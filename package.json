@@ -1,0 +1,28 @@
+{
+  "dependencies": {
+    "@wpkernel/pipeline": "^0.12.5-beta.0"
+  },
+  "name": "epipe",
+  "module": "index.ts",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "format": "prettier \"**/*.{ts,tsx,js,jsx,json,md}\" --write",
+    "format:check": "prettier \"**/*.{ts,tsx,js,jsx,json,md}\" --check",
+    "lint": "eslint \"**/*.{ts,tsx,js,jsx}\"",
+    "lint:fix": "eslint \"**/*.{ts,tsx,js,jsx}\" --fix",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@types/bun": "latest",
+    "@typescript-eslint/eslint-plugin": "6.21.0",
+    "@typescript-eslint/parser": "6.21.0",
+    "eslint": "8.57.0",
+    "eslint-config-prettier": "9.1.0",
+    "eslint-plugin-sonarjs": "0.24.0",
+    "prettier": "3.3.3"
+  },
+  "peerDependencies": {
+    "typescript": "^5"
+  }
+}
