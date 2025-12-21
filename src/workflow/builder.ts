@@ -6,8 +6,8 @@ import type { ArtefactOf, HumanInputOf, Plugin, RecipeName, RunInputOf } from ".
 import { getRecipe } from "./recipe-registry";
 
 export type WorkflowBuilder<N extends RecipeName> = {
-  use: (plugin: Plugin) => WorkflowBuilder<N>;
-  build: () => WorkflowRuntime<RunInputOf<N>, ArtefactOf<N>, HumanInputOf<N>>;
+  use(plugin: Plugin): WorkflowBuilder<N>;
+  build(): WorkflowRuntime<RunInputOf<N>, ArtefactOf<N>, HumanInputOf<N>>;
 };
 
 export const createBuilder = <N extends RecipeName>(recipeName: N): WorkflowBuilder<N> => {
@@ -18,12 +18,14 @@ export const createBuilder = <N extends RecipeName>(recipeName: N): WorkflowBuil
 
   const plugins: Plugin[] = [...(contract.defaultPlugins ?? [])];
 
-  const use = (plugin: Plugin) => {
+  function use(plugin: Plugin) {
     plugins.push(plugin);
     return builder;
-  };
+  }
 
-  const build = () => createRuntime<N>({ contract, plugins: [...plugins] });
+  function build() {
+    return createRuntime<N>({ contract, plugins: [...plugins] });
+  }
 
   const builder: WorkflowBuilder<N> = { use, build };
   return builder;

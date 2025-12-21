@@ -126,15 +126,15 @@ export type Outcome<TArtefact = unknown> =
   | { status: "error"; error: unknown; trace: unknown[]; diagnostics: unknown[] };
 
 export type WorkflowRuntime<TRunInput = unknown, TArtefact = unknown, THumanInput = unknown> = {
-  run: (input: TRunInput, runtime?: Runtime) => MaybePromise<Outcome<TArtefact>>;
-  resume?: (
+  run(input: TRunInput, runtime?: Runtime): MaybePromise<Outcome<TArtefact>>;
+  resume?(
     token: unknown,
     humanInput?: THumanInput,
     runtime?: Runtime,
-  ) => MaybePromise<Outcome<TArtefact>>;
-  capabilities: () => Record<string, unknown>;
-  explain: () => ExplainSnapshot;
-  contract: () => RecipeContract;
+  ): MaybePromise<Outcome<TArtefact>>;
+  capabilities(): Record<string, unknown>;
+  explain(): ExplainSnapshot;
+  contract(): RecipeContract;
 };
 
 // Outcome helpers

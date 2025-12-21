@@ -20,6 +20,7 @@
     "lint": "eslint \"**/*.{ts,tsx,js,jsx}\"",
     "lint:fix": "eslint \"**/*.{ts,tsx,js,jsx}\" --fix",
     "test": "bun test",
+    "test:coverage": "bun test --coverage --coverage-reporter=text",
     "typecheck": "tsc --noEmit"
   },
   "devDependencies": {

@@ -1,5 +1,7 @@
 # Plan
 
+Status: completed.
+
 Stage 6 focuses on test coverage, modular test suites, and keeping SLOC under control.
 
 ## Requirements
@@ -21,17 +23,18 @@ Stage 6 focuses on test coverage, modular test suites, and keeping SLOC under co
 
 ## Action items
 
-[ ] Split existing workflow tests into smaller suites by domain.
-[ ] Add registry/defaults tests (contracts, defaults, overrides).
-[ ] Add diagnostics tests (default vs strict, normalization).
-[ ] Add resume surface tests (presence + stub outcome).
-[ ] Keep helpers reused across suites and limit duplication.
+[x] Split existing workflow tests into smaller suites by domain.
+[x] Add registry/defaults tests (contracts, defaults, overrides).
+[x] Add diagnostics tests (default vs strict, normalization).
+[x] Add resume surface tests (presence + stub outcome).
+[x] Keep helpers reused across suites and limit duplication.
 
 ## Testing and validation
 
 - bun run lint
 - bun run typecheck
 - bun test
+- bun test --coverage --coverage-reporter=text
 
 ## Risks and edge cases
 

@@ -219,7 +219,7 @@ the base retriever; `retriever.rerank` is an add-on and does not provide `retrie
   - Provides: `retriever` capability (keyword + vector)
   - Emits: `retrieval.set`, `citations`
 - `retriever.rerank` (friendly: Retriever.rerank)
-  - Provides: `retrieval` artefact output; requires retriever
+  - Provides: `retrieval.reranked` artefact output; requires retriever; no `retriever` capability
   - Emits: `retrieval.reranked`
 
 ### Memory

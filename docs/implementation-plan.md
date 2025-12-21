@@ -129,9 +129,11 @@ Status: completed. See `docs/stage-5.md` for the detailed checklist.
 
 ## Stage 6 — Tests + SLOC Discipline
 
-Status: planned. See `docs/stage-6.md` for the detailed checklist.
+Status: completed. See `docs/stage-6.md` for the detailed checklist.
 
 ## Stage 7 — Interoperability Adapters (Deferred)
+
+Status: deferred. Not started.
 
 Code:
 
