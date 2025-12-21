@@ -7,3 +7,8 @@ export { fromLangChainTransformer } from "./transformer";
 export { fromLangChainReranker } from "./reranker";
 export { fromLangChainMemory } from "./memory";
 export { fromLangChainStore } from "./storage";
+export { fromLangChainPromptTemplate } from "./prompts";
+export { fromLangChainDocument, toLangChainDocument } from "./documents";
+export { fromLangChainMessage } from "./messages";
+export { fromLangChainMessages } from "./model-call";
+export { fromLangChainDocuments } from "./retrieval";

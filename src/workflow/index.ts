@@ -26,6 +26,7 @@ export type {
   AdapterMessageContent,
   AdapterMessagePart,
   AdapterMessageRole,
+  AdapterStructuredContent,
   AdapterModelCall,
   AdapterModelResult,
   AdapterRetrievalResult,

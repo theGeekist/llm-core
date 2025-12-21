@@ -41,6 +41,12 @@ This stage adds integration tests gated by environment to avoid CI breakage.
 [x] Implement transformer adapters (langchain + llamaindex; AI SDK has no transformer abstraction).
 [x] Implement memory adapters (langchain + llamaindex; AI SDK has no memory abstraction).
 [x] Implement storage adapters (langchain + llamaindex; AI SDK has no storage abstraction).
+[x] Implement prompt adapters (langchain + llamaindex; AI SDK has no prompt template abstraction).
+[x] Implement schema adapter helper (normalize Zod/JSON-schema-like inputs).
+[x] Implement document adapters (langchain + llamaindex; AI SDK has no document abstraction).
+[x] Implement message adapters (langchain + llamaindex + ai-sdk).
+[x] Implement model-call helpers (langchain + llamaindex + ai-sdk).
+[x] Implement retrieval helpers (langchain + llamaindex).
 [x] Use per-ecosystem subfolders: adapters/langchain/{construct}.ts, adapters/llamaindex/{construct}.ts, adapters/ai-sdk/{construct}.ts.
 [x] Add workflow helpers: adapter-aware context accessors, capability predicates, adapter validation.
 [ ] Add integration tests gated by env vars (OLLAMA_URL, OPENAI_API_KEY, ANTHROPIC_API_KEY).

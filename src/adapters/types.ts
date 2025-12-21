@@ -17,7 +17,13 @@ export type AdapterMessage = {
   metadata?: Record<string, unknown>;
 };
 
-export type AdapterMessageContent = string | AdapterMessagePart[];
+export type AdapterStructuredContent = {
+  text: string;
+  parts: AdapterMessagePart[];
+  raw?: unknown;
+};
+
+export type AdapterMessageContent = string | AdapterStructuredContent;
 
 export type AdapterMessagePart =
   | AdapterTextPart
@@ -183,10 +189,10 @@ export type AdapterKVStore<V = unknown> = {
 };
 
 export type AdapterStorage = {
-  get(key: string): Promise<AdapterBlob | undefined> | AdapterBlob | undefined;
-  put(key: string, blob: AdapterBlob): Promise<void> | void;
-  delete(key: string): Promise<void> | void;
-  list(prefix?: string): Promise<string[]> | string[];
+  get(key: string): AdapterMaybePromise<AdapterBlob | undefined>;
+  put(key: string, blob: AdapterBlob): AdapterMaybePromise<void>;
+  delete(key: string): AdapterMaybePromise<void>;
+  list(prefix?: string): AdapterMaybePromise<string[]>;
 };
 
 export type AdapterPromptSchema = {
