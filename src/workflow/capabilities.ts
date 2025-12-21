@@ -60,7 +60,7 @@ const addAdapterCapability = (
   capabilities[key] = value;
 };
 
-const hasItems = (values: unknown[] | undefined) => (values ? values.length > 0 : false);
+const hasItems = (values: unknown) => (Array.isArray(values) ? values.length > 0 : Boolean(values));
 
 const addAdapterCapabilities = (
   capabilities: Record<string, unknown>,

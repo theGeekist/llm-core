@@ -1,0 +1,1 @@
+export { fromAiSdkEmbeddings } from "./embeddings";

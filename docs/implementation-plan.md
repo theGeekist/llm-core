@@ -150,13 +150,15 @@ Exit criteria:
 
 ## Stage 8 — Interoperability Adapters
 
-Status: planned. See `docs/stage-8.md`.
+Status: in progress. See `docs/stage-8.md`.
 
 Code:
 
 - Add an opt-in adapter layer for external ecosystems (e.g., LangChain, LlamaIndex, AI SDK).
+- Execute construct-first across ecosystems (implement each construct for all ecosystems in parallel).
 - Focus on narrow boundary translation (inputs/outputs, tool calls, traces/diagnostics) without changing core Workflow DX.
 - Keep adapters as separate modules (or packages) so the core stays small and stable.
+- Use per-ecosystem subfolders: `src/adapters/langchain/*`, `src/adapters/llamaindex/*`, `src/adapters/ai-sdk/*`.
 - Treat external adapter packages as peer dependencies when work begins.
 - Revisit monorepo structure when adapters are introduced (to manage peer deps cleanly and avoid core churn).
 - Add workflow-side primitives for adapter use (context accessors, capability predicates, adapter validation).
@@ -181,6 +183,7 @@ Exit criteria:
 
 - One adapter can run end-to-end via a small example without widening core types.
 - Workflow contracts/recipes remain the source of truth; adapters translate to/from them.
+- Integration tests are organized by construct: `tests/integration/{construct}.{ecosystem}.test.ts`.
 
 ## Ongoing Constraints
 

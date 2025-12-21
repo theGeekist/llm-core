@@ -1,13 +1,14 @@
 # Plan
 
-Status: planned.
+Status: in progress.
 
 Stage 8 implements real adapters for each ecosystem using the Stage 7 contracts and parity tests.
+Execution is construct-first; each construct is implemented across ecosystems in parallel.
 This stage adds integration tests gated by environment to avoid CI breakage.
 
 ## Requirements
 
-- Implement adapter modules per ecosystem (LangChain, LlamaIndex, AI SDK).
+- Implement adapter modules per ecosystem (LangChain, LlamaIndex, AI SDK), construct by construct.
 - Keep adapter code isolated from core workflow runtime.
 - Wire adapters into lifecycle helpers without widening public API.
 - Resume should run through pipeline with adapters once a HITL adapter exists.
@@ -21,7 +22,9 @@ This stage adds integration tests gated by environment to avoid CI breakage.
 
 ## Files and entry points
 
-- src/adapters/\*
+- src/adapters/langchain/\*
+- src/adapters/llamaindex/\*
+- src/adapters/ai-sdk/\*
 - src/workflow/\*
 - tests/interop/\*
 - tests/integration/\*
@@ -29,11 +32,12 @@ This stage adds integration tests gated by environment to avoid CI breakage.
 
 ## Action items
 
-[ ] Implement LangChain adapters (tools, prompts, retrievers, embeddings, splitters).
-[ ] Implement LlamaIndex adapters (retriever, embedder, node parsers, memory).
-[ ] Implement AI SDK adapters (model calls, tools, embeddings).
-[ ] Add workflow helpers: adapter-aware context accessors, capability predicates, adapter validation.
+[x] Implement adapters per construct across ecosystems (embeddings across langchain/llamaindex/ai-sdk).
+[x] Implement text splitter adapters (langchain + llamaindex; AI SDK has no splitter abstraction).
+[x] Use per-ecosystem subfolders: adapters/langchain/{construct}.ts, adapters/llamaindex/{construct}.ts, adapters/ai-sdk/{construct}.ts.
+[x] Add workflow helpers: adapter-aware context accessors, capability predicates, adapter validation.
 [ ] Add integration tests gated by env vars (OLLAMA_URL, OPENAI_API_KEY, ANTHROPIC_API_KEY).
+[ ] Organize integration tests by construct: tests/integration/{construct}.{ecosystem}.test.ts.
 [ ] Thread adapters into resume pipeline path when HITL adapter exists.
 [ ] Keep parity/shape tests green; add integration-only suites separately.
 

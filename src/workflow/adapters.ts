@@ -19,22 +19,7 @@ const mergeAdapterBundle = (
   mode: Plugin["mode"],
 ): AdapterBundle => {
   if (mode === "override") {
-    return {
-      documents: replaceIfDefined(target.documents, next.documents),
-      messages: replaceIfDefined(target.messages, next.messages),
-      tools: replaceIfDefined(target.tools, next.tools),
-      prompts: replaceIfDefined(target.prompts, next.prompts),
-      schemas: replaceIfDefined(target.schemas, next.schemas),
-      textSplitter: replaceIfDefined(target.textSplitter, next.textSplitter),
-      embedder: replaceIfDefined(target.embedder, next.embedder),
-      retriever: replaceIfDefined(target.retriever, next.retriever),
-      reranker: replaceIfDefined(target.reranker, next.reranker),
-      loader: replaceIfDefined(target.loader, next.loader),
-      transformer: replaceIfDefined(target.transformer, next.transformer),
-      memory: replaceIfDefined(target.memory, next.memory),
-      storage: replaceIfDefined(target.storage, next.storage),
-      kv: replaceIfDefined(target.kv, next.kv),
-    };
+    return { ...next };
   }
   return {
     documents: mergeIfDefined(target.documents, next.documents),

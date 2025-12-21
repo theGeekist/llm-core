@@ -20,6 +20,7 @@ import type {
 } from "./types";
 import { createContractView } from "./contract";
 import { buildCapabilities } from "./capabilities";
+import { isCapabilitySatisfied } from "./capability-checks";
 import { buildExplainSnapshot } from "./explain";
 import {
   createLifecycleDiagnostic,
@@ -213,18 +214,6 @@ export const createRuntime = <N extends RecipeName>({
   for (const message of explain.missingRequirements ?? []) {
     buildDiagnostics.push(createRequirementDiagnostic(message));
   }
-  const isCapabilitySatisfied = (value: unknown) => {
-    if (value === undefined || value === null || value === false) {
-      return false;
-    }
-    if (Array.isArray(value)) {
-      return value.length > 0;
-    }
-    if (typeof value === "string") {
-      return value.length > 0;
-    }
-    return true;
-  };
   for (const minimum of contract.minimumCapabilities) {
     if (!isCapabilitySatisfied(resolved[minimum])) {
       buildDiagnostics.push(

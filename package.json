@@ -10,7 +10,7 @@
   "private": true,
   "scripts": {
     "build": "bun run build:js && bun run build:types",
-    "build:js": "bun build ./index.ts ./src/workflow/*.ts --outdir dist --root . --sourcemap --splitting --format=esm --target=node",
+    "build:js": "bun build ./index.ts ./src/workflow/*.ts ./src/adapters/*.ts ./src/adapters/*/*.ts --outdir dist --root . --sourcemap --splitting --format=esm --target=node",
     "build:types": "tsc -p tsconfig.build.json --emitDeclarationOnly",
     "prepare": "git config core.hooksPath .githooks",
     "format": "prettier \"**/*.{ts,tsx,js,jsx,json,md}\" --write",
@@ -48,7 +48,9 @@
   },
   "imports": {
     "#workflow": "./src/workflow/index.ts",
-    "#workflow/*": "./src/workflow/*.ts"
+    "#workflow/*": "./src/workflow/*.ts",
+    "#adapters": "./src/adapters/index.ts",
+    "#adapters/*": "./src/adapters/*/index.ts"
   },
   "exports": {
     ".": {
@@ -65,6 +67,16 @@
       "types": "./dist/src/workflow/*.d.ts",
       "import": "./dist/src/workflow/*.js",
       "default": "./dist/src/workflow/*.js"
+    },
+    "./adapters": {
+      "types": "./dist/src/adapters/index.d.ts",
+      "import": "./dist/src/adapters/index.js",
+      "default": "./dist/src/adapters/index.js"
+    },
+    "./adapters/*": {
+      "types": "./dist/src/adapters/*/index.d.ts",
+      "import": "./dist/src/adapters/*/index.js",
+      "default": "./dist/src/adapters/*/index.js"
     }
   },
   "peerDependencies": {

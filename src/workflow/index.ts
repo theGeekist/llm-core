@@ -10,6 +10,9 @@ export const Workflow = {
 export { createBuilder } from "./builder.ts";
 export { createRuntime } from "./runtime.ts";
 export { collectAdapters } from "./adapters.ts";
+export { getAdapters } from "./context.ts";
+export { hasAdapter, validateAdapters } from "./adapter-validation.ts";
+export { isCapabilitySatisfied } from "./capability-checks.ts";
 export { registerRecipe, getRecipe } from "./recipe-registry.ts";
 export { createContractView } from "./contract.ts";
 export { buildExplainSnapshot } from "./explain.ts";

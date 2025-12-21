@@ -41,3 +41,10 @@ export type {
   AdapterTurn,
   AdapterTraceEvent,
 } from "./types";
+
+export { identity, mapMaybe } from "./maybe";
+export { fromLangChainEmbeddings } from "./langchain";
+export { fromLangChainTextSplitter } from "./langchain";
+export { fromLlamaIndexEmbeddings } from "./llamaindex";
+export { fromLlamaIndexTextSplitter } from "./llamaindex";
+export { fromAiSdkEmbeddings } from "./ai-sdk";

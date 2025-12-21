@@ -1,8 +1,7 @@
-import { chainMaybe } from "#workflow/maybe";
-import type { AdapterMaybePromise } from "#workflow";
+import { mapMaybe } from "#adapters";
+import type { AdapterMaybePromise } from "#adapters";
 
-export const mapMaybe = <T, R>(value: AdapterMaybePromise<T>, map: (value: T) => R) =>
-  chainMaybe(value, map);
+export { mapMaybe };
 
 export const mapMaybeArray = <T, R>(value: AdapterMaybePromise<T[]>, map: (value: T) => R) =>
-  chainMaybe(value, (items) => items.map(map));
+  mapMaybe(value, (items) => items.map(map));
