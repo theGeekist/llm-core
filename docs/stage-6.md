@@ -26,7 +26,7 @@ Stage 6 focuses on test coverage, modular test suites, and keeping SLOC under co
 [x] Split existing workflow tests into smaller suites by domain.
 [x] Add registry/defaults tests (contracts, defaults, overrides).
 [x] Add diagnostics tests (default vs strict, normalization).
-[x] Add resume surface tests (presence + stub outcome).
+[x] Add resume surface tests (presence + missing resume adapter outcome).
 [x] Keep helpers reused across suites and limit duplication.
 
 ## Testing and validation

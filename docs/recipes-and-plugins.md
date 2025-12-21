@@ -263,6 +263,7 @@ the base retriever; `retriever.rerank` is an add-on and does not provide `retrie
 - `hitl.pauseResume` (friendly: Hitl.pauseResume)
   - Provides: `hitl` capability (adapter)
   - Emits: `hitl.token`, `hitl.packet`
+  - Resume relies on `runtime.resume.resolve(...)` to continue after `needsHuman`
 
 ## Conflict Scenarios + explain()
 

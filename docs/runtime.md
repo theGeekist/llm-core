@@ -11,7 +11,9 @@ type Runtime = {
   budget?: unknown;
   persistence?: unknown;
   traceSink?: unknown;
-  hitl?: unknown;
+  resume?: {
+    resolve: (request: { token: unknown; humanInput?: unknown }) => unknown;
+  };
 };
 ```
 
@@ -28,7 +30,7 @@ const runtime = {
   traceSink: {
     /* sink */
   },
-  hitl: {
+  resume: {
     /* adapter */
   },
 };
@@ -82,4 +84,4 @@ if (out.status === "needsHuman") {
 }
 ```
 
-If a recipe supports it, `resume(token, humanInput?, runtime?)` is exposed; current behavior is stubbed until a HITL adapter is wired.
+If a recipe supports it, `resume(token, humanInput?, runtime?)` is exposed; it uses `runtime.resume.resolve(...)` when provided and returns an error outcome when missing.

@@ -39,8 +39,9 @@ Keep each module under 500 SLOC.
 3. `src/workflow/runtime.ts`
 
    - `.run(input, runtime?)` with Outcome union
-   - `.resume(token, humanInput?, runtime?)` for HITL recipes
-   - runtime presets (optional)
+
+- `.resume(token, humanInput?, runtime?)` for HITL recipes (uses `runtime.resume.resolve`)
+  - runtime presets (optional)
 
 4. `src/workflow/plugins/types.ts`
 
@@ -150,7 +151,7 @@ Exit criteria:
 
 ## Stage 8 — Interoperability Adapters
 
-Status: in progress. See `docs/stage-8.md`.
+Status: completed. See `docs/stage-8.md`.
 
 Code:
 

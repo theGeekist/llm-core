@@ -1,7 +1,7 @@
-import { describe, expect, it } from "bun:test";
+import { describe, expect, it, mock } from "bun:test";
 import type { EmbeddingsInterface } from "@langchain/core/embeddings";
 import type { BaseEmbedding } from "@llamaindex/core/embeddings";
-import { fromAiSdkEmbeddings, fromLangChainEmbeddings, fromLlamaIndexEmbeddings } from "#adapters";
+import { fromLangChainEmbeddings, fromLlamaIndexEmbeddings } from "#adapters";
 
 describe("Adapter embeddings", () => {
   it("maps LangChain embeddings with sync returns", () => {
@@ -37,9 +37,24 @@ describe("Adapter embeddings", () => {
     await expect(adapter.embedMany?.(["hi"])).resolves.toEqual([[0.5, 0.6]]);
   });
 
-  it("exposes AI SDK embedding adapters", () => {
-    const adapter = fromAiSdkEmbeddings("test-model");
+  it("exposes AI SDK embedding adapters", async () => {
+    mock.module("ai", () => ({
+      embed: ({ value }: { value: string }) =>
+        value === "async"
+          ? Promise.resolve({ embedding: [value.length] })
+          : { embedding: [value.length] },
+      embedMany: ({ values }: { values: string[] }) =>
+        values.includes("async")
+          ? Promise.resolve({ embeddings: values.map((entry) => [entry.length]) })
+          : { embeddings: values.map((entry) => [entry.length]) },
+    }));
+    const { fromAiSdkEmbeddings } = await import("../../src/adapters/ai-sdk/embeddings.ts");
+    const adapter = fromAiSdkEmbeddings("test-model" as never);
     expect(adapter.embed).toBeFunction();
     expect(adapter.embedMany).toBeFunction();
+    expect(adapter.embed("hi")).toEqual([2]);
+    await expect(Promise.resolve(adapter.embed("async"))).resolves.toEqual([5]);
+    expect(adapter.embedMany?.(["a", "abcd"])).toEqual([[1], [4]]);
+    await expect(Promise.resolve(adapter.embedMany?.(["a", "async"]))).resolves.toEqual([[1], [5]]);
   });
 });

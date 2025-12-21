@@ -26,6 +26,7 @@ import {
   createLifecycleDiagnostic,
   createContractDiagnostic,
   createRequirementDiagnostic,
+  createResumeDiagnostic,
   applyDiagnosticsMode,
   hasErrorDiagnostics,
   normalizeDiagnostics,
@@ -256,6 +257,46 @@ export const createRuntime = <N extends RecipeName>({
     ((result as { partialArtifact?: Partial<ArtefactOf<N>> }).partialArtifact ??
       readArtifact(result)) as Partial<ArtefactOf<N>>;
 
+  const isObject = (value: unknown): value is Record<string, unknown> =>
+    typeof value === "object" && value !== null;
+
+  const resumeEnvelopeKeys = new Set(["input", "runtime", "adapters"]);
+  const hasOnlyResumeKeys = (value: Record<string, unknown>) =>
+    Object.keys(value).every((key) => resumeEnvelopeKeys.has(key));
+  const isResumeEnvelope = (value: Record<string, unknown>) =>
+    "input" in value && hasOnlyResumeKeys(value);
+
+  const readResumeOptions = (
+    value: unknown,
+    runtime?: Runtime,
+    diagnostics?: DiagnosticEntry[],
+  ) => {
+    if (isObject(value) && isResumeEnvelope(value)) {
+      const typed = value as { input?: unknown; runtime?: Runtime; adapters?: unknown };
+      return {
+        input: typed.input,
+        runtime: typed.runtime ?? runtime,
+        adapters: typed.adapters ?? adapters,
+      };
+    }
+    if (isObject(value)) {
+      if ("input" in value) {
+        diagnostics?.push(
+          createResumeDiagnostic(
+            "Resume adapter returned an object with extra keys; treating it as input.",
+          ),
+        );
+      } else {
+        diagnostics?.push(
+          createResumeDiagnostic(
+            "Resume adapter returned an object without an input; treating it as input.",
+          ),
+        );
+      }
+    }
+    return { input: value, runtime, adapters };
+  };
+
   const toNeedsHumanOutcome = (
     result: unknown,
     trace: TraceEvent[],
@@ -270,6 +311,39 @@ export const createRuntime = <N extends RecipeName>({
       trace,
       diagnostics,
     };
+  };
+
+  const finalizeResult = (
+    result: unknown,
+    extraDiagnostics: DiagnosticEntry[],
+    trace: TraceEvent[],
+    diagnosticsMode: "default" | "strict",
+  ) => {
+    const diagnostics = applyDiagnosticsMode(
+      readDiagnostics(result).concat(extraDiagnostics),
+      diagnosticsMode,
+    );
+    if (diagnosticsMode === "strict" && hasErrorDiagnostics(diagnostics)) {
+      return toErrorOutcome(new Error("Strict diagnostics failure."), trace, diagnostics);
+    }
+    const isNeedsHuman = (result as { needsHuman?: boolean }).needsHuman;
+    if (isNeedsHuman) {
+      return toNeedsHumanOutcome(result, trace, diagnostics);
+    }
+    return toOkOutcome(result, trace, diagnostics);
+  };
+
+  const createRunHandlers = (trace: TraceEvent[], diagnosticsMode: "default" | "strict") => {
+    const handleResult = (result: unknown) => finalizeResult(result, [], trace, diagnosticsMode);
+
+    const handleError = (error: unknown) =>
+      toErrorOutcome(
+        error,
+        trace,
+        applyDiagnosticsMode(readErrorDiagnostics(error), diagnosticsMode),
+      );
+
+    return { handleResult, handleError };
   };
 
   const toErrorOutcome = (
@@ -291,51 +365,87 @@ export const createRuntime = <N extends RecipeName>({
     const trace = createTrace();
     addTraceEvent(trace, "run.start", { recipe: contract.name });
     const diagnosticsMode = runtime?.diagnostics ?? "default";
-    return tryMaybe(performRun, handleRunError);
+    const handlers = createRunHandlers(trace, diagnosticsMode);
+    return tryMaybe(performRun, handlers.handleError);
 
     function performRun() {
       return chainMaybe(extensionRegistration, runPipelineWithExtensions);
     }
 
     function runPipelineWithExtensions() {
-      return chainMaybe(runPipeline(), handleRunResult);
+      return chainMaybe(runPipeline(), handlers.handleResult);
     }
 
     function runPipeline() {
       return pipeline.run({ input, runtime, reporter: runtime?.reporter, adapters });
     }
-
-    function handleRunResult(result: unknown) {
-      const diagnostics = applyDiagnosticsMode(readDiagnostics(result), diagnosticsMode);
-      if (diagnosticsMode === "strict" && hasErrorDiagnostics(diagnostics)) {
-        return toErrorOutcome(new Error("Strict diagnostics failure."), trace, diagnostics);
-      }
-      const isNeedsHuman = (result as { needsHuman?: boolean }).needsHuman;
-      if (isNeedsHuman) {
-        return toNeedsHumanOutcome(result, trace, diagnostics);
-      }
-      return toOkOutcome(result, trace, diagnostics);
-    }
-
-    function handleRunError(error: unknown) {
-      return toErrorOutcome(
-        error,
-        trace,
-        applyDiagnosticsMode(readErrorDiagnostics(error), diagnosticsMode),
-      );
-    }
   }
 
   const resume =
     contract.supportsResume === true
-      ? function resume(_token: unknown, _humanInput?: HumanInputOf<N>, runtime?: Runtime) {
-          void _token;
-          void _humanInput;
-          void runtime;
+      ? function resume(token: unknown, humanInput?: HumanInputOf<N>, runtime?: Runtime) {
           const trace = createTrace();
           addTraceEvent(trace, "run.start", { recipe: contract.name, resume: true });
-          const diagnostics = normalizeDiagnostics(buildDiagnostics, []);
-          return toErrorOutcome(new Error("Resume is not implemented."), trace, diagnostics);
+          const diagnosticsMode = runtime?.diagnostics ?? "default";
+          const resumeAdapter = runtime?.resume;
+
+          if (!resumeAdapter || typeof resumeAdapter.resolve !== "function") {
+            const diagnostics = applyDiagnosticsMode(
+              [...buildDiagnostics, createResumeDiagnostic("Resume requires a resume adapter.")],
+              diagnosticsMode,
+            );
+            return toErrorOutcome(
+              new Error("Resume requires a resume adapter."),
+              trace,
+              diagnostics,
+            );
+          }
+
+          const adapter = resumeAdapter;
+          const handlers = createRunHandlers(trace, diagnosticsMode);
+          return tryMaybe(performResume, handlers.handleError);
+
+          function performResume() {
+            return chainMaybe(extensionRegistration, resolveResume);
+          }
+
+          function resolveResume() {
+            return chainMaybe(
+              adapter.resolve({ token, humanInput, runtime, adapters }),
+              runResumePipeline,
+            );
+          }
+
+          function runResumePipeline(resumeValue: unknown) {
+            const resumeDiagnostics: DiagnosticEntry[] = [];
+            const resumeOptions = readResumeOptions(resumeValue, runtime, resumeDiagnostics);
+            const resumeRuntime = resumeOptions.runtime;
+            const resumeDiagnosticsMode = resumeRuntime?.diagnostics ?? diagnosticsMode;
+            return tryMaybe(
+              () =>
+                chainMaybe(
+                  pipeline.run({
+                    input: resumeOptions.input,
+                    runtime: resumeRuntime,
+                    reporter: resumeRuntime?.reporter,
+                    adapters: resumeOptions.adapters,
+                  }),
+                  (result) =>
+                    finalizeResult(
+                      result,
+                      normalizeDiagnostics(resumeDiagnostics, []),
+                      trace,
+                      resumeDiagnosticsMode,
+                    ),
+                ),
+              (error) =>
+                toErrorOutcome(
+                  error,
+                  trace,
+                  applyDiagnosticsMode(readErrorDiagnostics(error), resumeDiagnosticsMode),
+                ),
+            );
+          }
         }
       : undefined;
 

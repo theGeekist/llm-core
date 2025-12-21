@@ -33,6 +33,40 @@ describe("Adapter messages", () => {
     expect(fromAiSdkMessage(message)).toEqual({ role: "user", content: "hi" });
   });
 
+  it("maps AI SDK tool messages", () => {
+    const message = {
+      role: "tool",
+      content: [{ type: "text", text: "tool output" }],
+    } as unknown as ModelMessage;
+
+    const adapted = fromAiSdkMessage(message);
+    expect(adapted.role).toBe("tool");
+    expect(adapted.content).toMatchObject({ text: "tool output" });
+  });
+
+  it("falls back when AI SDK message has no content", () => {
+    const message = { role: "tool" } as unknown as ModelMessage;
+    expect(fromAiSdkMessage(message)).toEqual({ role: "tool", content: "" });
+  });
+
+  it("maps AI SDK system messages", () => {
+    const message: ModelMessage = {
+      role: "system",
+      content: "system",
+    };
+
+    expect(fromAiSdkMessage(message)).toEqual({ role: "system", content: "system" });
+  });
+
+  it("maps AI SDK assistant messages", () => {
+    const message: ModelMessage = {
+      role: "assistant",
+      content: "assistant",
+    };
+
+    expect(fromAiSdkMessage(message)).toEqual({ role: "assistant", content: "assistant" });
+  });
+
   it("maps AI SDK structured messages", () => {
     const content: TextPart[] = [{ type: "text", text: "hi" }];
     const message: ModelMessage = {
@@ -42,5 +76,18 @@ describe("Adapter messages", () => {
 
     const adapted = fromAiSdkMessage(message);
     expect(adapted.content).toMatchObject({ text: "hi" });
+  });
+
+  it("maps LlamaIndex developer and memory roles", () => {
+    const developer: ChatMessage = { role: "developer", content: "note" };
+    const memory: ChatMessage = { role: "memory", content: "memo" };
+
+    expect(fromLlamaIndexMessage(developer)).toEqual({ role: "system", content: "note" });
+    expect(fromLlamaIndexMessage(memory)).toEqual({ role: "system", content: "memo" });
+  });
+
+  it("maps LlamaIndex tool role to tool", () => {
+    const tool = { role: "tool", content: "result" } as unknown as ChatMessage;
+    expect(fromLlamaIndexMessage(tool)).toEqual({ role: "tool", content: "result" });
   });
 });

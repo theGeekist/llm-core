@@ -19,14 +19,23 @@ describe("Adapter memory", () => {
 
   it("maps LlamaIndex memory", async () => {
     const memory = {
-      getLLM: () => Promise.resolve([]),
+      getLLM: () =>
+        Promise.resolve([
+          { role: "developer", content: "note" },
+          { role: "memory", content: "memo" },
+          { role: "user", content: [{ type: "text", text: "hi" }] },
+        ]),
       add: () => Promise.resolve(),
       clear: () => Promise.resolve(),
     } as unknown as LlamaMemory;
 
     const adapter = fromLlamaIndexMemory(memory);
     const thread = await adapter.read?.("thread");
-    expect(thread?.turns).toEqual([]);
+    expect(thread?.turns).toEqual([
+      { role: "system", content: "note" },
+      { role: "system", content: "memo" },
+      { role: "user", content: "" },
+    ]);
     await expect(
       adapter.append?.("thread", { role: "user", content: "hi" }),
     ).resolves.toBeUndefined();

@@ -4,7 +4,7 @@ These are the Stage 3 guarantees for implementation and review. They are intenti
 
 ## Runtime Semantics
 
-- `run()` accepts a runtime channel for operational concerns (reporter, budget, persistence, HITL, trace sink).
+- `run()` accepts a runtime channel for operational concerns (reporter, budget, persistence, resume adapter, trace sink).
 - `run()` returns an Outcome union with trace + diagnostics always present.
 - Sync or async is supported via MaybePromise.
 
@@ -28,7 +28,7 @@ Current reducers (explicit capabilities):
 - `model`: replace
 - `evaluator`: replace
 - `embedder`: replace
-- `hitl`: replace
+- `resume`: replace
 - `recipe`: replace
 - `trace`: replace
 - `dataset`: replace
@@ -60,7 +60,7 @@ while full lists stay on `wf.adapters()`.
 ## Resume Surface
 
 - Resume exists only for recipes that declare `supportsResume`.
-- Current behavior is a stub that returns an error outcome; adapter integration is deferred.
+- Resume routes through `runtime.resume.resolve(...)` when present and returns an error outcome when missing.
 
 ## DX Commitments
 

@@ -30,6 +30,33 @@ describe("Adapter model calls", () => {
     expect("prompt" in call).toBe(true);
   });
 
+  it("maps AI SDK string prompts", () => {
+    const call = fromAiSdkPrompt("hello" as unknown as Prompt);
+    expect("prompt" in call).toBe(true);
+  });
+
+  it("prefers AI SDK messages when provided", () => {
+    const message: ModelMessage = { role: "user", content: "hi" };
+    const prompt: Prompt = {
+      system: "system",
+      messages: [message],
+    };
+
+    const call = fromAiSdkPrompt(prompt);
+    expect("messages" in call).toBe(true);
+  });
+
+  it("falls back when AI SDK messages are empty", () => {
+    const prompt = {
+      system: "system",
+      messages: [],
+      prompt: "fallback",
+    } as unknown as Prompt;
+
+    const call = fromAiSdkPrompt(prompt);
+    expect("prompt" in call).toBe(true);
+  });
+
   it("maps AI SDK prompt arrays to messages", () => {
     const prompt: Prompt = {
       system: "system",

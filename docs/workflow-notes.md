@@ -23,7 +23,7 @@ Canonical overview. Companion details live in `docs/recipes-and-plugins.md`, `do
 3. Build: `build()` returns a Workflow (runnable). The builder is a transient composer.
 4. Run: get a typed outcome + artefact + trace + diagnostics by default.
 5. Override: swap a plugin or override a helper key with deterministic results.
-6. Resume: if a run returns `needsHuman`, `resume` is exposed for supported recipes (currently stubbed until a HITL adapter is wired).
+6. Resume: if a run returns `needsHuman`, `resume` is exposed for supported recipes and uses `runtime.resume.resolve(...)`.
 
 Design intent:
 
@@ -38,7 +38,7 @@ Two DX anchors:
   wf.capabilities(); // -> { model: ..., tools: true, retriever?: ..., memory?: ... }
   wf.explain(); // -> { plugins: [...], capabilities: {...}, declaredCapabilities: {...}, overrides: [...], unused: [...] }
   ```
-- Runtime carries operational concerns (budget, persistence, HITL adapter, tracing sink), while plugins carry behavioral concerns.
+- Runtime carries operational concerns (budget, persistence, resume adapter, tracing sink), while plugins carry behavioral concerns.
 
 ## Glossary
 
@@ -63,7 +63,7 @@ Two DX anchors:
 - `.use(plugin)` -> compose
 - `.build()` -> runnable
 - `.run(input, runtime?)` -> outcome union
-- `.resume(token, humanInput?)` -> outcome union (recipe-provided, only if needed; currently stubbed)
+- `.resume(token, humanInput?)` -> outcome union (recipe-provided, only if needed; requires `runtime.resume`)
 
 Override should be expressed either:
 
@@ -141,7 +141,7 @@ How it maps:
 - Plugin.setup registers helpers (stages, DAG nodes) on the pipeline.
 - Plugin.hook runs at recipe lifecycles to transform artefacts or emit trace.
 - Recipe defines lifecycle names; stages call `makeLifecycleStage(name)` to trigger hooks.
-- Runtime concerns (trace sinks, persistence, HITL adapters) can be extensions that hook
+- Runtime concerns (trace sinks, persistence, resume adapters) can be extensions that hook
   lifecycle stages and commit/rollback as needed.
 
 Why it fits:
@@ -163,7 +163,7 @@ type Runtime = {
   budget?: Budget;
   traceSink?: TraceSink;
   persistence?: PersistenceAdapter;
-  hitl?: HitlAdapter;
+  resume?: ResumeAdapter;
 };
 
 type Outcome<TArtefact> =
@@ -296,7 +296,7 @@ const wf = Workflow.recipe("hitl-gate")
 const out = await wf.run({ input: "Approve $5000 spend?" });
 if (out.status === "needsHuman") {
   const resumed = await wf.resume(out.token, { decision: "deny" });
-  // resume is currently stubbed until a HITL adapter is wired
+  // resume relies on runtime.resume to translate the token + human input
 }
 ```
 

@@ -96,7 +96,7 @@ const runtime = {
   traceSink: {
     /* sink */
   },
-  hitl: {
+  resume: {
     /* adapter */
   },
 };
@@ -125,4 +125,4 @@ wf.explain();
 ## Resume (HITL Recipes)
 
 `resume()` only exists for recipes that explicitly support it. If present, it accepts a token and optional human input.
-Current behavior is a stub until a HITL adapter contract is wired.
+It uses `runtime.resume.resolve(...)` when provided; otherwise it returns an error outcome.

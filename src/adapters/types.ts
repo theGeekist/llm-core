@@ -174,6 +174,25 @@ export type AdapterBundle = {
   kv?: AdapterKVStore;
 };
 
+export type AdapterResumeRequest = {
+  token: unknown;
+  humanInput?: unknown;
+  runtime?: unknown;
+  adapters?: AdapterBundle;
+};
+
+export type AdapterResumeResult = {
+  input: unknown;
+  runtime?: unknown;
+  adapters?: AdapterBundle;
+};
+
+export type AdapterResumeReturn = AdapterResumeResult | unknown;
+
+export type AdapterResume = {
+  resolve: (request: AdapterResumeRequest) => AdapterMaybePromise<AdapterResumeReturn>;
+};
+
 export type AdapterBlob = {
   id?: string;
   contentType?: string;

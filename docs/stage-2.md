@@ -37,7 +37,7 @@ introspection. We’ll keep the surface minimal while ensuring diagnostics and c
 [x] Audit Stage 1 runtime against pipeline extension points; wire helper stages and lifecycle stages with diagnostics for
 missing hooks.
 [x] Strengthen explain/capabilities: overrides, missing requirements, unused/shadowed registrations, and capability map.
-[x] Formalize runtime channel (budget/persistence/HITL/tracing) in types and propagate into pipeline execution.
+[x] Formalize runtime channel (budget/persistence/resume/tracing) in types and propagate into pipeline execution.
 [x] Outcome ergonomics: keep Outcome.match/Outcome.ok helpers minimal and align with docs.
 [x] Expand tests for sync/async/maybeTry/maybeThen, lifecycle hook execution, diagnostics, and conflict scenarios.
 [x] Update docs per change: Stage 2 checklist in docs/implementation-plan.md and DX notes in docs/workflow-notes.md.

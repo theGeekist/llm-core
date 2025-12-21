@@ -1,7 +1,7 @@
 // References: docs/stage-3.md; docs/runtime.md
 
 export type DiagnosticLevel = "warn" | "error";
-export type DiagnosticKind = "pipeline" | "workflow" | "requirement" | "contract";
+export type DiagnosticKind = "pipeline" | "workflow" | "requirement" | "contract" | "resume";
 
 export type DiagnosticEntry = {
   level: DiagnosticLevel;
@@ -30,6 +30,12 @@ const pipelineLevel = (diagnostic: PipelineDiagnostic): DiagnosticLevel => {
 export const createLifecycleDiagnostic = (message: string): DiagnosticEntry => ({
   level: "warn",
   kind: "workflow",
+  message,
+});
+
+export const createResumeDiagnostic = (message: string): DiagnosticEntry => ({
+  level: "warn",
+  kind: "resume",
   message,
 });
 

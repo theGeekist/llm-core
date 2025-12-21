@@ -5,7 +5,7 @@ predictable and inspectable, while keeping the API surface thin and DX-first.
 
 ## Requirements
 
-- Runtime channel drives operational concerns (reporting, budgets, persistence, HITL).
+- Runtime channel drives operational concerns (reporting, budgets, persistence, resume adapter).
 - Outcomes stay small and FP-friendly (ok | needsHuman | error).
 - Diagnostics are always present; severity is configurable (default vs strict).
 - Sync and async behaviors remain first-class via MaybePromise.
@@ -42,7 +42,7 @@ Completed in Stage 3 (early, already in code):
 Remaining work:
 [x] Implement diagnostics severity policy in runtime (default = collect, strict = fail).
 [x] Create diagnostics helper module for mapping pipeline diagnostics into runtime outcomes.
-[x] Implement resume flow for HITL recipes (surface exists; behavior is stubbed).
+[x] Implement resume flow for HITL recipes (surface exists; behavior wired in Stage 8).
 [x] Add tests for strict diagnostics and resume paths.
 [x] Update docs with diagnostics severity and resume examples.
 

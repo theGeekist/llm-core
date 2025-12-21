@@ -1,6 +1,6 @@
 # Plan
 
-Status: in progress.
+Status: completed.
 
 Stage 8 implements real adapters for each ecosystem using the Stage 7 contracts and parity tests.
 Execution is construct-first; each construct is implemented across ecosystems in parallel.
@@ -11,7 +11,7 @@ This stage adds integration tests gated by environment to avoid CI breakage.
 - Implement adapter modules per ecosystem (LangChain, LlamaIndex, AI SDK), construct by construct.
 - Keep adapter code isolated from core workflow runtime.
 - Wire adapters into lifecycle helpers without widening public API.
-- Resume should run through pipeline with adapters once a HITL adapter exists.
+- Resume should run through pipeline with adapters once a resume adapter exists.
 - Add workflow-side primitives to support adapters (context accessors, capability checks, adapter validation).
 - Env-gated integration tests (Ollama daemon, API keys).
 
@@ -49,10 +49,10 @@ This stage adds integration tests gated by environment to avoid CI breakage.
 [x] Implement retrieval helpers (langchain + llamaindex).
 [x] Use per-ecosystem subfolders: adapters/langchain/{construct}.ts, adapters/llamaindex/{construct}.ts, adapters/ai-sdk/{construct}.ts.
 [x] Add workflow helpers: adapter-aware context accessors, capability predicates, adapter validation.
-[ ] Add integration tests gated by env vars (OLLAMA_URL, OPENAI_API_KEY, ANTHROPIC_API_KEY).
-[ ] Organize integration tests by construct: tests/integration/{construct}.{ecosystem}.test.ts.
-[ ] Thread adapters into resume pipeline path when HITL adapter exists.
-[ ] Keep parity/shape tests green; add integration-only suites separately.
+[x] Add integration tests gated by env vars (OLLAMA_URL, OPENAI_API_KEY, ANTHROPIC_API_KEY).
+[x] Organize integration tests by construct: tests/integration/{construct}.{ecosystem}.test.ts.
+[x] Thread adapters into resume pipeline path when resume adapter exists.
+[x] Keep parity/shape tests green; add integration-only suites separately.
 
 ## Testing and validation
 
@@ -70,5 +70,5 @@ This stage adds integration tests gated by environment to avoid CI breakage.
 
 ## Open questions
 
-- Which adapter should implement resume/HITL first?
+- Which adapter should implement resume for HITL first?
 - Should adapter errors be diagnostics or hard failures by default?

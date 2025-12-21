@@ -6,7 +6,7 @@ import type {
   PipelineExtensionRegisterOutput,
   PipelineReporter,
 } from "@wpkernel/pipeline/core";
-import type { AdapterBundle } from "../adapters/types";
+import type { AdapterBundle, AdapterResume } from "../adapters/types";
 import type { ExplainSnapshot } from "./explain";
 
 // Recipe inputs + artefacts
@@ -155,7 +155,7 @@ export type Runtime = {
   budget?: unknown;
   persistence?: unknown;
   traceSink?: unknown;
-  hitl?: unknown;
+  resume?: AdapterResume;
 };
 
 // PipelineReporter is imported for Runtime typing; do not re-export to avoid drift.

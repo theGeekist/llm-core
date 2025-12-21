@@ -4,6 +4,7 @@ import { assertSyncOutcome, diagnosticMessages, makeRuntime, makeWorkflow } from
 
 describe("Workflow runtime", () => {
   const TOKEN_NEEDS_HUMAN = "token-1";
+  const ERROR_RESUME = "Expected resume to be available.";
 
   it("supports sync workflows without requiring await", () => {
     const runtime = makeWorkflow("agent");
@@ -110,10 +111,10 @@ describe("Workflow runtime", () => {
     expect(nonResumable.resume).toBeUndefined();
   });
 
-  it("returns a stub error outcome for resume calls", () => {
+  it("returns an error outcome when resume has no adapter", () => {
     const resumable = makeWorkflow("hitl-gate");
     if (!resumable.resume) {
-      throw new Error("Expected resume to be available.");
+      throw new Error(ERROR_RESUME);
     }
 
     const outcome = assertSyncOutcome(resumable.resume("token", { answer: "yes" }));
@@ -121,7 +122,153 @@ describe("Workflow runtime", () => {
     if (outcome.status !== "error") {
       throw new Error("Expected error outcome.");
     }
-    expect(String(outcome.error)).toContain("Resume is not implemented.");
+    expect(String(outcome.error)).toContain("Resume requires a resume adapter.");
+  });
+
+  it("uses the resume adapter to resume runs", () => {
+    let captured: unknown;
+    const runtime = makeRuntime("hitl-gate", {
+      includeDefaults: false,
+      plugins: [
+        {
+          key: "adapter.tools",
+          adapters: {
+            tools: [{ name: "search" }],
+          },
+        },
+      ],
+      run: (options) => {
+        captured = options;
+        return { artifact: { ok: true } };
+      },
+    });
+
+    if (!runtime.resume) {
+      throw new Error(ERROR_RESUME);
+    }
+
+    const outcome = assertSyncOutcome(
+      runtime.resume(
+        "token-1",
+        { decision: "approve" },
+        {
+          resume: {
+            resolve: ({ token, humanInput }) => ({
+              input: { token, humanInput },
+            }),
+          },
+        },
+      ),
+    );
+
+    expect(outcome.status).toBe("ok");
+    expect(captured).toMatchObject({
+      input: { token: "token-1", humanInput: { decision: "approve" } },
+      adapters: { tools: [{ name: "search" }] },
+    });
+  });
+
+  it("supports async resume adapters during resume", async () => {
+    let captured: unknown;
+    const runtime = makeRuntime("hitl-gate", {
+      includeDefaults: false,
+      run: (options) => {
+        captured = options;
+        return { artifact: { ok: true } };
+      },
+    });
+
+    if (!runtime.resume) {
+      throw new Error(ERROR_RESUME);
+    }
+
+    const outcome = await runtime.resume("token-2", undefined, {
+      resume: {
+        resolve: async ({ token }) => ({ input: { token } }),
+      },
+    });
+
+    expect(outcome.status).toBe("ok");
+    expect(captured).toMatchObject({ input: { token: "token-2" } });
+  });
+
+  it("uses the resume runtime diagnostics mode", () => {
+    const runtime = makeRuntime("hitl-gate", {
+      includeDefaults: false,
+      run: () => ({
+        artifact: { ok: true },
+        diagnostics: [{ type: "missing-dependency", message: "missing adapter" }],
+      }),
+    });
+
+    if (!runtime.resume) {
+      throw new Error(ERROR_RESUME);
+    }
+
+    const outcome = assertSyncOutcome(
+      runtime.resume("token-4", undefined, {
+        resume: {
+          resolve: () => ({ input: { token: "token-4" }, runtime: { diagnostics: "strict" } }),
+        },
+      }),
+    );
+
+    expect(outcome.status).toBe("error");
+    expect(diagnosticMessages(outcome.diagnostics)).toContain("missing adapter");
+  });
+
+  it("treats resume envelopes with extra keys as input", () => {
+    let captured: unknown;
+    const runtime = makeRuntime("hitl-gate", {
+      includeDefaults: false,
+      run: (options) => {
+        captured = options.input;
+        return { artifact: { ok: true } };
+      },
+    });
+
+    if (!runtime.resume) {
+      throw new Error(ERROR_RESUME);
+    }
+
+    const resumeInput = { input: { token: "token-5" }, extra: "keep" };
+    const outcome = assertSyncOutcome(
+      runtime.resume("token-5", undefined, {
+        resume: {
+          resolve: () => resumeInput,
+        },
+      }),
+    );
+
+    expect(outcome.status).toBe("ok");
+    expect(captured).toEqual(resumeInput);
+    expect(diagnosticMessages(outcome.diagnostics)).toContain(
+      "Resume adapter returned an object with extra keys; treating it as input.",
+    );
+  });
+
+  it("warns when resume adapter returns an object without input", () => {
+    const runtime = makeRuntime("hitl-gate", {
+      includeDefaults: false,
+      run: () => ({ artifact: { ok: true } }),
+    });
+
+    if (!runtime.resume) {
+      throw new Error(ERROR_RESUME);
+    }
+
+    const outcome = assertSyncOutcome(
+      runtime.resume("token-3", undefined, {
+        resume: {
+          resolve: () => ({ runtime: { diagnostics: "default" } }),
+        },
+      }),
+    );
+
+    expect(outcome.status).toBe("ok");
+    expect(diagnosticMessages(outcome.diagnostics)).toContain(
+      "Resume adapter returned an object without an input; treating it as input.",
+    );
   });
 
   it("uses helper kinds when running the pipeline", async () => {
