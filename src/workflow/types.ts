@@ -1,7 +1,9 @@
 // References: docs/implementation-plan.md#L25-L42; docs/workflow-notes.md
 
-import type { MaybePromise, PipelineExtensionHook, PipelineExtensionRegisterOutput, PipelineReporter } from "@wpkernel/pipeline";
+import type { MaybePromise, PipelineExtensionHook, PipelineExtensionRegisterOutput, PipelineReporter } from "@wpkernel/pipeline/core";
+import type { ExplainSnapshot } from "./explain";
 
+// Recipe inputs + artefacts
 export type AgentInput = { input: string; context?: string };
 export type RagInput = { input: string; query?: string; topK?: number };
 export type EvalInput = { prompt: string; datasetId?: string; candidates?: number };
@@ -36,6 +38,21 @@ export type ArtefactOf<N extends RecipeName> = RecipeContracts[N]["artefact"];
 export type HumanInputOf<N extends RecipeName> =
   NonNullable<RecipeContracts[N] extends { humanInput?: infer H } ? H : never>;
 
+// Pipeline run types
+export type RunOptions = {
+  input: unknown;
+  reporter?: PipelineReporter;
+  runtime?: Runtime;
+};
+
+export type PipelineContext = {
+  reporter: PipelineReporter;
+  runtime?: Runtime;
+};
+
+export type PipelineState = Record<string, unknown>;
+
+// Contracts + plugins
 export type RecipeContract = {
   name: RecipeName;
   artefactKeys: string[];
@@ -59,6 +76,32 @@ export type Plugin = {
   register?: (pipeline: unknown) => MaybePromise<PipelineExtensionRegisterOutput<unknown, unknown, unknown>>;
 };
 
+// Runtime construction
+export type RuntimeDeps<N extends RecipeName> = {
+  contract: RecipeContract & { name: N };
+  plugins: Plugin[];
+  pipelineFactory?: (contract: RecipeContract & { name: N }, plugins: Plugin[]) => PipelineWithExtensions;
+};
+
+export type PipelineWithExtensions = {
+  extensions: {
+    use: (extension: unknown) => unknown;
+  };
+  run: (options: RunOptions) => MaybePromise<unknown>;
+};
+
+// Explain/capabilities
+export type CapabilitiesSnapshot = {
+  declared: Record<string, unknown>;
+  resolved: Record<string, unknown>;
+};
+
+export type ExplainInput = {
+  plugins: Plugin[];
+  declaredCapabilities: Record<string, unknown>;
+  resolvedCapabilities: Record<string, unknown>;
+};
+
 export type Outcome<TArtefact = unknown> =
   | { status: "ok"; artefact: TArtefact; trace: unknown[]; diagnostics: unknown[] }
   | {
@@ -69,6 +112,29 @@ export type Outcome<TArtefact = unknown> =
       diagnostics: unknown[];
     }
   | { status: "error"; error: unknown; trace: unknown[]; diagnostics: unknown[] };
+
+export type WorkflowRuntime<
+  TRunInput = unknown,
+  TArtefact = unknown,
+  THumanInput = unknown,
+> = {
+  run: (input: TRunInput, runtime?: Runtime) => MaybePromise<Outcome<TArtefact>>;
+  resume?: (
+    token: unknown,
+    humanInput?: THumanInput,
+    runtime?: Runtime
+  ) => MaybePromise<Outcome<TArtefact>>;
+  capabilities: () => Record<string, unknown>;
+  explain: () => ExplainSnapshot;
+  contract: () => RecipeContract;
+};
+
+// Outcome helpers
+export type OutcomeMatcher<TArtefact, TResult> = {
+  ok: (outcome: Extract<Outcome<TArtefact>, { status: "ok" }>) => TResult;
+  needsHuman: (outcome: Extract<Outcome<TArtefact>, { status: "needsHuman" }>) => TResult;
+  error: (outcome: Extract<Outcome<TArtefact>, { status: "error" }>) => TResult;
+};
 
 export type Runtime = {
   reporter?: PipelineReporter;

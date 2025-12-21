@@ -1,7 +1,7 @@
 // References: docs/implementation-plan.md#L29-L33,L79-L84; docs/workflow-notes.md
 
 import { createRuntime } from "./runtime";
-import type { WorkflowRuntime } from "./runtime";
+import type { WorkflowRuntime } from "./types";
 import type { ArtefactOf, HumanInputOf, Plugin, RecipeName, RunInputOf } from "./types";
 import { getRecipe } from "./recipe-registry";
 

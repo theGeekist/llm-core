@@ -1,6 +1,6 @@
 // References: docs/implementation-plan.md#L51-L54,L124-L130; docs/recipes-and-plugins.md
 
-import type { Plugin } from "./types";
+import type { ExplainInput, Plugin } from "./types";
 import { getEffectivePlugins } from "./plugins/effective";
 
 export type ExplainSnapshot = {
@@ -10,12 +10,6 @@ export type ExplainSnapshot = {
   overrides: string[];
   unused: string[];
   missingRequirements?: string[];
-};
-
-type ExplainInput = {
-  plugins: Plugin[];
-  declaredCapabilities: Record<string, unknown>;
-  resolvedCapabilities: Record<string, unknown>;
 };
 
 const isOverride = (plugin: Plugin) => plugin.mode === "override";

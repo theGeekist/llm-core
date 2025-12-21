@@ -95,23 +95,9 @@ Status: completed. See `docs/stage-2.md` for the detailed checklist.
 
 ## Stage 3 — Runtime + Outcome + Diagnostics
 Status: completed. See `docs/stage-3.md` for the detailed checklist.
-
-## Stage 4 — explain() + contract()
-Code:
-- Implement `src/workflow/explain.ts`:
-  - resolved capabilities
-  - overrides
-  - missing requirements
-  - unused/shadowed registrations
-- Implement `src/workflow/contract.ts` returning recipe contract view.
-
-Docs:
-- Add `explain()` and `contract()` to `docs/workflow-notes.md`.
-- Add a short `explain()` example to `docs/recipes-and-plugins.md` (conflicts).
-
-Exit criteria:
-- `explain()` snapshot is coherent and deterministic.
-- `contract()` exposes canonical artefact keys.
+Note: explain() + contract() were completed as part of Stage 3.
+## Stage 4 — Recipes + Minimum Capabilities (Next)
+Status: planned. See `docs/stage-4.md` for the detailed checklist.
 
 ## Stage 5 — Recipes + Plugin Catalogue Wiring
 Code:

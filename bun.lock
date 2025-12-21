@@ -3,7 +3,7 @@
   "workspaces": {
     "": {
       "dependencies": {
-        "@wpkernel/pipeline": "^0.12.5-beta.0",
+        "@wpkernel/pipeline": "0.12.6-beta.3",
       },
       "devDependencies": {
         "@types/bun": "latest",
@@ -15,7 +15,7 @@
         "prettier": "3.3.3",
       },
       "peerDependencies": {
-        "typescript": "^5",
+        "typescript": "^5.9.3",
       },
     },
   },
@@ -66,7 +66,7 @@
 
     "@ungap/structured-clone": ["@ungap/structured-clone@1.3.0", "", {}, "sha512-WmoN8qaIAo7WTYWbAZuG8PYEhn5fkz7dZrqTBZ7dtt//lL2Gwms1IcnQ5yHqjDfX8Ft5j4YzDM23f87zBfDe9g=="],
 
-    "@wpkernel/pipeline": ["@wpkernel/pipeline@0.12.5-beta.0", "", {}, "sha512-vQ1/6TDxgwgxVtj+rtpJ8e14SNsqlIc7I2YQdESDX28L6czPv/2Bmh9pTzc0dLRmxmQLf3K0Xot3YFP6YgOllg=="],
+    "@wpkernel/pipeline": ["@wpkernel/pipeline@0.12.6-beta.3", "", {}, "sha512-g4C6JQ7NMRtJGQfAUAKoY+2Pzwz6ScC3F0IJD0GiqqbuSksxXrk3zD98GMh6RiZa96yxV8dMq0Z5b/ZchBi2QQ=="],
 
     "acorn": ["acorn@8.15.0", "", { "bin": { "acorn": "bin/acorn" } }, "sha512-NZyJarBfL7nWwIq+FDL6Zp/yHEhePMNnnJ0y3qfieCrmNvYct8uvtiV41UvlSe6apAfk0fY1FbWx+NwfmpvtTg=="],
 

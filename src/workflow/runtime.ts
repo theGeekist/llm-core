@@ -1,16 +1,22 @@
 // References: docs/implementation-plan.md#L34-L37,L108-L114; docs/workflow-notes.md
 
-import { makePipeline, maybeThen, maybeTry, type MaybePromise, type PipelineReporter } from "@wpkernel/pipeline";
-import type { ExplainSnapshot } from "./explain";
+import { maybeThen, maybeTry, type PipelineReporter } from "@wpkernel/pipeline/core";
+import { makePipeline } from "@wpkernel/pipeline/core"
 import type {
   ArtefactOf,
   HumanInputOf,
   Outcome,
-  Plugin,
+  PipelineContext,
+  PipelineState,
+  PipelineWithExtensions,
+  RunOptions,
   RecipeContract,
   RecipeName,
   RunInputOf,
   Runtime,
+  RuntimeDeps,
+  WorkflowRuntime,
+  Plugin,
 } from "./types";
 import { createContractView } from "./contract";
 import { buildCapabilities } from "./capabilities";
@@ -25,44 +31,6 @@ import {
 import { getEffectivePlugins } from "./plugins/effective";
 import { addTraceEvent, createTrace, type TraceEvent } from "./trace";
 
-type RuntimeDeps<N extends RecipeName> = {
-  contract: RecipeContract & { name: N };
-  plugins: Plugin[];
-  pipelineFactory?: (
-    contract: RecipeContract & { name: N },
-    plugins: Plugin[]
-  ) => ReturnType<typeof createPipeline>;
-};
-
-type RunOptions = {
-  input: unknown;
-  reporter?: PipelineReporter;
-  runtime?: Runtime;
-};
-
-type PipelineContext = {
-  reporter: PipelineReporter;
-  runtime?: Runtime;
-};
-
-type PipelineState = Record<string, unknown>;
-
-
-export type WorkflowRuntime<
-  TRunInput = unknown,
-  TArtefact = unknown,
-  THumanInput = unknown,
-> = {
-  run: (input: TRunInput, runtime?: Runtime) => MaybePromise<Outcome<TArtefact>>;
-  resume?: (
-    token: unknown,
-    humanInput?: THumanInput,
-    runtime?: Runtime
-  ) => MaybePromise<Outcome<TArtefact>>;
-  capabilities: () => Record<string, unknown>;
-  explain: () => ExplainSnapshot;
-  contract: () => RecipeContract;
-};
 
 const collectHelperKinds = (contract: RecipeContract, plugins: Plugin[]) => {
   const kinds = new Set(contract.helperKinds ?? []);
@@ -73,12 +41,6 @@ const collectHelperKinds = (contract: RecipeContract, plugins: Plugin[]) => {
     }
   }
   return Array.from(kinds);
-};
-
-type PipelineWithExtensions = {
-  extensions: {
-    use: (extension: unknown) => unknown;
-  };
 };
 
 const DEFAULT_LIFECYCLE = "init";

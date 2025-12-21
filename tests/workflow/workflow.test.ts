@@ -1,9 +1,15 @@
 import { describe, expect, it } from "bun:test";
 import { Workflow } from "#workflow";
 import { createRuntime } from "#workflow/runtime";
-import { getRecipe } from "#workflow/recipe-registry";
-import type { Outcome, Plugin, RecipeName } from "#workflow/types";
 import { getEffectivePlugins } from "../../src/workflow/plugins/effective";
+import {
+  assertSyncOutcome,
+  diagnosticMessages,
+  getContract,
+  makeRuntime,
+  makeWorkflow,
+  withFactory,
+} from "./helpers";
 
 describe("Workflow builder/runtime", () => {
   const KEY_MODEL_OPENAI = "model.openai";
@@ -11,76 +17,7 @@ describe("Workflow builder/runtime", () => {
   const KEY_RETRIEVER_RERANK = "retriever.rerank";
   const KEY_REQUIRES_RETRIEVER = "plugin.requires.retriever";
   const VALUE_OVERRIDE_ONLY = "override-only";
-  const ERROR_MISSING_CONTRACT = "Missing recipe contract.";
   const TOKEN_NEEDS_HUMAN = "token-1";
-  const withFactory =
-    <T>(factory: () => T) =>
-    (_contract: unknown, _plugins: unknown[]) => {
-      void _contract;
-      void _plugins;
-      return factory();
-    };
-  const isPromiseLike = (value: unknown): value is Promise<unknown> =>
-    !!value && typeof (value as Promise<unknown>).then === "function";
-  const assertSyncOutcome = (value: Outcome | Promise<Outcome>) => {
-    if (isPromiseLike(value)) {
-      throw new Error("Expected a synchronous Outcome, got a Promise.");
-    }
-    return value;
-  };
-  const diagnosticMessages = (diagnostics: unknown[]) =>
-    diagnostics
-      .map((diagnostic) => {
-        if (typeof diagnostic === "string") {
-          return diagnostic;
-        }
-        const entry = diagnostic as { message?: string };
-        return entry.message;
-      })
-      .filter((message): message is string => !!message);
-  const getContract = (name: RecipeName) => {
-    const contract = getRecipe(name);
-    if (!contract) {
-      throw new Error(ERROR_MISSING_CONTRACT);
-    }
-    return contract;
-  };
-  const makeRuntime = (
-    name: RecipeName,
-    options?: {
-      plugins?: Plugin[];
-      run?: (options: TestRunOptions) => unknown;
-    }
-  ) => {
-    const contract = getContract(name);
-    const run = options?.run;
-    const pipelineFactory = run
-      ? withFactory(
-          () =>
-            ({
-              run: (runOptions: TestRunOptions) => run(runOptions),
-              extensions: { use: () => undefined },
-            }) as never
-        )
-      : undefined;
-    return createRuntime({
-      contract,
-      plugins: options?.plugins ?? [],
-      pipelineFactory,
-    });
-  };
-  const makeWorkflow = (name: RecipeName, plugins: Plugin[] = []) => {
-    let builder = Workflow.recipe(name);
-    for (const plugin of plugins) {
-      builder = builder.use(plugin);
-    }
-    return builder.build();
-  };
-  type TestRunOptions = {
-    input: unknown;
-    runtime?: unknown;
-    reporter?: unknown;
-  };
 
   it("builds a runtime from a known recipe", async () => {
     const runtime = makeWorkflow("agent");

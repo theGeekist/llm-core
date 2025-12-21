@@ -1,6 +1,6 @@
 // References: docs/workflow-notes.md (capability discovery)
 
-import type { Plugin } from "./types";
+import type { CapabilitiesSnapshot, Plugin } from "./types";
 import { getEffectivePlugins } from "./plugins/effective";
 
 const mergeValues = (existing: unknown, incoming: unknown) => {
@@ -21,11 +21,6 @@ const addCapability = (
   value: unknown
 ) => {
   capabilities[key] = mergeValues(capabilities[key], value);
-};
-
-type CapabilitiesSnapshot = {
-  declared: Record<string, unknown>;
-  resolved: Record<string, unknown>;
 };
 
 const collectDeclaredCapabilities = (plugins: Plugin[]) => {
