@@ -3,24 +3,35 @@
 import type { CapabilitiesSnapshot, Plugin } from "./types";
 import { getEffectivePlugins } from "./plugins/effective";
 
-const mergeValues = (existing: unknown, incoming: unknown) => {
-  if (existing === undefined) {
-    return incoming;
-  }
+type CapabilityReducer = (prev: unknown, next: unknown) => unknown;
 
-  if (Array.isArray(existing)) {
-    return Array.isArray(incoming) ? [...existing, ...incoming] : [...existing, incoming];
-  }
+const replace: CapabilityReducer = (_prev, next) => next;
 
-  return Array.isArray(incoming) ? [existing, ...incoming] : [existing, incoming];
+const mergeArrays: CapabilityReducer = (prev, next) => {
+  if (prev === undefined) {
+    return next;
+  }
+  if (Array.isArray(prev)) {
+    return Array.isArray(next) ? [...prev, ...next] : [...prev, next];
+  }
+  return Array.isArray(next) ? [prev, ...next] : [prev, next];
 };
 
-const addCapability = (
-  capabilities: Record<string, unknown>,
-  key: string,
-  value: unknown
-) => {
-  capabilities[key] = mergeValues(capabilities[key], value);
+const capabilityReducers: Record<string, CapabilityReducer> = {
+  tools: mergeArrays,
+  retriever: replace,
+  model: replace,
+  evaluator: replace,
+  embedder: replace,
+  hitl: replace,
+  recipe: replace,
+  trace: replace,
+  dataset: replace,
+};
+
+const addCapability = (capabilities: Record<string, unknown>, key: string, value: unknown) => {
+  const reducer = capabilityReducers[key] ?? mergeArrays;
+  capabilities[key] = reducer(capabilities[key], value);
 };
 
 const collectDeclaredCapabilities = (plugins: Plugin[]) => {

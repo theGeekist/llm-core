@@ -31,10 +31,7 @@ const pipeline = makePipeline<EtlRunOptions, EtlContext, Reporter, EtlState>({
   }),
   createStages: (deps) => {
     const stageDeps = deps as EtlStageDeps;
-    const flagUnused = (kind: EtlHelperKind) => (
-      state: EtlPipelineState,
-      visited: Set<string>
-    ) => {
+    const flagUnused = (kind: EtlHelperKind) => (state: EtlPipelineState, visited: Set<string>) => {
       const ordered = state.helperOrders?.get(kind) ?? [];
       for (const entry of ordered) {
         if (visited.has(entry.id)) {
@@ -44,7 +41,7 @@ const pipeline = makePipeline<EtlRunOptions, EtlContext, Reporter, EtlState>({
           entry.helper,
           kind,
           "was registered but never executed",
-          entry.helper.dependsOn ?? []
+          entry.helper.dependsOn ?? [],
         );
       }
       return state;
@@ -83,11 +80,9 @@ const pipeline = makePipeline<EtlRunOptions, EtlContext, Reporter, EtlState>({
 });
 
 const registerHelper = <TInput, TOutput, TKind extends EtlHelperKind>(
-  helper: Helper<EtlContext, TInput, TOutput, Reporter, TKind>
+  helper: Helper<EtlContext, TInput, TOutput, Reporter, TKind>,
 ) => {
-  pipeline.use(
-    helper as Helper<EtlContext, unknown, unknown, Reporter, EtlHelperKind>
-  );
+  pipeline.use(helper as Helper<EtlContext, unknown, unknown, Reporter, EtlHelperKind>);
 };
 
 const KEY_PARSE_ORDER_LINES = "parse-order-lines";
@@ -167,7 +162,7 @@ const createExtractHelpers = () => [
           {
             key: KEY_PARSE_ORDER_LINES,
             label: "Remove extracted orders",
-          }
+          },
         ),
       };
     },
@@ -204,17 +199,14 @@ const createExtractHelpers = () => [
           {
             key: "reject-nonpositive-qty",
             label: "Restore pre-filter extracted orders",
-          }
+          },
         ),
       };
     },
   }),
 ];
 
-const createNormaliseAndPriceHelper = (
-  mode: "extend" | "override",
-  origin: string
-) =>
+const createNormaliseAndPriceHelper = (mode: "extend" | "override", origin: string) =>
   createHelper<EtlContext, ExtractedOrder[], TransformedOrder[], Reporter, "transform">({
     key: KEY_NORMALISE_AND_PRICE,
     kind: "transform",
@@ -267,7 +259,7 @@ const createNormaliseAndPriceHelper = (
           {
             key: KEY_NORMALISE_AND_PRICE,
             label: "Remove transformed orders",
-          }
+          },
         ),
       };
     },
@@ -302,7 +294,7 @@ const createTransformHelpers = () => [
           {
             key: "dedupe-orders",
             label: "Restore pre-dedupe transformed orders",
-          }
+          },
         ),
       };
     },
@@ -328,9 +320,7 @@ const createLoadHelpers = () => [
       for (const [sku, qty] of required.entries()) {
         const have = context.destination.inventory[sku] ?? 0;
         if (have < qty) {
-          throw new Error(
-            `Insufficient inventory for ${sku}: need ${qty}, have ${have}`
-          );
+          throw new Error(`Insufficient inventory for ${sku}: need ${qty}, have ${have}`);
         }
       }
     },
@@ -386,7 +376,7 @@ const createLoadHelpers = () => [
           {
             key: KEY_COMMIT_LOAD,
             label: "Undo order commit and restore inventory",
-          }
+          },
         ),
       };
     },

@@ -1,0 +1,16 @@
+#!/bin/sh
+set -e
+
+echo "pre-commit: format"
+bun run format
+echo "pre-commit: lint:fix"
+bun run lint:fix
+echo "pre-commit: typecheck"
+bun run typecheck
+echo "pre-commit: test"
+bun run test
+
+if ! git diff --quiet; then
+  echo "pre-commit: changes detected after formatting/lint. Please review and re-stage."
+  exit 1
+fi

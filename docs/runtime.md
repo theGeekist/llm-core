@@ -55,7 +55,8 @@ Diagnostics capture “why this shape happened” and are always attached to out
 Examples:
 
 - plugin lifecycle declared but not scheduled
-- missing requirements
+- missing plugin requirements
+- missing recipe minimum capabilities
 - extension registration warnings
 
 Diagnostics are never required to run in default mode, but they are always present.
@@ -67,6 +68,8 @@ Diagnostics are never required to run in default mode, but they are always prese
   In strict mode, requirement and contract diagnostics are promoted to error.
 
 Diagnostics are normalized into structured entries with `level`, `kind`, and `message`.
+
+Capability resolution is deterministic and reducer-driven (see `docs/developer.md` for details).
 
 ## needsHuman Flow
 

@@ -60,7 +60,7 @@ Keep each module under 500 SLOC.
 7. `src/workflow/explain.ts`
 
    - `wf.explain()` snapshot
-   - uses diagnostics, overrides, missing requirements
+   - uses diagnostics, overrides, missing requirements (plugin requires) and minimum capabilities (recipe contract)
 
 8. `src/workflow/diagnostics.ts`
 
@@ -98,7 +98,7 @@ Code:
 
 - Implement `Workflow.recipe(name)` in `src/workflow/builder.ts`.
 - `.use(plugin)` stores plugin descriptors and override mode.
-- `.build()` validates contract + plugin requirements (diagnostic only in default mode).
+- `.build()` validates contract + plugin requirements (diagnostic only in default mode; strict promotes to error).
 
 Docs:
 
@@ -125,39 +125,11 @@ Status: completed. See `docs/stage-4.md` for the detailed checklist.
 
 ## Stage 5 — Recipes + Plugin Catalogue Wiring
 
-Code:
-
-- Implement recipe defaults in `src/workflow/recipe-registry.ts`.
-- Add minimal plugin objects for catalogue entries (no heavy logic yet).
-
-Docs:
-
-- Keep `docs/recipes-and-plugins.md` in sync with registry.
-- Add a “Defaults vs overrides” note.
-
-Exit criteria:
-
-- All 5–6 recipes can build a runtime with default plugins.
+Status: completed. See `docs/stage-5.md` for the detailed checklist.
 
 ## Stage 6 — Tests + SLOC Discipline
 
-Code:
-
-- Add tests per module (<500 SLOC):
-  - recipe registry inference
-  - plugin override ordering
-  - diagnostics severity
-  - explain() output
-  - resume flow (HITL)
-
-Docs:
-
-- Add a short “Testing philosophy” note in `docs/workflow-notes.md`.
-
-Exit criteria:
-
-- Each module/test file <500 SLOC.
-- Tests cover outcome union, resume, and diagnostics.
+Status: planned. See `docs/stage-6.md` for the detailed checklist.
 
 ## Stage 7 — Interoperability Adapters (Deferred)
 

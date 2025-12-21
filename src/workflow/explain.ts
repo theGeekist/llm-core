@@ -32,7 +32,7 @@ const recordDuplicate = (plugin: Plugin, prior: Plugin | undefined, unused: stri
 const recordMissingRequirements = (
   plugin: Plugin,
   capabilityKeys: Set<string>,
-  missingRequirements: string[]
+  missingRequirements: string[],
 ) => {
   if (!plugin.requires) {
     return;

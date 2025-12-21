@@ -31,7 +31,6 @@ const MODEL_OPENAI = { model: { name: "openai" } };
 const TRACE_CONSOLE = { trace: { sink: "console" } };
 const TOOLS_WEB = { tools: ["web.search"] };
 const RETRIEVER_VECTOR = { retriever: { type: "vector" } };
-const RETRIEVER_RERANK = { retriever: { type: "rerank" } };
 const EVALS_RUBRIC = { evaluator: { type: "rubric" } };
 const EVALS_CONFIDENCE = { evaluator: { type: "confidence" } };
 const DATASET_EMIT = { dataset: { emit: true } };
@@ -74,7 +73,7 @@ const registry = {
     helperKinds: [],
     defaultPlugins: [
       { key: PLUGIN_RETRIEVER_VECTOR, capabilities: RETRIEVER_VECTOR },
-      { key: PLUGIN_RETRIEVER_RERANK, capabilities: RETRIEVER_RERANK },
+      { key: PLUGIN_RETRIEVER_RERANK, requires: [CAP_RETRIEVER] },
       { key: PLUGIN_MODEL_OPENAI, capabilities: MODEL_OPENAI },
       { key: PLUGIN_TRACE_CONSOLE, capabilities: TRACE_CONSOLE },
     ],

@@ -7,7 +7,7 @@ export const ok = (outcome: OutcomeType): outcome is Extract<OutcomeType, { stat
 
 export const match = <TArtefact, TResult>(
   outcome: OutcomeType<TArtefact>,
-  matcher: OutcomeMatcher<TArtefact, TResult>
+  matcher: OutcomeMatcher<TArtefact, TResult>,
 ): TResult => {
   switch (outcome.status) {
     case "ok":
@@ -21,7 +21,7 @@ export const match = <TArtefact, TResult>(
 
 export const mapOk = <TArtefact, TNext>(
   outcome: OutcomeType<TArtefact>,
-  map: (artefact: TArtefact) => TNext
+  map: (artefact: TArtefact) => TNext,
 ): OutcomeType<TNext> | Exclude<OutcomeType<TArtefact>, { status: "ok" }> => {
   if (outcome.status === "ok") {
     return {

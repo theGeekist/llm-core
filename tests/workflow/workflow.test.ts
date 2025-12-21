@@ -36,7 +36,7 @@ describe("Workflow builder/runtime", () => {
         { key: KEY_MODEL_OPENAI, capabilities: { model: { name: "openai" } } },
         { key: KEY_RETRIEVER_VECTOR, capabilities: { retriever: { type: "vector" } } },
       ],
-      { includeDefaults: false }
+      { includeDefaults: false },
     );
 
     const explain = runtime.explain();
@@ -160,7 +160,7 @@ describe("Workflow builder/runtime", () => {
         { key: KEY_MODEL_OPENAI, capabilities: { model: { name: "openai" } } },
         { key: "tools.web", capabilities: { tools: ["web.search"] } },
       ],
-      { includeDefaults: false }
+      { includeDefaults: false },
     );
 
     expect(runtime.capabilities()).toEqual({
@@ -170,11 +170,9 @@ describe("Workflow builder/runtime", () => {
   });
 
   it("reports missing requirements in explain()", () => {
-    const runtime = makeWorkflow(
-      "rag",
-      [{ key: KEY_RETRIEVER_RERANK, requires: ["retriever"] }],
-      { includeDefaults: false }
-    );
+    const runtime = makeWorkflow("rag", [{ key: KEY_RETRIEVER_RERANK, requires: ["retriever"] }], {
+      includeDefaults: false,
+    });
 
     expect(runtime.explain().missingRequirements ?? []).toEqual([
       `${KEY_RETRIEVER_RERANK} (requires retriever)`,
@@ -200,7 +198,7 @@ describe("Workflow builder/runtime", () => {
           requires: ["retriever"],
         },
       ],
-      { includeDefaults: false }
+      { includeDefaults: false },
     );
 
     const explain = runtime.explain();
@@ -222,7 +220,7 @@ describe("Workflow builder/runtime", () => {
         { key: "model.openai.override", mode: "override", overrideKey: KEY_MODEL_OPENAI },
         { key: KEY_MODEL_OPENAI },
       ],
-      { includeDefaults: false }
+      { includeDefaults: false },
     );
 
     const explain = runtime.explain();
@@ -293,10 +291,7 @@ describe("Workflow builder/runtime", () => {
       run: () => Promise.resolve({ artifact: { answer: "ok" } }),
     });
 
-    const outcome = await runtime.run(
-      { input: "strict" },
-      { diagnostics: "strict" }
-    );
+    const outcome = await runtime.run({ input: "strict" }, { diagnostics: "strict" });
     expect(outcome.status).toBe("error");
     expect(diagnosticMessages(outcome.diagnostics)).toEqual([
       `${KEY_RETRIEVER_RERANK} (requires tools)`,
@@ -312,7 +307,7 @@ describe("Workflow builder/runtime", () => {
     const outcome = await runtime.run({ input: "defaults" });
     expect(outcome.status).toBe("ok");
     expect(diagnosticMessages(outcome.diagnostics)).toContain(
-      'Recipe "rag" requires capability "retriever".'
+      'Recipe "rag" requires capability "retriever".',
     );
   });
 
@@ -325,7 +320,7 @@ describe("Workflow builder/runtime", () => {
     const outcome = await runtime.run({ input: "strict" }, { diagnostics: "strict" });
     expect(outcome.status).toBe("error");
     expect(diagnosticMessages(outcome.diagnostics)).toContain(
-      'Recipe "rag" requires capability "retriever".'
+      'Recipe "rag" requires capability "retriever".',
     );
   });
 
@@ -380,7 +375,7 @@ describe("Workflow builder/runtime", () => {
                 extension.register?.();
               },
             },
-          }) as never
+          }) as never,
       ),
     });
 

@@ -65,7 +65,7 @@ export const createPipelineDiagnostic = (diagnostic: unknown): DiagnosticEntry =
 
 export const normalizeDiagnostics = (
   diagnostics: DiagnosticEntry[],
-  pipelineDiagnostics: unknown[]
+  pipelineDiagnostics: unknown[],
 ) => {
   const normalized = [...diagnostics];
   for (const diagnostic of pipelineDiagnostics) {
@@ -82,7 +82,7 @@ const shouldPromoteToError = (diagnostic: DiagnosticEntry) =>
 
 export const applyDiagnosticsMode = (
   diagnostics: DiagnosticEntry[],
-  mode: "default" | "strict"
+  mode: "default" | "strict",
 ): DiagnosticEntry[] => {
   if (mode !== "strict") {
     return diagnostics;
@@ -90,6 +90,6 @@ export const applyDiagnosticsMode = (
   return diagnostics.map((diagnostic) =>
     shouldPromoteToError(diagnostic)
       ? { ...diagnostic, level: "error" as DiagnosticLevel }
-      : diagnostic
+      : diagnostic,
   );
 };

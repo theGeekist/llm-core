@@ -105,21 +105,16 @@ export type EtlStageDeps = {
   makeHelperStage: (
     kind: EtlHelperKind,
     spec: {
-      makeArgs: (
-        state: EtlPipelineState
-      ) => (entry: unknown) => EtlHelperArgs<unknown, unknown>;
-      onVisited: (
-        state: EtlPipelineState,
-        visited: Set<string>
-      ) => EtlPipelineState;
-    }
+      makeArgs: (state: EtlPipelineState) => (entry: unknown) => EtlHelperArgs<unknown, unknown>;
+      onVisited: (state: EtlPipelineState, visited: Set<string>) => EtlPipelineState;
+    },
   ) => unknown;
   diagnosticManager: {
     flagUnusedHelper: (
       helper: EtlHelperOrderEntry["helper"],
       kind: string,
       reason: string,
-      dependsOn: readonly string[]
+      dependsOn: readonly string[],
     ) => void;
   };
   finalizeResult: unknown;

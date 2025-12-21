@@ -16,6 +16,24 @@ These are the Stage 3 guarantees for implementation and review. They are intenti
   - `strict`: error diagnostics short-circuit into an error outcome.
 - Missing plugin requirements are evaluated against **effective** plugins only.
 
+## Capability Resolution
+
+Capabilities are resolved via reducers. Each capability key has an explicit reducer that defines how
+values combine.
+
+Current reducers:
+
+- `tools`: merge arrays
+- `retriever`: replace
+- `model`: replace
+- `evaluator`: replace
+- `embedder`: replace
+- `hitl`: replace
+- `recipe`: replace
+- `trace`: replace
+- `dataset`: replace
+- unknown keys: collect (mergeArrays fallback; scalars become arrays)
+
 ## Overrides and Extensions
 
 - Overrides apply consistently across:

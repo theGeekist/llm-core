@@ -1,6 +1,11 @@
 // References: docs/implementation-plan.md#L25-L42; docs/workflow-notes.md
 
-import type { MaybePromise, PipelineExtensionHook, PipelineExtensionRegisterOutput, PipelineReporter } from "@wpkernel/pipeline/core";
+import type {
+  MaybePromise,
+  PipelineExtensionHook,
+  PipelineExtensionRegisterOutput,
+  PipelineReporter,
+} from "@wpkernel/pipeline/core";
 import type { ExplainSnapshot } from "./explain";
 
 // Recipe inputs + artefacts
@@ -35,8 +40,9 @@ export type RecipeName = keyof RecipeContracts;
 
 export type RunInputOf<N extends RecipeName> = RecipeContracts[N]["input"];
 export type ArtefactOf<N extends RecipeName> = RecipeContracts[N]["artefact"];
-export type HumanInputOf<N extends RecipeName> =
-  NonNullable<RecipeContracts[N] extends { humanInput?: infer H } ? H : never>;
+export type HumanInputOf<N extends RecipeName> = NonNullable<
+  RecipeContracts[N] extends { humanInput?: infer H } ? H : never
+>;
 
 // Pipeline run types
 export type RunOptions = {
@@ -74,14 +80,19 @@ export type Plugin = {
   helperKinds?: string[];
   lifecycle?: string;
   hook?: PipelineExtensionHook<unknown, unknown, unknown>;
-  register?: (pipeline: unknown) => MaybePromise<PipelineExtensionRegisterOutput<unknown, unknown, unknown>>;
+  register?: (
+    pipeline: unknown,
+  ) => MaybePromise<PipelineExtensionRegisterOutput<unknown, unknown, unknown>>;
 };
 
 // Runtime construction
 export type RuntimeDeps<N extends RecipeName> = {
   contract: RecipeContract & { name: N };
   plugins: Plugin[];
-  pipelineFactory?: (contract: RecipeContract & { name: N }, plugins: Plugin[]) => PipelineWithExtensions;
+  pipelineFactory?: (
+    contract: RecipeContract & { name: N },
+    plugins: Plugin[],
+  ) => PipelineWithExtensions;
 };
 
 export type PipelineWithExtensions = {
@@ -114,16 +125,12 @@ export type Outcome<TArtefact = unknown> =
     }
   | { status: "error"; error: unknown; trace: unknown[]; diagnostics: unknown[] };
 
-export type WorkflowRuntime<
-  TRunInput = unknown,
-  TArtefact = unknown,
-  THumanInput = unknown,
-> = {
+export type WorkflowRuntime<TRunInput = unknown, TArtefact = unknown, THumanInput = unknown> = {
   run: (input: TRunInput, runtime?: Runtime) => MaybePromise<Outcome<TArtefact>>;
   resume?: (
     token: unknown,
     humanInput?: THumanInput,
-    runtime?: Runtime
+    runtime?: Runtime,
   ) => MaybePromise<Outcome<TArtefact>>;
   capabilities: () => Record<string, unknown>;
   explain: () => ExplainSnapshot;

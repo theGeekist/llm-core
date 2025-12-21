@@ -32,12 +32,12 @@ Defaults are installed automatically for each recipe. You can extend or override
 - Outcomes
   - ok | needsHuman | error
 - Minimum capabilities
-  - Model
-  - Tools (at least one tool)
+  - `model`
+  - `tools`
 - Default plugin set (illustrative)
-  - Model.openai
-  - Tools.web
-  - Trace.console
+  - `model.openai`
+  - `tools.web`
+  - `trace.console`
 - Extension points
   - beforePlan
   - afterToolExec
@@ -54,12 +54,12 @@ Defaults are installed automatically for each recipe. You can extend or override
 - Outcomes
   - ok | error
 - Minimum capabilities
-  - Retriever (vector store)
-  - Embedder (model or embedding provider)
+  - `retriever`
+  - `embedder`
 - Default plugin set (illustrative)
-  - Retriever.vector
-  - Model.embedder
-  - Trace.console
+  - `retriever.vector`
+  - `model.embedder`
+  - `trace.console`
 - Extension points
   - beforeChunk
   - afterUpsert
@@ -78,13 +78,16 @@ Defaults are installed automatically for each recipe. You can extend or override
 - Outcomes
   - ok | needsHuman | error
 - Minimum capabilities
-  - Retriever (base retriever)
-  - Model (for answer)
+  - `retriever`
+  - `model`
 - Default plugin set (illustrative)
-  - Retriever.vector
-  - Retriever.rerank
-  - Model.openai
-  - Trace.console
+  - `retriever.vector`
+  - `retriever.rerank`
+  - `model.openai`
+  - `trace.console`
+
+Note: `retriever.rerank` is an add-on; it assumes a base retriever is present and does not replace it.
+
 - Extension points
   - beforeRetrieve
   - afterRetrieve
@@ -103,13 +106,13 @@ Defaults are installed automatically for each recipe. You can extend or override
 - Outcomes
   - ok | error
 - Minimum capabilities
-  - Model (for generation)
-  - Evaluator (at least one scorer)
+  - `model`
+  - `evaluator`
 - Default plugin set (illustrative)
-  - Model.openai
-  - Evals.rubric
-  - Trace.console
-  - Dataset.emit
+  - `model.openai`
+  - `evals.rubric`
+  - `trace.console`
+  - `dataset.emit`
 - Extension points
   - beforeGenerate
   - afterScore
@@ -128,14 +131,14 @@ Defaults are installed automatically for each recipe. You can extend or override
 - Outcomes
   - ok | needsHuman | error
 - Minimum capabilities
-  - Model
-  - Evaluator (confidence or policy gate)
-  - HITL adapter (to resume)
+  - `model`
+  - `evaluator`
+  - `hitl`
 - Default plugin set (illustrative)
-  - Model.openai
-  - Evals.confidence
-  - Hitl.pauseResume
-  - Trace.console
+  - `model.openai`
+  - `evals.confidence`
+  - `hitl.pauseResume`
+  - `trace.console`
 - Extension points
   - beforeGate
   - afterGate
@@ -152,12 +155,12 @@ Defaults are installed automatically for each recipe. You can extend or override
 - Outcomes
   - ok | needsHuman | error
 - Minimum capabilities
-  - Inner recipe (agent or tot-step)
-  - Model
+  - `recipe`
+  - `model`
 - Default plugin set (illustrative)
-  - Recipe.agent (as inner)
-  - Model.openai
-  - Trace.console
+  - `recipe.agent`
+  - `model.openai`
+  - `trace.console`
 
 Notes:
 
@@ -183,79 +186,82 @@ Grouped by capability. Plugins are composable and may extend or override behavio
 
 ### Model
 
-- Model.openai
-  - Provides: model capability, default prompt formatting
+- `model.openai` (friendly: Model.openai)
+  - Provides: `model` capability, default prompt formatting
   - Emits: Answer, Confidence
-- Model.anthropic
-  - Provides: model capability, alternative prompt formatting
+- `model.anthropic` (friendly: Model.anthropic)
+  - Provides: `model` capability, alternative prompt formatting
   - Emits: Answer, Confidence
-- Model.embedder
-  - Provides: embedding capability
+- `model.embedder` (friendly: Model.embedder)
+  - Provides: `embedder` capability
   - Emits: `ingest.embeddings`
 
 ### Tools
 
-- Tools.web
-  - Provides: tool capability
+- `tools.web` (friendly: Tools.web)
+  - Provides: `tools` capability
   - Tool ids: `web.search`, `web.fetch`
   - Emits: `tool.calls`, `tool.results`
-- Tools.code
-  - Provides: tool capability
+- `tools.code` (friendly: Tools.code)
+  - Provides: `tools` capability
   - Tool ids: `code.run`, `code.lint`
   - Emits: `tool.calls`, `tool.results`
 
 ### Retriever
 
-- Retriever.vector
-  - Provides: base retriever capability (vector store)
+Note: `retriever` is treated as a single capability in code. Defaults treat `retriever.vector` as
+the base retriever; `retriever.rerank` is an add-on and does not provide `retriever` capability.
+
+- `retriever.vector` (friendly: Retriever.vector)
+  - Provides: `retriever` capability (base vector store)
   - Emits: `retrieval.set`, `citations`
-- Retriever.hybrid
-  - Provides: base retriever capability (keyword + vector)
+- `retriever.hybrid` (friendly: Retriever.hybrid)
+  - Provides: `retriever` capability (keyword + vector)
   - Emits: `retrieval.set`, `citations`
-- Retriever.rerank
-  - Provides: reranking capability
+- `retriever.rerank` (friendly: Retriever.rerank)
+  - Provides: `retrieval` artefact output; requires retriever
   - Emits: `retrieval.reranked`
 
 ### Memory
 
-- Memory.threadSummary
-  - Provides: memory capability
+- `memory.threadSummary` (friendly: Memory.threadSummary)
+  - Provides: `memory` capability
   - Emits: `memory.summary`
 
 ### Evaluator
 
-- Evals.rubric
-  - Provides: evaluator capability (rubric scoring)
+- `evals.rubric` (friendly: Evals.rubric)
+  - Provides: `evaluator` capability (rubric scoring)
   - Emits: `eval.scores`, `eval.report`
-- Evals.confidence
-  - Provides: evaluator capability (confidence thresholds)
+- `evals.confidence` (friendly: Evals.confidence)
+  - Provides: `evaluator` capability (confidence thresholds)
   - Emits: `answer.confidence`, `gate.decision`
-- Evals.citations
-  - Provides: evaluator capability (citation presence/coverage)
+- `evals.citations` (friendly: Evals.citations)
+  - Provides: `evaluator` capability (citation presence/coverage)
   - Emits: `eval.scores`
-- Evals.factuality
-  - Provides: evaluator capability (tool-backed or judge-backed factuality)
+- `evals.factuality` (friendly: Evals.factuality)
+  - Provides: `evaluator` capability (tool-backed or judge-backed factuality)
   - Emits: `eval.scores`
 
 ### Trace
 
-- Trace.console
-  - Provides: trace capability (console sink)
+- `trace.console` (friendly: Trace.console)
+  - Provides: `trace` capability (console sink)
   - Emits: `trace.events`
-- Trace.persist
-  - Provides: trace capability (storage sink)
+- `trace.persist` (friendly: Trace.persist)
+  - Provides: `trace` capability (storage sink)
   - Emits: `trace.events`
 
 ### Dataset
 
-- Dataset.emit
-  - Provides: dataset emission capability (rows + storage adapter)
+- `dataset.emit` (friendly: Dataset.emit)
+  - Provides: `dataset` capability (rows + storage adapter)
   - Emits: `dataset.rows`
 
 ### HITL
 
-- Hitl.pauseResume
-  - Provides: HITL adapter
+- `hitl.pauseResume` (friendly: Hitl.pauseResume)
+  - Provides: `hitl` capability (adapter)
   - Emits: `hitl.token`, `hitl.packet`
 
 ## Conflict Scenarios + explain()
@@ -269,8 +275,8 @@ Grouped by capability. Plugins are composable and may extend or override behavio
 ### Conflict 1: Model override shadowing
 
 - Scenario: two model plugins installed, one overrides the other.
-  - `.use(Model.openai({ ... }))`
-  - `.use(Model.anthropic({ mode: "override" }))`
+  - `.use({ key: "model.openai" })`
+  - `.use({ key: "model.anthropic", mode: "override", overrideKey: "model.openai" })`
 - explain() (illustrative)
 
 ```ts
@@ -283,8 +289,8 @@ Grouped by capability. Plugins are composable and may extend or override behavio
 
 ### Conflict 2: Retriever missing dependency
 
-- Scenario: RAG recipe uses `Retriever.rerank` but no base retriever installed.
-  - `.use(Retriever.rerank())`
+- Scenario: RAG recipe uses `retriever.rerank` but no base retriever installed.
+  - `.use({ key: "retriever.rerank", requires: ["retriever"] })`
 - explain() (illustrative)
 
 ```ts
@@ -292,15 +298,15 @@ Grouped by capability. Plugins are composable and may extend or override behavio
   plugins: ["retriever.rerank"],
   overrides: [],
   unused: [],
-  missingRequirements: ["retriever.rerank (requires base retriever: retriever.vector or retriever.hybrid)"]
+  missingRequirements: ["retriever.rerank (requires retriever)"]
 }
 ```
 
 ### Conflict 3: Duplicate tool registrations (extend mode)
 
 - Scenario: two tool plugins register the same tool id in extend mode.
-  - `.use(Tools.web({ toolId: "web.search" }))`
-  - `.use(Tools.web({ toolId: "web.search" }))`
+  - `.use({ key: "tools.web" })`
+  - `.use({ key: "tools.web" })`
 - explain() (illustrative)
 
 ```ts

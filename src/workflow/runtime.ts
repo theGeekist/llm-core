@@ -1,7 +1,7 @@
 // References: docs/implementation-plan.md#L34-L37,L108-L114; docs/workflow-notes.md
 
 import { maybeThen, maybeTry, type PipelineReporter } from "@wpkernel/pipeline/core";
-import { makePipeline } from "@wpkernel/pipeline/core"
+import { makePipeline } from "@wpkernel/pipeline/core";
 import type {
   ArtefactOf,
   HumanInputOf,
@@ -33,7 +33,6 @@ import {
 import { getEffectivePlugins } from "./plugins/effective";
 import { addTraceEvent, createTrace, type TraceEvent } from "./trace";
 
-
 const collectHelperKinds = (contract: RecipeContract, plugins: Plugin[]) => {
   const kinds = new Set(contract.helperKinds ?? []);
   const effectivePlugins = getEffectivePlugins(plugins);
@@ -54,7 +53,7 @@ const registerExtensions = (
   pipeline: PipelineWithExtensions,
   plugins: Plugin[],
   extensionPoints: string[],
-  diagnostics: DiagnosticEntry[]
+  diagnostics: DiagnosticEntry[],
 ) => {
   const effectivePlugins = getEffectivePlugins(plugins);
   const defaultLifecycle = DEFAULT_LIFECYCLE;
@@ -65,11 +64,8 @@ const registerExtensions = (
       if (plugin.lifecycle && !lifecycleSet.has(plugin.lifecycle)) {
         diagnostics.push(
           createLifecycleDiagnostic(
-            createLifecycleMessage(
-              plugin,
-              `lifecycle "${plugin.lifecycle}" not scheduled`
-            )
-          )
+            createLifecycleMessage(plugin, `lifecycle "${plugin.lifecycle}" not scheduled`),
+          ),
         );
       }
       pipeline.extensions.use({
@@ -85,9 +81,10 @@ const registerExtensions = (
 
     const lifecycle = plugin.lifecycle ?? defaultLifecycle;
     if (!lifecycleSet.has(lifecycle)) {
-      const reason = lifecycle === DEFAULT_LIFECYCLE
-        ? `default lifecycle "${DEFAULT_LIFECYCLE}" not scheduled`
-        : `lifecycle "${lifecycle}" not scheduled`;
+      const reason =
+        lifecycle === DEFAULT_LIFECYCLE
+          ? `default lifecycle "${DEFAULT_LIFECYCLE}" not scheduled`
+          : `lifecycle "${lifecycle}" not scheduled`;
       diagnostics.push(createLifecycleDiagnostic(createLifecycleMessage(plugin, reason)));
       continue;
     }
@@ -118,11 +115,9 @@ const createPipeline = (contract: RecipeContract, plugins: Plugin[]) =>
         makeHelperStage: (kind: string) => unknown;
         finalizeResult: unknown;
       };
-      const lifecycles = contract.extensionPoints.map((name) =>
-        stageDeps.makeLifecycleStage(name)
-      );
+      const lifecycles = contract.extensionPoints.map((name) => stageDeps.makeLifecycleStage(name));
       const helperStages = collectHelperKinds(contract, plugins).map((kind) =>
-        stageDeps.makeHelperStage(kind)
+        stageDeps.makeHelperStage(kind),
       );
       return [...lifecycles, ...helperStages, stageDeps.finalizeResult];
     },
@@ -141,7 +136,7 @@ export const createRuntime = <N extends RecipeName>({
     pipeline as unknown as PipelineWithExtensions,
     plugins,
     contract.extensionPoints,
-    buildDiagnostics
+    buildDiagnostics,
   );
   const { declared, resolved } = buildCapabilities(plugins);
   const explain = buildExplainSnapshot({
@@ -155,9 +150,7 @@ export const createRuntime = <N extends RecipeName>({
   for (const minimum of contract.minimumCapabilities) {
     if (!(minimum in resolved)) {
       buildDiagnostics.push(
-        createContractDiagnostic(
-          `Recipe "${contract.name}" requires capability "${minimum}".`
-        )
+        createContractDiagnostic(`Recipe "${contract.name}" requires capability "${minimum}".`),
       );
     }
   }
@@ -166,7 +159,7 @@ export const createRuntime = <N extends RecipeName>({
   const readDiagnostics = (result: unknown) =>
     normalizeDiagnostics(
       buildDiagnostics,
-      (result as { diagnostics?: unknown[] }).diagnostics ?? []
+      (result as { diagnostics?: unknown[] }).diagnostics ?? [],
     );
 
   const readErrorDiagnostics = (error: unknown) => {
@@ -180,7 +173,7 @@ export const createRuntime = <N extends RecipeName>({
   const toOkOutcome = (
     result: unknown,
     trace: TraceEvent[],
-    diagnostics: DiagnosticEntry[]
+    diagnostics: DiagnosticEntry[],
   ): Outcome<ArtefactOf<N>> => {
     addTraceEvent(trace, "run.ok");
     addTraceEvent(trace, "run.end", { status: "ok" });
@@ -199,7 +192,7 @@ export const createRuntime = <N extends RecipeName>({
   const toNeedsHumanOutcome = (
     result: unknown,
     trace: TraceEvent[],
-    diagnostics: DiagnosticEntry[]
+    diagnostics: DiagnosticEntry[],
   ): Outcome<ArtefactOf<N>> => {
     addTraceEvent(trace, "run.needsHuman");
     addTraceEvent(trace, "run.end", { status: "needsHuman" });
@@ -215,7 +208,7 @@ export const createRuntime = <N extends RecipeName>({
   const toErrorOutcome = (
     error: unknown,
     trace: TraceEvent[],
-    diagnostics?: DiagnosticEntry[]
+    diagnostics?: DiagnosticEntry[],
   ): Outcome<ArtefactOf<N>> => {
     addTraceEvent(trace, "run.error", { error });
     addTraceEvent(trace, "run.end", { status: "error" });
@@ -236,11 +229,7 @@ export const createRuntime = <N extends RecipeName>({
         maybeThen(pipeline.run({ input, runtime, reporter: runtime?.reporter }), (result) => {
           const diagnostics = applyDiagnosticsMode(readDiagnostics(result), diagnosticsMode);
           if (diagnosticsMode === "strict" && hasErrorDiagnostics(diagnostics)) {
-            return toErrorOutcome(
-              new Error("Strict diagnostics failure."),
-              trace,
-              diagnostics
-            );
+            return toErrorOutcome(new Error("Strict diagnostics failure."), trace, diagnostics);
           }
           const isNeedsHuman = (result as { needsHuman?: boolean }).needsHuman;
           if (isNeedsHuman) {
@@ -252,24 +241,25 @@ export const createRuntime = <N extends RecipeName>({
         toErrorOutcome(
           error,
           trace,
-          applyDiagnosticsMode(readErrorDiagnostics(error), diagnosticsMode)
-        )
+          applyDiagnosticsMode(readErrorDiagnostics(error), diagnosticsMode),
+        ),
     );
   };
 
   return {
     run,
-    resume: contract.supportsResume === true
-      ? (_token, _humanInput, runtime) => {
-        void _token;
-          void _humanInput;
-          void runtime;
-          const trace = createTrace();
-          addTraceEvent(trace, "run.start", { recipe: contract.name, resume: true });
-          const diagnostics = normalizeDiagnostics(buildDiagnostics, []);
-          return toErrorOutcome(new Error("Resume is not implemented."), trace, diagnostics);
-        }
-      : undefined,
+    resume:
+      contract.supportsResume === true
+        ? (_token, _humanInput, runtime) => {
+            void _token;
+            void _humanInput;
+            void runtime;
+            const trace = createTrace();
+            addTraceEvent(trace, "run.start", { recipe: contract.name, resume: true });
+            const diagnostics = normalizeDiagnostics(buildDiagnostics, []);
+            return toErrorOutcome(new Error("Resume is not implemented."), trace, diagnostics);
+          }
+        : undefined,
     capabilities: () => resolved,
     explain: () => explain,
     contract: contractView,
