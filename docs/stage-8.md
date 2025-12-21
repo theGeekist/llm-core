@@ -37,6 +37,8 @@ This stage adds integration tests gated by environment to avoid CI breakage.
 [x] Implement retriever adapters (langchain + llamaindex; AI SDK has no retriever abstraction).
 [x] Implement tool adapters (langchain + llamaindex + ai-sdk).
 [x] Implement document loader adapters (langchain + llamaindex; AI SDK has no loader abstraction).
+[x] Implement reranker adapters (langchain + llamaindex; AI SDK has no reranker abstraction).
+[x] Implement transformer adapters (langchain + llamaindex; AI SDK has no transformer abstraction).
 [x] Use per-ecosystem subfolders: adapters/langchain/{construct}.ts, adapters/llamaindex/{construct}.ts, adapters/ai-sdk/{construct}.ts.
 [x] Add workflow helpers: adapter-aware context accessors, capability predicates, adapter validation.
 [ ] Add integration tests gated by env vars (OLLAMA_URL, OPENAI_API_KEY, ANTHROPIC_API_KEY).
