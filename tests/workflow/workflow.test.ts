@@ -1,8 +1,8 @@
 import { describe, expect, it } from "bun:test";
-import { Workflow } from "../../src/workflow";
-import { createRuntime } from "../../src/workflow/runtime";
-import { getRecipe } from "../../src/workflow/recipe-registry";
-import type { Outcome } from "../../src/workflow/types";
+import { Workflow } from "#workflow";
+import { createRuntime } from "#workflow/runtime";
+import { getRecipe } from "#workflow/recipe-registry";
+import type { Outcome } from "#workflow/types";
 
 describe("Workflow builder/runtime", () => {
   const KEY_MODEL_OPENAI = "model.openai";

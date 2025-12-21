@@ -23,6 +23,10 @@
     "eslint-plugin-sonarjs": "0.24.0",
     "prettier": "3.3.3"
   },
+  "imports": {
+    "#workflow": "./src/workflow/index.ts",
+    "#workflow/*": "./src/workflow/*.ts"
+  },
   "peerDependencies": {
     "typescript": "^5"
   }

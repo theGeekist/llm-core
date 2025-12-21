@@ -62,6 +62,19 @@ Override should be expressed either:
 
 Verb list stays small: recipe, use, build, run, resume.
 
+## Builder Lifecycle
+`Workflow.recipe(name)` creates a transient composer. You can `.use(...)` multiple plugins
+in order, then call `.build()` once to snapshot the configuration into a runnable workflow.
+After build, the runtime is deterministic even if the builder is mutated.
+
+Example:
+```ts
+const wf = Workflow.recipe("rag")
+  .use(Model.openai({ model: "gpt-4.1" }))
+  .use(Retriever.vector({ store: "docs" }))
+  .build();
+```
+
 ## Plugin Model
 Plugin should declare:
 - what it adds (capabilities)
