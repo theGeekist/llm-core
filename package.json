@@ -24,12 +24,25 @@
     "typecheck": "tsc --noEmit"
   },
   "devDependencies": {
+    "@ai-sdk/anthropic": "^2.0.56",
+    "@ai-sdk/openai": "^2.0.88",
+    "@langchain/community": "^1.1.1",
+    "@langchain/core": "^1.1.7",
+    "@langchain/ollama": "^1.1.0",
+    "@langchain/openai": "^1.2.0",
+    "@langchain/textsplitters": "^1.0.1",
     "@types/bun": "latest",
     "@typescript-eslint/eslint-plugin": "6.21.0",
     "@typescript-eslint/parser": "6.21.0",
+    "ai": "^5.0.116",
     "eslint": "8.57.0",
     "eslint-config-prettier": "9.1.0",
     "eslint-plugin-sonarjs": "0.24.0",
+    "langchain": "^1.2.2",
+    "llamaindex": "^0.12.1",
+    "ollama": "^0.6.3",
+    "ollama-ai-provider-v2": "^1.5.5",
+    "openai": "^6.15.0",
     "prettier": "3.3.3"
   },
   "imports": {
