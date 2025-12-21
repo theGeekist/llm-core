@@ -42,11 +42,16 @@ export type {
   AdapterTraceEvent,
 } from "./types";
 
-export { identity, mapMaybe } from "./maybe";
+export { identity, mapMaybe, mapMaybeArray } from "./maybe";
 export { fromLangChainEmbeddings } from "./langchain";
 export { fromLangChainTextSplitter } from "./langchain";
 export { fromLangChainRetriever } from "./langchain";
+export { fromLangChainTool } from "./langchain";
+export { fromLangChainLoader } from "./langchain";
 export { fromLlamaIndexEmbeddings } from "./llamaindex";
 export { fromLlamaIndexTextSplitter } from "./llamaindex";
 export { fromLlamaIndexRetriever } from "./llamaindex";
+export { fromLlamaIndexTool } from "./llamaindex";
+export { fromLlamaIndexLoader } from "./llamaindex";
 export { fromAiSdkEmbeddings } from "./ai-sdk";
+export { fromAiSdkTool } from "./ai-sdk";
