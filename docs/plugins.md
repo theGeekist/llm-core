@@ -67,8 +67,9 @@ If a plugin declares `lifecycle` but the recipe does not schedule it, the workfl
 
 If `register` includes a `lifecycle` and the recipe doesn’t schedule it, you still get a diagnostic.
 
+Overrides apply here too: overridden plugins do **not** register extensions.
+
 ## Helper Kinds
 `helperKinds` installs pipeline helpers that run as stages.
 
 Override rules apply: helper kinds only come from **effective** plugins.
-

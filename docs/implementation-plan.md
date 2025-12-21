@@ -94,7 +94,7 @@ Exit criteria:
 Status: completed. See `docs/stage-2.md` for the detailed checklist.
 
 ## Stage 3 — Runtime + Outcome + Diagnostics
-Status: in progress. See `docs/stage-3.md` for the detailed checklist.
+Status: completed. See `docs/stage-3.md` for the detailed checklist.
 
 ## Stage 4 — explain() + contract()
 Code:

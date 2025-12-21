@@ -68,6 +68,7 @@ Runtime carries operational concerns; plugins carry behavior.
 ```ts
 const runtime = {
   reporter: { warn: (msg, ctx) => console.warn(msg, ctx) },
+  diagnostics: "default",
   budget: { maxTokens: 2000 },
   persistence: { /* adapter */ },
   traceSink: { /* sink */ },
@@ -93,3 +94,6 @@ wf.explain();
 
 `contract()` always returns the declared recipe contract (stable, reviewable).
 
+## Resume (HITL Recipes)
+`resume()` only exists for recipes that explicitly support it. If present, it accepts a token and optional human input.
+Current behavior is a stub until a HITL adapter contract is wired.

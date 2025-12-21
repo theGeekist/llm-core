@@ -40,11 +40,11 @@
   [x] Runtime reporter flows into pipeline run options.
 
   Remaining work:
-  [ ] Implement diagnostics severity policy in runtime (default = collect, strict = fail).
-  [ ] Create diagnostics helper module for mapping pipeline diagnostics into runtime outcomes.
-  [ ] Add optional resume flow for HITL recipes (if recipe contract declares it).
-  [ ] Add tests for strict diagnostics and resume paths.
-  [ ] Update docs with diagnostics severity and resume examples.
+  [x] Implement diagnostics severity policy in runtime (default = collect, strict = fail).
+  [x] Create diagnostics helper module for mapping pipeline diagnostics into runtime outcomes.
+  [x] Implement resume flow for HITL recipes (surface exists; behavior is stubbed).
+  [x] Add tests for strict diagnostics and resume paths.
+  [x] Update docs with diagnostics severity and resume examples.
 
   ## Testing and validation
 

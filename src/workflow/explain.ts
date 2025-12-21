@@ -1,6 +1,7 @@
 // References: docs/implementation-plan.md#L51-L54,L124-L130; docs/recipes-and-plugins.md
 
 import type { Plugin } from "./types";
+import { getEffectivePlugins } from "./plugins/effective";
 
 export type ExplainSnapshot = {
   plugins: string[];
@@ -58,6 +59,7 @@ export const buildExplainSnapshot = ({
   const unused: string[] = [];
   const missingRequirements: string[] = [];
   const seenKeys = new Map<string, Plugin>();
+  const effectiveKeys = new Set(getEffectivePlugins(plugins).map((plugin) => plugin.key));
   const capabilityKeys = new Set(Object.keys(resolvedCapabilities));
 
   for (const plugin of plugins) {
@@ -65,7 +67,9 @@ export const buildExplainSnapshot = ({
     const prior = seenKeys.get(key);
     recordOverride(plugin, prior, overrides);
     recordDuplicate(plugin, prior, unused);
-    recordMissingRequirements(plugin, capabilityKeys, missingRequirements);
+    if (effectiveKeys.has(plugin.key)) {
+      recordMissingRequirements(plugin, capabilityKeys, missingRequirements);
+    }
     if (!prior || isOverride(plugin)) {
       seenKeys.set(key, plugin);
     }

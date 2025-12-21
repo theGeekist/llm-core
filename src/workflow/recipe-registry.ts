@@ -61,6 +61,7 @@ const registry = {
     extensionPoints: ["init", "beforeGate", "afterGate", "beforeFinalize"],
     minimumCapabilities: [CAP_MODEL, CAP_EVALUATOR, CAP_HITL],
     helperKinds: [],
+    supportsResume: true,
   },
   loop: {
     name: "loop",

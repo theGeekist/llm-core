@@ -43,6 +43,7 @@ export type RecipeContract = {
   extensionPoints: string[];
   minimumCapabilities: string[];
   helperKinds?: string[];
+  supportsResume?: boolean;
 };
 
 export type Plugin = {
@@ -71,6 +72,7 @@ export type Outcome<TArtefact = unknown> =
 
 export type Runtime = {
   reporter?: PipelineReporter;
+  diagnostics?: "default" | "strict";
   budget?: unknown;
   persistence?: unknown;
   traceSink?: unknown;

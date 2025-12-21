@@ -6,6 +6,7 @@ The runtime is the single place for operational concerns. It is passed to `run(.
 ```ts
 type Runtime = {
   reporter?: { warn: (message: string, context?: unknown) => void };
+  diagnostics?: "default" | "strict";
   budget?: unknown;
   persistence?: unknown;
   traceSink?: unknown;
@@ -17,6 +18,7 @@ Use it like this:
 ```ts
 const runtime = {
   reporter: { warn: (msg, ctx) => console.warn(msg, ctx) },
+  diagnostics: "default",
   budget: { maxTokens: 2000 },
   persistence: { /* adapter */ },
   traceSink: { /* sink */ },
@@ -46,6 +48,12 @@ Examples:
 
 Diagnostics are never required to run in default mode, but they are always present.
 
+### Diagnostics Severity
+- `default`: collect + report diagnostics, do not block execution.
+- `strict`: treat error diagnostics as failures (e.g., missing requirements or conflicts).
+
+Diagnostics are normalized into structured entries with `level`, `kind`, and `message`.
+
 ## needsHuman Flow
 If a run returns `needsHuman`, the outcome includes a partial artefact snapshot:
 ```ts
@@ -56,4 +64,3 @@ if (out.status === "needsHuman") {
 ```
 
 If a recipe supports it, `resume(token, humanInput?, runtime?)` completes the run.
-

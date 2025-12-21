@@ -28,6 +28,16 @@ describe("Workflow builder/runtime", () => {
     }
     return value;
   };
+  const diagnosticMessages = (diagnostics: unknown[]) =>
+    diagnostics
+      .map((diagnostic) => {
+        if (typeof diagnostic === "string") {
+          return diagnostic;
+        }
+        const entry = diagnostic as { message?: string };
+        return entry.message;
+      })
+      .filter((message): message is string => !!message);
   const getContract = (name: RecipeName) => {
     const contract = getRecipe(name);
     if (!contract) {
@@ -137,7 +147,7 @@ describe("Workflow builder/runtime", () => {
       throw new Error("Expected ok outcome.");
     }
     expect(outcome.artefact).toEqual({ answer: "sync-ok" });
-    expect(outcome.diagnostics).toEqual(["sync-warn"]);
+    expect(diagnosticMessages(outcome.diagnostics)).toEqual(["sync-warn"]);
   });
 
   it("handles async pipeline success paths", async () => {
@@ -155,7 +165,7 @@ describe("Workflow builder/runtime", () => {
       throw new Error("Expected ok outcome.");
     }
     expect(outcome.artefact).toEqual({ answer: "ok" });
-    expect(outcome.diagnostics).toEqual(["warn"]);
+    expect(diagnosticMessages(outcome.diagnostics)).toEqual(["warn"]);
   });
 
   it("maps async pipeline failures to error outcomes", async () => {
@@ -273,7 +283,7 @@ describe("Workflow builder/runtime", () => {
     });
 
     const outcome = await runtime.run({ input: "diag" });
-    expect(outcome.diagnostics).toEqual([
+    expect(diagnosticMessages(outcome.diagnostics)).toEqual([
       'Plugin "plugin.missing.lifecycle" extension skipped (lifecycle "notScheduled" not scheduled).',
     ]);
   });
@@ -309,9 +319,33 @@ describe("Workflow builder/runtime", () => {
     });
 
     const outcome = await runtime.run({ input: "diag-register" });
-    expect(outcome.diagnostics).toEqual([
+    expect(diagnosticMessages(outcome.diagnostics)).toEqual([
       'Plugin "plugin.register.lifecycle" extension skipped (lifecycle "notScheduled" not scheduled).',
     ]);
+  });
+
+  it("escalates error diagnostics in strict mode", async () => {
+    const runtime = makeRuntime("rag", {
+      plugins: [{ key: KEY_RETRIEVER_RERANK, requires: ["retriever"] }],
+      run: () => Promise.resolve({ artifact: { answer: "ok" } }),
+    });
+
+    const outcome = await runtime.run(
+      { input: "strict" },
+      { diagnostics: "strict" }
+    );
+    expect(outcome.status).toBe("error");
+    expect(diagnosticMessages(outcome.diagnostics)).toEqual([
+      `${KEY_RETRIEVER_RERANK} (requires retriever)`,
+    ]);
+  });
+
+  it("exposes resume only for recipes that support needsHuman", () => {
+    const resumable = makeWorkflow("hitl-gate");
+    const nonResumable = makeWorkflow("rag");
+
+    expect(resumable.resume).toBeFunction();
+    expect(nonResumable.resume).toBeUndefined();
   });
 
   it("keeps only effective plugins after overrides", () => {
@@ -323,5 +357,64 @@ describe("Workflow builder/runtime", () => {
 
     expect(effective.map((plugin) => plugin.key)).toEqual(["alpha.override"]);
     expect(effective[0]?.helperKinds).toEqual(["two"]);
+  });
+
+  it("ignores overridden plugins when registering extensions", async () => {
+    const calls: string[] = [];
+    const contract = getContract("rag");
+    const runtime = createRuntime({
+      contract,
+      plugins: [
+        {
+          key: "ext.base",
+          register: () => {
+            calls.push("base");
+            return undefined;
+          },
+        },
+        {
+          key: "ext.override",
+          mode: "override",
+          overrideKey: "ext.base",
+          register: () => {
+            calls.push("override");
+            return undefined;
+          },
+        },
+      ],
+      pipelineFactory: withFactory(
+        () =>
+          ({
+            run: () => ({ artifact: { ok: true } }),
+            extensions: {
+              use: (extension: { register?: () => unknown }) => {
+                extension.register?.();
+              },
+            },
+          }) as never
+      ),
+    });
+
+    const outcome = await runtime.run({ input: "extensions" });
+    expect(outcome.status).toBe("ok");
+    expect(calls).toEqual(["override"]);
+  });
+
+  it("ignores overridden requires in strict mode", async () => {
+    const runtime = makeRuntime("rag", {
+      plugins: [
+        { key: "requires.base", requires: ["retriever"] },
+        {
+          key: "requires.override",
+          mode: "override",
+          overrideKey: "requires.base",
+          capabilities: { model: { name: "override" } },
+        },
+      ],
+      run: () => Promise.resolve({ artifact: { answer: "ok" } }),
+    });
+
+    const outcome = await runtime.run({ input: "strict" }, { diagnostics: "strict" });
+    expect(outcome.status).toBe("ok");
   });
 });
