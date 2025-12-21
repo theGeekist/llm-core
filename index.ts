@@ -90,6 +90,10 @@ const registerHelper = <TInput, TOutput, TKind extends EtlHelperKind>(
   );
 };
 
+const KEY_PARSE_ORDER_LINES = "parse-order-lines";
+const KEY_NORMALISE_AND_PRICE = "normalise-and-price";
+const KEY_COMMIT_LOAD = "commit-load";
+
 const createExtractHelpers = () => [
   createHelper<EtlContext, string[], ExtractedOrder[], Reporter, "extract">({
     key: "extract-middleware",
@@ -103,7 +107,7 @@ const createExtractHelpers = () => [
     },
   }),
   createHelper<EtlContext, string[], ExtractedOrder[], Reporter, "extract">({
-    key: "parse-order-lines",
+    key: KEY_PARSE_ORDER_LINES,
     kind: "extract",
     mode: "extend",
     apply: async ({ reporter, input, output }) => {
@@ -161,7 +165,7 @@ const createExtractHelpers = () => [
             output.splice(start);
           },
           {
-            key: "parse-order-lines",
+            key: KEY_PARSE_ORDER_LINES,
             label: "Remove extracted orders",
           }
         ),
@@ -173,7 +177,7 @@ const createExtractHelpers = () => [
     key: "reject-nonpositive-qty",
     kind: "extract",
     mode: "extend",
-    dependsOn: ["parse-order-lines"],
+    dependsOn: [KEY_PARSE_ORDER_LINES],
     apply: ({ reporter, output }) => {
       const before = output.slice();
       const filtered = output.filter((o) => {
@@ -212,7 +216,7 @@ const createNormaliseAndPriceHelper = (
   origin: string
 ) =>
   createHelper<EtlContext, ExtractedOrder[], TransformedOrder[], Reporter, "transform">({
-    key: "normalise-and-price",
+    key: KEY_NORMALISE_AND_PRICE,
     kind: "transform",
     mode,
     origin,
@@ -261,7 +265,7 @@ const createNormaliseAndPriceHelper = (
             output.splice(start);
           },
           {
-            key: "normalise-and-price",
+            key: KEY_NORMALISE_AND_PRICE,
             label: "Remove transformed orders",
           }
         ),
@@ -276,7 +280,7 @@ const createTransformHelpers = () => [
     key: "dedupe-orders",
     kind: "transform",
     mode: "extend",
-    dependsOn: ["normalise-and-price"],
+    dependsOn: [KEY_NORMALISE_AND_PRICE],
     apply: ({ output }) => {
       // Keep the last occurrence per orderId (later lines win)
       const before = output.slice();
@@ -333,7 +337,7 @@ const createLoadHelpers = () => [
   }),
 
   createHelper<EtlContext, TransformedOrder[], LoadedOrder[], Reporter, "load">({
-    key: "commit-load",
+    key: KEY_COMMIT_LOAD,
     kind: "load",
     mode: "extend",
     dependsOn: ["validate-load"],
@@ -380,7 +384,7 @@ const createLoadHelpers = () => [
             }
           },
           {
-            key: "commit-load",
+            key: KEY_COMMIT_LOAD,
             label: "Undo order commit and restore inventory",
           }
         ),
@@ -392,7 +396,7 @@ const createLoadHelpers = () => [
     key: "finalize-load",
     kind: "load",
     mode: "extend",
-    dependsOn: ["commit-load"],
+    dependsOn: [KEY_COMMIT_LOAD],
     apply: ({ context }) => {
       if (context.simulateFailure) {
         throw new Error("Simulated failure after commit (should rollback).");
