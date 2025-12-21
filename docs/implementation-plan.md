@@ -91,35 +91,10 @@ Exit criteria:
 - Override semantics are captured in `explain()` data model (even if not surfaced yet).
 
 ## Stage 2 — Extension Adapter (Pipeline Mapping)
-Code:
-- Implement `src/workflow/plugins/adapter.ts` mapping:
-  - Plugin.setup -> pipeline helper registration
-  - Plugin.hook -> `createPipelineExtension` hook registration
-  - Recipe extension points -> `makeLifecycleStage(name)` scheduling
-- Ensure all mapping uses pipeline APIs from refs above.
-
-Docs:
-- Add “Pipeline mapping” section to `docs/workflow-notes.md` referencing the extension API.
-- Include a diagram bullet list (Plugin -> Extension -> Lifecycle -> Hook).
-
-Exit criteria:
-- A minimal recipe can run via pipeline extensions.
+Status: completed. See `docs/stage-2.md` for the detailed checklist.
 
 ## Stage 3 — Runtime + Outcome + Diagnostics
-Code:
-- Implement `src/workflow/runtime.ts` with `run` and optional `resume`.
-- Implement `src/workflow/diagnostics.ts` to map pipeline diagnostics:
-  - default: collect + warn
-  - strict: treat missing requirements/incompatibilities as errors
-- Implement `src/workflow/outcome.ts` helpers.
-
-Docs:
-- Add “Diagnostics severity” section to `docs/workflow-notes.md`.
-- Add “Outcome helpers” examples.
-
-Exit criteria:
-- Runtime always returns `{ outcome, trace, diagnostics }`.
-- Strict mode blocks on missing requirements.
+Status: in progress. See `docs/stage-3.md` for the detailed checklist.
 
 ## Stage 4 — explain() + contract()
 Code:
@@ -162,9 +137,26 @@ Code:
 Docs:
 - Add a short “Testing philosophy” note in `docs/workflow-notes.md`.
 
+
 Exit criteria:
 - Each module/test file <500 SLOC.
 - Tests cover outcome union, resume, and diagnostics.
+
+## Stage 7 — Interoperability Adapters (Deferred)
+Code:
+- Add an opt-in adapter layer for external ecosystems (e.g., LangChain, LlamaIndex, Vercel AI SDK).
+- Focus on narrow boundary translation (inputs/outputs, tool calls, traces/diagnostics) without changing core Workflow DX.
+- Keep adapters as separate modules (or packages) so the core stays small and stable.
+- Treat external adapter packages as peer dependencies when work begins.
+- Revisit monorepo structure when adapters are introduced (to manage peer deps cleanly and avoid core churn).
+
+Docs:
+- Add a short note describing what “first-class interoperability” means here (bridge, not reimplementation).
+- Document a minimal example that wraps an external chain/index into a Workflow plugin.
+
+Exit criteria:
+- One adapter can run end-to-end via a small example without widening core types.
+- Workflow contracts/recipes remain the source of truth; adapters translate to/from them.
 
 ## Ongoing Constraints
 - Prefer early returns and small pure functions.

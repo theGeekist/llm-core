@@ -12,5 +12,5 @@ export { createRuntime } from "./runtime.ts";
 export { registerRecipe, getRecipe } from "./recipe-registry.ts";
 export { createContractView } from "./contract.ts";
 export { buildExplainSnapshot } from "./explain.ts";
-export { adaptPlugins } from "./plugins/adapter.ts";
-export type { Plugin, Outcome, RecipeName, RecipeContract } from "./types";
+export { Outcome } from "./outcome.ts";
+export type { Plugin, RecipeName, RecipeContract, Outcome as OutcomeType } from "./types";

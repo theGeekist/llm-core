@@ -15,7 +15,8 @@ import type {
 import { createContractView } from "./contract";
 import { buildCapabilities } from "./capabilities";
 import { buildExplainSnapshot } from "./explain";
-import { createTrace } from "./trace";
+import { getEffectivePlugins } from "./plugins/effective";
+import { addTraceEvent, createTrace, type TraceEvent } from "./trace";
 
 type RuntimeDeps<N extends RecipeName> = {
   contract: RecipeContract & { name: N };
@@ -58,7 +59,8 @@ export type WorkflowRuntime<
 
 const collectHelperKinds = (contract: RecipeContract, plugins: Plugin[]) => {
   const kinds = new Set(contract.helperKinds ?? []);
-  for (const plugin of plugins) {
+  const effectivePlugins = getEffectivePlugins(plugins);
+  for (const plugin of effectivePlugins) {
     for (const kind of plugin.helperKinds ?? []) {
       kinds.add(kind);
     }
@@ -72,23 +74,30 @@ type PipelineWithExtensions = {
   };
 };
 
-const warnMissingLifecycle = (plugin: Plugin) => {
-  console.warn(
-    `Plugin "${plugin.key}" registered a hook but no lifecycle was scheduled.`,
-    { lifecycle: plugin.lifecycle }
-  );
-};
+const DEFAULT_LIFECYCLE = "init";
+
+const createLifecycleDiagnostic = (plugin: Plugin, reason: string) =>
+  `Plugin "${plugin.key}" extension skipped (${reason}).`;
 
 const registerExtensions = (
   pipeline: PipelineWithExtensions,
   plugins: Plugin[],
-  extensionPoints: string[]
+  extensionPoints: string[],
+  diagnostics: string[]
 ) => {
-  const defaultLifecycle = extensionPoints[0];
+  const defaultLifecycle = DEFAULT_LIFECYCLE;
   const lifecycleSet = new Set(extensionPoints);
 
   for (const plugin of plugins) {
     if (plugin.register) {
+      if (plugin.lifecycle && !lifecycleSet.has(plugin.lifecycle)) {
+        diagnostics.push(
+          createLifecycleDiagnostic(
+            plugin,
+            `lifecycle "${plugin.lifecycle}" not scheduled`
+          )
+        );
+      }
       pipeline.extensions.use({
         key: plugin.key,
         register: plugin.register as never,
@@ -100,14 +109,12 @@ const registerExtensions = (
       continue;
     }
 
-    if (!defaultLifecycle) {
-      warnMissingLifecycle(plugin);
-      continue;
-    }
-
     const lifecycle = plugin.lifecycle ?? defaultLifecycle;
     if (!lifecycleSet.has(lifecycle)) {
-      warnMissingLifecycle(plugin);
+      const reason = lifecycle === DEFAULT_LIFECYCLE
+        ? `default lifecycle "${DEFAULT_LIFECYCLE}" not scheduled`
+        : `lifecycle "${lifecycle}" not scheduled`;
+      diagnostics.push(createLifecycleDiagnostic(plugin, reason));
       continue;
     }
 
@@ -152,30 +159,46 @@ export const createRuntime = <N extends RecipeName>({
   plugins,
   pipelineFactory,
 }: RuntimeDeps<N>): WorkflowRuntime<RunInputOf<N>, ArtefactOf<N>, HumanInputOf<N>> => {
+  const buildDiagnostics: string[] = [];
   const pipeline = pipelineFactory
     ? pipelineFactory(contract, plugins)
     : createPipeline(contract, plugins);
   registerExtensions(
     pipeline as unknown as PipelineWithExtensions,
     plugins,
-    contract.extensionPoints
+    contract.extensionPoints,
+    buildDiagnostics
   );
-  const capabilities = buildCapabilities(plugins);
-  const explain = buildExplainSnapshot({ plugins, capabilities });
+  const { declared, resolved } = buildCapabilities(plugins);
+  const explain = buildExplainSnapshot({
+    plugins,
+    declaredCapabilities: declared,
+    resolvedCapabilities: resolved,
+  });
   const contractView = createContractView(contract);
 
-  const readDiagnostics = (result: unknown) =>
-    (result as { diagnostics?: unknown[] }).diagnostics ?? [];
+  const readDiagnostics = (result: unknown) => {
+    const diagnostics = (result as { diagnostics?: unknown[] }).diagnostics ?? [];
+    return [...buildDiagnostics, ...diagnostics];
+  };
+
+  const readErrorDiagnostics = (error: unknown) => {
+    const diagnostics = (error as { diagnostics?: unknown[] }).diagnostics ?? [];
+    return [...buildDiagnostics, ...diagnostics];
+  };
 
   const readArtifact = (result: unknown) =>
     ((result as { artifact?: PipelineState }).artifact ?? {}) as ArtefactOf<N>;
 
-  const toOkOutcome = (result: unknown, trace: unknown[]): Outcome<ArtefactOf<N>> => ({
-    status: "ok",
-    artefact: readArtifact(result),
-    trace,
-    diagnostics: readDiagnostics(result),
-  });
+  const toOkOutcome = (result: unknown, trace: TraceEvent[]): Outcome<ArtefactOf<N>> => {
+    addTraceEvent(trace, "run.end", { status: "ok" });
+    return {
+      status: "ok",
+      artefact: readArtifact(result),
+      trace,
+      diagnostics: readDiagnostics(result),
+    };
+  };
 
   const readPartialArtifact = (result: unknown) =>
     ((result as { partialArtifact?: Partial<ArtefactOf<N>> }).partialArtifact ??
@@ -183,40 +206,52 @@ export const createRuntime = <N extends RecipeName>({
 
   const toNeedsHumanOutcome = (
     result: unknown,
-    trace: unknown[]
-  ): Outcome<ArtefactOf<N>> => ({
-    status: "needsHuman",
-    token: (result as { token?: unknown }).token,
-    artefact: readPartialArtifact(result),
-    trace,
-    diagnostics: readDiagnostics(result),
-  });
+    trace: TraceEvent[]
+  ): Outcome<ArtefactOf<N>> => {
+    addTraceEvent(trace, "run.end", { status: "needsHuman" });
+    return {
+      status: "needsHuman",
+      token: (result as { token?: unknown }).token,
+      artefact: readPartialArtifact(result),
+      trace,
+      diagnostics: readDiagnostics(result),
+    };
+  };
 
-  const toErrorOutcome = (error: unknown, trace: unknown[]): Outcome<ArtefactOf<N>> => ({
-    status: "error",
-    error,
-    trace,
-    diagnostics: [],
-  });
+  const toErrorOutcome = (error: unknown, trace: TraceEvent[]): Outcome<ArtefactOf<N>> => {
+    addTraceEvent(trace, "run.end", { status: "error" });
+    return {
+      status: "error",
+      error,
+      trace,
+      diagnostics: readErrorDiagnostics(error),
+    };
+  };
 
   const run = (input: RunInputOf<N>, runtime?: Runtime) => {
     const trace = createTrace();
+    addTraceEvent(trace, "run.start", { recipe: contract.name });
     return maybeTry(
       () =>
-        maybeThen(pipeline.run({ input, runtime }), (result) => {
+        maybeThen(pipeline.run({ input, runtime, reporter: runtime?.reporter }), (result) => {
           const isNeedsHuman = (result as { needsHuman?: boolean }).needsHuman;
           if (isNeedsHuman) {
+            addTraceEvent(trace, "run.needsHuman");
             return toNeedsHumanOutcome(result, trace);
           }
+          addTraceEvent(trace, "run.ok");
           return toOkOutcome(result, trace);
         }),
-      (error) => toErrorOutcome(error, trace)
+      (error) => {
+        addTraceEvent(trace, "run.error", { error });
+        return toErrorOutcome(error, trace);
+      }
     );
   };
 
   return {
     run,
-    capabilities: () => capabilities,
+    capabilities: () => resolved,
     explain: () => explain,
     contract: contractView,
   };

@@ -4,6 +4,8 @@ import type { Plugin } from "./types";
 
 export type ExplainSnapshot = {
   plugins: string[];
+  capabilities: Record<string, unknown>;
+  declaredCapabilities: Record<string, unknown>;
   overrides: string[];
   unused: string[];
   missingRequirements?: string[];
@@ -11,7 +13,8 @@ export type ExplainSnapshot = {
 
 type ExplainInput = {
   plugins: Plugin[];
-  capabilities: Record<string, unknown>;
+  declaredCapabilities: Record<string, unknown>;
+  resolvedCapabilities: Record<string, unknown>;
 };
 
 const isOverride = (plugin: Plugin) => plugin.mode === "override";
@@ -46,12 +49,16 @@ const recordMissingRequirements = (
   }
 };
 
-export const buildExplainSnapshot = ({ plugins, capabilities }: ExplainInput): ExplainSnapshot => {
+export const buildExplainSnapshot = ({
+  plugins,
+  declaredCapabilities,
+  resolvedCapabilities,
+}: ExplainInput): ExplainSnapshot => {
   const overrides: string[] = [];
   const unused: string[] = [];
   const missingRequirements: string[] = [];
   const seenKeys = new Map<string, Plugin>();
-  const capabilityKeys = new Set(Object.keys(capabilities));
+  const capabilityKeys = new Set(Object.keys(resolvedCapabilities));
 
   for (const plugin of plugins) {
     const key = overrideKey(plugin);
@@ -59,11 +66,15 @@ export const buildExplainSnapshot = ({ plugins, capabilities }: ExplainInput): E
     recordOverride(plugin, prior, overrides);
     recordDuplicate(plugin, prior, unused);
     recordMissingRequirements(plugin, capabilityKeys, missingRequirements);
-    seenKeys.set(key, plugin);
+    if (!prior || isOverride(plugin)) {
+      seenKeys.set(key, plugin);
+    }
   }
 
   return {
     plugins: plugins.map((plugin) => plugin.key),
+    capabilities: resolvedCapabilities,
+    declaredCapabilities,
     overrides,
     unused,
     missingRequirements: missingRequirements.length ? missingRequirements : undefined,

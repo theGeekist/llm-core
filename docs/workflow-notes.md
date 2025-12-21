@@ -1,6 +1,6 @@
 # Workflow Product Notes (Draft)
 
-Canonical overview. Companion details live in `docs/recipes-and-plugins.md`.
+Canonical overview. Companion details live in `docs/recipes-and-plugins.md`, `docs/workflow-api.md`, `docs/plugins.md`, and `docs/runtime.md`.
 
 ## DX Guardrails (Type Safety + Defaults)
 - Recipe name drives inference. Literal names are the typed path; dynamic strings intentionally widen and rely on runtime diagnostics (escape hatch for JS-ish call sites).
@@ -9,7 +9,7 @@ Canonical overview. Companion details live in `docs/recipes-and-plugins.md`.
   - `Workflow.recipe("rag").contract(myContract)` (typed value or schema drives inference)
   - If `.as<Contract>()` exists, document it as rare/advanced only.
 - Runtime presets are illustrative (e.g., dev/prod) to avoid option sprawl and keep operational concerns centralized.
-- `explain()` returns a single snapshot: resolved capabilities, overrides, missing requirements, unused/shadowed registrations, optional "why" hints.
+- `explain()` returns a single snapshot: resolved capabilities, declared capabilities, overrides, missing requirements, unused/shadowed registrations, optional "why" hints.
 - Expose a contract view for discoverability (`wf.contract()`), stick to one noun.
 - Outcome ergonomics should be small and explicit: `Outcome.match`, `Outcome.ok` type guard, and optional `Outcome.mapOk`.
 
@@ -30,7 +30,7 @@ Two DX anchors:
 - Capability discovery is first-class (illustrative, not API commitment):
   ```ts
   wf.capabilities() // -> { model: ..., tools: [...], retriever?: ..., memory?: ... }
-  wf.explain()      // -> { plugins: [...], overrides: [...], unused: [...] }
+  wf.explain()      // -> { plugins: [...], capabilities: {...}, declaredCapabilities: {...}, overrides: [...], unused: [...] }
   ```
 - Runtime carries operational concerns (budget, persistence, HITL adapter, tracing sink), while plugins carry behavioral concerns.
 
@@ -130,6 +130,7 @@ Why it fits:
 Notes:
 - Keep helper registration in `setup` to avoid plumbing in user code.
 - Reserve lifecycle names for recipe extension points (beforePlan, afterToolExec, etc.).
+- `init` is the default lifecycle; plugins without an explicit lifecycle attach to `init`, and recipes should schedule it.
 
 ## Minimal Implementation Sketch (TypeScript)
 ```ts
