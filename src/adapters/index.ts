@@ -45,6 +45,8 @@ export type {
 export { identity, mapMaybe } from "./maybe";
 export { fromLangChainEmbeddings } from "./langchain";
 export { fromLangChainTextSplitter } from "./langchain";
+export { fromLangChainRetriever } from "./langchain";
 export { fromLlamaIndexEmbeddings } from "./llamaindex";
 export { fromLlamaIndexTextSplitter } from "./llamaindex";
+export { fromLlamaIndexRetriever } from "./llamaindex";
 export { fromAiSdkEmbeddings } from "./ai-sdk";
