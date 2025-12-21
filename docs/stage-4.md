@@ -1,52 +1,52 @@
 # Plan
 
-  Stage 4 focuses on recipe defaults and minimum capability enforcement, keeping recipes as the source of truth and
-  ensuring diagnostics remain DX-first.
+Stage 4 focuses on recipe defaults and minimum capability enforcement, keeping recipes as the source of truth and
+ensuring diagnostics remain DX-first.
 
-  ## Requirements
+## Requirements
 
-  - Enforce recipe minimumCapabilities (default = warn, strict = error).
-  - Keep recipe defaults minimal and aligned with the catalogue.
-  - Keep runtime/Outcome surface unchanged.
-  - Update docs alongside code changes.
+- Enforce recipe minimumCapabilities (default = warn, strict = error).
+- Keep recipe defaults minimal and aligned with the catalogue.
+- Keep runtime/Outcome surface unchanged.
+- Update docs alongside code changes.
 
-  ## Scope
+## Scope
 
-  - In: minimum capability checks, recipe defaults wiring, catalogue sync.
-  - Out: advanced adapters and external integrations.
+- In: minimum capability checks, recipe defaults wiring, catalogue sync.
+- Out: advanced adapters and external integrations.
 
-  ## Files and entry points
+## Files and entry points
 
-  - src/workflow/runtime.ts
-  - src/workflow/recipe-registry.ts
-  - docs/recipes-and-plugins.md
-  - docs/workflow-notes.md
-  - docs/implementation-plan.md
+- src/workflow/runtime.ts
+- src/workflow/recipe-registry.ts
+- docs/recipes-and-plugins.md
+- docs/workflow-notes.md
+- docs/implementation-plan.md
 
-  ## Data model / API changes
+## Data model / API changes
 
-  - Diagnostics: add recipe minimum capability checks.
-  - Defaults: recipe registry includes minimal default plugins.
+- Diagnostics: add recipe minimum capability checks.
+- Defaults: recipe registry includes minimal default plugins.
 
-  ## Action items
+## Action items
 
-  [ ] Add runtime diagnostics for missing recipe minimumCapabilities (default warn, strict error).
-  [ ] Add tests for minimum capability enforcement (default vs strict).
-  [ ] Define minimal default plugin sets per recipe (no heavy logic).
-  [ ] Sync catalogue docs with registry defaults and capability names.
-  [ ] Add a defaults vs overrides example in docs.
+[x] Add runtime diagnostics for missing recipe minimumCapabilities (default warn, strict error).
+[x] Add tests for minimum capability enforcement (default vs strict).
+[x] Define minimal default plugin sets per recipe (no heavy logic).
+[x] Sync catalogue docs with registry defaults and capability names.
+[x] Add a defaults vs overrides example in docs.
 
-  ## Testing and validation
+## Testing and validation
 
-  - bun run lint
-  - bun run typecheck
-  - bun test
+- bun run lint
+- bun run typecheck
+- bun test
 
-  ## Risks and edge cases
+## Risks and edge cases
 
-  - Over‑prescribing defaults could freeze recipes prematurely.
-  - Strict mode could fail unexpectedly if defaults drift from docs.
+- Over‑prescribing defaults could freeze recipes prematurely.
+- Strict mode could fail unexpectedly if defaults drift from docs.
 
-  ## Open questions
+## Open questions
 
-  - None (revisit if defaults require richer semantics).
+- None (revisit if defaults require richer semantics).

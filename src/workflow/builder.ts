@@ -16,7 +16,7 @@ export const createBuilder = <N extends RecipeName>(recipeName: N): WorkflowBuil
     throw new Error(`Unknown recipe: ${recipeName}`);
   }
 
-  const plugins: Plugin[] = [];
+  const plugins: Plugin[] = [...(contract.defaultPlugins ?? [])];
 
   const use = (plugin: Plugin) => {
     plugins.push(plugin);

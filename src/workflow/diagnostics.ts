@@ -1,7 +1,7 @@
 // References: docs/stage-3.md; docs/runtime.md
 
 export type DiagnosticLevel = "warn" | "error";
-export type DiagnosticKind = "pipeline" | "workflow" | "requirement";
+export type DiagnosticKind = "pipeline" | "workflow" | "requirement" | "contract";
 
 export type DiagnosticEntry = {
   level: DiagnosticLevel;
@@ -34,8 +34,14 @@ export const createLifecycleDiagnostic = (message: string): DiagnosticEntry => (
 });
 
 export const createRequirementDiagnostic = (message: string): DiagnosticEntry => ({
-  level: "error",
+  level: "warn",
   kind: "requirement",
+  message,
+});
+
+export const createContractDiagnostic = (message: string): DiagnosticEntry => ({
+  level: "warn",
+  kind: "contract",
   message,
 });
 
@@ -70,3 +76,20 @@ export const normalizeDiagnostics = (
 
 export const hasErrorDiagnostics = (diagnostics: DiagnosticEntry[]) =>
   diagnostics.some((diagnostic) => diagnostic.level === "error");
+
+const shouldPromoteToError = (diagnostic: DiagnosticEntry) =>
+  diagnostic.kind === "requirement" || diagnostic.kind === "contract";
+
+export const applyDiagnosticsMode = (
+  diagnostics: DiagnosticEntry[],
+  mode: "default" | "strict"
+): DiagnosticEntry[] => {
+  if (mode !== "strict") {
+    return diagnostics;
+  }
+  return diagnostics.map((diagnostic) =>
+    shouldPromoteToError(diagnostic)
+      ? { ...diagnostic, level: "error" as DiagnosticLevel }
+      : diagnostic
+  );
+};

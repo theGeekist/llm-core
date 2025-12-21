@@ -23,7 +23,9 @@ import { buildCapabilities } from "./capabilities";
 import { buildExplainSnapshot } from "./explain";
 import {
   createLifecycleDiagnostic,
+  createContractDiagnostic,
   createRequirementDiagnostic,
+  applyDiagnosticsMode,
   hasErrorDiagnostics,
   normalizeDiagnostics,
   type DiagnosticEntry,
@@ -150,6 +152,15 @@ export const createRuntime = <N extends RecipeName>({
   for (const message of explain.missingRequirements ?? []) {
     buildDiagnostics.push(createRequirementDiagnostic(message));
   }
+  for (const minimum of contract.minimumCapabilities) {
+    if (!(minimum in resolved)) {
+      buildDiagnostics.push(
+        createContractDiagnostic(
+          `Recipe "${contract.name}" requires capability "${minimum}".`
+        )
+      );
+    }
+  }
   const contractView = createContractView(contract);
 
   const readDiagnostics = (result: unknown) =>
@@ -223,7 +234,7 @@ export const createRuntime = <N extends RecipeName>({
     return maybeTry(
       () =>
         maybeThen(pipeline.run({ input, runtime, reporter: runtime?.reporter }), (result) => {
-          const diagnostics = readDiagnostics(result);
+          const diagnostics = applyDiagnosticsMode(readDiagnostics(result), diagnosticsMode);
           if (diagnosticsMode === "strict" && hasErrorDiagnostics(diagnostics)) {
             return toErrorOutcome(
               new Error("Strict diagnostics failure."),
@@ -237,7 +248,12 @@ export const createRuntime = <N extends RecipeName>({
           }
           return toOkOutcome(result, trace, diagnostics);
         }),
-      (error) => toErrorOutcome(error, trace)
+      (error) =>
+        toErrorOutcome(
+          error,
+          trace,
+          applyDiagnosticsMode(readErrorDiagnostics(error), diagnosticsMode)
+        )
     );
   };
 

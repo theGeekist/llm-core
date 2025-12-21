@@ -53,9 +53,13 @@ export const makeRuntime = (
   options?: {
     plugins?: Plugin[];
     run?: (options: TestRunOptions) => unknown;
+    includeDefaults?: boolean;
   }
 ) => {
   const contract = getContract(name);
+  const includeDefaults = options?.includeDefaults ?? true;
+  const basePlugins = includeDefaults ? contract.defaultPlugins ?? [] : [];
+  const plugins = [...basePlugins, ...(options?.plugins ?? [])];
   const run = options?.run;
   const pipelineFactory = run
     ? withFactory(
@@ -68,12 +72,23 @@ export const makeRuntime = (
     : undefined;
   return createRuntime({
     contract,
-    plugins: options?.plugins ?? [],
+    plugins,
     pipelineFactory,
   });
 };
 
-export const makeWorkflow = (name: RecipeName, plugins: Plugin[] = []) => {
+export const makeWorkflow = (
+  name: RecipeName,
+  plugins: Plugin[] = [],
+  options?: { includeDefaults?: boolean }
+) => {
+  if (options?.includeDefaults === false) {
+    const contract = getContract(name);
+    return createRuntime({
+      contract,
+      plugins,
+    });
+  }
   let builder = Workflow.recipe(name);
   for (const plugin of plugins) {
     builder = builder.use(plugin);

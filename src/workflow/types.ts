@@ -61,6 +61,7 @@ export type RecipeContract = {
   minimumCapabilities: string[];
   helperKinds?: string[];
   supportsResume?: boolean;
+  defaultPlugins?: Plugin[];
 };
 
 export type Plugin = {

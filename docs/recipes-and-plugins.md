@@ -3,7 +3,9 @@
 Companion to `docs/workflow-notes.md`. This file is a focused catalogue.
 
 ## Recipe Contract Template
+
 Each recipe contract declares:
+
 - **Input**: the single run input shape.
 - **Outcome**: `ok | needsHuman | error` (recipes may omit `needsHuman` if they never pause).
 - **Artefact map**: canonical artefact keys for this recipe. Keys are stable; plugins may enrich with additional keys.
@@ -13,9 +15,12 @@ Each recipe contract declares:
 
 Artefact naming note (illustrative): prefer stable, schema-like keys (e.g. `plan`, `tool.calls`, `retrieval.set`, `answer.text`, `answer.confidence`).
 
+Defaults are installed automatically for each recipe. You can extend or override them via `.use(...)`.
+
 ## Starter Recipes (6)
 
 ### 1) Tool-Calling Agent
+
 - Inputs
   - AgentInput: { input: string; context?: string }
 - Primary artefacts
@@ -39,6 +44,7 @@ Artefact naming note (illustrative): prefer stable, schema-like keys (e.g. `plan
   - beforeAnswer
 
 ### 2) Ingest (Chunk → Embed → Upsert)
+
 - Inputs
   - IngestInput: { sourceId: string; documents: Array<{ id: string; text: string }>; chunking?: "default" | "byHeading" }
 - Artefact map (canonical keys)
@@ -59,6 +65,7 @@ Artefact naming note (illustrative): prefer stable, schema-like keys (e.g. `plan
   - afterUpsert
 
 ### 3) RAG With Citations (Retrieve → Rerank → Cite → Answer)
+
 - Inputs
   - RagInput: { input: string; query?: string; topK?: number }
 - Artefact map (canonical keys)
@@ -84,6 +91,7 @@ Artefact naming note (illustrative): prefer stable, schema-like keys (e.g. `plan
   - beforeAnswer
 
 ### 4) Evaluation Run
+
 - Inputs
   - EvalInput: { prompt: string; datasetId?: string; candidates?: number }
 - Primary artefacts
@@ -108,6 +116,7 @@ Artefact naming note (illustrative): prefer stable, schema-like keys (e.g. `plan
   - beforeReport
 
 ### 5) HITL Gate
+
 - Inputs
   - HitlGateInput: { input: string; policy?: string }
 - Primary artefacts
@@ -133,6 +142,7 @@ Artefact naming note (illustrative): prefer stable, schema-like keys (e.g. `plan
   - beforeFinalize
 
 ### 6) Loop Recipe (Agent/ToT)
+
 - Inputs
   - LoopInput: { input: string; maxIterations?: number }
 - Artefact map (canonical keys)
@@ -150,6 +160,7 @@ Artefact naming note (illustrative): prefer stable, schema-like keys (e.g. `plan
   - Trace.console
 
 Notes:
+
 - A loop recipe wraps a deterministic inner workflow per iteration; the controller decides continue/stop based on artefacts + budget.
 - `needsHuman` may bubble up mid-loop; the outcome should include the partial artefact snapshot and a resume token.
 
@@ -158,10 +169,20 @@ Notes:
   - afterIteration
   - beforeTerminate
 
+Defaults vs overrides:
+
+```ts
+const wf = Workflow.recipe("agent")
+  .use({ key: "model.openai.override", mode: "override", overrideKey: "model.openai" })
+  .build();
+```
+
 ## Plugin Catalogue (10–12)
+
 Grouped by capability. Plugins are composable and may extend or override behaviour.
 
 ### Model
+
 - Model.openai
   - Provides: model capability, default prompt formatting
   - Emits: Answer, Confidence
@@ -173,6 +194,7 @@ Grouped by capability. Plugins are composable and may extend or override behavio
   - Emits: `ingest.embeddings`
 
 ### Tools
+
 - Tools.web
   - Provides: tool capability
   - Tool ids: `web.search`, `web.fetch`
@@ -183,6 +205,7 @@ Grouped by capability. Plugins are composable and may extend or override behavio
   - Emits: `tool.calls`, `tool.results`
 
 ### Retriever
+
 - Retriever.vector
   - Provides: base retriever capability (vector store)
   - Emits: `retrieval.set`, `citations`
@@ -194,11 +217,13 @@ Grouped by capability. Plugins are composable and may extend or override behavio
   - Emits: `retrieval.reranked`
 
 ### Memory
+
 - Memory.threadSummary
   - Provides: memory capability
   - Emits: `memory.summary`
 
 ### Evaluator
+
 - Evals.rubric
   - Provides: evaluator capability (rubric scoring)
   - Emits: `eval.scores`, `eval.report`
@@ -213,6 +238,7 @@ Grouped by capability. Plugins are composable and may extend or override behavio
   - Emits: `eval.scores`
 
 ### Trace
+
 - Trace.console
   - Provides: trace capability (console sink)
   - Emits: `trace.events`
@@ -221,11 +247,13 @@ Grouped by capability. Plugins are composable and may extend or override behavio
   - Emits: `trace.events`
 
 ### Dataset
+
 - Dataset.emit
   - Provides: dataset emission capability (rows + storage adapter)
   - Emits: `dataset.rows`
 
 ### HITL
+
 - Hitl.pauseResume
   - Provides: HITL adapter
   - Emits: `hitl.token`, `hitl.packet`
@@ -233,15 +261,18 @@ Grouped by capability. Plugins are composable and may extend or override behavio
 ## Conflict Scenarios + explain()
 
 `explain()` is illustrative and focuses on composition truth:
+
 - `overrides`: resolved deterministic overrides (what replaced what).
 - `unused`: registrations that were installed but did not participate (e.g., shadowed by override, duplicate key in extend mode).
 - `missingRequirements`: plugins that are blocked due to missing required capabilities.
 
 ### Conflict 1: Model override shadowing
+
 - Scenario: two model plugins installed, one overrides the other.
   - `.use(Model.openai({ ... }))`
   - `.use(Model.anthropic({ mode: "override" }))`
 - explain() (illustrative)
+
 ```ts
 {
   plugins: ["model.openai", "model.anthropic"],
@@ -251,9 +282,11 @@ Grouped by capability. Plugins are composable and may extend or override behavio
 ```
 
 ### Conflict 2: Retriever missing dependency
+
 - Scenario: RAG recipe uses `Retriever.rerank` but no base retriever installed.
   - `.use(Retriever.rerank())`
 - explain() (illustrative)
+
 ```ts
 {
   plugins: ["retriever.rerank"],
@@ -264,10 +297,12 @@ Grouped by capability. Plugins are composable and may extend or override behavio
 ```
 
 ### Conflict 3: Duplicate tool registrations (extend mode)
+
 - Scenario: two tool plugins register the same tool id in extend mode.
   - `.use(Tools.web({ toolId: "web.search" }))`
   - `.use(Tools.web({ toolId: "web.search" }))`
 - explain() (illustrative)
+
 ```ts
 {
   plugins: ["tools.web#1", "tools.web#2"],

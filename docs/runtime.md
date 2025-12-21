@@ -3,6 +3,7 @@
 The runtime is the single place for operational concerns. It is passed to `run(...)` and can be reused across workflows.
 
 ## Runtime Channel
+
 ```ts
 type Runtime = {
   reporter?: { warn: (message: string, context?: unknown) => void };
@@ -15,21 +16,30 @@ type Runtime = {
 ```
 
 Use it like this:
+
 ```ts
 const runtime = {
   reporter: { warn: (msg, ctx) => console.warn(msg, ctx) },
   diagnostics: "default",
   budget: { maxTokens: 2000 },
-  persistence: { /* adapter */ },
-  traceSink: { /* sink */ },
-  hitl: { /* adapter */ },
+  persistence: {
+    /* adapter */
+  },
+  traceSink: {
+    /* sink */
+  },
+  hitl: {
+    /* adapter */
+  },
 };
 
 const out = await wf.run({ input: "..." }, runtime);
 ```
 
 ## Trace
+
 Trace is always present and records workflow-level events:
+
 - `run.start`
 - `run.ok`
 - `run.needsHuman`
@@ -39,9 +49,11 @@ Trace is always present and records workflow-level events:
 Trace is designed to be stable and readable. Hooks or helpers can append additional trace events.
 
 ## Diagnostics
+
 Diagnostics capture “why this shape happened” and are always attached to outcomes.
 
 Examples:
+
 - plugin lifecycle declared but not scheduled
 - missing requirements
 - extension registration warnings
@@ -49,13 +61,17 @@ Examples:
 Diagnostics are never required to run in default mode, but they are always present.
 
 ### Diagnostics Severity
+
 - `default`: collect + report diagnostics, do not block execution.
 - `strict`: treat error diagnostics as failures (e.g., missing requirements or conflicts).
+  In strict mode, requirement and contract diagnostics are promoted to error.
 
 Diagnostics are normalized into structured entries with `level`, `kind`, and `message`.
 
 ## needsHuman Flow
+
 If a run returns `needsHuman`, the outcome includes a partial artefact snapshot:
+
 ```ts
 if (out.status === "needsHuman") {
   // out.artefact is Partial<Artefact>
@@ -63,4 +79,4 @@ if (out.status === "needsHuman") {
 }
 ```
 
-If a recipe supports it, `resume(token, humanInput?, runtime?)` completes the run.
+If a recipe supports it, `resume(token, humanInput?, runtime?)` is exposed; current behavior is stubbed until a HITL adapter is wired.

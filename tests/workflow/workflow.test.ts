@@ -30,10 +30,14 @@ describe("Workflow builder/runtime", () => {
   });
 
   it("collects plugin keys for explain()", () => {
-    const runtime = makeWorkflow("rag", [
-      { key: KEY_MODEL_OPENAI, capabilities: { model: { name: "openai" } } },
-      { key: KEY_RETRIEVER_VECTOR, capabilities: { retriever: { type: "vector" } } },
-    ]);
+    const runtime = makeWorkflow(
+      "rag",
+      [
+        { key: KEY_MODEL_OPENAI, capabilities: { model: { name: "openai" } } },
+        { key: KEY_RETRIEVER_VECTOR, capabilities: { retriever: { type: "vector" } } },
+      ],
+      { includeDefaults: false }
+    );
 
     const explain = runtime.explain();
     expect(explain.plugins).toEqual([KEY_MODEL_OPENAI, KEY_RETRIEVER_VECTOR]);
@@ -135,19 +139,29 @@ describe("Workflow builder/runtime", () => {
 
   it("keeps explain() snapshot deterministic after build", () => {
     let builder = Workflow.recipe("rag");
-    builder = builder.use({ key: KEY_MODEL_OPENAI });
+    builder = builder.use({ key: "custom.after" });
     const runtime = builder.build();
 
-    builder.use({ key: KEY_RETRIEVER_VECTOR });
+    builder.use({ key: "custom.later" });
 
-    expect(runtime.explain().plugins).toEqual([KEY_MODEL_OPENAI]);
+    expect(runtime.explain().plugins).toEqual([
+      "retriever.vector",
+      "retriever.rerank",
+      "model.openai",
+      "trace.console",
+      "custom.after",
+    ]);
   });
 
   it("derives capabilities from plugins", () => {
-    const runtime = makeWorkflow("agent", [
-      { key: KEY_MODEL_OPENAI, capabilities: { model: { name: "openai" } } },
-      { key: "tools.web", capabilities: { tools: ["web.search"] } },
-    ]);
+    const runtime = makeWorkflow(
+      "agent",
+      [
+        { key: KEY_MODEL_OPENAI, capabilities: { model: { name: "openai" } } },
+        { key: "tools.web", capabilities: { tools: ["web.search"] } },
+      ],
+      { includeDefaults: false }
+    );
 
     expect(runtime.capabilities()).toEqual({
       model: { name: "openai" },
@@ -156,7 +170,11 @@ describe("Workflow builder/runtime", () => {
   });
 
   it("reports missing requirements in explain()", () => {
-    const runtime = makeWorkflow("rag", [{ key: KEY_RETRIEVER_RERANK, requires: ["retriever"] }]);
+    const runtime = makeWorkflow(
+      "rag",
+      [{ key: KEY_RETRIEVER_RERANK, requires: ["retriever"] }],
+      { includeDefaults: false }
+    );
 
     expect(runtime.explain().missingRequirements ?? []).toEqual([
       `${KEY_RETRIEVER_RERANK} (requires retriever)`,
@@ -164,22 +182,26 @@ describe("Workflow builder/runtime", () => {
   });
 
   it("evaluates missing requirements against resolved capabilities", () => {
-    const runtime = makeWorkflow("rag", [
-      {
-        key: "retriever.primary",
-        capabilities: { retriever: { type: "vector" } },
-      },
-      {
-        key: "retriever.override",
-        mode: "override",
-        overrideKey: "retriever.primary",
-        capabilities: { model: { name: VALUE_OVERRIDE_ONLY } },
-      },
-      {
-        key: KEY_REQUIRES_RETRIEVER,
-        requires: ["retriever"],
-      },
-    ]);
+    const runtime = makeWorkflow(
+      "rag",
+      [
+        {
+          key: "retriever.primary",
+          capabilities: { retriever: { type: "vector" } },
+        },
+        {
+          key: "retriever.override",
+          mode: "override",
+          overrideKey: "retriever.primary",
+          capabilities: { model: { name: VALUE_OVERRIDE_ONLY } },
+        },
+        {
+          key: KEY_REQUIRES_RETRIEVER,
+          requires: ["retriever"],
+        },
+      ],
+      { includeDefaults: false }
+    );
 
     const explain = runtime.explain();
     expect(explain.capabilities).toEqual({ model: { name: VALUE_OVERRIDE_ONLY } });
@@ -193,11 +215,15 @@ describe("Workflow builder/runtime", () => {
   });
 
   it("reports override and duplicate plugins in explain()", () => {
-    const runtime = makeWorkflow("agent", [
-      { key: KEY_MODEL_OPENAI },
-      { key: "model.openai.override", mode: "override", overrideKey: KEY_MODEL_OPENAI },
-      { key: KEY_MODEL_OPENAI },
-    ]);
+    const runtime = makeWorkflow(
+      "agent",
+      [
+        { key: KEY_MODEL_OPENAI },
+        { key: "model.openai.override", mode: "override", overrideKey: KEY_MODEL_OPENAI },
+        { key: KEY_MODEL_OPENAI },
+      ],
+      { includeDefaults: false }
+    );
 
     const explain = runtime.explain();
     expect(explain.overrides).toEqual([`model.openai.override overrides ${KEY_MODEL_OPENAI}`]);
@@ -263,7 +289,7 @@ describe("Workflow builder/runtime", () => {
 
   it("escalates error diagnostics in strict mode", async () => {
     const runtime = makeRuntime("rag", {
-      plugins: [{ key: KEY_RETRIEVER_RERANK, requires: ["retriever"] }],
+      plugins: [{ key: KEY_RETRIEVER_RERANK, requires: ["tools"] }],
       run: () => Promise.resolve({ artifact: { answer: "ok" } }),
     });
 
@@ -273,8 +299,34 @@ describe("Workflow builder/runtime", () => {
     );
     expect(outcome.status).toBe("error");
     expect(diagnosticMessages(outcome.diagnostics)).toEqual([
-      `${KEY_RETRIEVER_RERANK} (requires retriever)`,
+      `${KEY_RETRIEVER_RERANK} (requires tools)`,
     ]);
+  });
+
+  it("warns for missing recipe minimum capabilities in default mode", async () => {
+    const runtime = makeRuntime("rag", {
+      includeDefaults: false,
+      run: () => Promise.resolve({ artifact: { answer: "ok" } }),
+    });
+
+    const outcome = await runtime.run({ input: "defaults" });
+    expect(outcome.status).toBe("ok");
+    expect(diagnosticMessages(outcome.diagnostics)).toContain(
+      'Recipe "rag" requires capability "retriever".'
+    );
+  });
+
+  it("fails strict mode when recipe minimum capabilities are missing", async () => {
+    const runtime = makeRuntime("rag", {
+      includeDefaults: false,
+      run: () => Promise.resolve({ artifact: { answer: "ok" } }),
+    });
+
+    const outcome = await runtime.run({ input: "strict" }, { diagnostics: "strict" });
+    expect(outcome.status).toBe("error");
+    expect(diagnosticMessages(outcome.diagnostics)).toContain(
+      'Recipe "rag" requires capability "retriever".'
+    );
   });
 
   it("exposes resume only for recipes that support needsHuman", () => {
