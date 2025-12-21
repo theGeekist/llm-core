@@ -9,8 +9,45 @@ export const Workflow = {
 
 export { createBuilder } from "./builder.ts";
 export { createRuntime } from "./runtime.ts";
+export { collectAdapters } from "./adapters.ts";
 export { registerRecipe, getRecipe } from "./recipe-registry.ts";
 export { createContractView } from "./contract.ts";
 export { buildExplainSnapshot } from "./explain.ts";
 export { Outcome } from "./outcome.ts";
 export type { Plugin, RecipeName, RecipeContract, Outcome as OutcomeType } from "./types";
+export type {
+  AdapterBundle,
+  AdapterDiagnostic,
+  AdapterDocument,
+  AdapterMessage,
+  AdapterMessageContent,
+  AdapterMessagePart,
+  AdapterMessageRole,
+  AdapterModelCall,
+  AdapterModelResult,
+  AdapterRetrievalResult,
+  AdapterSchema,
+  AdapterStorage,
+  AdapterStreamChunk,
+  AdapterTool,
+  AdapterToolCall,
+  AdapterToolParam,
+  AdapterToolResult,
+  AdapterTraceEvent,
+  AdapterPromptTemplate,
+  AdapterPromptSchema,
+  AdapterStructuredResult,
+  AdapterTextSplitter,
+  AdapterEmbedder,
+  AdapterRetriever,
+  AdapterRetrievalQuery,
+  AdapterReranker,
+  AdapterDocumentLoader,
+  AdapterDocumentTransformer,
+  AdapterMemory,
+  AdapterThread,
+  AdapterTurn,
+  AdapterKVStore,
+  AdapterMaybePromise,
+  AdapterBlob,
+} from "../adapters";

@@ -7,6 +7,7 @@ Canonical overview. Companion details live in `docs/recipes-and-plugins.md`, `do
 - Recipe name drives inference. Literal names are the typed path; dynamic strings intentionally widen and rely on runtime diagnostics (escape hatch for JS-ish call sites).
 - Diagnostics severity over strictness: default mode is permissive + diagnosable; "strict" upgrades requirement/contract diagnostics to errors and fails.
 - Recipe minimum capabilities are enforced via diagnostics (default warn, strict error).
+- Capabilities are inferred from adapters to avoid strict-mode surprises; explicit capabilities still win. List-like adapters (documents/messages/tools/prompts/schemas) are surfaced as presence flags in capabilities when they contain items, while full lists stay on adapters.
 - Avoid user-facing generics. If an escape hatch is needed, prefer value-first:
   - `Workflow.recipe("rag").contract(myContract)` (typed value or schema drives inference)
   - If `.as<Contract>()` exists, document it as rare/advanced only.
@@ -34,7 +35,7 @@ Two DX anchors:
 
 - Capability discovery is first-class (illustrative, not API commitment):
   ```ts
-  wf.capabilities(); // -> { model: ..., tools: [...], retriever?: ..., memory?: ... }
+  wf.capabilities(); // -> { model: ..., tools: true, retriever?: ..., memory?: ... }
   wf.explain(); // -> { plugins: [...], capabilities: {...}, declaredCapabilities: {...}, overrides: [...], unused: [...] }
   ```
 - Runtime carries operational concerns (budget, persistence, HITL adapter, tracing sink), while plugins carry behavioral concerns.

@@ -21,7 +21,8 @@
     "lint:fix": "eslint \"**/*.{ts,tsx,js,jsx}\" --fix",
     "test": "bun test",
     "test:coverage": "bun test --coverage --coverage-reporter=text",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "typecheck:tests": "tsc -p tsconfig.test.json --noEmit"
   },
   "devDependencies": {
     "@ai-sdk/anthropic": "^2.0.56",

@@ -159,6 +159,23 @@ describe("Workflow diagnostics", () => {
     );
   });
 
+  it("treats empty capability arrays as missing for minimum requirements", async () => {
+    const runtime = makeRuntime("agent", {
+      includeDefaults: false,
+      plugins: [
+        { key: "model.only", capabilities: { model: { name: "ok" } } },
+        { key: "tools.empty", capabilities: { tools: [] } },
+      ],
+      run: () => Promise.resolve({ artifact: { answer: "ok" } }),
+    });
+
+    const outcome = await runtime.run({ input: "defaults" });
+    expect(outcome.status).toBe("ok");
+    expect(diagnosticMessages(outcome.diagnostics)).toContain(
+      'Recipe "agent" requires capability "tools".',
+    );
+  });
+
   it("ignores overridden requires in strict mode", async () => {
     const runtime = makeRuntime("rag", {
       plugins: [

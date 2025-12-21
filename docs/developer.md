@@ -21,7 +21,7 @@ These are the Stage 3 guarantees for implementation and review. They are intenti
 Capabilities are resolved via reducers. Each capability key has an explicit reducer that defines how
 values combine.
 
-Current reducers:
+Current reducers (explicit capabilities):
 
 - `tools`: merge arrays
 - `retriever`: replace
@@ -32,7 +32,22 @@ Current reducers:
 - `recipe`: replace
 - `trace`: replace
 - `dataset`: replace
+- `textSplitter`: replace
+- `reranker`: replace
+- `loader`: replace
+- `transformer`: replace
+- `memory`: replace
+- `storage`: replace
+- `kv`: replace
+- `prompts`: replace
+- `schemas`: replace
+- `documents`: replace
+- `messages`: replace
 - unknown keys: collect (mergeArrays fallback; scalars become arrays)
+
+Adapter-derived capability presence is applied in a second pass and only fills missing keys.
+List-like adapter keys (documents/messages/tools/prompts/schemas) are exposed as `true` presence flags,
+while full lists stay on `wf.adapters()`.
 
 ## Overrides and Extensions
 

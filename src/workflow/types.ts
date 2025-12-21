@@ -6,6 +6,7 @@ import type {
   PipelineExtensionRegisterOutput,
   PipelineReporter,
 } from "@wpkernel/pipeline/core";
+import type { AdapterBundle } from "../adapters/types";
 import type { ExplainSnapshot } from "./explain";
 
 // Recipe inputs + artefacts
@@ -49,11 +50,13 @@ export type RunOptions = {
   input: unknown;
   reporter?: PipelineReporter;
   runtime?: Runtime;
+  adapters?: AdapterBundle;
 };
 
 export type PipelineContext = {
   reporter: PipelineReporter;
   runtime?: Runtime;
+  adapters?: AdapterBundle;
 };
 
 export type PipelineState = Record<string, unknown>;
@@ -78,6 +81,7 @@ export type Plugin = {
   requires?: string[];
   emits?: string[];
   helperKinds?: string[];
+  adapters?: AdapterBundle;
   lifecycle?: string;
   hook?: PipelineExtensionHook<unknown, unknown, unknown>;
   register?: (
@@ -133,6 +137,7 @@ export type WorkflowRuntime<TRunInput = unknown, TArtefact = unknown, THumanInpu
     runtime?: Runtime,
   ): MaybePromise<Outcome<TArtefact>>;
   capabilities(): Record<string, unknown>;
+  adapters(): AdapterBundle;
   explain(): ExplainSnapshot;
   contract(): RecipeContract;
 };

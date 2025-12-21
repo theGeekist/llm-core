@@ -33,6 +33,7 @@ import {
 import { getEffectivePlugins } from "./plugins/effective";
 import { addTraceEvent, createTrace, type TraceEvent } from "./trace";
 import { chainMaybe, tryMaybe } from "./maybe";
+import { collectAdapters } from "./adapters";
 
 const collectHelperKinds = (contract: RecipeContract, plugins: Plugin[]) => {
   const kinds = new Set(contract.helperKinds ?? []);
@@ -165,6 +166,7 @@ function createContext(options: RunOptions): PipelineContext {
   return {
     reporter: options.reporter ?? createDefaultReporter(),
     runtime: options.runtime,
+    adapters: options.adapters,
   };
 }
 
@@ -202,6 +204,7 @@ export const createRuntime = <N extends RecipeName>({
     buildDiagnostics,
   );
   const { declared, resolved } = buildCapabilities(plugins);
+  const adapters = collectAdapters(plugins);
   const explain = buildExplainSnapshot({
     plugins,
     declaredCapabilities: declared,
@@ -210,8 +213,20 @@ export const createRuntime = <N extends RecipeName>({
   for (const message of explain.missingRequirements ?? []) {
     buildDiagnostics.push(createRequirementDiagnostic(message));
   }
+  const isCapabilitySatisfied = (value: unknown) => {
+    if (value === undefined || value === null || value === false) {
+      return false;
+    }
+    if (Array.isArray(value)) {
+      return value.length > 0;
+    }
+    if (typeof value === "string") {
+      return value.length > 0;
+    }
+    return true;
+  };
   for (const minimum of contract.minimumCapabilities) {
-    if (!(minimum in resolved)) {
+    if (!isCapabilitySatisfied(resolved[minimum])) {
       buildDiagnostics.push(
         createContractDiagnostic(`Recipe "${contract.name}" requires capability "${minimum}".`),
       );
@@ -298,7 +313,7 @@ export const createRuntime = <N extends RecipeName>({
     }
 
     function runPipeline() {
-      return pipeline.run({ input, runtime, reporter: runtime?.reporter });
+      return pipeline.run({ input, runtime, reporter: runtime?.reporter, adapters });
     }
 
     function handleRunResult(result: unknown) {
@@ -339,6 +354,10 @@ export const createRuntime = <N extends RecipeName>({
     return resolved;
   }
 
+  function adapterBundle() {
+    return adapters;
+  }
+
   function explainSnapshot() {
     return explain;
   }
@@ -347,6 +366,7 @@ export const createRuntime = <N extends RecipeName>({
     run,
     resume,
     capabilities,
+    adapters: adapterBundle,
     explain: explainSnapshot,
     contract: contractView,
   };

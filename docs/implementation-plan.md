@@ -131,17 +131,46 @@ Status: completed. See `docs/stage-5.md` for the detailed checklist.
 
 Status: completed. See `docs/stage-6.md` for the detailed checklist.
 
-## Stage 7 — Interoperability Adapters (Deferred)
+## Stage 7 — Interface Discovery (Code + Docs)
 
-Status: deferred. Not started.
+Status: completed. See `docs/stage-7.md`.
+
+Docs + code:
+
+- Inventory ecosystem interfaces by construct (documents, messages, tools, model calls, retrieval, tracing, text utils, embeddings, retrievers, rerankers, loaders/transformers).
+- Define normalized contracts with examples per ecosystem.
+- Define parity test matrix and add interop scaffolding tests.
+- Add normalized adapter contracts for discovered constructs.
+
+Exit criteria:
+
+- Stage 7 discovery doc is complete for all constructs (including text utilities).
+- Normalization contracts documented with ecosystem examples.
+- Parity/shape tests exist for all constructs with available peers.
+
+## Stage 8 — Interoperability Adapters
+
+Status: planned. See `docs/stage-8.md`.
 
 Code:
 
-- Add an opt-in adapter layer for external ecosystems (e.g., LangChain, LlamaIndex, Vercel AI SDK).
+- Add an opt-in adapter layer for external ecosystems (e.g., LangChain, LlamaIndex, AI SDK).
 - Focus on narrow boundary translation (inputs/outputs, tool calls, traces/diagnostics) without changing core Workflow DX.
 - Keep adapters as separate modules (or packages) so the core stays small and stable.
 - Treat external adapter packages as peer dependencies when work begins.
 - Revisit monorepo structure when adapters are introduced (to manage peer deps cleanly and avoid core churn).
+- Add workflow-side primitives for adapter use (context accessors, capability predicates, adapter validation).
+
+Peer dependency targets (starter list):
+
+- adapter-langchain
+  - peers: `@langchain/core`, `@langchain/ollama` (installed)
+  - optional peers: `@langchain/textsplitters` (installed), `@langchain/openai`, `@langchain/community`
+- adapter-llamaindex
+  - peers: `llamaindex`, `openai`, `ollama`
+- adapter-ai-sdk
+  - peers: `ai`
+  - optional peers: `@ai-sdk/openai`, `@ai-sdk/anthropic`, `ollama-ai-provider-v2` (no `@ai-sdk/ollama`)
 
 Docs:
 

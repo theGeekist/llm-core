@@ -139,4 +139,57 @@ describe("Workflow runtime", () => {
       registerRecipe(original);
     }
   });
+
+  it("exposes adapter bundles from plugins", () => {
+    const runtime = makeWorkflow(
+      "agent",
+      [
+        {
+          key: "adapter.docs",
+          adapters: {
+            documents: [{ text: "doc-1" }],
+          },
+        },
+        {
+          key: "adapter.tools",
+          adapters: {
+            tools: [{ name: "search" }],
+          },
+        },
+      ],
+      { includeDefaults: false },
+    );
+
+    const adapters = runtime.adapters();
+    expect(adapters.documents).toEqual([{ text: "doc-1" }]);
+    expect(adapters.tools).toEqual([{ name: "search" }]);
+  });
+
+  it("honors override semantics for adapter bundles", () => {
+    const runtime = makeWorkflow(
+      "agent",
+      [
+        {
+          key: "adapter.base",
+          adapters: {
+            documents: [{ text: "doc-1" }],
+            tools: [{ name: "search" }],
+          },
+        },
+        {
+          key: "adapter.override",
+          mode: "override",
+          overrideKey: "adapter.base",
+          adapters: {
+            documents: [{ text: "doc-2" }],
+          },
+        },
+      ],
+      { includeDefaults: false },
+    );
+
+    const adapters = runtime.adapters();
+    expect(adapters.documents).toEqual([{ text: "doc-2" }]);
+    expect(adapters.tools).toBeUndefined();
+  });
 });

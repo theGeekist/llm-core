@@ -31,7 +31,7 @@ Recipes ship with minimal default plugins. `.use(...)` extends or overrides thos
 - `.build()` -> runnable workflow
 - `.run(input, runtime?)` -> outcome union (ok | needsHuman | error)
 - `.resume(token, humanInput?, runtime?)` -> only if a recipe exposes it
-- `wf.capabilities()` -> resolved capabilities (override-aware)
+- `wf.capabilities()` -> resolved capabilities (override-aware; list-like adapters surface as presence flags)
 - `wf.explain()` -> composition snapshot (declared + resolved capabilities, overrides, unused, missing requirements)
 - `wf.contract()` -> declared recipe contract
 
