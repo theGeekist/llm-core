@@ -5,3 +5,5 @@ export { fromLangChainTool } from "./tools";
 export { fromLangChainLoader } from "./loader";
 export { fromLangChainTransformer } from "./transformer";
 export { fromLangChainReranker } from "./reranker";
+export { fromLangChainMemory } from "./memory";
+export { fromLangChainStore } from "./storage";

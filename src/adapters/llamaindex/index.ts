@@ -5,3 +5,5 @@ export { fromLlamaIndexTool } from "./tools";
 export { fromLlamaIndexLoader } from "./loader";
 export { fromLlamaIndexTransformer } from "./transformer";
 export { fromLlamaIndexReranker } from "./reranker";
+export { fromLlamaIndexMemory } from "./memory";
+export { fromLlamaIndexDocumentStore } from "./storage";
