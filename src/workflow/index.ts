@@ -42,6 +42,7 @@ export type {
   AdapterToolParam,
   AdapterToolResult,
   AdapterTraceEvent,
+  AdapterTraceSink,
   AdapterPromptTemplate,
   AdapterPromptSchema,
   AdapterStructuredResult,

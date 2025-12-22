@@ -23,6 +23,13 @@ export const assertSyncOutcome = (value: Outcome | Promise<Outcome>) => {
   return value;
 };
 
+export const resolveMaybe = async <T>(value: T | Promise<T>): Promise<T> => {
+  if (isPromiseLike(value)) {
+    return value;
+  }
+  return value;
+};
+
 export const diagnosticMessages = (diagnostics: unknown[]) =>
   diagnostics
     .map((diagnostic) => {

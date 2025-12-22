@@ -11,6 +11,7 @@ This stage adds integration tests gated by environment to avoid CI breakage.
 - Implement adapter modules per ecosystem (LangChain, LlamaIndex, AI SDK), construct by construct.
 - Keep adapter code isolated from core workflow runtime.
 - Wire adapters into lifecycle helpers without widening public API.
+- Add adapter API references for end users (contracts + helpers).
 - Resume should run through pipeline with adapters once a resume adapter exists.
 - Add workflow-side primitives to support adapters (context accessors, capability checks, adapter validation).
 - Env-gated integration tests (Ollama daemon, API keys).
@@ -53,6 +54,7 @@ This stage adds integration tests gated by environment to avoid CI breakage.
 [x] Organize integration tests by construct: tests/integration/{construct}.{ecosystem}.test.ts.
 [x] Thread adapters into resume pipeline path when resume adapter exists.
 [x] Keep parity/shape tests green; add integration-only suites separately.
+[x] Publish adapter contracts and helpers in `docs/adapters-api.md`.
 
 ## Testing and validation
 

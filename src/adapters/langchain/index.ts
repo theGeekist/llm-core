@@ -12,3 +12,4 @@ export { fromLangChainDocument, toLangChainDocument } from "./documents";
 export { fromLangChainMessage } from "./messages";
 export { fromLangChainMessages } from "./model-call";
 export { fromLangChainDocuments } from "./retrieval";
+export { fromLangChainModel } from "./model";

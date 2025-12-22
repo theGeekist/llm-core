@@ -62,6 +62,13 @@ export type PipelineContext = {
 export type PipelineState = Record<string, unknown>;
 
 // Contracts + plugins
+export type RecipeConstructs = {
+  required?: string[];
+  optional?: string[];
+  providers?: Record<string, string>;
+  dependsOn?: Record<string, string[]>;
+};
+
 export type RecipeContract = {
   name: RecipeName;
   artefactKeys: string[];
@@ -71,6 +78,7 @@ export type RecipeContract = {
   helperKinds?: string[];
   supportsResume?: boolean;
   defaultPlugins?: Plugin[];
+  constructs?: RecipeConstructs;
 };
 
 export type Plugin = {
@@ -136,8 +144,10 @@ export type WorkflowRuntime<TRunInput = unknown, TArtefact = unknown, THumanInpu
     humanInput?: THumanInput,
     runtime?: Runtime,
   ): MaybePromise<Outcome<TArtefact>>;
-  capabilities(): Record<string, unknown>;
-  adapters(): AdapterBundle;
+  capabilities(): MaybePromise<Record<string, unknown>>;
+  declaredCapabilities(): Record<string, unknown>;
+  adapters(): MaybePromise<AdapterBundle>;
+  declaredAdapters(): AdapterBundle;
   explain(): ExplainSnapshot;
   contract(): RecipeContract;
 };
@@ -156,6 +166,7 @@ export type Runtime = {
   persistence?: unknown;
   traceSink?: unknown;
   resume?: AdapterResume;
+  providers?: Record<string, string>;
 };
 
 // PipelineReporter is imported for Runtime typing; do not re-export to avoid drift.

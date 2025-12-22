@@ -73,6 +73,8 @@ const addAdapterCapabilities = (
     ["documents", hasItems(adapters.documents) ? true : undefined],
     ["messages", hasItems(adapters.messages) ? true : undefined],
     ["tools", hasItems(adapters.tools) ? true : undefined],
+    ["model", adapters.model],
+    ["trace", adapters.trace],
     ["prompts", hasItems(adapters.prompts) ? true : undefined],
     ["schemas", hasItems(adapters.schemas) ? true : undefined],
     ["textSplitter", adapters.textSplitter],
@@ -105,17 +107,27 @@ const collectExplicitCapabilities = (plugins: Plugin[]) => {
   return snapshot;
 };
 
-const applyAdapterPresence = (capabilities: Record<string, unknown>, plugins: Plugin[]) => {
+const applyAdapterPresenceFromPlugins = (
+  capabilities: Record<string, unknown>,
+  plugins: Plugin[],
+) => {
   for (const plugin of plugins) {
     addAdapterCapabilities(capabilities, plugin.adapters);
   }
 };
 
+export const applyAdapterPresence = (
+  capabilities: Record<string, unknown>,
+  adapters?: AdapterBundle,
+) => {
+  addAdapterCapabilities(capabilities, adapters);
+};
+
 export const buildCapabilities = (plugins: Plugin[]): CapabilitiesSnapshot => {
   const declared = collectExplicitCapabilities(plugins);
-  applyAdapterPresence(declared, plugins);
+  applyAdapterPresenceFromPlugins(declared, plugins);
   const effective = getEffectivePlugins(plugins);
   const resolved = collectExplicitCapabilities(effective);
-  applyAdapterPresence(resolved, effective);
+  applyAdapterPresenceFromPlugins(resolved, effective);
   return { declared, resolved };
 };

@@ -1,7 +1,12 @@
-# Workflow API (DX First)
+# Workflow API
 
 The Workflow API is intentionally tiny. You start from a recipe name, compose plugins, build a runtime, and run it.
 All runs return a structured outcome with trace + diagnostics. Sync or async — it’s always `MaybePromise`.
+
+Related:
+
+- Adapter contracts and helpers: `docs/adapters-api.md`
+- Runtime channel details: `docs/runtime.md`
 
 ## Quick Start
 
@@ -24,6 +29,23 @@ Outcome.match(out, {
 
 Recipes ship with minimal default plugins. `.use(...)` extends or overrides those defaults.
 
+## Adapter helpers (DX path)
+
+You can register adapters without touching registry types:
+
+```ts
+import { Adapter } from "#adapters";
+import { Workflow } from "#workflow";
+
+const wf = Workflow.recipe("rag")
+  .use(
+    Adapter.retriever("custom.retriever", {
+      retrieve: () => ({ documents: [] }),
+    }),
+  )
+  .build();
+```
+
 ## Surface Area
 
 - `Workflow.recipe(name)` -> builder
@@ -31,7 +53,10 @@ Recipes ship with minimal default plugins. `.use(...)` extends or overrides thos
 - `.build()` -> runnable workflow
 - `.run(input, runtime?)` -> outcome union (ok | needsHuman | error)
 - `.resume(token, humanInput?, runtime?)` -> only if a recipe exposes it
-- `wf.capabilities()` -> resolved capabilities (override-aware; list-like adapters surface as presence flags)
+- `wf.capabilities()` -> resolved capabilities (override-aware; list-like adapters surface as presence flags; `model` is the adapter instance; MaybePromise)
+- `wf.declaredCapabilities()` -> plugin-only capabilities (override-aware)
+- `wf.adapters()` -> resolved adapter bundle (registry defaults + constructs merged; MaybePromise)
+- `wf.declaredAdapters()` -> plugin-only adapter bundle (override-aware)
 - `wf.explain()` -> composition snapshot (declared + resolved capabilities, overrides, unused, missing requirements)
 - `wf.contract()` -> declared recipe contract
 
@@ -102,6 +127,18 @@ const runtime = {
 };
 
 await wf.run({ input: "..." }, runtime);
+```
+
+## Mix-and-match providers
+
+Workflows resolve construct providers via the adapter registry (a thin wrapper around `makePipeline`).
+You can override providers per run without widening the core API:
+
+```ts
+const out = await wf.run(
+  { input: "..." },
+  { providers: { model: "ai-sdk:openai:gpt-4o-mini", retriever: "llamaindex:vector" } },
+);
 ```
 
 ## Explain and Contract

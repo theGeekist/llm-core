@@ -2,6 +2,11 @@
 
 The runtime is the single place for operational concerns. It is passed to `run(...)` and can be reused across workflows.
 
+Related:
+
+- Workflow API: `docs/workflow-api.md`
+- Adapter contracts: `docs/adapters-api.md`
+
 ## Runtime Channel
 
 ```ts
@@ -12,7 +17,13 @@ type Runtime = {
   persistence?: unknown;
   traceSink?: unknown;
   resume?: {
-    resolve: (request: { token: unknown; humanInput?: unknown }) => unknown;
+    resolve: (request: {
+      token: unknown;
+      humanInput?: unknown;
+      adapters?: unknown;
+      declaredAdapters?: unknown;
+      providers?: Record<string, string>;
+    }) => unknown;
   };
 };
 ```

@@ -1,8 +1,8 @@
-import type { AIMessage, HumanMessage, SystemMessage } from "@langchain/core/messages";
-import type { AdapterMessage } from "../types";
+import { AIMessage, HumanMessage, SystemMessage, ToolMessage } from "@langchain/core/messages";
+import type { AdapterMessage, AdapterMessageContent, AdapterMessagePart } from "../types";
 import { toAdapterMessageContent } from "../message-content";
 
-type LangChainMessage = HumanMessage | AIMessage | SystemMessage;
+type LangChainMessage = HumanMessage | AIMessage | SystemMessage | ToolMessage;
 
 const toAdapterRole = (role: string): AdapterMessage["role"] => {
   if (role === "human") {
@@ -14,15 +14,123 @@ const toAdapterRole = (role: string): AdapterMessage["role"] => {
   if (role === "system") {
     return "system";
   }
+  if (role === "tool") {
+    return "tool";
+  }
   return "tool";
 };
 
 const toContent = (message: LangChainMessage) =>
   toAdapterMessageContent(message.content === undefined ? message.text : message.content);
 
+type LangChainContentPart =
+  | { type: "text"; text: string }
+  | { type: "image_url"; image_url: { url: string } };
+
+const DEFAULT_IMAGE_MEDIA = "image/png";
+
+const toDataUrl = (data: string, mediaType?: string) =>
+  `data:${mediaType ?? DEFAULT_IMAGE_MEDIA};base64,${data}`;
+
+const safeStringify = (value: unknown) => {
+  try {
+    return JSON.stringify(value);
+  } catch {
+    return String(value);
+  }
+};
+
+const summarizePart = (part: AdapterMessagePart) => {
+  if (part.type === "text") {
+    return part.text;
+  }
+  if (part.type === "reasoning") {
+    return part.text;
+  }
+  if (part.type === "tool-call") {
+    return `tool-call:${part.toolName}:${safeStringify(part.input)}`;
+  }
+  if (part.type === "tool-result") {
+    return `tool-result:${part.toolName}:${safeStringify(part.output)}`;
+  }
+  if (part.type === "image") {
+    return `image:${part.url ?? "inline"}`;
+  }
+  if (part.type === "file") {
+    return `file:${part.mediaType ?? "application/octet-stream"}`;
+  }
+  if (part.type === "data") {
+    return safeStringify(part.data);
+  }
+  return "";
+};
+
+const toLangChainPart = (part: AdapterMessagePart): LangChainContentPart | undefined => {
+  if (part.type === "text") {
+    return { type: "text", text: part.text };
+  }
+  if (part.type === "image") {
+    if (part.url) {
+      return { type: "image_url", image_url: { url: part.url } };
+    }
+    if (part.data) {
+      return { type: "image_url", image_url: { url: toDataUrl(part.data, part.mediaType) } };
+    }
+  }
+  const fallback = summarizePart(part);
+  return fallback ? { type: "text", text: fallback } : undefined;
+};
+
+const toPlainText = (content: AdapterMessageContent) => {
+  if (typeof content === "string") {
+    return content;
+  }
+  if (content.text) {
+    return content.text;
+  }
+  return content.parts.map(summarizePart).filter(Boolean).join("\n");
+};
+
 export function fromLangChainMessage(message: LangChainMessage): AdapterMessage {
+  if (ToolMessage.isInstance(message)) {
+    return {
+      role: "tool",
+      content: toContent(message),
+      toolCallId: message.tool_call_id,
+      name: message.name ?? undefined,
+    };
+  }
   return {
     role: toAdapterRole(message.type),
     content: toContent(message),
   };
+}
+
+const toLangChainContent = (content: AdapterMessageContent) => {
+  if (typeof content === "string") {
+    return content;
+  }
+  const parts = content.parts.map(toLangChainPart).filter(Boolean) as LangChainContentPart[];
+  if (parts.length) {
+    return parts;
+  }
+  return content.text;
+};
+
+export function toLangChainMessage(message: AdapterMessage): LangChainMessage {
+  const content = toLangChainContent(message.content);
+  if (message.role === "assistant") {
+    return new AIMessage(content);
+  }
+  if (message.role === "system") {
+    return new SystemMessage(content);
+  }
+  if (message.role === "tool") {
+    return new ToolMessage({
+      content: toPlainText(message.content),
+      tool_call_id: message.toolCallId ?? "tool",
+      name: message.name,
+    });
+  }
+  return new HumanMessage(content);
 }

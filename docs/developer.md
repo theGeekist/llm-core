@@ -47,7 +47,7 @@ Current reducers (explicit capabilities):
 
 Adapter-derived capability presence is applied in a second pass and only fills missing keys.
 List-like adapter keys (documents/messages/tools/prompts/schemas) are exposed as `true` presence flags,
-while full lists stay on `wf.adapters()`.
+while full lists stay on `wf.adapters()` (resolved adapters).
 
 ## Overrides and Extensions
 

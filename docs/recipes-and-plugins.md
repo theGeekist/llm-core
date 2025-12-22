@@ -1,6 +1,7 @@
 # Recipe Contracts + Plugin Catalogue (Draft)
 
 Companion to `docs/workflow-notes.md`. This file is a focused catalogue.
+Adapter contracts live in `docs/adapters-api.md`.
 
 ## Recipe Contract Template
 
@@ -16,6 +17,23 @@ Each recipe contract declares:
 Artefact naming note (illustrative): prefer stable, schema-like keys (e.g. `plan`, `tool.calls`, `retrieval.set`, `answer.text`, `answer.confidence`).
 
 Defaults are installed automatically for each recipe. You can extend or override them via `.use(...)`.
+
+## Adapter helpers (DX path)
+
+Adapters can be registered with value-first helpers and used like any plugin:
+
+```ts
+import { Adapter } from "#adapters";
+import { Workflow } from "#workflow";
+
+const wf = Workflow.recipe("rag")
+  .use(
+    Adapter.retriever("custom.retriever", {
+      retrieve: () => ({ documents: [] }),
+    }),
+  )
+  .build();
+```
 
 ## Starter Recipes (6)
 

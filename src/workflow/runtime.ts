@@ -1,6 +1,5 @@
 // References: docs/implementation-plan.md#L34-L37,L108-L114; docs/workflow-notes.md
-
-import { isPromiseLike, maybeAll, type PipelineReporter } from "@wpkernel/pipeline/core";
+import { type PipelineReporter } from "@wpkernel/pipeline/core";
 import { makePipeline } from "@wpkernel/pipeline/core";
 import type {
   ArtefactOf,
@@ -18,15 +17,16 @@ import type {
   WorkflowRuntime,
   Plugin,
 } from "./types";
+import type { AdapterBundle, AdapterDiagnostic } from "../adapters/types";
 import { createContractView } from "./contract";
-import { buildCapabilities } from "./capabilities";
+import { applyAdapterPresence, buildCapabilities } from "./capabilities";
 import { isCapabilitySatisfied } from "./capability-checks";
 import { buildExplainSnapshot } from "./explain";
 import {
-  createLifecycleDiagnostic,
   createContractDiagnostic,
   createRequirementDiagnostic,
   createResumeDiagnostic,
+  createAdapterDiagnostic,
   applyDiagnosticsMode,
   hasErrorDiagnostics,
   normalizeDiagnostics,
@@ -34,8 +34,14 @@ import {
 } from "./diagnostics";
 import { getEffectivePlugins } from "./plugins/effective";
 import { addTraceEvent, createTrace, type TraceEvent } from "./trace";
-import { chainMaybe, tryMaybe } from "./maybe";
-import { collectAdapters } from "./adapters";
+import { chainMaybe, mapMaybe, tryMaybe } from "../maybe";
+import {
+  collectAdapters,
+  createRegistryFromPlugins,
+  resolveConstructRequirements,
+} from "./adapters";
+import { readResumeOptions } from "./resume";
+import { createDefaultReporter, registerExtensions } from "./extensions";
 
 const collectHelperKinds = (contract: RecipeContract, plugins: Plugin[]) => {
   const kinds = new Set(contract.helperKinds ?? []);
@@ -48,113 +54,7 @@ const collectHelperKinds = (contract: RecipeContract, plugins: Plugin[]) => {
   return Array.from(kinds);
 };
 
-const DEFAULT_LIFECYCLE = "init";
-
-const createLifecycleMessage = (plugin: Plugin, reason: string) =>
-  `Plugin "${plugin.key}" extension skipped (${reason}).`;
-
-const createDefaultReporter = (): PipelineReporter => ({
-  warn: (message, context) => console.warn(message, context),
-});
-
-const hasExtensions = (pipeline: PipelineWithExtensions) =>
-  !!pipeline.extensions && typeof pipeline.extensions.use === "function";
-
-const trackMaybePromise = (pending: Promise<unknown>[], value: unknown) => {
-  if (isPromiseLike(value)) {
-    pending.push(Promise.resolve(value));
-  }
-};
-
-const isLifecycleScheduled = (lifecycleSet: Set<string>, lifecycle: string) =>
-  lifecycleSet.has(lifecycle);
-
-const describeMissingLifecycle = (lifecycle: string) =>
-  lifecycle === DEFAULT_LIFECYCLE
-    ? `default lifecycle "${DEFAULT_LIFECYCLE}" not scheduled`
-    : `lifecycle "${lifecycle}" not scheduled`;
-
-const registerPluginExtension = (
-  pipeline: PipelineWithExtensions,
-  plugin: Plugin,
-  lifecycleSet: Set<string>,
-  diagnostics: DiagnosticEntry[],
-  pending: Promise<unknown>[],
-) => {
-  if (plugin.lifecycle && !isLifecycleScheduled(lifecycleSet, plugin.lifecycle)) {
-    diagnostics.push(
-      createLifecycleDiagnostic(
-        createLifecycleMessage(plugin, `lifecycle "${plugin.lifecycle}" not scheduled`),
-      ),
-    );
-  }
-  trackMaybePromise(
-    pending,
-    pipeline.extensions.use({
-      key: plugin.key,
-      register: plugin.register as never,
-    }),
-  );
-};
-
-const registerHookExtension = (
-  pipeline: PipelineWithExtensions,
-  plugin: Plugin,
-  lifecycleSet: Set<string>,
-  diagnostics: DiagnosticEntry[],
-  pending: Promise<unknown>[],
-) => {
-  const lifecycle = plugin.lifecycle ?? DEFAULT_LIFECYCLE;
-  if (!isLifecycleScheduled(lifecycleSet, lifecycle)) {
-    diagnostics.push(
-      createLifecycleDiagnostic(
-        createLifecycleMessage(plugin, describeMissingLifecycle(lifecycle)),
-      ),
-    );
-    return;
-  }
-  const register = makeHookRegister(lifecycle, plugin.hook);
-  trackMaybePromise(pending, pipeline.extensions.use({ key: plugin.key, register }));
-};
-
-const makeHookRegister = (lifecycle: string, hook: Plugin["hook"]) =>
-  function registerHook() {
-    return {
-      lifecycle,
-      hook: hook as never,
-    };
-  };
-
-const registerExtensions = (
-  pipeline: PipelineWithExtensions,
-  plugins: Plugin[],
-  extensionPoints: string[],
-  diagnostics: DiagnosticEntry[],
-) => {
-  if (!hasExtensions(pipeline)) {
-    diagnostics.push(
-      createLifecycleDiagnostic("Pipeline extensions unavailable; plugin extensions skipped."),
-    );
-    return;
-  }
-
-  const effectivePlugins = getEffectivePlugins(plugins);
-  const lifecycleSet = new Set(extensionPoints);
-  const pending: Promise<unknown>[] = [];
-
-  for (const plugin of effectivePlugins) {
-    if (plugin.register) {
-      registerPluginExtension(pipeline, plugin, lifecycleSet, diagnostics, pending);
-      continue;
-    }
-    if (!plugin.hook) {
-      continue;
-    }
-    registerHookExtension(pipeline, plugin, lifecycleSet, diagnostics, pending);
-  }
-
-  return maybeAll(pending);
-};
+const STRICT_DIAGNOSTICS_ERROR = "Strict diagnostics failure.";
 
 const createPipeline = (contract: RecipeContract, plugins: Plugin[]) =>
   makePipeline<RunOptions, PipelineContext, PipelineReporter, PipelineState>({
@@ -205,22 +105,23 @@ export const createRuntime = <N extends RecipeName>({
     contract.extensionPoints,
     buildDiagnostics,
   );
-  const { declared, resolved } = buildCapabilities(plugins);
-  const adapters = collectAdapters(plugins);
+  const capabilitySnapshot = buildCapabilities(plugins);
+  const declaredCapabilities = capabilitySnapshot.resolved;
+  const baseAdapters = collectAdapters(plugins);
+  const registry = createRegistryFromPlugins(plugins);
+  const constructRequirements = resolveConstructRequirements(
+    contract.minimumCapabilities,
+    plugins,
+    contract.constructs,
+  );
+  const defaultProviders = contract.constructs?.providers;
   const explain = buildExplainSnapshot({
     plugins,
-    declaredCapabilities: declared,
-    resolvedCapabilities: resolved,
+    declaredCapabilities: capabilitySnapshot.declared,
+    resolvedCapabilities: capabilitySnapshot.resolved,
   });
   for (const message of explain.missingRequirements ?? []) {
     buildDiagnostics.push(createRequirementDiagnostic(message));
-  }
-  for (const minimum of contract.minimumCapabilities) {
-    if (!isCapabilitySatisfied(resolved[minimum])) {
-      buildDiagnostics.push(
-        createContractDiagnostic(`Recipe "${contract.name}" requires capability "${minimum}".`),
-      );
-    }
   }
   const contractView = createContractView(contract);
 
@@ -257,44 +158,56 @@ export const createRuntime = <N extends RecipeName>({
     ((result as { partialArtifact?: Partial<ArtefactOf<N>> }).partialArtifact ??
       readArtifact(result)) as Partial<ArtefactOf<N>>;
 
-  const isObject = (value: unknown): value is Record<string, unknown> =>
-    typeof value === "object" && value !== null;
+  const resolveAdaptersForRun = (runtime?: Runtime, providers?: Record<string, string>) =>
+    registry.resolve({
+      constructs: constructRequirements,
+      providers: providers ?? runtime?.providers,
+      defaults: defaultProviders,
+      reporter: runtime?.reporter,
+    });
 
-  const resumeEnvelopeKeys = new Set(["input", "runtime", "adapters"]);
-  const hasOnlyResumeKeys = (value: Record<string, unknown>) =>
-    Object.keys(value).every((key) => resumeEnvelopeKeys.has(key));
-  const isResumeEnvelope = (value: Record<string, unknown>) =>
-    "input" in value && hasOnlyResumeKeys(value);
+  const applyAdapterOverrides = (resolved: AdapterBundle, overrides?: AdapterBundle) => {
+    if (!overrides) {
+      return resolved;
+    }
+    return {
+      ...resolved,
+      ...overrides,
+      constructs: {
+        ...(resolved.constructs ?? {}),
+        ...(overrides.constructs ?? {}),
+      },
+    };
+  };
 
-  const readResumeOptions = (
-    value: unknown,
-    runtime?: Runtime,
-    diagnostics?: DiagnosticEntry[],
-  ) => {
-    if (isObject(value) && isResumeEnvelope(value)) {
-      const typed = value as { input?: unknown; runtime?: Runtime; adapters?: unknown };
-      return {
-        input: typed.input,
-        runtime: typed.runtime ?? runtime,
-        adapters: typed.adapters ?? adapters,
-      };
-    }
-    if (isObject(value)) {
-      if ("input" in value) {
-        diagnostics?.push(
-          createResumeDiagnostic(
-            "Resume adapter returned an object with extra keys; treating it as input.",
-          ),
-        );
-      } else {
-        diagnostics?.push(
-          createResumeDiagnostic(
-            "Resume adapter returned an object without an input; treating it as input.",
-          ),
-        );
-      }
-    }
-    return { input: value, runtime, adapters };
+  const readContractDiagnostics = (adapters: AdapterBundle): DiagnosticEntry[] => {
+    const runtimeCapabilities: Record<string, unknown> = { ...declaredCapabilities };
+    applyAdapterPresence(runtimeCapabilities, adapters);
+    return contract.minimumCapabilities.flatMap((minimum) =>
+      isCapabilitySatisfied(runtimeCapabilities[minimum])
+        ? []
+        : [createContractDiagnostic(`Recipe "${contract.name}" requires capability "${minimum}".`)],
+    );
+  };
+
+  const toResolvedAdapters = (resolution: {
+    adapters: AdapterBundle;
+    constructs: Record<string, unknown>;
+  }): AdapterBundle => ({
+    ...resolution.adapters,
+    constructs: {
+      ...(resolution.adapters.constructs ?? {}),
+      ...resolution.constructs,
+    },
+  });
+
+  const resolveAdaptersSnapshot = () =>
+    mapMaybe(resolveAdaptersForRun(undefined), (resolution) => toResolvedAdapters(resolution));
+
+  const buildResolvedCapabilities = (adapters: AdapterBundle) => {
+    const runtimeCapabilities: Record<string, unknown> = { ...declaredCapabilities };
+    applyAdapterPresence(runtimeCapabilities, adapters);
+    return runtimeCapabilities;
   };
 
   const toNeedsHumanOutcome = (
@@ -324,7 +237,7 @@ export const createRuntime = <N extends RecipeName>({
       diagnosticsMode,
     );
     if (diagnosticsMode === "strict" && hasErrorDiagnostics(diagnostics)) {
-      return toErrorOutcome(new Error("Strict diagnostics failure."), trace, diagnostics);
+      return toErrorOutcome(new Error(STRICT_DIAGNOSTICS_ERROR), trace, diagnostics);
     }
     const isNeedsHuman = (result as { needsHuman?: boolean }).needsHuman;
     if (isNeedsHuman) {
@@ -373,11 +286,35 @@ export const createRuntime = <N extends RecipeName>({
     }
 
     function runPipelineWithExtensions() {
-      return chainMaybe(runPipeline(), handlers.handleResult);
+      return chainMaybe(resolveAdaptersForRun(runtime), runPipeline);
     }
 
-    function runPipeline() {
-      return pipeline.run({ input, runtime, reporter: runtime?.reporter, adapters });
+    function runPipeline(resolution: {
+      adapters: AdapterBundle;
+      diagnostics: AdapterDiagnostic[];
+      constructs: Record<string, unknown>;
+    }) {
+      const resolvedAdapters = toResolvedAdapters(resolution);
+      const adapterDiagnostics = resolution.diagnostics.map(createAdapterDiagnostic);
+      const contractDiagnostics = readContractDiagnostics(resolvedAdapters);
+      const runtimeDiagnostics = adapterDiagnostics.concat(contractDiagnostics);
+      const adjustedDiagnostics = applyDiagnosticsMode(runtimeDiagnostics, diagnosticsMode);
+      if (diagnosticsMode === "strict" && hasErrorDiagnostics(adjustedDiagnostics)) {
+        const diagnostics = applyDiagnosticsMode(
+          [...buildDiagnostics, ...runtimeDiagnostics],
+          diagnosticsMode,
+        );
+        return toErrorOutcome(new Error(STRICT_DIAGNOSTICS_ERROR), trace, diagnostics);
+      }
+      return chainMaybe(
+        pipeline.run({
+          input,
+          runtime,
+          reporter: runtime?.reporter,
+          adapters: resolvedAdapters,
+        }),
+        (result) => finalizeResult(result, runtimeDiagnostics, trace, diagnosticsMode),
+      );
     }
   }
 
@@ -410,10 +347,20 @@ export const createRuntime = <N extends RecipeName>({
           }
 
           function resolveResume() {
-            return chainMaybe(
-              adapter.resolve({ token, humanInput, runtime, adapters }),
-              runResumePipeline,
-            );
+            return chainMaybe(resolveAdaptersForRun(runtime), (resolution) => {
+              const resolvedAdapters = toResolvedAdapters(resolution);
+              return chainMaybe(
+                adapter.resolve({
+                  token,
+                  humanInput,
+                  runtime,
+                  adapters: resolvedAdapters,
+                  declaredAdapters: baseAdapters,
+                  providers: runtime?.providers,
+                }),
+                runResumePipeline,
+              );
+            });
           }
 
           function runResumePipeline(resumeValue: unknown) {
@@ -422,22 +369,66 @@ export const createRuntime = <N extends RecipeName>({
             const resumeRuntime = resumeOptions.runtime;
             const resumeDiagnosticsMode = resumeRuntime?.diagnostics ?? diagnosticsMode;
             return tryMaybe(
-              () =>
-                chainMaybe(
-                  pipeline.run({
-                    input: resumeOptions.input,
-                    runtime: resumeRuntime,
-                    reporter: resumeRuntime?.reporter,
-                    adapters: resumeOptions.adapters,
-                  }),
-                  (result) =>
-                    finalizeResult(
-                      result,
-                      normalizeDiagnostics(resumeDiagnostics, []),
-                      trace,
-                      resumeDiagnosticsMode,
-                    ),
-                ),
+              () => {
+                return chainMaybe(
+                  resolveAdaptersForRun(resumeRuntime, resumeOptions.providers),
+                  (resolution) => {
+                    const resolvedAdapters: AdapterBundle = {
+                      ...resolution.adapters,
+                      constructs: {
+                        ...(resolution.adapters.constructs ?? {}),
+                        ...resolution.constructs,
+                      },
+                    };
+                    const adapterDiagnostics = resolution.diagnostics.map(createAdapterDiagnostic);
+                    const mergedAdapters = applyAdapterOverrides(
+                      resolvedAdapters,
+                      resumeOptions.adapters,
+                    );
+                    const contractDiagnostics = readContractDiagnostics(mergedAdapters);
+                    const runtimeDiagnostics = adapterDiagnostics.concat(contractDiagnostics);
+                    if (
+                      resumeDiagnosticsMode === "strict" &&
+                      hasErrorDiagnostics(
+                        applyDiagnosticsMode(runtimeDiagnostics, resumeDiagnosticsMode),
+                      )
+                    ) {
+                      const diagnostics = applyDiagnosticsMode(
+                        [
+                          ...buildDiagnostics,
+                          ...normalizeDiagnostics(resumeDiagnostics, []),
+                          ...runtimeDiagnostics,
+                        ],
+                        resumeDiagnosticsMode,
+                      );
+                      return toErrorOutcome(
+                        new Error(STRICT_DIAGNOSTICS_ERROR),
+                        trace,
+                        diagnostics,
+                      );
+                    }
+                    const resumeExtraDiagnostics = normalizeDiagnostics(
+                      resumeDiagnostics,
+                      [],
+                    ).concat(runtimeDiagnostics);
+                    return chainMaybe(
+                      pipeline.run({
+                        input: resumeOptions.input,
+                        runtime: resumeRuntime,
+                        reporter: resumeRuntime?.reporter,
+                        adapters: mergedAdapters,
+                      }),
+                      (result) =>
+                        finalizeResult(
+                          result,
+                          resumeExtraDiagnostics,
+                          trace,
+                          resumeDiagnosticsMode,
+                        ),
+                    );
+                  },
+                );
+              },
               (error) =>
                 toErrorOutcome(
                   error,
@@ -450,11 +441,19 @@ export const createRuntime = <N extends RecipeName>({
       : undefined;
 
   function capabilities() {
-    return resolved;
+    return mapMaybe(resolveAdaptersSnapshot(), buildResolvedCapabilities);
+  }
+
+  function declaredAdapterBundle() {
+    return baseAdapters;
+  }
+
+  function declaredCapabilitiesSnapshot() {
+    return declaredCapabilities;
   }
 
   function adapterBundle() {
-    return adapters;
+    return resolveAdaptersSnapshot();
   }
 
   function explainSnapshot() {
@@ -466,7 +465,9 @@ export const createRuntime = <N extends RecipeName>({
     resume,
     capabilities,
     adapters: adapterBundle,
+    declaredAdapters: declaredAdapterBundle,
     explain: explainSnapshot,
     contract: contractView,
+    declaredCapabilities: declaredCapabilitiesSnapshot,
   };
 };

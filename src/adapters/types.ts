@@ -114,21 +114,72 @@ type AdapterModelCallBase = {
   system?: string;
   tools?: AdapterTool[];
   toolChoice?: string;
+  responseSchema?: AdapterSchema;
   temperature?: number;
   topP?: number;
   maxTokens?: number;
   metadata?: Record<string, unknown>;
 };
 
-export type AdapterModelCall =
-  | (AdapterModelCallBase & { messages: AdapterMessage[]; prompt?: never })
-  | (AdapterModelCallBase & { prompt: string; messages?: never });
+export type AdapterModelCall = AdapterModelCallBase & {
+  messages?: AdapterMessage[];
+  prompt?: string;
+};
 
 export type AdapterModelResult = {
   text?: string;
+  messages?: AdapterMessage[];
   toolCalls?: AdapterToolCall[];
+  toolResults?: AdapterToolResult[];
+  reasoning?: unknown;
+  output?: unknown;
+  diagnostics?: AdapterDiagnostic[];
+  trace?: AdapterTraceEvent[];
+  telemetry?: AdapterModelTelemetry;
+  usage?: AdapterModelUsage;
+  meta?: AdapterModelMeta;
   raw?: unknown;
   metadata?: Record<string, unknown>;
+};
+
+export type AdapterModelUsage = {
+  inputTokens?: number;
+  outputTokens?: number;
+  totalTokens?: number;
+  [key: string]: unknown;
+};
+
+export type AdapterModelMeta = {
+  provider?: string;
+  modelId?: string;
+  requestId?: string;
+  latencyMs?: number;
+  [key: string]: unknown;
+};
+
+export type AdapterModelRequest = {
+  body?: unknown;
+};
+
+export type AdapterModelResponse = {
+  id?: string;
+  modelId?: string;
+  timestamp?: number;
+  headers?: Record<string, string>;
+  body?: unknown;
+};
+
+export type AdapterModelTelemetry = {
+  request?: AdapterModelRequest;
+  response?: AdapterModelResponse;
+  usage?: AdapterModelUsage;
+  totalUsage?: AdapterModelUsage;
+  warnings?: AdapterDiagnostic[];
+  providerMetadata?: Record<string, unknown>;
+};
+
+export type AdapterModel = {
+  generate(call: AdapterModelCall): AdapterMaybePromise<AdapterModelResult>;
 };
 
 export type AdapterStreamChunk = {
@@ -151,6 +202,11 @@ export type AdapterTraceEvent = {
   data?: Record<string, unknown>;
 };
 
+export type AdapterTraceSink = {
+  emit(event: AdapterTraceEvent): AdapterMaybePromise<void>;
+  emitMany?(events: AdapterTraceEvent[]): AdapterMaybePromise<void>;
+};
+
 export type AdapterDiagnostic = {
   level: "warn" | "error";
   message: string;
@@ -161,6 +217,8 @@ export type AdapterBundle = {
   documents?: AdapterDocument[];
   messages?: AdapterMessage[];
   tools?: AdapterTool[];
+  model?: AdapterModel;
+  trace?: AdapterTraceSink;
   prompts?: AdapterPromptTemplate[];
   schemas?: AdapterSchema[];
   textSplitter?: AdapterTextSplitter;
@@ -172,6 +230,7 @@ export type AdapterBundle = {
   memory?: AdapterMemory;
   storage?: AdapterStorage;
   kv?: AdapterKVStore;
+  constructs?: Record<string, unknown>;
 };
 
 export type AdapterResumeRequest = {
@@ -179,12 +238,15 @@ export type AdapterResumeRequest = {
   humanInput?: unknown;
   runtime?: unknown;
   adapters?: AdapterBundle;
+  declaredAdapters?: AdapterBundle;
+  providers?: Record<string, string>;
 };
 
 export type AdapterResumeResult = {
   input: unknown;
   runtime?: unknown;
   adapters?: AdapterBundle;
+  providers?: Record<string, string>;
 };
 
 export type AdapterResumeReturn = AdapterResumeResult | unknown;

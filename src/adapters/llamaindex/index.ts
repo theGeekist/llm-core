@@ -12,3 +12,4 @@ export { fromLlamaIndexDocument, fromLlamaIndexNode, toLlamaIndexDocument } from
 export { fromLlamaIndexMessage } from "./messages";
 export { fromLlamaIndexMessages } from "./model-call";
 export { fromLlamaIndexNodes } from "./retrieval";
+export { fromLlamaIndexModel } from "./model";

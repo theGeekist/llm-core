@@ -195,6 +195,11 @@ describe("Workflow runtime", () => {
   it("uses the resume runtime diagnostics mode", () => {
     const runtime = makeRuntime("hitl-gate", {
       includeDefaults: false,
+      plugins: [
+        { key: "cap.model", capabilities: { model: { name: "stub" } } },
+        { key: "cap.evaluator", capabilities: { evaluator: { name: "stub" } } },
+        { key: "cap.hitl", capabilities: { hitl: { adapter: "stub" } } },
+      ],
       run: () => ({
         artifact: { ok: true },
         diagnostics: [{ type: "missing-dependency", message: "missing adapter" }],
@@ -288,6 +293,7 @@ describe("Workflow runtime", () => {
   });
 
   it("exposes adapter bundles from plugins", () => {
+    const model = { generate: () => ({ text: "ok" }) };
     const runtime = makeWorkflow(
       "agent",
       [
@@ -303,13 +309,20 @@ describe("Workflow runtime", () => {
             tools: [{ name: "search" }],
           },
         },
+        {
+          key: "adapter.model",
+          adapters: {
+            model,
+          },
+        },
       ],
       { includeDefaults: false },
     );
 
-    const adapters = runtime.adapters();
+    const adapters = runtime.declaredAdapters();
     expect(adapters.documents).toEqual([{ text: "doc-1" }]);
     expect(adapters.tools).toEqual([{ name: "search" }]);
+    expect(adapters.model).toBe(model);
   });
 
   it("honors override semantics for adapter bundles", () => {
@@ -335,7 +348,7 @@ describe("Workflow runtime", () => {
       { includeDefaults: false },
     );
 
-    const adapters = runtime.adapters();
+    const adapters = runtime.declaredAdapters();
     expect(adapters.documents).toEqual([{ text: "doc-2" }]);
     expect(adapters.tools).toBeUndefined();
   });

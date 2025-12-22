@@ -7,6 +7,7 @@ Related docs:
 
 - `docs/workflow-notes.md` (canonical overview)
 - `docs/recipes-and-plugins.md` (catalogue)
+- `docs/adapters-api.md` (adapter contracts + helpers)
 
 ## Pipeline API References (Installed Package)
 
@@ -185,6 +186,35 @@ Exit criteria:
 - One adapter can run end-to-end via a small example without widening core types.
 - Workflow contracts/recipes remain the source of truth; adapters translate to/from them.
 - Integration tests are organized by construct: `tests/integration/{construct}.{ecosystem}.test.ts`.
+
+## Stage 8b — Model Execution Adapters
+
+Status: completed. See `docs/stage-8b.md`.
+
+Code:
+
+- Add an execution-level adapter (`AdapterModel`) that runs a model end-to-end.
+- Normalize results (text, messages, tool calls/results, reasoning, usage, metadata) without generics.
+- Support schemaed prompts and structured outputs for both JSON Schema and Zod inputs.
+- Implement factories per ecosystem: AI SDK, LangChain, LlamaIndex.
+- Dogfood tool calls and schemas in integration tests across all ecosystems.
+
+Exit criteria:
+
+- Model execution works via adapters for text + embeddings + tool calls + structured outputs.
+- Integration tests cover tool calls and schemas across AI SDK, LangChain, LlamaIndex.
+
+## Stage 9 — Adapter Registry + Primitives
+
+Status: completed. See `docs/stage-9.md`.
+
+Goals:
+
+- Add an internal adapter registry to resolve constructs across providers (override-aware).
+- Add adapter-free primitives so workflows can run without external ecosystems.
+- Add a construct extension API to register new constructs/providers.
+- Route runtime execution through registry for true mix-and-match.
+- Provide value-first adapter registration helpers for DX.
 
 ## Ongoing Constraints
 

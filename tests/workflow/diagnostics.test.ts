@@ -134,7 +134,7 @@ describe("Workflow diagnostics", () => {
   });
 
   it("warns for missing recipe minimum capabilities in default mode", async () => {
-    const runtime = makeRuntime("rag", {
+    const runtime = makeRuntime("hitl-gate", {
       includeDefaults: false,
       run: () => Promise.resolve({ artifact: { answer: "ok" } }),
     });
@@ -142,12 +142,15 @@ describe("Workflow diagnostics", () => {
     const outcome = await runtime.run({ input: "defaults" });
     expect(outcome.status).toBe("ok");
     expect(diagnosticMessages(outcome.diagnostics)).toContain(
-      'Recipe "rag" requires capability "retriever".',
+      'Recipe "hitl-gate" requires capability "evaluator".',
+    );
+    expect(diagnosticMessages(outcome.diagnostics)).toContain(
+      'Recipe "hitl-gate" requires capability "hitl".',
     );
   });
 
   it("fails strict mode when recipe minimum capabilities are missing", async () => {
-    const runtime = makeRuntime("rag", {
+    const runtime = makeRuntime("hitl-gate", {
       includeDefaults: false,
       run: () => Promise.resolve({ artifact: { answer: "ok" } }),
     });
@@ -155,7 +158,10 @@ describe("Workflow diagnostics", () => {
     const outcome = await runtime.run({ input: "strict" }, { diagnostics: "strict" });
     expect(outcome.status).toBe("error");
     expect(diagnosticMessages(outcome.diagnostics)).toContain(
-      'Recipe "rag" requires capability "retriever".',
+      'Recipe "hitl-gate" requires capability "evaluator".',
+    );
+    expect(diagnosticMessages(outcome.diagnostics)).toContain(
+      'Recipe "hitl-gate" requires capability "hitl".',
     );
   });
 

@@ -1,13 +1,37 @@
 # Workflow Product Notes (Draft)
 
-Canonical overview. Companion details live in `docs/recipes-and-plugins.md`, `docs/workflow-api.md`, `docs/plugins.md`, and `docs/runtime.md`.
+Canonical overview. Companion details live in `docs/recipes-and-plugins.md`, `docs/workflow-api.md`,
+`docs/adapters.md`, `docs/adapters-api.md`, `docs/plugins.md`, and `docs/runtime.md`.
+
+## Nouns (What’s What)
+
+- Recipe: the contract + extension points + minimum capabilities. Defines the workflow.
+- Plugin: composable unit that installs capabilities and can extend/override deterministically.
+- Adapter: concrete implementation of a construct (model, retriever, tools, etc).
+- Extension: pipeline lifecycle hook/registration used by plugins to inject behavior.
+
+### Relationship map
+
+```mermaid
+flowchart TB
+  Recipe -->|defaults + requirements| Workflow
+  Plugin -->|use()| Workflow
+  Plugin -->|installs| Adapter
+  Plugin -->|registers| Extension
+  Adapter -->|implements| Construct
+  Workflow -->|resolves| AdapterRegistry
+  AdapterRegistry -->|selects| Adapter
+  Extension -->|hooks| Pipeline
+```
 
 ## DX Guardrails (Type Safety + Defaults)
 
 - Recipe name drives inference. Literal names are the typed path; dynamic strings intentionally widen and rely on runtime diagnostics (escape hatch for JS-ish call sites).
 - Diagnostics severity over strictness: default mode is permissive + diagnosable; "strict" upgrades requirement/contract diagnostics to errors and fails.
 - Recipe minimum capabilities are enforced via diagnostics (default warn, strict error).
-- Capabilities are inferred from adapters to avoid strict-mode surprises; explicit capabilities still win. List-like adapters (documents/messages/tools/prompts/schemas) are surfaced as presence flags in capabilities when they contain items, while full lists stay on adapters.
+- Capabilities are inferred from resolved adapters to avoid strict-mode surprises; explicit capabilities still win. List-like adapters (documents/messages/tools/prompts/schemas) are surfaced as presence flags in capabilities when they contain items, while full lists stay on adapters. `model` surfaces the adapter instance, not a boolean flag.
+- Adapter bundles are discoverable on the runtime (`wf.adapters()`), and return resolved adapters (registry defaults + constructs merged). Use `wf.declaredAdapters()` for plugin-only.
+- `wf.declaredCapabilities()` exposes the plugin-only capability view; `wf.capabilities()` reflects resolved adapters.
 - Avoid user-facing generics. If an escape hatch is needed, prefer value-first:
   - `Workflow.recipe("rag").contract(myContract)` (typed value or schema drives inference)
   - If `.as<Contract>()` exists, document it as rare/advanced only.

@@ -1,7 +1,14 @@
 // References: docs/stage-3.md; docs/runtime.md
-
+import type { AdapterDiagnostic } from "../adapters/types";
 export type DiagnosticLevel = "warn" | "error";
-export type DiagnosticKind = "pipeline" | "workflow" | "requirement" | "contract" | "resume";
+
+export type DiagnosticKind =
+  | "pipeline"
+  | "workflow"
+  | "requirement"
+  | "contract"
+  | "resume"
+  | "adapter";
 
 export type DiagnosticEntry = {
   level: DiagnosticLevel;
@@ -68,6 +75,13 @@ export const createPipelineDiagnostic = (diagnostic: unknown): DiagnosticEntry =
     data: diagnostic,
   };
 };
+
+export const createAdapterDiagnostic = (diagnostic: AdapterDiagnostic): DiagnosticEntry => ({
+  level: diagnostic.level,
+  kind: "adapter",
+  message: diagnostic.message,
+  data: diagnostic.data,
+});
 
 export const normalizeDiagnostics = (
   diagnostics: DiagnosticEntry[],
