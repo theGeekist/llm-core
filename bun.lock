@@ -27,6 +27,8 @@
         "ollama-ai-provider-v2": "^1.5.5",
         "openai": "^6.15.0",
         "prettier": "3.3.3",
+        "zod": "^4.2.1",
+        "zod-to-json-schema": "^3.25.0",
       },
       "peerDependencies": {
         "typescript": "^5.9.3",
