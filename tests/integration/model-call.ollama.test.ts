@@ -1,7 +1,7 @@
 import { describe, expect } from "bun:test";
-import { generateText } from "ai";
 import { createOllama } from "ollama-ai-provider-v2";
-import { itIfEnvAll, normalizeOllamaUrl } from "./helpers";
+import { fromAiSdkModel } from "#adapters";
+import { expectTelemetryPresence, itIfEnvAll, normalizeOllamaUrl } from "./helpers";
 
 const itWithOllamaModel = itIfEnvAll("OLLAMA_URL", "OLLAMA_MODEL");
 const itWithOllamaVision = itIfEnvAll("OLLAMA_URL", "OLLAMA_VISION_MODEL");
@@ -18,19 +18,22 @@ describe("Integration model calls (AI SDK/Ollama)", () => {
       const baseURL = normalizeOllamaUrl(process.env.OLLAMA_URL ?? "");
       const modelId = process.env.OLLAMA_MODEL ?? "llama3.2";
       const provider = createOllama({ baseURL });
-      const model = provider(modelId);
+      const model = fromAiSdkModel(provider(modelId));
 
-      const result = await generateText({
-        model,
+      const result = await model.generate({
         messages: [
           {
             role: "user",
-            content: [{ type: "text", text: "Say hello in one word." }],
+            content: {
+              text: "Say hello in one word.",
+              parts: [{ type: "text", text: "Say hello in one word." }],
+            },
           },
         ],
       });
 
-      expect(result.text.length).toBeGreaterThan(0);
+      expect(result.text?.length).toBeGreaterThan(0);
+      expectTelemetryPresence(result);
     },
     OLLAMA_TIMEOUT_MS,
   );
@@ -41,22 +44,25 @@ describe("Integration model calls (AI SDK/Ollama)", () => {
       const baseURL = normalizeOllamaUrl(process.env.OLLAMA_URL ?? "");
       const modelId = process.env.OLLAMA_VISION_MODEL ?? "llava";
       const provider = createOllama({ baseURL });
-      const model = provider(modelId);
+      const model = fromAiSdkModel(provider(modelId));
 
-      const result = await generateText({
-        model,
+      const result = await model.generate({
         messages: [
           {
             role: "user",
-            content: [
-              { type: "text", text: "Describe the image in one word." },
-              { type: "file", data: IMAGE_64_PNG, mediaType: "image/png" },
-            ],
+            content: {
+              text: "Describe the image in one word.",
+              parts: [
+                { type: "text", text: "Describe the image in one word." },
+                { type: "file", data: IMAGE_64_PNG, mediaType: "image/png" },
+              ],
+            },
           },
         ],
       });
 
-      expect(result.text.length).toBeGreaterThan(0);
+      expect(result.text?.length).toBeGreaterThan(0);
+      expectTelemetryPresence(result);
     },
     OLLAMA_VISION_TIMEOUT_MS,
   );

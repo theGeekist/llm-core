@@ -1,15 +1,14 @@
 import { describe, expect, it } from "bun:test";
-import type { BaseMemory } from "@langchain/core/memory";
-import type { Memory as LlamaMemory } from "@llamaindex/core/memory";
 import { fromLangChainMemory, fromLlamaIndexMemory } from "#adapters";
+import { asLangChainMemory, asLlamaIndexMemory } from "./helpers";
 
 describe("Adapter memory", () => {
   it("maps LangChain memory", async () => {
-    const memory = {
+    const memory = asLangChainMemory({
       loadMemoryVariables: () => Promise.resolve({ history: [] }),
       saveContext: () => Promise.resolve(),
       memoryKeys: ["history"],
-    } as unknown as BaseMemory;
+    });
 
     const adapter = fromLangChainMemory(memory);
     const loaded = await adapter.load?.({ input: "hi" });
@@ -18,7 +17,7 @@ describe("Adapter memory", () => {
   });
 
   it("maps LlamaIndex memory", async () => {
-    const memory = {
+    const memory = asLlamaIndexMemory({
       getLLM: () =>
         Promise.resolve([
           { role: "developer", content: "note" },
@@ -27,7 +26,7 @@ describe("Adapter memory", () => {
         ]),
       add: () => Promise.resolve(),
       clear: () => Promise.resolve(),
-    } as unknown as LlamaMemory;
+    });
 
     const adapter = fromLlamaIndexMemory(memory);
     const thread = await adapter.read?.("thread");

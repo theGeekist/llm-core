@@ -1,40 +1,85 @@
 import { describe, expect } from "bun:test";
 import { OpenAI } from "@llamaindex/openai";
-import { fromLlamaIndexMessage } from "#adapters";
-import { itIfEnvAll } from "./helpers";
+import { z } from "zod";
+import { fromLlamaIndexModel, Tool, toAdapterSchema } from "#adapters";
+import { expectTelemetryPresence, itIfEnvAll } from "./helpers";
 
 const itWithOpenAI = itIfEnvAll("OPENAI_API_KEY");
 const OPENAI_TIMEOUT_MS = Number(process.env.OPENAI_TIMEOUT_MS ?? 60_000);
-
-const readMessageText = (content: unknown) => {
-  if (typeof content === "string") {
-    return content;
-  }
-  if (Array.isArray(content)) {
-    return content
-      .map((entry) => (typeof entry === "string" ? entry : ""))
-      .join("")
-      .trim();
-  }
-  return "";
-};
+const DEFAULT_OPENAI_MODEL = "gpt-4o-mini-2024-07-18";
 
 describe("Integration model calls (LlamaIndex/OpenAI)", () => {
   itWithOpenAI(
     "generates text via OpenAI",
     async () => {
-      const model = new OpenAI({
-        model: process.env.OPENAI_MODEL ?? "gpt-4o-mini",
+      const llm = new OpenAI({
+        model: process.env.OPENAI_MODEL ?? DEFAULT_OPENAI_MODEL,
       });
-      const response = await model.chat({
-        messages: [{ role: "user", content: "Say hi in one word." }],
+      const model = fromLlamaIndexModel(llm);
+      const response = await model.generate({ prompt: "Say hi in one word." });
+      expect(response.text?.length).toBeGreaterThan(0);
+      expectTelemetryPresence(response);
+      expect(response.meta?.modelId).toBe(process.env.OPENAI_MODEL ?? DEFAULT_OPENAI_MODEL);
+    },
+    OPENAI_TIMEOUT_MS,
+  );
+});
+
+describe("Integration tool calls (LlamaIndex/OpenAI)", () => {
+  itWithOpenAI(
+    "calls a tool",
+    async () => {
+      const llm = new OpenAI({
+        model: process.env.OPENAI_MODEL ?? DEFAULT_OPENAI_MODEL,
+      });
+      const model = fromLlamaIndexModel(llm);
+      const tools = [
+        Tool.create({
+          name: "echo",
+          description: "Echo back the provided text",
+          inputSchema: toAdapterSchema(z.object({ text: z.string() })),
+          execute: (input) => {
+            const typed = input as { text?: string };
+            return { echoed: typed.text ?? "" };
+          },
+        }),
+      ];
+
+      const result = await model.generate({
+        prompt: "Call the echo tool with text 'hello'.",
+        tools,
       });
 
-      const text = readMessageText(response.message.content);
-      expect(text.length).toBeGreaterThan(0);
+      expect(result.toolCalls?.[0]?.name).toBe("echo");
+      expectTelemetryPresence(result);
+      expect(result.meta?.modelId).toBe(process.env.OPENAI_MODEL ?? DEFAULT_OPENAI_MODEL);
+    },
+    OPENAI_TIMEOUT_MS,
+  );
+});
 
-      const adapted = fromLlamaIndexMessage(response.message);
-      expect(typeof adapted.content).toBe("string");
+describe("Integration structured output (LlamaIndex/OpenAI)", () => {
+  itWithOpenAI(
+    "returns structured output for a schema",
+    async () => {
+      const llm = new OpenAI({
+        model: process.env.OPENAI_MODEL ?? DEFAULT_OPENAI_MODEL,
+      });
+      const model = fromLlamaIndexModel(llm);
+      const schema = toAdapterSchema(
+        z.object({
+          answer: z.string(),
+        }),
+      );
+
+      const result = await model.generate({
+        prompt: "Respond with { answer: 'ok' }.",
+        responseSchema: schema,
+      });
+
+      expect(result.output && typeof result.output === "object").toBe(true);
+      expectTelemetryPresence(result);
+      expect(result.meta?.modelId).toBe(process.env.OPENAI_MODEL ?? DEFAULT_OPENAI_MODEL);
     },
     OPENAI_TIMEOUT_MS,
   );

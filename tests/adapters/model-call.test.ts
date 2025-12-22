@@ -3,6 +3,7 @@ import { AIMessage, HumanMessage, SystemMessage } from "@langchain/core/messages
 import type { ChatMessage } from "@llamaindex/core/llms";
 import type { ModelMessage, Prompt } from "ai";
 import { fromAiSdkPrompt, fromLangChainMessages, fromLlamaIndexMessages } from "#adapters";
+import { asAiSdkPrompt } from "./helpers";
 
 describe("Adapter model calls", () => {
   it("maps LangChain messages to AdapterModelCall", () => {
@@ -31,7 +32,7 @@ describe("Adapter model calls", () => {
   });
 
   it("maps AI SDK string prompts", () => {
-    const call = fromAiSdkPrompt("hello" as unknown as Prompt);
+    const call = fromAiSdkPrompt(asAiSdkPrompt("hello"));
     expect("prompt" in call).toBe(true);
   });
 
@@ -47,11 +48,11 @@ describe("Adapter model calls", () => {
   });
 
   it("falls back when AI SDK messages are empty", () => {
-    const prompt = {
+    const prompt = asAiSdkPrompt({
       system: "system",
       messages: [],
       prompt: "fallback",
-    } as unknown as Prompt;
+    });
 
     const call = fromAiSdkPrompt(prompt);
     expect("prompt" in call).toBe(true);

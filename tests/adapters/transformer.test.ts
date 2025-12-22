@@ -1,9 +1,9 @@
 import { describe, expect, it } from "bun:test";
 import type { BaseDocumentTransformer } from "@langchain/core/documents";
 import { Document as LangChainDocument } from "@langchain/core/documents";
-import type { NodeParser } from "@llamaindex/core/node-parser";
 import { Document as LlamaDocument } from "@llamaindex/core/schema";
 import { fromLangChainTransformer, fromLlamaIndexTransformer } from "#adapters";
+import { asLlamaIndexParser } from "./helpers";
 
 describe("Adapter transformers", () => {
   it("maps LangChain transformers", async () => {
@@ -17,9 +17,9 @@ describe("Adapter transformers", () => {
   });
 
   it("maps LlamaIndex node parsers", async () => {
-    const parser = {
+    const parser = asLlamaIndexParser({
       getNodesFromDocuments: (docs: LlamaDocument[]) => Promise.resolve(docs),
-    } as unknown as NodeParser;
+    });
 
     const adapter = fromLlamaIndexTransformer(parser);
     const result = await adapter.transform([{ text: "hello" }]);

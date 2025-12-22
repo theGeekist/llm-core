@@ -1,14 +1,13 @@
 import { describe, expect, it, mock } from "bun:test";
-import type { EmbeddingsInterface } from "@langchain/core/embeddings";
-import type { BaseEmbedding } from "@llamaindex/core/embeddings";
 import { fromLangChainEmbeddings, fromLlamaIndexEmbeddings } from "#adapters";
+import { asLangChainEmbeddings, asLlamaIndexEmbeddings } from "./helpers";
 
 describe("Adapter embeddings", () => {
   it("maps LangChain embeddings with sync returns", () => {
-    const embeddings = {
+    const embeddings = asLangChainEmbeddings({
       embedQuery: () => [0.1, 0.2],
       embedDocuments: () => [[0.1, 0.2]],
-    } as unknown as EmbeddingsInterface<number[]>;
+    });
 
     const adapter = fromLangChainEmbeddings(embeddings);
     expect(adapter.embed("hi")).toEqual([0.1, 0.2]);
@@ -16,10 +15,10 @@ describe("Adapter embeddings", () => {
   });
 
   it("maps LangChain embeddings with async returns", async () => {
-    const embeddings = {
+    const embeddings = asLangChainEmbeddings({
       embedQuery: () => Promise.resolve([0.3, 0.4]),
       embedDocuments: () => Promise.resolve([[0.3, 0.4]]),
-    } as EmbeddingsInterface<number[]>;
+    });
 
     const adapter = fromLangChainEmbeddings(embeddings);
     await expect(adapter.embed("hi")).resolves.toEqual([0.3, 0.4]);
@@ -27,10 +26,10 @@ describe("Adapter embeddings", () => {
   });
 
   it("maps LlamaIndex embeddings with sync and async returns", async () => {
-    const embedding = {
+    const embedding = asLlamaIndexEmbeddings({
       getTextEmbedding: () => [0.5, 0.6],
       getTextEmbeddings: () => Promise.resolve([[0.5, 0.6]]),
-    } as unknown as BaseEmbedding;
+    });
 
     const adapter = fromLlamaIndexEmbeddings(embedding);
     expect(adapter.embed("hi")).toEqual([0.5, 0.6]);

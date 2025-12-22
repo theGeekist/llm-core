@@ -1,7 +1,7 @@
 import { describe, expect, it } from "bun:test";
 import { PromptTemplate as LangChainPromptTemplate } from "@langchain/core/prompts";
-import type { PromptTemplate as LlamaPromptTemplate } from "@llamaindex/core/prompts";
 import { fromLangChainPromptTemplate, fromLlamaIndexPromptTemplate } from "#adapters";
+import { asLlamaPromptTemplate } from "./helpers";
 
 describe("Adapter prompts", () => {
   const TEMPLATE = "Hello {name}";
@@ -18,13 +18,12 @@ describe("Adapter prompts", () => {
   });
 
   it("maps LlamaIndex prompt templates", () => {
-    const prompt = {
+    const prompt = asLlamaPromptTemplate({
       template: TEMPLATE,
       vars: () => ["name"],
       format: () => "",
       formatMessages: () => [],
-      partialFormat: () => prompt,
-    } as unknown as LlamaPromptTemplate;
+    });
 
     const adapter = fromLlamaIndexPromptTemplate(prompt);
     expect(adapter.template).toBe(TEMPLATE);
