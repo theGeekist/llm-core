@@ -1,7 +1,7 @@
 import type { Memory } from "@llamaindex/core/memory";
 import type { ChatMessage, MessageType } from "@llamaindex/core/llms";
 import type { AdapterMemory, AdapterTurn } from "../types";
-import { mapMaybe } from "../maybe";
+import { mapMaybe } from "../../maybe";
 
 type TurnRole = AdapterTurn["role"];
 

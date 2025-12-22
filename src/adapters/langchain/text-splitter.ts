@@ -1,7 +1,7 @@
 import type { Document } from "@langchain/core/documents";
 import type { TextSplitter } from "@langchain/textsplitters";
 import type { AdapterTextSplitter } from "../types";
-import { mapMaybe } from "../maybe";
+import { mapMaybe } from "../../maybe";
 
 function toWithMetadata(documents: Document[]) {
   return documents.map((doc) => ({ text: doc.pageContent, metadata: doc.metadata }));

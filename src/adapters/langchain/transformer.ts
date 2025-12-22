@@ -1,6 +1,6 @@
 import type { BaseDocumentTransformer } from "@langchain/core/documents";
 import type { AdapterDocument, AdapterDocumentTransformer } from "../types";
-import { mapMaybeArray } from "../maybe";
+import { mapMaybeArray } from "../../maybe";
 import { toLangChainDocument } from "./documents";
 
 export function fromLangChainTransformer(

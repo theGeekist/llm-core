@@ -1,6 +1,6 @@
 import { embed, embedMany, type EmbeddingModel } from "ai";
 import type { AdapterEmbedder } from "../types";
-import { mapMaybe } from "../maybe";
+import { mapMaybe } from "../../maybe";
 
 type EmbedResult = Awaited<ReturnType<typeof embed>>;
 type EmbedManyResult = Awaited<ReturnType<typeof embedMany>>;

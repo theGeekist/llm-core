@@ -1,6 +1,6 @@
 import type { BaseDocumentStore } from "@llamaindex/core/storage/doc-store";
 import type { AdapterKVStore } from "../types";
-import { mapMaybe } from "../maybe";
+import { mapMaybe } from "../../maybe";
 
 type DocumentShape = { id_?: string };
 

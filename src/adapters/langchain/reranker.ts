@@ -1,6 +1,6 @@
 import type { BaseDocumentCompressor } from "@langchain/core/retrievers/document_compressors";
 import type { AdapterDocument, AdapterReranker, AdapterRetrievalQuery } from "../types";
-import { mapMaybeArray } from "../maybe";
+import { mapMaybeArray } from "../../maybe";
 import { toQueryText } from "../retrieval-query";
 import { toLangChainDocument } from "./documents";
 

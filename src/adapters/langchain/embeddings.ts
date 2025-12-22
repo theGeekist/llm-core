@@ -1,6 +1,6 @@
 import type { EmbeddingsInterface } from "@langchain/core/embeddings";
 import type { AdapterEmbedder } from "../types";
-import { identity, mapMaybe } from "../maybe";
+import { identity, mapMaybe } from "../../maybe";
 
 export function fromLangChainEmbeddings(
   embeddings: EmbeddingsInterface<number[]>,

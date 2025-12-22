@@ -1,6 +1,6 @@
 import type { NodeParser } from "@llamaindex/core/node-parser";
 import type { AdapterDocument, AdapterDocumentTransformer } from "../types";
-import { mapMaybeArray } from "../maybe";
+import { mapMaybeArray } from "../../maybe";
 import { toLlamaIndexDocument } from "./documents";
 
 export function fromLlamaIndexTransformer(parser: NodeParser): AdapterDocumentTransformer {

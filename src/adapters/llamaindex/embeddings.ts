@@ -1,6 +1,6 @@
 import type { BaseEmbedding } from "@llamaindex/core/embeddings";
 import type { AdapterEmbedder } from "../types";
-import { identity, mapMaybe } from "../maybe";
+import { identity, mapMaybe } from "../../maybe";
 
 export function fromLlamaIndexEmbeddings(embedding: BaseEmbedding): AdapterEmbedder {
   function embed(text: string) {
