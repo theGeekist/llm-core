@@ -1,10 +1,7 @@
 // References: docs/stage-7.md (normalized adapter contracts)
 
 import type { AdapterBundle } from "../adapters/types";
-import type {
-  AdapterConstructRequirement,
-  AdapterProviderRegistration,
-} from "../adapters/registry";
+import type { ConstructRequirement, AdapterProviderRegistration } from "../adapters/registry";
 import { createRegistryFromDefaults } from "../adapters/registry";
 import type { Plugin } from "./types";
 import { getEffectivePlugins } from "./plugins/effective";
@@ -139,7 +136,7 @@ const toConstructRequirements = (
   required: boolean,
   deps?: Record<string, string[]>,
 ) =>
-  constructs.map<AdapterConstructRequirement>((name) => ({
+  constructs.map<ConstructRequirement>((name) => ({
     name,
     required,
     dependsOn: deps?.[name],

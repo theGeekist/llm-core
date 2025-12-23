@@ -1,15 +1,15 @@
 import { describe, expect, it } from "bun:test";
-import type { AdapterStructuredContent } from "#adapters";
-import { toAdapterMessageContent } from "#adapters";
+import type { StructuredContent } from "#adapters";
+import { toMessageContent } from "#adapters";
 
 describe("Adapter message content", () => {
   it("keeps structured content intact", () => {
-    const structured: AdapterStructuredContent = {
+    const structured: StructuredContent = {
       text: "hello",
       parts: [{ type: "text", text: "hello" }],
     };
 
-    expect(toAdapterMessageContent(structured)).toBe(structured);
+    expect(toMessageContent(structured)).toBe(structured);
   });
 
   it("keeps tool parts", () => {
@@ -18,7 +18,7 @@ describe("Adapter message content", () => {
       { type: "tool-result", toolName: "search", toolCallId: "id-1", output: { ok: true } },
     ];
 
-    const content = toAdapterMessageContent(input);
+    const content = toMessageContent(input);
     expect(content).toMatchObject({
       text: "",
       parts: [
@@ -30,7 +30,7 @@ describe("Adapter message content", () => {
 
   it("keeps single tool part objects", () => {
     const input = { type: "tool-call", toolName: "lookup", input: { q: "hi" } };
-    const content = toAdapterMessageContent(input);
+    const content = toMessageContent(input);
 
     expect(content).toMatchObject({
       parts: [{ type: "tool-call", toolName: "lookup" }],
@@ -45,7 +45,7 @@ describe("Adapter message content", () => {
       { type: "file", data: file, mediaType: "text/plain" },
     ];
 
-    const content = toAdapterMessageContent(input);
+    const content = toMessageContent(input);
     expect(content).toMatchObject({
       parts: [
         { type: "image", mediaType: "image/png" },
@@ -62,7 +62,7 @@ describe("Adapter message content", () => {
       { type: "image", image: "https://example.com/third.png" },
     ];
 
-    const content = toAdapterMessageContent(input);
+    const content = toMessageContent(input);
     expect(content).toMatchObject({
       parts: [
         { type: "image", url: "https://example.com/image.png" },
@@ -79,7 +79,7 @@ describe("Adapter message content", () => {
       { type: "file", data: "plain-text" },
     ];
 
-    const content = toAdapterMessageContent(input);
+    const content = toMessageContent(input);
     expect(content).toMatchObject({
       parts: [
         { type: "file", data: "https://example.com/file.txt" },
@@ -89,13 +89,13 @@ describe("Adapter message content", () => {
   });
 
   it("falls back to text shortcut when object has only text", () => {
-    const content = toAdapterMessageContent({ text: "hello" });
+    const content = toMessageContent({ text: "hello" });
     expect(content).toBe("hello");
   });
 
   it("handles ArrayBuffer and raw data parts", () => {
     const buffer = new Uint8Array([1, 2, 3]).buffer;
-    const content = toAdapterMessageContent([
+    const content = toMessageContent([
       { type: "file", data: buffer },
       { type: "image", image: buffer },
       42,
@@ -110,7 +110,7 @@ describe("Adapter message content", () => {
     if (typeof Buffer === "undefined") {
       return;
     }
-    const content = toAdapterMessageContent([
+    const content = toMessageContent([
       { type: "image", image: Buffer.from([1, 2, 3]) },
       { type: "file", data: Buffer.from([4, 5]) },
     ]);
@@ -121,14 +121,14 @@ describe("Adapter message content", () => {
   });
 
   it("maps reasoning parts", () => {
-    const content = toAdapterMessageContent([{ type: "reasoning", text: "step" }]);
+    const content = toMessageContent([{ type: "reasoning", text: "step" }]);
     expect(content).toMatchObject({
       parts: [{ type: "reasoning", text: "step" }],
     });
   });
 
   it("returns string inputs as-is", () => {
-    expect(toAdapterMessageContent("hello")).toBe("hello");
+    expect(toMessageContent("hello")).toBe("hello");
   });
 
   it("uses btoa fallback when Buffer is unavailable", () => {
@@ -139,7 +139,7 @@ describe("Adapter message content", () => {
     const previous = globalScope.Buffer;
     globalScope.Buffer = undefined;
     try {
-      const content = toAdapterMessageContent([{ type: "image", image: new Uint8Array([1]) }]);
+      const content = toMessageContent([{ type: "image", image: new Uint8Array([1]) }]);
       expect(content).toMatchObject({ parts: [{ type: "image" }] });
     } finally {
       globalScope.Buffer = previous;
@@ -147,7 +147,7 @@ describe("Adapter message content", () => {
   });
 
   it("wraps unknown objects into data parts", () => {
-    const content = toAdapterMessageContent({ foo: "bar" });
+    const content = toMessageContent({ foo: "bar" });
     expect(content).toMatchObject({
       parts: [{ type: "data", data: { foo: "bar" } }],
     });
@@ -155,7 +155,7 @@ describe("Adapter message content", () => {
 
   it("accepts mimeType metadata for binary parts", () => {
     const input = [{ type: "image", image: new Uint8Array([1]), mimeType: "image/gif" }];
-    const content = toAdapterMessageContent(input);
+    const content = toMessageContent(input);
 
     expect(content).toMatchObject({
       parts: [{ type: "image", mediaType: "image/gif" }],

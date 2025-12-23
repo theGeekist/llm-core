@@ -9,10 +9,10 @@ import {
   type NodeWithScore,
 } from "@llamaindex/core/schema";
 import * as AiSdk from "ai";
-import type { AdapterReranker } from "#workflow";
+import type { Reranker } from "#workflow";
 import { mapMaybe } from "./helpers";
 
-const toAdapterRerankerFromLangChain = (compressor: BaseDocumentCompressor): AdapterReranker => ({
+const toRerankerFromLangChain = (compressor: BaseDocumentCompressor): Reranker => ({
   rerank: (query, documents) => {
     const langchainDocs = documents.map(
       (doc) =>
@@ -32,7 +32,7 @@ const toAdapterRerankerFromLangChain = (compressor: BaseDocumentCompressor): Ada
   },
 });
 
-const toAdapterRerankerFromLlama = (reranker: BaseNodePostprocessor): AdapterReranker => ({
+const toRerankerFromLlama = (reranker: BaseNodePostprocessor): Reranker => ({
   rerank: (query, documents) => {
     const nodes: NodeWithScore[] = documents.map((doc) => ({
       node: new LlamaDocument({ text: doc.text, metadata: doc.metadata }),
@@ -57,22 +57,22 @@ const getLlamaNodeText = (node: BaseNode): string => {
 };
 
 describe("Interop reranker", () => {
-  it("maps LangChain compressor to AdapterReranker", async () => {
+  it("maps LangChain compressor to Reranker", async () => {
     const compressor = {
       compressDocuments: (docs: LangChainDocument[]) => Promise.resolve(docs),
     } as BaseDocumentCompressor;
 
-    const adapted = toAdapterRerankerFromLangChain(compressor);
+    const adapted = toRerankerFromLangChain(compressor);
     const result = await adapted.rerank("query", [{ text: "hello" }]);
     expect(result[0]?.text).toBe("hello");
   });
 
-  it("maps LlamaIndex postprocessor to AdapterReranker", async () => {
+  it("maps LlamaIndex postprocessor to Reranker", async () => {
     const reranker = {
       postprocessNodes: (nodes: NodeWithScore[]) => Promise.resolve(nodes),
     } as BaseNodePostprocessor;
 
-    const adapted = toAdapterRerankerFromLlama(reranker);
+    const adapted = toRerankerFromLlama(reranker);
     const result = await adapted.rerank("query", [{ text: "hello" }]);
     expect(result[0]?.text).toBe("hello");
   });

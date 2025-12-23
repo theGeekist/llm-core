@@ -3,21 +3,21 @@ import { AIMessage, ToolMessage } from "@langchain/core/messages";
 import type { ResponseFormatConfiguration } from "@langchain/openai";
 import type {
   AdapterDiagnostic,
-  AdapterModel,
-  AdapterModelCall,
-  AdapterModelResult,
-  AdapterModelTelemetry,
-  AdapterModelUsage,
-  AdapterToolCall,
-  AdapterToolResult,
+  Model,
+  ModelCall,
+  ModelResult,
+  ModelTelemetry,
+  ModelUsage,
+  ToolCall,
+  ToolResult,
 } from "../types";
 import { fromLangChainMessage, toLangChainMessage } from "./messages";
 import { toLangChainTool } from "./tools";
 import { toAdapterTrace } from "../telemetry";
 import { mapMaybe } from "../../maybe";
-import { ModelCall, ModelUsage } from "../modeling";
+import { ModelCallHelper, ModelUsageHelper } from "../modeling";
 
-const toUsage = (usage: unknown): AdapterModelUsage | undefined => {
+const toUsage = (usage: unknown): ModelUsage | undefined => {
   const typed = usage as { input_tokens?: number; output_tokens?: number; total_tokens?: number };
   if (
     typed?.input_tokens === undefined &&
@@ -33,18 +33,16 @@ const toUsage = (usage: unknown): AdapterModelUsage | undefined => {
   };
 };
 
-const toAdapterToolCalls = (
-  calls: Array<{ id?: string; name: string; args: Record<string, unknown> }>,
-) =>
+const toToolCalls = (calls: Array<{ id?: string; name: string; args: Record<string, unknown> }>) =>
   calls.map(
-    (call): AdapterToolCall => ({
+    (call): ToolCall => ({
       id: call.id,
       name: call.name,
       arguments: call.args ?? {},
     }),
   );
 
-const toAdapterToolResults = (message: ToolMessage): AdapterToolResult[] => [
+const toToolResults = (message: ToolMessage): ToolResult[] => [
   {
     toolCallId: message.tool_call_id,
     name: message.name ?? "tool",
@@ -62,9 +60,9 @@ const toResponseFormat = (schema: Record<string, unknown>): ResponseFormatConfig
 });
 
 const buildMessages = (input: {
-  messages?: AdapterModelCall["messages"];
-  prompt?: AdapterModelCall["prompt"];
-  system?: AdapterModelCall["system"];
+  messages?: ModelCall["messages"];
+  prompt?: ModelCall["prompt"];
+  system?: ModelCall["system"];
 }) => {
   const messages = input.messages?.map(toLangChainMessage) ?? [];
   if (input.messages === undefined && input.prompt) {
@@ -137,9 +135,9 @@ const readMetadataField = (meta: Record<string, unknown> | undefined, keys: stri
 
 const toTelemetry = (
   response: Awaited<ReturnType<BaseChatModel["invoke"]>>,
-  usage: AdapterModelUsage | undefined,
+  usage: ModelUsage | undefined,
   diagnostics: AdapterDiagnostic[],
-): AdapterModelTelemetry => {
+): ModelTelemetry => {
   const responseMetadata = (response as { response_metadata?: Record<string, unknown> })
     .response_metadata;
   const created = responseMetadata?.created;
@@ -171,8 +169,8 @@ type RunState = {
   diagnostics: AdapterDiagnostic[];
 };
 
-const createRunState = (call: AdapterModelCall): RunState => {
-  const prepared = ModelCall.prepare(call);
+const createRunState = (call: ModelCall): RunState => {
+  const prepared = ModelCallHelper.prepare(call);
   const tools = prepared.allowTools ? call.tools?.map(toLangChainTool) : undefined;
   const toolChoice = prepared.allowTools ? toToolChoice(call.toolChoice) : undefined;
   const responseFormat = prepared.normalizedSchema
@@ -206,33 +204,28 @@ const invokeModel = (
 };
 
 const extractToolCalls = (response: unknown) =>
-  AIMessage.isInstance(response) && response.tool_calls
-    ? toAdapterToolCalls(response.tool_calls)
-    : [];
+  AIMessage.isInstance(response) && response.tool_calls ? toToolCalls(response.tool_calls) : [];
 
 const extractToolResults = (response: unknown) =>
-  ToolMessage.isInstance(response) ? toAdapterToolResults(response) : [];
+  ToolMessage.isInstance(response) ? toToolResults(response) : [];
 
 const toResult = (
   response: Awaited<ReturnType<BaseChatModel["invoke"]>>,
   state: RunState,
-): AdapterModelResult => {
-  const adapterMessage = fromLangChainMessage(response);
-  const text =
-    typeof adapterMessage.content === "string"
-      ? adapterMessage.content
-      : adapterMessage.content.text;
+): ModelResult => {
+  const Message = fromLangChainMessage(response);
+  const text = typeof Message.content === "string" ? Message.content : Message.content.text;
   const output = state.responseFormat ? tryParseJson(text) : undefined;
   if (state.responseFormat && output === undefined) {
     state.diagnostics.push(warn("response_schema_parse_failed"));
   }
   const usage = toUsage((response as { usage_metadata?: unknown }).usage_metadata);
-  ModelUsage.warnIfMissing(state.diagnostics, usage, "langchain");
+  ModelUsageHelper.warnIfMissing(state.diagnostics, usage, "langchain");
   const telemetry = toTelemetry(response, usage, state.diagnostics);
 
   return {
     text,
-    messages: [adapterMessage],
+    messages: [Message],
     toolCalls: extractToolCalls(response),
     toolResults: extractToolResults(response),
     output,
@@ -249,8 +242,8 @@ const toResult = (
   };
 };
 
-export function fromLangChainModel(model: BaseChatModel): AdapterModel {
-  function generate(call: AdapterModelCall) {
+export function fromLangChainModel(model: BaseChatModel): Model {
+  function generate(call: ModelCall) {
     const state = createRunState(call);
     return mapMaybe(invokeModel(model, state), (response) => toResult(response, state));
   }

@@ -4,10 +4,10 @@ import { Document as LangChainDocument } from "@langchain/core/documents";
 import type { BaseReader } from "@llamaindex/core/schema";
 import { Document as LlamaDocument } from "@llamaindex/core/schema";
 import * as AiSdk from "ai";
-import type { AdapterDocumentLoader } from "#workflow";
+import type { DocumentLoader } from "#workflow";
 import { mapMaybeArray } from "./helpers";
 
-const toAdapterLoaderFromLangChain = (loader: BaseDocumentLoader): AdapterDocumentLoader => ({
+const toAdapterLoaderFromLangChain = (loader: BaseDocumentLoader): DocumentLoader => ({
   load: () =>
     mapMaybeArray(loader.load(), (doc) => ({
       id: doc.id,
@@ -16,7 +16,7 @@ const toAdapterLoaderFromLangChain = (loader: BaseDocumentLoader): AdapterDocume
     })),
 });
 
-const toAdapterLoaderFromLlama = (reader: BaseReader): AdapterDocumentLoader => ({
+const toAdapterLoaderFromLlama = (reader: BaseReader): DocumentLoader => ({
   load: () =>
     mapMaybeArray(reader.loadData(), (doc) => ({
       id: doc.id_,
@@ -26,7 +26,7 @@ const toAdapterLoaderFromLlama = (reader: BaseReader): AdapterDocumentLoader => 
 });
 
 describe("Interop loader", () => {
-  it("maps LangChain document loader to AdapterDocumentLoader", async () => {
+  it("maps LangChain document loader to DocumentLoader", async () => {
     const loader = {
       load: () => Promise.resolve([new LangChainDocument({ pageContent: "hello" })]),
     } as BaseDocumentLoader;
@@ -36,7 +36,7 @@ describe("Interop loader", () => {
     expect(result[0]?.text).toBe("hello");
   });
 
-  it("maps LlamaIndex reader to AdapterDocumentLoader", async () => {
+  it("maps LlamaIndex reader to DocumentLoader", async () => {
     const reader = {
       loadData: () => Promise.resolve([new LlamaDocument({ text: "hello" })]),
     } as BaseReader;

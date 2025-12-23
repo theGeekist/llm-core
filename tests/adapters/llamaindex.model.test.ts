@@ -1,6 +1,6 @@
 import { describe, expect, it } from "bun:test";
 import type { ChatMessage, LLM } from "@llamaindex/core/llms";
-import { fromLlamaIndexModel, toAdapterSchema } from "#adapters";
+import { fromLlamaIndexModel, toSchema } from "#adapters";
 
 const makeMessage = (content: ChatMessage["content"]): ChatMessage => ({
   role: "assistant",
@@ -61,7 +61,7 @@ describe("Adapter LlamaIndex model", () => {
     const result = await adapter.generate({
       prompt: "hi",
       system: "sys",
-      responseSchema: toAdapterSchema({ type: "object", properties: {} }),
+      responseSchema: toSchema({ type: "object", properties: {} }),
     });
 
     expect(result.diagnostics?.map((entry) => entry.message)).toContain(
@@ -86,7 +86,7 @@ describe("Adapter LlamaIndex model", () => {
     const adapter = fromLlamaIndexModel(model);
     const result = await adapter.generate({
       prompt: "hi",
-      responseSchema: toAdapterSchema({ type: "object", properties: {} }),
+      responseSchema: toSchema({ type: "object", properties: {} }),
     });
 
     expect(result.usage).toEqual({ inputTokens: 1, outputTokens: 2, totalTokens: 3 });

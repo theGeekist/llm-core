@@ -1,5 +1,5 @@
-import type { PromptTemplate } from "@llamaindex/core/prompts";
-import type { AdapterPromptSchema, AdapterPromptTemplate } from "../types";
+import type { PromptTemplate as LlamaindexPromptTemplate } from "@llamaindex/core/prompts";
+import type { PromptSchema, PromptTemplate } from "../types";
 
 const DEFAULT_NAME = "llama.prompt";
 
@@ -8,7 +8,7 @@ type PromptMeta = {
   metadata?: Record<string, unknown>;
 };
 
-const toInputs = (variables: string[]): AdapterPromptSchema["inputs"] =>
+const toInputs = (variables: string[]): PromptSchema["inputs"] =>
   variables.map((variable) => ({
     name: variable,
     type: "string",
@@ -16,9 +16,9 @@ const toInputs = (variables: string[]): AdapterPromptSchema["inputs"] =>
   }));
 
 export function fromLlamaIndexPromptTemplate(
-  prompt: PromptTemplate,
+  prompt: LlamaindexPromptTemplate,
   name?: string,
-): AdapterPromptTemplate {
+): PromptTemplate {
   const meta = prompt as PromptMeta;
   const resolvedName = name ?? meta.promptType ?? DEFAULT_NAME;
 

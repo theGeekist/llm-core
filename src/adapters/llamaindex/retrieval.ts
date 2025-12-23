@@ -1,11 +1,11 @@
 import type { NodeWithScore } from "@llamaindex/core/schema";
-import type { AdapterRetrievalQuery, AdapterRetrievalResult } from "../types";
+import type { RetrievalQuery, RetrievalResult } from "../types";
 import { fromLlamaIndexNode } from "./documents";
 
 export function fromLlamaIndexNodes(
   nodes: NodeWithScore[],
-  query?: AdapterRetrievalQuery,
-): AdapterRetrievalResult {
+  query?: RetrievalQuery,
+): RetrievalResult {
   return {
     query,
     documents: nodes.map((entry) => ({

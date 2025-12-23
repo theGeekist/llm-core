@@ -1,7 +1,7 @@
 import { describe, expect } from "bun:test";
 import { OpenAI } from "@llamaindex/openai";
 import { z } from "zod";
-import { fromLlamaIndexModel, Tool, toAdapterSchema } from "#adapters";
+import { fromLlamaIndexModel, Tooling, toSchema } from "#adapters";
 import { expectTelemetryPresence, itIfEnvAll } from "./helpers";
 
 const itWithOpenAI = itIfEnvAll("OPENAI_API_KEY");
@@ -34,10 +34,10 @@ describe("Integration tool calls (LlamaIndex/OpenAI)", () => {
       });
       const model = fromLlamaIndexModel(llm);
       const tools = [
-        Tool.create({
+        Tooling.create({
           name: "echo",
           description: "Echo back the provided text",
-          inputSchema: toAdapterSchema(z.object({ text: z.string() })),
+          inputSchema: toSchema(z.object({ text: z.string() })),
           execute: (input) => {
             const typed = input as { text?: string };
             return { echoed: typed.text ?? "" };
@@ -66,7 +66,7 @@ describe("Integration structured output (LlamaIndex/OpenAI)", () => {
         model: process.env.OPENAI_MODEL ?? DEFAULT_OPENAI_MODEL,
       });
       const model = fromLlamaIndexModel(llm);
-      const schema = toAdapterSchema(
+      const schema = toSchema(
         z.object({
           answer: z.string(),
         }),

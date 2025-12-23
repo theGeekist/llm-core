@@ -1,10 +1,4 @@
-import type {
-  AdapterBundle,
-  AdapterModel,
-  AdapterRetriever,
-  AdapterTool,
-  AdapterTraceSink,
-} from "./types";
+import type { AdapterBundle, Model, Retriever, Tool, AdapterTraceSink } from "./types";
 
 export type AdapterPlugin = {
   key: string;
@@ -81,17 +75,13 @@ export const Adapter = {
   ): AdapterPlugin {
     return makePlugin(key, buildBundle(construct, value), options);
   },
-  model(key: string, model: AdapterModel, options?: AdapterPluginOptions): AdapterPlugin {
+  model(key: string, model: Model, options?: AdapterPluginOptions): AdapterPlugin {
     return makePlugin(key, { model }, options);
   },
-  tools(key: string, tools: AdapterTool[], options?: AdapterPluginOptions): AdapterPlugin {
+  tools(key: string, tools: Tool[], options?: AdapterPluginOptions): AdapterPlugin {
     return makePlugin(key, { tools }, options);
   },
-  retriever(
-    key: string,
-    retriever: AdapterRetriever,
-    options?: AdapterPluginOptions,
-  ): AdapterPlugin {
+  retriever(key: string, retriever: Retriever, options?: AdapterPluginOptions): AdapterPlugin {
     return makePlugin(key, { retriever }, options);
   },
   trace(key: string, trace: AdapterTraceSink, options?: AdapterPluginOptions): AdapterPlugin {

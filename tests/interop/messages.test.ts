@@ -2,16 +2,14 @@ import { describe, expect, it } from "bun:test";
 import { AIMessage, HumanMessage, SystemMessage } from "@langchain/core/messages";
 import type { ChatMessage } from "@llamaindex/core/llms";
 import type { ModelMessage } from "ai";
-import type { AdapterMessage } from "#workflow";
+import type { Message } from "#workflow";
 
-const toAdapterMessageFromLangChain = (
-  message: HumanMessage | AIMessage | SystemMessage,
-): AdapterMessage => ({
+const toMessageFromLangChain = (message: HumanMessage | AIMessage | SystemMessage): Message => ({
   role: langChainRoleToAdapter(message.type),
   content: message.text,
 });
 
-const langChainRoleToAdapter = (role: string): AdapterMessage["role"] => {
+const langChainRoleToAdapter = (role: string): Message["role"] => {
   if (role === "human") {
     return "user";
   }
@@ -24,12 +22,12 @@ const langChainRoleToAdapter = (role: string): AdapterMessage["role"] => {
   return "tool";
 };
 
-const toAdapterMessageFromLlama = (message: ChatMessage): AdapterMessage => ({
+const toMessageFromLlama = (message: ChatMessage): Message => ({
   role: llamaRoleToAdapter(message.role),
   content: typeof message.content === "string" ? message.content : "",
 });
 
-const llamaRoleToAdapter = (role: ChatMessage["role"]): AdapterMessage["role"] => {
+const llamaRoleToAdapter = (role: ChatMessage["role"]): Message["role"] => {
   if (role === "user") {
     return "user";
   }
@@ -42,7 +40,7 @@ const llamaRoleToAdapter = (role: ChatMessage["role"]): AdapterMessage["role"] =
   return "tool";
 };
 
-const toAdapterMessageFromAiSdk = (message: ModelMessage): AdapterMessage => {
+const toMessageFromAiSdk = (message: ModelMessage): Message => {
   if (message.role === "system") {
     return { role: "system", content: message.content };
   }
@@ -62,31 +60,31 @@ const toAdapterMessageFromAiSdk = (message: ModelMessage): AdapterMessage => {
 };
 
 describe("Interop messages", () => {
-  it("maps LangChain messages to AdapterMessage", () => {
+  it("maps LangChain messages to Message", () => {
     const human = new HumanMessage("hi");
     const ai = new AIMessage("hello");
     const system = new SystemMessage("system");
 
-    expect(toAdapterMessageFromLangChain(human)).toEqual({ role: "user", content: "hi" });
-    expect(toAdapterMessageFromLangChain(ai)).toEqual({ role: "assistant", content: "hello" });
-    expect(toAdapterMessageFromLangChain(system)).toEqual({ role: "system", content: "system" });
+    expect(toMessageFromLangChain(human)).toEqual({ role: "user", content: "hi" });
+    expect(toMessageFromLangChain(ai)).toEqual({ role: "assistant", content: "hello" });
+    expect(toMessageFromLangChain(system)).toEqual({ role: "system", content: "system" });
   });
 
-  it("maps LlamaIndex messages to AdapterMessage", () => {
+  it("maps LlamaIndex messages to Message", () => {
     const message: ChatMessage = {
       role: "user",
       content: "hello",
     };
 
-    expect(toAdapterMessageFromLlama(message)).toEqual({ role: "user", content: "hello" });
+    expect(toMessageFromLlama(message)).toEqual({ role: "user", content: "hello" });
   });
 
-  it("maps AI SDK messages to AdapterMessage", () => {
+  it("maps AI SDK messages to Message", () => {
     const message: ModelMessage = {
       role: "user",
       content: "hi",
     };
 
-    expect(toAdapterMessageFromAiSdk(message)).toEqual({ role: "user", content: "hi" });
+    expect(toMessageFromAiSdk(message)).toEqual({ role: "user", content: "hi" });
   });
 });

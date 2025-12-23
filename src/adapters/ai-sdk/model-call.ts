@@ -1,8 +1,8 @@
 import type { Prompt } from "ai";
-import type { AdapterModelCall } from "../types";
+import type { ModelCall } from "../types";
 import { fromAiSdkMessage } from "./messages";
 
-export function fromAiSdkPrompt(prompt: Prompt): AdapterModelCall {
+export function fromAiSdkPrompt(prompt: Prompt): ModelCall {
   if (typeof prompt === "string") {
     return { prompt, system: undefined };
   }

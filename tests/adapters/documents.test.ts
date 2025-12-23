@@ -31,13 +31,13 @@ describe("Adapter documents", () => {
     expect(adapter.metadata).toEqual({ source: "llama" });
   });
 
-  it("creates LangChain documents from AdapterDocument", () => {
+  it("creates LangChain documents from Document", () => {
     const doc = toLangChainDocument({ text: "Hello", metadata: { source: "langchain" } });
     expect(doc.pageContent).toBe("Hello");
     expect(doc.metadata).toEqual({ source: "langchain" });
   });
 
-  it("creates LlamaIndex documents from AdapterDocument", () => {
+  it("creates LlamaIndex documents from Document", () => {
     const doc = toLlamaIndexDocument({ text: "Hello", metadata: { source: "llama" } });
     expect(doc.text).toBe("Hello");
     expect(doc.metadata).toEqual({ source: "llama" });

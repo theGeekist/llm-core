@@ -2,7 +2,7 @@ import { describe, expect } from "bun:test";
 import { ChatOllama } from "@langchain/ollama";
 import { ChatOpenAI } from "@langchain/openai";
 import { z } from "zod";
-import { fromLangChainModel, Tool, toAdapterSchema } from "#adapters";
+import { fromLangChainModel, Tooling, toSchema } from "#adapters";
 import { expectTelemetryPresence, itIfEnvAll } from "./helpers";
 
 const itWithOllama = itIfEnvAll("OLLAMA_URL", "OLLAMA_MODEL");
@@ -37,10 +37,10 @@ describe("Integration tool calls (LangChain/OpenAI)", () => {
       });
       const model = fromLangChainModel(llm);
       const tools = [
-        Tool.create({
+        Tooling.create({
           name: "echo",
           description: "Echo back the provided text",
-          inputSchema: toAdapterSchema(z.object({ text: z.string() })),
+          inputSchema: toSchema(z.object({ text: z.string() })),
         }),
       ];
 
@@ -65,7 +65,7 @@ describe("Integration structured output (LangChain/OpenAI)", () => {
         model: process.env.OPENAI_MODEL ?? "gpt-4o-mini-2024-07-18",
       });
       const model = fromLangChainModel(llm);
-      const schema = toAdapterSchema(
+      const schema = toSchema(
         z.object({
           answer: z.string(),
         }),

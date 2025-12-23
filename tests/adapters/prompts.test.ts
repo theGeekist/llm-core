@@ -57,4 +57,52 @@ describe("Adapter prompts", () => {
     const diagnostics = validatePromptInputs(adapter.schema!, {});
     expect(diagnostics[0]?.message).toBe("prompt_input_missing");
   });
+
+  it("flags invalid prompt input types", () => {
+    const prompt = fromLangChainPromptTemplate(
+      new LangChainPromptTemplate({
+        template: TEMPLATE,
+        inputVariables: [INPUT_NAME],
+      }),
+    );
+    prompt.schema = {
+      name: "test",
+      inputs: [
+        { name: "flag", type: "boolean", required: true },
+        { name: "count", type: "integer" },
+        { name: "tags", type: "array" },
+        { name: "meta", type: "object" },
+      ],
+    };
+
+    const diagnostics = validatePromptInputs(prompt.schema, {
+      flag: "nope",
+      count: 1.5,
+      tags: "tag",
+      meta: "data",
+    });
+
+    expect(diagnostics.map((entry) => entry.message)).toContain("prompt_input_invalid_type");
+  });
+
+  it("accepts valid prompt inputs without diagnostics", () => {
+    const schema = {
+      name: "test",
+      inputs: [
+        { name: "flag", type: "boolean", required: true },
+        { name: "count", type: "integer", required: true },
+        { name: "tags", type: "array" },
+        { name: "meta", type: "object" },
+      ],
+    };
+
+    const diagnostics = validatePromptInputs(schema, {
+      flag: true,
+      count: 2,
+      tags: ["a"],
+      meta: { ok: true },
+    });
+
+    expect(diagnostics).toHaveLength(0);
+  });
 });

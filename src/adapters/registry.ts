@@ -4,18 +4,19 @@ import {
   type PipelineDiagnostic,
   type PipelineReporter,
 } from "@wpkernel/pipeline/core";
-import type { AdapterBundle, AdapterDiagnostic, AdapterMaybePromise } from "./types";
-import { mapMaybe } from "../maybe";
+import type { AdapterBundle, AdapterDiagnostic } from "./types";
+import { mapMaybe, type MaybePromise } from "../maybe";
 import { createBuiltinModel } from "./primitives/model";
 import { createBuiltinTools } from "./primitives/tools";
 import { createBuiltinRetriever } from "./primitives/retriever";
 import { createBuiltinTrace } from "./primitives/trace";
+import { validateAdapterRequirements } from "./requirements";
 
 export type AdapterConstructName = keyof AdapterBundle | string;
 export type AdapterProviderKey = string;
 export type AdapterProviderId = string;
 
-export type AdapterConstructRequirement = {
+export type ConstructRequirement = {
   name: AdapterConstructName;
   required?: boolean;
   capabilities?: string[];
@@ -23,7 +24,7 @@ export type AdapterConstructRequirement = {
 };
 
 export type AdapterRegistryResolveInput = {
-  constructs: AdapterConstructRequirement[];
+  constructs: ConstructRequirement[];
   providers?: Record<string, string>;
   defaults?: Record<string, string>;
   reporter?: PipelineReporter;
@@ -40,12 +41,12 @@ export type AdapterProviderFactoryOptions = {
   construct: AdapterConstructName;
   providerKey: AdapterProviderKey;
   providerId: AdapterProviderId;
-  requirement?: AdapterConstructRequirement;
+  requirement?: ConstructRequirement;
 };
 
 export type AdapterProviderFactory<T = unknown> = (
   options: AdapterProviderFactoryOptions,
-) => AdapterMaybePromise<T>;
+) => MaybePromise<T>;
 
 export type AdapterProviderRegistration<T = unknown> = {
   construct: AdapterConstructName;
@@ -71,9 +72,7 @@ export type AdapterRegistrySnapshot = {
 export type AdapterRegistry = {
   registerConstruct: (construct: AdapterConstructRegistration) => void;
   registerProvider: (provider: AdapterProviderRegistration) => void;
-  resolve: (
-    request: AdapterRegistryResolveInput,
-  ) => AdapterMaybePromise<AdapterRegistryResolveResult>;
+  resolve: (request: AdapterRegistryResolveInput) => MaybePromise<AdapterRegistryResolveResult>;
   listConstructs: () => AdapterConstructRegistration[];
   listProviders: (construct: AdapterConstructName) => AdapterProviderRegistration[];
   snapshot: () => AdapterRegistrySnapshot;
@@ -121,7 +120,29 @@ const createState = (diagnostics: AdapterDiagnostic[]): RegistryState => ({
   constructs: {},
 });
 
-const isBundleKey = (key: AdapterConstructName): key is keyof AdapterBundle => key !== "constructs";
+// When adding a new construct, update AdapterBundle + this list.
+const bundleKeys = new Set<keyof AdapterBundle>([
+  "documents",
+  "messages",
+  "tools",
+  "model",
+  "trace",
+  "prompts",
+  "schemas",
+  "textSplitter",
+  "embedder",
+  "retriever",
+  "reranker",
+  "loader",
+  "transformer",
+  "memory",
+  "storage",
+  "kv",
+  "constructs",
+]);
+
+const isBundleKey = (key: AdapterConstructName): key is keyof AdapterBundle =>
+  bundleKeys.has(key as keyof AdapterBundle) && key !== "constructs";
 
 const addAdapterValue = (state: RegistryState, construct: AdapterConstructName, value: unknown) => {
   if (isBundleKey(construct)) {
@@ -132,8 +153,8 @@ const addAdapterValue = (state: RegistryState, construct: AdapterConstructName, 
   state.constructs[construct] = value;
 };
 
-const toRequirementMap = (requirements: AdapterConstructRequirement[]) => {
-  const map = new Map<AdapterConstructName, AdapterConstructRequirement>();
+const toRequirementMap = (requirements: ConstructRequirement[]) => {
+  const map = new Map<AdapterConstructName, ConstructRequirement>();
   for (const requirement of requirements) {
     if (!map.has(requirement.name)) {
       map.set(requirement.name, requirement);
@@ -178,7 +199,7 @@ const hasPriorityConflict = (
   return providers.filter((provider) => (provider.priority ?? 0) === priority).length > 1;
 };
 
-const createReporters = (requirement: AdapterConstructRequirement) => {
+const createReporters = (requirement: ConstructRequirement) => {
   const required = requirement.required ?? false;
   const level = required ? "error" : "warn";
   const diagnostics: AdapterDiagnostic[] = [];
@@ -197,7 +218,7 @@ const createReporters = (requirement: AdapterConstructRequirement) => {
 };
 
 const selectById = (
-  requirement: AdapterConstructRequirement,
+  requirement: ConstructRequirement,
   entries: AdapterProviderRegistration[],
   providerId: string,
   report: (code: string, data?: Record<string, unknown>) => void,
@@ -210,7 +231,7 @@ const selectById = (
 };
 
 const selectByPriority = (
-  requirement: AdapterConstructRequirement,
+  requirement: ConstructRequirement,
   entries: AdapterProviderRegistration[],
   report: (code: string, data?: Record<string, unknown>) => void,
   reportConflict: (entry: AdapterProviderRegistration) => void,
@@ -241,7 +262,7 @@ const selectByPriority = (
 };
 
 const validateCapabilities = (
-  requirement: AdapterConstructRequirement,
+  requirement: ConstructRequirement,
   selected: AdapterProviderRegistration | undefined,
   report: (code: string, data?: Record<string, unknown>) => void,
 ) => {
@@ -260,7 +281,7 @@ const validateCapabilities = (
 };
 
 const resolveProviderSelection = (
-  requirement: AdapterConstructRequirement,
+  requirement: ConstructRequirement,
   entries: AdapterProviderRegistration[],
   overrides: Record<string, string>,
   defaults: Record<string, string>,
@@ -352,9 +373,16 @@ export const createAdapterRegistry = (
       createState: () => createState(registrationDiagnostics),
       createRunResult: ({ artifact, diagnostics }) => {
         const state = artifact as RegistryState;
+        const dependencyDiagnostics = validateAdapterRequirements(
+          state.adapters,
+          state.constructs,
+          state.providers,
+        );
         return {
           adapters: state.adapters,
-          diagnostics: state.diagnostics.concat(diagnostics.map(pipelineDiagnostic)),
+          diagnostics: state.diagnostics
+            .concat(diagnostics.map(pipelineDiagnostic))
+            .concat(dependencyDiagnostics),
           providers: state.providers,
           constructs: state.constructs,
         };

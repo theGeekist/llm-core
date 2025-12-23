@@ -40,6 +40,7 @@ import {
   createRegistryFromPlugins,
   resolveConstructRequirements,
 } from "./adapters";
+import { attachAdapterContext, createAdapterContext } from "./adapter-context";
 import { readResumeOptions } from "./resume";
 import { createDefaultReporter, registerExtensions } from "./extensions";
 
@@ -295,6 +296,8 @@ export const createRuntime = <N extends RecipeName>({
       constructs: Record<string, unknown>;
     }) {
       const resolvedAdapters = toResolvedAdapters(resolution);
+      const adapterContext = createAdapterContext();
+      const adaptersWithContext = attachAdapterContext(resolvedAdapters, adapterContext.context);
       const adapterDiagnostics = resolution.diagnostics.map(createAdapterDiagnostic);
       const contractDiagnostics = readContractDiagnostics(resolvedAdapters);
       const runtimeDiagnostics = adapterDiagnostics.concat(contractDiagnostics);
@@ -311,9 +314,15 @@ export const createRuntime = <N extends RecipeName>({
           input,
           runtime,
           reporter: runtime?.reporter,
-          adapters: resolvedAdapters,
+          adapters: adaptersWithContext,
         }),
-        (result) => finalizeResult(result, runtimeDiagnostics, trace, diagnosticsMode),
+        (result) =>
+          finalizeResult(
+            result,
+            runtimeDiagnostics.concat(adapterContext.diagnostics),
+            trace,
+            diagnosticsMode,
+          ),
       );
     }
   }
@@ -380,9 +389,14 @@ export const createRuntime = <N extends RecipeName>({
                         ...resolution.constructs,
                       },
                     };
+                    const adapterContext = createAdapterContext();
+                    const adaptersWithContext = attachAdapterContext(
+                      resolvedAdapters,
+                      adapterContext.context,
+                    );
                     const adapterDiagnostics = resolution.diagnostics.map(createAdapterDiagnostic);
                     const mergedAdapters = applyAdapterOverrides(
-                      resolvedAdapters,
+                      adaptersWithContext,
                       resumeOptions.adapters,
                     );
                     const contractDiagnostics = readContractDiagnostics(mergedAdapters);
@@ -410,7 +424,7 @@ export const createRuntime = <N extends RecipeName>({
                     const resumeExtraDiagnostics = normalizeDiagnostics(
                       resumeDiagnostics,
                       [],
-                    ).concat(runtimeDiagnostics);
+                    ).concat(runtimeDiagnostics, adapterContext.diagnostics);
                     return chainMaybe(
                       pipeline.run({
                         input: resumeOptions.input,

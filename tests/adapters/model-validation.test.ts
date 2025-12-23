@@ -1,7 +1,7 @@
 import { describe, expect, it } from "bun:test";
 import { z } from "zod";
 import { validateModelCall } from "#adapters";
-import type { AdapterSchema } from "#adapters";
+import type { Schema } from "#adapters";
 import { makeMessage, makeModelCall, makeSchema } from "./helpers";
 
 const objectSchema = makeSchema({ type: "object", properties: { answer: { type: "string" } } });
@@ -46,7 +46,7 @@ describe("Adapter model call validation", () => {
   });
 
   it("flags non-object zod response schemas", () => {
-    const zodSchema: AdapterSchema = {
+    const zodSchema: Schema = {
       kind: "zod",
       jsonSchema: z.string(),
     };
@@ -74,7 +74,7 @@ describe("Adapter model call validation", () => {
   });
 
   it("warns when response schema conversion fails", () => {
-    const invalidSchema: AdapterSchema = {
+    const invalidSchema: Schema = {
       kind: "zod",
       jsonSchema: {
         safeParse: () => ({ success: true }),
@@ -112,5 +112,14 @@ describe("Adapter model call validation", () => {
     expect(result.diagnostics.map((entry) => entry.message)).toContain(
       "prompt_ignored_when_messages_present",
     );
+  });
+
+  it("warns when prompt and messages are missing", () => {
+    const result = validateModelCall({
+      prompt: "",
+      messages: [],
+    });
+
+    expect(result.diagnostics.map((entry) => entry.message)).toContain("model_input_missing");
   });
 });

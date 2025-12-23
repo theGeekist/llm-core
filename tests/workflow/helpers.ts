@@ -53,6 +53,7 @@ type TestRunOptions = {
   input: unknown;
   runtime?: unknown;
   reporter?: unknown;
+  adapters?: unknown;
 };
 
 export const makeRuntime = (

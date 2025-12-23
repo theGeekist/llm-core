@@ -16,22 +16,22 @@ Related:
 
 ```ts
 type AdapterBundle = {
-  model?: AdapterModel;
-  tools?: AdapterTool[];
-  messages?: AdapterMessage[];
-  documents?: AdapterDocument[];
+  model?: Model;
+  tools?: Tool[];
+  messages?: Message[];
+  documents?: Document[];
   trace?: AdapterTraceSink;
-  prompts?: AdapterPromptTemplate[];
-  schemas?: AdapterSchema[];
-  textSplitter?: AdapterTextSplitter;
-  embedder?: AdapterEmbedder;
-  retriever?: AdapterRetriever;
-  reranker?: AdapterReranker;
-  loader?: AdapterDocumentLoader;
-  transformer?: AdapterDocumentTransformer;
-  memory?: AdapterMemory;
-  storage?: AdapterStorage;
-  kv?: AdapterKVStore;
+  prompts?: PromptTemplate[];
+  schemas?: Schema[];
+  textSplitter?: TextSplitter;
+  embedder?: Embedder;
+  retriever?: Retriever;
+  reranker?: Reranker;
+  loader?: DocumentLoader;
+  transformer?: DocumentTransformer;
+  memory?: Memory;
+  storage?: Storage;
+  kv?: KVStore;
   constructs?: Record<string, unknown>;
 };
 ```
@@ -41,6 +41,44 @@ Capabilities treat list-like adapters as presence flags (e.g., `tools: true` if 
 Custom constructs are stored under `constructs` to avoid widening core types.
 Per-run registry resolution merges registry constructs into `adapters.constructs` before pipeline execution.
 `constructs` expects a record map; non-object values are wrapped as `{ value }` for convenience.
+
+## Adapter requirements (dependencies)
+
+Adapters can declare hard dependencies via metadata:
+
+```ts
+metadata: {
+  requires: [
+    { kind: "construct", name: "retriever" },
+    { kind: "capability", name: "tools" },
+  ],
+}
+```
+
+Registry resolution emits diagnostics when these are missing. Default mode warns; strict mode fails.
+These diagnostics are produced when the registry resolves providers, not at call time.
+
+## Runtime input diagnostics
+
+Adapters can emit diagnostics when invoked with missing inputs using an optional call context:
+
+```ts
+type AdapterCallContext = {
+  report?: (diagnostic: AdapterDiagnostic) => void;
+};
+```
+
+Example (retriever):
+
+```ts
+const diagnostics: AdapterDiagnostic[] = [];
+const context = { report: (entry: AdapterDiagnostic) => diagnostics.push(entry) };
+const result = await adapter.retrieve("", context);
+// diagnostics includes "retriever_query_missing"
+```
+
+Model calls report input issues via `ModelResult.diagnostics` (e.g. `model_input_missing`).
+Workflow runtimes wrap adapters with `AdapterCallContext`, so these diagnostics appear automatically during runs.
 
 ## Adapter registration helpers (DX path)
 
@@ -84,11 +122,11 @@ const { adapters, diagnostics } = registry.resolve({
 });
 ```
 
-## Model execution (AdapterModel)
+## Model execution (Model)
 
 ```ts
-type AdapterModel = {
-  generate(call: AdapterModelCall): AdapterMaybePromise<AdapterModelResult>;
+type Model = {
+  generate(call: ModelCall): MaybePromise<ModelResult>;
 };
 ```
 
@@ -104,14 +142,14 @@ const wf = Workflow.recipe("agent")
   .build();
 ```
 
-`AdapterModelCall` accepts `messages` and/or `prompt`. If both are set, `messages` win and a diagnostic is emitted:
+`ModelCall` accepts `messages` and/or `prompt`. If both are set, `messages` win and a diagnostic is emitted:
 
 ```ts
-type AdapterModelCall = {
-  messages?: AdapterMessage[];
+type ModelCall = {
+  messages?: Message[];
   prompt?: string;
-  responseSchema?: AdapterSchema;
-  tools?: AdapterTool[];
+  responseSchema?: Schema;
+  tools?: Tool[];
   toolChoice?: string;
   ...
 };
@@ -136,48 +174,51 @@ const { diagnostics, allowTools, normalizedSchema } = validateModelCall(call);
 ### Model helpers
 
 ```ts
-import { Model, ModelCall } from "#adapters";
+import { ModelCallHelper, ModelHelper } from "#adapters";
 
-const prepared = ModelCall.prepare(call);
-const adapter = Model.create(async (input) => {
-  // implement AdapterModel.generate
+const prepared = ModelCallHelper.prepare(call);
+const adapter = ModelHelper.create(async (input) => {
+  // implement Model.generate
   return { text: "ok" };
 });
 ```
 
-`ModelCall.prepare` resolves prompt vs messages (messages win, even if empty) and bundles validation diagnostics.
+`ModelCallHelper.prepare` resolves prompt vs messages (messages win, even if empty) and bundles validation diagnostics.
 
 ## Tools
 
 ```ts
-type AdapterTool = {
+type Tool = {
   name: string;
   description?: string;
   params?: Array<{ name: string; type: string; required?: boolean }>;
-  inputSchema?: AdapterSchema;
-  outputSchema?: AdapterSchema;
-  execute?: (input: unknown) => AdapterMaybePromise<unknown>;
+  inputSchema?: Schema;
+  outputSchema?: Schema;
+  execute?: (input: unknown) => MaybePromise<unknown>;
 };
 ```
 
 Param schemas normalize to object‑typed JSON schema when needed. Parameter types expect JSON Schema
 primitives; unknown types fall back to `"string"`.
 
+AI SDK tool adapters accept either AI SDK schema wrappers or raw JSON schema objects; both normalize
+through `toSchema`.
+
 ### Tool helpers
 
 ```ts
-import { Tool } from "#adapters";
+import { Tooling } from "#adapters";
 
-const params = [Tool.param("query", "string", { required: true })];
-const tool = Tool.create({ name: "search", params });
+const params = [Tooling.param("query", "string", { required: true })];
+const tool = Tooling.create({ name: "search", params });
 ```
 
 ## Messages (structured content)
 
 ```ts
-type AdapterMessage = {
+type Message = {
   role: "system" | "user" | "assistant" | "tool";
-  content: string | AdapterStructuredContent;
+  content: string | StructuredContent;
   name?: string;
   toolCallId?: string;
 };
@@ -188,10 +229,10 @@ Binary image/file parts are preserved and base64‑encoded in adapters.
 
 ## Schemas
 
-`AdapterSchema` accepts JSON schema or Zod.
+`Schema` accepts JSON schema or Zod.
 
 ```ts
-type AdapterSchema = {
+type Schema = {
   name?: string;
   jsonSchema: unknown;
   kind?: "json-schema" | "zod" | "unknown";
@@ -218,7 +259,7 @@ Adapters expose provider metadata in `result.telemetry`.
 Trace events are derived from telemetry where possible:
 
 ```ts
-type AdapterModelTelemetry = {
+type ModelTelemetry = {
   request?: { body?: unknown };
   response?: { id?: string; modelId?: string; timestamp?: number; body?: unknown };
   usage?: { inputTokens?: number; outputTokens?: number; totalTokens?: number };

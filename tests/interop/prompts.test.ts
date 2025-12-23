@@ -1,14 +1,14 @@
 import { describe, expect, it } from "bun:test";
 import { PromptTemplate as LangChainPromptTemplate } from "@langchain/core/prompts";
 import type { PromptTemplate as LlamaPromptTemplate } from "@llamaindex/core/prompts";
-import type { AdapterPromptTemplate } from "#workflow";
+import type { PromptTemplate } from "#workflow";
 
-const toAdapterPromptFromLangChain = (prompt: LangChainPromptTemplate): AdapterPromptTemplate => ({
+const toPromptFromLangChain = (prompt: LangChainPromptTemplate): PromptTemplate => ({
   name: "langchain.prompt",
   template: String(prompt.template),
 });
 
-const toAdapterPromptFromLlama = (prompt: LlamaPromptTemplate): AdapterPromptTemplate => ({
+const toPromptFromLlama = (prompt: LlamaPromptTemplate): PromptTemplate => ({
   name: "llama.prompt",
   template: prompt.template,
 });
@@ -16,17 +16,17 @@ const toAdapterPromptFromLlama = (prompt: LlamaPromptTemplate): AdapterPromptTem
 describe("Interop prompts", () => {
   const TEMPLATE = "Hello {name}";
 
-  it("maps LangChain PromptTemplate to AdapterPromptTemplate", () => {
+  it("maps LangChain PromptTemplate to PromptTemplate", () => {
     const prompt = new LangChainPromptTemplate({
       template: TEMPLATE,
       inputVariables: ["name"],
     });
 
-    const adapted = toAdapterPromptFromLangChain(prompt);
+    const adapted = toPromptFromLangChain(prompt);
     expect(adapted.template).toBe(TEMPLATE);
   });
 
-  it("maps LlamaIndex PromptTemplate to AdapterPromptTemplate", () => {
+  it("maps LlamaIndex PromptTemplate to PromptTemplate", () => {
     const prompt = {
       template: TEMPLATE,
       vars: () => ["name"],
@@ -35,7 +35,7 @@ describe("Interop prompts", () => {
       partialFormat: () => prompt,
     } as unknown as LlamaPromptTemplate;
 
-    const adapted = toAdapterPromptFromLlama(prompt);
+    const adapted = toPromptFromLlama(prompt);
     expect(adapted.template).toBe(TEMPLATE);
   });
 });

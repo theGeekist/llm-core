@@ -3,7 +3,7 @@ import type { BaseDocumentCompressor } from "@langchain/core/retrievers/document
 import { Document as LangChainDocument } from "@langchain/core/documents";
 import { Document as LlamaDocument } from "@llamaindex/core/schema";
 import { fromLangChainReranker, fromLlamaIndexReranker } from "#adapters";
-import { asLlamaIndexPostprocessor } from "./helpers";
+import { asLlamaIndexPostprocessor, captureDiagnostics } from "./helpers";
 
 describe("Adapter rerankers", () => {
   it("maps LangChain compressors", async () => {
@@ -25,5 +25,20 @@ describe("Adapter rerankers", () => {
     const adapter = fromLlamaIndexReranker(reranker);
     const result = await adapter.rerank("query", [{ text: "hello" }]);
     expect(result[0]?.text).toBe("hello");
+  });
+
+  it("warns when reranker inputs are missing", async () => {
+    const compressor = {
+      compressDocuments: (docs: LangChainDocument[]) => Promise.resolve(docs),
+    } as BaseDocumentCompressor;
+    const adapter = fromLangChainReranker(compressor);
+    const { context, diagnostics } = captureDiagnostics();
+
+    const result = await adapter.rerank(" ", [], context);
+    expect(result).toEqual([]);
+    expect(diagnostics.map((entry) => entry.message)).toEqual([
+      "reranker_documents_missing",
+      "reranker_query_missing",
+    ]);
   });
 });

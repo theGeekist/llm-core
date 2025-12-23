@@ -1,12 +1,12 @@
-import type { PromptTemplate } from "@langchain/core/prompts";
-import type { AdapterPromptSchema, AdapterPromptTemplate } from "../types";
+import type { PromptTemplate as LangChainPromptTemplate } from "@langchain/core/prompts";
+import type { PromptSchema, PromptTemplate } from "../types";
 
 const DEFAULT_NAME = "langchain.prompt";
 
-const toTemplateString = (template: PromptTemplate["template"]) =>
+const toTemplateString = (template: LangChainPromptTemplate["template"]) =>
   typeof template === "string" ? template : JSON.stringify(template);
 
-const toInputs = (variables: string[]): AdapterPromptSchema["inputs"] =>
+const toInputs = (variables: string[]): PromptSchema["inputs"] =>
   variables.map((variable) => ({
     name: variable,
     type: "string",
@@ -14,9 +14,9 @@ const toInputs = (variables: string[]): AdapterPromptSchema["inputs"] =>
   }));
 
 export function fromLangChainPromptTemplate(
-  prompt: PromptTemplate,
+  prompt: LangChainPromptTemplate,
   name: string = DEFAULT_NAME,
-): AdapterPromptTemplate {
+): PromptTemplate {
   return {
     name,
     template: toTemplateString(prompt.template),

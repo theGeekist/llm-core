@@ -8,6 +8,8 @@ describe("Adapter AI SDK message conversions", () => {
   const TOOL_NAME = "search";
   const TOOL_CALL_TYPE = "tool-call";
   const TOOL_RESULT_TYPE = "tool-result";
+  const TEXT_MEDIA = "text/plain";
+  const FILE_PAYLOAD = "payload";
   it("maps structured system content to plain text", () => {
     const message = toAiSdkMessage({
       role: "system",
@@ -33,12 +35,26 @@ describe("Adapter AI SDK message conversions", () => {
         parts: [
           { type: "text", text: "hello" },
           { type: "image", data: "abc", mediaType: "image/png" },
-          { type: "file", data: "payload", mediaType: "text/plain" },
+          { type: "file", data: FILE_PAYLOAD, mediaType: TEXT_MEDIA },
         ],
       },
     });
 
     expect(Array.isArray(message.content)).toBe(true);
+  });
+
+  it("maps user file parts with media types", () => {
+    const message = toAiSdkMessage({
+      role: "user",
+      content: {
+        text: "",
+        parts: [{ type: "file", data: FILE_PAYLOAD, mediaType: TEXT_MEDIA }],
+      },
+    });
+
+    const content = "content" in message ? message.content : "";
+    const parts = Array.isArray(content) ? content : [];
+    expect(parts[0]).toMatchObject({ type: "file", mediaType: TEXT_MEDIA });
   });
 
   it("falls back to text when user parts are unsupported", () => {
@@ -101,6 +117,20 @@ describe("Adapter AI SDK message conversions", () => {
     expect(parts.some((part) => part.type === "reasoning")).toBe(true);
   });
 
+  it("maps assistant image parts into file payloads", () => {
+    const message = toAiSdkMessage({
+      role: "assistant",
+      content: {
+        text: "",
+        parts: [{ type: "image", data: "abc", mediaType: "image/png" }],
+      },
+    });
+
+    const content = "content" in message ? message.content : "";
+    const parts = Array.isArray(content) ? content : [];
+    expect(parts[0]).toMatchObject({ type: "file", mediaType: "image/png" });
+  });
+
   it("maps tool content without tool parts to a fallback tool result", () => {
     const message = toAiSdkMessage({
       role: "tool",
@@ -161,5 +191,23 @@ describe("Adapter AI SDK message conversions", () => {
     const adapted = fromAiSdkMessage(message);
     expect(adapted.toolCallId).toBeUndefined();
     expect(adapted.name).toBeUndefined();
+  });
+
+  it("reads tool metadata from tool-result parts", () => {
+    const message = asAiSdkMessage({
+      role: "tool",
+      content: [
+        {
+          type: TOOL_RESULT_TYPE,
+          toolCallId: "call-3",
+          toolName: TOOL_NAME,
+          output: { ok: true },
+        },
+      ],
+    });
+
+    const adapted = fromAiSdkMessage(message);
+    expect(adapted.toolCallId).toBe("call-3");
+    expect(adapted.name).toBe(TOOL_NAME);
   });
 });

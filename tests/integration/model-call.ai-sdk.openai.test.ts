@@ -1,7 +1,7 @@
 import { describe, expect } from "bun:test";
 import { openai } from "@ai-sdk/openai";
 import { z } from "zod";
-import { fromAiSdkModel, Tool, toAdapterSchema, type AdapterModelCall } from "#adapters";
+import { fromAiSdkModel, Tooling, toSchema, type ModelCall } from "#adapters";
 import { expectTelemetryPresence, expectTelemetryUsage, itIfEnvAll } from "./helpers";
 
 const itWithOpenAI = itIfEnvAll("OPENAI_API_KEY");
@@ -14,7 +14,7 @@ describe("Integration model calls (AI SDK/OpenAI)", () => {
     async () => {
       const modelId = process.env.OPENAI_MODEL ?? DEFAULT_OPENAI_MODEL;
       const model = fromAiSdkModel(openai(modelId));
-      const call: AdapterModelCall = {
+      const call: ModelCall = {
         prompt: "Say hi in one word.",
       };
       const result = await model.generate(call);
@@ -36,10 +36,10 @@ describe("Integration tool calls (AI SDK/OpenAI)", () => {
       const modelId = process.env.OPENAI_MODEL ?? DEFAULT_OPENAI_MODEL;
       const model = fromAiSdkModel(openai(modelId));
       const tools = [
-        Tool.create({
+        Tooling.create({
           name: "echo",
           description: "Echo back the provided text",
-          inputSchema: toAdapterSchema(z.object({ text: z.string() })),
+          inputSchema: toSchema(z.object({ text: z.string() })),
           execute: (input) => {
             const typed = input as { text?: string };
             return { echoed: typed.text ?? "" };
@@ -69,7 +69,7 @@ describe("Integration structured output (AI SDK/OpenAI)", () => {
     async () => {
       const modelId = process.env.OPENAI_MODEL ?? DEFAULT_OPENAI_MODEL;
       const model = fromAiSdkModel(openai(modelId));
-      const schema = toAdapterSchema(
+      const schema = toSchema(
         z.object({
           answer: z.string(),
         }),

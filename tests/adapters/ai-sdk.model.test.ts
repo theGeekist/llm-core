@@ -1,6 +1,6 @@
 import { describe, expect, it, mock } from "bun:test";
 import { z } from "zod";
-import { Tool, toAdapterSchema } from "#adapters";
+import { Tooling, toSchema } from "#adapters";
 
 describe("Adapter AI SDK model", () => {
   it("maps named tool choice to a tool selector", async () => {
@@ -19,7 +19,7 @@ describe("Adapter AI SDK model", () => {
     const model = fromAiSdkModel({} as never);
     await model.generate({
       prompt: "hi",
-      tools: [Tool.create({ name: "search" })],
+      tools: [Tooling.create({ name: "search" })],
       toolChoice: "search",
     });
 
@@ -85,7 +85,7 @@ describe("Adapter AI SDK model", () => {
     const model = fromAiSdkModel({} as never);
     await model.generate({
       prompt: "hi",
-      responseSchema: toAdapterSchema(z.object({ ok: z.boolean() })),
+      responseSchema: toSchema(z.object({ ok: z.boolean() })),
     });
 
     expect(captured?.schema).toEqual({ kind: "zod" });
@@ -108,7 +108,7 @@ describe("Adapter AI SDK model", () => {
     const model = fromAiSdkModel({} as never);
     await model.generate({
       prompt: "hi",
-      responseSchema: toAdapterSchema({ type: "object", properties: {} }),
+      responseSchema: toSchema({ type: "object", properties: {} }),
     });
 
     expect(captured?.schema).toEqual({ kind: "json" });

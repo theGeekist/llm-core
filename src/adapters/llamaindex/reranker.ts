@@ -1,9 +1,10 @@
 import type { BaseNodePostprocessor } from "@llamaindex/core/postprocessor";
 import { MetadataMode, type BaseNode } from "@llamaindex/core/schema";
-import type { AdapterDocument, AdapterReranker, AdapterRetrievalQuery } from "../types";
+import type { AdapterCallContext, Document, Reranker, RetrievalQuery } from "../types";
 import { mapMaybeArray } from "../../maybe";
 import { toQueryText } from "../retrieval-query";
 import { toLlamaIndexDocument } from "./documents";
+import { reportDiagnostics, validateRerankerInput } from "../input-validation";
 
 const getNodeText = (node: BaseNode) => {
   if ("getText" in node && typeof node.getText === "function") {
@@ -12,8 +13,13 @@ const getNodeText = (node: BaseNode) => {
   return node.getContent(MetadataMode.NONE);
 };
 
-export function fromLlamaIndexReranker(reranker: BaseNodePostprocessor): AdapterReranker {
-  function rerank(query: AdapterRetrievalQuery, documents: AdapterDocument[]) {
+export function fromLlamaIndexReranker(reranker: BaseNodePostprocessor): Reranker {
+  function rerank(query: RetrievalQuery, documents: Document[], context?: AdapterCallContext) {
+    const diagnostics = validateRerankerInput(query, documents);
+    if (diagnostics.length > 0) {
+      reportDiagnostics(context, diagnostics);
+      return [];
+    }
     const nodes = documents.map((doc) => ({
       node: toLlamaIndexDocument(doc),
       score: doc.score,
@@ -26,5 +32,10 @@ export function fromLlamaIndexReranker(reranker: BaseNodePostprocessor): Adapter
     }));
   }
 
-  return { rerank };
+  return {
+    rerank,
+    metadata: {
+      requires: [{ kind: "construct", name: "retriever" }],
+    },
+  };
 }

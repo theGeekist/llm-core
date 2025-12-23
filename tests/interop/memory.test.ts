@@ -2,15 +2,15 @@ import { describe, expect, it } from "bun:test";
 import type { BaseMemory as LangChainMemory } from "@langchain/core/memory";
 import type { Memory as LlamaMemory } from "@llamaindex/core/memory";
 import * as AiSdk from "ai";
-import type { AdapterMemory } from "#workflow";
+import type { Memory } from "#workflow";
 import { mapMaybe } from "./helpers";
 
-const toAdapterMemoryFromLangChain = (memory: LangChainMemory): AdapterMemory => ({
+const toMemoryFromLangChain = (memory: LangChainMemory): Memory => ({
   load: (input) => mapMaybe(memory.loadMemoryVariables(input), (value) => value),
   save: (input, output) => mapMaybe(memory.saveContext(input, output), () => undefined),
 });
 
-const toAdapterMemoryFromLlama = (memory: LlamaMemory): AdapterMemory => ({
+const toMemoryFromLlama = (memory: LlamaMemory): Memory => ({
   read: (threadId) => {
     void threadId;
     return mapMaybe(memory.getLLM(), (messages) => ({
@@ -30,19 +30,19 @@ const toAdapterMemoryFromLlama = (memory: LlamaMemory): AdapterMemory => ({
 });
 
 describe("Interop memory", () => {
-  it("maps LangChain memory to AdapterMemory", () => {
+  it("maps LangChain memory to Memory", () => {
     const memory = {
       memoryKeys: ["history"],
       loadMemoryVariables: () => Promise.resolve({ history: [] }),
       saveContext: () => Promise.resolve(),
     } as unknown as LangChainMemory;
 
-    const adapted = toAdapterMemoryFromLangChain(memory);
+    const adapted = toMemoryFromLangChain(memory);
     expect(adapted.load).toBeFunction();
     expect(adapted.save).toBeFunction();
   });
 
-  it("maps LlamaIndex memory to AdapterMemory", () => {
+  it("maps LlamaIndex memory to Memory", () => {
     const memory = {
       get: () => Promise.resolve([]),
       getLLM: () => Promise.resolve([]),
@@ -51,7 +51,7 @@ describe("Interop memory", () => {
       snapshot: () => "",
     } as unknown as LlamaMemory;
 
-    const adapted = toAdapterMemoryFromLlama(memory);
+    const adapted = toMemoryFromLlama(memory);
     expect(adapted.read).toBeFunction();
     expect(adapted.reset).toBeFunction();
   });

@@ -9,10 +9,10 @@ import {
   type NodeWithScore,
 } from "@llamaindex/core/schema";
 import * as AiSdk from "ai";
-import type { AdapterRetriever } from "#workflow";
+import type { Retriever } from "#workflow";
 import { mapMaybe } from "./helpers";
 
-const toAdapterRetrieverFromLangChain = (retriever: BaseRetrieverInterface): AdapterRetriever => ({
+const toRetrieverFromLangChain = (retriever: BaseRetrieverInterface): Retriever => ({
   retrieve: (query) =>
     mapMaybe(retriever.invoke(String(query)), (docs) => ({
       query,
@@ -24,7 +24,7 @@ const toAdapterRetrieverFromLangChain = (retriever: BaseRetrieverInterface): Ada
     })),
 });
 
-const toAdapterRetrieverFromLlama = (retriever: LlamaRetriever): AdapterRetriever => ({
+const toRetrieverFromLlama = (retriever: LlamaRetriever): Retriever => ({
   retrieve: (query) =>
     mapMaybe(retriever.retrieve(String(query)), (nodes) => ({
       query,
@@ -45,7 +45,7 @@ const getLlamaNodeText = (node: BaseNode): string => {
 };
 
 describe("Interop retriever", () => {
-  it("maps LangChain retriever to AdapterRetriever", async () => {
+  it("maps LangChain retriever to Retriever", async () => {
     const retriever = {
       invoke: () =>
         Promise.resolve([
@@ -53,19 +53,19 @@ describe("Interop retriever", () => {
         ]),
     } as unknown as BaseRetrieverInterface;
 
-    const adapted = toAdapterRetrieverFromLangChain(retriever);
+    const adapted = toRetrieverFromLangChain(retriever);
     const result = await adapted.retrieve("query");
     expect(result.documents[0]?.text).toBe("hello");
   });
 
-  it("maps LlamaIndex retriever to AdapterRetriever", async () => {
+  it("maps LlamaIndex retriever to Retriever", async () => {
     const node = new LlamaDocument({ text: "hello", metadata: { source: "llama" } });
     const nodes: NodeWithScore[] = [{ node, score: 0.9 }];
     const retriever = {
       retrieve: () => Promise.resolve(nodes),
     } as unknown as LlamaRetriever;
 
-    const adapted = toAdapterRetrieverFromLlama(retriever);
+    const adapted = toRetrieverFromLlama(retriever);
     const result = await adapted.retrieve("query");
     expect(result.documents[0]?.text).toBe("hello");
   });

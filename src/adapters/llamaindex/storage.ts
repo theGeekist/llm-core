@@ -1,6 +1,7 @@
 import type { BaseDocumentStore } from "@llamaindex/core/storage/doc-store";
-import type { AdapterKVStore } from "../types";
-import { mapMaybe } from "../../maybe";
+import type { AdapterCallContext, KVStore } from "../types";
+import { mapMaybe, maybeAll } from "../../maybe";
+import { reportDiagnostics, validateKvKeys, validateKvPairs } from "../input-validation";
 
 type DocumentShape = { id_?: string };
 
@@ -12,13 +13,24 @@ const asDocument = (value: Record<string, unknown>, key: string) => {
   return doc as Record<string, unknown>;
 };
 
-export function fromLlamaIndexDocumentStore(store: BaseDocumentStore): AdapterKVStore {
+export function fromLlamaIndexDocumentStore(store: BaseDocumentStore): KVStore {
   return {
-    mget: (keys) =>
-      mapMaybe(Promise.all(keys.map((key) => store.getDocument(key, false))), (docs) =>
+    mget: (keys, context?: AdapterCallContext) => {
+      const diagnostics = validateKvKeys(keys, "mget");
+      if (diagnostics.length > 0) {
+        reportDiagnostics(context, diagnostics);
+        return [];
+      }
+      return mapMaybe(maybeAll(keys.map((key) => store.getDocument(key, false))), (docs) =>
         docs.map((doc) => (doc ? doc.toJSON() : undefined)),
-      ),
-    mset: (pairs) => {
+      );
+    },
+    mset: (pairs, context?: AdapterCallContext) => {
+      const diagnostics = validateKvPairs(pairs);
+      if (diagnostics.length > 0) {
+        reportDiagnostics(context, diagnostics);
+        return;
+      }
       const docs = pairs
         .filter(
           (pair): pair is [string, Record<string, unknown>] =>
@@ -27,8 +39,17 @@ export function fromLlamaIndexDocumentStore(store: BaseDocumentStore): AdapterKV
         .map(([key, value]) => asDocument(value, key));
       return store.addDocuments(docs as never, true);
     },
-    mdelete: (keys) =>
-      mapMaybe(Promise.all(keys.map((key) => store.deleteDocument(key, false))), () => undefined),
+    mdelete: (keys, context?: AdapterCallContext) => {
+      const diagnostics = validateKvKeys(keys, "mdelete");
+      if (diagnostics.length > 0) {
+        reportDiagnostics(context, diagnostics);
+        return;
+      }
+      return mapMaybe(
+        maybeAll(keys.map((key) => store.deleteDocument(key, false))),
+        () => undefined,
+      );
+    },
     list: () => mapMaybe(store.docs(), (docs) => Object.keys(docs)),
   };
 }

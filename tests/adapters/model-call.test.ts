@@ -6,7 +6,7 @@ import { fromAiSdkPrompt, fromLangChainMessages, fromLlamaIndexMessages } from "
 import { asAiSdkPrompt } from "./helpers";
 
 describe("Adapter model calls", () => {
-  it("maps LangChain messages to AdapterModelCall", () => {
+  it("maps LangChain messages to ModelCall", () => {
     const messages = [new HumanMessage("hi"), new AIMessage("hello"), new SystemMessage("sys")];
     const call = fromLangChainMessages(messages);
 
@@ -15,13 +15,13 @@ describe("Adapter model calls", () => {
     expect(call.messages?.[2]?.role).toBe("system");
   });
 
-  it("maps LlamaIndex messages to AdapterModelCall", () => {
+  it("maps LlamaIndex messages to ModelCall", () => {
     const messages: ChatMessage[] = [{ role: "user", content: "hello" }];
     const call = fromLlamaIndexMessages(messages);
     expect(call.messages?.[0]?.content).toBe("hello");
   });
 
-  it("maps AI SDK prompts to AdapterModelCall", () => {
+  it("maps AI SDK prompts to ModelCall", () => {
     const prompt: Prompt = {
       system: "system",
       prompt: "hello",

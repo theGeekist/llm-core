@@ -1,10 +1,10 @@
 import { describe, expect, it } from "bun:test";
-import type { AdapterStructuredContent } from "#adapters";
+import type { StructuredContent } from "#adapters";
 import { toQueryText } from "#adapters";
 
 describe("Adapter retrieval query", () => {
   it("uses structured text when available", () => {
-    const query: AdapterStructuredContent = {
+    const query: StructuredContent = {
       text: "query",
       parts: [{ type: "text", text: "fallback" }],
     };
@@ -13,7 +13,7 @@ describe("Adapter retrieval query", () => {
   });
 
   it("falls back to concatenated text parts", () => {
-    const query: AdapterStructuredContent = {
+    const query: StructuredContent = {
       text: "",
       parts: [
         { type: "text", text: "first" },
@@ -25,7 +25,7 @@ describe("Adapter retrieval query", () => {
   });
 
   it("returns empty string for empty structured content", () => {
-    const query: AdapterStructuredContent = { text: "", parts: [] };
+    const query: StructuredContent = { text: "", parts: [] };
     expect(toQueryText(query)).toBe("");
   });
 });

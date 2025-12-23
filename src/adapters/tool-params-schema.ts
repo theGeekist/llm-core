@@ -1,4 +1,4 @@
-import type { AdapterToolParam } from "./types";
+import type { ToolParam } from "./types";
 
 // Expects JSON Schema primitive types; unknowns default to "string".
 export const adapterParamTypeToJsonType = (type: string) => {
@@ -15,7 +15,7 @@ export const adapterParamTypeToJsonType = (type: string) => {
   }
 };
 
-export const adapterParamsToJsonSchema = (params: AdapterToolParam[] = []) => {
+export const adapterParamsToJsonSchema = (params: ToolParam[] = []) => {
   const properties: Record<string, unknown> = {};
   const required: string[] = [];
   for (const param of params) {

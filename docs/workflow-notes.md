@@ -32,6 +32,7 @@ flowchart TB
 - Capabilities are inferred from resolved adapters to avoid strict-mode surprises; explicit capabilities still win. List-like adapters (documents/messages/tools/prompts/schemas) are surfaced as presence flags in capabilities when they contain items, while full lists stay on adapters. `model` surfaces the adapter instance, not a boolean flag.
 - Adapter bundles are discoverable on the runtime (`wf.adapters()`), and return resolved adapters (registry defaults + constructs merged). Use `wf.declaredAdapters()` for plugin-only.
 - `wf.declaredCapabilities()` exposes the plugin-only capability view; `wf.capabilities()` reflects resolved adapters.
+- Adapter metadata may declare hard requirements (construct/capability). Registry resolution emits warnings (strict mode fails).
 - Avoid user-facing generics. If an escape hatch is needed, prefer value-first:
   - `Workflow.recipe("rag").contract(myContract)` (typed value or schema drives inference)
   - If `.as<Contract>()` exists, document it as rare/advanced only.

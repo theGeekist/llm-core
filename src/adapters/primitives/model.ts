@@ -1,11 +1,11 @@
-import type { AdapterMessageContent, AdapterModel, AdapterModelResult } from "../types";
-import { ModelCall, ModelUsage } from "../modeling";
+import type { MessageContent, Model, ModelResult } from "../types";
+import { ModelCallHelper, ModelUsageHelper } from "../modeling";
 import { toQueryText } from "../retrieval-query";
 
-const toContentText = (content: AdapterMessageContent) =>
+const toContentText = (content: MessageContent) =>
   typeof content === "string" ? content : toQueryText(content);
 
-const resolvePromptText = (messages?: AdapterModelResult["messages"], prompt?: string) => {
+const resolvePromptText = (messages?: ModelResult["messages"], prompt?: string) => {
   if (messages && messages.length > 0) {
     const last = messages[messages.length - 1];
     if (last) {
@@ -17,12 +17,12 @@ const resolvePromptText = (messages?: AdapterModelResult["messages"], prompt?: s
 
 const createResultText = (text: string) => (text ? `builtin:${text}` : "builtin:");
 
-export const createBuiltinModel = (): AdapterModel => ({
+export const createBuiltinModel = (): Model => ({
   generate(call) {
-    const prepared = ModelCall.prepare(call);
+    const prepared = ModelCallHelper.prepare(call);
     const baseText = resolvePromptText(prepared.messages, prepared.prompt);
     const diagnostics = [...prepared.diagnostics];
-    let result: AdapterModelResult = {
+    let result: ModelResult = {
       text: createResultText(baseText),
       diagnostics,
     };
@@ -34,7 +34,7 @@ export const createBuiltinModel = (): AdapterModel => ({
         text: JSON.stringify(output),
       };
     }
-    ModelUsage.warnIfMissing(diagnostics, result.usage, "builtin");
+    ModelUsageHelper.warnIfMissing(diagnostics, result.usage, "builtin");
     return result;
   },
 });

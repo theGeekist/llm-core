@@ -1,20 +1,20 @@
-import type { BaseTool, ChatMessage, LLM, ToolCall } from "@llamaindex/core/llms";
+import type { BaseTool, ChatMessage, LLM, ToolCall as LlamaToolCall } from "@llamaindex/core/llms";
 import type {
   AdapterDiagnostic,
-  AdapterModel,
-  AdapterModelCall,
-  AdapterModelResult,
-  AdapterModelTelemetry,
-  AdapterModelUsage,
-  AdapterToolCall,
+  Model,
+  ModelCall,
+  ModelResult,
+  ModelTelemetry,
+  ModelUsage,
+  ToolCall,
 } from "../types";
 import { fromLlamaIndexMessage, toLlamaIndexMessage } from "./messages";
 import { toLlamaIndexTool } from "./tools";
 import { toAdapterTrace } from "../telemetry";
 import { mapMaybe } from "../../maybe";
-import { ModelCall, ModelUsage } from "../modeling";
+import { ModelCallHelper, ModelUsageHelper } from "../modeling";
 
-const toAdapterToolCalls = (calls: ToolCall[]): AdapterToolCall[] =>
+const toToolCalls = (calls: LlamaToolCall[]): ToolCall[] =>
   calls.map((call) => ({
     id: call.id,
     name: call.name,
@@ -22,9 +22,9 @@ const toAdapterToolCalls = (calls: ToolCall[]): AdapterToolCall[] =>
   }));
 
 const buildMessages = (input: {
-  messages?: AdapterModelCall["messages"];
-  prompt?: AdapterModelCall["prompt"];
-  system?: AdapterModelCall["system"];
+  messages?: ModelCall["messages"];
+  prompt?: ModelCall["prompt"];
+  system?: ModelCall["system"];
 }): ChatMessage[] => {
   const messages = input.messages?.map(toLlamaIndexMessage) ?? [];
   if (input.messages === undefined && input.prompt) {
@@ -38,7 +38,7 @@ const buildMessages = (input: {
 
 type LlamaIndexExecResult = {
   newMessages: ChatMessage[];
-  toolCalls: ToolCall[];
+  toolCalls: LlamaToolCall[];
   object?: unknown;
   raw?: unknown;
 };
@@ -112,7 +112,7 @@ const toResponseTelemetry = (raw: unknown) => {
 
 const readUsageValue = (value: unknown) => (typeof value === "number" ? value : undefined);
 
-const toUsage = (raw: unknown): AdapterModelUsage | undefined => {
+const toUsage = (raw: unknown): ModelUsage | undefined => {
   const usage = readUsagePayload(raw);
   if (!usage) {
     return undefined;
@@ -145,9 +145,9 @@ const readUsagePayload = (raw: unknown) => {
 };
 
 const appendTelemetryResponse = (
-  telemetry: AdapterModelTelemetry | undefined,
+  telemetry: ModelTelemetry | undefined,
   raw: unknown,
-): AdapterModelTelemetry | undefined => {
+): ModelTelemetry | undefined => {
   const response = toResponseTelemetry(raw);
   const usage = toUsage(raw);
   if (!response && !usage) {
@@ -176,10 +176,10 @@ const getExec = (model: LLM) => {
 const toExecResult = (
   result: LlamaIndexExecResult,
   diagnostics: AdapterDiagnostic[],
-  telemetry: AdapterModelTelemetry | undefined,
+  telemetry: ModelTelemetry | undefined,
   modelId: string | undefined,
   shouldParseOutput: boolean,
-): AdapterModelResult => {
+): ModelResult => {
   const newMessages = result.newMessages.map(fromLlamaIndexMessage);
   const lastMessage = newMessages.at(-1);
   const text = lastMessage
@@ -192,11 +192,11 @@ const toExecResult = (
     diagnostics.push(warn("response_schema_parse_failed"));
   }
   const nextTelemetry = appendTelemetryResponse(telemetry, result.raw);
-  ModelUsage.warnIfMissing(diagnostics, nextTelemetry?.usage, "llamaindex");
+  ModelUsageHelper.warnIfMissing(diagnostics, nextTelemetry?.usage, "llamaindex");
   return {
     text,
     messages: newMessages,
-    toolCalls: toAdapterToolCalls(result.toolCalls),
+    toolCalls: toToolCalls(result.toolCalls),
     output,
     diagnostics,
     telemetry: nextTelemetry,
@@ -210,15 +210,15 @@ const toExecResult = (
 const toChatResult = (
   response: Awaited<ReturnType<LLM["chat"]>>,
   diagnostics: AdapterDiagnostic[],
-  telemetry: AdapterModelTelemetry | undefined,
+  telemetry: ModelTelemetry | undefined,
   modelId: string | undefined,
-): AdapterModelResult => {
-  const adapterMessage = fromLlamaIndexMessage(response.message);
+): ModelResult => {
+  const Message = fromLlamaIndexMessage(response.message);
   const nextTelemetry = appendTelemetryResponse(telemetry, response.raw);
-  ModelUsage.warnIfMissing(diagnostics, nextTelemetry?.usage, "llamaindex");
+  ModelUsageHelper.warnIfMissing(diagnostics, nextTelemetry?.usage, "llamaindex");
   return {
     text: readMessageText(response.message.content),
-    messages: [adapterMessage],
+    messages: [Message],
     diagnostics,
     telemetry: nextTelemetry,
     trace: toAdapterTrace(nextTelemetry),
@@ -228,26 +228,26 @@ const toChatResult = (
   };
 };
 
-export function fromLlamaIndexModel(model: LLM): AdapterModel {
+export function fromLlamaIndexModel(model: LLM): Model {
   type RunState = {
     messages: ChatMessage[];
     tools: BaseTool[] | undefined;
     responseSchema: unknown;
     diagnostics: AdapterDiagnostic[];
-    telemetry: AdapterModelTelemetry;
+    telemetry: ModelTelemetry;
     modelId: string | undefined;
     hasResponseSchema: boolean;
   };
 
-  const createRunState = (call: AdapterModelCall): RunState => {
-    const prepared = ModelCall.prepare(call, { supportsToolChoice: false });
+  const createRunState = (call: ModelCall): RunState => {
+    const prepared = ModelCallHelper.prepare(call, { supportsToolChoice: false });
     const tools = prepared.allowTools ? call.tools?.map(toLlamaIndexTool) : undefined;
     const responseSchema = prepared.normalizedSchema
       ? toResponseFormat(prepared.normalizedSchema.schema)
       : undefined;
 
     const modelId = typeof model.metadata?.model === "string" ? model.metadata.model : undefined;
-    const telemetry: AdapterModelTelemetry = {
+    const telemetry: ModelTelemetry = {
       providerMetadata: model.metadata as Record<string, unknown> | undefined,
     };
 
@@ -266,7 +266,7 @@ export function fromLlamaIndexModel(model: LLM): AdapterModel {
     };
   };
 
-  function generate(call: AdapterModelCall) {
+  function generate(call: ModelCall) {
     const state = createRunState(call);
     const exec = getExec(model);
     if (exec && ((state.tools && state.tools.length) || state.responseSchema)) {

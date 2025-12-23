@@ -1,10 +1,12 @@
 import type {
-  AdapterMessage,
-  AdapterMessagePart,
-  AdapterModelCall,
-  AdapterSchema,
+  AdapterCallContext,
+  AdapterDiagnostic,
+  Message,
+  MessagePart,
+  ModelCall,
+  Schema,
 } from "#adapters";
-import { Tool, type AdapterTool } from "#adapters";
+import { Tooling, type Tool } from "#adapters";
 import type { ModelMessage, Prompt } from "ai";
 
 export const isPromiseLike = (value: unknown): value is Promise<unknown> =>
@@ -17,19 +19,29 @@ export const assertSyncValue = <T>(value: T | Promise<T>) => {
   return value;
 };
 
-export const makeMessage = (overrides: Partial<AdapterMessage> = {}): AdapterMessage => ({
+export const captureDiagnostics = () => {
+  const diagnostics: AdapterDiagnostic[] = [];
+  const context: AdapterCallContext = {
+    report: (diagnostic) => {
+      diagnostics.push(diagnostic);
+    },
+  };
+  return { context, diagnostics };
+};
+
+export const makeMessage = (overrides: Partial<Message> = {}): Message => ({
   role: "user",
   content: "hello",
   ...overrides,
 });
 
-export const makeStructuredContent = (parts: AdapterMessagePart[], text = "") => ({
+export const makeStructuredContent = (parts: MessagePart[], text = "") => ({
   text,
   parts,
 });
 
-export const makeModelCall = (overrides: Partial<AdapterModelCall> = {}): AdapterModelCall => {
-  const base: AdapterModelCall = { prompt: "hello" };
+export const makeModelCall = (overrides: Partial<ModelCall> = {}): ModelCall => {
+  const base: ModelCall = { prompt: "hello" };
   if (overrides.messages) {
     base.messages = overrides.messages;
   }
@@ -40,15 +52,15 @@ export const makeModelCall = (overrides: Partial<AdapterModelCall> = {}): Adapte
 };
 
 export const makeSchema = (
-  jsonSchema: AdapterSchema["jsonSchema"],
-  kind: AdapterSchema["kind"] = "json-schema",
-): AdapterSchema => ({
+  jsonSchema: Schema["jsonSchema"],
+  kind: Schema["kind"] = "json-schema",
+): Schema => ({
   jsonSchema,
   kind,
 });
 
-export const makeTool = (overrides: Partial<AdapterTool> = {}): AdapterTool =>
-  Tool.create({
+export const makeTool = (overrides: Partial<Tool> = {}): Tool =>
+  Tooling.create({
     name: "tool",
     ...overrides,
   });
@@ -57,7 +69,7 @@ export const makeToolParam = (
   name: string,
   type: string,
   options: { description?: string; required?: boolean } = {},
-) => Tool.param(name, type, options);
+) => Tooling.param(name, type, options);
 
 export const makeUsage = (inputTokens: number, outputTokens: number) => ({
   inputTokens,
@@ -65,12 +77,12 @@ export const makeUsage = (inputTokens: number, outputTokens: number) => ({
   totalTokens: inputTokens + outputTokens,
 });
 
-export const asModelMessage = (message: Partial<AdapterMessage>) =>
+export const asModelMessage = (message: Partial<Message>) =>
   ({
     role: "user",
     content: "hello",
     ...message,
-  }) satisfies AdapterMessage;
+  }) satisfies Message;
 
 export const asLlamaChatMessage = (message: unknown) =>
   ({

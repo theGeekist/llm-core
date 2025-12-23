@@ -1,8 +1,8 @@
 import type { BaseDocumentLoader } from "@langchain/core/document_loaders/base";
-import type { AdapterDocumentLoader } from "../types";
+import type { DocumentLoader } from "../types";
 import { mapMaybeArray } from "../../maybe";
 
-export function fromLangChainLoader(loader: BaseDocumentLoader): AdapterDocumentLoader {
+export function fromLangChainLoader(loader: BaseDocumentLoader): DocumentLoader {
   function load() {
     return mapMaybeArray(loader.load(), (doc) => ({
       id: doc.id,

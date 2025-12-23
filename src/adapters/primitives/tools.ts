@@ -1,3 +1,3 @@
-import type { AdapterTool } from "../types";
+import type { Tool } from "../types";
 
-export const createBuiltinTools = (tools: AdapterTool[] = []): AdapterTool[] => tools;
+export const createBuiltinTools = (tools: Tool[] = []): Tool[] => tools;

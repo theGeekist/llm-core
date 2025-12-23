@@ -1,14 +1,14 @@
 import type {
   ChatMessage,
-  MessageContent,
+  MessageContent as LlamaIndexMessageContent,
   MessageContentDetail,
   MessageType,
 } from "@llamaindex/core/llms";
-import type { AdapterMessage, AdapterMessageContent, AdapterMessagePart } from "../types";
-import { toAdapterMessageContent } from "../message-content";
+import type { Message, MessageContent, MessagePart } from "../types";
+import { toMessageContent } from "../message-content";
 
 type AdapterOptions = {
-  adapterRole?: AdapterMessage["role"];
+  adapterRole?: Message["role"];
   toolCallId?: string;
   toolName?: string;
 };
@@ -21,7 +21,7 @@ const readAdapterOptions = (message: ChatMessage): AdapterOptions | undefined =>
   return options;
 };
 
-const toAdapterRole = (message: ChatMessage): AdapterMessage["role"] => {
+const toAdapterRole = (message: ChatMessage): Message["role"] => {
   const adapterRole = readAdapterOptions(message)?.adapterRole;
   if (adapterRole === "tool") {
     return "tool";
@@ -39,7 +39,7 @@ const toAdapterRole = (message: ChatMessage): AdapterMessage["role"] => {
   return "tool";
 };
 
-const toContent = (content: ChatMessage["content"]) => toAdapterMessageContent(content);
+const toContent = (content: ChatMessage["content"]) => toMessageContent(content);
 
 const safeStringify = (value: unknown) => {
   try {
@@ -49,28 +49,25 @@ const safeStringify = (value: unknown) => {
   }
 };
 
-const summaryGenerators: Record<AdapterMessagePart["type"], (part: AdapterMessagePart) => string> =
-  {
-    text: (part) => (part.type === "text" ? part.text : ""),
-    reasoning: (part) => (part.type === "reasoning" ? part.text : ""),
-    "tool-call": (part) =>
-      part.type === "tool-call" ? `tool-call:${part.toolName}:${safeStringify(part.input)}` : "",
-    "tool-result": (part) =>
-      part.type === "tool-result"
-        ? `tool-result:${part.toolName}:${safeStringify(part.output)}`
-        : "",
-    image: (part) => (part.type === "image" ? `image:${part.url ?? "inline"}` : ""),
-    file: (part) =>
-      part.type === "file" ? `file:${part.mediaType ?? "application/octet-stream"}` : "",
-    data: (part) => (part.type === "data" ? safeStringify(part.data) : ""),
-  };
+const summaryGenerators: Record<MessagePart["type"], (part: MessagePart) => string> = {
+  text: (part) => (part.type === "text" ? part.text : ""),
+  reasoning: (part) => (part.type === "reasoning" ? part.text : ""),
+  "tool-call": (part) =>
+    part.type === "tool-call" ? `tool-call:${part.toolName}:${safeStringify(part.input)}` : "",
+  "tool-result": (part) =>
+    part.type === "tool-result" ? `tool-result:${part.toolName}:${safeStringify(part.output)}` : "",
+  image: (part) => (part.type === "image" ? `image:${part.url ?? "inline"}` : ""),
+  file: (part) =>
+    part.type === "file" ? `file:${part.mediaType ?? "application/octet-stream"}` : "",
+  data: (part) => (part.type === "data" ? safeStringify(part.data) : ""),
+};
 
-const summarizePart = (part: AdapterMessagePart) => {
+const summarizePart = (part: MessagePart) => {
   const summary = summaryGenerators[part.type];
   return summary ? summary(part) : "";
 };
 
-export function fromLlamaIndexMessage(message: ChatMessage): AdapterMessage {
+export function fromLlamaIndexMessage(message: ChatMessage): Message {
   const options = readAdapterOptions(message);
   return {
     role: toAdapterRole(message),
@@ -80,12 +77,12 @@ export function fromLlamaIndexMessage(message: ChatMessage): AdapterMessage {
   };
 }
 
-const toLlamaIndexSummary = (part: AdapterMessagePart): MessageContentDetail | undefined => {
+const toLlamaIndexSummary = (part: MessagePart): MessageContentDetail | undefined => {
   const summary = summarizePart(part);
   return summary ? ({ type: "text", text: summary } as MessageContentDetail) : undefined;
 };
 
-const imagePartFromAdapter = (part: AdapterMessagePart): MessageContentDetail | undefined => {
+const imagePartFromAdapter = (part: MessagePart): MessageContentDetail | undefined => {
   if (part.type !== "image") {
     return undefined;
   }
@@ -98,7 +95,7 @@ const imagePartFromAdapter = (part: AdapterMessagePart): MessageContentDetail | 
   return undefined;
 };
 
-const filePartFromAdapter = (part: AdapterMessagePart): MessageContentDetail | undefined => {
+const filePartFromAdapter = (part: MessagePart): MessageContentDetail | undefined => {
   if (part.type !== "file" || !part.data) {
     return undefined;
   }
@@ -109,20 +106,20 @@ const filePartFromAdapter = (part: AdapterMessagePart): MessageContentDetail | u
   };
 };
 
-const textPartFromAdapter = (part: AdapterMessagePart): MessageContentDetail | undefined => {
+const textPartFromAdapter = (part: MessagePart): MessageContentDetail | undefined => {
   if (part.type === "text" || part.type === "reasoning") {
     return { type: "text", text: part.text } as MessageContentDetail;
   }
   return undefined;
 };
 
-const toLlamaIndexPart = (part: AdapterMessagePart): MessageContentDetail | undefined =>
+const toLlamaIndexPart = (part: MessagePart): MessageContentDetail | undefined =>
   textPartFromAdapter(part) ??
   imagePartFromAdapter(part) ??
   filePartFromAdapter(part) ??
   toLlamaIndexSummary(part);
 
-const toLlamaIndexContent = (content: AdapterMessageContent): MessageContent => {
+const toLlamaIndexContent = (content: MessageContent): LlamaIndexMessageContent => {
   if (typeof content === "string") {
     return content;
   }
@@ -130,7 +127,7 @@ const toLlamaIndexContent = (content: AdapterMessageContent): MessageContent => 
   return parts.length ? parts : content.text;
 };
 
-export function toLlamaIndexMessage(message: AdapterMessage): ChatMessage {
+export function toLlamaIndexMessage(message: Message): ChatMessage {
   const content = toLlamaIndexContent(message.content);
   if (message.role === "assistant") {
     return { role: "assistant", content };

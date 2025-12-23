@@ -16,12 +16,12 @@ Keep MaybePromise semantics, no any, and no type explosion.
 
 ## Scope
 
-- In: new AdapterModel type + factories, integration tests using adapters, tool calling, schemas.
+- In: new Model type + factories, integration tests using adapters, tool calling, schemas.
 - Out: streaming, HITL flow changes.
 
 ## Files and entry points
 
-- src/adapters/types.ts (new AdapterModel types)
+- src/adapters/types.ts (new Model types)
 - src/adapters/ai-sdk/\* (factory)
 - src/adapters/langchain/\* (factory)
 - src/adapters/llamaindex/\* (factory)
@@ -31,13 +31,13 @@ Keep MaybePromise semantics, no any, and no type explosion.
 
 ## Data model / API changes
 
-- New AdapterModel with generate(call: AdapterModelCall): AdapterMaybePromise<AdapterModelResult>.
-- Extend AdapterModelResult to include toolCalls/toolResults and reasoning (optional).
+- New Model with generate(call: ModelCall): MaybePromise<ModelResult>.
+- Extend ModelResult to include toolCalls/toolResults and reasoning (optional).
 - New factory exports: fromAiSdkModel, fromLangChainModel, fromLlamaIndexModel.
 
 ## Action items
 
-[x] Define AdapterModel and result shape updates (toolCalls/toolResults/reasoning) in src/adapters/types.ts.
+[x] Define Model and result shape updates (toolCalls/toolResults/reasoning) in src/adapters/types.ts.
 [x] Implement AI SDK model adapter using generateText (support tools + schemas).
 [x] Implement LangChain model adapter using invoke() / call() (support tools + schemas).
 [x] Implement LlamaIndex model adapter using LLM.chat() (support tools + schemas).
@@ -63,5 +63,5 @@ Keep MaybePromise semantics, no any, and no type explosion.
 ## Open questions
 
 - OK to keep streaming out of scope for now? Yes
-- AdapterModelResult includes raw and metadata per provider (as per agreed shape).
+- ModelResult includes raw and metadata per provider (as per agreed shape).
 - Normalize both JSON Schema and Zod; allow either when provided.

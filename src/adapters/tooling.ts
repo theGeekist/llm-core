@@ -1,20 +1,22 @@
-import type { AdapterMaybePromise, AdapterTool, AdapterToolParam } from "./types";
+import type { AdapterCallContext, Tool, ToolParam } from "./types";
+import { reportDiagnostics, validateToolInput } from "./input-validation";
+import type { MaybePromise } from "../maybe";
 
 export type ToolCreateInput = {
   name: string;
   description?: string;
-  params?: AdapterToolParam[];
-  inputSchema?: AdapterTool["inputSchema"];
-  outputSchema?: AdapterTool["outputSchema"];
-  execute?: (input: unknown) => AdapterMaybePromise<unknown>;
+  params?: ToolParam[];
+  inputSchema?: Tool["inputSchema"];
+  outputSchema?: Tool["outputSchema"];
+  execute?: (input: unknown, context?: AdapterCallContext) => MaybePromise<unknown>;
 };
 
-export const Tool = {
+export const Tooling = {
   param(
     name: string,
     type: string,
     options: { description?: string; required?: boolean } = {},
-  ): AdapterToolParam {
+  ): ToolParam {
     return {
       name,
       type,
@@ -22,14 +24,32 @@ export const Tool = {
       required: options.required,
     };
   },
-  create(input: ToolCreateInput): AdapterTool {
+  create(input: ToolCreateInput): Tool {
+    const execute = input.execute
+      ? (value: unknown, context?: AdapterCallContext) => {
+          const diagnostics = validateToolInput(
+            {
+              name: input.name,
+              params: input.params,
+              inputSchema: input.inputSchema,
+              outputSchema: input.outputSchema,
+            },
+            value,
+          );
+          if (diagnostics.length > 0) {
+            reportDiagnostics(context, diagnostics);
+            return undefined;
+          }
+          return input.execute?.(value, context);
+        }
+      : undefined;
     return {
       name: input.name,
       description: input.description,
       params: input.params,
       inputSchema: input.inputSchema,
       outputSchema: input.outputSchema,
-      execute: input.execute,
+      execute,
     };
   },
 };

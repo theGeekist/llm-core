@@ -77,7 +77,7 @@ References are the authoritative installed package types in this repo.
 
 ### Document
 
-Normalized: `AdapterDocument` in `src/adapters/types.ts` with `text`, `metadata`, `id`, `score`.
+Normalized: `Document` in `src/adapters/types.ts` with `text`, `metadata`, `id`, `score`.
 
 - LangChain: `Document` has `pageContent`, `metadata`, `id`. `node_modules/@langchain/core/dist/documents/document.d.ts`
 - LlamaIndex: `Document` extends `TextNode` with `id_`, `text`, `metadata`, embeddings, relationships. `node_modules/@llamaindex/core/schema/dist/index.d.ts`
@@ -85,7 +85,7 @@ Normalized: `AdapterDocument` in `src/adapters/types.ts` with `text`, `metadata`
 
 ### Messages / chat
 
-Normalized: `AdapterMessage` with `content` as `string | AdapterMessagePart[]`.
+Normalized: `Message` with `content` as `string | MessagePart[]`.
 
 - LangChain: `BaseMessage` content is string or content blocks; tool calls are content blocks. `node_modules/@langchain/core/dist/messages/base.d.ts` and `node_modules/@langchain/core/dist/messages/content/index.d.ts`
 - LlamaIndex: `ChatMessage` uses `role` and `MessageContent` (string or multimodal detail list). `node_modules/@llamaindex/core/llms/dist/index.d.ts`
@@ -95,7 +95,7 @@ Normalized parts: text, image, file, reasoning, tool-call, tool-result, data.
 
 ### Tools / function calling
 
-Normalized: `AdapterTool`, `AdapterToolCall`, `AdapterToolResult`.
+Normalized: `Tool`, `ToolCall`, `ToolResult`.
 
 - LangChain: `StructuredTool` / `DynamicStructuredTool` accept Zod or JSON schema and optional execution. `node_modules/@langchain/core/dist/tools/index.d.ts`
 - LlamaIndex: `BaseTool` includes metadata (name, description, parameters) and optional `call`. `node_modules/@llamaindex/core/llms/dist/index.d.ts`
@@ -103,7 +103,7 @@ Normalized: `AdapterTool`, `AdapterToolCall`, `AdapterToolResult`.
 
 ### Model calls + streaming
 
-Normalized: `AdapterModelCall`, `AdapterModelResult`, `AdapterStreamChunk`.
+Normalized: `ModelCall`, `ModelResult`, `AdapterStreamChunk`.
 
 - LlamaIndex: `LLM.chat` accepts `messages`, `tools`, `responseFormat` and returns `ChatResponse` or async chunks. `node_modules/@llamaindex/core/llms/dist/index.d.ts`
 - AI SDK: `Prompt` supports `system` + `prompt` or `messages`, and streaming via model calls. `node_modules/ai/dist/index.d.ts`
@@ -113,7 +113,7 @@ Normalized call allows `messages` or `prompt` + `system`, with tool choice and s
 
 ### Retrieval + citations
 
-Normalized: `AdapterRetrievalResult` with `documents` and `citations`.
+Normalized: `RetrievalResult` with `documents` and `citations`.
 
 - LangChain: retrievers return `Document` lists. `node_modules/@langchain/core/dist/documents/document.d.ts`
 - LlamaIndex: results include `NodeWithScore` and `sourceNodes`. `node_modules/@llamaindex/core/schema/dist/index.d.ts`
@@ -121,7 +121,7 @@ Normalized: `AdapterRetrievalResult` with `documents` and `citations`.
 
 ### Prompts + prompt schemas
 
-Normalized: `AdapterPromptTemplate`, `AdapterPromptSchema`, `AdapterSchema`, `AdapterStructuredResult`.
+Normalized: `PromptTemplate`, `PromptSchema`, `Schema`.
 
 - LangChain: `PromptTemplate`, `ChatPromptTemplate`, `StructuredPrompt` with `schema` and `method`. `node_modules/@langchain/core/dist/prompts/structured.d.ts`
 - LlamaIndex: `PromptTemplate` with `templateVars`, `promptType`, and output parser. `node_modules/@llamaindex/core/prompts/dist/index.d.ts`
@@ -129,7 +129,7 @@ Normalized: `AdapterPromptTemplate`, `AdapterPromptSchema`, `AdapterSchema`, `Ad
 
 ### Memory
 
-Normalized: `AdapterMemory`, `AdapterThread`, `AdapterTurn`.
+Normalized: `Memory`, `Thread`, `AdapterTurn`.
 
 - LangChain: `BaseMemory` with `loadMemoryVariables` + `saveContext`. `node_modules/@langchain/core/dist/memory.d.ts`
 - LlamaIndex: `Memory` with `getLLM`, `add`, `clear`, snapshot + adapters. `node_modules/@llamaindex/core/memory/dist/index.d.ts` (BaseMemory is deprecated)
@@ -153,7 +153,7 @@ Normalized: `AdapterTraceEvent`, `AdapterDiagnostic`.
 
 ### Text utilities (splitters / chunkers)
 
-Normalized: `AdapterTextSplitter` (split, batch split, and optional metadata-aware split).
+Normalized: `TextSplitter` (split, batch split, and optional metadata-aware split).
 
 - LangChain: `TextSplitter`, `RecursiveCharacterTextSplitter` in `@langchain/textsplitters`. `node_modules/@langchain/textsplitters/dist/text_splitter.d.ts`
 - LlamaIndex: `TextSplitter`, `SentenceSplitter`, `TokenTextSplitter` in `@llamaindex/core/node-parser`. `node_modules/@llamaindex/core/node-parser/dist/index.d.ts`
@@ -162,7 +162,7 @@ Normalized: `AdapterTextSplitter` (split, batch split, and optional metadata-awa
 
 ### Embeddings
 
-Normalized: `AdapterEmbedder`.
+Normalized: `Embedder`.
 
 - LangChain: `Embeddings` with `embedQuery` and `embedDocuments`. `node_modules/@langchain/core/dist/embeddings.d.ts`
 - LlamaIndex: `BaseEmbedding` with `getTextEmbedding` and `getTextEmbeddings`. `node_modules/@llamaindex/core/embeddings/dist/index.d.ts`
@@ -170,7 +170,7 @@ Normalized: `AdapterEmbedder`.
 
 ### Retrievers
 
-Normalized: `AdapterRetriever` returning `AdapterRetrievalResult`.
+Normalized: `Retriever` returning `RetrievalResult`.
 
 - LangChain: `BaseRetriever` with `invoke(query)` returning documents. `node_modules/@langchain/core/dist/retrievers/index.d.ts`
 - LlamaIndex: `BaseRetriever` with `retrieve(query)` returning `NodeWithScore`. `node_modules/@llamaindex/core/retriever/dist/index.d.ts`
@@ -178,7 +178,7 @@ Normalized: `AdapterRetriever` returning `AdapterRetrievalResult`.
 
 ### Rerankers / compressors
 
-Normalized: `AdapterReranker` reranking `AdapterDocument[]`.
+Normalized: `Reranker` reranking `Document[]`.
 
 - LangChain: `BaseDocumentCompressor` with `compressDocuments(documents, query)`. `node_modules/@langchain/core/dist/retrievers/document_compressors/index.d.ts`
 - LlamaIndex: `BaseNodePostprocessor` with `postprocessNodes(nodes, query)`. `node_modules/@llamaindex/core/postprocessor/dist/index.d.ts`
@@ -186,7 +186,7 @@ Normalized: `AdapterReranker` reranking `AdapterDocument[]`.
 
 ### Loaders / transformers
 
-Normalized: `AdapterDocumentLoader`, `AdapterDocumentTransformer`.
+Normalized: `DocumentLoader`, `DocumentTransformer`.
 
 - LangChain: `BaseDocumentLoader` with `load()`. `node_modules/@langchain/core/dist/document_loaders/base.d.ts`
 - LangChain: `BaseDocumentTransformer` with `transformDocuments(documents)`. `node_modules/@langchain/core/dist/documents/transformers.d.ts`
@@ -200,46 +200,46 @@ Stage 7 adds shape tests under `tests/interop/` to document expected mappings. S
 real adapters to satisfy these shapes.
 
 - Documents
-  - LangChain Document -> AdapterDocument
-  - LlamaIndex Document -> AdapterDocument
+  - LangChain Document -> Document
+  - LlamaIndex Document -> Document
 - Messages
-  - LangChain BaseMessage -> AdapterMessage
-  - LlamaIndex ChatMessage -> AdapterMessage
-  - AI SDK ModelMessage -> AdapterMessage
+  - LangChain BaseMessage -> Message
+  - LlamaIndex ChatMessage -> Message
+  - AI SDK ModelMessage -> Message
 - Tools
-  - LangChain Tool -> AdapterTool
-  - LlamaIndex BaseTool -> AdapterTool
-  - AI SDK Tool -> AdapterTool
+  - LangChain Tool -> Tool
+  - LlamaIndex BaseTool -> Tool
+  - AI SDK Tool -> Tool
 - Model calls
-  - LlamaIndex ChatMessage[] -> AdapterModelCall
-  - AI SDK Prompt -> AdapterModelCall
+  - LlamaIndex ChatMessage[] -> ModelCall
+  - AI SDK Prompt -> ModelCall
 - Memory
-  - LangChain BaseMemory -> AdapterMemory
-  - LlamaIndex Memory -> AdapterMemory
+  - LangChain BaseMemory -> Memory
+  - LlamaIndex Memory -> Memory
 - Storage
-  - LangChain BaseStore -> AdapterKVStore
-  - LlamaIndex BaseDocumentStore -> AdapterKVStore
+  - LangChain BaseStore ->KVStore
+  - LlamaIndex BaseDocumentStore ->KVStore
 - Prompts
-  - LangChain PromptTemplate -> AdapterPromptTemplate
-  - LlamaIndex PromptTemplate -> AdapterPromptTemplate
+  - LangChain PromptTemplate -> PromptTemplate
+  - LlamaIndex PromptTemplate -> PromptTemplate
 - Text utilities
-  - LlamaIndex TextSplitter -> AdapterTextSplitter
-  - LangChain splitter -> AdapterTextSplitter
+  - LlamaIndex TextSplitter -> TextSplitter
+  - LangChain splitter -> TextSplitter
 - Embeddings
-  - LangChain Embeddings -> AdapterEmbedder
-  - LlamaIndex BaseEmbedding -> AdapterEmbedder
-  - AI SDK embed/embedMany -> AdapterEmbedder
+  - LangChain Embeddings -> Embedder
+  - LlamaIndex BaseEmbedding -> Embedder
+  - AI SDK embed/embedMany -> Embedder
 - Retrievers
-  - LangChain BaseRetriever -> AdapterRetriever
-  - LlamaIndex BaseRetriever -> AdapterRetriever
+  - LangChain BaseRetriever -> Retriever
+  - LlamaIndex BaseRetriever -> Retriever
   - AI SDK: none
 - Rerankers / compressors
-  - LangChain BaseDocumentCompressor -> AdapterReranker
-  - LlamaIndex BaseNodePostprocessor -> AdapterReranker
+  - LangChain BaseDocumentCompressor -> Reranker
+  - LlamaIndex BaseNodePostprocessor -> Reranker
   - AI SDK: none
 - Loaders / transformers
-  - LangChain BaseDocumentLoader -> AdapterDocumentLoader
-  - LangChain BaseDocumentTransformer -> AdapterDocumentTransformer
-  - LlamaIndex BaseReader -> AdapterDocumentLoader
-  - LlamaIndex NodeParser -> AdapterDocumentTransformer
+  - LangChain BaseDocumentLoader -> DocumentLoader
+  - LangChain BaseDocumentTransformer -> DocumentTransformer
+  - LlamaIndex BaseReader -> DocumentLoader
+  - LlamaIndex NodeParser -> DocumentTransformer
   - AI SDK: none

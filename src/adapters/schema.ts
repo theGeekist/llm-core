@@ -1,5 +1,5 @@
 import { zodToJsonSchema } from "zod-to-json-schema";
-import type { AdapterSchema } from "./types";
+import type { Schema } from "./types";
 
 type SchemaLike = {
   jsonSchema?: unknown;
@@ -13,7 +13,7 @@ type SchemaLike = {
 const isObject = (value: unknown): value is Record<string, unknown> =>
   typeof value === "object" && value !== null;
 
-export function toAdapterSchema(schema: unknown): AdapterSchema | undefined {
+export function toSchema(schema: unknown): Schema | undefined {
   if (schema === undefined || schema === null) {
     return undefined;
   }
@@ -74,7 +74,7 @@ export function normalizeObjectSchema(schema: unknown): {
   return { schema: { type: "object", properties: {} }, isObject: false };
 }
 
-export function toJsonSchema(schema: AdapterSchema): unknown {
+export function toJsonSchema(schema: Schema): unknown {
   if (schema.kind === "zod") {
     if (hasToJsonSchema(schema.jsonSchema)) {
       try {

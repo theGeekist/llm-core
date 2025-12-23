@@ -1,7 +1,7 @@
-import type { AdapterModelTelemetry, AdapterTraceEvent } from "./types";
+import type { ModelTelemetry, AdapterTraceEvent } from "./types";
 
 export const toAdapterTrace = (
-  telemetry: AdapterModelTelemetry | undefined,
+  telemetry: ModelTelemetry | undefined,
   existing: AdapterTraceEvent[] = [],
 ): AdapterTraceEvent[] | undefined => {
   if (!telemetry?.response) {

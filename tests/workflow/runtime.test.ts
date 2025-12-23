@@ -1,4 +1,5 @@
 import { describe, expect, it } from "bun:test";
+import { createBuiltinRetriever } from "#adapters";
 import { getRecipe, registerRecipe } from "#workflow/recipe-registry";
 import { assertSyncOutcome, diagnosticMessages, makeRuntime, makeWorkflow } from "./helpers";
 
@@ -101,6 +102,23 @@ describe("Workflow runtime", () => {
 
     const outcome = assertSyncOutcome(runtime.run({ input: "reporter" }, { reporter }));
     expect(outcome.status).toBe("ok");
+  });
+
+  it("reports adapter input diagnostics during runs", () => {
+    const retriever = createBuiltinRetriever();
+    const runtime = makeRuntime("rag", {
+      includeDefaults: false,
+      plugins: [{ key: "adapter.retriever", adapters: { retriever } }],
+      run: (options) => {
+        const adapters = options.adapters as { retriever?: typeof retriever };
+        adapters.retriever?.retrieve(" ");
+        return { artifact: { ok: true } };
+      },
+    });
+
+    const outcome = assertSyncOutcome(runtime.run({ input: "query" }));
+    expect(outcome.status).toBe("ok");
+    expect(diagnosticMessages(outcome.diagnostics)).toContain("retriever_query_missing");
   });
 
   it("exposes resume only for recipes that support needsHuman", () => {

@@ -78,7 +78,13 @@ export const createPipelineDiagnostic = (diagnostic: unknown): DiagnosticEntry =
 
 export const createAdapterDiagnostic = (diagnostic: AdapterDiagnostic): DiagnosticEntry => ({
   level: diagnostic.level,
-  kind: "adapter",
+  kind:
+    diagnostic.data && typeof diagnostic.data === "object"
+      ? (diagnostic.data as { code?: string }).code === "construct_dependency_missing" ||
+        (diagnostic.data as { code?: string }).code === "capability_dependency_missing"
+        ? "requirement"
+        : "adapter"
+      : "adapter",
   message: diagnostic.message,
   data: diagnostic.data,
 });

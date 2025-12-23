@@ -1,23 +1,42 @@
 import type { Document } from "@langchain/core/documents";
-import type { TextSplitter } from "@langchain/textsplitters";
-import type { AdapterTextSplitter } from "../types";
-import { mapMaybe } from "../../maybe";
+import type { TextSplitter as LanchainTextSplitter } from "@langchain/textsplitters";
+import type { AdapterCallContext, TextSplitter } from "../types";
+import { mapMaybe, maybeAll } from "../../maybe";
+import {
+  reportDiagnostics,
+  validateTextSplitterBatchInput,
+  validateTextSplitterInput,
+} from "../input-validation";
 
 function toWithMetadata(documents: Document[]) {
   return documents.map((doc) => ({ text: doc.pageContent, metadata: doc.metadata }));
 }
 
-export function fromLangChainTextSplitter(splitter: TextSplitter): AdapterTextSplitter {
-  function split(text: string) {
+export function fromLangChainTextSplitter(splitter: LanchainTextSplitter): TextSplitter {
+  function split(text: string, context?: AdapterCallContext) {
+    const diagnostics = validateTextSplitterInput(text);
+    if (diagnostics.length > 0) {
+      reportDiagnostics(context, diagnostics);
+      return [];
+    }
     return mapMaybe(splitter.splitText(text), (chunks) => chunks);
   }
 
-  function splitBatch(texts: string[]) {
-    const pending = Promise.all(texts.map((text) => splitter.splitText(text)));
-    return mapMaybe(pending, (chunks) => chunks);
+  function splitBatch(texts: string[], context?: AdapterCallContext) {
+    const diagnostics = validateTextSplitterBatchInput(texts);
+    if (diagnostics.length > 0) {
+      reportDiagnostics(context, diagnostics);
+      return [];
+    }
+    return mapMaybe(maybeAll(texts.map((text) => splitter.splitText(text))), (chunks) => chunks);
   }
 
-  function splitWithMetadata(text: string) {
+  function splitWithMetadata(text: string, context?: AdapterCallContext) {
+    const diagnostics = validateTextSplitterInput(text);
+    if (diagnostics.length > 0) {
+      reportDiagnostics(context, diagnostics);
+      return [];
+    }
     return mapMaybe(splitter.createDocuments([text], [{ source: "langchain" }]), toWithMetadata);
   }
 

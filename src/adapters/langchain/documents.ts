@@ -1,7 +1,7 @@
 import { Document as LangChainDocument } from "@langchain/core/documents";
-import type { AdapterDocument } from "../types";
+import type { Document } from "../types";
 
-export function fromLangChainDocument(doc: LangChainDocument): AdapterDocument {
+export function fromLangChainDocument(doc: LangChainDocument): Document {
   return {
     id: doc.id,
     text: doc.pageContent,
@@ -9,7 +9,7 @@ export function fromLangChainDocument(doc: LangChainDocument): AdapterDocument {
   };
 }
 
-export function toLangChainDocument(doc: AdapterDocument): LangChainDocument {
+export function toLangChainDocument(doc: Document): LangChainDocument {
   return new LangChainDocument({
     pageContent: doc.text,
     metadata: doc.metadata ?? {},

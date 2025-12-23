@@ -1,11 +1,11 @@
-import type { AdapterDiagnostic, AdapterMessage, AdapterModel, AdapterModelCall } from "./types";
-import { validateModelCall, type AdapterModelValidationOptions } from "./model-validation";
+import type { AdapterDiagnostic, Message, Model, ModelCall } from "./types";
+import { validateModelCall, type ModelValidationOptions } from "./model-validation";
 
 export type ModelCallPrepared = {
   diagnostics: AdapterDiagnostic[];
   allowTools: boolean;
   normalizedSchema?: ReturnType<typeof validateModelCall>["normalizedSchema"];
-  messages?: AdapterMessage[];
+  messages?: Message[];
   prompt?: string;
 };
 
@@ -22,17 +22,18 @@ const userDiagnostics = new Set([
   "tools_ignored_for_response_schema",
   "response_schema_not_object",
   "response_schema_invalid",
+  "model_input_missing",
 ]);
 
-const resolvePrompt = (call: AdapterModelCall) => {
+const resolvePrompt = (call: ModelCall) => {
   if (call.messages !== undefined) {
     return { messages: call.messages ?? [], prompt: undefined };
   }
   return { messages: undefined, prompt: call.prompt ?? "" };
 };
 
-export const ModelCall = {
-  prepare(call: AdapterModelCall, options?: AdapterModelValidationOptions): ModelCallPrepared {
+export const ModelCallHelper = {
+  prepare(call: ModelCall, options?: ModelValidationOptions): ModelCallPrepared {
     const validation = validateModelCall(call, options);
     const resolved = resolvePrompt(call);
     return {
@@ -43,10 +44,10 @@ export const ModelCall = {
       prompt: resolved.prompt,
     };
   },
-  shouldUseSchema(call: AdapterModelCall) {
+  shouldUseSchema(call: ModelCall) {
     return Boolean(call.responseSchema);
   },
-  shouldUseTools(call: AdapterModelCall) {
+  shouldUseTools(call: ModelCall) {
     return Boolean(call.tools?.length) && !call.responseSchema;
   },
   groupDiagnostics(diagnostics: AdapterDiagnostic[]): DiagnosticGroups {
@@ -66,8 +67,8 @@ export const ModelCall = {
   },
 };
 
-export const Model = {
-  create(generate: AdapterModel["generate"]): AdapterModel {
+export const ModelHelper = {
+  create(generate: Model["generate"]): Model {
     return { generate };
   },
 };
@@ -78,7 +79,7 @@ const warn = (message: string, data?: unknown): AdapterDiagnostic => ({
   data,
 });
 
-export const ModelUsage = {
+export const ModelUsageHelper = {
   warnIfMissing(diagnostics: AdapterDiagnostic[], usage: unknown, provider?: string): void {
     if (usage) {
       return;

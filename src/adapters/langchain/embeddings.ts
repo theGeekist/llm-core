@@ -1,15 +1,28 @@
 import type { EmbeddingsInterface } from "@langchain/core/embeddings";
-import type { AdapterEmbedder } from "../types";
+import type { AdapterCallContext, Embedder } from "../types";
 import { identity, mapMaybe } from "../../maybe";
+import {
+  reportDiagnostics,
+  validateEmbedderBatchInput,
+  validateEmbedderInput,
+} from "../input-validation";
 
-export function fromLangChainEmbeddings(
-  embeddings: EmbeddingsInterface<number[]>,
-): AdapterEmbedder {
-  function embed(text: string) {
+export function fromLangChainEmbeddings(embeddings: EmbeddingsInterface<number[]>): Embedder {
+  function embed(text: string, context?: AdapterCallContext) {
+    const diagnostics = validateEmbedderInput(text);
+    if (diagnostics.length > 0) {
+      reportDiagnostics(context, diagnostics);
+      return [];
+    }
     return mapMaybe(embeddings.embedQuery(text), identity);
   }
 
-  function embedMany(texts: string[]) {
+  function embedMany(texts: string[], context?: AdapterCallContext) {
+    const diagnostics = validateEmbedderBatchInput(texts);
+    if (diagnostics.length > 0) {
+      reportDiagnostics(context, diagnostics);
+      return [];
+    }
     return mapMaybe(embeddings.embedDocuments(texts), identity);
   }
 

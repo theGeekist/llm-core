@@ -1,4 +1,4 @@
-import type { AdapterDiagnostic, AdapterPromptSchema, AdapterSchema } from "./types";
+import type { AdapterDiagnostic, PromptSchema, Schema } from "./types";
 import { adapterParamTypeToJsonType } from "./tool-params-schema";
 
 const warn = (message: string, data?: unknown): AdapterDiagnostic => ({
@@ -33,7 +33,7 @@ const isType = (value: unknown, type: string) => {
   }
 };
 
-const toJsonSchema = (schema: AdapterPromptSchema) => {
+const toJsonSchema = (schema: PromptSchema) => {
   const properties: Record<string, unknown> = {};
   const required: string[] = [];
   for (const input of schema.inputs) {
@@ -54,14 +54,14 @@ const toJsonSchema = (schema: AdapterPromptSchema) => {
   };
 };
 
-export const toPromptInputSchema = (schema: AdapterPromptSchema): AdapterSchema => ({
+export const toPromptInputSchema = (schema: PromptSchema): Schema => ({
   name: schema.name,
   jsonSchema: toJsonSchema(schema),
   kind: "json-schema",
 });
 
 export const validatePromptInputs = (
-  schema: AdapterPromptSchema,
+  schema: PromptSchema,
   values: Record<string, unknown>,
 ): AdapterDiagnostic[] => {
   const diagnostics: AdapterDiagnostic[] = [];

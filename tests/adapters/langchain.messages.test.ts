@@ -1,10 +1,12 @@
 import { describe, expect, it } from "bun:test";
-import { ToolMessage } from "@langchain/core/messages";
+import { AIMessage, HumanMessage, SystemMessage, ToolMessage } from "@langchain/core/messages";
 import { fromLangChainMessage } from "#adapters";
 import { toLangChainMessage } from "../../src/adapters/langchain/messages";
 
 describe("Adapter LangChain message conversions", () => {
   const TOOL_NAME = "search";
+  const IMAGE_URL = "https://example.com/ok.png";
+  const TEXT_MEDIA = "text/plain";
 
   it("maps tool messages with ids and names", () => {
     const message = new ToolMessage({
@@ -17,6 +19,16 @@ describe("Adapter LangChain message conversions", () => {
     expect(adapted.role).toBe("tool");
     expect(adapted.toolCallId).toBe("call-1");
     expect(adapted.name).toBe(TOOL_NAME);
+  });
+
+  it("maps human, ai, and system messages to adapter roles", () => {
+    const human = fromLangChainMessage(new HumanMessage("hi"));
+    const ai = fromLangChainMessage(new AIMessage("ok"));
+    const system = fromLangChainMessage(new SystemMessage("sys"));
+
+    expect(human.role).toBe("user");
+    expect(ai.role).toBe("assistant");
+    expect(system.role).toBe("system");
   });
 
   it("summarizes tool parts for tool messages", () => {
@@ -56,7 +68,7 @@ describe("Adapter LangChain message conversions", () => {
         text: "",
         parts: [
           { type: "image", data: "abc", mediaType: "image/png" },
-          { type: "image", url: "https://example.com/ok.png" },
+          { type: "image", url: IMAGE_URL },
         ],
       },
     });
@@ -70,8 +82,7 @@ describe("Adapter LangChain message conversions", () => {
       parts.some(
         (part) =>
           part.type === "image_url" &&
-          (part as { image_url?: { url?: string } }).image_url?.url ===
-            "https://example.com/ok.png",
+          (part as { image_url?: { url?: string } }).image_url?.url === IMAGE_URL,
       ),
     ).toBe(true);
   });
@@ -85,15 +96,33 @@ describe("Adapter LangChain message conversions", () => {
         text: "",
         parts: [
           { type: "reasoning", text: "think" },
-          { type: "file", data: "payload", mediaType: "text/plain" },
+          { type: "file", data: "payload", mediaType: TEXT_MEDIA },
           { type: "data", data: { ok: true } },
           { type: "data", data: cyclic },
         ],
       },
     });
 
-    expect(message.content).toContain("file:text/plain");
+    expect(message.content).toContain(`file:${TEXT_MEDIA}`);
     expect(message.content).toContain('{"ok":true}');
+  });
+
+  it("maps assistant messages with structured parts", () => {
+    const message = toLangChainMessage({
+      role: "assistant",
+      content: {
+        text: "",
+        parts: [
+          { type: "text", text: "hi" },
+          { type: "image", url: "https://example.com/ok.png" },
+        ],
+      },
+    });
+
+    const content = "content" in message ? message.content : "";
+    const parts = Array.isArray(content) ? content : [];
+    expect(parts.some((part) => part.type === "text")).toBe(true);
+    expect(parts.some((part) => part.type === "image_url")).toBe(true);
   });
 
   it("maps unknown message types to tool role", () => {

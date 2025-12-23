@@ -2,7 +2,7 @@ import { describe, expect, it } from "bun:test";
 import { Document as LangChainDocument } from "@langchain/core/documents";
 import { Document as LlamaDocument, type NodeWithScore } from "@llamaindex/core/schema";
 import { fromLangChainRetriever, fromLlamaIndexRetriever } from "#adapters";
-import { asLangChainRetriever, asLlamaIndexRetriever } from "./helpers";
+import { asLangChainRetriever, asLlamaIndexRetriever, captureDiagnostics } from "./helpers";
 
 describe("Adapter retrievers", () => {
   it("maps LangChain retriever with sync returns", async () => {
@@ -31,5 +31,25 @@ describe("Adapter retrievers", () => {
     const adapter = fromLlamaIndexRetriever(retriever);
     const result = await adapter.retrieve("query");
     expect(result.documents[0]?.text).toBe("hello");
+  });
+
+  it("warns when retriever queries are missing", async () => {
+    const retriever = asLangChainRetriever(() => [new LangChainDocument({ pageContent: "hello" })]);
+    const adapter = fromLangChainRetriever(retriever);
+    const { context, diagnostics } = captureDiagnostics();
+
+    const result = await adapter.retrieve("   ", context);
+    expect(result.documents).toBeArrayOfSize(0);
+    expect(diagnostics[0]?.message).toBe("retriever_query_missing");
+  });
+
+  it("warns when LlamaIndex retriever queries are missing", async () => {
+    const retriever = asLlamaIndexRetriever(() => Promise.resolve([]));
+    const adapter = fromLlamaIndexRetriever(retriever);
+    const { context, diagnostics } = captureDiagnostics();
+
+    const result = await adapter.retrieve(" ", context);
+    expect(result.documents).toBeArrayOfSize(0);
+    expect(diagnostics[0]?.message).toBe("retriever_query_missing");
   });
 });

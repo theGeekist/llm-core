@@ -1,11 +1,11 @@
 import type {
-  AdapterDataPart,
-  AdapterFilePart,
-  AdapterImagePart,
-  AdapterMessageContent,
-  AdapterMessagePart,
-  AdapterStructuredContent,
-  AdapterTextPart,
+  DataPart,
+  FilePart,
+  ImagePart,
+  MessageContent,
+  MessagePart,
+  StructuredContent,
+  TextPart,
 } from "./types";
 
 type PartWithType = { type?: string };
@@ -13,29 +13,29 @@ type PartWithType = { type?: string };
 const isObject = (value: unknown): value is Record<string, unknown> =>
   typeof value === "object" && value !== null;
 
-const isStructuredContent = (value: unknown): value is AdapterStructuredContent =>
+const isStructuredContent = (value: unknown): value is StructuredContent =>
   isObject(value) && Array.isArray(value.parts) && typeof value.text === "string";
 
-const toDataPart = (data: unknown): AdapterDataPart => ({
+const toDataPart = (data: unknown): DataPart => ({
   type: "data",
   data,
 });
 
-const getTextParts = (parts: AdapterMessagePart[]) =>
+const getTextParts = (parts: MessagePart[]) =>
   parts
-    .filter((part): part is AdapterTextPart => part.type === "text")
+    .filter((part): part is TextPart => part.type === "text")
     .map((part) => part.text)
     .join("");
 
-const toImagePartFromUrl = (url: string): AdapterImagePart => ({ type: "image", url });
+const toImagePartFromUrl = (url: string): ImagePart => ({ type: "image", url });
 
-const toImagePartFromData = (data: string, mediaType?: string): AdapterImagePart => ({
+const toImagePartFromData = (data: string, mediaType?: string): ImagePart => ({
   type: "image",
   data,
   mediaType,
 });
 
-const toFilePartFromData = (data: string, mediaType?: string): AdapterFilePart => ({
+const toFilePartFromData = (data: string, mediaType?: string): FilePart => ({
   type: "file",
   data,
   mediaType,
@@ -51,7 +51,7 @@ const readMediaType = (part: Record<string, unknown>) => {
   return undefined;
 };
 
-const toImagePart = (value: unknown, mediaType?: string): AdapterMessagePart => {
+const toImagePart = (value: unknown, mediaType?: string): MessagePart => {
   if (value instanceof URL) {
     return toImagePartFromUrl(String(value));
   }
@@ -73,7 +73,7 @@ const toImagePart = (value: unknown, mediaType?: string): AdapterMessagePart => 
   return toDataPart(value);
 };
 
-const toFilePart = (value: unknown, mediaType?: string): AdapterMessagePart => {
+const toFilePart = (value: unknown, mediaType?: string): MessagePart => {
   if (value instanceof URL) {
     return toFilePartFromData(String(value), mediaType);
   }
@@ -94,21 +94,21 @@ const toFilePart = (value: unknown, mediaType?: string): AdapterMessagePart => {
 
 const readType = (part: PartWithType) => (typeof part.type === "string" ? part.type : "");
 
-const toTextPart = (part: Record<string, unknown>): AdapterMessagePart | undefined => {
+const toTextPart = (part: Record<string, unknown>): MessagePart | undefined => {
   if (readType(part) === "text" && typeof part.text === "string") {
     return { type: "text", text: part.text };
   }
   return undefined;
 };
 
-const toReasoningPart = (part: Record<string, unknown>): AdapterMessagePart | undefined => {
+const toReasoningPart = (part: Record<string, unknown>): MessagePart | undefined => {
   if (readType(part) === "reasoning" && typeof part.text === "string") {
     return { type: "reasoning", text: part.text };
   }
   return undefined;
 };
 
-const toToolCallPart = (part: Record<string, unknown>): AdapterMessagePart | undefined => {
+const toToolCallPart = (part: Record<string, unknown>): MessagePart | undefined => {
   if (readType(part) === "tool-call" && typeof part.toolName === "string") {
     return {
       type: "tool-call",
@@ -120,7 +120,7 @@ const toToolCallPart = (part: Record<string, unknown>): AdapterMessagePart | und
   return undefined;
 };
 
-const toToolResultPart = (part: Record<string, unknown>): AdapterMessagePart | undefined => {
+const toToolResultPart = (part: Record<string, unknown>): MessagePart | undefined => {
   if (readType(part) === "tool-result" && typeof part.toolName === "string") {
     return {
       type: "tool-result",
@@ -132,7 +132,7 @@ const toToolResultPart = (part: Record<string, unknown>): AdapterMessagePart | u
   return undefined;
 };
 
-const toImagePartFromObject = (part: Record<string, unknown>): AdapterMessagePart | undefined => {
+const toImagePartFromObject = (part: Record<string, unknown>): MessagePart | undefined => {
   if (readType(part) === "image") {
     return toImagePart(part.image, readMediaType(part));
   }
@@ -145,7 +145,7 @@ const toImagePartFromObject = (part: Record<string, unknown>): AdapterMessagePar
   return undefined;
 };
 
-const toFilePartFromObject = (part: Record<string, unknown>): AdapterMessagePart | undefined => {
+const toFilePartFromObject = (part: Record<string, unknown>): MessagePart | undefined => {
   if (readType(part) === "file") {
     return toFilePart(part.data, readMediaType(part));
   }
@@ -161,7 +161,7 @@ const partParsers = [
   toFilePartFromObject,
 ];
 
-const parseAdapterPart = (value: unknown): AdapterMessagePart | undefined => {
+const parseAdapterPart = (value: unknown): MessagePart | undefined => {
   if (!isObject(value)) {
     return undefined;
   }
@@ -174,17 +174,16 @@ const parseAdapterPart = (value: unknown): AdapterMessagePart | undefined => {
   return undefined;
 };
 
-const toAdapterPart = (value: unknown): AdapterMessagePart =>
-  parseAdapterPart(value) ?? toDataPart(value);
+const toAdapterPart = (value: unknown): MessagePart => parseAdapterPart(value) ?? toDataPart(value);
 
-export function toAdapterMessageContent(input: unknown): AdapterMessageContent {
+export function toMessageContent(input: unknown): MessageContent {
   if (typeof input === "string") {
     return input;
   }
 
   if (Array.isArray(input)) {
     const parts = input.map(toAdapterPart);
-    const structured: AdapterStructuredContent = {
+    const structured: StructuredContent = {
       text: getTextParts(parts),
       parts,
     };

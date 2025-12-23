@@ -1,13 +1,13 @@
-import type { AdapterDiagnostic, AdapterModelCall } from "./types";
+import type { AdapterDiagnostic, ModelCall } from "./types";
 import { normalizeObjectSchema, toJsonSchema } from "./schema";
 
-export type AdapterModelValidation = {
+export type ModelValidation = {
   diagnostics: AdapterDiagnostic[];
   allowTools: boolean;
   normalizedSchema?: ReturnType<typeof normalizeObjectSchema>;
 };
 
-export type AdapterModelValidationOptions = {
+export type ModelValidationOptions = {
   supportsToolChoice?: boolean;
 };
 
@@ -21,10 +21,7 @@ const appendDiagnostic = (diagnostics: AdapterDiagnostic[], message: string, dat
   diagnostics.push(warn(message, data));
 };
 
-const readSchema = (
-  schema: AdapterModelCall["responseSchema"],
-  diagnostics: AdapterDiagnostic[],
-) => {
+const readSchema = (schema: ModelCall["responseSchema"], diagnostics: AdapterDiagnostic[]) => {
   if (!schema) {
     return undefined;
   }
@@ -38,7 +35,7 @@ const readSchema = (
   }
 };
 
-const maybeWarnPromptIgnored = (call: AdapterModelCall, diagnostics: AdapterDiagnostic[]) => {
+const maybeWarnPromptIgnored = (call: ModelCall, diagnostics: AdapterDiagnostic[]) => {
   if (!call.messages || call.prompt === undefined) {
     return;
   }
@@ -46,7 +43,7 @@ const maybeWarnPromptIgnored = (call: AdapterModelCall, diagnostics: AdapterDiag
 };
 
 const maybeWarnToolChoiceNotSupported = (
-  call: AdapterModelCall,
+  call: ModelCall,
   diagnostics: AdapterDiagnostic[],
   supportsToolChoice: boolean,
 ) => {
@@ -56,7 +53,7 @@ const maybeWarnToolChoiceNotSupported = (
   appendDiagnostic(diagnostics, "tool_choice_not_supported");
 };
 
-const maybeWarnToolsIgnored = (call: AdapterModelCall, diagnostics: AdapterDiagnostic[]) => {
+const maybeWarnToolsIgnored = (call: ModelCall, diagnostics: AdapterDiagnostic[]) => {
   if (!call.responseSchema || !call.tools?.length) {
     return;
   }
@@ -75,17 +72,26 @@ const maybeWarnNonObjectSchema = (
   appendDiagnostic(diagnostics, "response_schema_not_object");
 };
 
-const maybeWarnToolChoiceIgnored = (call: AdapterModelCall, diagnostics: AdapterDiagnostic[]) => {
+const maybeWarnToolChoiceIgnored = (call: ModelCall, diagnostics: AdapterDiagnostic[]) => {
   if (!call.responseSchema || !call.toolChoice) {
     return;
   }
   appendDiagnostic(diagnostics, "tool_choice_ignored_for_response_schema");
 };
 
+const maybeWarnMissingInput = (call: ModelCall, diagnostics: AdapterDiagnostic[]) => {
+  const hasMessages = Array.isArray(call.messages) && call.messages.length > 0;
+  const hasPrompt = typeof call.prompt === "string" && call.prompt.trim().length > 0;
+  if (hasMessages || hasPrompt) {
+    return;
+  }
+  appendDiagnostic(diagnostics, "model_input_missing");
+};
+
 export const validateModelCall = (
-  call: AdapterModelCall,
-  options: AdapterModelValidationOptions = {},
-): AdapterModelValidation => {
+  call: ModelCall,
+  options: ModelValidationOptions = {},
+): ModelValidation => {
   const diagnostics: AdapterDiagnostic[] = [];
   const allowTools = !call.responseSchema;
   const normalizedSchema = readSchema(call.responseSchema, diagnostics);
@@ -96,6 +102,7 @@ export const validateModelCall = (
   maybeWarnToolsIgnored(call, diagnostics);
   maybeWarnNonObjectSchema(normalizedSchema, diagnostics);
   maybeWarnToolChoiceIgnored(call, diagnostics);
+  maybeWarnMissingInput(call, diagnostics);
 
   return {
     diagnostics,

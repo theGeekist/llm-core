@@ -1,7 +1,7 @@
 import { describe, expect, it } from "bun:test";
 import { AIMessage, ToolMessage } from "@langchain/core/messages";
 import type { BaseChatModel } from "@langchain/core/language_models/chat_models";
-import { Tool, toAdapterSchema } from "#adapters";
+import { Tooling, toSchema } from "#adapters";
 import { fromLangChainModel } from "#adapters";
 
 const createModel = (handler: (messages: unknown, options?: unknown) => unknown) =>
@@ -23,7 +23,7 @@ describe("Adapter LangChain model", () => {
     const adapter = fromLangChainModel(model);
     await adapter.generate({
       prompt: "hi",
-      tools: [Tool.create({ name: "search" })],
+      tools: [Tooling.create({ name: "search" })],
       toolChoice: "required",
     });
 
@@ -51,7 +51,7 @@ describe("Adapter LangChain model", () => {
 
     const result = await adapter.generate({
       prompt: "hi",
-      responseSchema: toAdapterSchema({ type: "object", properties: {} }),
+      responseSchema: toSchema({ type: "object", properties: {} }),
     });
 
     expect(result.diagnostics?.map((entry) => entry.message)).toContain(

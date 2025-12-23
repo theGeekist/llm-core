@@ -1,11 +1,11 @@
 import { describe, expect, it } from "bun:test";
 import type { AdapterDiagnostic } from "#adapters";
-import { Model, ModelCall, ModelUsage } from "#adapters";
+import { ModelHelper, ModelCallHelper, ModelUsageHelper } from "#adapters";
 import { makeMessage } from "./helpers";
 
 describe("Adapter modeling helpers", () => {
   it("prepares calls and prefers messages over prompt", () => {
-    const prepared = ModelCall.prepare({
+    const prepared = ModelCallHelper.prepare({
       messages: [],
       prompt: "hi",
     });
@@ -18,7 +18,7 @@ describe("Adapter modeling helpers", () => {
   });
 
   it("preserves prompt when messages are absent", () => {
-    const prepared = ModelCall.prepare({
+    const prepared = ModelCallHelper.prepare({
       prompt: "hi",
     });
 
@@ -33,30 +33,30 @@ describe("Adapter modeling helpers", () => {
       { level: "warn", message: "unknown" },
     ];
 
-    const grouped = ModelCall.groupDiagnostics(diagnostics);
+    const grouped = ModelCallHelper.groupDiagnostics(diagnostics);
     expect(grouped.provider.map((entry) => entry.message)).toEqual(["provider_warning"]);
     expect(grouped.user.map((entry) => entry.message)).toEqual(["response_schema_invalid"]);
     expect(grouped.system.map((entry) => entry.message)).toEqual(["unknown"]);
   });
 
   it("reports schema and tool intent", () => {
-    expect(ModelCall.shouldUseSchema({ responseSchema: { kind: "unknown", jsonSchema: {} } })).toBe(
-      true,
-    );
-    expect(ModelCall.shouldUseTools({ tools: [{ name: "tool" }], responseSchema: undefined })).toBe(
-      true,
-    );
+    expect(
+      ModelCallHelper.shouldUseSchema({ responseSchema: { kind: "unknown", jsonSchema: {} } }),
+    ).toBe(true);
+    expect(
+      ModelCallHelper.shouldUseTools({ tools: [{ name: "tool" }], responseSchema: undefined }),
+    ).toBe(true);
   });
 
   it("creates adapter models from a generate function", async () => {
-    const model = Model.create(() => ({ text: "ok" }));
+    const model = ModelHelper.create(() => ({ text: "ok" }));
     const result = await model.generate({ messages: [makeMessage()] });
     expect(result.text).toBe("ok");
   });
 
   it("warns when usage is missing", () => {
     const diagnostics: AdapterDiagnostic[] = [];
-    ModelUsage.warnIfMissing(diagnostics, undefined, "provider");
+    ModelUsageHelper.warnIfMissing(diagnostics, undefined, "provider");
     expect(diagnostics.map((entry) => entry.message)).toContain("usage_unavailable");
   });
 });

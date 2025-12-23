@@ -1,27 +1,27 @@
 import { generateObject, generateText, jsonSchema, zodSchema, type LanguageModel } from "ai";
 import type {
   AdapterDiagnostic,
-  AdapterModel,
-  AdapterModelCall,
-  AdapterModelResult,
-  AdapterModelTelemetry,
-  AdapterModelUsage,
-  AdapterSchema,
-  AdapterToolCall,
-  AdapterToolResult,
+  Model,
+  ModelCall,
+  ModelResult,
+  ModelTelemetry,
+  ModelUsage,
+  Schema,
+  ToolCall,
+  ToolResult,
 } from "../types";
 import { fromAiSdkMessage, toAiSdkMessage } from "./messages";
 import { toAiSdkTools } from "./tools";
 import { toAdapterTrace } from "../telemetry";
 import { mapMaybe } from "../../maybe";
-import { ModelCall, ModelUsage } from "../modeling";
+import { ModelCallHelper, ModelUsageHelper } from "../modeling";
 import { validateModelCall } from "../model-validation";
 
 const toModelUsage = (usage?: {
   inputTokens?: number;
   outputTokens?: number;
   totalTokens?: number;
-}): AdapterModelUsage | undefined => {
+}): ModelUsage | undefined => {
   if (!usage) {
     return undefined;
   }
@@ -32,18 +32,18 @@ const toModelUsage = (usage?: {
   };
 };
 
-const toAdapterToolCalls = (
+const toToolCalls = (
   calls: Array<{ toolCallId: string; toolName: string; input: unknown }> | undefined,
-): AdapterToolCall[] =>
+): ToolCall[] =>
   (calls ?? []).map((call) => ({
     id: call.toolCallId,
     name: call.toolName,
     arguments: (call.input ?? {}) as Record<string, unknown>,
   }));
 
-const toAdapterToolResults = (
+const toToolResults = (
   results: Array<{ toolCallId: string; toolName: string; output: unknown }> | undefined,
-): AdapterToolResult[] =>
+): ToolResult[] =>
   (results ?? []).map((result) => ({
     toolCallId: result.toolCallId,
     name: result.toolName,
@@ -55,7 +55,7 @@ type AiZodSchemaInput = Parameters<typeof zodSchema>[0];
 
 type NormalizedSchema = ReturnType<typeof validateModelCall>["normalizedSchema"];
 
-const toAiSdkSchema = (schema: AdapterSchema, normalizedSchema: NormalizedSchema) => {
+const toAiSdkSchema = (schema: Schema, normalizedSchema: NormalizedSchema) => {
   if (schema.kind === "zod" && normalizedSchema?.isObject) {
     return zodSchema(schema.jsonSchema as AiZodSchemaInput);
   }
@@ -63,8 +63,8 @@ const toAiSdkSchema = (schema: AdapterSchema, normalizedSchema: NormalizedSchema
 };
 
 const buildPromptOptions = (prepared: {
-  messages?: AdapterModelCall["messages"];
-  prompt?: AdapterModelCall["prompt"];
+  messages?: ModelCall["messages"];
+  prompt?: ModelCall["prompt"];
 }) => {
   if (prepared.messages !== undefined) {
     return { messages: prepared.messages.map(toAiSdkMessage) };
@@ -100,11 +100,11 @@ const toTelemetry = (result: {
     headers?: Record<string, string>;
     body?: unknown;
   };
-  usage?: AdapterModelUsage;
-  totalUsage?: AdapterModelUsage;
+  usage?: ModelUsage;
+  totalUsage?: ModelUsage;
   warnings?: unknown[];
   providerMetadata?: Record<string, unknown>;
-}): AdapterModelTelemetry => ({
+}): ModelTelemetry => ({
   request: result.request ? { body: result.request.body } : undefined,
   response: result.response
     ? {
@@ -121,7 +121,7 @@ const toTelemetry = (result: {
   providerMetadata: result.providerMetadata,
 });
 
-export function fromAiSdkModel(model: LanguageModel): AdapterModel {
+export function fromAiSdkModel(model: LanguageModel): Model {
   type RunState = {
     promptOptions: ReturnType<typeof buildPromptOptions>;
     tools: ReturnType<typeof toAiSdkTools> | undefined;
@@ -130,8 +130,8 @@ export function fromAiSdkModel(model: LanguageModel): AdapterModel {
     normalizedSchema: NormalizedSchema;
   };
 
-  const createRunState = (call: AdapterModelCall): RunState => {
-    const prepared = ModelCall.prepare(call);
+  const createRunState = (call: ModelCall): RunState => {
+    const prepared = ModelCallHelper.prepare(call);
     const tools = prepared.allowTools ? toAiSdkTools(call.tools) : undefined;
     const toolChoice = prepared.allowTools ? toToolChoice(call.toolChoice) : undefined;
 
@@ -153,10 +153,10 @@ export function fromAiSdkModel(model: LanguageModel): AdapterModel {
   const toSchemaResult = (
     result: Awaited<ReturnType<typeof generateObject>>,
     state: RunState,
-  ): AdapterModelResult => {
+  ): ModelResult => {
     const usage = toModelUsage(result.usage);
     const diagnostics = state.diagnostics.concat(toDiagnostics(result.warnings));
-    ModelUsage.warnIfMissing(diagnostics, usage, "ai-sdk");
+    ModelUsageHelper.warnIfMissing(diagnostics, usage, "ai-sdk");
     const telemetry = toTelemetry({
       request: result.request,
       response: result.response,
@@ -180,12 +180,12 @@ export function fromAiSdkModel(model: LanguageModel): AdapterModel {
   const toTextResult = (
     result: Awaited<ReturnType<typeof generateText>>,
     state: RunState,
-  ): AdapterModelResult => {
+  ): ModelResult => {
     const usage = toModelUsage(result.usage);
     const totalUsage = toModelUsage(result.totalUsage);
     const collapsedUsage = totalUsage ?? usage;
     const diagnostics = state.diagnostics.concat(toDiagnostics(result.warnings));
-    ModelUsage.warnIfMissing(diagnostics, collapsedUsage, "ai-sdk");
+    ModelUsageHelper.warnIfMissing(diagnostics, collapsedUsage, "ai-sdk");
     const telemetry = toTelemetry({
       request: result.request,
       response: result.response,
@@ -197,8 +197,8 @@ export function fromAiSdkModel(model: LanguageModel): AdapterModel {
     return {
       text: result.text,
       messages: result.response?.messages?.map(fromAiSdkMessage),
-      toolCalls: toAdapterToolCalls(result.toolCalls),
-      toolResults: toAdapterToolResults(result.toolResults),
+      toolCalls: toToolCalls(result.toolCalls),
+      toolResults: toToolResults(result.toolResults),
       reasoning: result.reasoningText ?? result.reasoning,
       diagnostics,
       telemetry,
@@ -209,7 +209,7 @@ export function fromAiSdkModel(model: LanguageModel): AdapterModel {
     };
   };
 
-  function generate(call: AdapterModelCall) {
+  function generate(call: ModelCall) {
     const state = createRunState(call);
     if (call.responseSchema) {
       return mapMaybe(

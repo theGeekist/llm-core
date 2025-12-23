@@ -1,17 +1,30 @@
 import type { BaseTool } from "@llamaindex/core/llms";
 import { tool as defineTool } from "@llamaindex/core/tools";
 import type { JSONValue } from "@llamaindex/core/global";
-import type { AdapterSchema, AdapterTool } from "../types";
+import type { AdapterCallContext, Schema, Tool } from "../types";
 import { identity, mapMaybe } from "../../maybe";
-import { normalizeObjectSchema, toAdapterSchema, toJsonSchema } from "../schema";
+import { normalizeObjectSchema, toSchema, toJsonSchema } from "../schema";
 import { adapterParamsToJsonSchema } from "../tool-params-schema";
+import { reportDiagnostics, validateToolInput } from "../input-validation";
 
-export function fromLlamaIndexTool(tool: BaseTool): AdapterTool {
+export function fromLlamaIndexTool(tool: BaseTool): Tool {
   const parameters = tool.metadata.parameters;
-  const inputSchema = toAdapterSchema(parameters);
+  const inputSchema = toSchema(parameters);
+  const adapterShape: Tool = {
+    name: tool.metadata.name,
+    description: tool.metadata.description,
+    inputSchema,
+  };
 
   const execute = tool.call
-    ? (input: unknown) => mapMaybe(tool.call?.(input), identity)
+    ? (input: unknown, context?: AdapterCallContext) => {
+        const diagnostics = validateToolInput(adapterShape, input);
+        if (diagnostics.length > 0) {
+          reportDiagnostics(context, diagnostics);
+          return undefined;
+        }
+        return mapMaybe(tool.call?.(input), identity);
+      }
     : undefined;
 
   return {
@@ -22,13 +35,12 @@ export function fromLlamaIndexTool(tool: BaseTool): AdapterTool {
   };
 }
 
-const toLlamaIndexSchema = (schema: AdapterSchema) =>
-  normalizeObjectSchema(toJsonSchema(schema)).schema;
+const toLlamaIndexSchema = (schema: Schema) => normalizeObjectSchema(toJsonSchema(schema)).schema;
 
-export function toLlamaIndexTool(adapterTool: AdapterTool): BaseTool {
+export function toLlamaIndexTool(adapterTool: Tool): BaseTool {
   const inputSchema =
     adapterTool.inputSchema ??
-    toAdapterSchema(adapterTool.params ? adapterParamsToJsonSchema(adapterTool.params) : undefined);
+    toSchema(adapterTool.params ? adapterParamsToJsonSchema(adapterTool.params) : undefined);
   const schema = inputSchema ? toLlamaIndexSchema(inputSchema) : adapterParamsToJsonSchema();
   const execute = adapterTool.execute
     ? (input: unknown) => mapMaybe(adapterTool.execute?.(input), (value) => value as JSONValue)

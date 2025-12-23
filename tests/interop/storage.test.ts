@@ -2,17 +2,17 @@ import { describe, expect, it } from "bun:test";
 import type { BaseStore } from "@langchain/core/stores";
 import type { BaseDocumentStore } from "@llamaindex/core/storage/doc-store";
 import * as AiSdk from "ai";
-import type { AdapterKVStore } from "#workflow";
+import type { KVStore } from "#workflow";
 import { mapMaybe } from "./helpers";
 
-const toAdapterKVFromLangChain = (store: BaseStore<string, unknown>): AdapterKVStore => ({
+const toAdapterKVFromLangChain = (store: BaseStore<string, unknown>): KVStore => ({
   mget: (keys) => store.mget(keys),
   mset: (pairs) => store.mset(pairs),
   mdelete: (keys) => store.mdelete(keys),
   list: (prefix) => collectAsyncKeys(store, prefix),
 });
 
-const toAdapterKVFromLlamaDocStore = (store: BaseDocumentStore): AdapterKVStore => ({
+const toAdapterKVFromLlamaDocStore = (store: BaseDocumentStore): KVStore => ({
   mget: (keys) =>
     mapMaybe(Promise.all(keys.map((key) => store.getDocument(key, false))), (docs) =>
       docs.map((doc) => (doc ? doc.toJSON() : undefined)),
@@ -50,7 +50,7 @@ const collectAsyncKeys = async (
 };
 
 describe("Interop storage", () => {
-  it("maps LangChain BaseStore to AdapterKVStore", () => {
+  it("maps LangChain BaseStore toKVStore", () => {
     const store = {
       mget: () => Promise.resolve([undefined]),
       mset: () => Promise.resolve(),
@@ -65,7 +65,7 @@ describe("Interop storage", () => {
     expect(adapted.list).toBeFunction();
   });
 
-  it("maps LlamaIndex DocumentStore to AdapterKVStore", () => {
+  it("maps LlamaIndex DocumentStore toKVStore", () => {
     const store = {
       docs: () => Promise.resolve({}),
       addDocuments: () => Promise.resolve(),

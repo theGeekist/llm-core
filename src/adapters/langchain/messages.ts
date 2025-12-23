@@ -1,10 +1,10 @@
 import { AIMessage, HumanMessage, SystemMessage, ToolMessage } from "@langchain/core/messages";
-import type { AdapterMessage, AdapterMessageContent, AdapterMessagePart } from "../types";
-import { toAdapterMessageContent } from "../message-content";
+import type { Message, MessageContent, MessagePart } from "../types";
+import { toMessageContent } from "../message-content";
 
 type LangChainMessage = HumanMessage | AIMessage | SystemMessage | ToolMessage;
 
-const toAdapterRole = (role: string): AdapterMessage["role"] => {
+const toAdapterRole = (role: string): Message["role"] => {
   if (role === "human") {
     return "user";
   }
@@ -21,7 +21,7 @@ const toAdapterRole = (role: string): AdapterMessage["role"] => {
 };
 
 const toContent = (message: LangChainMessage) =>
-  toAdapterMessageContent(message.content === undefined ? message.text : message.content);
+  toMessageContent(message.content === undefined ? message.text : message.content);
 
 type LangChainContentPart =
   | { type: "text"; text: string }
@@ -40,7 +40,7 @@ const safeStringify = (value: unknown) => {
   }
 };
 
-const summarizePart = (part: AdapterMessagePart) => {
+const summarizePart = (part: MessagePart) => {
   if (part.type === "text") {
     return part.text;
   }
@@ -65,7 +65,7 @@ const summarizePart = (part: AdapterMessagePart) => {
   return "";
 };
 
-const toLangChainPart = (part: AdapterMessagePart): LangChainContentPart | undefined => {
+const toLangChainPart = (part: MessagePart): LangChainContentPart | undefined => {
   if (part.type === "text") {
     return { type: "text", text: part.text };
   }
@@ -81,7 +81,7 @@ const toLangChainPart = (part: AdapterMessagePart): LangChainContentPart | undef
   return fallback ? { type: "text", text: fallback } : undefined;
 };
 
-const toPlainText = (content: AdapterMessageContent) => {
+const toPlainText = (content: MessageContent) => {
   if (typeof content === "string") {
     return content;
   }
@@ -91,7 +91,7 @@ const toPlainText = (content: AdapterMessageContent) => {
   return content.parts.map(summarizePart).filter(Boolean).join("\n");
 };
 
-export function fromLangChainMessage(message: LangChainMessage): AdapterMessage {
+export function fromLangChainMessage(message: LangChainMessage): Message {
   if (ToolMessage.isInstance(message)) {
     return {
       role: "tool",
@@ -106,7 +106,7 @@ export function fromLangChainMessage(message: LangChainMessage): AdapterMessage 
   };
 }
 
-const toLangChainContent = (content: AdapterMessageContent) => {
+const toLangChainContent = (content: MessageContent) => {
   if (typeof content === "string") {
     return content;
   }
@@ -117,7 +117,7 @@ const toLangChainContent = (content: AdapterMessageContent) => {
   return content.text;
 };
 
-export function toLangChainMessage(message: AdapterMessage): LangChainMessage {
+export function toLangChainMessage(message: Message): LangChainMessage {
   const content = toLangChainContent(message.content);
   if (message.role === "assistant") {
     return new AIMessage(content);

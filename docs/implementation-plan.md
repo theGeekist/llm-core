@@ -193,7 +193,7 @@ Status: completed. See `docs/stage-8b.md`.
 
 Code:
 
-- Add an execution-level adapter (`AdapterModel`) that runs a model end-to-end.
+- Add an execution-level adapter (`Model`) that runs a model end-to-end.
 - Normalize results (text, messages, tool calls/results, reasoning, usage, metadata) without generics.
 - Support schemaed prompts and structured outputs for both JSON Schema and Zod inputs.
 - Implement factories per ecosystem: AI SDK, LangChain, LlamaIndex.
@@ -215,6 +215,17 @@ Goals:
 - Add a construct extension API to register new constructs/providers.
 - Route runtime execution through registry for true mix-and-match.
 - Provide value-first adapter registration helpers for DX.
+
+## Stage 10 — Adapter Dependency Signals
+
+Status: completed. See `docs/stage-10.md`.
+
+Goals:
+
+- Add adapter-level dependency metadata where a construct has a hard dependency.
+- Emit runtime diagnostics for missing adapter dependencies (warn default, error strict).
+- Add runtime input diagnostics for missing data at adapter call sites.
+- Document dependency expectations per adapter family.
 
 ## Ongoing Constraints
 

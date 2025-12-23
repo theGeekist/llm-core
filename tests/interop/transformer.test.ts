@@ -4,12 +4,12 @@ import { Document as LangChainDocument } from "@langchain/core/documents";
 import type { NodeParser } from "@llamaindex/core/node-parser";
 import { Document as LlamaDocument } from "@llamaindex/core/schema";
 import * as AiSdk from "ai";
-import type { AdapterDocumentTransformer } from "#workflow";
+import type { DocumentTransformer } from "#workflow";
 import { mapMaybe } from "./helpers";
 
 const toAdapterTransformerFromLangChain = (
   transformer: BaseDocumentTransformer,
-): AdapterDocumentTransformer => ({
+): DocumentTransformer => ({
   transform: (documents) => {
     const langchainDocs = documents.map(
       (doc) =>
@@ -29,7 +29,7 @@ const toAdapterTransformerFromLangChain = (
   },
 });
 
-const toAdapterTransformerFromLlama = (parser: NodeParser): AdapterDocumentTransformer => ({
+const toAdapterTransformerFromLlama = (parser: NodeParser): DocumentTransformer => ({
   transform: (documents) => {
     const llamaDocs = documents.map(
       (doc) => new LlamaDocument({ text: doc.text, metadata: doc.metadata }),
@@ -45,7 +45,7 @@ const toAdapterTransformerFromLlama = (parser: NodeParser): AdapterDocumentTrans
 });
 
 describe("Interop transformer", () => {
-  it("maps LangChain transformer to AdapterDocumentTransformer", async () => {
+  it("maps LangChain transformer to DocumentTransformer", async () => {
     const transformer = {
       transformDocuments: (docs: LangChainDocument[]) => Promise.resolve(docs),
     } as BaseDocumentTransformer;
@@ -55,7 +55,7 @@ describe("Interop transformer", () => {
     expect(result[0]?.text).toBe("hello");
   });
 
-  it("maps LlamaIndex node parser to AdapterDocumentTransformer", async () => {
+  it("maps LlamaIndex node parser to DocumentTransformer", async () => {
     const parser = {
       getNodesFromDocuments: (docs: LlamaDocument[]) => Promise.resolve(docs),
     } as unknown as NodeParser;

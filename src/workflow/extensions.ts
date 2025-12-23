@@ -2,6 +2,7 @@ import { isPromiseLike, maybeAll, type PipelineReporter } from "@wpkernel/pipeli
 import type { PipelineWithExtensions, Plugin } from "./types";
 import { createLifecycleDiagnostic, type DiagnosticEntry } from "./diagnostics";
 import { getEffectivePlugins } from "./plugins/effective";
+import type { MaybePromise } from "../maybe";
 
 const DEFAULT_LIFECYCLE = "init";
 
@@ -11,9 +12,9 @@ const createLifecycleMessage = (plugin: Plugin, reason: string) =>
 const hasExtensions = (pipeline: PipelineWithExtensions) =>
   !!pipeline.extensions && typeof pipeline.extensions.use === "function";
 
-const trackMaybePromise = (pending: Promise<unknown>[], value: unknown) => {
+const trackMaybePromise = (pending: MaybePromise<unknown>[], value: unknown) => {
   if (isPromiseLike(value)) {
-    pending.push(Promise.resolve(value));
+    pending.push(value as MaybePromise<unknown>);
   }
 };
 
@@ -30,7 +31,7 @@ const registerPluginExtension = (
   plugin: Plugin,
   lifecycleSet: Set<string>,
   diagnostics: DiagnosticEntry[],
-  pending: Promise<unknown>[],
+  pending: MaybePromise<unknown>[],
 ) => {
   if (plugin.lifecycle && !isLifecycleScheduled(lifecycleSet, plugin.lifecycle)) {
     diagnostics.push(
@@ -61,7 +62,7 @@ const registerHookExtension = (
   plugin: Plugin,
   lifecycleSet: Set<string>,
   diagnostics: DiagnosticEntry[],
-  pending: Promise<unknown>[],
+  pending: MaybePromise<unknown>[],
 ) => {
   const lifecycle = plugin.lifecycle ?? DEFAULT_LIFECYCLE;
   if (!isLifecycleScheduled(lifecycleSet, lifecycle)) {
@@ -95,7 +96,7 @@ export const registerExtensions = (
 
   const effectivePlugins = getEffectivePlugins(plugins);
   const lifecycleSet = new Set(extensionPoints);
-  const pending: Promise<unknown>[] = [];
+  const pending: MaybePromise<unknown>[] = [];
 
   for (const plugin of effectivePlugins) {
     if (plugin.register) {

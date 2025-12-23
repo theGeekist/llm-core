@@ -1,8 +1,8 @@
 import type { ModelMessage } from "ai";
-import type { AdapterMessage, AdapterMessageContent, AdapterMessagePart } from "../types";
-import { toAdapterMessageContent } from "../message-content";
+import type { Message, MessageContent, MessagePart } from "../types";
+import { toMessageContent } from "../message-content";
 
-const toContent = (content: ModelMessage["content"]) => toAdapterMessageContent(content);
+const toContent = (content: ModelMessage["content"]) => toMessageContent(content);
 
 const TOOL_RESULT_TYPE = "tool-result";
 const DEFAULT_MEDIA_TYPE = "application/octet-stream";
@@ -21,7 +21,7 @@ const toFilePart = (data: string, mediaType?: string) => ({
   mediaType: mediaType ?? DEFAULT_MEDIA_TYPE,
 });
 
-const toUserPart = (part: AdapterMessagePart): UserPart | undefined => {
+const toUserPart = (part: MessagePart): UserPart | undefined => {
   if (part.type === "text") {
     return { type: "text", text: part.text };
   }
@@ -56,19 +56,19 @@ const readToolMetadata = (content: ModelMessage["content"]) => {
   };
 };
 
-const parseAssistantText = (part: AdapterMessagePart): AssistantPart | undefined =>
+const parseAssistantText = (part: MessagePart): AssistantPart | undefined =>
   part.type === "text" ? { type: "text", text: part.text } : undefined;
 
-const parseAssistantImage = (part: AdapterMessagePart): AssistantPart | undefined =>
+const parseAssistantImage = (part: MessagePart): AssistantPart | undefined =>
   part.type === "image" ? toFilePart(part.data ?? part.url ?? "", part.mediaType) : undefined;
 
-const parseAssistantFile = (part: AdapterMessagePart): AssistantPart | undefined =>
+const parseAssistantFile = (part: MessagePart): AssistantPart | undefined =>
   part.type === "file" ? toFilePart(part.data ?? "", part.mediaType) : undefined;
 
-const parseAssistantReasoning = (part: AdapterMessagePart): AssistantPart | undefined =>
+const parseAssistantReasoning = (part: MessagePart): AssistantPart | undefined =>
   part.type === "reasoning" ? { type: "reasoning", text: part.text } : undefined;
 
-const parseAssistantToolCall = (part: AdapterMessagePart): AssistantPart | undefined =>
+const parseAssistantToolCall = (part: MessagePart): AssistantPart | undefined =>
   part.type === "tool-call"
     ? {
         type: "tool-call",
@@ -78,7 +78,7 @@ const parseAssistantToolCall = (part: AdapterMessagePart): AssistantPart | undef
       }
     : undefined;
 
-const parseAssistantToolResult = (part: AdapterMessagePart): AssistantPart | undefined =>
+const parseAssistantToolResult = (part: MessagePart): AssistantPart | undefined =>
   part.type === "tool-result"
     ? {
         type: TOOL_RESULT_TYPE,
@@ -97,7 +97,7 @@ const assistantPartParsers = [
   parseAssistantToolResult,
 ];
 
-const toAssistantPart = (part: AdapterMessagePart): AssistantPart | undefined => {
+const toAssistantPart = (part: MessagePart): AssistantPart | undefined => {
   for (const parser of assistantPartParsers) {
     const parsed = parser(part);
     if (parsed) {
@@ -107,7 +107,7 @@ const toAssistantPart = (part: AdapterMessagePart): AssistantPart | undefined =>
   return undefined;
 };
 
-const toUserContent = (content: AdapterMessageContent): UserContent => {
+const toUserContent = (content: MessageContent): UserContent => {
   if (typeof content === "string") {
     return content;
   }
@@ -118,7 +118,7 @@ const toUserContent = (content: AdapterMessageContent): UserContent => {
   return content.text;
 };
 
-const toAssistantContent = (content: AdapterMessageContent): AssistantContent => {
+const toAssistantContent = (content: MessageContent): AssistantContent => {
   if (typeof content === "string") {
     return content;
   }
@@ -131,7 +131,7 @@ const toAssistantContent = (content: AdapterMessageContent): AssistantContent =>
 
 const DEFAULT_TOOL_NAME = "tool";
 
-const toAiSdkToolContent = (message: AdapterMessage): ToolContent => {
+const toAiSdkToolContent = (message: Message): ToolContent => {
   const content = message.content;
   const fallbackToolCallId = message.toolCallId ?? DEFAULT_TOOL_NAME;
   const fallbackToolName = message.name ?? DEFAULT_TOOL_NAME;
@@ -167,7 +167,7 @@ const toAiSdkToolContent = (message: AdapterMessage): ToolContent => {
   ];
 };
 
-export function fromAiSdkMessage(message: ModelMessage): AdapterMessage {
+export function fromAiSdkMessage(message: ModelMessage): Message {
   if (message.role === "system") {
     return { role: "system", content: toContent(message.content) };
   }
@@ -190,7 +190,7 @@ export function fromAiSdkMessage(message: ModelMessage): AdapterMessage {
   return { role: "tool", content: "" };
 }
 
-export function toAiSdkMessage(message: AdapterMessage): ModelMessage {
+export function toAiSdkMessage(message: Message): ModelMessage {
   if (message.role === "system") {
     const content: SystemContent =
       typeof message.content === "string" ? message.content : message.content.text;

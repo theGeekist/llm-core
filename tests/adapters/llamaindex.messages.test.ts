@@ -37,6 +37,14 @@ describe("Adapter LlamaIndex message conversions", () => {
     expect(adapted.toolCallId).toBeUndefined();
   });
 
+  it("maps developer and memory roles to system", () => {
+    const developer: ChatMessage = { role: "developer", content: "note" };
+    const memory: ChatMessage = { role: "memory", content: "memo" };
+
+    expect(fromLlamaIndexMessage(developer).role).toBe("system");
+    expect(fromLlamaIndexMessage(memory).role).toBe("system");
+  });
+
   it("maps tool messages into LlamaIndex options", () => {
     const message = toLlamaIndexMessage({
       role: "tool",
@@ -69,6 +77,11 @@ describe("Adapter LlamaIndex message conversions", () => {
     expect(parts[0]).toMatchObject({ type: "image", mimeType: IMAGE_MEDIA });
     expect(parts[1]).toMatchObject({ type: "image_url", image_url: { url: IMAGE_URL } });
     expect(parts[2]).toMatchObject({ type: "file", mimeType: TEXT_MEDIA });
+  });
+
+  it("passes through string content for user messages", () => {
+    const message = toLlamaIndexMessage({ role: "user", content: "hello" });
+    expect(message.content).toBe("hello");
   });
 
   it("maps text and reasoning parts into message content", () => {
