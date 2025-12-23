@@ -75,15 +75,25 @@ export function normalizeObjectSchema(schema: unknown): {
 }
 
 export function toJsonSchema(schema: Schema): unknown {
+  return toJsonSchemaWithDiagnostics(schema).schema;
+}
+
+export function toJsonSchemaWithDiagnostics(schema: Schema): {
+  schema: unknown;
+  warning?: { message: string; error?: unknown };
+} {
   if (schema.kind === "zod") {
     if (hasToJsonSchema(schema.jsonSchema)) {
       try {
-        return schema.jsonSchema.toJSONSchema({ target: "draft-07" });
-      } catch {
-        return zodToJsonSchema(schema.jsonSchema as unknown as ZodToJsonInput);
+        return { schema: schema.jsonSchema.toJSONSchema({ target: "draft-07" }) };
+      } catch (error) {
+        return {
+          schema: zodToJsonSchema(schema.jsonSchema as unknown as ZodToJsonInput),
+          warning: { message: "response_schema_invalid", error },
+        };
       }
     }
-    return zodToJsonSchema(schema.jsonSchema as unknown as ZodToJsonInput);
+    return { schema: zodToJsonSchema(schema.jsonSchema as unknown as ZodToJsonInput) };
   }
-  return schema.jsonSchema;
+  return { schema: schema.jsonSchema };
 }

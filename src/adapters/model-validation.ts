@@ -1,5 +1,5 @@
 import type { AdapterDiagnostic, ModelCall } from "./types";
-import { normalizeObjectSchema, toJsonSchema } from "./schema";
+import { normalizeObjectSchema, toJsonSchemaWithDiagnostics } from "./schema";
 
 export type ModelValidation = {
   diagnostics: AdapterDiagnostic[];
@@ -26,7 +26,16 @@ const readSchema = (schema: ModelCall["responseSchema"], diagnostics: AdapterDia
     return undefined;
   }
   try {
-    return normalizeObjectSchema(toJsonSchema(schema));
+    const result = toJsonSchemaWithDiagnostics(schema);
+    if (result.warning) {
+      appendDiagnostic(diagnostics, result.warning.message, {
+        error:
+          result.warning.error instanceof Error
+            ? result.warning.error.message
+            : result.warning.error,
+      });
+    }
+    return normalizeObjectSchema(result.schema);
   } catch (error) {
     appendDiagnostic(diagnostics, "response_schema_invalid", {
       error: error instanceof Error ? error.message : error,
