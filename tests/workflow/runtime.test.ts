@@ -171,8 +171,8 @@ describe("Workflow runtime", () => {
         { decision: "approve" },
         {
           resume: {
-            resolve: ({ token, humanInput }) => ({
-              input: { token, humanInput },
+            resolve: ({ token, resumeInput }) => ({
+              input: { token, resumeInput },
             }),
           },
         },
@@ -181,7 +181,7 @@ describe("Workflow runtime", () => {
 
     expect(outcome.status).toBe("ok");
     expect(captured).toMatchObject({
-      input: { token: "token-1", humanInput: { decision: "approve" } },
+      input: { token: "token-1", resumeInput: { decision: "approve" } },
       adapters: { tools: [{ name: "search" }] },
     });
   });

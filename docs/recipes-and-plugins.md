@@ -170,7 +170,7 @@ Note: `retriever.rerank` is an add-on; it assumes a base retriever is present an
   - DraftAnswer
   - Confidence
   - GateDecision
-  - HumanInput
+  - ResumeInput
   - FinalAnswer
 - Outcomes
   - ok | paused | error

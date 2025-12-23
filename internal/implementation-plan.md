@@ -41,7 +41,7 @@ Keep each module under 500 SLOC.
 
    - `.run(input, runtime?)` with Outcome union
 
-- `.resume(token, humanInput?, runtime?)` for HITL recipes (uses `runtime.resume.resolve`)
+- `.resume(token, resumeInput?, runtime?)` for HITL recipes (uses `runtime.resume.resolve`)
   - runtime presets (optional)
 
 4. `src/workflow/plugins/types.ts`

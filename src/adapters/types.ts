@@ -401,7 +401,7 @@ export type AdapterBundle = {
 export type AdapterResumeRequest = {
   adapters?: AdapterBundle;
   declaredAdapters?: AdapterBundle;
-  humanInput?: unknown;
+  resumeInput?: unknown;
   providers?: Record<string, string>;
   runtime?: unknown;
   token: unknown;

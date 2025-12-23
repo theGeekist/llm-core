@@ -21,28 +21,28 @@ export type IngestInput = {
   chunking?: "default" | "byHeading";
 };
 
-export type AgentHumanInput = { decision: "approve" | "deny" | "edit"; notes?: string };
-export type HitlGateHumanInput = { decision: string; notes?: string };
+export type AgentResumeInput = { decision: "approve" | "deny" | "edit"; notes?: string };
+export type HitlGateResumeInput = { decision: string; notes?: string };
 
 export type RecipeContracts = {
-  agent: { input: AgentInput; artefact: Record<string, unknown>; humanInput?: AgentHumanInput };
-  rag: { input: RagInput; artefact: Record<string, unknown>; humanInput?: never };
-  eval: { input: EvalInput; artefact: Record<string, unknown>; humanInput?: never };
+  agent: { input: AgentInput; artefact: Record<string, unknown>; resumeInput?: AgentResumeInput };
+  rag: { input: RagInput; artefact: Record<string, unknown>; resumeInput?: never };
+  eval: { input: EvalInput; artefact: Record<string, unknown>; resumeInput?: never };
   "hitl-gate": {
     input: HitlGateInput;
     artefact: Record<string, unknown>;
-    humanInput: HitlGateHumanInput;
+    resumeInput: HitlGateResumeInput;
   };
-  loop: { input: LoopInput; artefact: Record<string, unknown>; humanInput?: unknown };
-  ingest: { input: IngestInput; artefact: Record<string, unknown>; humanInput?: never };
+  loop: { input: LoopInput; artefact: Record<string, unknown>; resumeInput?: unknown };
+  ingest: { input: IngestInput; artefact: Record<string, unknown>; resumeInput?: never };
 };
 
 export type RecipeName = keyof RecipeContracts;
 
 export type RunInputOf<N extends RecipeName> = RecipeContracts[N]["input"];
 export type ArtefactOf<N extends RecipeName> = RecipeContracts[N]["artefact"];
-export type HumanInputOf<N extends RecipeName> = NonNullable<
-  RecipeContracts[N] extends { humanInput?: infer H } ? H : never
+export type ResumeInputOf<N extends RecipeName> = NonNullable<
+  RecipeContracts[N] extends { resumeInput?: infer H } ? H : never
 >;
 
 // Pipeline run types
@@ -137,11 +137,11 @@ export type Outcome<TArtefact = unknown> =
     }
   | { status: "error"; error: unknown; trace: unknown[]; diagnostics: unknown[] };
 
-export type WorkflowRuntime<TRunInput = unknown, TArtefact = unknown, THumanInput = unknown> = {
+export type WorkflowRuntime<TRunInput = unknown, TArtefact = unknown, TResumeInput = unknown> = {
   run(input: TRunInput, runtime?: Runtime): MaybePromise<Outcome<TArtefact>>;
   resume?(
     token: unknown,
-    humanInput?: THumanInput,
+    resumeInput?: TResumeInput,
     runtime?: Runtime,
   ): MaybePromise<Outcome<TArtefact>>;
   capabilities(): MaybePromise<Record<string, unknown>>;

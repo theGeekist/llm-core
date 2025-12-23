@@ -3,7 +3,7 @@ import { type PipelineReporter } from "@wpkernel/pipeline/core";
 import { makePipeline } from "@wpkernel/pipeline/core";
 import type {
   ArtefactOf,
-  HumanInputOf,
+  ResumeInputOf,
   Outcome,
   PipelineContext,
   PipelineState,
@@ -95,7 +95,7 @@ export const createRuntime = <N extends RecipeName>({
   contract,
   plugins,
   pipelineFactory,
-}: RuntimeDeps<N>): WorkflowRuntime<RunInputOf<N>, ArtefactOf<N>, HumanInputOf<N>> => {
+}: RuntimeDeps<N>): WorkflowRuntime<RunInputOf<N>, ArtefactOf<N>, ResumeInputOf<N>> => {
   const buildDiagnostics: DiagnosticEntry[] = [];
   const pipeline = pipelineFactory
     ? pipelineFactory(contract, plugins)
@@ -328,7 +328,7 @@ export const createRuntime = <N extends RecipeName>({
 
   const resume =
     contract.supportsResume === true
-      ? function resume(token: unknown, humanInput?: HumanInputOf<N>, runtime?: Runtime) {
+      ? function resume(token: unknown, resumeInput?: ResumeInputOf<N>, runtime?: Runtime) {
           const trace = createTrace();
           addTraceEvent(trace, "run.start", { recipe: contract.name, resume: true });
           const diagnosticsMode = runtime?.diagnostics ?? "default";
@@ -360,7 +360,7 @@ export const createRuntime = <N extends RecipeName>({
               return chainMaybe(
                 adapter.resolve({
                   token,
-                  humanInput,
+                  resumeInput,
                   runtime,
                   adapters: resolvedAdapters,
                   declaredAdapters: baseAdapters,

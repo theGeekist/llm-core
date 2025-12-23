@@ -88,7 +88,7 @@ Two DX anchors:
 - `.use(plugin)` -> compose
 - `.build()` -> runnable
 - `.run(input, runtime?)` -> outcome union
-- `.resume(token, humanInput?)` -> outcome union (recipe-provided, only if needed; requires `runtime.resume`)
+- `.resume(token, resumeInput?)` -> outcome union (recipe-provided, only if needed; requires `runtime.resume`)
 
 Override should be expressed either:
 
@@ -207,7 +207,7 @@ type WorkflowRuntime<TRunInput, TArtefact> = {
   // illustrative: some recipes support resume with a typed human input
   resume?: (
     token: ResumeToken,
-    humanInput?: unknown,
+    resumeInput?: unknown,
     runtime?: Runtime,
   ) => MaybePromise<Outcome<TArtefact>>;
   capabilities: () => CapabilityMap;
@@ -221,7 +221,7 @@ type ResumableWorkflowRuntime<N extends RecipeName> = WorkflowRuntime<
 > & {
   resume: (
     token: ResumeToken,
-    humanInput: HumanInputOf<N>,
+    resumeInput: ResumeInputOf<N>,
     runtime?: Runtime,
   ) => MaybePromise<Outcome<ArtefactOf<N>>>;
 };
@@ -230,15 +230,19 @@ type ResumableWorkflowRuntime<N extends RecipeName> = WorkflowRuntime<
 // the `name` literal selects the contract.
 type RecipeContracts = {
   // illustrative only — recipes fill these in
-  agent: { input: AgentInput; artefact: AgentArtefact; humanInput?: AgentHumanInput };
-  rag: { input: RagInput; artefact: RagArtefact; humanInput?: never };
-  "hitl-gate": { input: HitlGateInput; artefact: HitlGateArtefact; humanInput: HitlGateHumanInput };
+  agent: { input: AgentInput; artefact: AgentArtefact; resumeInput?: AgentResumeInput };
+  rag: { input: RagInput; artefact: RagArtefact; resumeInput?: never };
+  "hitl-gate": {
+    input: HitlGateInput;
+    artefact: HitlGateArtefact;
+    resumeInput: HitlGateResumeInput;
+  };
 };
 
 type RecipeName = keyof RecipeContracts;
 type RunInputOf<N extends RecipeName> = RecipeContracts[N]["input"];
 type ArtefactOf<N extends RecipeName> = RecipeContracts[N]["artefact"];
-type HumanInputOf<N extends RecipeName> = RecipeContracts[N] extends { humanInput: infer H }
+type ResumeInputOf<N extends RecipeName> = RecipeContracts[N] extends { resumeInput: infer H }
   ? H
   : unknown;
 
@@ -268,15 +272,19 @@ Internal typing (illustrative):
 
 ```ts
 type RecipeContracts = {
-  agent: { input: AgentInput; artefact: AgentArtefact; humanInput?: AgentHumanInput };
-  rag: { input: RagInput; artefact: RagArtefact; humanInput?: never };
-  "hitl-gate": { input: HitlGateInput; artefact: HitlGateArtefact; humanInput: HitlGateHumanInput };
+  agent: { input: AgentInput; artefact: AgentArtefact; resumeInput?: AgentResumeInput };
+  rag: { input: RagInput; artefact: RagArtefact; resumeInput?: never };
+  "hitl-gate": {
+    input: HitlGateInput;
+    artefact: HitlGateArtefact;
+    resumeInput: HitlGateResumeInput;
+  };
 };
 
 type RecipeName = keyof RecipeContracts;
 type RunInputOf<N extends RecipeName> = RecipeContracts[N]["input"];
 type ArtefactOf<N extends RecipeName> = RecipeContracts[N]["artefact"];
-type HumanInputOf<N extends RecipeName> = RecipeContracts[N] extends { humanInput: infer H }
+type ResumeInputOf<N extends RecipeName> = RecipeContracts[N] extends { resumeInput: infer H }
   ? H
   : unknown;
 ```

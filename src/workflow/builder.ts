@@ -2,12 +2,12 @@
 
 import { createRuntime } from "./runtime";
 import type { WorkflowRuntime } from "./types";
-import type { ArtefactOf, HumanInputOf, Plugin, RecipeName, RunInputOf } from "./types";
+import type { ArtefactOf, ResumeInputOf, Plugin, RecipeName, RunInputOf } from "./types";
 import { getRecipe } from "./recipe-registry";
 
 export type WorkflowBuilder<N extends RecipeName> = {
   use(plugin: Plugin): WorkflowBuilder<N>;
-  build(): WorkflowRuntime<RunInputOf<N>, ArtefactOf<N>, HumanInputOf<N>>;
+  build(): WorkflowRuntime<RunInputOf<N>, ArtefactOf<N>, ResumeInputOf<N>>;
 };
 
 export const createBuilder = <N extends RecipeName>(recipeName: N): WorkflowBuilder<N> => {

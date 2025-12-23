@@ -102,7 +102,7 @@ This list looks longer than it feels in practice. Most apps need maybe only 3-4 
 - `.use(plugin)` -> compose
 - `.build()` -> runnable workflow
 - `.run(input, runtime?)` -> outcome union (ok | paused | error)
-- `.resume(token, humanInput?, runtime?)` -> only if a recipe exposes it
+- `.resume(token, resumeInput?, runtime?)` -> only if a recipe exposes it
 - `wf.capabilities()` -> resolved capabilities (override-aware; list-like adapters surface as presence flags; `model` is the adapter instance; MaybePromise)
 - `wf.declaredCapabilities()` -> plugin-only capabilities (override-aware)
 - `wf.adapters()` -> resolved adapter bundle (registry defaults + constructs merged; MaybePromise)

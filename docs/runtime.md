@@ -22,7 +22,7 @@ type Runtime = {
   resume?: {
     resolve: (request: {
       token: unknown;
-      humanInput?: unknown;
+      resumeInput?: unknown;
       adapters?: unknown;
       declaredAdapters?: unknown;
       providers?: Record<string, string>;
@@ -39,7 +39,7 @@ const runtime = {
   diagnostics: "default",
   budget: { maxTokens: 2000 },
   resume: {
-    resolve: ({ token, humanInput }) => ({ input: { token, humanInput } }),
+    resolve: ({ token, resumeInput }) => ({ input: { token, resumeInput } }),
   },
 };
 ```
@@ -153,4 +153,4 @@ if (out.status === "paused") {
 
 :::
 
-If a recipe supports it, `resume(token, humanInput?, runtime?)` is exposed; it uses `runtime.resume.resolve(...)` when provided and returns an error outcome when missing.
+If a recipe supports it, `resume(token, resumeInput?, runtime?)` is exposed; it uses `runtime.resume.resolve(...)` when provided and returns an error outcome when missing.
