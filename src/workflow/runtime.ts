@@ -211,15 +211,15 @@ export const createRuntime = <N extends RecipeName>({
     return runtimeCapabilities;
   };
 
-  const toNeedsHumanOutcome = (
+  const toPausedOutcome = (
     result: unknown,
     trace: TraceEvent[],
     diagnostics: DiagnosticEntry[],
   ): Outcome<ArtefactOf<N>> => {
-    addTraceEvent(trace, "run.needsHuman");
-    addTraceEvent(trace, "run.end", { status: "needsHuman" });
+    addTraceEvent(trace, "run.paused");
+    addTraceEvent(trace, "run.end", { status: "paused" });
     return {
-      status: "needsHuman",
+      status: "paused",
       token: (result as { token?: unknown }).token,
       artefact: readPartialArtifact(result),
       trace,
@@ -240,9 +240,8 @@ export const createRuntime = <N extends RecipeName>({
     if (diagnosticsMode === "strict" && hasErrorDiagnostics(diagnostics)) {
       return toErrorOutcome(new Error(STRICT_DIAGNOSTICS_ERROR), trace, diagnostics);
     }
-    const isNeedsHuman = (result as { needsHuman?: boolean }).needsHuman;
-    if (isNeedsHuman) {
-      return toNeedsHumanOutcome(result, trace, diagnostics);
+    if ((result as { paused?: boolean }).paused) {
+      return toPausedOutcome(result, trace, diagnostics);
     }
     return toOkOutcome(result, trace, diagnostics);
   };

@@ -4,7 +4,7 @@ import { getRecipe, registerRecipe } from "#workflow/recipe-registry";
 import { assertSyncOutcome, diagnosticMessages, makeRuntime, makeWorkflow } from "./helpers";
 
 describe("Workflow runtime", () => {
-  const TOKEN_NEEDS_HUMAN = "token-1";
+  const TOKEN_PAUSED = "token-1";
   const ERROR_RESUME = "Expected resume to be available.";
 
   it("supports sync workflows without requiring await", () => {
@@ -70,22 +70,22 @@ describe("Workflow runtime", () => {
     expect(outcome.status).toBe("error");
   });
 
-  it("maps needsHuman outcomes with partial artefacts", async () => {
+  it("maps paused outcomes with partial artefacts", async () => {
     const runtime = makeRuntime("hitl-gate", {
       run: () =>
         Promise.resolve({
-          needsHuman: true,
-          token: TOKEN_NEEDS_HUMAN,
+          paused: true,
+          token: TOKEN_PAUSED,
           artifact: { partial: true },
         }),
     });
 
     const outcome = await runtime.run({ input: "gate" });
-    expect(outcome.status).toBe("needsHuman");
-    if (outcome.status !== "needsHuman") {
-      throw new Error("Expected needsHuman outcome.");
+    expect(outcome.status).toBe("paused");
+    if (outcome.status !== "paused") {
+      throw new Error("Expected paused outcome.");
     }
-    expect(outcome.token).toBe(TOKEN_NEEDS_HUMAN);
+    expect(outcome.token).toBe(TOKEN_PAUSED);
     expect(outcome.artefact).toEqual({ partial: true });
   });
 
@@ -121,7 +121,7 @@ describe("Workflow runtime", () => {
     expect(diagnosticMessages(outcome.diagnostics)).toContain("retriever_query_missing");
   });
 
-  it("exposes resume only for recipes that support needsHuman", () => {
+  it("exposes resume only for recipes that support paused", () => {
     const resumable = makeWorkflow("hitl-gate");
     const nonResumable = makeWorkflow("rag");
 

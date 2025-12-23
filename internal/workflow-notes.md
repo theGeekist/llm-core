@@ -48,11 +48,11 @@ flowchart TB
 3. Build: `build()` returns a Workflow (runnable). The builder is a transient composer.
 4. Run: get a typed outcome + artefact + trace + diagnostics by default.
 5. Override: swap a plugin or override a helper key with deterministic results.
-6. Resume: if a run returns `needsHuman`, `resume` is exposed for supported recipes and uses `runtime.resume.resolve(...)`.
+6. Resume: if a run returns `paused`, `resume` is exposed for supported recipes and uses `runtime.resume.resolve(...)`.
 
 Design intent:
 
-- Outcome types are small algebraic unions (ok | needsHuman | error).
+- Outcome types are small algebraic unions (ok | paused | error).
 - Runs return monadic, typed containers where `MaybePromise` is the baseline for sync/async.
 - FP-friendly composition: plugins are pure descriptors, runs are deterministic.
 
@@ -130,14 +130,14 @@ Each recipe defines:
 
 - inputs
 - primary artefacts
-- termination outcomes (ok | needsHuman | error)
+- termination outcomes (ok | paused | error)
 - extension points (named in recipe terms, mapped to lifecycles internally)
 
 Example: Tool-calling Agent contract:
 
 - input: AgentInput
 - artefacts: Plan, ToolCall[], ToolResult[], Answer, Confidence
-- outcomes: ok / needsHuman / error
+- outcomes: ok / paused / error
 - extension points: beforePlan, afterToolExec, beforeAnswer
 
 Notes:
@@ -194,7 +194,7 @@ type Runtime = {
 type Outcome<TArtefact> =
   | { status: "ok"; artefact: TArtefact; trace: TraceEvent[]; diagnostics: Diagnostic[] }
   | {
-      status: "needsHuman";
+      status: "paused";
       token: ResumeToken;
       artefact: TArtefact;
       trace: TraceEvent[];
@@ -309,7 +309,7 @@ const out = await wf.run({ input: "Explain our refund policy with citations." })
 if (out.status !== "ok") return out;
 ```
 
-### HITL Gate (needsHuman)
+### HITL Gate (paused)
 
 ```ts
 const wf = Workflow.recipe("hitl-gate")
@@ -319,7 +319,7 @@ const wf = Workflow.recipe("hitl-gate")
   .build();
 
 const out = await wf.run({ input: "Approve $5000 spend?" });
-if (out.status === "needsHuman") {
+if (out.status === "paused") {
   const resumed = await wf.resume(out.token, { decision: "deny" });
   // resume relies on runtime.resume to translate the token + human input
 }

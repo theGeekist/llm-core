@@ -1,17 +1,20 @@
 # Adapters Overview
 
 Adapters normalize external ecosystem constructs into one consistent shape, then let workflows mix and match them.
-This is the high-level entry point; the detailed contracts live in `docs/adapters-api.md`.
+This is the high-level entry point; the detailed contracts live in [Adapters API](/adapters-api).
 
 Related:
 
-- Workflow API: `docs/workflow-api.md`
-- Adapter contracts: `docs/adapters-api.md`
-- Recipes + plugins: `docs/recipes-and-plugins.md`
+- [Workflow API](/workflow-api)
+- [Adapter contracts](/adapters-api)
+- [Recipes + plugins](/recipes-and-plugins)
 
 ## Quick start (value-first helpers)
 
 Register a retriever without touching registry types:
+
+::: tabs
+== TypeScript
 
 ```ts
 import { Adapter } from "#adapters";
@@ -26,15 +29,46 @@ const wf = Workflow.recipe("rag")
   .build();
 ```
 
+== JavaScript
+
+```js
+import { Adapter } from "#adapters";
+import { Workflow } from "#workflow";
+
+const wf = Workflow.recipe("rag")
+  .use(
+    Adapter.retriever("custom.retriever", {
+      retrieve: () => ({ documents: [] }),
+    }),
+  )
+  .build();
+```
+
+:::
+
 Custom constructs (e.g., `mcp`) go into constructs:
+
+::: tabs
+== TypeScript
 
 ```ts
 const plugin = Adapter.register("custom.mcp", "mcp", { client });
 ```
 
+== JavaScript
+
+```js
+const plugin = Adapter.register("custom.mcp", "mcp", { client });
+```
+
+:::
+
 ## Registry (advanced)
 
 If you need explicit provider resolution, use the registry directly:
+
+::: tabs
+== TypeScript
 
 ```ts
 import { createRegistryFromDefaults } from "#adapters";
@@ -48,3 +82,20 @@ registry.registerProvider({
   factory: () => myModelAdapter,
 });
 ```
+
+== JavaScript
+
+```js
+import { createRegistryFromDefaults } from "#adapters";
+
+const registry = createRegistryFromDefaults();
+registry.registerProvider({
+  construct: "model",
+  providerKey: "custom",
+  id: "custom:model",
+  priority: 10,
+  factory: () => myModelAdapter,
+});
+```
+
+:::

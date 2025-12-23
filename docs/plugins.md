@@ -5,6 +5,9 @@ They are deterministic: order matters, and overrides are explicit.
 
 ## The Shape
 
+::: tabs
+== TypeScript
+
 ```ts
 type Plugin = {
   key: string;
@@ -22,12 +25,29 @@ type Plugin = {
 };
 ```
 
+== JavaScript
+
+```js
+const plugin = {
+  key: "model.openai",
+  mode: "extend",
+  overrideKey: "model.openai",
+  capabilities: { model: { name: "gpt-4.1" } },
+  requires: ["tools"],
+};
+```
+
+:::
+
 ## Extend vs Override
 
 - **extend** (default) adds capabilities and helpers.
 - **override** replaces any earlier plugin with the same `overrideKey`.
 
 Example:
+
+::: tabs
+== TypeScript
 
 ```ts
 const wf = Workflow.recipe("agent")
@@ -40,6 +60,22 @@ const wf = Workflow.recipe("agent")
   })
   .build();
 ```
+
+== JavaScript
+
+```js
+const wf = Workflow.recipe("agent")
+  .use({ key: "model.openai", capabilities: { model: { name: "gpt-4.1" } } })
+  .use({
+    key: "model.openai.override",
+    mode: "override",
+    overrideKey: "model.openai",
+    capabilities: { model: { name: "gpt-4.1-mini" } },
+  })
+  .build();
+```
+
+:::
 
 ## Capabilities (Declared vs Resolved)
 
@@ -55,6 +91,9 @@ This keeps “what’s installed” separate from “what actually won.”
 
 Plugins can hook into recipe lifecycles:
 
+::: tabs
+== TypeScript
+
 ```ts
 const tracePlugin = {
   key: "trace.console",
@@ -64,6 +103,20 @@ const tracePlugin = {
   },
 };
 ```
+
+== JavaScript
+
+```js
+const tracePlugin = {
+  key: "trace.console",
+  lifecycle: "beforeAnswer",
+  hook: async ({ state }) => {
+    console.log("Answer about to render", state);
+  },
+};
+```
+
+:::
 
 ### Default Lifecycle
 

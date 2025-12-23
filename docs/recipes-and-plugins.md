@@ -8,7 +8,7 @@ Adapter contracts live in `docs/adapters-api.md`.
 Each recipe contract declares:
 
 - **Input**: the single run input shape.
-- **Outcome**: `ok | needsHuman | error` (recipes may omit `needsHuman` if they never pause).
+- **Outcome**: `ok | paused | error` (recipes may omit `paused` if they never pause).
 - **Artefact map**: canonical artefact keys for this recipe. Keys are stable; plugins may enrich with additional keys.
 - **Minimum capabilities**: what must be installed for the recipe to run.
 - **Default plugin set**: the baseline “batteries included” configuration.
@@ -21,6 +21,9 @@ Defaults are installed automatically for each recipe. You can extend or override
 ## Adapter helpers (DX path)
 
 Adapters can be registered with value-first helpers and used like any plugin:
+
+::: tabs
+== TypeScript
 
 ```ts
 import { Adapter } from "#adapters";
@@ -35,6 +38,23 @@ const wf = Workflow.recipe("rag")
   .build();
 ```
 
+== JavaScript
+
+```js
+import { Adapter } from "#adapters";
+import { Workflow } from "#workflow";
+
+const wf = Workflow.recipe("rag")
+  .use(
+    Adapter.retriever("custom.retriever", {
+      retrieve: () => ({ documents: [] }),
+    }),
+  )
+  .build();
+```
+
+:::
+
 ## Starter Recipes (6)
 
 ### 1) Tool-Calling Agent
@@ -48,7 +68,7 @@ const wf = Workflow.recipe("rag")
   - Answer
   - Confidence
 - Outcomes
-  - ok | needsHuman | error
+  - ok | paused | error
 - Minimum capabilities
   - `model`
   - `tools`
@@ -97,7 +117,7 @@ const wf = Workflow.recipe("rag")
   - `answer.text`
   - `answer.confidence`
 - Outcomes
-  - ok | needsHuman | error
+  - ok | paused | error
 - Minimum capabilities
   - `retriever`
   - `model`
@@ -153,7 +173,7 @@ Note: `retriever.rerank` is an add-on; it assumes a base retriever is present an
   - HumanInput
   - FinalAnswer
 - Outcomes
-  - ok | needsHuman | error
+  - ok | paused | error
 - Minimum capabilities
   - `model`
   - `evaluator`
@@ -177,7 +197,7 @@ Note: `retriever.rerank` is an add-on; it assumes a base retriever is present an
   - `loop.result`
   - `loop.terminationReason`
 - Outcomes
-  - ok | needsHuman | error
+  - ok | paused | error
 - Minimum capabilities
   - `recipe`
   - `model`
@@ -189,7 +209,7 @@ Note: `retriever.rerank` is an add-on; it assumes a base retriever is present an
 Notes:
 
 - A loop recipe wraps a deterministic inner workflow per iteration; the controller decides continue/stop based on artefacts + budget.
-- `needsHuman` may bubble up mid-loop; the outcome should include the partial artefact snapshot and a resume token.
+- `paused` may bubble up mid-loop; the outcome should include the partial artefact snapshot and a resume token.
 
 - Extension points
   - beforeIteration
@@ -198,11 +218,24 @@ Notes:
 
 Defaults vs overrides:
 
+::: tabs
+== TypeScript
+
 ```ts
 const wf = Workflow.recipe("agent")
   .use({ key: "model.openai.override", mode: "override", overrideKey: "model.openai" })
   .build();
 ```
+
+== JavaScript
+
+```js
+const wf = Workflow.recipe("agent")
+  .use({ key: "model.openai.override", mode: "override", overrideKey: "model.openai" })
+  .build();
+```
+
+:::
 
 ## Plugin Catalogue (10–12)
 
@@ -287,7 +320,7 @@ the base retriever; `retriever.rerank` is an add-on and does not provide `retrie
 - `hitl.pauseResume` (friendly: Hitl.pauseResume)
   - Provides: `hitl` capability (adapter)
   - Emits: `hitl.token`, `hitl.packet`
-  - Resume relies on `runtime.resume.resolve(...)` to continue after `needsHuman`
+  - Resume relies on `runtime.resume.resolve(...)` to continue after `paused`
 
 ## Conflict Scenarios + explain()
 
@@ -304,6 +337,9 @@ the base retriever; `retriever.rerank` is an add-on and does not provide `retrie
   - `.use({ key: "model.anthropic", mode: "override", overrideKey: "model.openai" })`
 - explain() (illustrative)
 
+::: tabs
+== TypeScript
+
 ```ts
 {
   plugins: ["model.openai", "model.anthropic"],
@@ -312,11 +348,26 @@ the base retriever; `retriever.rerank` is an add-on and does not provide `retrie
 }
 ```
 
+== JavaScript
+
+```js
+{
+  plugins: ["model.openai", "model.anthropic"],
+  overrides: ["model.anthropic overrides model.openai"],
+  unused: []
+}
+```
+
+:::
+
 ### Conflict 2: Retriever missing dependency
 
 - Scenario: RAG recipe uses `retriever.rerank` but no base retriever installed.
   - `.use({ key: "retriever.rerank", requires: ["retriever"] })`
 - explain() (illustrative)
+
+::: tabs
+== TypeScript
 
 ```ts
 {
@@ -327,12 +378,28 @@ the base retriever; `retriever.rerank` is an add-on and does not provide `retrie
 }
 ```
 
+== JavaScript
+
+```js
+{
+  plugins: ["retriever.rerank"],
+  overrides: [],
+  unused: [],
+  missingRequirements: ["retriever.rerank (requires retriever)"]
+}
+```
+
+:::
+
 ### Conflict 3: Duplicate tool registrations (extend mode)
 
 - Scenario: two tool plugins register the same tool id in extend mode.
   - `.use({ key: "tools.web" })`
   - `.use({ key: "tools.web" })`
 - explain() (illustrative)
+
+::: tabs
+== TypeScript
 
 ```ts
 {
@@ -341,3 +408,15 @@ the base retriever; `retriever.rerank` is an add-on and does not provide `retrie
   unused: ["tools.web#2 (duplicate tool id: web.search)"]
 }
 ```
+
+== JavaScript
+
+```js
+{
+  plugins: ["tools.web#1", "tools.web#2"],
+  overrides: [],
+  unused: ["tools.web#2 (duplicate tool id: web.search)"]
+}
+```
+
+:::

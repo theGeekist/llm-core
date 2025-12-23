@@ -72,7 +72,7 @@ export type RecipeConstructs = {
 export type RecipeContract = {
   name: RecipeName;
   artefactKeys: string[];
-  outcomes: Array<"ok" | "needsHuman" | "error">;
+  outcomes: Array<"ok" | "paused" | "error">;
   extensionPoints: string[];
   minimumCapabilities: string[];
   helperKinds?: string[];
@@ -129,7 +129,7 @@ export type ExplainInput = {
 export type Outcome<TArtefact = unknown> =
   | { status: "ok"; artefact: TArtefact; trace: unknown[]; diagnostics: unknown[] }
   | {
-      status: "needsHuman";
+      status: "paused";
       token: unknown;
       artefact: Partial<TArtefact>;
       trace: unknown[];
@@ -155,7 +155,7 @@ export type WorkflowRuntime<TRunInput = unknown, TArtefact = unknown, THumanInpu
 // Outcome helpers
 export type OutcomeMatcher<TArtefact, TResult> = {
   ok: (outcome: Extract<Outcome<TArtefact>, { status: "ok" }>) => TResult;
-  needsHuman: (outcome: Extract<Outcome<TArtefact>, { status: "needsHuman" }>) => TResult;
+  paused: (outcome: Extract<Outcome<TArtefact>, { status: "paused" }>) => TResult;
   error: (outcome: Extract<Outcome<TArtefact>, { status: "error" }>) => TResult;
 };
 

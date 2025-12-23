@@ -4,10 +4,13 @@ The runtime is the single place for operational concerns. It is passed to `run(.
 
 Related:
 
-- Workflow API: `docs/workflow-api.md`
-- Adapter contracts: `docs/adapters-api.md`
+- [Workflow API](/workflow-api)
+- [Adapter contracts](/adapters-api)
 
 ## Runtime Channel
+
+::: tabs
+== TypeScript
 
 ```ts
 type Runtime = {
@@ -28,7 +31,25 @@ type Runtime = {
 };
 ```
 
+== JavaScript
+
+```js
+const runtime = {
+  reporter: { warn: (message, context) => console.warn(message, context) },
+  diagnostics: "default",
+  budget: { maxTokens: 2000 },
+  resume: {
+    resolve: ({ token, humanInput }) => ({ input: { token, humanInput } }),
+  },
+};
+```
+
+:::
+
 Use it like this:
+
+::: tabs
+== TypeScript
 
 ```ts
 const runtime = {
@@ -49,13 +70,36 @@ const runtime = {
 const out = await wf.run({ input: "..." }, runtime);
 ```
 
+== JavaScript
+
+```js
+const runtime = {
+  reporter: { warn: (msg, ctx) => console.warn(msg, ctx) },
+  diagnostics: "default",
+  budget: { maxTokens: 2000 },
+  persistence: {
+    /* adapter */
+  },
+  traceSink: {
+    /* sink */
+  },
+  resume: {
+    /* adapter */
+  },
+};
+
+const out = await wf.run({ input: "..." }, runtime);
+```
+
+:::
+
 ## Trace
 
 Trace is always present and records workflow-level events:
 
 - `run.start`
 - `run.ok`
-- `run.needsHuman`
+- `run.paused`
 - `run.error`
 - `run.end` (with final status)
 
@@ -84,15 +128,29 @@ Diagnostics are normalized into structured entries with `level`, `kind`, and `me
 
 Capability resolution is deterministic and reducer-driven.
 
-## needsHuman Flow
+## paused Flow
 
-If a run returns `needsHuman`, the outcome includes a partial artefact snapshot:
+If a run returns `paused`, the outcome includes a partial artefact snapshot:
+
+::: tabs
+== TypeScript
 
 ```ts
-if (out.status === "needsHuman") {
+if (out.status === "paused") {
   // out.artefact is Partial<Artefact>
   // out.token can be used to resume
 }
 ```
+
+== JavaScript
+
+```js
+if (out.status === "paused") {
+  // out.artefact is a partial snapshot
+  // out.token can be used to resume
+}
+```
+
+:::
 
 If a recipe supports it, `resume(token, humanInput?, runtime?)` is exposed; it uses `runtime.resume.resolve(...)` when provided and returns an error outcome when missing.

@@ -12,8 +12,8 @@ export const match = <TArtefact, TResult>(
   switch (outcome.status) {
     case "ok":
       return matcher.ok(outcome);
-    case "needsHuman":
-      return matcher.needsHuman(outcome);
+    case "paused":
+      return matcher.paused(outcome);
     case "error":
       return matcher.error(outcome);
   }

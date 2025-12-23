@@ -6,7 +6,7 @@ predictable and inspectable, while keeping the API surface thin and DX-first.
 ## Requirements
 
 - Runtime channel drives operational concerns (reporting, budgets, persistence, resume adapter).
-- Outcomes stay small and FP-friendly (ok | needsHuman | error).
+- Outcomes stay small and FP-friendly (ok | paused | error).
 - Diagnostics are always present; severity is configurable (default vs strict).
 - Sync and async behaviors remain first-class via MaybePromise.
 - Docs updated as part of the stage to avoid drift.

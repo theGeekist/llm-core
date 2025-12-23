@@ -21,8 +21,8 @@ describe("Workflow Outcome helpers", () => {
       trace: [],
       diagnostics: [],
     };
-    const needsHuman: OutcomeType<{ answer: string }> = {
-      status: "needsHuman",
+    const paused: OutcomeType<{ answer: string }> = {
+      status: "paused",
       token: "token",
       artefact: { answer: "draft" },
       trace: [],
@@ -38,15 +38,15 @@ describe("Workflow Outcome helpers", () => {
     expect(
       Outcome.match<{ answer: string }, string>(ok, {
         ok: (value) => value.artefact.answer,
-        needsHuman: () => "human",
+        paused: () => "human",
         error: () => "error",
       }),
     ).toBe("ok");
 
     expect(
-      Outcome.match<{ answer: string }, string>(needsHuman, {
+      Outcome.match<{ answer: string }, string>(paused, {
         ok: () => "ok",
-        needsHuman: (value) => String(value.token),
+        paused: (value) => String(value.token),
         error: () => "error",
       }),
     ).toBe("token");
@@ -54,7 +54,7 @@ describe("Workflow Outcome helpers", () => {
     expect(
       Outcome.match<{ answer: string }, string>(error, {
         ok: () => "ok",
-        needsHuman: () => "human",
+        paused: () => "human",
         error: (value) => (value.error instanceof Error ? value.error.message : "unknown"),
       }),
     ).toBe("boom");
@@ -67,8 +67,8 @@ describe("Workflow Outcome helpers", () => {
       trace: [],
       diagnostics: [],
     };
-    const needsHuman: OutcomeType<{ value: number }> = {
-      status: "needsHuman",
+    const paused: OutcomeType<{ value: number }> = {
+      status: "paused",
       token: "token",
       artefact: { value: 0 },
       trace: [],
@@ -80,7 +80,7 @@ describe("Workflow Outcome helpers", () => {
       expect(mapped.artefact).toEqual({ value: 4 });
     }
 
-    const untouched = Outcome.mapOk(needsHuman, () => ({ value: 0 }));
-    expect(untouched).toBe(needsHuman);
+    const untouched = Outcome.mapOk(paused, () => ({ value: 0 }));
+    expect(untouched).toBe(paused);
   });
 });

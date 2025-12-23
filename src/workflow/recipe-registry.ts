@@ -2,7 +2,7 @@
 
 import type { RecipeContract, RecipeName } from "./types";
 
-const OUTCOMES_DEFAULT: RecipeContract["outcomes"] = ["ok", "needsHuman", "error"];
+const OUTCOMES_DEFAULT: RecipeContract["outcomes"] = ["ok", "paused", "error"];
 const OUTCOMES_NO_HITL: RecipeContract["outcomes"] = ["ok", "error"];
 
 const CAP_MODEL = "model";
