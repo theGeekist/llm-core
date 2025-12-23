@@ -10,8 +10,12 @@ Related:
 
 ## Quick Start
 
+::: tabs
+== TypeScript
+
 ```ts
-import { Workflow, Outcome } from "#workflow";
+import { Workflow } from "@geekist/llm-core/workflow";
+import { Outcome } from "@geekist/llm-core";
 
 const wf = Workflow.recipe("rag")
   .use({ key: "model.openai", capabilities: { model: { name: "gpt-4.1" } } })
@@ -26,6 +30,28 @@ Outcome.match(out, {
   error: ({ error }) => `Failed: ${String(error)}`,
 });
 ```
+
+== JavaScript
+
+```js
+import { Workflow } from "@geekist/llm-core/workflow";
+import { Outcome } from "@geekist/llm-core";
+
+const wf = Workflow.recipe("rag")
+  .use({ key: "model.openai", capabilities: { model: { name: "gpt-4.1" } } })
+  .use({ key: "retriever.vector", capabilities: { retriever: { type: "vector" } } })
+  .build();
+
+const out = await wf.run({ input: "What is a capybara?" });
+
+Outcome.match(out, {
+  ok: ({ artefact }) => artefact["answer.text"],
+  needsHuman: ({ token }) => `Need approval: ${String(token)}`,
+  error: ({ error }) => `Failed: ${String(error)}`,
+});
+```
+
+:::
 
 Recipes ship with minimal default plugins. `.use(...)` extends or overrides those defaults.
 

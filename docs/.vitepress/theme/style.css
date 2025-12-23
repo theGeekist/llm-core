@@ -1,0 +1,66 @@
+@import url("https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap");
+
+:root {
+  --vp-font-family-base: "Space Grotesk", "Inter", system-ui, sans-serif;
+  --vp-c-brand-1: #f5c451;
+  --vp-c-brand-2: #ffd78a;
+  --vp-c-brand-3: #b8892d;
+  --vp-c-brand-soft: rgba(245, 196, 81, 0.2);
+  --vp-c-bg: #0b0f14;
+  --vp-c-bg-elv: #121722;
+  --vp-c-bg-soft: #161c2a;
+  --vp-c-text-1: #f3f4f6;
+  --vp-c-text-2: #a1a9b5;
+  --vp-c-text-3: #7c8592;
+  --vp-c-divider: rgba(255, 255, 255, 0.08);
+  --vp-c-gutter: rgba(255, 255, 255, 0.05);
+}
+
+.VPNavBar {
+  border-bottom-color: rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(12px);
+}
+
+.VPHomeHero {
+  position: relative;
+}
+
+.VPHomeHero::before {
+  content: "";
+  position: absolute;
+  inset: -30% -10% auto -10%;
+  height: 420px;
+  background: radial-gradient(circle at 20% 10%, rgba(245, 196, 81, 0.25), transparent 60%),
+    radial-gradient(circle at 70% 20%, rgba(114, 196, 255, 0.25), transparent 60%),
+    radial-gradient(circle at 50% 50%, rgba(255, 110, 110, 0.18), transparent 70%);
+  filter: blur(8px);
+  z-index: -1;
+}
+
+.VPHomeHero .name {
+  letter-spacing: -0.02em;
+}
+
+.VPButton.brand {
+  background: linear-gradient(135deg, #f5c451, #f8a845);
+  border-color: transparent;
+  color: #0b0f14;
+}
+
+.VPButton.alt {
+  border-color: rgba(245, 196, 81, 0.4);
+  color: #f5c451;
+}
+
+.VPFeature {
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: linear-gradient(180deg, rgba(18, 23, 34, 0.9), rgba(11, 15, 20, 0.95));
+}
+
+.VPFeature:hover {
+  border-color: rgba(245, 196, 81, 0.35);
+}
+
+.VPDoc a {
+  font-weight: 500;
+}

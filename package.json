@@ -1,24 +1,32 @@
 {
   "name": "@geekist/llm-core",
   "version": "0.1.0",
-  "description": "Composable workflow + adapter core for the JS/TS LLM ecosystem.",
+  "description": "Composable, dependency-free TypeScript core for LLM workflows and adapters. Clean runtime, high coverage, no heavy framework deps.",
   "keywords": [
+    "typescript",
+    "javascript",
     "llm",
+    "ai",
     "workflow",
     "pipeline",
+    "pipelines",
     "rag",
     "agents",
     "tools",
     "adapters",
     "langchain",
     "llamaindex",
-    "ai-sdk"
+    "ai-sdk",
+    "geekist",
+    "dag",
+    "openai",
+    "ollama"
   ],
   "repository": {
     "type": "git",
     "url": "https://github.com/theGeekist/llm-core.git"
   },
-  "homepage": "https://thegeekist.github.io/llm-core/",
+  "homepage": "https://llm-core.geekist.co/",
   "bugs": {
     "url": "https://github.com/theGeekist/llm-core/issues"
   },
@@ -29,14 +37,15 @@
   "dependencies": {
     "@wpkernel/pipeline": "^0.12.6-beta.3"
   },
-  "main": "./dist/index.js",
-  "module": "./dist/index.js",
-  "types": "./dist/index.d.ts",
+  "main": "./dist/cjs/index.cjs",
+  "module": "./dist/esm/index.js",
+  "types": "./dist/types/index.d.ts",
   "type": "module",
   "private": true,
   "scripts": {
-    "build": "bun run build:js && bun run build:types",
-    "build:js": "bun build ./index.ts ./src/workflow/*.ts ./src/adapters/*.ts ./src/adapters/*/*.ts --outdir dist --root . --sourcemap --splitting --format=esm --target=node",
+    "build": "bun run build:esm && bun run build:cjs && bun run build:types",
+    "build:esm": "bun build ./index.ts ./src/workflow/index.ts ./src/adapters/index.ts ./src/adapters/*/index.ts --outdir dist/esm --root . --sourcemap=external --splitting --format=esm --target=node",
+    "build:cjs": "bun build ./index.ts ./src/workflow/index.ts ./src/adapters/index.ts ./src/adapters/*/index.ts --outdir dist/cjs --root . --sourcemap=external --format=cjs --target=node --entry-naming=[dir]/[name].cjs --chunk-naming=[name]-[hash].cjs",
     "build:types": "tsc -p tsconfig.build.json --emitDeclarationOnly",
     "prepare": "git config core.hooksPath .githooks",
     "format": "prettier \"**/*.{ts,tsx,js,jsx,json,md}\" --write",
@@ -71,13 +80,15 @@
     "eslint-plugin-sonarjs": "0.24.0",
     "langchain": "^1.2.2",
     "llamaindex": "^0.12.1",
+    "markdown-it-mermaid": "^0.2.5",
     "ollama": "^0.6.3",
     "ollama-ai-provider-v2": "^1.5.5",
     "openai": "^6.15.0",
     "prettier": "3.3.3",
+    "vitepress": "^1.3.4",
+    "vitepress-plugin-tabs": "^0.7.3",
     "zod": "^4.2.1",
-    "zod-to-json-schema": "^3.25.0",
-    "vitepress": "^1.3.4"
+    "zod-to-json-schema": "^3.25.0"
   },
   "imports": {
     "#workflow": "./src/workflow/index.ts",
@@ -87,29 +98,46 @@
   },
   "exports": {
     ".": {
-      "types": "./dist/index.d.ts",
-      "import": "./dist/index.js",
-      "default": "./dist/index.js"
+      "types": "./dist/types/index.d.ts",
+      "import": "./dist/esm/index.js",
+      "require": "./dist/cjs/index.cjs",
+      "default": "./dist/esm/index.js"
     },
     "./workflow": {
-      "types": "./dist/src/workflow/index.d.ts",
-      "import": "./dist/src/workflow/index.js",
-      "default": "./dist/src/workflow/index.js"
-    },
-    "./workflow/*": {
-      "types": "./dist/src/workflow/*.d.ts",
-      "import": "./dist/src/workflow/*.js",
-      "default": "./dist/src/workflow/*.js"
+      "types": "./dist/types/src/workflow/index.d.ts",
+      "import": "./dist/esm/src/workflow/index.js",
+      "require": "./dist/cjs/src/workflow/index.cjs",
+      "default": "./dist/esm/src/workflow/index.js"
     },
     "./adapters": {
-      "types": "./dist/src/adapters/index.d.ts",
-      "import": "./dist/src/adapters/index.js",
-      "default": "./dist/src/adapters/index.js"
+      "types": "./dist/types/src/adapters/index.d.ts",
+      "import": "./dist/esm/src/adapters/index.js",
+      "require": "./dist/cjs/src/adapters/index.cjs",
+      "default": "./dist/esm/src/adapters/index.js"
     },
-    "./adapters/*": {
-      "types": "./dist/src/adapters/*/index.d.ts",
-      "import": "./dist/src/adapters/*/index.js",
-      "default": "./dist/src/adapters/*/index.js"
+    "./adapters/ai-sdk": {
+      "types": "./dist/types/src/adapters/ai-sdk/index.d.ts",
+      "import": "./dist/esm/src/adapters/ai-sdk/index.js",
+      "require": "./dist/cjs/src/adapters/ai-sdk/index.cjs",
+      "default": "./dist/esm/src/adapters/ai-sdk/index.js"
+    },
+    "./adapters/langchain": {
+      "types": "./dist/types/src/adapters/langchain/index.d.ts",
+      "import": "./dist/esm/src/adapters/langchain/index.js",
+      "require": "./dist/cjs/src/adapters/langchain/index.cjs",
+      "default": "./dist/esm/src/adapters/langchain/index.js"
+    },
+    "./adapters/llamaindex": {
+      "types": "./dist/types/src/adapters/llamaindex/index.d.ts",
+      "import": "./dist/esm/src/adapters/llamaindex/index.js",
+      "require": "./dist/cjs/src/adapters/llamaindex/index.cjs",
+      "default": "./dist/esm/src/adapters/llamaindex/index.js"
+    },
+    "./adapters/primitives": {
+      "types": "./dist/types/src/adapters/primitives/index.d.ts",
+      "import": "./dist/esm/src/adapters/primitives/index.js",
+      "require": "./dist/cjs/src/adapters/primitives/index.cjs",
+      "default": "./dist/esm/src/adapters/primitives/index.js"
     }
   },
   "peerDependencies": {

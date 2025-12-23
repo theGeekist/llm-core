@@ -82,7 +82,7 @@ Diagnostics are never required to run in default mode, but they are always prese
 
 Diagnostics are normalized into structured entries with `level`, `kind`, and `message`.
 
-Capability resolution is deterministic and reducer-driven (see `docs/developer.md` for details).
+Capability resolution is deterministic and reducer-driven.
 
 ## needsHuman Flow
 

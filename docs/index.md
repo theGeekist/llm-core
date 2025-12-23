@@ -1,18 +1,31 @@
-# llm-core
+---
+layout: home
 
-Composable workflow + adapter core for the JS/TS LLM ecosystem.
+hero:
+  name: llm-core
+  text: A DX-first LLM runtime core
+  tagline: Composable workflows and adapters for a fragmented JS/TS ecosystem.
+  image:
+    src: /logo.png
+    alt: llm-core logo
+  actions:
+    - theme: brand
+      text: Get Started
+      link: /workflow-api
+    - theme: alt
+      text: Adapters API
+      link: /adapters-api
 
-## Start here
-
-- Workflow API: `workflow-api.md`
-- Adapters API: `adapters-api.md`
-- Runtime model: `runtime.md`
-
-## What this gives you
-
-- One workflow surface for RAG, agents, and HITL-style flows.
-- Adapter contracts to normalize LangChain, LlamaIndex, and AI SDK.
-- Diagnostics and trace data that are always present.
+features:
+  - title: Workflow-first
+    details: One clean surface for RAG, agents, HITL gates, and loops.
+  - title: Adapter ecosystem
+    details: Normalize LangChain, LlamaIndex, and AI SDK without leaking types.
+  - title: Diagnostics always on
+    details: Trace + diagnostics come back with every run, strict when you want it.
+  - title: Deterministic composition
+    details: Explicit overrides, capability checks, and a stable explain snapshot.
+---
 
 ## Quick start
 
@@ -27,11 +40,8 @@ if (result.status === "ok") {
 }
 ```
 
-## How to contribute
+## Next
 
-```bash
-bun install
-bun run lint
-bun run typecheck
-bun test
-```
+- Workflow API: `workflow-api.md`
+- Adapters API: `adapters-api.md`
+- Runtime model: `runtime.md`

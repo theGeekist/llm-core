@@ -4,6 +4,8 @@ Composable workflow + adapter core for the JS/TS LLM ecosystem.
 
 [![CI](https://github.com/theGeekist/llm-core/actions/workflows/ci.yml/badge.svg)](https://github.com/theGeekist/llm-core/actions/workflows/ci.yml)
 [![codecov](https://codecov.io/gh/theGeekist/llm-core/branch/main/graph/badge.svg)](https://codecov.io/gh/theGeekist/llm-core)
+[![SonarCloud](https://sonarcloud.io/api/project_badges/measure?project=theGeekist_llm-core&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=theGeekist_llm-core)
+[![Docs](https://img.shields.io/badge/docs-llm--core.geekist.co-0b0f14?style=flat&labelColor=0b0f14&color=f5c451)](https://llm-core.geekist.co/)
 
 ## Why
 
@@ -34,9 +36,10 @@ if (result.status === "ok") {
 
 ## Docs
 
-- Docs site: https://theGeekist.github.io/llm-core/
+- Docs site: https://llm-core.geekist.co/
 - Adapters API: docs/adapters-api.md
 - Workflow API: docs/workflow-api.md
+- ETL example: docs/examples/etl-pipeline.ts
 
 ## Contributing
 

@@ -1,6 +1,6 @@
 # Recipe Contracts + Plugin Catalogue (Draft)
 
-Companion to `docs/workflow-notes.md`. This file is a focused catalogue.
+This file is a focused catalogue for recipe contracts + plugin expectations.
 Adapter contracts live in `docs/adapters-api.md`.
 
 ## Recipe Contract Template
