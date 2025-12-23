@@ -26,7 +26,13 @@ export default defineConfig({
   markdown: {
     config: (md) => {
       md.use(tabsMarkdownPlugin);
-      md.use(markdownItMermaid);
+      const mermaidPlugin =
+        typeof markdownItMermaid === "function"
+          ? markdownItMermaid
+          : (markdownItMermaid as { default?: (md: typeof md) => void }).default;
+      if (mermaidPlugin) {
+        md.use(mermaidPlugin);
+      }
     },
   },
   themeConfig: {

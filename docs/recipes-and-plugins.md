@@ -85,7 +85,10 @@ const wf = Workflow.recipe("rag")
 ### 3) RAG With Citations (Retrieve → Rerank → Cite → Answer)
 
 - Inputs
-  - RagInput: { input: string; query?: string; topK?: number }
+  - `RagInput`
+    - `input: string`
+    - `query?: string`
+    - `topK?: number`
 - Artefact map (canonical keys)
   - `retrieval.query`
   - `retrieval.set`
@@ -114,7 +117,10 @@ Note: `retriever.rerank` is an add-on; it assumes a base retriever is present an
 ### 4) Evaluation Run
 
 - Inputs
-  - EvalInput: { prompt: string; datasetId?: string; candidates?: number }
+  - `EvalInput`
+    - `prompt: string`
+    - `datasetId?: string`
+    - `candidates?: number`
 - Primary artefacts
   - Candidates
   - Scores

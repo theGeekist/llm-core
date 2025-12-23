@@ -1,1 +1,6 @@
 .DS_Store
+dist/
+AGENTS.md
+node_modules/
+.env
+.vscode/
