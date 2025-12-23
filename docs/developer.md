@@ -67,3 +67,9 @@ while full lists stay on `wf.adapters()` (resolved adapters).
 - No user-facing generics for the happy path.
 - Recipe name drives inference.
 - Small, readable modules (<500 SLOC) with early returns and minimal nesting.
+
+## Docs + Release
+
+- Docs site is VitePress (`docs/`) and publishes to GitHub Pages on `main`.
+- Releases are tag-driven (`vX.Y.Z`) and publish to npm + GitHub.
+- See `docs/release.md` for the exact workflow + secrets.

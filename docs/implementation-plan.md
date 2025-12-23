@@ -227,6 +227,16 @@ Goals:
 - Add runtime input diagnostics for missing data at adapter call sites.
 - Document dependency expectations per adapter family.
 
+## Stage 10b — Brand + Infra
+
+Status: in progress. See `docs/stage-10b.md`.
+
+Goals:
+
+- Rebrand to Geekist and update package scope/repo metadata.
+- Add CI + Codecov, docs site deploy, and release workflows.
+- Publish docs via VitePress on GitHub Pages.
+
 ## Ongoing Constraints
 
 - Prefer early returns and small pure functions.
