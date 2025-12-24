@@ -1,6 +1,11 @@
 import { describe, expect, it } from "bun:test";
 import type { Model, Retriever } from "#adapters";
-import { assertSyncOutcome, makeRuntime } from "./helpers";
+import {
+  assertSyncOutcome,
+  createResumeSnapshot,
+  createSessionStore,
+  makeRuntime,
+} from "./helpers";
 
 describe("Workflow registry routing", () => {
   it("routes runs through builtin providers when no adapters are supplied", () => {
@@ -51,6 +56,8 @@ describe("Workflow registry routing", () => {
 
   it("re-resolves providers during resume using provider overrides", () => {
     let captured: unknown;
+    const { sessionStore } = createSessionStore();
+    sessionStore.set("token", createResumeSnapshot("token"));
     const model: Model = {
       generate: () => ({ text: "override" }),
     };
@@ -70,6 +77,7 @@ describe("Workflow registry routing", () => {
     const outcome = assertSyncOutcome(
       runtime.resume("token", undefined, {
         resume: {
+          sessionStore,
           resolve: () => ({
             input: { token: "token" },
             providers: { model: "override.adapters:model" },

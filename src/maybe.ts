@@ -5,12 +5,15 @@ import {
   maybeTry,
   composeK,
   processSequentially,
-  type MaybePromise,
-} from "@wpkernel/pipeline/core";
+} from "@wpkernel/pipeline/core/async-utils";
+import type { MaybePromise } from "@wpkernel/pipeline/core";
 
 type MaybeThunk<T> = { (): MaybePromise<T> };
 type MaybeHandler<TIn, TOut> = { (value: TIn): MaybePromise<TOut> };
 type ErrorHandler<T> = { (error: unknown): MaybePromise<T> };
+type MaybeBinary<TFirst, TSecond, TResult> = {
+  (first: TFirst, second: TSecond): MaybePromise<TResult>;
+};
 
 export { isPromiseLike, maybeAll, maybeThen, maybeTry, composeK, processSequentially };
 
@@ -33,6 +36,21 @@ export function mapMaybe<TIn, TOut>(
 
 export function mapMaybeArray<TIn, TOut>(value: MaybePromise<TIn[]>, map: (value: TIn) => TOut) {
   return mapMaybe(value, (items) => items.map(map));
+}
+
+export function tapMaybe<TIn>(value: MaybePromise<TIn>, tap: (value: TIn) => MaybePromise<void>) {
+  return mapMaybe(value, (result) => chainMaybe(tap(result), () => result));
+}
+
+export function partialK<TFirst, TSecond, TResult>(
+  fn: MaybeBinary<TFirst, TSecond, TResult>,
+  first: TFirst,
+) {
+  return (second: TSecond) => fn(first, second);
+}
+
+export function curryK<TFirst, TSecond, TResult>(fn: MaybeBinary<TFirst, TSecond, TResult>) {
+  return (first: TFirst) => (second: TSecond) => fn(first, second);
 }
 
 export function identity<T>(value: T) {

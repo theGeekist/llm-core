@@ -132,8 +132,29 @@ describe("Adapter tools", () => {
     expect(built).toBeDefined();
   });
 
+  it("uses json schema wrappers for non-zod schemas", () => {
+    const schema = makeSchema({
+      type: "object",
+      properties: { query: { type: "string" } },
+      required: ["query"],
+    });
+    const built = toAiSdkFlexibleSchema(schema);
+    expect(built).toBeDefined();
+  });
+
   it("returns undefined when no AI SDK tools are provided", () => {
     expect(toAiSdkTools([])).toBeUndefined();
+  });
+
+  it("preserves adapter tool execution for AI SDK tools", async () => {
+    const Tool = ToolHelper.create({
+      name: TOOL_NAME,
+      execute: (input) => `ok:${JSON.stringify(input)}`,
+    });
+
+    const built = toAiSdkTool(Tool);
+    const result = await built.execute?.({ query: "hi" }, { toolCallId: "call-1", messages: [] });
+    expect(result).toBe('ok:{"query":"hi"}');
   });
 
   it("preserves zod schemas when building LangChain tools", () => {

@@ -1,11 +1,27 @@
 import { describe, expect, it } from "bun:test";
 import { createBuiltinRetriever } from "#adapters";
 import { getRecipe, registerRecipe } from "#workflow/recipe-registry";
-import { assertSyncOutcome, diagnosticMessages, makeRuntime, makeWorkflow } from "./helpers";
+import {
+  assertSyncOutcome,
+  createResumeSnapshot,
+  createSessionStore,
+  diagnosticMessages,
+  makeRuntime,
+  makeWorkflow,
+} from "./helpers";
 
 describe("Workflow runtime", () => {
   const TOKEN_PAUSED = "token-1";
   const ERROR_RESUME = "Expected resume to be available.";
+  const ERROR_EXPECTED_OK = "Expected ok outcome.";
+  const ERROR_EXPECTED_PAUSED = "Expected paused outcome.";
+  type ResumeDecision = { decision: "approve" | "deny" };
+  type PauseYield = {
+    paused: true;
+    token: string;
+    pauseKind?: "human" | "external" | "system";
+    partialArtifact?: Record<string, unknown>;
+  };
 
   it("supports sync workflows without requiring await", () => {
     const runtime = makeWorkflow("agent");
@@ -37,7 +53,7 @@ describe("Workflow runtime", () => {
     const outcome = assertSyncOutcome(runtime.run({ input: "sync-artifact" }));
     expect(outcome.status).toBe("ok");
     if (outcome.status !== "ok") {
-      throw new Error("Expected ok outcome.");
+      throw new Error(ERROR_EXPECTED_OK);
     }
     expect(outcome.artefact).toEqual({ answer: "sync-ok" });
     expect(diagnosticMessages(outcome.diagnostics)).toEqual(["sync-warn"]);
@@ -55,7 +71,7 @@ describe("Workflow runtime", () => {
     const outcome = await runtime.run({ input: "async" });
     expect(outcome.status).toBe("ok");
     if (outcome.status !== "ok") {
-      throw new Error("Expected ok outcome.");
+      throw new Error(ERROR_EXPECTED_OK);
     }
     expect(outcome.artefact).toEqual({ answer: "ok" });
     expect(diagnosticMessages(outcome.diagnostics)).toEqual(["warn"]);
@@ -83,10 +99,110 @@ describe("Workflow runtime", () => {
     const outcome = await runtime.run({ input: "gate" });
     expect(outcome.status).toBe("paused");
     if (outcome.status !== "paused") {
-      throw new Error("Expected paused outcome.");
+      throw new Error(ERROR_EXPECTED_PAUSED);
     }
     expect(outcome.token).toBe(TOKEN_PAUSED);
     expect(outcome.artefact).toEqual({ partial: true });
+  });
+
+  it("supports generator pauses and resumes with pauseKind", async () => {
+    let capturedPauseKind: unknown;
+    function* pauseSequence(): Generator<
+      PauseYield,
+      { artifact: { resumed: ResumeDecision } },
+      ResumeDecision
+    > {
+      const resumeValue = yield {
+        paused: true,
+        token: TOKEN_PAUSED,
+        pauseKind: "external",
+        partialArtifact: { pending: true },
+      };
+      return { artifact: { resumed: resumeValue } };
+    }
+
+    const runtime = makeRuntime("hitl-gate", {
+      run: () => pauseSequence(),
+    });
+
+    const paused = await runtime.run({ input: "gate" });
+    expect(paused.status).toBe("paused");
+    if (paused.status !== "paused") {
+      throw new Error(ERROR_EXPECTED_PAUSED);
+    }
+    const pausedTrace = (
+      paused.trace as Array<{ kind: string; data?: Record<string, unknown> }>
+    ).find((event) => event.kind === "run.paused");
+    expect(pausedTrace?.data).toMatchObject({ pauseKind: "external" });
+
+    if (!runtime.resume) {
+      throw new Error(ERROR_RESUME);
+    }
+
+    const resumed = await runtime.resume(
+      TOKEN_PAUSED,
+      { decision: "approve" },
+      {
+        resume: {
+          resolve: (request) => {
+            capturedPauseKind = request.pauseKind;
+            return { input: request.resumeInput };
+          },
+        },
+      },
+    );
+
+    expect(capturedPauseKind).toBe("external");
+    expect(resumed.status).toBe("ok");
+    if (resumed.status !== "ok") {
+      throw new Error(ERROR_EXPECTED_OK);
+    }
+    expect(resumed.artefact).toEqual({ resumed: { decision: "approve" } });
+  });
+
+  it("supports async generator pauses during resume", async () => {
+    const token = "token-async";
+    async function* pauseSequence(): AsyncGenerator<
+      { paused: true; token: string },
+      { artifact: { resumed: ResumeDecision } },
+      ResumeDecision
+    > {
+      const resumeValue = yield {
+        paused: true,
+        token,
+      };
+      return { artifact: { resumed: resumeValue } };
+    }
+
+    const runtime = makeRuntime("hitl-gate", {
+      run: () => pauseSequence(),
+    });
+
+    const paused = await runtime.run({ input: "gate" });
+    expect(paused.status).toBe("paused");
+    if (paused.status !== "paused") {
+      throw new Error(ERROR_EXPECTED_PAUSED);
+    }
+
+    if (!runtime.resume) {
+      throw new Error(ERROR_RESUME);
+    }
+
+    const resumed = await runtime.resume(
+      token,
+      { decision: "deny" },
+      {
+        resume: {
+          resolve: (request) => ({ input: request.resumeInput }),
+        },
+      },
+    );
+
+    expect(resumed.status).toBe("ok");
+    if (resumed.status !== "ok") {
+      throw new Error(ERROR_EXPECTED_OK);
+    }
+    expect(resumed.artefact).toEqual({ resumed: { decision: "deny" } });
   });
 
   it("passes runtime reporter into pipeline run options", () => {
@@ -121,6 +237,34 @@ describe("Workflow runtime", () => {
     expect(diagnosticMessages(outcome.diagnostics)).toContain("retriever_query_missing");
   });
 
+  it("reports adapter input diagnostics during generator pauses", async () => {
+    const retriever = createBuiltinRetriever();
+    const runtime = makeRuntime("hitl-gate", {
+      includeDefaults: false,
+      plugins: [{ key: "adapter.retriever", adapters: { retriever } }],
+      run: (options) => {
+        const adapters = options.adapters as { retriever?: typeof retriever };
+        function* pauseWithDiagnostics(): Generator<
+          PauseYield,
+          { artifact: { ok: true } },
+          unknown
+        > {
+          adapters.retriever?.retrieve(" ");
+          yield { paused: true, token: TOKEN_PAUSED };
+          return { artifact: { ok: true } };
+        }
+        return pauseWithDiagnostics();
+      },
+    });
+
+    const outcome = await runtime.run({ input: "query" });
+    expect(outcome.status).toBe("paused");
+    if (outcome.status !== "paused") {
+      throw new Error(ERROR_EXPECTED_PAUSED);
+    }
+    expect(diagnosticMessages(outcome.diagnostics)).toContain("retriever_query_missing");
+  });
+
   it("exposes resume only for recipes that support paused", () => {
     const resumable = makeWorkflow("hitl-gate");
     const nonResumable = makeWorkflow("rag");
@@ -130,12 +274,23 @@ describe("Workflow runtime", () => {
   });
 
   it("returns an error outcome when resume has no adapter", () => {
-    const resumable = makeWorkflow("hitl-gate");
+    const resumable = makeRuntime("hitl-gate", {
+      run: () => {
+        function* pauseSequence(): Generator<PauseYield, { artifact: { ok: true } }, unknown> {
+          yield { paused: true, token: TOKEN_PAUSED };
+          return { artifact: { ok: true } };
+        }
+        return pauseSequence();
+      },
+    });
     if (!resumable.resume) {
       throw new Error(ERROR_RESUME);
     }
 
-    const outcome = assertSyncOutcome(resumable.resume("token", { answer: "yes" }));
+    const paused = assertSyncOutcome(resumable.run({ input: "gate" }));
+    expect(paused.status).toBe("paused");
+
+    const outcome = assertSyncOutcome(resumable.resume(TOKEN_PAUSED, { answer: "yes" }));
     expect(outcome.status).toBe("error");
     if (outcome.status !== "error") {
       throw new Error("Expected error outcome.");
@@ -143,8 +298,29 @@ describe("Workflow runtime", () => {
     expect(String(outcome.error)).toContain("Resume requires a resume adapter.");
   });
 
+  it("returns an error outcome when resume token is invalid", () => {
+    const resumable = makeWorkflow("hitl-gate");
+    if (!resumable.resume) {
+      throw new Error(ERROR_RESUME);
+    }
+
+    const outcome = assertSyncOutcome(resumable.resume("missing-token"));
+    expect(outcome.status).toBe("error");
+    if (outcome.status !== "error") {
+      throw new Error("Expected error outcome.");
+    }
+    expect(diagnosticMessages(outcome.diagnostics)).toContain(
+      "Resume token is invalid or expired.",
+    );
+  });
+
   it("uses the resume adapter to resume runs", () => {
     let captured: unknown;
+    const { sessionStore } = createSessionStore();
+    sessionStore.set(
+      "token-1",
+      createResumeSnapshot("token-1", { pending: true }, { pauseKind: "human" }),
+    );
     const runtime = makeRuntime("hitl-gate", {
       includeDefaults: false,
       plugins: [
@@ -171,6 +347,7 @@ describe("Workflow runtime", () => {
         { decision: "approve" },
         {
           resume: {
+            sessionStore,
             resolve: ({ token, resumeInput }) => ({
               input: { token, resumeInput },
             }),
@@ -188,6 +365,8 @@ describe("Workflow runtime", () => {
 
   it("supports async resume adapters during resume", async () => {
     let captured: unknown;
+    const { sessionStore } = createSessionStore();
+    sessionStore.set("token-2", createResumeSnapshot("token-2"));
     const runtime = makeRuntime("hitl-gate", {
       includeDefaults: false,
       run: (options) => {
@@ -202,6 +381,7 @@ describe("Workflow runtime", () => {
 
     const outcome = await runtime.resume("token-2", undefined, {
       resume: {
+        sessionStore,
         resolve: async ({ token }) => ({ input: { token } }),
       },
     });
@@ -211,6 +391,8 @@ describe("Workflow runtime", () => {
   });
 
   it("uses the resume runtime diagnostics mode", () => {
+    const { sessionStore } = createSessionStore();
+    sessionStore.set("token-4", createResumeSnapshot("token-4"));
     const runtime = makeRuntime("hitl-gate", {
       includeDefaults: false,
       plugins: [
@@ -231,6 +413,7 @@ describe("Workflow runtime", () => {
     const outcome = assertSyncOutcome(
       runtime.resume("token-4", undefined, {
         resume: {
+          sessionStore,
           resolve: () => ({ input: { token: "token-4" }, runtime: { diagnostics: "strict" } }),
         },
       }),
@@ -242,6 +425,8 @@ describe("Workflow runtime", () => {
 
   it("treats resume envelopes with extra keys as input", () => {
     let captured: unknown;
+    const { sessionStore } = createSessionStore();
+    sessionStore.set("token-5", createResumeSnapshot("token-5"));
     const runtime = makeRuntime("hitl-gate", {
       includeDefaults: false,
       run: (options) => {
@@ -258,6 +443,7 @@ describe("Workflow runtime", () => {
     const outcome = assertSyncOutcome(
       runtime.resume("token-5", undefined, {
         resume: {
+          sessionStore,
           resolve: () => resumeInput,
         },
       }),
@@ -271,6 +457,8 @@ describe("Workflow runtime", () => {
   });
 
   it("warns when resume adapter returns an object without input", () => {
+    const { sessionStore } = createSessionStore();
+    sessionStore.set("token-3", createResumeSnapshot("token-3"));
     const runtime = makeRuntime("hitl-gate", {
       includeDefaults: false,
       run: () => ({ artifact: { ok: true } }),
@@ -283,6 +471,7 @@ describe("Workflow runtime", () => {
     const outcome = assertSyncOutcome(
       runtime.resume("token-3", undefined, {
         resume: {
+          sessionStore,
           resolve: () => ({ runtime: { diagnostics: "default" } }),
         },
       }),

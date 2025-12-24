@@ -99,7 +99,7 @@ Trace is always present and records workflow-level events:
 
 - `run.start`
 - `run.ok`
-- `run.paused`
+- `run.paused` (may include `{ pauseKind }` in event data)
 - `run.error`
 - `run.end` (with final status)
 
@@ -153,4 +153,4 @@ if (out.status === "paused") {
 
 :::
 
-If a recipe supports it, `resume(token, resumeInput?, runtime?)` is exposed; it uses `runtime.resume.resolve(...)` when provided and returns an error outcome when missing.
+If a recipe supports it, `resume(token, resumeInput?, runtime?)` is exposed; it uses `runtime.resume.resolve(...)` when provided and returns an error outcome when missing (including a `resume.invalidToken` diagnostic when the token is unknown). Paused tokens are process-local unless you supply a durable resume store via runtime configuration.

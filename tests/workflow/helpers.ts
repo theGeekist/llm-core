@@ -1,6 +1,7 @@
 import { Workflow } from "#workflow";
 import { createRuntime } from "#workflow/runtime";
 import { getRecipe } from "#workflow/recipe-registry";
+import type { ResumeSnapshot } from "#adapters";
 import type { Outcome, Plugin, RecipeName } from "#workflow/types";
 
 const ERROR_MISSING_CONTRACT = "Missing recipe contract.";
@@ -54,6 +55,35 @@ type TestRunOptions = {
   runtime?: unknown;
   reporter?: unknown;
   adapters?: unknown;
+};
+
+export const createSessionStore = () => {
+  const sessions = new Map<unknown, ResumeSnapshot>();
+  const sessionStore = {
+    get: (token: unknown) => sessions.get(token),
+    set: (token: unknown, snapshot: ResumeSnapshot) => {
+      sessions.set(token, snapshot);
+    },
+    delete: (token: unknown) => {
+      sessions.delete(token);
+    },
+  };
+  return { sessions, sessionStore };
+};
+
+export const createResumeSnapshot = (
+  token: unknown,
+  payload?: unknown,
+  options?: { pauseKind?: ResumeSnapshot["pauseKind"] },
+): ResumeSnapshot => {
+  const createdAt = Date.now();
+  return {
+    token,
+    createdAt,
+    lastAccessedAt: createdAt,
+    pauseKind: options?.pauseKind,
+    payload,
+  };
 };
 
 export const makeRuntime = (

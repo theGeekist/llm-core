@@ -15,6 +15,7 @@ export type {
   AdapterResumeRequest,
   AdapterResumeResult,
   AdapterResumeReturn,
+  ResumeSnapshot,
   Tool,
   AdapterTraceEvent,
   AdapterTraceSink,
@@ -53,6 +54,7 @@ export type {
   ToolResult,
   ToolResultPart,
   Turn,
+  PauseKind,
 } from "./types";
 
 export {

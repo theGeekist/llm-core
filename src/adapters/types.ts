@@ -21,6 +21,16 @@ export type AdapterDiagnostic = {
   data?: unknown;
 };
 
+export type PauseKind = "human" | "external" | "system";
+
+export type ResumeSnapshot = {
+  token: unknown;
+  pauseKind?: PauseKind;
+  createdAt: number;
+  lastAccessedAt?: number;
+  payload?: unknown;
+};
+
 export type AdapterCallContext = {
   report?: (diagnostic: AdapterDiagnostic) => void;
 };
@@ -401,6 +411,8 @@ export type AdapterBundle = {
 export type AdapterResumeRequest = {
   adapters?: AdapterBundle;
   declaredAdapters?: AdapterBundle;
+  pauseKind?: PauseKind;
+  resumeSnapshot?: ResumeSnapshot;
   resumeInput?: unknown;
   providers?: Record<string, string>;
   runtime?: unknown;
@@ -418,4 +430,6 @@ export type AdapterResumeReturn = AdapterResumeResult | unknown;
 
 export type AdapterResume = {
   resolve: (request: AdapterResumeRequest) => MaybePromise<AdapterResumeReturn>;
+  sessionStore?: unknown;
+  sessionTtlMs?: number;
 };

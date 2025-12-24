@@ -11,6 +11,14 @@ import { createBuiltinTools } from "./primitives/tools";
 import { createBuiltinRetriever } from "./primitives/retriever";
 import { createBuiltinTrace } from "./primitives/trace";
 import { validateAdapterRequirements } from "./requirements";
+import {
+  createDefaultReporter,
+  pipelineDiagnostic,
+  registryDiagnostic,
+} from "./registry/diagnostics";
+import { addAdapterValue, createState, type RegistryState } from "./registry/state";
+import { createReporters, toRequirementMap } from "./registry/requirements";
+import { resolveProviderSelection, validateCapabilities } from "./registry/selection";
 
 export type AdapterConstructName = keyof AdapterBundle | string;
 export type AdapterProviderKey = string;
@@ -78,224 +86,9 @@ export type AdapterRegistry = {
   snapshot: () => AdapterRegistrySnapshot;
 };
 
-type RegistryState = {
-  adapters: AdapterBundle;
-  diagnostics: AdapterDiagnostic[];
-  providers: Record<string, string>;
-  constructs: Record<string, unknown>;
-};
-
 type RegistryContext = {
   reporter: PipelineReporter;
   request: AdapterRegistryResolveInput;
-};
-
-const createDefaultReporter = (): PipelineReporter => ({
-  warn: (message, context) => console.warn(message, context),
-});
-
-const warn = (message: string, data?: unknown): AdapterDiagnostic => ({
-  level: "warn",
-  message,
-  data,
-});
-
-const registryDiagnostic = (
-  level: "warn" | "error",
-  code: string,
-  data?: Record<string, unknown>,
-): AdapterDiagnostic => ({
-  level,
-  message: code,
-  data,
-});
-
-const pipelineDiagnostic = (diagnostic: PipelineDiagnostic): AdapterDiagnostic =>
-  warn("registry_pipeline_diagnostic", diagnostic);
-
-const createState = (diagnostics: AdapterDiagnostic[]): RegistryState => ({
-  adapters: {},
-  diagnostics: [...diagnostics],
-  providers: {},
-  constructs: {},
-});
-
-// When adding a new construct, update AdapterBundle + this list.
-const bundleKeys = new Set<keyof AdapterBundle>([
-  "documents",
-  "messages",
-  "tools",
-  "model",
-  "trace",
-  "prompts",
-  "schemas",
-  "textSplitter",
-  "embedder",
-  "retriever",
-  "reranker",
-  "loader",
-  "transformer",
-  "memory",
-  "storage",
-  "kv",
-  "constructs",
-]);
-
-const isBundleKey = (key: AdapterConstructName): key is keyof AdapterBundle =>
-  bundleKeys.has(key as keyof AdapterBundle) && key !== "constructs";
-
-const addAdapterValue = (state: RegistryState, construct: AdapterConstructName, value: unknown) => {
-  if (isBundleKey(construct)) {
-    const bundle = state.adapters as Record<string, unknown>;
-    bundle[construct] = value;
-    return;
-  }
-  state.constructs[construct] = value;
-};
-
-const toRequirementMap = (requirements: ConstructRequirement[]) => {
-  const map = new Map<AdapterConstructName, ConstructRequirement>();
-  for (const requirement of requirements) {
-    if (!map.has(requirement.name)) {
-      map.set(requirement.name, requirement);
-    }
-  }
-  return map;
-};
-
-const hasCapabilities = (required: string[] | undefined, available: string[] | undefined) => {
-  if (!required || required.length === 0) {
-    return true;
-  }
-  const set = new Set(available ?? []);
-  return required.every((capability) => set.has(capability));
-};
-
-const pickHighestPriority = (providers: AdapterProviderRegistration[]) => {
-  if (providers.length === 0) {
-    return undefined;
-  }
-  const first = providers[0];
-  if (!first) {
-    return undefined;
-  }
-  let selected = first;
-  let best = selected.priority ?? 0;
-  for (const provider of providers.slice(1)) {
-    const priority = provider.priority ?? 0;
-    if (priority > best) {
-      best = priority;
-      selected = provider;
-    }
-  }
-  return selected;
-};
-
-const hasPriorityConflict = (
-  providers: AdapterProviderRegistration[],
-  winner: AdapterProviderRegistration,
-) => {
-  const priority = winner.priority ?? 0;
-  return providers.filter((provider) => (provider.priority ?? 0) === priority).length > 1;
-};
-
-const createReporters = (requirement: ConstructRequirement) => {
-  const required = requirement.required ?? false;
-  const level = required ? "error" : "warn";
-  const diagnostics: AdapterDiagnostic[] = [];
-  const report = (code: string, data?: Record<string, unknown>) => {
-    diagnostics.push(registryDiagnostic(level, code, data));
-  };
-  const reportConflict = (entry: AdapterProviderRegistration) => {
-    diagnostics.push(
-      registryDiagnostic(level, "construct_provider_conflict", {
-        construct: requirement.name,
-        providerId: entry.id,
-      }),
-    );
-  };
-  return { diagnostics, report, reportConflict };
-};
-
-const selectById = (
-  requirement: ConstructRequirement,
-  entries: AdapterProviderRegistration[],
-  providerId: string,
-  report: (code: string, data?: Record<string, unknown>) => void,
-) => {
-  const selected = entries.find((entry) => entry.id === providerId);
-  if (!selected) {
-    report("construct_provider_not_found", { construct: requirement.name, providerId });
-  }
-  return selected;
-};
-
-const selectByPriority = (
-  requirement: ConstructRequirement,
-  entries: AdapterProviderRegistration[],
-  report: (code: string, data?: Record<string, unknown>) => void,
-  reportConflict: (entry: AdapterProviderRegistration) => void,
-) => {
-  const candidates = entries.filter((entry) =>
-    hasCapabilities(requirement.capabilities, entry.capabilities),
-  );
-  if (candidates.length === 0) {
-    if (entries.length > 0 && requirement.capabilities?.length) {
-      report("construct_capability_missing", {
-        construct: requirement.name,
-        missing: requirement.capabilities,
-      });
-    } else {
-      report("construct_provider_missing", { construct: requirement.name });
-    }
-    return undefined;
-  }
-  const selected = pickHighestPriority(candidates);
-  if (!selected) {
-    report("construct_provider_missing", { construct: requirement.name });
-    return undefined;
-  }
-  if (hasPriorityConflict(candidates, selected)) {
-    reportConflict(selected);
-  }
-  return selected;
-};
-
-const validateCapabilities = (
-  requirement: ConstructRequirement,
-  selected: AdapterProviderRegistration | undefined,
-  report: (code: string, data?: Record<string, unknown>) => void,
-) => {
-  if (!selected) {
-    return undefined;
-  }
-  if (hasCapabilities(requirement.capabilities, selected.capabilities)) {
-    return selected;
-  }
-  report("construct_capability_missing", {
-    construct: requirement.name,
-    providerId: selected.id,
-    missing: requirement.capabilities ?? [],
-  });
-  return undefined;
-};
-
-const resolveProviderSelection = (
-  requirement: ConstructRequirement,
-  entries: AdapterProviderRegistration[],
-  overrides: Record<string, string>,
-  defaults: Record<string, string>,
-) => {
-  const providerId = overrides[requirement.name] ?? defaults[requirement.name];
-  const { diagnostics, report, reportConflict } = createReporters(requirement);
-  const selected = providerId
-    ? selectById(requirement, entries, providerId, report)
-    : selectByPriority(requirement, entries, report, reportConflict);
-  const validated = validateCapabilities(requirement, selected, report);
-  return {
-    selected: validated,
-    diagnostics,
-  };
 };
 
 export const createAdapterRegistry = (
@@ -393,16 +186,25 @@ export const createAdapterRegistry = (
       const overrides = request.providers ?? {};
       const defaults = request.defaults ?? {};
       const entries = listProviders(requirement.name);
-      const preselection = resolveProviderSelection(requirement, entries, overrides, defaults);
+      const { diagnostics, report, reportConflict } = createReporters(requirement);
+      const preselection = resolveProviderSelection(
+        requirement,
+        entries,
+        overrides,
+        defaults,
+        report,
+        reportConflict,
+      );
+      const selected = validateCapabilities(requirement, preselection.selected, report);
       const dependencyList = requirement.dependsOn ?? [];
-      if (preselection.selected && dependencyList.length > 0) {
+      if (selected && dependencyList.length > 0) {
         const available = new Set(requirements.keys());
         const missing = dependencyList.filter((dep) => !available.has(dep));
         if (missing.length > 0) {
-          preselection.diagnostics.push(
+          diagnostics.push(
             registryDiagnostic("warn", "construct_dependency_missing", {
               construct: requirement.name,
-              providerId: preselection.selected.id,
+              providerId: selected.id,
               missing,
             }),
           );
@@ -421,8 +223,7 @@ export const createAdapterRegistry = (
               return;
             }
             const req = requirements.get(requirement.name) ?? requirement;
-            state.diagnostics.push(...preselection.diagnostics);
-            const selected = preselection.selected;
+            state.diagnostics.push(...diagnostics);
             if (!selected) {
               return;
             }

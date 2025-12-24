@@ -40,10 +40,11 @@ export const createLifecycleDiagnostic = (message: string): DiagnosticEntry => (
   message,
 });
 
-export const createResumeDiagnostic = (message: string): DiagnosticEntry => ({
+export const createResumeDiagnostic = (message: string, data?: unknown): DiagnosticEntry => ({
   level: "warn",
   kind: "resume",
   message,
+  data,
 });
 
 export const createRequirementDiagnostic = (message: string): DiagnosticEntry => ({

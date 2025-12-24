@@ -237,6 +237,17 @@ Goals:
 - Add CI + Codecov, docs site deploy, and release workflows.
 - Publish docs via VitePress on GitHub Pages.
 
+## Stage 11 — Paused/Resume Mechanics (Internal Driver)
+
+Status: planned. See `internal/stage-11.md`.
+
+Goals:
+
+- Keep the public API as `run()` / `resume()` with `paused` outcomes (no generator surface).
+- Add internal `PauseKind` metadata to trace/diagnostics (not a top-level outcome field).
+- Pass `pauseKind?: PauseKind` into resume adapters for better resolution logic.
+- Introduce an internal driver that can normalize generator yields into outcomes without exposing generators.
+
 ## Ongoing Constraints
 
 - Prefer early returns and small pure functions.
