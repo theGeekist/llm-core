@@ -248,6 +248,17 @@ Goals:
 - Pass `pauseKind?: PauseKind` into resume adapters for better resolution logic.
 - Introduce an internal driver that can normalize generator yields into outcomes without exposing generators.
 
+## Stage 12 — Cache Adapter & Session Persistence
+
+Status: completed. See `internal/stage-12.md`.
+
+Goals:
+
+- Standardize a `Cache` adapter for TTL-backed ephemeral state.
+- Provide `MemoryCache` as a built-in primitive (in-process, best-effort TTL).
+- Bridge cache adapters into the resume session store for pluggable persistence.
+- Document cache caveats (TTL behavior, serialization limits, token constraints).
+
 ## Ongoing Constraints
 
 - Prefer early returns and small pure functions.

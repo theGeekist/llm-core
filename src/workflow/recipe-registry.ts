@@ -1,4 +1,5 @@
 // References: docs/implementation-plan.md#L25-L27,L66-L70; docs/recipes-and-plugins.md
+import { createMemoryCache } from "../adapters";
 
 import type { RecipeContract, RecipeName } from "./types";
 
@@ -24,6 +25,7 @@ const PLUGIN_EVALS_RUBRIC = "evals.rubric";
 const PLUGIN_EVALS_CONFIDENCE = "evals.confidence";
 const PLUGIN_DATASET_EMIT = "dataset.emit";
 const PLUGIN_HITL_PAUSE = "hitl.pauseResume";
+const PLUGIN_CACHE_MEMORY = "adapter.cache.memory";
 const PLUGIN_RECIPE_AGENT = "recipe.agent";
 const PLUGIN_EMBEDDER_DEFAULT = "model.embedder";
 
@@ -101,6 +103,7 @@ const registry = {
     helperKinds: [],
     supportsResume: true,
     defaultPlugins: [
+      { key: PLUGIN_CACHE_MEMORY, adapters: { cache: createMemoryCache() } },
       { key: PLUGIN_MODEL_OPENAI, capabilities: MODEL_OPENAI },
       { key: PLUGIN_EVALS_CONFIDENCE, capabilities: EVALS_CONFIDENCE },
       { key: PLUGIN_HITL_PAUSE, capabilities: HITL_DEFAULT },

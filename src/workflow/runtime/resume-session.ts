@@ -1,6 +1,12 @@
-import type { PauseKind, ResumeSnapshot } from "../../adapters/types";
+import type {
+  AdapterBundle,
+  Cache,
+  Blob as AdapterBlob,
+  PauseKind,
+  ResumeSnapshot,
+} from "../../adapters/types";
 import type { MaybePromise } from "../../maybe";
-import { mapMaybe } from "../../maybe";
+import { mapMaybe, mapMaybeOr } from "../../maybe";
 import type { PauseSession } from "../driver";
 import type { Runtime } from "../types";
 
@@ -11,6 +17,49 @@ export type SessionStore = {
   touch?: (token: unknown, ttlMs?: number) => MaybePromise<void>;
   sweep?: () => MaybePromise<number>;
 };
+
+// Serialization helpers
+const serialize = (snapshot: ResumeSnapshot): { value: AdapterBlob } => {
+  const json = JSON.stringify(snapshot);
+  const bytes = new TextEncoder().encode(json);
+  return { value: { bytes, contentType: "application/json" } };
+};
+
+const deserialize = (blob: AdapterBlob | undefined): ResumeSnapshot | undefined => {
+  if (!blob) return undefined;
+  try {
+    const json = new TextDecoder().decode(blob.bytes);
+    return JSON.parse(json) as ResumeSnapshot;
+  } catch {
+    return undefined;
+  }
+};
+
+export const createSessionStoreFromCache = (cache: Cache): SessionStore => ({
+  get: (token: unknown) => {
+    if (typeof token !== "string" && typeof token !== "number") {
+      return undefined;
+    }
+    return mapMaybe(cache.get(String(token)), (blob) => deserialize(blob));
+  },
+  set: (token: unknown, snapshot: ResumeSnapshot, ttlMs?: number) => {
+    if (typeof token !== "string" && typeof token !== "number") {
+      return undefined;
+    }
+    try {
+      const serialized = serialize(snapshot);
+      return cache.set(String(token), serialized.value, ttlMs);
+    } catch {
+      return undefined;
+    }
+  },
+  delete: (token: unknown) => {
+    if (typeof token !== "string" && typeof token !== "number") {
+      return undefined;
+    }
+    return cache.delete(String(token));
+  },
+});
 
 export type ResumeSession =
   | { kind: "iterator"; session: PauseSession; store?: SessionStore }
@@ -29,7 +78,9 @@ const isSessionStore = (value: unknown): value is SessionStore => {
   );
 };
 
-export const readSessionStore = (runtime?: Runtime): SessionStore | undefined => {
+export const readSessionStore = (
+  runtime?: Runtime | { resume?: { sessionStore?: unknown } },
+): SessionStore | undefined => {
   const candidate = (runtime?.resume as { sessionStore?: unknown } | undefined)?.sessionStore;
   return isSessionStore(candidate) ? candidate : undefined;
 };
@@ -61,8 +112,7 @@ const createResumeSnapshot = (
   };
 };
 
-export const createSnapshotRecorder = (runtime?: Runtime) => {
-  const store = readSessionStore(runtime);
+export const createSnapshotRecorder = (store: SessionStore | undefined, runtime?: Runtime) => {
   if (!store) {
     return function recordSnapshot() {
       return undefined;
@@ -76,23 +126,37 @@ export const createSnapshotRecorder = (runtime?: Runtime) => {
     }
     const pauseKind = (result as { pauseKind?: PauseKind }).pauseKind;
     const payload = readPauseSnapshotPayload(result);
-    return store.set(token, createResumeSnapshot(token, pauseKind, payload), ttlMs);
+    // Guard against store errors or serialization failures
+    try {
+      return store.set(token, createResumeSnapshot(token, pauseKind, payload), ttlMs);
+    } catch {
+      return undefined;
+    }
   };
 };
 
 export const resolveResumeSession = (
   token: unknown,
   session: PauseSession | undefined,
-  runtime?: Runtime,
+  store: SessionStore | undefined,
 ): MaybePromise<ResumeSession> => {
   if (session) {
-    return { kind: "iterator", session, store: readSessionStore(runtime) };
+    return { kind: "iterator", session, store };
   }
-  const store = readSessionStore(runtime);
   if (!store) {
     return { kind: "invalid" };
   }
-  return mapMaybe(store.get(token), (snapshot) =>
-    snapshot ? { kind: "snapshot", snapshot, store } : { kind: "invalid" },
+  return mapMaybeOr<ResumeSnapshot, ResumeSession>(
+    store.get(token),
+    (snapshot) => ({ kind: "snapshot", snapshot, store }),
+    () => ({ kind: "invalid" }),
   );
+};
+
+export const resolveSessionStore = (runtime: Runtime | undefined, adapters: AdapterBundle) => {
+  const runtimeStore = readSessionStore(runtime);
+  if (runtimeStore) {
+    return runtimeStore;
+  }
+  return adapters.cache ? createSessionStoreFromCache(adapters.cache) : undefined;
 };

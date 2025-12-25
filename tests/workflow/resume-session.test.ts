@@ -50,7 +50,7 @@ describe("Workflow resume sessions", () => {
         sessionStore,
       },
     } satisfies Runtime;
-    const record = createSnapshotRecorder(runtime);
+    const record = createSnapshotRecorder(sessionStore, runtime);
 
     record({ pauseSnapshot: { step: 1 } });
     expect(sessions.size).toBe(0);
@@ -69,7 +69,7 @@ describe("Workflow resume sessions", () => {
         sessionStore,
       },
     } satisfies Runtime;
-    const record = createSnapshotRecorder(runtime);
+    const record = createSnapshotRecorder(sessionStore, runtime);
 
     record({ token: "token-2", resumeSnapshot: { step: 3 } });
     const stored = sessions.get("token-2");
@@ -78,19 +78,13 @@ describe("Workflow resume sessions", () => {
 
   it("resolves iterator sessions before store snapshots", async () => {
     const { sessionStore } = createSessionStore();
-    const runtime = {
-      resume: {
-        resolve: () => ({ input: "ok" }),
-        sessionStore,
-      },
-    } satisfies Runtime;
     const iterator = [1].values();
     const pauseSession: PauseSession = {
       iterator,
       getDiagnostics: () => [],
       createdAt: Date.now(),
     };
-    const resolved = await resolveMaybe(resolveResumeSession("token", pauseSession, runtime));
+    const resolved = await resolveMaybe(resolveResumeSession("token", pauseSession, sessionStore));
 
     expect(resolved.kind).toBe("iterator");
     if (resolved.kind === "iterator") {
@@ -102,17 +96,13 @@ describe("Workflow resume sessions", () => {
   it("resolves snapshots when stored sessions exist", async () => {
     const { sessionStore } = createSessionStore();
     const snapshot = createResumeSnapshot("token-3", { step: 4 });
-    const runtime = {
-      resume: {
-        resolve: () => ({ input: "ok" }),
-        sessionStore: {
-          ...sessionStore,
-          get: () => snapshot,
-        },
-      },
-    } satisfies Runtime;
 
-    const resolved = await resolveMaybe(resolveResumeSession("token-3", undefined, runtime));
+    const resolved = await resolveMaybe(
+      resolveResumeSession("token-3", undefined, {
+        ...sessionStore,
+        get: () => snapshot,
+      }),
+    );
     expect(resolved.kind).toBe("snapshot");
     if (resolved.kind === "snapshot") {
       expect(resolved.snapshot).toBe(snapshot);
@@ -120,8 +110,7 @@ describe("Workflow resume sessions", () => {
   });
 
   it("marks sessions invalid when no store is available", async () => {
-    const runtime = { resume: { resolve: () => ({ input: "ok" }) } } satisfies Runtime;
-    const resolved = await resolveMaybe(resolveResumeSession("token-4", undefined, runtime));
+    const resolved = await resolveMaybe(resolveResumeSession("token-4", undefined, undefined));
     expect(resolved.kind).toBe("invalid");
   });
 

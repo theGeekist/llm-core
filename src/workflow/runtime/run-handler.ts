@@ -12,12 +12,12 @@ import type { DiagnosticEntry } from "../diagnostics";
 import type { TraceEvent } from "../trace";
 import type { MaybePromise } from "../../maybe";
 import { addTraceEvent, createTrace } from "../trace";
-import { createSnapshotRecorder } from "./resume-session";
 import { runWorkflow, type RunWorkflowContext } from "./run-runner";
 import type { ExecutionIterator } from "../driver/types";
-import type { IteratorFinalize } from "../driver/types";
+import type { DriveIteratorInput } from "../driver/iterator";
 import { createRunErrorHandler } from "./outcomes";
 import { applyDiagnosticsMode } from "../diagnostics";
+import type { FinalizeResult } from "./helpers";
 
 type AdapterResolution = {
   adapters: AdapterBundle;
@@ -44,14 +44,7 @@ export type RunHandlerDeps<N extends RecipeName> = {
   readContractDiagnostics: (adapters: AdapterBundle) => DiagnosticEntry[];
   buildDiagnostics: DiagnosticEntry[];
   strictErrorMessage: string;
-  finalizeResult: (
-    result: unknown,
-    getDiagnostics: () => DiagnosticEntry[],
-    trace: TraceEvent[],
-    diagnosticsMode: "default" | "strict",
-    iterator?: ExecutionIterator,
-    recordSnapshot?: (result: unknown) => MaybePromise<void>,
-  ) => MaybePromise<Outcome<ArtefactOf<N>>>;
+  finalizeResult: FinalizeResult<Outcome<ArtefactOf<N>>>;
   errorOutcome: (
     error: unknown,
     trace: TraceEvent[],
@@ -60,37 +53,9 @@ export type RunHandlerDeps<N extends RecipeName> = {
   readErrorDiagnostics: (error: unknown) => DiagnosticEntry[];
   isExecutionIterator: (value: unknown) => value is ExecutionIterator;
   driveIterator: (
-    iterator: ExecutionIterator,
-    input: unknown,
-    trace: TraceEvent[],
-    getDiagnostics: () => DiagnosticEntry[],
-    diagnosticsMode: "default" | "strict",
-    finalize: IteratorFinalize<Outcome<ArtefactOf<N>>>,
-    onError: (error: unknown) => MaybePromise<Outcome<ArtefactOf<N>>>,
-    onInvalidYield: (value: unknown) => MaybePromise<Outcome<ArtefactOf<N>>>,
+    input: DriveIteratorInput<Outcome<ArtefactOf<N>>>,
   ) => MaybePromise<Outcome<ArtefactOf<N>>>;
 };
-
-const createFinalize = <N extends RecipeName>(
-  finalizeResult: (
-    result: unknown,
-    getDiagnostics: () => DiagnosticEntry[],
-    trace: TraceEvent[],
-    diagnosticsMode: "default" | "strict",
-    iterator?: ExecutionIterator,
-    recordSnapshot?: (result: unknown) => MaybePromise<void>,
-  ) => MaybePromise<Outcome<ArtefactOf<N>>>,
-  recordSnapshot: (result: unknown) => MaybePromise<void>,
-) =>
-  function finalizeRunResult(
-    result: unknown,
-    getDiagnostics: () => DiagnosticEntry[],
-    runtimeTrace: TraceEvent[],
-    mode: "default" | "strict",
-    iterator?: ExecutionIterator,
-  ) {
-    return finalizeResult(result, getDiagnostics, runtimeTrace, mode, iterator, recordSnapshot);
-  };
 
 export const createRunHandler =
   <N extends RecipeName>(
@@ -107,8 +72,6 @@ export const createRunHandler =
       applyDiagnosticsMode,
       deps.errorOutcome,
     );
-    const recordSnapshot = createSnapshotRecorder(runtime);
-    const finalize = createFinalize<N>(deps.finalizeResult, recordSnapshot);
     const workflowDeps = {
       pipeline: deps.pipeline,
       extensionRegistration: deps.extensionRegistration,
@@ -118,7 +81,7 @@ export const createRunHandler =
       buildDiagnostics: deps.buildDiagnostics,
       strictErrorMessage: deps.strictErrorMessage,
       toErrorOutcome: deps.errorOutcome,
-      finalize,
+      finalizeResult: deps.finalizeResult,
       isExecutionIterator: deps.isExecutionIterator,
       driveIterator: deps.driveIterator,
     };

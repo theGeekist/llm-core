@@ -1,5 +1,6 @@
 import type {
   ArtefactOf,
+  Outcome,
   ResumeInputOf,
   PipelineWithExtensions,
   RecipeName,
@@ -17,6 +18,7 @@ import {
   recordPauseSession,
   type ExecutionIterator,
 } from "./driver";
+import type { PauseSession } from "./driver/types";
 import { createContractView } from "./contract";
 import { buildCapabilities } from "./capabilities";
 import { buildExplainSnapshot } from "./explain";
@@ -28,7 +30,7 @@ import {
   type DiagnosticEntry,
 } from "./diagnostics";
 import type { TraceEvent } from "./trace";
-import { chainMaybe, mapMaybe } from "../maybe";
+import { bindFirst, chainMaybe, mapMaybe } from "../maybe";
 import type { MaybePromise } from "../maybe";
 import {
   collectAdapters,
@@ -53,6 +55,169 @@ import {
 } from "./runtime/outcomes";
 
 const STRICT_DIAGNOSTICS_ERROR = "Strict diagnostics failure.";
+
+type ReadDiagnosticsInput = {
+  buildDiagnostics: DiagnosticEntry[];
+};
+
+const readDiagnosticsFromResult = (input: ReadDiagnosticsInput, result: unknown) =>
+  normalizeDiagnostics(
+    input.buildDiagnostics,
+    (result as { diagnostics?: unknown[] }).diagnostics ?? [],
+  );
+
+const readErrorDiagnosticsFromError = (input: ReadDiagnosticsInput, error: unknown) => {
+  const diagnostics = (error as { diagnostics?: unknown[] }).diagnostics ?? [];
+  return normalizeDiagnostics(input.buildDiagnostics, diagnostics);
+};
+
+const readArtefactFromResult = <N extends RecipeName>(result: unknown) => readArtifact<N>(result);
+
+const readPartialFromResult = <N extends RecipeName>(
+  readArtifactValue: (result: unknown) => ArtefactOf<N>,
+  result: unknown,
+) => readPartialArtifact<N>(result, readArtifactValue);
+
+type ErrorOutcomeInput = {
+  readErrorDiagnostics: (error: unknown) => DiagnosticEntry[];
+};
+
+const toErrorOutcomeWithDiagnostics = <N extends RecipeName>(
+  input: ErrorOutcomeInput,
+  error: unknown,
+  trace: TraceEvent[],
+  diagnostics?: DiagnosticEntry[],
+) => toErrorOutcome<N>(error, trace, diagnostics, input.readErrorDiagnostics);
+
+type FinalizeRuntimeInput<N extends RecipeName> = {
+  readDiagnostics: (result: unknown) => DiagnosticEntry[];
+  readPartial: (result: unknown) => Partial<ArtefactOf<N>>;
+  readArtefact: (result: unknown) => ArtefactOf<N>;
+  errorOutcome: (
+    error: unknown,
+    trace: TraceEvent[],
+    diagnostics?: DiagnosticEntry[],
+  ) => Outcome<ArtefactOf<N>>;
+  pauseSessions: Map<unknown, PauseSession>;
+};
+
+type PausedOutcomeInput<N extends RecipeName> = {
+  result: unknown;
+  trace: TraceEvent[];
+  diagnostics: DiagnosticEntry[];
+  readPartial: (result: unknown) => Partial<ArtefactOf<N>>;
+};
+
+const toPausedOutcomeAfterSnapshot = <N extends RecipeName>(input: PausedOutcomeInput<N>) =>
+  toPausedOutcome(input.result, input.trace, input.diagnostics, input.readPartial);
+
+const finalizeRuntimeResult = <N extends RecipeName>(
+  input: FinalizeRuntimeInput<N>,
+  result: unknown,
+  getDiagnostics: () => DiagnosticEntry[],
+  trace: TraceEvent[],
+  diagnosticsMode: "default" | "strict",
+  iterator?: ExecutionIterator,
+  recordSnapshot?: (result: unknown) => MaybePromise<void>,
+) => {
+  const diagnostics = applyDiagnosticsMode(
+    input.readDiagnostics(result).concat(getDiagnostics()),
+    diagnosticsMode,
+  );
+  if (diagnosticsMode === "strict" && hasErrorDiagnostics(diagnostics)) {
+    return input.errorOutcome(new Error(STRICT_DIAGNOSTICS_ERROR), trace, diagnostics);
+  }
+  if ((result as { paused?: boolean }).paused) {
+    recordPauseSession(input.pauseSessions, result, iterator, getDiagnostics);
+    if (recordSnapshot) {
+      return chainMaybe(
+        recordSnapshot(result),
+        bindFirst(toPausedOutcomeAfterSnapshot<N>, {
+          result,
+          trace,
+          diagnostics,
+          readPartial: input.readPartial,
+        }),
+      );
+    }
+    return toPausedOutcome(result, trace, diagnostics, input.readPartial);
+  }
+  return toOkOutcome(result, trace, diagnostics, input.readArtefact);
+};
+
+type ResolveAdaptersInput = {
+  registry: ReturnType<typeof createRegistryFromPlugins>;
+  constructRequirements: ReturnType<typeof resolveConstructRequirements>;
+  defaultProviders: Record<string, string> | undefined;
+};
+
+const resolveAdaptersForRunWithInput = (
+  input: ResolveAdaptersInput,
+  runtime?: Runtime,
+  providers?: Record<string, string>,
+) =>
+  input.registry.resolve({
+    constructs: input.constructRequirements,
+    providers: providers ?? runtime?.providers,
+    defaults: input.defaultProviders,
+    reporter: runtime?.reporter,
+  });
+
+const createResolveAdaptersForRun = (input: ResolveAdaptersInput) =>
+  bindFirst(resolveAdaptersForRunWithInput, input);
+
+type AdapterResolution = {
+  adapters: AdapterBundle;
+  constructs: Record<string, unknown>;
+};
+
+const resolveAdaptersSnapshot = (
+  resolveAdaptersForRun: (runtime?: Runtime) => MaybePromise<AdapterResolution>,
+) => mapMaybe(resolveAdaptersForRun(undefined), toResolvedAdapters);
+
+const resolveCapabilitiesSnapshot = (
+  declaredCapabilities: Record<string, unknown>,
+  adapters: AdapterBundle,
+) => buildResolvedCapabilities(declaredCapabilities, adapters);
+
+type CapabilitiesInput = {
+  resolveAdaptersSnapshotFn: () => MaybePromise<AdapterBundle>;
+  resolveCapabilitiesSnapshotFn: (adapters: AdapterBundle) => Record<string, unknown>;
+};
+
+const getCapabilities = (input: CapabilitiesInput) =>
+  mapMaybe(input.resolveAdaptersSnapshotFn(), input.resolveCapabilitiesSnapshotFn);
+
+const createCapabilitiesGetter = (
+  resolveAdaptersSnapshotFn: () => MaybePromise<AdapterBundle>,
+  resolveCapabilitiesSnapshotFn: (adapters: AdapterBundle) => Record<string, unknown>,
+) =>
+  bindFirst(getCapabilities, {
+    resolveAdaptersSnapshotFn,
+    resolveCapabilitiesSnapshotFn,
+  });
+
+const getDeclaredAdapters = (baseAdapters: AdapterBundle) => baseAdapters;
+
+const createDeclaredAdaptersGetter = (baseAdapters: AdapterBundle) =>
+  bindFirst(getDeclaredAdapters, baseAdapters);
+
+const getDeclaredCapabilities = (declaredCapabilities: Record<string, unknown>) =>
+  declaredCapabilities;
+
+const createDeclaredCapabilitiesGetter = (declaredCapabilities: Record<string, unknown>) =>
+  bindFirst(getDeclaredCapabilities, declaredCapabilities);
+
+const getAdapters = (resolveAdaptersSnapshotFn: () => MaybePromise<AdapterBundle>) =>
+  resolveAdaptersSnapshotFn();
+
+const createAdaptersGetter = (resolveAdaptersSnapshotFn: () => MaybePromise<AdapterBundle>) =>
+  bindFirst(getAdapters, resolveAdaptersSnapshotFn);
+
+const getExplain = (explain: ReturnType<typeof buildExplainSnapshot>) => explain;
+
+const createExplainGetter = (explain: ReturnType<typeof buildExplainSnapshot>) =>
+  bindFirst(getExplain, explain);
 
 export const createRuntime = <N extends RecipeName>({
   contract,
@@ -90,60 +255,31 @@ export const createRuntime = <N extends RecipeName>({
   }
   const contractView = createContractView(contract);
 
-  const readDiagnostics = (result: unknown) =>
-    normalizeDiagnostics(
-      buildDiagnostics,
-      (result as { diagnostics?: unknown[] }).diagnostics ?? [],
-    );
+  const readDiagnostics = bindFirst(readDiagnosticsFromResult, { buildDiagnostics });
+  const readErrorDiagnostics = bindFirst(readErrorDiagnosticsFromError, { buildDiagnostics });
+  const readArtefact = readArtefactFromResult<N>;
+  const readPartial = bindFirst(readPartialFromResult<N>, readArtefact);
+  const errorOutcome = bindFirst(toErrorOutcomeWithDiagnostics<N>, { readErrorDiagnostics });
 
-  const readErrorDiagnostics = (error: unknown) => {
-    const diagnostics = (error as { diagnostics?: unknown[] }).diagnostics ?? [];
-    return normalizeDiagnostics(buildDiagnostics, diagnostics);
-  };
-  const readArtefact = (result: unknown) => readArtifact<N>(result);
-  const readPartial = (result: unknown) => readPartialArtifact<N>(result, readArtefact);
-  const errorOutcome = (error: unknown, trace: TraceEvent[], diagnostics?: DiagnosticEntry[]) =>
-    toErrorOutcome<N>(error, trace, diagnostics, readErrorDiagnostics);
-
-  const resolveAdaptersForRun = (runtime?: Runtime, providers?: Record<string, string>) =>
-    registry.resolve({
-      constructs: constructRequirements,
-      providers: providers ?? runtime?.providers,
-      defaults: defaultProviders,
-      reporter: runtime?.reporter,
-    });
-  const resolveAdaptersSnapshot = () =>
-    mapMaybe(resolveAdaptersForRun(undefined), (resolution) => toResolvedAdapters(resolution));
-  const resolveCapabilitiesSnapshot = (adapters: AdapterBundle) =>
-    buildResolvedCapabilities(declaredCapabilities, adapters);
+  const resolveAdaptersForRun = createResolveAdaptersForRun({
+    registry,
+    constructRequirements,
+    defaultProviders,
+  });
+  const resolveAdaptersSnapshotFn = bindFirst(resolveAdaptersSnapshot, resolveAdaptersForRun);
+  const resolveCapabilitiesSnapshotFn = bindFirst(
+    resolveCapabilitiesSnapshot,
+    declaredCapabilities,
+  );
 
   const pauseSessions = createPauseSessions();
-  const finalizeResult = (
-    result: unknown,
-    getDiagnostics: () => DiagnosticEntry[],
-    trace: TraceEvent[],
-    diagnosticsMode: "default" | "strict",
-    iterator?: ExecutionIterator,
-    recordSnapshot?: (result: unknown) => MaybePromise<void>,
-  ) => {
-    const diagnostics = applyDiagnosticsMode(
-      readDiagnostics(result).concat(getDiagnostics()),
-      diagnosticsMode,
-    );
-    if (diagnosticsMode === "strict" && hasErrorDiagnostics(diagnostics)) {
-      return errorOutcome(new Error(STRICT_DIAGNOSTICS_ERROR), trace, diagnostics);
-    }
-    if ((result as { paused?: boolean }).paused) {
-      recordPauseSession(pauseSessions, result, iterator, getDiagnostics);
-      if (recordSnapshot) {
-        return chainMaybe(recordSnapshot(result), () =>
-          toPausedOutcome(result, trace, diagnostics, readPartial),
-        );
-      }
-      return toPausedOutcome(result, trace, diagnostics, readPartial);
-    }
-    return toOkOutcome(result, trace, diagnostics, readArtefact);
-  };
+  const finalizeResult = bindFirst(finalizeRuntimeResult<N>, {
+    readDiagnostics,
+    readPartial,
+    readArtefact,
+    errorOutcome,
+    pauseSessions,
+  });
 
   const run = createRunHandler<N>({
     contractName: contract.name,
@@ -183,25 +319,14 @@ export const createRuntime = <N extends RecipeName>({
         })
       : undefined;
 
-  function capabilities() {
-    return mapMaybe(resolveAdaptersSnapshot(), resolveCapabilitiesSnapshot);
-  }
-
-  function declaredAdapterBundle() {
-    return baseAdapters;
-  }
-
-  function declaredCapabilitiesSnapshot() {
-    return declaredCapabilities;
-  }
-
-  function adapterBundle() {
-    return resolveAdaptersSnapshot();
-  }
-
-  function explainSnapshot() {
-    return explain;
-  }
+  const capabilities = createCapabilitiesGetter(
+    resolveAdaptersSnapshotFn,
+    resolveCapabilitiesSnapshotFn,
+  );
+  const declaredAdapterBundle = createDeclaredAdaptersGetter(baseAdapters);
+  const declaredCapabilitiesSnapshot = createDeclaredCapabilitiesGetter(declaredCapabilities);
+  const adapterBundle = createAdaptersGetter(resolveAdaptersSnapshotFn);
+  const explainSnapshot = createExplainGetter(explain);
 
   return {
     run,

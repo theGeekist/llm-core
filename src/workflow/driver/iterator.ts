@@ -1,5 +1,5 @@
 import type { MaybePromise } from "../../maybe";
-import { chainMaybe, tryMaybe } from "../../maybe";
+import { bindFirst, chainMaybe, tryMaybe } from "../../maybe";
 import type { DiagnosticEntry } from "../diagnostics";
 import type { TraceEvent } from "../trace";
 import type { ExecutionIterator, IteratorFinalize } from "./types";
@@ -18,27 +18,30 @@ const wrapError = <TOutcome>(outcome: TOutcome): IteratorStep<TOutcome> => ({
   outcome,
 });
 
-const nextStep = <TOutcome>(
-  iterator: ExecutionIterator,
-  input: unknown,
-): MaybePromise<IteratorStep<TOutcome>> =>
-  chainMaybe(iterator.next(input), wrapIteration<TOutcome>);
+type NextStepInput = {
+  iterator: ExecutionIterator;
+  input: unknown;
+};
 
-const bindNextStep = <TOutcome>(iterator: ExecutionIterator, input: unknown) =>
-  function advanceIterator() {
-    return nextStep<TOutcome>(iterator, input);
-  };
+const nextStep = <TOutcome>(input: NextStepInput): MaybePromise<IteratorStep<TOutcome>> =>
+  chainMaybe(input.iterator.next(input.input), wrapIteration<TOutcome>);
 
-const handleNextError = <TOutcome>(handler: (error: unknown) => MaybePromise<TOutcome>) =>
-  function handleNextErrorBound(error: unknown) {
-    return chainMaybe(handler(error), wrapError);
-  };
+type NextErrorInput<TOutcome> = {
+  onError: (error: unknown) => MaybePromise<TOutcome>;
+};
+
+const handleNextError = <TOutcome>(input: NextErrorInput<TOutcome>, error: unknown) =>
+  chainMaybe(input.onError(error), wrapError);
 
 const safeNextStep = <TOutcome>(
   iterator: ExecutionIterator,
   input: unknown,
   onError: (error: unknown) => MaybePromise<TOutcome>,
-) => tryMaybe(bindNextStep<TOutcome>(iterator, input), handleNextError(onError));
+) =>
+  tryMaybe(
+    bindFirst(nextStep<TOutcome>, { iterator, input }),
+    bindFirst(handleNextError<TOutcome>, { onError }),
+  );
 
 const isPausedIteration = (iteration: IteratorResult<unknown>) =>
   iteration.done === false && (iteration.value as { paused?: boolean }).paused === true;
@@ -64,37 +67,57 @@ const handleIteratorStep = <TOutcome>(
   return finalize(step.iteration.value, getDiagnostics, trace, diagnosticsMode, iterator);
 };
 
-const bindIteratorStep = <TOutcome>(
-  iterator: ExecutionIterator,
-  getDiagnostics: () => DiagnosticEntry[],
-  trace: TraceEvent[],
-  diagnosticsMode: "default" | "strict",
-  finalize: IteratorFinalize<TOutcome>,
-  onInvalidYield: (value: unknown) => MaybePromise<TOutcome>,
-) =>
-  function handleIteratorStepBound(step: IteratorStep<TOutcome>) {
-    return handleIteratorStep(
-      step,
-      iterator,
-      getDiagnostics,
-      trace,
-      diagnosticsMode,
-      finalize,
-      onInvalidYield,
-    );
-  };
+type IteratorStepInput<TOutcome> = {
+  iterator: ExecutionIterator;
+  getDiagnostics: () => DiagnosticEntry[];
+  trace: TraceEvent[];
+  diagnosticsMode: "default" | "strict";
+  finalize: IteratorFinalize<TOutcome>;
+  onInvalidYield: (value: unknown) => MaybePromise<TOutcome>;
+};
 
-export const driveIterator = <TOutcome>(
-  iterator: ExecutionIterator,
-  input: unknown,
-  trace: TraceEvent[],
-  getDiagnostics: () => DiagnosticEntry[],
-  diagnosticsMode: "default" | "strict",
-  finalize: IteratorFinalize<TOutcome>,
-  onError: (error: unknown) => MaybePromise<TOutcome>,
-  onInvalidYield: (value: unknown) => MaybePromise<TOutcome>,
-): MaybePromise<TOutcome> =>
-  chainMaybe(
-    safeNextStep<TOutcome>(iterator, input, onError),
-    bindIteratorStep(iterator, getDiagnostics, trace, diagnosticsMode, finalize, onInvalidYield),
+const runIteratorStep = <TOutcome>(
+  input: IteratorStepInput<TOutcome>,
+  step: IteratorStep<TOutcome>,
+) =>
+  handleIteratorStep(
+    step,
+    input.iterator,
+    input.getDiagnostics,
+    input.trace,
+    input.diagnosticsMode,
+    input.finalize,
+    input.onInvalidYield,
   );
+
+export type DriveIteratorInput<TOutcome> = {
+  iterator: ExecutionIterator;
+  input: unknown;
+  trace: TraceEvent[];
+  getDiagnostics: () => DiagnosticEntry[];
+  diagnosticsMode: "default" | "strict";
+  finalize: IteratorFinalize<TOutcome>;
+  onError: (error: unknown) => MaybePromise<TOutcome>;
+  onInvalidYield: (value: unknown) => MaybePromise<TOutcome>;
+};
+
+export const driveIterator = <TOutcome>({
+  iterator,
+  input,
+  trace,
+  getDiagnostics,
+  diagnosticsMode,
+  finalize,
+  onError,
+  onInvalidYield,
+}: DriveIteratorInput<TOutcome>): MaybePromise<TOutcome> => {
+  const handleIteratorStepBound = bindFirst(runIteratorStep<TOutcome>, {
+    iterator,
+    getDiagnostics,
+    trace,
+    diagnosticsMode,
+    finalize,
+    onInvalidYield,
+  });
+  return chainMaybe(safeNextStep<TOutcome>(iterator, input, onError), handleIteratorStepBound);
+};

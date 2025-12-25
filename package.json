@@ -138,6 +138,12 @@
       "import": "./dist/esm/src/adapters/primitives/index.js",
       "require": "./dist/cjs/src/adapters/primitives/index.cjs",
       "default": "./dist/esm/src/adapters/primitives/index.js"
+    },
+    "./recipes": {
+      "types": "./dist/types/src/recipes/index.d.ts",
+      "import": "./dist/esm/src/recipes/index.js",
+      "require": "./dist/cjs/src/recipes/index.cjs",
+      "default": "./dist/esm/src/recipes/index.js"
     }
   },
   "peerDependencies": {

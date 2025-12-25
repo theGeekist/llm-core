@@ -344,6 +344,12 @@ export type KVStore<V = unknown> = {
   mset(pairs: Array<[string, V]>, context?: AdapterCallContext): MaybePromise<void>;
 };
 
+export type Cache = {
+  get(key: string, context?: AdapterCallContext): MaybePromise<Blob | undefined>;
+  set(key: string, value: Blob, ttlMs?: number, context?: AdapterCallContext): MaybePromise<void>;
+  delete(key: string, context?: AdapterCallContext): MaybePromise<void>;
+};
+
 export type Storage = {
   delete(key: string, context?: AdapterCallContext): MaybePromise<void>;
   get(key: string, context?: AdapterCallContext): MaybePromise<Blob | undefined>;
@@ -389,6 +395,7 @@ export type Memory = {
  * ------------------------------------------------------------------------------------------------- */
 
 export type AdapterBundle = {
+  cache?: Cache;
   constructs?: Record<string, unknown>;
   documents?: Document[];
   embedder?: Embedder;
@@ -430,6 +437,12 @@ export type AdapterResumeReturn = AdapterResumeResult | unknown;
 
 export type AdapterResume = {
   resolve: (request: AdapterResumeRequest) => MaybePromise<AdapterResumeReturn>;
+  /**
+   * @deprecated Use `adapters.cache` instead.
+   */
   sessionStore?: unknown;
+  /**
+   * @deprecated Use `adapters.cache` TTL instead.
+   */
   sessionTtlMs?: number;
 };

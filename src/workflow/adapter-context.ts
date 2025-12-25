@@ -1,4 +1,4 @@
-import type { AdapterBundle, AdapterCallContext } from "../adapters/types";
+import type { AdapterBundle, AdapterCallContext, Blob } from "../adapters/types";
 import { createAdapterDiagnostic, type DiagnosticEntry } from "./diagnostics";
 
 const createContextState = () => {
@@ -121,6 +121,19 @@ const wrapStorage = (storage: AdapterBundle["storage"], context: AdapterCallCont
   };
 };
 
+const wrapCache = (cache: AdapterBundle["cache"], context: AdapterCallContext) => {
+  if (!cache) {
+    return undefined;
+  }
+  return {
+    ...cache,
+    get: wrapRequiredOne(cache.get, context),
+    set: (key: string, value: Blob, ttlMs?: number, ctx?: AdapterCallContext) =>
+      cache.set(key, value, ttlMs, ctx ?? context),
+    delete: wrapRequiredOne(cache.delete, context),
+  };
+};
+
 const wrapKv = (kv: AdapterBundle["kv"], context: AdapterCallContext) => {
   if (!kv) {
     return undefined;
@@ -174,6 +187,7 @@ export const attachAdapterContext = (
   textSplitter: wrapTextSplitter(adapters.textSplitter, context),
   transformer: wrapTransformer(adapters.transformer, context),
   storage: wrapStorage(adapters.storage, context),
+  cache: wrapCache(adapters.cache, context),
   kv: wrapKv(adapters.kv, context),
   memory: wrapMemory(adapters.memory, context),
   tools: wrapTools(adapters.tools, context),

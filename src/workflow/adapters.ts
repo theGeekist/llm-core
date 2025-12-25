@@ -7,6 +7,7 @@ import type { Plugin } from "./types";
 import { getEffectivePlugins } from "./plugins/effective";
 
 const adapterConstructs: Array<keyof AdapterBundle> = [
+  "cache",
   "documents",
   "messages",
   "tools",
@@ -56,6 +57,7 @@ const mergeAdapterBundle = (
     schemas: mergeIfDefined(target.schemas, next.schemas),
     textSplitter: replaceIfDefined(target.textSplitter, next.textSplitter),
     embedder: replaceIfDefined(target.embedder, next.embedder),
+    cache: replaceIfDefined(target.cache, next.cache),
     retriever: replaceIfDefined(target.retriever, next.retriever),
     reranker: replaceIfDefined(target.reranker, next.reranker),
     loader: replaceIfDefined(target.loader, next.loader),

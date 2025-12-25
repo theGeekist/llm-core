@@ -38,6 +38,20 @@ export function mapMaybeArray<TIn, TOut>(value: MaybePromise<TIn[]>, map: (value
   return mapMaybe(value, (items) => items.map(map));
 }
 
+export function mapMaybeOr<TIn, TOut>(
+  value: MaybePromise<TIn | undefined>,
+  map: (value: TIn) => MaybePromise<TOut>,
+  fallback: () => MaybePromise<TOut>,
+) {
+  if (isPromiseLike(value)) {
+    return maybeThen(value, (inner) => (inner === undefined ? fallback() : map(inner)));
+  }
+  if (value === undefined) {
+    return fallback();
+  }
+  return map(value);
+}
+
 export function tapMaybe<TIn>(value: MaybePromise<TIn>, tap: (value: TIn) => MaybePromise<void>) {
   return mapMaybe(value, (result) => chainMaybe(tap(result), () => result));
 }
@@ -55,4 +69,11 @@ export function curryK<TFirst, TSecond, TResult>(fn: MaybeBinary<TFirst, TSecond
 
 export function identity<T>(value: T) {
   return value;
+}
+
+export function bindFirst<TFirst, TRest extends unknown[], TResult>(
+  fn: (first: TFirst, ...rest: TRest) => TResult,
+  first: TFirst,
+) {
+  return (...rest: TRest) => fn(first, ...rest);
 }

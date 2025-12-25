@@ -12,19 +12,19 @@ describe("Workflow driver iterator", () => {
     const iterator = {
       next: () => ({ done: true, value: "done" }),
     };
-    const result = await driveIterator(
+    const result = await driveIterator({
       iterator,
-      undefined,
-      [],
-      () => [],
-      "default",
-      (value, _getDiagnostics, _trace, _mode, iter) => ({
+      input: undefined,
+      trace: [],
+      getDiagnostics: () => [],
+      diagnosticsMode: "default",
+      finalize: (value, _getDiagnostics, _trace, _mode, iter) => ({
         value,
         iterator: iter,
       }),
-      () => ({ value: "error", iterator: undefined }),
-      () => ({ value: "invalid", iterator: undefined }),
-    );
+      onError: () => ({ value: "error", iterator: undefined }),
+      onInvalidYield: () => ({ value: "invalid", iterator: undefined }),
+    });
     expect(result.value).toBe("done");
     expect(result.iterator).toBeUndefined();
   });
@@ -33,19 +33,19 @@ describe("Workflow driver iterator", () => {
     const iterator = {
       next: () => ({ done: false, value: { paused: true, value: "step" } }),
     };
-    const result = await driveIterator(
+    const result = await driveIterator({
       iterator,
-      "input",
-      [],
-      () => [],
-      "default",
-      (value, _getDiagnostics, _trace, _mode, iter) => ({
+      input: "input",
+      trace: [],
+      getDiagnostics: () => [],
+      diagnosticsMode: "default",
+      finalize: (value, _getDiagnostics, _trace, _mode, iter) => ({
         value: (value as { value: string }).value,
         iterator: iter,
       }),
-      () => ({ value: "error", iterator: undefined }),
-      () => ({ value: "invalid", iterator: undefined }),
-    );
+      onError: () => ({ value: "error", iterator: undefined }),
+      onInvalidYield: () => ({ value: "invalid", iterator: undefined }),
+    });
     expect(result.value).toBe("step");
     expect(result.iterator).toBe(iterator);
   });
@@ -56,21 +56,21 @@ describe("Workflow driver iterator", () => {
         throw new Error("boom");
       },
     };
-    const result = await driveIterator<{ value: string; error?: string }>(
+    const result = await driveIterator<{ value: string; error?: string }>({
       iterator,
-      undefined,
-      [],
-      () => [],
-      "default",
-      (value, getDiagnostics, trace, mode) => {
+      input: undefined,
+      trace: [],
+      getDiagnostics: () => [],
+      diagnosticsMode: "default",
+      finalize: (value, getDiagnostics, trace, mode) => {
         void getDiagnostics;
         void trace;
         void mode;
         return { value: String(value) };
       },
-      (error) => ({ value: "error", error: (error as Error).message }),
-      () => ({ value: "invalid" }),
-    );
+      onError: (error) => ({ value: "error", error: (error as Error).message }),
+      onInvalidYield: () => ({ value: "invalid" }),
+    });
     expect(result.error).toBe("boom");
   });
 });

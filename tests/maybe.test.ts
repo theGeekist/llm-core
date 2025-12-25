@@ -1,11 +1,23 @@
 import { describe, expect, it } from "bun:test";
-import { curryK, partialK, tapMaybe } from "../src/maybe";
+import { bindFirst, curryK, partialK, tapMaybe } from "../src/maybe";
 
 describe("Maybe utilities", () => {
   it("partialK binds the first argument", () => {
     const add = (left: number, right: number) => left + right;
     const addTwo = partialK(add, 2);
     expect(addTwo(3)).toBe(5);
+  });
+
+  it("bindFirst binds the first argument", () => {
+    const add = (left: number, right: number) => left + right;
+    const addTwo = bindFirst(add, 2);
+    expect(addTwo(3)).toBe(5);
+  });
+
+  it("bindFirst preserves rest arguments", () => {
+    const join = (prefix: string, ...parts: string[]) => `${prefix}:${parts.join(",")}`;
+    const withPrefix = bindFirst(join, "p");
+    expect(withPrefix("a", "b")).toBe("p:a,b");
   });
 
   it("curryK returns a nested function", () => {

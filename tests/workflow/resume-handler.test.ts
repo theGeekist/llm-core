@@ -5,7 +5,7 @@ import type { TraceEvent } from "#workflow/trace";
 import type { Outcome, Runtime } from "#workflow/types";
 import { createResumeHandler } from "../../src/workflow/runtime/resume-handler";
 import { toResolvedAdapters } from "../../src/workflow/runtime/adapters";
-import { createResumeSnapshot } from "./helpers";
+import { createResumeSnapshot, diagnosticMessages } from "./helpers";
 import type { PauseSession } from "../../src/workflow/driver/types";
 
 describe("Workflow resume handler", () => {
@@ -97,6 +97,96 @@ describe("Workflow resume handler", () => {
     const outcome = await handler(tokenIterator, undefined, runtime);
     expect(outcome.status).toBe("ok");
     expect(deleted).toBe(true);
+  });
+
+  it("returns diagnostics when resume handling throws", async () => {
+    const pauseSessions = new Map<unknown, PauseSession>();
+    const runtime = {
+      resume: {
+        resolve: () => ({ input: "resume" }),
+        sessionStore: {
+          get: () => {
+            throw new Error("store boom");
+          },
+          set: () => undefined,
+          delete: () => undefined,
+        },
+      },
+    } satisfies Runtime;
+
+    const readErrorDiagnostics = () =>
+      [{ level: "warn", kind: "resume", message: "resume error" }] as DiagnosticEntry[];
+
+    const handler = createResumeHandler({
+      contractName: "agent",
+      extensionRegistration: [],
+      pipeline: { run: () => ({ artifact: { ok: true } }) },
+      resolveAdaptersForRun: () => ({
+        adapters: baseAdapters,
+        diagnostics: [],
+        constructs: {},
+      }),
+      toResolvedAdapters,
+      applyAdapterOverrides: (resolved) => resolved,
+      readContractDiagnostics: () => [],
+      buildDiagnostics: [],
+      strictErrorMessage: "strict",
+      readErrorDiagnostics,
+      errorOutcome,
+      finalizeResult,
+      baseAdapters,
+      pauseSessions,
+    });
+
+    const outcome = await handler("token-boom", undefined, runtime);
+    expect(outcome.status).toBe("error");
+    expect(diagnosticMessages(outcome.diagnostics)).toContain("resume error");
+  });
+
+  it("ignores provider overrides for iterator resumes", async () => {
+    const pauseSessions = new Map<unknown, PauseSession>();
+    const iterator = {
+      next: () => ({ done: true, value: { ok: true } }),
+    };
+    pauseSessions.set(tokenIterator, {
+      iterator,
+      getDiagnostics: () => [],
+      createdAt: Date.now(),
+    });
+    let resolveCalls = 0;
+    const runtime = {
+      resume: {
+        resolve: () => ({ input: "resume", providers: { model: "override" } }),
+      },
+    } satisfies Runtime;
+
+    const handler = createResumeHandler({
+      contractName: "agent",
+      extensionRegistration: [],
+      pipeline: { run: () => ({ artifact: { ok: true } }) },
+      resolveAdaptersForRun: () => {
+        resolveCalls += 1;
+        return {
+          adapters: baseAdapters,
+          diagnostics: [],
+          constructs: {},
+        };
+      },
+      toResolvedAdapters,
+      applyAdapterOverrides: (resolved) => resolved,
+      readContractDiagnostics: () => [],
+      buildDiagnostics: [],
+      strictErrorMessage: "strict",
+      readErrorDiagnostics,
+      errorOutcome,
+      finalizeResult,
+      baseAdapters,
+      pauseSessions,
+    });
+
+    const outcome = await handler(tokenIterator, undefined, runtime);
+    expect(outcome.status).toBe("ok");
+    expect(resolveCalls).toBe(1);
   });
 
   it("uses resume error handling when store deletes fail", async () => {

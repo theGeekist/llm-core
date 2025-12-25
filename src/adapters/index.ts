@@ -25,6 +25,7 @@ export type {
   DocumentTransformer,
   Embedder,
   KVStore,
+  Cache,
   Memory,
   Message,
   MessageContent,
@@ -124,6 +125,7 @@ export { createBuiltinModel } from "./primitives/model";
 export { createBuiltinRetriever } from "./primitives/retriever";
 export { createBuiltinTools } from "./primitives/tools";
 export { createBuiltinTrace } from "./primitives/trace";
+export { createMemoryCache } from "./primitives/cache";
 
 export { fromAiSdkEmbeddings } from "./ai-sdk";
 export { fromAiSdkMessage } from "./ai-sdk";
