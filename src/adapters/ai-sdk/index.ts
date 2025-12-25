@@ -1,4 +1,5 @@
 export { fromAiSdkEmbeddings } from "./embeddings";
+export { fromAiSdkCacheStore } from "./cache";
 export { fromAiSdkImageModel } from "./image";
 export { fromAiSdkMemory } from "./memory";
 export { fromAiSdkTool } from "./tools";

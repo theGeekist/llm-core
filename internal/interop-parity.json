@@ -84,8 +84,9 @@
     {
       "construct": "Cache",
       "ecosystem": "ai-sdk",
-      "status": "missing",
-      "note": "@ai-sdk-tools/cache provides tool-result caching, not mapped yet."
+      "status": "partial",
+      "note": "CacheStore adapters via @ai-sdk-tools/cache (TTL best-effort).",
+      "probe": "ai-sdk:Cache"
     },
 
     {
@@ -176,8 +177,9 @@
     {
       "construct": "Cache",
       "ecosystem": "langchain",
-      "status": "missing",
-      "note": "LangChain caches exist but are not normalized yet."
+      "status": "partial",
+      "note": "BaseStore-backed cache adapter (KV-style).",
+      "probe": "langchain:Cache"
     },
 
     {
@@ -274,8 +276,9 @@
     {
       "construct": "Cache",
       "ecosystem": "llamaindex",
-      "status": "missing",
-      "note": "No cache adapter normalized for LlamaIndex."
+      "status": "partial",
+      "note": "BaseKVStore-backed cache adapter (collection optional).",
+      "probe": "llamaindex:Cache"
     }
   ]
 }

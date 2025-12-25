@@ -1,6 +1,7 @@
 import type {
   AdapterCallContext,
   AdapterDiagnostic,
+  AiSdkCacheStore,
   Message,
   MessagePart,
   ModelCall,
@@ -155,7 +156,12 @@ export const asAiSdkReranker = (model: unknown) =>
 export const asAiSdkMemoryProvider = (provider: unknown) =>
   provider as import("@ai-sdk-tools/memory").MemoryProvider;
 
+export const asAiSdkCacheStore = <T>(store: unknown) => store as AiSdkCacheStore<T>;
+
 export const asAiSdkStreamPart = (part: unknown) =>
   part as import("ai").TextStreamPart<import("ai").ToolSet>;
 
 export const asLlamaIndexModel = (model: unknown) => model as import("@llamaindex/core/llms").LLM;
+
+export const asLlamaIndexKVStore = (store: unknown) =>
+  store as import("@llamaindex/core/storage/kv-store").BaseKVStore;

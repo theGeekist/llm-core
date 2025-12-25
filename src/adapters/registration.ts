@@ -1,5 +1,6 @@
 import type {
   AdapterBundle,
+  Cache,
   Model,
   ImageModel,
   Memory,
@@ -121,6 +122,9 @@ export const Adapter = {
     options?: AdapterPluginOptions,
   ): AdapterPlugin {
     return makePlugin(key, { vectorStore }, options);
+  },
+  cache(key: string, cache: Cache, options?: AdapterPluginOptions): AdapterPlugin {
+    return makePlugin(key, { cache }, options);
   },
   trace(key: string, trace: AdapterTraceSink, options?: AdapterPluginOptions): AdapterPlugin {
     return makePlugin(key, { trace }, options);

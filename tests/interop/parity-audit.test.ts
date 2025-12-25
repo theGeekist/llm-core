@@ -2,6 +2,7 @@ import { describe, expect, it } from "bun:test";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import {
+  fromAiSdkCacheStore,
   fromAiSdkEmbeddings,
   fromAiSdkImageModel,
   fromAiSdkMemory,
@@ -17,6 +18,7 @@ import {
   fromLangChainPromptTemplate,
   fromLangChainReranker,
   fromLangChainRetriever,
+  fromLangChainStoreCache,
   fromLangChainStore,
   fromLangChainTextSplitter,
   fromLangChainTool,
@@ -24,6 +26,7 @@ import {
   fromLangChainVectorStore,
   fromLlamaIndexDocumentStore,
   fromLlamaIndexEmbeddings,
+  fromLlamaIndexKVStoreCache,
   fromLlamaIndexLoader,
   fromLlamaIndexMemory,
   fromLlamaIndexModel,
@@ -57,6 +60,7 @@ const probes: Record<string, () => boolean> = {
   "ai-sdk:Reranker": () => isFunction(fromAiSdkReranker),
   "ai-sdk:Tool": () => isFunction(fromAiSdkTool),
   "ai-sdk:ImageModel": () => isFunction(fromAiSdkImageModel),
+  "ai-sdk:Cache": () => isFunction(fromAiSdkCacheStore),
   "ai-sdk:Memory": () => isFunction(fromAiSdkMemory),
   "ai-sdk:SpeechModel": () => isFunction(fromAiSdkSpeechModel),
   "ai-sdk:TranscriptionModel": () => isFunction(fromAiSdkTranscriptionModel),
@@ -69,6 +73,7 @@ const probes: Record<string, () => boolean> = {
   "langchain:DocumentLoader": () => isFunction(fromLangChainLoader),
   "langchain:VectorStore": () => isFunction(fromLangChainVectorStore),
   "langchain:Memory": () => isFunction(fromLangChainMemory),
+  "langchain:Cache": () => isFunction(fromLangChainStoreCache),
   "langchain:KVStore": () => isFunction(fromLangChainStore),
   "langchain:Tool": () => isFunction(fromLangChainTool),
   "langchain:PromptTemplate": () => isFunction(fromLangChainPromptTemplate),
@@ -81,6 +86,7 @@ const probes: Record<string, () => boolean> = {
   "llamaindex:DocumentLoader": () => isFunction(fromLlamaIndexLoader),
   "llamaindex:VectorStore": () => isFunction(fromLlamaIndexVectorStore),
   "llamaindex:Memory": () => isFunction(fromLlamaIndexMemory),
+  "llamaindex:Cache": () => isFunction(fromLlamaIndexKVStoreCache),
   "llamaindex:KVStore": () => isFunction(fromLlamaIndexDocumentStore),
   "llamaindex:Tool": () => isFunction(fromLlamaIndexTool),
   "llamaindex:PromptTemplate": () => isFunction(fromLlamaIndexPromptTemplate),

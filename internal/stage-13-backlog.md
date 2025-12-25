@@ -9,6 +9,7 @@ Status: active. This is the source of truth for what is done vs pending.
 - AI SDK media adapters: image, speech, transcription.
 - AI SDK reranker adapter (RerankingModelV3).
 - AI SDK memory adapter via `@ai-sdk-tools/memory`.
+- Cache adapters: AI SDK CacheStore, LangChain BaseStore, LlamaIndex BaseKVStore.
 - Adapter input validations + tests for new constructs.
 - Parity audit document (`docs/interop-audit.md`).
 
@@ -40,7 +41,6 @@ Status: active. This is the source of truth for what is done vs pending.
 
 ### AI SDK tools packages
 
-- Map `@ai-sdk-tools/cache` to Cache or tool-level cache helper (decide scope).
 - Document `@ai-sdk-tools/store` as UI-only (out of scope for adapters).
 
 ## Notes

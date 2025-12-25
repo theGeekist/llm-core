@@ -58,16 +58,19 @@ export const createMemoryCache = (): Cache => {
 };
 
 export const createCacheFromKVStore = (store: KVStore<Blob>): Cache => {
+  const readFirst = (entries: Array<Blob | undefined>) => entries[0];
+  const toUndefined = () => undefined;
+
   const get = (key: string, context?: AdapterCallContext) =>
-    mapMaybe(store.mget([key], context), (entries) => entries[0]);
+    mapMaybe(store.mget([key], context), readFirst);
 
   const set = (key: string, value: Blob, ttlMs?: number, context?: AdapterCallContext) => {
     // Note: KV stores do not support ttl yet; document resume vs abort trade-offs later.
-    return mapMaybe(store.mset([[key, value]], context), () => undefined);
+    return mapMaybe(store.mset([[key, value]], context), toUndefined);
   };
 
   const del = (key: string, context?: AdapterCallContext) =>
-    mapMaybe(store.mdelete([key], context), () => undefined);
+    mapMaybe(store.mdelete([key], context), toUndefined);
 
   return { get, set, delete: del };
 };

@@ -1,4 +1,5 @@
 export { fromLlamaIndexEmbeddings } from "./embeddings";
+export { fromLlamaIndexKVStoreCache } from "./cache";
 export { fromLlamaIndexTextSplitter } from "./text-splitter";
 export { fromLlamaIndexRetriever } from "./retriever";
 export { fromLlamaIndexTool } from "./tools";

@@ -74,6 +74,8 @@ export type {
   PauseKind,
 } from "./types";
 
+export type { AiSdkCacheStore } from "./ai-sdk/cache";
+
 export {
   chainMaybe,
   composeK,
@@ -146,8 +148,10 @@ export { createBuiltinModel } from "./primitives/model";
 export { createBuiltinRetriever } from "./primitives/retriever";
 export { createBuiltinTools } from "./primitives/tools";
 export { createBuiltinTrace } from "./primitives/trace";
+export { createCacheFromKVStore } from "./primitives/cache";
 export { createMemoryCache } from "./primitives/cache";
 
+export { fromAiSdkCacheStore } from "./ai-sdk";
 export { fromAiSdkEmbeddings } from "./ai-sdk";
 export { fromAiSdkImageModel } from "./ai-sdk";
 export { fromAiSdkMemory } from "./ai-sdk";
@@ -163,6 +167,7 @@ export { toModelStreamEvents } from "./ai-sdk";
 export { fromLangChainDocument, toLangChainDocument } from "./langchain";
 export { fromLangChainDocuments } from "./langchain";
 export { fromLangChainEmbeddings } from "./langchain";
+export { fromLangChainStoreCache } from "./langchain";
 export { fromLangChainLoader } from "./langchain";
 export { fromLangChainMemory } from "./langchain";
 export { fromLangChainMessage } from "./langchain";
@@ -180,6 +185,7 @@ export { fromLangChainVectorStore } from "./langchain";
 export { fromLlamaIndexDocument, fromLlamaIndexNode, toLlamaIndexDocument } from "./llamaindex";
 export { fromLlamaIndexDocumentStore } from "./llamaindex";
 export { fromLlamaIndexEmbeddings } from "./llamaindex";
+export { fromLlamaIndexKVStoreCache } from "./llamaindex";
 export { fromLlamaIndexLoader } from "./llamaindex";
 export { fromLlamaIndexMemory } from "./llamaindex";
 export { fromLlamaIndexMessage } from "./llamaindex";

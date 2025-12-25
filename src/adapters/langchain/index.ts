@@ -1,4 +1,5 @@
 export { fromLangChainEmbeddings } from "./embeddings";
+export { fromLangChainStoreCache } from "./cache";
 export { fromLangChainTextSplitter } from "./text-splitter";
 export { fromLangChainRetriever } from "./retriever";
 export { fromLangChainTool } from "./tools";
