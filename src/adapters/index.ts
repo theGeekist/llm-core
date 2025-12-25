@@ -7,8 +7,14 @@ export type {
   ImagePart,
   AdapterMetadata,
   Model,
+  ImageCall,
+  ImageModel,
+  ImageResult,
   ModelCall,
   ModelUsage,
+  SpeechCall,
+  SpeechModel,
+  SpeechResult,
   ReasoningPart,
   AdapterRequirement,
   AdapterResume,
@@ -49,12 +55,22 @@ export type {
   TextPart,
   TextSplitter,
   Thread,
+  TranscriptionCall,
+  TranscriptionModel,
+  TranscriptionResult,
+  TranscriptionSegment,
   ToolCall,
   ToolCallPart,
   ToolParam,
   ToolResult,
   ToolResultPart,
   Turn,
+  VectorRecord,
+  VectorStore,
+  VectorStoreDeleteInput,
+  VectorStoreInfo,
+  VectorStoreUpsertInput,
+  VectorStoreUpsertResult,
   PauseKind,
 } from "./types";
 
@@ -87,6 +103,7 @@ export {
   reportDiagnostics,
   validateEmbedderBatchInput,
   validateEmbedderInput,
+  validateImageInput,
   validateKvKeys,
   validateKvPairs,
   validateMemoryLoadInput,
@@ -94,12 +111,16 @@ export {
   validateMemoryTurn,
   validateRerankerInput,
   validateRetrieverInput,
+  validateSpeechInput,
   validateStorageKey,
   validateTextSplitterBatchInput,
   validateTextSplitterInput,
   validateThreadId,
+  validateTranscriptionInput,
   validateToolInput,
   validateTransformerInput,
+  validateVectorStoreDeleteInput,
+  validateVectorStoreUpsertInput,
 } from "./input-validation";
 
 export { Tooling } from "./tooling";
@@ -128,10 +149,14 @@ export { createBuiltinTrace } from "./primitives/trace";
 export { createMemoryCache } from "./primitives/cache";
 
 export { fromAiSdkEmbeddings } from "./ai-sdk";
+export { fromAiSdkImageModel } from "./ai-sdk";
 export { fromAiSdkMessage } from "./ai-sdk";
 export { fromAiSdkModel } from "./ai-sdk";
 export { fromAiSdkPrompt } from "./ai-sdk";
+export { fromAiSdkReranker } from "./ai-sdk";
+export { fromAiSdkSpeechModel } from "./ai-sdk";
 export { fromAiSdkTool } from "./ai-sdk";
+export { fromAiSdkTranscriptionModel } from "./ai-sdk";
 
 export { fromLangChainDocument, toLangChainDocument } from "./langchain";
 export { fromLangChainDocuments } from "./langchain";
@@ -148,6 +173,7 @@ export { fromLangChainStore } from "./langchain";
 export { fromLangChainTextSplitter } from "./langchain";
 export { fromLangChainTool } from "./langchain";
 export { fromLangChainTransformer } from "./langchain";
+export { fromLangChainVectorStore } from "./langchain";
 
 export { fromLlamaIndexDocument, fromLlamaIndexNode, toLlamaIndexDocument } from "./llamaindex";
 export { fromLlamaIndexDocumentStore } from "./llamaindex";
@@ -164,3 +190,4 @@ export { fromLlamaIndexRetriever } from "./llamaindex";
 export { fromLlamaIndexTextSplitter } from "./llamaindex";
 export { fromLlamaIndexTool } from "./llamaindex";
 export { fromLlamaIndexTransformer } from "./llamaindex";
+export { fromLlamaIndexVectorStore } from "./llamaindex";

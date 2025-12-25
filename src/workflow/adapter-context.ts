@@ -63,6 +63,16 @@ const wrapEmbedder = (embedder: AdapterBundle["embedder"], context: AdapterCallC
   };
 };
 
+const wrapImage = (image: AdapterBundle["image"], context: AdapterCallContext) => {
+  if (!image) {
+    return undefined;
+  }
+  return {
+    ...image,
+    generate: wrapRequiredOne(image.generate, context),
+  };
+};
+
 const wrapRetriever = (retriever: AdapterBundle["retriever"], context: AdapterCallContext) => {
   if (!retriever) {
     return undefined;
@@ -162,6 +172,40 @@ const wrapMemory = (memory: AdapterBundle["memory"], context: AdapterCallContext
   };
 };
 
+const wrapSpeech = (speech: AdapterBundle["speech"], context: AdapterCallContext) => {
+  if (!speech) {
+    return undefined;
+  }
+  return {
+    ...speech,
+    generate: wrapRequiredOne(speech.generate, context),
+  };
+};
+
+const wrapTranscription = (
+  transcription: AdapterBundle["transcription"],
+  context: AdapterCallContext,
+) => {
+  if (!transcription) {
+    return undefined;
+  }
+  return {
+    ...transcription,
+    generate: wrapRequiredOne(transcription.generate, context),
+  };
+};
+
+const wrapVectorStore = (store: AdapterBundle["vectorStore"], context: AdapterCallContext) => {
+  if (!store) {
+    return undefined;
+  }
+  return {
+    ...store,
+    upsert: wrapRequiredOne(store.upsert, context),
+    delete: wrapRequiredOne(store.delete, context),
+  };
+};
+
 const wrapTools = (tools: AdapterBundle["tools"], context: AdapterCallContext) => {
   if (!tools) {
     return undefined;
@@ -182,6 +226,7 @@ export const attachAdapterContext = (
 ): AdapterBundle => ({
   ...adapters,
   embedder: wrapEmbedder(adapters.embedder, context),
+  image: wrapImage(adapters.image, context),
   retriever: wrapRetriever(adapters.retriever, context),
   reranker: wrapReranker(adapters.reranker, context),
   textSplitter: wrapTextSplitter(adapters.textSplitter, context),
@@ -190,5 +235,8 @@ export const attachAdapterContext = (
   cache: wrapCache(adapters.cache, context),
   kv: wrapKv(adapters.kv, context),
   memory: wrapMemory(adapters.memory, context),
+  speech: wrapSpeech(adapters.speech, context),
+  transcription: wrapTranscription(adapters.transcription, context),
+  vectorStore: wrapVectorStore(adapters.vectorStore, context),
   tools: wrapTools(adapters.tools, context),
 });

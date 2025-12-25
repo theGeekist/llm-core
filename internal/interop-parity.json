@@ -1,0 +1,280 @@
+{
+  "entries": [
+    { "construct": "Model", "ecosystem": "ai-sdk", "status": "full", "probe": "ai-sdk:Model" },
+    {
+      "construct": "Embedder",
+      "ecosystem": "ai-sdk",
+      "status": "full",
+      "probe": "ai-sdk:Embedder"
+    },
+    {
+      "construct": "Reranker",
+      "ecosystem": "ai-sdk",
+      "status": "full",
+      "probe": "ai-sdk:Reranker"
+    },
+    {
+      "construct": "Retriever",
+      "ecosystem": "ai-sdk",
+      "status": "missing",
+      "note": "AI SDK has no retriever abstraction."
+    },
+    {
+      "construct": "TextSplitter",
+      "ecosystem": "ai-sdk",
+      "status": "missing",
+      "note": "AI SDK has no splitter abstraction."
+    },
+    {
+      "construct": "Transformer",
+      "ecosystem": "ai-sdk",
+      "status": "missing",
+      "note": "AI SDK has no transformer abstraction."
+    },
+    {
+      "construct": "DocumentLoader",
+      "ecosystem": "ai-sdk",
+      "status": "missing",
+      "note": "AI SDK has no document loader abstraction."
+    },
+    {
+      "construct": "VectorStore",
+      "ecosystem": "ai-sdk",
+      "status": "missing",
+      "note": "AI SDK has no vector store abstraction."
+    },
+    {
+      "construct": "Memory",
+      "ecosystem": "ai-sdk",
+      "status": "missing",
+      "note": "AI SDK has no memory abstraction."
+    },
+    {
+      "construct": "KVStore",
+      "ecosystem": "ai-sdk",
+      "status": "missing",
+      "note": "AI SDK has no KV store abstraction."
+    },
+    { "construct": "Tool", "ecosystem": "ai-sdk", "status": "full", "probe": "ai-sdk:Tool" },
+    {
+      "construct": "PromptTemplate",
+      "ecosystem": "ai-sdk",
+      "status": "missing",
+      "note": "AI SDK has no prompt template abstraction."
+    },
+    {
+      "construct": "ImageModel",
+      "ecosystem": "ai-sdk",
+      "status": "full",
+      "probe": "ai-sdk:ImageModel"
+    },
+    {
+      "construct": "SpeechModel",
+      "ecosystem": "ai-sdk",
+      "status": "full",
+      "probe": "ai-sdk:SpeechModel"
+    },
+    {
+      "construct": "TranscriptionModel",
+      "ecosystem": "ai-sdk",
+      "status": "full",
+      "probe": "ai-sdk:TranscriptionModel"
+    },
+    {
+      "construct": "Cache",
+      "ecosystem": "ai-sdk",
+      "status": "missing",
+      "note": "Cache is a core primitive (MemoryCache)."
+    },
+
+    {
+      "construct": "Model",
+      "ecosystem": "langchain",
+      "status": "full",
+      "probe": "langchain:Model"
+    },
+    {
+      "construct": "Embedder",
+      "ecosystem": "langchain",
+      "status": "full",
+      "probe": "langchain:Embedder"
+    },
+    {
+      "construct": "Reranker",
+      "ecosystem": "langchain",
+      "status": "full",
+      "probe": "langchain:Reranker"
+    },
+    {
+      "construct": "Retriever",
+      "ecosystem": "langchain",
+      "status": "full",
+      "probe": "langchain:Retriever"
+    },
+    {
+      "construct": "TextSplitter",
+      "ecosystem": "langchain",
+      "status": "full",
+      "probe": "langchain:TextSplitter"
+    },
+    {
+      "construct": "Transformer",
+      "ecosystem": "langchain",
+      "status": "full",
+      "probe": "langchain:Transformer"
+    },
+    {
+      "construct": "DocumentLoader",
+      "ecosystem": "langchain",
+      "status": "full",
+      "probe": "langchain:DocumentLoader"
+    },
+    {
+      "construct": "VectorStore",
+      "ecosystem": "langchain",
+      "status": "full",
+      "probe": "langchain:VectorStore"
+    },
+    {
+      "construct": "Memory",
+      "ecosystem": "langchain",
+      "status": "full",
+      "probe": "langchain:Memory"
+    },
+    {
+      "construct": "KVStore",
+      "ecosystem": "langchain",
+      "status": "full",
+      "probe": "langchain:KVStore"
+    },
+    { "construct": "Tool", "ecosystem": "langchain", "status": "full", "probe": "langchain:Tool" },
+    {
+      "construct": "PromptTemplate",
+      "ecosystem": "langchain",
+      "status": "full",
+      "probe": "langchain:PromptTemplate"
+    },
+    {
+      "construct": "ImageModel",
+      "ecosystem": "langchain",
+      "status": "missing",
+      "note": "Exists as provider-specific wrappers/tools, not a generic interface."
+    },
+    {
+      "construct": "SpeechModel",
+      "ecosystem": "langchain",
+      "status": "missing",
+      "note": "Audio output is model-specific (ChatOpenAI), not a standalone interface."
+    },
+    {
+      "construct": "TranscriptionModel",
+      "ecosystem": "langchain",
+      "status": "missing",
+      "note": "Available via document loaders, not a model interface."
+    },
+    {
+      "construct": "Cache",
+      "ecosystem": "langchain",
+      "status": "missing",
+      "note": "LangChain caches exist but are not normalized yet."
+    },
+
+    {
+      "construct": "Model",
+      "ecosystem": "llamaindex",
+      "status": "full",
+      "probe": "llamaindex:Model"
+    },
+    {
+      "construct": "Embedder",
+      "ecosystem": "llamaindex",
+      "status": "full",
+      "probe": "llamaindex:Embedder"
+    },
+    {
+      "construct": "Reranker",
+      "ecosystem": "llamaindex",
+      "status": "full",
+      "probe": "llamaindex:Reranker"
+    },
+    {
+      "construct": "Retriever",
+      "ecosystem": "llamaindex",
+      "status": "full",
+      "probe": "llamaindex:Retriever"
+    },
+    {
+      "construct": "TextSplitter",
+      "ecosystem": "llamaindex",
+      "status": "full",
+      "probe": "llamaindex:TextSplitter"
+    },
+    {
+      "construct": "Transformer",
+      "ecosystem": "llamaindex",
+      "status": "full",
+      "probe": "llamaindex:Transformer"
+    },
+    {
+      "construct": "DocumentLoader",
+      "ecosystem": "llamaindex",
+      "status": "full",
+      "probe": "llamaindex:DocumentLoader"
+    },
+    {
+      "construct": "VectorStore",
+      "ecosystem": "llamaindex",
+      "status": "partial",
+      "probe": "llamaindex:VectorStore",
+      "note": "Delete filters are not supported in LlamaIndex adapter."
+    },
+    {
+      "construct": "Memory",
+      "ecosystem": "llamaindex",
+      "status": "full",
+      "probe": "llamaindex:Memory"
+    },
+    {
+      "construct": "KVStore",
+      "ecosystem": "llamaindex",
+      "status": "full",
+      "probe": "llamaindex:KVStore"
+    },
+    {
+      "construct": "Tool",
+      "ecosystem": "llamaindex",
+      "status": "full",
+      "probe": "llamaindex:Tool"
+    },
+    {
+      "construct": "PromptTemplate",
+      "ecosystem": "llamaindex",
+      "status": "full",
+      "probe": "llamaindex:PromptTemplate"
+    },
+    {
+      "construct": "ImageModel",
+      "ecosystem": "llamaindex",
+      "status": "missing",
+      "note": "Exists via tool specs, not a generic interface."
+    },
+    {
+      "construct": "SpeechModel",
+      "ecosystem": "llamaindex",
+      "status": "missing",
+      "note": "No core speech model interface in LlamaIndex TS."
+    },
+    {
+      "construct": "TranscriptionModel",
+      "ecosystem": "llamaindex",
+      "status": "missing",
+      "note": "No core transcription model interface in LlamaIndex TS."
+    },
+    {
+      "construct": "Cache",
+      "ecosystem": "llamaindex",
+      "status": "missing",
+      "note": "No cache adapter normalized for LlamaIndex."
+    }
+  ]
+}

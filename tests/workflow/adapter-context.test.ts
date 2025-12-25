@@ -1,6 +1,13 @@
 import { describe, expect, it } from "bun:test";
 import { attachAdapterContext, createAdapterContext } from "#workflow/adapter-context";
-import type { AdapterBundle, AdapterCallContext, AdapterDiagnostic } from "#adapters";
+import type {
+  AdapterBundle,
+  AdapterCallContext,
+  AdapterDiagnostic,
+  ImageCall,
+  SpeechCall,
+  TranscriptionCall,
+} from "#adapters";
 
 const makeReporter = (bucket: AdapterDiagnostic[]) => ({
   report: (diagnostic: AdapterDiagnostic) => {
@@ -26,6 +33,12 @@ describe("Workflow adapter context wrappers", () => {
         retrieve: (_query, ctx) => {
           ctx?.report?.({ level: "warn", message: "retrieve" });
           return { documents: [] };
+        },
+      },
+      image: {
+        generate: (_call: ImageCall, ctx?: AdapterCallContext) => {
+          ctx?.report?.({ level: "warn", message: "image" });
+          return { images: [] };
         },
       },
       reranker: {
@@ -116,6 +129,18 @@ describe("Workflow adapter context wrappers", () => {
           return undefined;
         },
       },
+      speech: {
+        generate: (_call: SpeechCall, ctx?: AdapterCallContext) => {
+          ctx?.report?.({ level: "warn", message: "speech" });
+          return { audio: { bytes: new Uint8Array() } };
+        },
+      },
+      transcription: {
+        generate: (_call: TranscriptionCall, ctx?: AdapterCallContext) => {
+          ctx?.report?.({ level: "warn", message: "transcription" });
+          return { text: "" };
+        },
+      },
       tools: [
         {
           name: "tool",
@@ -125,6 +150,16 @@ describe("Workflow adapter context wrappers", () => {
           },
         },
       ],
+      vectorStore: {
+        upsert: (_input, ctx) => {
+          ctx?.report?.({ level: "warn", message: "upsert" });
+          return { ids: [] };
+        },
+        delete: (_input, ctx) => {
+          ctx?.report?.({ level: "warn", message: "vectorDelete" });
+          return undefined;
+        },
+      },
     };
 
     const wrapped = attachAdapterContext(adapters, context);
@@ -132,6 +167,7 @@ describe("Workflow adapter context wrappers", () => {
     await wrapped.embedder?.embed("hi");
     await wrapped.embedder?.embedMany?.(["hi"]);
     await wrapped.retriever?.retrieve("hi");
+    await wrapped.image?.generate({ prompt: "hi" });
     await wrapped.reranker?.rerank("hi", []);
     await wrapped.textSplitter?.split("hi");
     await wrapped.textSplitter?.splitBatch?.(["hi"]);
@@ -151,7 +187,11 @@ describe("Workflow adapter context wrappers", () => {
     await wrapped.memory?.load?.({ input: "hi" });
     await wrapped.memory?.save?.({ input: "hi" }, { output: "ok" });
     await wrapped.memory?.reset?.();
+    await wrapped.speech?.generate({ text: "hi" });
+    await wrapped.transcription?.generate({ audio: { bytes: new Uint8Array() } });
     await wrapped.tools?.[0]?.execute?.({ ok: true });
+    await wrapped.vectorStore?.upsert({ documents: [] });
+    await wrapped.vectorStore?.delete({ ids: [] });
 
     expect(diagnostics.length).toBeGreaterThan(0);
   });

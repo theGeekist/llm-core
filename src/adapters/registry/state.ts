@@ -13,6 +13,7 @@ const bundleKeys = new Set<keyof AdapterBundle>([
   "messages",
   "tools",
   "model",
+  "image",
   "trace",
   "prompts",
   "schemas",
@@ -23,8 +24,11 @@ const bundleKeys = new Set<keyof AdapterBundle>([
   "loader",
   "transformer",
   "memory",
+  "speech",
   "storage",
+  "transcription",
   "kv",
+  "vectorStore",
   "constructs",
 ]);
 

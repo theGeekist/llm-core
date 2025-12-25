@@ -7,6 +7,7 @@ export { fromLangChainTransformer } from "./transformer";
 export { fromLangChainReranker } from "./reranker";
 export { fromLangChainMemory } from "./memory";
 export { fromLangChainStore } from "./storage";
+export { fromLangChainVectorStore } from "./vector-store";
 export { fromLangChainPromptTemplate } from "./prompts";
 export { fromLangChainDocument, toLangChainDocument } from "./documents";
 export { fromLangChainMessage } from "./messages";

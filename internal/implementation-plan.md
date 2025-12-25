@@ -259,9 +259,32 @@ Goals:
 - Bridge cache adapters into the resume session store for pluggable persistence.
 - Document cache caveats (TTL behavior, serialization limits, token constraints).
 
+## Stage 13 — RAG Write Path + Missing Adapter Constructs
+
+Status: in progress. See `internal/stage-13.md`.
+
+Goals:
+
+- Add a vector store write-path adapter (upsert/delete) to enable ingestion pipelines.
+- Define namespace/collection semantics and metadata/filter contracts.
+- Support batch ingestion with diagnostics for partial failure.
+- Validate embedding dimension constraints where possible.
+
+Progress:
+
+- Added `VectorStore` core types + bundle wiring.
+- Implemented LangChain + LlamaIndex vector store adapters.
+- Added vector store input diagnostics + tests.
+- Updated adapter docs with write-path examples.
+- Added AI SDK image/speech/transcription adapters with validations + tests.
+- Added AI SDK reranker adapter (RerankingModelV3).
+
 ## Ongoing Constraints
 
 - Prefer early returns and small pure functions.
 - Avoid deep nesting by splitting helpers into single-purpose functions.
 - Add short, precise comments only for non-obvious logic.
 - Update docs in each stage to prevent drift.
+- Track streaming parity separately until a normalized adapter surface is defined.
+- Track higher-level LC/LI constructs (query engines, output parsers, tracing) in
+  `docs/interop-audit.md` for future parity stages.

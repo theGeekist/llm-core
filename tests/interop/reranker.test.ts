@@ -8,7 +8,7 @@ import {
   type BaseNode,
   type NodeWithScore,
 } from "@llamaindex/core/schema";
-import * as AiSdk from "ai";
+import { fromAiSdkReranker } from "#adapters";
 import type { Reranker } from "#workflow";
 import { mapMaybe } from "./helpers";
 
@@ -77,7 +77,18 @@ describe("Interop reranker", () => {
     expect(result[0]?.text).toBe("hello");
   });
 
-  it("notes AI SDK has no reranker abstraction", () => {
-    expect("BaseDocumentCompressor" in AiSdk).toBe(false);
+  it("maps AI SDK reranking models", async () => {
+    const model = {
+      specificationVersion: "v3" as const,
+      provider: "test",
+      modelId: "rerank",
+      doRerank: () =>
+        Promise.resolve({
+          ranking: [{ index: 0, relevanceScore: 0.8 }],
+        }),
+    };
+    const adapter = fromAiSdkReranker(model);
+    const result = await adapter.rerank("query", [{ text: "hello" }]);
+    expect(result[0]?.score).toBe(0.8);
   });
 });

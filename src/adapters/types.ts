@@ -275,6 +275,95 @@ export type AdapterTraceSink = {
 };
 
 /* -------------------------------------------------------------------------------------------------
+ * Images + speech + transcription
+ * ------------------------------------------------------------------------------------------------- */
+
+export type ImageCall = {
+  prompt: string;
+  count?: number;
+  size?: string;
+  aspectRatio?: string;
+  seed?: number;
+  providerOptions?: Record<string, Record<string, unknown>>;
+  headers?: Record<string, string | undefined>;
+  abortSignal?: AbortSignal;
+  metadata?: AdapterMetadata;
+};
+
+export type ImageResult = {
+  images: Blob[];
+  diagnostics?: AdapterDiagnostic[];
+  telemetry?: ModelTelemetry;
+  usage?: ModelUsage;
+  trace?: AdapterTraceEvent[];
+  meta?: ModelMeta;
+  raw?: unknown;
+};
+
+export type ImageModel = {
+  generate(call: ImageCall, context?: AdapterCallContext): MaybePromise<ImageResult>;
+};
+
+export type SpeechCall = {
+  text: string;
+  voice?: string;
+  outputFormat?: string;
+  instructions?: string;
+  speed?: number;
+  language?: string;
+  providerOptions?: Record<string, Record<string, unknown>>;
+  headers?: Record<string, string | undefined>;
+  abortSignal?: AbortSignal;
+  metadata?: AdapterMetadata;
+};
+
+export type SpeechResult = {
+  audio: Blob;
+  diagnostics?: AdapterDiagnostic[];
+  telemetry?: ModelTelemetry;
+  trace?: AdapterTraceEvent[];
+  meta?: ModelMeta;
+  raw?: unknown;
+};
+
+export type SpeechModel = {
+  generate(call: SpeechCall, context?: AdapterCallContext): MaybePromise<SpeechResult>;
+};
+
+export type TranscriptionCall = {
+  audio: Blob;
+  providerOptions?: Record<string, Record<string, unknown>>;
+  headers?: Record<string, string | undefined>;
+  abortSignal?: AbortSignal;
+  metadata?: AdapterMetadata;
+};
+
+export type TranscriptionSegment = {
+  text: string;
+  startSecond: number;
+  endSecond: number;
+};
+
+export type TranscriptionResult = {
+  text: string;
+  segments?: TranscriptionSegment[];
+  language?: string;
+  durationSeconds?: number;
+  diagnostics?: AdapterDiagnostic[];
+  telemetry?: ModelTelemetry;
+  trace?: AdapterTraceEvent[];
+  meta?: ModelMeta;
+  raw?: unknown;
+};
+
+export type TranscriptionModel = {
+  generate(
+    call: TranscriptionCall,
+    context?: AdapterCallContext,
+  ): MaybePromise<TranscriptionResult>;
+};
+
+/* -------------------------------------------------------------------------------------------------
  * Retrieval + splitting + embeddings
  * ------------------------------------------------------------------------------------------------- */
 
@@ -323,6 +412,46 @@ export type DocumentLoader = {
 
 export type DocumentTransformer = {
   transform(documents: Document[], context?: AdapterCallContext): MaybePromise<Document[]>;
+  metadata?: AdapterMetadata;
+};
+
+/* -------------------------------------------------------------------------------------------------
+ * Vector store write path
+ * ------------------------------------------------------------------------------------------------- */
+
+export type VectorRecord = {
+  id?: string;
+  values: number[];
+  metadata?: AdapterMetadata;
+  document?: Document;
+};
+
+export type VectorStoreUpsertInput =
+  | { documents: Document[]; namespace?: string }
+  | { vectors: VectorRecord[]; namespace?: string };
+
+export type VectorStoreDeleteInput =
+  | { ids: string[]; namespace?: string }
+  | { filter: Record<string, unknown>; namespace?: string };
+
+export type VectorStoreInfo = {
+  dimension?: number;
+  metadataSchema?: Record<string, unknown>;
+  filterSchema?: Record<string, unknown>;
+  namespace?: string;
+};
+
+export type VectorStoreUpsertResult = {
+  ids?: string[];
+};
+
+export type VectorStore = {
+  upsert(
+    input: VectorStoreUpsertInput,
+    context?: AdapterCallContext,
+  ): MaybePromise<VectorStoreUpsertResult | void>;
+  delete(input: VectorStoreDeleteInput, context?: AdapterCallContext): MaybePromise<void>;
+  info?: VectorStoreInfo;
   metadata?: AdapterMetadata;
 };
 
@@ -399,6 +528,7 @@ export type AdapterBundle = {
   constructs?: Record<string, unknown>;
   documents?: Document[];
   embedder?: Embedder;
+  image?: ImageModel;
   kv?: KVStore;
   loader?: DocumentLoader;
   memory?: Memory;
@@ -408,11 +538,14 @@ export type AdapterBundle = {
   reranker?: Reranker;
   retriever?: Retriever;
   schemas?: Schema[];
+  speech?: SpeechModel;
   storage?: Storage;
   textSplitter?: TextSplitter;
+  transcription?: TranscriptionModel;
   tools?: Tool[];
   trace?: AdapterTraceSink;
   transformer?: DocumentTransformer;
+  vectorStore?: VectorStore;
 };
 
 export type AdapterResumeRequest = {

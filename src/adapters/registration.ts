@@ -1,4 +1,14 @@
-import type { AdapterBundle, Model, Retriever, Tool, AdapterTraceSink } from "./types";
+import type {
+  AdapterBundle,
+  Model,
+  ImageModel,
+  Retriever,
+  SpeechModel,
+  Tool,
+  AdapterTraceSink,
+  TranscriptionModel,
+  VectorStore,
+} from "./types";
 
 export type AdapterPlugin = {
   key: string;
@@ -19,6 +29,7 @@ const bundleKeys = new Set<keyof AdapterBundle>([
   "messages",
   "tools",
   "model",
+  "image",
   "trace",
   "prompts",
   "schemas",
@@ -29,8 +40,11 @@ const bundleKeys = new Set<keyof AdapterBundle>([
   "loader",
   "transformer",
   "memory",
+  "speech",
   "storage",
+  "transcription",
   "kv",
+  "vectorStore",
   "constructs",
 ]);
 
@@ -78,11 +92,31 @@ export const Adapter = {
   model(key: string, model: Model, options?: AdapterPluginOptions): AdapterPlugin {
     return makePlugin(key, { model }, options);
   },
+  image(key: string, image: ImageModel, options?: AdapterPluginOptions): AdapterPlugin {
+    return makePlugin(key, { image }, options);
+  },
   tools(key: string, tools: Tool[], options?: AdapterPluginOptions): AdapterPlugin {
     return makePlugin(key, { tools }, options);
   },
   retriever(key: string, retriever: Retriever, options?: AdapterPluginOptions): AdapterPlugin {
     return makePlugin(key, { retriever }, options);
+  },
+  speech(key: string, speech: SpeechModel, options?: AdapterPluginOptions): AdapterPlugin {
+    return makePlugin(key, { speech }, options);
+  },
+  transcription(
+    key: string,
+    transcription: TranscriptionModel,
+    options?: AdapterPluginOptions,
+  ): AdapterPlugin {
+    return makePlugin(key, { transcription }, options);
+  },
+  vectorStore(
+    key: string,
+    vectorStore: VectorStore,
+    options?: AdapterPluginOptions,
+  ): AdapterPlugin {
+    return makePlugin(key, { vectorStore }, options);
   },
   trace(key: string, trace: AdapterTraceSink, options?: AdapterPluginOptions): AdapterPlugin {
     return makePlugin(key, { trace }, options);

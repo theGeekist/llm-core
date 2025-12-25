@@ -109,6 +109,12 @@ export const asLangChainStore = (store: unknown) =>
 export const asLlamaIndexDocStore = (store: unknown) =>
   store as import("@llamaindex/core/storage/doc-store").BaseDocumentStore;
 
+export const asLangChainVectorStore = (store: unknown) =>
+  store as import("@langchain/core/vectorstores").VectorStoreInterface;
+
+export const asLlamaIndexVectorStore = (store: unknown) =>
+  store as import("@llamaindex/core/vector-store").BaseVectorStore;
+
 export const asLangChainMemory = (memory: unknown) =>
   memory as import("@langchain/core/memory").BaseMemory;
 
@@ -133,5 +139,17 @@ export const asLlamaIndexParser = (parser: unknown) =>
 export const asAiSdkMessage = (message: unknown) => message as ModelMessage;
 
 export const asAiSdkPrompt = (prompt: unknown) => prompt as Prompt;
+
+export const asAiSdkImageModel = (model: unknown) =>
+  model as import("@ai-sdk/provider").ImageModelV2;
+
+export const asAiSdkSpeechModel = (model: unknown) =>
+  model as import("@ai-sdk/provider").SpeechModelV2;
+
+export const asAiSdkTranscriptionModel = (model: unknown) =>
+  model as import("@ai-sdk/provider").TranscriptionModelV2;
+
+export const asAiSdkReranker = (model: unknown) =>
+  model as import("@ai-sdk/provider").RerankingModelV3;
 
 export const asLlamaIndexModel = (model: unknown) => model as import("@llamaindex/core/llms").LLM;

@@ -34,6 +34,13 @@ export function mapMaybe<TIn, TOut>(
   return maybeThen(value, map);
 }
 
+export function fromPromiseLike<T>(value: T | PromiseLike<T>): MaybePromise<T> {
+  if (isPromiseLike(value)) {
+    return Promise.resolve(value);
+  }
+  return value;
+}
+
 export function mapMaybeArray<TIn, TOut>(value: MaybePromise<TIn[]>, map: (value: TIn) => TOut) {
   return mapMaybe(value, (items) => items.map(map));
 }

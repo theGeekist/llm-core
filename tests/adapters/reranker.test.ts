@@ -2,8 +2,10 @@ import { describe, expect, it } from "bun:test";
 import type { BaseDocumentCompressor } from "@langchain/core/retrievers/document_compressors";
 import { Document as LangChainDocument } from "@langchain/core/documents";
 import { Document as LlamaDocument } from "@llamaindex/core/schema";
-import { fromLangChainReranker, fromLlamaIndexReranker } from "#adapters";
-import { asLlamaIndexPostprocessor, captureDiagnostics } from "./helpers";
+import { fromAiSdkReranker, fromLangChainReranker, fromLlamaIndexReranker } from "#adapters";
+import { asAiSdkReranker, asLlamaIndexPostprocessor, captureDiagnostics } from "./helpers";
+
+const asPromiseLike = <T>(value: T): PromiseLike<T> => Promise.resolve(value);
 
 describe("Adapter rerankers", () => {
   it("maps LangChain compressors", async () => {
@@ -25,6 +27,25 @@ describe("Adapter rerankers", () => {
     const adapter = fromLlamaIndexReranker(reranker);
     const result = await adapter.rerank("query", [{ text: "hello" }]);
     expect(result[0]?.text).toBe("hello");
+  });
+
+  it("maps AI SDK reranking models", async () => {
+    const model = asAiSdkReranker({
+      specificationVersion: "v3",
+      provider: "test",
+      modelId: "rerank",
+      doRerank: () =>
+        asPromiseLike({
+          ranking: [
+            { index: 1, relevanceScore: 0.9 },
+            { index: 0, relevanceScore: 0.5 },
+          ],
+        }),
+    });
+    const adapter = fromAiSdkReranker(model);
+    const result = await adapter.rerank("query", [{ text: "first" }, { text: "second" }]);
+    expect(result[0]?.text).toBe("second");
+    expect(result[0]?.score).toBe(0.9);
   });
 
   it("warns when reranker inputs are missing", async () => {

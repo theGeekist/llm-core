@@ -33,6 +33,7 @@ type AdapterBundle = {
   trace?: AdapterTraceSink;
   prompts?: PromptTemplate[];
   schemas?: Schema[];
+  image?: ImageModel;
   textSplitter?: TextSplitter;
   embedder?: Embedder;
   retriever?: Retriever;
@@ -40,8 +41,11 @@ type AdapterBundle = {
   loader?: DocumentLoader;
   transformer?: DocumentTransformer;
   memory?: Memory;
+  speech?: SpeechModel;
   storage?: Storage;
+  transcription?: TranscriptionModel;
   kv?: KVStore;
+  vectorStore?: VectorStore;
   constructs?: Record<string, unknown>;
 };
 ```
@@ -57,6 +61,7 @@ const adapterBundle = {
   trace: undefined,
   prompts: [],
   schemas: [],
+  image: undefined,
   textSplitter: undefined,
   embedder: undefined,
   retriever: undefined,
@@ -64,8 +69,11 @@ const adapterBundle = {
   loader: undefined,
   transformer: undefined,
   memory: undefined,
+  speech: undefined,
   storage: undefined,
+  transcription: undefined,
   kv: undefined,
+  vectorStore: undefined,
   constructs: {},
 };
 ```
@@ -110,6 +118,58 @@ metadata: {
 
 Registry resolution emits diagnostics when these are missing. Default mode warns; strict mode fails.
 These diagnostics are produced when the registry resolves providers, not at call time.
+
+## Vector store write path
+
+Vector stores let you ingest and delete embeddings in a portable way (no raw SDKs).
+Use this adapter when building ingestion pipelines or managing indexes.
+
+::: tabs
+== TypeScript
+
+```ts
+const store: VectorStore = {
+  upsert: ({ documents }) => ({ ids: documents.map((doc) => doc.id ?? "new") }),
+  delete: ({ ids }) => console.log(ids),
+};
+```
+
+== JavaScript
+
+```js
+const store = {
+  upsert: ({ documents }) => ({ ids: documents.map((doc) => doc.id ?? "new") }),
+  delete: ({ ids }) => console.log(ids),
+};
+```
+
+:::
+
+## Media models (image, speech, transcription)
+
+Image/speech/transcription models are first-class adapters. Only AI SDK provides these today,
+so other ecosystems will show “unsupported” in interop docs.
+
+::: tabs
+== TypeScript
+
+```ts
+import { fromAiSdkImageModel } from "#adapters";
+import { openai } from "@ai-sdk/openai";
+
+const image = fromAiSdkImageModel(openai.image("gpt-image-1"));
+```
+
+== JavaScript
+
+```js
+import { fromAiSdkImageModel } from "#adapters";
+import { openai } from "@ai-sdk/openai";
+
+const image = fromAiSdkImageModel(openai.image("gpt-image-1"));
+```
+
+:::
 
 ## Runtime input diagnostics
 

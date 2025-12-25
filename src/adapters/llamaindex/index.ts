@@ -7,6 +7,7 @@ export { fromLlamaIndexTransformer } from "./transformer";
 export { fromLlamaIndexReranker } from "./reranker";
 export { fromLlamaIndexMemory } from "./memory";
 export { fromLlamaIndexDocumentStore } from "./storage";
+export { fromLlamaIndexVectorStore } from "./vector-store";
 export { fromLlamaIndexPromptTemplate } from "./prompts";
 export { fromLlamaIndexDocument, fromLlamaIndexNode, toLlamaIndexDocument } from "./documents";
 export { fromLlamaIndexMessage } from "./messages";

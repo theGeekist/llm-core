@@ -34,15 +34,32 @@ describe("Adapter registration helpers", () => {
     expect(plugin.adapters.model).toBeDefined();
   });
 
-  it("supports tools, retriever, and trace helpers", () => {
+  it("supports media, tools, retriever, vector store, and trace helpers", () => {
+    const image = Adapter.image(`${CUSTOM_PREFIX}.image`, {
+      generate: () => ({ images: [] }),
+    });
+    const speech = Adapter.speech(`${CUSTOM_PREFIX}.speech`, {
+      generate: () => ({ audio: { bytes: new Uint8Array() } }),
+    });
+    const transcription = Adapter.transcription(`${CUSTOM_PREFIX}.transcription`, {
+      generate: () => ({ text: "" }),
+    });
     const tools = Adapter.tools(`${CUSTOM_PREFIX}.tools`, [{ name: "tool" }]);
     const retriever = Adapter.retriever(`${CUSTOM_PREFIX}.retriever`, {
       retrieve: () => ({ documents: [] }),
     });
+    const vectorStore = Adapter.vectorStore(`${CUSTOM_PREFIX}.vectorStore`, {
+      upsert: () => ({ ids: [] }),
+      delete: () => undefined,
+    });
     const trace = Adapter.trace(`${CUSTOM_PREFIX}.trace`, { emit: () => undefined });
 
+    expect(image.adapters.image).toBeDefined();
+    expect(speech.adapters.speech).toBeDefined();
+    expect(transcription.adapters.transcription).toBeDefined();
     expect(tools.adapters.tools).toBeDefined();
     expect(retriever.adapters.retriever).toBeDefined();
+    expect(vectorStore.adapters.vectorStore).toBeDefined();
     expect(trace.adapters.trace).toBeDefined();
   });
 

@@ -63,6 +63,66 @@ const plugin = Adapter.register("custom.mcp", "mcp", { client });
 
 :::
 
+## Write path (vector store)
+
+Vector stores let you ingest or delete embeddings without reaching for raw SDKs:
+
+::: tabs
+== TypeScript
+
+```ts
+import { Adapter } from "#adapters";
+
+const vectorStore = Adapter.vectorStore("custom.vectorStore", {
+  upsert: ({ documents }) => ({ ids: documents.map((doc) => doc.id ?? "new") }),
+  delete: ({ ids }) => console.log(ids),
+});
+```
+
+== JavaScript
+
+```js
+import { Adapter } from "#adapters";
+
+const vectorStore = Adapter.vectorStore("custom.vectorStore", {
+  upsert: ({ documents }) => ({ ids: documents.map((doc) => doc.id ?? "new") }),
+  delete: ({ ids }) => console.log(ids),
+});
+```
+
+:::
+
+## Media models (AI SDK)
+
+AI SDK exposes image, speech, and transcription models. Wrap them directly:
+
+::: tabs
+== TypeScript
+
+```ts
+import { Adapter, fromAiSdkSpeechModel } from "#adapters";
+import { openai } from "@ai-sdk/openai";
+
+const speech = Adapter.speech(
+  "custom.speech",
+  fromAiSdkSpeechModel(openai.speech("gpt-4o-mini-tts")),
+);
+```
+
+== JavaScript
+
+```js
+import { Adapter, fromAiSdkSpeechModel } from "#adapters";
+import { openai } from "@ai-sdk/openai";
+
+const speech = Adapter.speech(
+  "custom.speech",
+  fromAiSdkSpeechModel(openai.speech("gpt-4o-mini-tts")),
+);
+```
+
+:::
+
 ## Registry (advanced)
 
 If you need explicit provider resolution, use the registry directly:

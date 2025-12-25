@@ -65,6 +65,8 @@
   "devDependencies": {
     "@ai-sdk/anthropic": "^2.0.56",
     "@ai-sdk/openai": "^2.0.88",
+    "@ai-sdk/provider": "^3.0.0",
+    "@ai-sdk/provider-utils": "^4.0.1",
     "@langchain/community": "^1.1.1",
     "@langchain/core": "^1.1.8",
     "@langchain/ollama": "^1.1.0",

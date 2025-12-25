@@ -1,5 +1,9 @@
 export { fromAiSdkEmbeddings } from "./embeddings";
+export { fromAiSdkImageModel } from "./image";
 export { fromAiSdkTool } from "./tools";
 export { fromAiSdkMessage } from "./messages";
 export { fromAiSdkPrompt } from "./model-call";
 export { fromAiSdkModel } from "./model";
+export { fromAiSdkReranker } from "./reranker";
+export { fromAiSdkSpeechModel } from "./speech";
+export { fromAiSdkTranscriptionModel } from "./transcription";

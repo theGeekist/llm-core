@@ -3,6 +3,7 @@ import {
   reportDiagnostics,
   validateEmbedderBatchInput,
   validateEmbedderInput,
+  validateImageInput,
   validateKvKeys,
   validateKvPairs,
   validateMemoryLoadInput,
@@ -10,12 +11,16 @@ import {
   validateMemoryTurn,
   validateRetrieverInput,
   validateRerankerInput,
+  validateSpeechInput,
   validateStorageKey,
   validateTextSplitterBatchInput,
   validateTextSplitterInput,
   validateThreadId,
+  validateTranscriptionInput,
   validateToolInput,
   validateTransformerInput,
+  validateVectorStoreDeleteInput,
+  validateVectorStoreUpsertInput,
 } from "#adapters";
 
 describe("Adapter input validation", () => {
@@ -38,6 +43,15 @@ describe("Adapter input validation", () => {
     expect(validateEmbedderBatchInput([" "])).toHaveLength(1);
   });
 
+  it("validates image, speech, and transcription inputs", () => {
+    expect(validateImageInput("")).toHaveLength(1);
+    expect(validateSpeechInput("")).toHaveLength(1);
+    expect(validateTranscriptionInput(undefined)).toHaveLength(2);
+    expect(
+      validateTranscriptionInput({ bytes: new Uint8Array([1, 2]), contentType: "audio/wav" }),
+    ).toHaveLength(0);
+  });
+
   it("validates tool and storage inputs", () => {
     expect(
       validateToolInput({ name: "tool", params: [{ name: "q", type: "string" }] }, undefined),
@@ -56,5 +70,14 @@ describe("Adapter input validation", () => {
 
   it("validates transformer inputs", () => {
     expect(validateTransformerInput([])).toHaveLength(1);
+  });
+
+  it("validates vector store inputs", () => {
+    expect(validateVectorStoreUpsertInput(undefined)).toHaveLength(1);
+    expect(validateVectorStoreUpsertInput({ documents: [] })).toHaveLength(1);
+    expect(validateVectorStoreUpsertInput({ vectors: [] })).toHaveLength(1);
+    expect(validateVectorStoreDeleteInput(undefined)).toHaveLength(1);
+    expect(validateVectorStoreDeleteInput({ ids: [] })).toHaveLength(1);
+    expect(validateVectorStoreDeleteInput({ filter: {} })).toHaveLength(1);
   });
 });

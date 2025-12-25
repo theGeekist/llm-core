@@ -72,6 +72,52 @@ export const validateTransformerInput = (documents: Document[] | undefined) => {
   return [];
 };
 
+export const validateVectorStoreUpsertInput = (input: unknown) => {
+  if (!input) {
+    return [warn("vector_store_input_missing")];
+  }
+  if (typeof input !== "object") {
+    return [warn("vector_store_input_missing")];
+  }
+  const record = input as { documents?: Document[]; vectors?: Array<{ values?: number[] }> };
+  if (record.documents) {
+    if (record.documents.length === 0) {
+      return [warn("vector_store_documents_missing")];
+    }
+    return [];
+  }
+  if (record.vectors) {
+    if (record.vectors.length === 0) {
+      return [warn("vector_store_vectors_missing")];
+    }
+    return [];
+  }
+  return [warn("vector_store_input_missing")];
+};
+
+export const validateVectorStoreDeleteInput = (input: unknown) => {
+  if (!input) {
+    return [warn("vector_store_delete_missing")];
+  }
+  if (typeof input !== "object") {
+    return [warn("vector_store_delete_missing")];
+  }
+  const record = input as { ids?: string[]; filter?: Record<string, unknown> };
+  if (record.ids) {
+    if (record.ids.length === 0 || record.ids.every((id) => isBlank(id))) {
+      return [warn("vector_store_delete_ids_missing")];
+    }
+    return [];
+  }
+  if (record.filter) {
+    if (Object.keys(record.filter).length === 0) {
+      return [warn("vector_store_delete_filter_missing")];
+    }
+    return [];
+  }
+  return [warn("vector_store_delete_missing")];
+};
+
 export const validateEmbedderInput = (text: string | undefined) => {
   if (!text || isBlank(text)) {
     return [warn("embedder_input_missing")];
@@ -84,6 +130,33 @@ export const validateEmbedderBatchInput = (texts: string[] | undefined) => {
     return [warn("embedder_input_missing")];
   }
   return [];
+};
+
+export const validateImageInput = (prompt: string | undefined) => {
+  if (!prompt || isBlank(prompt)) {
+    return [warn("image_prompt_missing")];
+  }
+  return [];
+};
+
+export const validateSpeechInput = (text: string | undefined) => {
+  if (!text || isBlank(text)) {
+    return [warn("speech_text_missing")];
+  }
+  return [];
+};
+
+export const validateTranscriptionInput = (
+  audio: { bytes?: Uint8Array; contentType?: string } | undefined,
+) => {
+  const diagnostics: AdapterDiagnostic[] = [];
+  if (!audio?.bytes || audio.bytes.length === 0) {
+    diagnostics.push(warn("transcription_audio_missing"));
+  }
+  if (!audio?.contentType) {
+    diagnostics.push(warn("transcription_media_type_missing"));
+  }
+  return diagnostics;
 };
 
 export const validateToolInput = (tool: Tool, input: unknown) => {

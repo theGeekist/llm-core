@@ -58,6 +58,7 @@ const listBundleEntries = (adapters: AdapterBundle): Array<[string, unknown]> =>
   ["messages", adapters.messages],
   ["tools", adapters.tools],
   ["model", adapters.model],
+  ["image", adapters.image],
   ["trace", adapters.trace],
   ["prompts", adapters.prompts],
   ["schemas", adapters.schemas],
@@ -68,12 +69,16 @@ const listBundleEntries = (adapters: AdapterBundle): Array<[string, unknown]> =>
   ["loader", adapters.loader],
   ["transformer", adapters.transformer],
   ["memory", adapters.memory],
+  ["speech", adapters.speech],
   ["storage", adapters.storage],
+  ["transcription", adapters.transcription],
   ["kv", adapters.kv],
+  ["vectorStore", adapters.vectorStore],
 ];
 
 const listRequirementEntries = (adapters: AdapterBundle): Array<[string, unknown]> => [
   ["model", adapters.model],
+  ["image", adapters.image],
   ["trace", adapters.trace],
   ["textSplitter", adapters.textSplitter],
   ["embedder", adapters.embedder],
@@ -82,8 +87,11 @@ const listRequirementEntries = (adapters: AdapterBundle): Array<[string, unknown
   ["loader", adapters.loader],
   ["transformer", adapters.transformer],
   ["memory", adapters.memory],
+  ["speech", adapters.speech],
   ["storage", adapters.storage],
+  ["transcription", adapters.transcription],
   ["kv", adapters.kv],
+  ["vectorStore", adapters.vectorStore],
 ];
 
 const hasItems = (value: unknown) => (Array.isArray(value) ? value.length > 0 : Boolean(value));
