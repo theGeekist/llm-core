@@ -26,9 +26,9 @@ export const assertSyncOutcome = (value: Outcome | Promise<Outcome>) => {
 
 export const resolveMaybe = async <T>(value: T | Promise<T>): Promise<T> => {
   if (isPromiseLike(value)) {
-    return value;
+    return value as Promise<T>;
   }
-  return value;
+  return value as T;
 };
 
 export const diagnosticMessages = (diagnostics: unknown[]) =>

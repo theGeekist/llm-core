@@ -112,8 +112,6 @@ export {
   type AdapterConstructRegistration,
   type AdapterProviderFactory,
   type AdapterProviderFactoryOptions,
-  type AdapterProviderId,
-  type AdapterProviderKey,
   type AdapterProviderRegistration,
   type AdapterRegistry,
   type AdapterRegistryResolveInput,

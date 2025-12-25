@@ -21,8 +21,6 @@ import { createReporters, toRequirementMap } from "./registry/requirements";
 import { resolveProviderSelection, validateCapabilities } from "./registry/selection";
 
 export type AdapterConstructName = keyof AdapterBundle | string;
-export type AdapterProviderKey = string;
-export type AdapterProviderId = string;
 
 export type ConstructRequirement = {
   name: AdapterConstructName;
@@ -47,8 +45,8 @@ export type AdapterRegistryResolveResult = {
 
 export type AdapterProviderFactoryOptions = {
   construct: AdapterConstructName;
-  providerKey: AdapterProviderKey;
-  providerId: AdapterProviderId;
+  providerKey: string;
+  providerId: string;
   requirement?: ConstructRequirement;
 };
 
@@ -58,8 +56,8 @@ export type AdapterProviderFactory<T = unknown> = (
 
 export type AdapterProviderRegistration<T = unknown> = {
   construct: AdapterConstructName;
-  providerKey: AdapterProviderKey;
-  id: AdapterProviderId;
+  providerKey: string;
+  id: string;
   priority?: number;
   capabilities?: string[];
   dependsOn?: string[];

@@ -81,6 +81,21 @@ describe("Workflow extensions", () => {
   it("waits for async extension registration before run", async () => {
     let registered = false;
     const contract = getContract("rag");
+    const asyncExtensionPlugin = {
+      run: () => {
+        if (!registered) {
+          throw new Error("Extension not registered yet.");
+        }
+        return { artifact: { ok: true } };
+      },
+      extensions: {
+        use: () =>
+          createRegistrationPromise(() => {
+            registered = true;
+          }),
+      },
+    };
+
     const runtime = createRuntime({
       contract,
       plugins: [
@@ -89,29 +104,22 @@ describe("Workflow extensions", () => {
           register: () => undefined,
         },
       ],
-      pipelineFactory: withFactory(
-        () =>
-          ({
-            run: () => {
-              if (!registered) {
-                throw new Error("Extension not registered yet.");
-              }
-              return { artifact: { ok: true } };
-            },
-            extensions: {
-              use: () =>
-                new Promise<void>((resolve) => {
-                  setTimeout(() => {
-                    registered = true;
-                    resolve();
-                  }, 0);
-                }),
-            },
-          }) as never,
-      ),
+      pipelineFactory: withFactory(() => asyncExtensionPlugin as never),
     });
 
     const outcome = await runtime.run({ input: "extensions-async" });
     expect(outcome.status).toBe("ok");
   });
 });
+
+const scheduleRegistration = (callback: () => void) => {
+  setTimeout(callback, 0);
+};
+
+const createRegistrationPromise = (callback: () => void) =>
+  new Promise<void>((resolve) => {
+    scheduleRegistration(() => {
+      callback();
+      resolve();
+    });
+  });

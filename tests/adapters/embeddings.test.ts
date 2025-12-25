@@ -85,15 +85,19 @@ describe("Adapter embeddings", () => {
   });
 
   it("exposes AI SDK embedding adapters", async () => {
+    const mockEmbed = ({ value }: { value: string }) =>
+      value === "async"
+        ? Promise.resolve({ embedding: [value.length] })
+        : { embedding: [value.length] };
+
+    const mockEmbedMany = ({ values }: { values: string[] }) =>
+      values.includes("async")
+        ? Promise.resolve({ embeddings: values.map((entry) => [entry.length]) })
+        : { embeddings: values.map((entry) => [entry.length]) };
+
     mock.module("ai", () => ({
-      embed: ({ value }: { value: string }) =>
-        value === "async"
-          ? Promise.resolve({ embedding: [value.length] })
-          : { embedding: [value.length] },
-      embedMany: ({ values }: { values: string[] }) =>
-        values.includes("async")
-          ? Promise.resolve({ embeddings: values.map((entry) => [entry.length]) })
-          : { embeddings: values.map((entry) => [entry.length]) },
+      embed: mockEmbed,
+      embedMany: mockEmbedMany,
     }));
     const { fromAiSdkEmbeddings } = await import("../../src/adapters/ai-sdk/embeddings.ts");
     const adapter = fromAiSdkEmbeddings("test-model" as never);

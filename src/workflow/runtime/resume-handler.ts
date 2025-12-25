@@ -228,115 +228,151 @@ export const createResumeHandler =
     );
 
     const performResume = () =>
-      chainMaybe(deps.extensionRegistration, () =>
-        chainMaybe(resolveResumeSession(token, pauseSession, runtime), (session) =>
-          resumeFromSession(session),
-        ),
-      );
-
-    const resumeFromSession = (session: ResumeSession) => {
-      if (session.kind === "invalid") {
-        return invalidResumeTokenOutcome<N>(
-          trace,
-          diagnosticsMode,
-          deps.buildDiagnostics,
-          "Resume token is invalid or expired.",
-          "resume.invalidToken",
-          deps.errorOutcome,
-        );
-      }
-
-      const required = requireResumeAdapter<N>(
-        runtime?.resume,
-        trace,
-        diagnosticsMode,
-        deps.buildDiagnostics,
-        deps.errorOutcome,
-      );
-      if (!required.ok) {
-        return required.outcome;
-      }
-
-      return chainMaybe(deps.resolveAdaptersForRun(runtime), (resolution) => {
-        const resolvedAdapters = deps.toResolvedAdapters(resolution);
-        return chainMaybe(
-          required.adapter.resolve({
-            token,
-            resumeInput,
-            pauseKind: readPauseKind(session as ActiveResumeSession),
-            resumeSnapshot: session.kind === "snapshot" ? session.snapshot : undefined,
-            runtime,
-            adapters: resolvedAdapters,
-            declaredAdapters: deps.baseAdapters,
-            providers: runtime?.providers,
-          }),
-          (resumeValue) => runResumePipeline(resumeValue, session as ActiveResumeSession),
-        );
-      });
-    };
-
-    const runResumePipeline = (resumeValue: unknown, session: ActiveResumeSession) => {
-      const resumeDiagnostics: DiagnosticEntry[] = [];
-      const resumeOptions = readResumeOptions(resumeValue, runtime, resumeDiagnostics);
-      const resumeRuntime = resumeOptions.runtime;
-      const resumeDiagnosticsMode = resumeRuntime?.diagnostics ?? diagnosticsMode;
-      const resumeError = createResumeError<N>(
-        trace,
-        resumeDiagnosticsMode,
-        deps.readErrorDiagnostics,
-        deps.errorOutcome,
-      );
-      const resumeInvalidYield = createInvalidResumeYieldOutcome<N>(
-        trace,
-        resumeDiagnosticsMode,
-        deps.buildDiagnostics,
-        deps.errorOutcome,
-      );
-      const resumeExtraDiagnostics = normalizeDiagnostics(resumeDiagnostics, []);
-      const getIteratorDiagnostics = buildIteratorDiagnostics(session, resumeExtraDiagnostics);
-      const recordSnapshot = createSnapshotRecorder(resumeRuntime ?? runtime);
-      const finalize = createResumeFinalize<N>(deps.finalizeResult, recordSnapshot);
-
-      const resumeDeps = {
-        pipeline: deps.pipeline,
-        resolveAdaptersForRun: deps.resolveAdaptersForRun,
-        applyAdapterOverrides: deps.applyAdapterOverrides,
-        readContractDiagnostics: deps.readContractDiagnostics,
-        buildDiagnostics: deps.buildDiagnostics,
-        strictErrorMessage: deps.strictErrorMessage,
-        trace,
-        toErrorOutcome: deps.errorOutcome,
-      };
-
-      const resumeStep = () => {
-        if (session.kind === "iterator") {
-          const outcome = continueIterator<N>(
-            session,
-            token,
-            deps.pauseSessions,
-            resumeOptions,
-            trace,
-            getIteratorDiagnostics,
-            resumeDiagnosticsMode,
-            finalize,
-            resumeError,
-            resumeInvalidYield,
-          );
-          return deleteSessionOnSuccess<N>(session, token, outcome);
-        }
-        const outcome = continueResumedPipeline<N>(
-          resumeDeps,
-          resumeOptions,
-          resumeDiagnostics,
-          resumeRuntime,
-          resumeDiagnosticsMode,
-          finalize,
-        );
-        return deleteSessionOnSuccess<N>(session, token, outcome);
-      };
-
-      return tryMaybe(resumeStep, resumeError);
-    };
+      startResumePipeline(token, resumeInput, runtime, pauseSession, trace, diagnosticsMode, deps);
 
     return tryMaybe(performResume, handleError);
   };
+
+const startResumePipeline = <N extends RecipeName>(
+  token: unknown,
+  resumeInput: ResumeInputOf<N> | undefined,
+  runtime: Runtime | undefined,
+  pauseSession: PauseSession | undefined,
+  trace: TraceEvent[],
+  diagnosticsMode: "default" | "strict",
+  deps: ResumeHandlerDeps<N>,
+) =>
+  chainMaybe(deps.extensionRegistration, () =>
+    chainMaybe(resolveResumeSession(token, pauseSession, runtime), (session) =>
+      resumeFromSession(session, token, resumeInput, runtime, trace, diagnosticsMode, deps),
+    ),
+  );
+
+const executeResumePipeline = <N extends RecipeName>(
+  resumeValue: unknown,
+  session: ActiveResumeSession,
+  token: unknown,
+  runtime: Runtime | undefined,
+  diagnosticsMode: "default" | "strict",
+  trace: TraceEvent[],
+  deps: ResumeHandlerDeps<N>,
+) => {
+  const resumeDiagnostics: DiagnosticEntry[] = [];
+  const resumeOptions = readResumeOptions(resumeValue, runtime, resumeDiagnostics);
+  const resumeRuntime = resumeOptions.runtime;
+  const resumeDiagnosticsMode = resumeRuntime?.diagnostics ?? diagnosticsMode;
+  const resumeError = createResumeError<N>(
+    trace,
+    resumeDiagnosticsMode,
+    deps.readErrorDiagnostics,
+    deps.errorOutcome,
+  );
+  const resumeInvalidYield = createInvalidResumeYieldOutcome<N>(
+    trace,
+    resumeDiagnosticsMode,
+    deps.buildDiagnostics,
+    deps.errorOutcome,
+  );
+  const resumeExtraDiagnostics = normalizeDiagnostics(resumeDiagnostics, []);
+  const getIteratorDiagnostics = buildIteratorDiagnostics(session, resumeExtraDiagnostics);
+  const recordSnapshot = createSnapshotRecorder(resumeRuntime ?? runtime);
+  const finalize = createResumeFinalize<N>(deps.finalizeResult, recordSnapshot);
+
+  const resumeDeps = {
+    pipeline: deps.pipeline,
+    resolveAdaptersForRun: deps.resolveAdaptersForRun,
+    applyAdapterOverrides: deps.applyAdapterOverrides,
+    readContractDiagnostics: deps.readContractDiagnostics,
+    buildDiagnostics: deps.buildDiagnostics,
+    strictErrorMessage: deps.strictErrorMessage,
+    trace,
+    toErrorOutcome: deps.errorOutcome,
+  };
+
+  const resumeStep = () => {
+    if (session.kind === "iterator") {
+      const outcome = continueIterator<N>(
+        session,
+        token,
+        deps.pauseSessions,
+        resumeOptions,
+        trace,
+        getIteratorDiagnostics,
+        resumeDiagnosticsMode,
+        finalize,
+        resumeError,
+        resumeInvalidYield,
+      );
+      return deleteSessionOnSuccess<N>(session, token, outcome);
+    }
+    const outcome = continueResumedPipeline<N>(
+      resumeDeps,
+      resumeOptions,
+      resumeDiagnostics,
+      resumeRuntime,
+      resumeDiagnosticsMode,
+      finalize,
+    );
+    return deleteSessionOnSuccess<N>(session, token, outcome);
+  };
+
+  return tryMaybe(resumeStep, resumeError);
+};
+
+const resumeFromSession = <N extends RecipeName>(
+  session: ResumeSession,
+  token: unknown,
+  resumeInput: ResumeInputOf<N> | undefined,
+  runtime: Runtime | undefined,
+  trace: TraceEvent[],
+  diagnosticsMode: "default" | "strict",
+  deps: ResumeHandlerDeps<N>,
+) => {
+  if (session.kind === "invalid") {
+    return invalidResumeTokenOutcome<N>(
+      trace,
+      diagnosticsMode,
+      deps.buildDiagnostics,
+      "Resume token is invalid or expired.",
+      "resume.invalidToken",
+      deps.errorOutcome,
+    );
+  }
+
+  const required = requireResumeAdapter<N>(
+    runtime?.resume,
+    trace,
+    diagnosticsMode,
+    deps.buildDiagnostics,
+    deps.errorOutcome,
+  );
+  if (!required.ok) {
+    return required.outcome;
+  }
+
+  return chainMaybe(deps.resolveAdaptersForRun(runtime), (resolution) => {
+    const resolvedAdapters = deps.toResolvedAdapters(resolution);
+    return chainMaybe(
+      required.adapter.resolve({
+        token,
+        resumeInput,
+        pauseKind: readPauseKind(session as ActiveResumeSession),
+        resumeSnapshot: session.kind === "snapshot" ? session.snapshot : undefined,
+        runtime,
+        adapters: resolvedAdapters,
+        declaredAdapters: deps.baseAdapters,
+        providers: runtime?.providers,
+      }),
+      (resumeValue) =>
+        executeResumePipeline(
+          resumeValue,
+          session as ActiveResumeSession,
+          token,
+          runtime,
+          diagnosticsMode,
+          trace,
+          deps,
+        ),
+    );
+  });
+};

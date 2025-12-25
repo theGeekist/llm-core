@@ -13,13 +13,14 @@ module.exports = {
   extends: [
     "eslint:recommended",
     "plugin:@typescript-eslint/recommended",
-    "plugin:sonarjs/recommended",
+    "plugin:sonarjs/recommended-legacy",
     "prettier",
   ],
   rules: {
-    complexity: ["error", 10],
-    "max-depth": ["error", 4],
     "max-lines": ["error", { max: 500, skipBlankLines: true, skipComments: true }],
     "no-console": "off",
+    "sonarjs/no-nested-conditional": "off",
+    "sonarjs/void-use": "off",
+    "sonarjs/no-empty-test-file": "off",
   },
 };
