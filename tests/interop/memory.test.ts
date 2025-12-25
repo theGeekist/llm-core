@@ -2,6 +2,7 @@ import { describe, expect, it } from "bun:test";
 import type { BaseMemory as LangChainMemory } from "@langchain/core/memory";
 import type { Memory as LlamaMemory } from "@llamaindex/core/memory";
 import * as AiSdk from "ai";
+import * as AiSdkMemory from "@ai-sdk-tools/memory";
 import type { Memory } from "#workflow";
 import { mapMaybe } from "./helpers";
 
@@ -56,7 +57,8 @@ describe("Interop memory", () => {
     expect(adapted.reset).toBeFunction();
   });
 
-  it("notes AI SDK has no memory abstraction", () => {
+  it("notes AI SDK memory lives in tools packages", () => {
     expect("Memory" in AiSdk).toBe(false);
+    expect("formatWorkingMemory" in AiSdkMemory).toBe(true);
   });
 });

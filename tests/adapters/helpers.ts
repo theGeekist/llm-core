@@ -152,6 +152,9 @@ export const asAiSdkTranscriptionModel = (model: unknown) =>
 export const asAiSdkReranker = (model: unknown) =>
   model as import("@ai-sdk/provider").RerankingModelV3;
 
+export const asAiSdkMemoryProvider = (provider: unknown) =>
+  provider as import("@ai-sdk-tools/memory").MemoryProvider;
+
 export const asAiSdkStreamPart = (part: unknown) =>
   part as import("ai").TextStreamPart<import("ai").ToolSet>;
 

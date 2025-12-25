@@ -46,14 +46,15 @@
     {
       "construct": "Memory",
       "ecosystem": "ai-sdk",
-      "status": "missing",
-      "note": "AI SDK has no memory abstraction."
+      "status": "partial",
+      "probe": "ai-sdk:Memory",
+      "note": "Mapped via @ai-sdk-tools/memory; working memory/history shape differs from core Memory."
     },
     {
       "construct": "KVStore",
       "ecosystem": "ai-sdk",
       "status": "missing",
-      "note": "AI SDK has no KV store abstraction."
+      "note": "@ai-sdk-tools/store is a UI chat store; no generic KV store adapter."
     },
     { "construct": "Tool", "ecosystem": "ai-sdk", "status": "full", "probe": "ai-sdk:Tool" },
     {
@@ -84,7 +85,7 @@
       "construct": "Cache",
       "ecosystem": "ai-sdk",
       "status": "missing",
-      "note": "Cache is a core primitive (MemoryCache)."
+      "note": "@ai-sdk-tools/cache provides tool-result caching, not mapped yet."
     },
 
     {

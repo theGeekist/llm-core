@@ -150,6 +150,7 @@ export { createMemoryCache } from "./primitives/cache";
 
 export { fromAiSdkEmbeddings } from "./ai-sdk";
 export { fromAiSdkImageModel } from "./ai-sdk";
+export { fromAiSdkMemory } from "./ai-sdk";
 export { fromAiSdkMessage } from "./ai-sdk";
 export { fromAiSdkModel } from "./ai-sdk";
 export { fromAiSdkPrompt } from "./ai-sdk";

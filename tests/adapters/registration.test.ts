@@ -34,7 +34,7 @@ describe("Adapter registration helpers", () => {
     expect(plugin.adapters.model).toBeDefined();
   });
 
-  it("supports media, tools, retriever, vector store, and trace helpers", () => {
+  it("supports media, tools, retriever, vector store, memory, and trace helpers", () => {
     const image = Adapter.image(`${CUSTOM_PREFIX}.image`, {
       generate: () => ({ images: [] }),
     });
@@ -52,6 +52,9 @@ describe("Adapter registration helpers", () => {
       upsert: () => ({ ids: [] }),
       delete: () => undefined,
     });
+    const memory = Adapter.memory(`${CUSTOM_PREFIX}.memory`, {
+      append: () => undefined,
+    });
     const trace = Adapter.trace(`${CUSTOM_PREFIX}.trace`, { emit: () => undefined });
 
     expect(image.adapters.image).toBeDefined();
@@ -60,6 +63,7 @@ describe("Adapter registration helpers", () => {
     expect(tools.adapters.tools).toBeDefined();
     expect(retriever.adapters.retriever).toBeDefined();
     expect(vectorStore.adapters.vectorStore).toBeDefined();
+    expect(memory.adapters.memory).toBeDefined();
     expect(trace.adapters.trace).toBeDefined();
   });
 

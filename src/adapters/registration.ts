@@ -2,6 +2,7 @@ import type {
   AdapterBundle,
   Model,
   ImageModel,
+  Memory,
   Retriever,
   SpeechModel,
   Tool,
@@ -100,6 +101,9 @@ export const Adapter = {
   },
   retriever(key: string, retriever: Retriever, options?: AdapterPluginOptions): AdapterPlugin {
     return makePlugin(key, { retriever }, options);
+  },
+  memory(key: string, memory: Memory, options?: AdapterPluginOptions): AdapterPlugin {
+    return makePlugin(key, { memory }, options);
   },
   speech(key: string, speech: SpeechModel, options?: AdapterPluginOptions): AdapterPlugin {
     return makePlugin(key, { speech }, options);

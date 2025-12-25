@@ -8,6 +8,7 @@ Status: active. This is the source of truth for what is done vs pending.
 - LangChain + LlamaIndex vector store adapters.
 - AI SDK media adapters: image, speech, transcription.
 - AI SDK reranker adapter (RerankingModelV3).
+- AI SDK memory adapter via `@ai-sdk-tools/memory`.
 - Adapter input validations + tests for new constructs.
 - Parity audit document (`docs/interop-audit.md`).
 
@@ -23,6 +24,7 @@ Status: active. This is the source of truth for what is done vs pending.
 - Define streaming adapter surface (if we keep it).
 - Map LC/LI streaming semantics (provider-specific).
 - Bridge runtime streams to AI SDK transport resume without owning resumable-stream.
+- Review @ai-sdk/langchain stream/UI bridge for transport adapter ideas.
 
 ### Higher-level constructs (optional)
 
@@ -35,6 +37,11 @@ Status: active. This is the source of truth for what is done vs pending.
 
 - `EmbeddingModelV3`, `ImageModelV3`, `SpeechModelV3`, `TranscriptionModelV3`
   wiring (if we decide to normalize beyond V2).
+
+### AI SDK tools packages
+
+- Map `@ai-sdk-tools/cache` to Cache or tool-level cache helper (decide scope).
+- Document `@ai-sdk-tools/store` as UI-only (out of scope for adapters).
 
 ## Notes
 

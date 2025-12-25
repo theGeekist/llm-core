@@ -14,6 +14,10 @@ Packages audited:
 - `ai` (core helpers + UI utilities)
 - `@ai-sdk/provider` (model interfaces + telemetry)
 - `@ai-sdk/provider-utils` (messages/tools/schemas)
+- `@ai-sdk/langchain` (UI message/stream adapter + LangSmith transport)
+- `@ai-sdk-tools/cache` (tool caching helpers)
+- `@ai-sdk-tools/memory` (working memory + history provider)
+- `@ai-sdk-tools/store` (chat UI store + hooks)
 - `@ai-sdk/openai`, `@ai-sdk/anthropic`, `ollama-ai-provider-v2` (providers)
 
 Key export categories:
@@ -32,6 +36,10 @@ Mapping to our primitives:
 - `Model`, `Embedder`, `Reranker`, `ImageModel`, `SpeechModel`, `TranscriptionModel`
   → **covered** (V2/V3 mixed).
 - `Messages`, `Tools`, `Schema`, `PromptTemplate` → **covered**.
+- `Memory` → **partial** via `@ai-sdk-tools/memory` (working memory + history provider).
+- `Cache` → **missing**, but available via `@ai-sdk-tools/cache` (tool-level caching).
+- `Store` → **out of scope** (`@ai-sdk-tools/store` is a UI state layer).
+- `LangChain UI bridge` → **out of scope** (`@ai-sdk/langchain` targets UI transport + streaming).
 - `Streaming` → **not normalized** (V3 introduces stream parts).
 - `UI/transport` → **out of scope** (UI-only).
 
@@ -40,6 +48,8 @@ Gaps:
 - V3 streaming model shapes are not normalized in adapters.
 - V3 image/speech/transcription types not wired (V2 only).
 - Provider middleware hooks exist but no adapter-level tracing bridge.
+- AI SDK tool cache needs explicit adapter mapping.
+- AI SDK LangChain adapter is UI/transport-level; we could mirror ideas for runtime stream bridging.
 
 ## LangChain (JS/TS)
 
@@ -148,9 +158,9 @@ Legend:
 | TextSplitter        | missing | full      | full       | AI SDK has no splitter; LC/LI supported.                        |
 | Transformer         | missing | full      | full       | AI SDK has no transformer; LC/LI supported.                     |
 | Storage (KVStore)   | missing | full      | full       | AI SDK has no storage adapter.                                  |
-| Cache               | missing | missing   | missing    | Core primitive only (MemoryCache).                              |
-| KV                  | missing | full      | full       | AI SDK has no KV adapter.                                       |
-| Memory              | missing | full      | full       | AI SDK has no memory adapter.                                   |
+| Cache               | missing | missing   | missing    | AI SDK tool cache exists (`@ai-sdk-tools/cache`), not mapped.   |
+| KV                  | missing | full      | full       | AI SDK has no KV adapter; UI store is out of scope.             |
+| Memory              | partial | full      | full       | AI SDK has a memory provider (`@ai-sdk-tools/memory`), mapped.  |
 | Tools               | full    | full      | full       | Safe; tool schemas normalize across ecosystems.                 |
 | VectorStore (write) | missing | full      | partial    | AI SDK has none; LC full; LI delete filters not supported.      |
 | ImageModel          | full    | missing   | missing    | AI SDK direct; LC/LI require tool wrappers.                     |
@@ -164,7 +174,7 @@ Covered primitives (cross-ecosystem):
 
 - `Model`, `Embedder`, `Retriever`, `Reranker`
 - `TextSplitter`, `Transformer`, `DocumentLoader`
-- `VectorStore` (write path), `Memory`, `KVStore`
+- `VectorStore` (write path), `Memory` (LC/LI), `KVStore` (LC/LI)
 - `Tool`, `PromptTemplate`, `Schema`, `Messages`
 - `ImageModel`, `SpeechModel`, `TranscriptionModel` (AI SDK direct; LC/LI provider-specific)
 
@@ -174,6 +184,7 @@ Gaps (candidate future primitives):
 - `OutputParser` (LangChain), `StructuredQuery` (LangChain), `Indexing` (LC).
 - `QueryEngine` and `ResponseSynthesizer` (LlamaIndex).
 - `Callbacks/Tracers` (LangChain) → potential `TraceAdapter`.
+- `Cache` adapters for AI SDK tools packages.
 
 We keep these out of the core surface to preserve DX and avoid API sprawl. If
 we decide to add any, they should be optional and value-first.

@@ -1,5 +1,6 @@
 export { fromAiSdkEmbeddings } from "./embeddings";
 export { fromAiSdkImageModel } from "./image";
+export { fromAiSdkMemory } from "./memory";
 export { fromAiSdkTool } from "./tools";
 export { fromAiSdkMessage } from "./messages";
 export { fromAiSdkPrompt } from "./model-call";

@@ -222,3 +222,7 @@ export const validateMemoryTurn = (turn: Turn | undefined) => {
   }
   return [];
 };
+
+export const validateMemoryProvider = (method: string, action: string) => [
+  warn("memory_provider_missing", { action, method }),
+];

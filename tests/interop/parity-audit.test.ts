@@ -4,6 +4,7 @@ import { resolve } from "node:path";
 import {
   fromAiSdkEmbeddings,
   fromAiSdkImageModel,
+  fromAiSdkMemory,
   fromAiSdkModel,
   fromAiSdkReranker,
   fromAiSdkSpeechModel,
@@ -56,6 +57,7 @@ const probes: Record<string, () => boolean> = {
   "ai-sdk:Reranker": () => isFunction(fromAiSdkReranker),
   "ai-sdk:Tool": () => isFunction(fromAiSdkTool),
   "ai-sdk:ImageModel": () => isFunction(fromAiSdkImageModel),
+  "ai-sdk:Memory": () => isFunction(fromAiSdkMemory),
   "ai-sdk:SpeechModel": () => isFunction(fromAiSdkSpeechModel),
   "ai-sdk:TranscriptionModel": () => isFunction(fromAiSdkTranscriptionModel),
   "langchain:Model": () => isFunction(fromLangChainModel),
