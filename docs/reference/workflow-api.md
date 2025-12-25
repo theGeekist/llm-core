@@ -5,8 +5,8 @@ All runs return a structured outcome with trace + diagnostics. Sync or async —
 
 Related:
 
-- [Adapter contracts + helpers](/adapters-api)
-- [Runtime channel details](/runtime)
+- [Adapter contracts + helpers](/reference/adapters-api)
+- [Runtime channel details](/reference/runtime)
 
 ## Quick Start
 

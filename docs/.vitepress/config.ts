@@ -38,38 +38,58 @@ export default defineConfig({
   themeConfig: {
     nav: [
       { text: "Docs", link: "/" },
-      { text: "Workflow", link: "/workflow-api" },
-      { text: "Adapters", link: "/adapters-api" },
+      { text: "Guide", link: "/guide/hello-world" },
+      { text: "Reference", link: "/reference/workflow-api" },
       { text: "GitHub", link: "https://github.com/theGeekist/llm-core" },
     ],
-    sidebar: [
-      {
-        text: "Start",
-        items: [
-          { text: "Overview", link: "/" },
-          { text: "Workflow API", link: "/workflow-api" },
-          { text: "Adapters API", link: "/adapters-api" },
-        ],
-      },
-      {
-        text: "Runtime",
-        items: [
-          { text: "Runtime", link: "/runtime" },
-          { text: "Recipes + Plugins", link: "/recipes-and-plugins" },
-          { text: "Plugins", link: "/plugins" },
-        ],
-      },
-      {
-        text: "Adapters",
-        items: [
-          { text: "Adapters", link: "/adapters" },
-          { text: "Adapters API", link: "/adapters-api" },
-        ],
-      },
-      {
-        text: "Operations",
-        items: [{ text: "Release Process", link: "/release" }],
-      },
-    ],
+    sidebar: {
+      "/guide/": [
+        {
+          text: "Get Started",
+          items: [
+            { text: "Why llm-core?", link: "/guide/philosophy" },
+            { text: "Your First Workflow", link: "/guide/hello-world" },
+            { text: "Core Concepts", link: "/guide/core-concepts" },
+            { text: "Composing Recipes", link: "/guide/composing-recipes" },
+          ],
+        },
+        {
+          text: "Recipes",
+          items: [{ text: "RAG Deep Dive", link: "/recipes/rag" }],
+        },
+      ],
+      "/reference/": [
+        {
+          text: "Core API",
+          items: [
+            { text: "Workflow API", link: "/reference/workflow-api" },
+            { text: "Adapters API", link: "/reference/adapters-api" },
+            { text: "Runtime Model", link: "/reference/runtime" },
+          ],
+        },
+        {
+          text: "Ecosystem",
+          items: [
+            { text: "Adapters Overview", link: "/reference/adapters" },
+            { text: "Packs & Recipes", link: "/reference/packs-and-recipes" },
+            { text: "Plugin System", link: "/reference/plugins" },
+            { text: "Interop Audit", link: "/reference/interop-audit" },
+          ],
+        },
+        {
+          text: "Operations",
+          items: [{ text: "Release Process", link: "/reference/release" }],
+        },
+      ],
+      "/recipes/": [
+        {
+          text: "Recipes",
+          items: [
+            { text: "Back to Guide", link: "/guide/hello-world" },
+            { text: "RAG Deep Dive", link: "/recipes/rag" },
+          ],
+        },
+      ],
+    },
   },
 });

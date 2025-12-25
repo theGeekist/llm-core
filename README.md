@@ -9,11 +9,15 @@ Composable workflow + adapter core for the JS/TS LLM ecosystem.
 
 ## Why
 
-LLM tooling is fragmented. This repo provides a stable core with:
+LLM tooling is fragmented. `llm-core` unifies it with **principled orchestration**:
 
-- A workflow engine that favors DX over type gymnastics.
-- Adapter surfaces that normalize LangChain, LlamaIndex, and AI SDK.
-- Deterministic diagnostics, tracing, and lifecycle hooks.
+- **Cross-ecosystem**: Plug into LangChain, LlamaIndex, or AI SDK with a single primitive set.
+- **Recipe-first**: Treat workflows as named, versioned assets, not throwaway scripts.
+- **DAG-driven**: Reorder steps and manage state without touching the rest of the graph.
+- **Adapters**: Swap models or vector stores via config, avoiding full rewrites.
+- **MaybePromise**: Write sync-looking business logic that plugs into async pipelines directly.
+- **Deterministic**: Debug behavior via trace graphs, not by reading string logs.
+- **Interop-aware**: Check parity gaps in the repo so you don't guess what works.
 
 ## Install
 

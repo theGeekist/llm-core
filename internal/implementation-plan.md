@@ -288,3 +288,14 @@ Progress:
 - Track streaming parity separately until a normalized adapter surface is defined.
 - Track higher-level LC/LI constructs (query engines, output parsers, tracing) in
   `docs/interop-audit.md` for future parity stages.
+
+## Stage 14 — Composable Recipes (Step Packs)
+
+Status: planned. See `internal/stage-14.md`.
+
+Goals:
+
+- Add a public "step" API that compiles to pipeline helpers.
+- Support composable recipe packs and multi-pack flows.
+- Keep adapter swapping intact with defaults + overrides.
+- Maintain deterministic ordering and clear conflict diagnostics.

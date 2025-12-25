@@ -4,8 +4,8 @@ The runtime is the single place for operational concerns. It is passed to `run(.
 
 Related:
 
-- [Workflow API](/workflow-api)
-- [Adapter contracts](/adapters-api)
+- [Workflow API](/reference/workflow-api)
+- [Adapter contracts](/reference/adapters-api)
 
 ## Runtime Channel
 

@@ -10,9 +10,9 @@ available for diagnostics and tracing.
 
 Related:
 
-- [Workflow API](/workflow-api)
-- [Recipes + plugins](/recipes-and-plugins)
-- [Runtime channel](/runtime)
+- [Workflow API](/reference/workflow-api)
+- [Packs & Recipes](/reference/packs-and-recipes)
+- [Runtime channel](/reference/runtime)
 
 ## Adapter bundle (resolved on a workflow)
 
@@ -33,6 +33,7 @@ type AdapterBundle = {
   trace?: AdapterTraceSink;
   prompts?: PromptTemplate[];
   schemas?: Schema[];
+  cache?: Cache;
   image?: ImageModel;
   textSplitter?: TextSplitter;
   embedder?: Embedder;
@@ -61,6 +62,7 @@ const adapterBundle = {
   trace: undefined,
   prompts: [],
   schemas: [],
+  cache: undefined,
   image: undefined,
   textSplitter: undefined,
   embedder: undefined,
@@ -85,6 +87,11 @@ Capabilities treat list-like adapters as presence flags (e.g., `tools: true` if 
 Custom constructs are stored under `constructs` to avoid widening core types.
 Per-run registry resolution merges registry constructs into `adapters.constructs` before pipeline execution.
 `constructs` expects a record map; non-object values are wrapped as `{ value }` for convenience.
+
+## Cache adapters (resume persistence)
+
+`cache` is the adapter used to persist pause sessions for `resume()`. TTL is best‑effort and depends on
+the underlying cache implementation.
 
 ## Adapter requirements (dependencies)
 

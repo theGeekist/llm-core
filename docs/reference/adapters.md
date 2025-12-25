@@ -1,13 +1,13 @@
 # Adapters Overview
 
 Adapters normalize external ecosystem constructs into one consistent shape, then let workflows mix and match them.
-This is the high-level entry point; the detailed contracts live in [Adapters API](/adapters-api).
+This is the high-level entry point; the detailed contracts live in [Adapters API](/reference/adapters-api).
 
 Related:
 
-- [Workflow API](/workflow-api)
-- [Adapter contracts](/adapters-api)
-- [Recipes + plugins](/recipes-and-plugins)
+- [Workflow API](/reference/workflow-api)
+- [Adapter contracts](/reference/adapters-api)
+- [Packs & Recipes](/reference/packs-and-recipes)
 
 ## Quick start (value-first helpers)
 

@@ -1,5 +1,3 @@
-# Interop Export Audit (Stage 13)
-
 This document is a **full export audit** across the three ecosystems we support:
 AI SDK, LangChain (JS/TS), and LlamaIndex (TS). The goal is to map _every major
 export surface_ to our adapter primitives, highlight mismatches, and list gaps.
@@ -37,7 +35,7 @@ Mapping to our primitives:
   → **covered** (V2/V3 mixed).
 - `Messages`, `Tools`, `Schema`, `PromptTemplate` → **covered**.
 - `Memory` → **partial** via `@ai-sdk-tools/memory` (working memory + history provider).
-- `Cache` → **missing**, but available via `@ai-sdk-tools/cache` (tool-level caching).
+- `Cache` → **partial** via `@ai-sdk-tools/cache` `CacheStore` adapters (TTL best-effort).
 - `Store` → **out of scope** (`@ai-sdk-tools/store` is a UI state layer).
 - `LangChain UI bridge` → **out of scope** (`@ai-sdk/langchain` targets UI transport + streaming).
 - `Streaming` → **not normalized** (V3 introduces stream parts).
@@ -48,7 +46,7 @@ Gaps:
 - V3 streaming model shapes are not normalized in adapters.
 - V3 image/speech/transcription types not wired (V2 only).
 - Provider middleware hooks exist but no adapter-level tracing bridge.
-- AI SDK tool cache needs explicit adapter mapping.
+- AI SDK tool cache now maps to CacheStore adapters (TTL best-effort).
 - AI SDK LangChain adapter is UI/transport-level; we could mirror ideas for runtime stream bridging.
 
 ## LangChain (JS/TS)
@@ -71,17 +69,17 @@ Core module inventory (from `@langchain/core/*.d.ts`):
 Mapping to our primitives:
 
 - `Model`, `Embedder`, `Retriever`, `Reranker`, `TextSplitter`, `Transformer`,
-  `DocumentLoader`, `VectorStore`, `Memory`, `KVStore`, `Tool`, `PromptTemplate`
+  `DocumentLoader`, `VectorStore`, `Memory`, `KVStore`, `Cache`, `Tool`, `PromptTemplate`
   → **covered**.
 - `OutputParser`, `Runnable`, `StructuredQuery`, `Indexing/Record managers`,
-  `Caches`, `Callbacks/Tracers`, `Agents`, `ChatHistory`
+  `Callbacks/Tracers`, `Agents`, `ChatHistory`
   → **not covered**.
 
 Gaps:
 
 - Output parsers and structured query translators are not modeled.
 - Runnables/chains/agents are higher-level composition constructs.
-- Caches and callbacks/tracers could be normalized but are currently out of scope.
+- Callbacks/tracers could be normalized but are currently out of scope.
 
 ## LlamaIndex (TS)
 
@@ -94,7 +92,7 @@ Packages audited (top-level modules):
 Mapping to our primitives:
 
 - `Model`, `Embedder`, `Retriever`, `Reranker`, `TextSplitter`, `Transformer`,
-  `DocumentLoader`, `VectorStore`, `Memory`, `KVStore`, `Tool`, `PromptTemplate`
+  `DocumentLoader`, `VectorStore`, `Memory`, `KVStore`, `Cache`, `Tool`, `PromptTemplate`
   → **covered**.
 - `QueryEngine`, `ResponseSynthesizer`, `ChatEngine`, `Agent`, `Indices`
   → **not covered**.
@@ -149,24 +147,24 @@ Legend:
 - **provider-specific**: adapter only for certain providers/tools
 - **missing**: no adapter or ecosystem surface
 
-| Construct           | AI SDK  | LangChain | LlamaIndex | Mix-and-match implications                                      |
-| ------------------- | ------- | --------- | ---------- | --------------------------------------------------------------- |
-| Model               | full    | full      | full       | Safe to mix; Model is the canonical cross-ecosystem surface.    |
-| Embedder            | full    | full      | full       | Safe; embedding dimension may still vary per provider.          |
-| Retriever           | missing | full      | full       | AI SDK has no retriever abstraction; must bring one from LC/LI. |
-| Reranker            | full    | full      | full       | AI SDK supports reranking via `RerankingModelV3`.               |
-| TextSplitter        | missing | full      | full       | AI SDK has no splitter; LC/LI supported.                        |
-| Transformer         | missing | full      | full       | AI SDK has no transformer; LC/LI supported.                     |
-| Storage (KVStore)   | missing | full      | full       | AI SDK has no storage adapter.                                  |
-| Cache               | missing | missing   | missing    | AI SDK tool cache exists (`@ai-sdk-tools/cache`), not mapped.   |
-| KV                  | missing | full      | full       | AI SDK has no KV adapter; UI store is out of scope.             |
-| Memory              | partial | full      | full       | AI SDK has a memory provider (`@ai-sdk-tools/memory`), mapped.  |
-| Tools               | full    | full      | full       | Safe; tool schemas normalize across ecosystems.                 |
-| VectorStore (write) | missing | full      | partial    | AI SDK has none; LC full; LI delete filters not supported.      |
-| ImageModel          | full    | missing   | missing    | AI SDK direct; LC/LI require tool wrappers.                     |
-| SpeechModel         | full    | missing   | missing    | AI SDK direct; LC via ChatOpenAI audio output.                  |
-| TranscriptionModel  | full    | missing   | missing    | AI SDK direct; LC via document loaders (shape mismatch).        |
-| Streaming (Model)   | partial | partial   | partial    | Varies by provider; no normalized streaming adapter yet.        |
+| Construct           | AI SDK  | LangChain | LlamaIndex | Mix-and-match implications                                          |
+| ------------------- | ------- | --------- | ---------- | ------------------------------------------------------------------- |
+| Model               | full    | full      | full       | Safe to mix; Model is the canonical cross-ecosystem surface.        |
+| Embedder            | full    | full      | full       | Safe; embedding dimension may still vary per provider.              |
+| Retriever           | missing | full      | full       | AI SDK has no retriever abstraction; must bring one from LC/LI.     |
+| Reranker            | full    | full      | full       | AI SDK supports reranking via `RerankingModelV3`.                   |
+| TextSplitter        | missing | full      | full       | AI SDK has no splitter; LC/LI supported.                            |
+| Transformer         | missing | full      | full       | AI SDK has no transformer; LC/LI supported.                         |
+| Storage (KVStore)   | missing | full      | full       | AI SDK has no storage adapter.                                      |
+| Cache               | partial | partial   | partial    | AI SDK CacheStore + LC BaseStore + LI BaseKVStore; TTL best-effort. |
+| KV                  | missing | full      | full       | AI SDK has no KV adapter; UI store is out of scope.                 |
+| Memory              | partial | full      | full       | AI SDK has a memory provider (`@ai-sdk-tools/memory`), mapped.      |
+| Tools               | full    | full      | full       | Safe; tool schemas normalize across ecosystems.                     |
+| VectorStore (write) | missing | full      | partial    | AI SDK has none; LC full; LI delete filters not supported.          |
+| ImageModel          | full    | missing   | missing    | AI SDK direct; LC/LI require tool wrappers.                         |
+| SpeechModel         | full    | missing   | missing    | AI SDK direct; LC via ChatOpenAI audio output.                      |
+| TranscriptionModel  | full    | missing   | missing    | AI SDK direct; LC via document loaders (shape mismatch).            |
+| Streaming (Model)   | partial | partial   | partial    | Varies by provider; no normalized streaming adapter yet.            |
 
 ## Summary: Coverage vs Gaps
 
@@ -174,7 +172,7 @@ Covered primitives (cross-ecosystem):
 
 - `Model`, `Embedder`, `Retriever`, `Reranker`
 - `TextSplitter`, `Transformer`, `DocumentLoader`
-- `VectorStore` (write path), `Memory` (LC/LI), `KVStore` (LC/LI)
+- `VectorStore` (write path), `Memory` (LC/LI), `KVStore` (LC/LI), `Cache` (partial)
 - `Tool`, `PromptTemplate`, `Schema`, `Messages`
 - `ImageModel`, `SpeechModel`, `TranscriptionModel` (AI SDK direct; LC/LI provider-specific)
 
@@ -184,7 +182,3 @@ Gaps (candidate future primitives):
 - `OutputParser` (LangChain), `StructuredQuery` (LangChain), `Indexing` (LC).
 - `QueryEngine` and `ResponseSynthesizer` (LlamaIndex).
 - `Callbacks/Tracers` (LangChain) → potential `TraceAdapter`.
-- `Cache` adapters for AI SDK tools packages.
-
-We keep these out of the core surface to preserve DX and avoid API sprawl. If
-we decide to add any, they should be optional and value-first.
