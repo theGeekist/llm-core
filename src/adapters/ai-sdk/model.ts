@@ -1,10 +1,20 @@
-import { generateObject, generateText, jsonSchema, zodSchema, type LanguageModel } from "ai";
+import {
+  generateObject,
+  generateText,
+  jsonSchema,
+  streamText,
+  zodSchema,
+  type LanguageModel,
+  type StreamTextResult,
+  type ToolSet,
+} from "ai";
 import type {
   AdapterDiagnostic,
   Model,
   ModelCall,
   ModelResult,
   ModelTelemetry,
+  ModelStreamEvent,
   ModelUsage,
   Schema,
   ToolCall,
@@ -16,6 +26,7 @@ import { toAdapterTrace } from "../telemetry";
 import { mapMaybe } from "../../maybe";
 import { ModelCallHelper, ModelUsageHelper } from "../modeling";
 import { validateModelCall } from "../model-validation";
+import { toModelStreamEvents, toStreamErrorEvents } from "./stream";
 
 const toModelUsage = (usage?: {
   inputTokens?: number;
@@ -209,6 +220,48 @@ export function fromAiSdkModel(model: LanguageModel): Model {
     };
   };
 
+  const toUsageEvent = (usage?: ModelUsage): ModelStreamEvent | undefined => {
+    if (!usage) {
+      return undefined;
+    }
+    return { type: "usage", usage };
+  };
+
+  const toEndEvent = (
+    finishReason: string | undefined,
+    diagnostics: AdapterDiagnostic[],
+  ): ModelStreamEvent => ({
+    type: "end",
+    finishReason,
+    diagnostics: diagnostics.length > 0 ? diagnostics : undefined,
+  });
+
+  const toStreamEvents = async function* (
+    result: StreamTextResult<ToolSet, unknown>,
+    state: RunState,
+  ): AsyncIterable<ModelStreamEvent> {
+    // Note: Abort vs resume semantics should be documented for transport resume bridges.
+    for await (const event of toModelStreamEvents(result.fullStream)) {
+      yield event;
+    }
+
+    const usage = toModelUsage(await result.totalUsage);
+    const usageEvent = toUsageEvent(usage);
+    if (usageEvent) {
+      yield usageEvent;
+    }
+
+    const finishReason = await result.finishReason;
+    yield toEndEvent(finishReason, state.diagnostics);
+  };
+
+  const toStreamUnsupported = async function* (state: RunState): AsyncIterable<ModelStreamEvent> {
+    yield* toStreamErrorEvents(
+      new Error("streaming_unsupported_for_response_schema"),
+      state.diagnostics,
+    );
+  };
+
   function generate(call: ModelCall) {
     const state = createRunState(call);
     if (call.responseSchema) {
@@ -241,5 +294,26 @@ export function fromAiSdkModel(model: LanguageModel): Model {
     );
   }
 
-  return { generate };
+  function stream(call: ModelCall) {
+    const state = createRunState(call);
+    if (call.responseSchema) {
+      return toStreamUnsupported(state);
+    }
+
+    return mapMaybe(
+      streamText({
+        model,
+        system: call.system,
+        ...state.promptOptions,
+        tools: state.tools,
+        toolChoice: state.toolChoice,
+        temperature: call.temperature,
+        topP: call.topP,
+        maxOutputTokens: call.maxTokens,
+      }),
+      (result) => toStreamEvents(result, state),
+    );
+  }
+
+  return { generate, stream };
 }

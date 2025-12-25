@@ -152,4 +152,7 @@ export const asAiSdkTranscriptionModel = (model: unknown) =>
 export const asAiSdkReranker = (model: unknown) =>
   model as import("@ai-sdk/provider").RerankingModelV3;
 
+export const asAiSdkStreamPart = (part: unknown) =>
+  part as import("ai").TextStreamPart<import("ai").ToolSet>;
+
 export const asLlamaIndexModel = (model: unknown) => model as import("@llamaindex/core/llms").LLM;

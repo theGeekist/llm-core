@@ -22,6 +22,7 @@ Status: active. This is the source of truth for what is done vs pending.
 - Normalize AI SDK V3 stream results (`LanguageModelV3`).
 - Define streaming adapter surface (if we keep it).
 - Map LC/LI streaming semantics (provider-specific).
+- Bridge runtime streams to AI SDK transport resume without owning resumable-stream.
 
 ### Higher-level constructs (optional)
 

@@ -261,6 +261,7 @@ export type ModelResult = {
 
 export type Model = {
   generate(call: ModelCall): MaybePromise<ModelResult>;
+  stream?(call: ModelCall): MaybePromise<AsyncIterable<ModelStreamEvent>>;
 };
 
 export type StreamChunk = {
@@ -268,6 +269,41 @@ export type StreamChunk = {
   toolCallDelta?: ToolCall;
   raw?: unknown;
 };
+
+export type ModelStreamEvent =
+  | {
+      type: "start";
+      id?: string;
+      modelId?: string;
+      timestamp?: number;
+    }
+  | {
+      type: "delta";
+      text?: string;
+      reasoning?: string;
+      toolCall?: ToolCall;
+      toolResult?: ToolResult;
+      raw?: unknown;
+      timestamp?: number;
+    }
+  | {
+      type: "usage";
+      usage: ModelUsage;
+    }
+  | {
+      type: "end";
+      finishReason?: string;
+      raw?: unknown;
+      timestamp?: number;
+      diagnostics?: AdapterDiagnostic[];
+    }
+  | {
+      type: "error";
+      error: unknown;
+      diagnostics?: AdapterDiagnostic[];
+      raw?: unknown;
+      timestamp?: number;
+    };
 
 export type AdapterTraceSink = {
   emit(event: AdapterTraceEvent): MaybePromise<void>;

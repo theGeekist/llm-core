@@ -48,11 +48,44 @@ describe("Adapter rerankers", () => {
     expect(result[0]?.score).toBe(0.9);
   });
 
+  it("skips AI SDK ranking entries that point to missing documents", async () => {
+    const model = asAiSdkReranker({
+      specificationVersion: "v3",
+      provider: "test",
+      modelId: "rerank",
+      doRerank: () =>
+        asPromiseLike({
+          ranking: [{ index: 2, relevanceScore: 0.9 }],
+        }),
+    });
+    const adapter = fromAiSdkReranker(model);
+    const result = await adapter.rerank("query", [{ text: "first" }]);
+    expect(result).toEqual([]);
+  });
+
   it("warns when reranker inputs are missing", async () => {
     const compressor = {
       compressDocuments: (docs: LangChainDocument[]) => Promise.resolve(docs),
     } as BaseDocumentCompressor;
     const adapter = fromLangChainReranker(compressor);
+    const { context, diagnostics } = captureDiagnostics();
+
+    const result = await adapter.rerank(" ", [], context);
+    expect(result).toEqual([]);
+    expect(diagnostics.map((entry) => entry.message)).toEqual([
+      "reranker_documents_missing",
+      "reranker_query_missing",
+    ]);
+  });
+
+  it("reports diagnostics for AI SDK reranker inputs", async () => {
+    const model = asAiSdkReranker({
+      specificationVersion: "v3",
+      provider: "test",
+      modelId: "rerank",
+      doRerank: () => asPromiseLike({ ranking: [] }),
+    });
+    const adapter = fromAiSdkReranker(model);
     const { context, diagnostics } = captureDiagnostics();
 
     const result = await adapter.rerank(" ", [], context);

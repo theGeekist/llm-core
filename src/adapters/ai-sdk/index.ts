@@ -7,3 +7,4 @@ export { fromAiSdkModel } from "./model";
 export { fromAiSdkReranker } from "./reranker";
 export { fromAiSdkSpeechModel } from "./speech";
 export { fromAiSdkTranscriptionModel } from "./transcription";
+export { toModelStreamEvents } from "./stream";

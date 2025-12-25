@@ -157,6 +157,7 @@ export { fromAiSdkReranker } from "./ai-sdk";
 export { fromAiSdkSpeechModel } from "./ai-sdk";
 export { fromAiSdkTool } from "./ai-sdk";
 export { fromAiSdkTranscriptionModel } from "./ai-sdk";
+export { toModelStreamEvents } from "./ai-sdk";
 
 export { fromLangChainDocument, toLangChainDocument } from "./langchain";
 export { fromLangChainDocuments } from "./langchain";

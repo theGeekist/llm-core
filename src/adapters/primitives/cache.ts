@@ -1,5 +1,6 @@
-import type { AdapterCallContext, Blob, Cache } from "../types";
+import type { AdapterCallContext, Blob, Cache, KVStore } from "../types";
 import { reportDiagnostics, validateStorageKey } from "../input-validation";
+import { mapMaybe } from "../../maybe";
 
 type CacheEntry = {
   value: Blob;
@@ -52,6 +53,21 @@ export const createMemoryCache = (): Cache => {
     }
     store.delete(key);
   };
+
+  return { get, set, delete: del };
+};
+
+export const createCacheFromKVStore = (store: KVStore<Blob>): Cache => {
+  const get = (key: string, context?: AdapterCallContext) =>
+    mapMaybe(store.mget([key], context), (entries) => entries[0]);
+
+  const set = (key: string, value: Blob, ttlMs?: number, context?: AdapterCallContext) => {
+    // Note: KV stores do not support ttl yet; document resume vs abort trade-offs later.
+    return mapMaybe(store.mset([[key, value]], context), () => undefined);
+  };
+
+  const del = (key: string, context?: AdapterCallContext) =>
+    mapMaybe(store.mdelete([key], context), () => undefined);
 
   return { get, set, delete: del };
 };

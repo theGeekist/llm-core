@@ -63,6 +63,9 @@
     "typecheck:tests": "tsc -p tsconfig.test.json --noEmit"
   },
   "devDependencies": {
+    "@ai-sdk-tools/cache": "^1.2.0",
+    "@ai-sdk-tools/memory": "^1.2.0",
+    "@ai-sdk-tools/store": "^1.2.0",
     "@ai-sdk/anthropic": "^2.0.56",
     "@ai-sdk/openai": "^2.0.88",
     "@ai-sdk/provider": "^3.0.0",
