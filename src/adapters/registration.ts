@@ -12,6 +12,7 @@ import type {
   TranscriptionModel,
   VectorStore,
 } from "./types";
+import { isRecord } from "./utils";
 
 export type AdapterPlugin = {
   key: string;
@@ -55,16 +56,13 @@ const bundleKeys = new Set<keyof AdapterBundle>([
 const isBundleKey = (construct: string): construct is keyof AdapterBundle =>
   bundleKeys.has(construct as keyof AdapterBundle) && construct !== "constructs";
 
-const isObject = (value: unknown): value is Record<string, unknown> =>
-  typeof value === "object" && value !== null;
-
 const buildBundle = (construct: string, value: unknown): AdapterBundle => {
   if (isBundleKey(construct)) {
     return { [construct]: value } as AdapterBundle;
   }
   if (construct === "constructs") {
     // Allow a direct constructs map; non-objects are wrapped for convenience.
-    return { constructs: isObject(value) ? value : { value } };
+    return { constructs: isRecord(value) ? value : { value } };
   }
   return { constructs: { [construct]: value } };
 };

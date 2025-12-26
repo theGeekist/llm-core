@@ -7,14 +7,12 @@ import type {
   StructuredContent,
   TextPart,
 } from "./types";
+import { isRecord } from "./utils";
 
 type PartWithType = { type?: string };
 
-const isObject = (value: unknown): value is Record<string, unknown> =>
-  typeof value === "object" && value !== null;
-
 const isStructuredContent = (value: unknown): value is StructuredContent =>
-  isObject(value) && Array.isArray(value.parts) && typeof value.text === "string";
+  isRecord(value) && Array.isArray(value.parts) && typeof value.text === "string";
 
 const toDataPart = (data: unknown): DataPart => ({
   type: "data",
@@ -136,7 +134,7 @@ const toImagePartFromObject = (part: Record<string, unknown>): MessagePart | und
   if (readType(part) === "image") {
     return toImagePart(part.image, readMediaType(part));
   }
-  if (readType(part) === "image_url" && isObject(part.image_url)) {
+  if (readType(part) === "image_url" && isRecord(part.image_url)) {
     const url = part.image_url.url;
     if (typeof url === "string") {
       return toImagePartFromUrl(url);
@@ -162,7 +160,7 @@ const partParsers = [
 ];
 
 const parseAdapterPart = (value: unknown): MessagePart | undefined => {
-  if (!isObject(value)) {
+  if (!isRecord(value)) {
     return undefined;
   }
   for (const parser of partParsers) {
@@ -194,7 +192,7 @@ export function toMessageContent(input: unknown): MessageContent {
     return input;
   }
 
-  if (isObject(input)) {
+  if (isRecord(input)) {
     const parsed = parseAdapterPart(input);
     if (parsed) {
       return {
@@ -205,7 +203,7 @@ export function toMessageContent(input: unknown): MessageContent {
     }
   }
 
-  if (isObject(input) && typeof input.text === "string" && !Array.isArray(input.parts)) {
+  if (isRecord(input) && typeof input.text === "string" && !Array.isArray(input.parts)) {
     return input.text;
   }
 

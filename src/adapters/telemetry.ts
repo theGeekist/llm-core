@@ -7,15 +7,16 @@ export const toAdapterTrace = (
   if (!telemetry?.response) {
     return existing.length ? existing : undefined;
   }
+  const response = telemetry.response;
   const event: AdapterTraceEvent = {
     name: "provider.response",
     data: {
-      id: telemetry.response.id,
-      modelId: telemetry.response.modelId,
+      id: response.id,
+      modelId: response.modelId,
     },
   };
-  if (typeof telemetry.response.timestamp === "number") {
-    event.timestamp = telemetry.response.timestamp;
+  if (typeof response.timestamp === "number") {
+    event.timestamp = response.timestamp;
   }
   return existing.concat(event);
 };

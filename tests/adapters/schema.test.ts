@@ -44,13 +44,13 @@ describe("Adapter schemas", () => {
 
   it("normalizes object schemas without properties", () => {
     const result = normalizeObjectSchema({ type: "object" });
-    expect(result.isObject).toBe(true);
+    expect(result.isRecord).toBe(true);
     expect(result.schema).toMatchObject({ type: "object", properties: {} });
   });
 
   it("normalizes non-object schemas into object shells", () => {
     const result = normalizeObjectSchema({ type: "string" });
-    expect(result.isObject).toBe(false);
+    expect(result.isRecord).toBe(false);
     expect(result.schema).toMatchObject({ type: "object", properties: {} });
   });
 

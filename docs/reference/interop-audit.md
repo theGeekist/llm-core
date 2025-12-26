@@ -78,15 +78,14 @@ Mapping to our primitives:
 
 - `Model`, `Embedder`, `Retriever`, `Reranker`, `TextSplitter`, `Transformer`,
   `DocumentLoader`, `VectorStore`, `Memory`, `KVStore`, `Cache`, `Tool`, `PromptTemplate`,
-  `OutputParser`
+  `OutputParser`, `StructuredQuery`
   → **covered**.
-- `Runnable`, `StructuredQuery`, `Indexing/Record managers`,
+- `Runnable`, `Indexing/Record managers`,
   `Callbacks/Tracers`, `Agents`, `ChatHistory`
   → **not covered**.
 
 Gaps:
 
-- Structured query translators are not modeled.
 - Runnables/chains/agents are higher-level composition constructs.
 - Callbacks/tracers could be normalized but are currently out of scope.
 
@@ -173,6 +172,7 @@ Legend:
 | Memory              | partial | full      | full       | AI SDK has a memory provider (`@ai-sdk-tools/memory`), mapped.      |
 | Tools               | full    | full      | full       | Safe; tool schemas normalize across ecosystems.                     |
 | OutputParser        | missing | full      | missing    | LangChain parsers only; other ecosystems lack a parser interface.   |
+| StructuredQuery     | missing | full      | missing    | LangChain structured query IR; other ecosystems lack a parser.      |
 | VectorStore (write) | missing | full      | partial    | AI SDK has none; LC full; LI delete filters not supported.          |
 | ImageModel          | full    | missing   | missing    | AI SDK direct; LC/LI require tool wrappers.                         |
 | SpeechModel         | full    | missing   | missing    | AI SDK direct; LC via ChatOpenAI audio output.                      |
@@ -188,10 +188,11 @@ Covered primitives (cross-ecosystem):
 - `VectorStore` (write path), `Memory` (LC/LI), `KVStore` (LC/LI), `Cache` (partial)
 - `Tool`, `PromptTemplate`, `Schema`, `Messages`
 - `OutputParser` (LangChain only)
+- `StructuredQuery` (LangChain only)
 - `ImageModel`, `SpeechModel`, `TranscriptionModel` (AI SDK direct; LC/LI provider-specific)
 
 Gaps (candidate future primitives):
 
-- `StructuredQuery` (LangChain), `Indexing` (LC).
+- `Indexing` (LangChain).
 - `QueryEngine` and `ResponseSynthesizer` (LlamaIndex).
 - `Callbacks/Tracers` (LangChain) → potential `TraceAdapter`.

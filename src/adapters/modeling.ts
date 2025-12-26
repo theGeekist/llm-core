@@ -1,5 +1,6 @@
 import type { AdapterDiagnostic, Message, Model, ModelCall } from "./types";
 import { validateModelCall, type ModelValidationOptions } from "./model-validation";
+import { warnDiagnostic } from "./utils";
 
 export type ModelCallPrepared = {
   diagnostics: AdapterDiagnostic[];
@@ -73,17 +74,11 @@ export const ModelHelper = {
   },
 };
 
-const warn = (message: string, data?: unknown): AdapterDiagnostic => ({
-  level: "warn",
-  message,
-  data,
-});
-
 export const ModelUsageHelper = {
   warnIfMissing(diagnostics: AdapterDiagnostic[], usage: unknown, provider?: string): void {
     if (usage) {
       return;
     }
-    diagnostics.push(warn("usage_unavailable", provider ? { provider } : undefined));
+    diagnostics.push(warnDiagnostic("usage_unavailable", provider ? { provider } : undefined));
   },
 };

@@ -583,6 +583,52 @@ const parser = {
 
 :::
 
+## Structured Query (IR for RAG)
+
+Structured Query works like an Output Parser but for Retrieval.
+It normalizes filter expressions (comparisons, AND/OR logic) into a portable IR so retrievers can execute them regardless of the backend (e.g., Pinecone vs generic filter).
+
+::: tabs
+== TypeScript
+
+```ts
+type StructuredQuery = {
+  query: string;
+  filter?: StructuredQueryFilter;
+};
+
+type StructuredQueryFilter = StructuredQueryComparison | StructuredQueryOperation;
+
+type StructuredQueryComparison = {
+  type: "comparison";
+  comparator: "eq" | "gt" | "lt" | "gte" | "lte" | "ne" | "in" | "nin";
+  attribute: string;
+  value: string | number | boolean;
+};
+
+type StructuredQueryOperation = {
+  type: "operation";
+  operator: "and" | "or" | "not";
+  args?: StructuredQueryFilter[];
+};
+```
+
+== JavaScript
+
+```js
+const query = {
+  query: "cats",
+  filter: {
+    type: "comparison",
+    comparator: "eq",
+    attribute: "species",
+    value: "feline",
+  },
+};
+```
+
+:::
+
 ## Tools
 
 ::: tabs

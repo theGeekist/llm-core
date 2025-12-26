@@ -4,6 +4,7 @@ import type {
   AdapterMetadata,
   AdapterRequirement,
 } from "./types";
+import { isRecord, warnDiagnostic } from "./utils";
 
 type RequirementSource = {
   construct: string;
@@ -11,17 +12,8 @@ type RequirementSource = {
   requirements: AdapterRequirement[];
 };
 
-const warn = (message: string, data?: Record<string, unknown>): AdapterDiagnostic => ({
-  level: "warn",
-  message,
-  data,
-});
-
-const isObject = (value: unknown): value is Record<string, unknown> =>
-  typeof value === "object" && value !== null;
-
 const isRequirement = (value: unknown): value is AdapterRequirement =>
-  isObject(value) &&
+  isRecord(value) &&
   typeof value.kind === "string" &&
   typeof value.name === "string" &&
   (value.kind === "construct" || value.kind === "capability");
@@ -30,7 +22,7 @@ const readMetadataRequirements = (value: unknown): AdapterRequirement[] => {
   if (Array.isArray(value)) {
     return value.flatMap(readMetadataRequirements);
   }
-  if (!isObject(value)) {
+  if (!isRecord(value)) {
     return [];
   }
   const metadata = (value as { metadata?: AdapterMetadata }).metadata;
@@ -150,7 +142,7 @@ export const validateAdapterRequirements = (
 
   const pushConstructMissing = (source: RequirementSource, requirement: AdapterRequirement) => {
     diagnostics.push(
-      warn(
+      warnDiagnostic(
         `Construct "${source.construct}" (${source.providerId ?? "unknown"}) requires ` +
           `construct "${requirement.name}" but none was resolved.`,
         {
@@ -165,7 +157,7 @@ export const validateAdapterRequirements = (
 
   const pushCapabilityMissing = (source: RequirementSource, requirement: AdapterRequirement) => {
     diagnostics.push(
-      warn(
+      warnDiagnostic(
         `Construct "${source.construct}" (${source.providerId ?? "unknown"}) requires ` +
           `capability "${requirement.name}" but it is missing.`,
         {

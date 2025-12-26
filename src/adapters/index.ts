@@ -38,7 +38,6 @@ export type {
   MessagePart,
   MessageRole,
   ModelMeta,
-  ModelRequest,
   ModelResponse,
   ModelResult,
   ModelStreamEvent,
@@ -181,6 +180,7 @@ export { fromLangChainMessages } from "./langchain";
 export { fromLangChainModel } from "./langchain";
 export { fromLangChainPromptTemplate } from "./langchain";
 export { fromLangChainOutputParser } from "./langchain";
+export { fromLangChainStructuredQuery } from "./langchain";
 export { fromLangChainReranker } from "./langchain";
 export { fromLangChainRetriever } from "./langchain";
 export { fromLangChainStore } from "./langchain";

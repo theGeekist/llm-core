@@ -26,8 +26,8 @@ import {
   parseOutput,
   readMessageText,
   toToolCalls,
-  warn,
 } from "./model-utils";
+import { warnDiagnostic } from "../utils";
 
 const toExecResult = (
   result: LlamaIndexExecResult,
@@ -45,7 +45,7 @@ const toExecResult = (
     : "";
   const output = parseOutput(text, shouldParseOutput, result.object);
   if (shouldParseOutput && output === undefined) {
-    diagnostics.push(warn("response_schema_parse_failed"));
+    diagnostics.push(warnDiagnostic("response_schema_parse_failed"));
   }
   const nextTelemetry = appendTelemetryResponse(telemetry, result.raw);
   ModelUsageHelper.warnIfMissing(diagnostics, nextTelemetry?.usage, "llamaindex");

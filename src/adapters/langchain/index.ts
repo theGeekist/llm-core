@@ -11,6 +11,7 @@ export { fromLangChainStore } from "./storage";
 export { fromLangChainVectorStore } from "./vector-store";
 export { fromLangChainPromptTemplate } from "./prompts";
 export { fromLangChainOutputParser } from "./output-parser";
+export { fromLangChainStructuredQuery } from "./structured-query";
 export { fromLangChainDocument, toLangChainDocument } from "./documents";
 export { fromLangChainMessage } from "./messages";
 export { fromLangChainMessages } from "./model-call";

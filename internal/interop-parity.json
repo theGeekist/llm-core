@@ -70,6 +70,12 @@
       "note": "AI SDK has no output parser abstraction."
     },
     {
+      "construct": "StructuredQuery",
+      "ecosystem": "ai-sdk",
+      "status": "missing",
+      "note": "AI SDK has no structured query abstraction."
+    },
+    {
       "construct": "ImageModel",
       "ecosystem": "ai-sdk",
       "status": "full",
@@ -167,6 +173,12 @@
       "ecosystem": "langchain",
       "status": "full",
       "probe": "langchain:OutputParser"
+    },
+    {
+      "construct": "StructuredQuery",
+      "ecosystem": "langchain",
+      "status": "full",
+      "probe": "langchain:StructuredQuery"
     },
     {
       "construct": "ImageModel",
@@ -272,6 +284,12 @@
       "ecosystem": "llamaindex",
       "status": "missing",
       "note": "No output parser abstraction in LlamaIndex TS."
+    },
+    {
+      "construct": "StructuredQuery",
+      "ecosystem": "llamaindex",
+      "status": "missing",
+      "note": "No structured query abstraction in LlamaIndex TS."
     },
     {
       "construct": "ImageModel",

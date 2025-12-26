@@ -4,8 +4,8 @@ import {
   createDefaultReporter,
   pipelineDiagnostic,
   registryDiagnostic,
-  warn,
 } from "../../src/adapters/registry/diagnostics";
+import { warnDiagnostic } from "../../src/adapters/utils";
 
 describe("Adapter registry diagnostics", () => {
   it("creates a default reporter", () => {
@@ -15,7 +15,7 @@ describe("Adapter registry diagnostics", () => {
   });
 
   it("wraps warning diagnostics", () => {
-    const diagnostic = warn("registry_warn", { source: "test" });
+    const diagnostic = warnDiagnostic("registry_warn", { source: "test" });
     expect(diagnostic.level).toBe("warn");
     expect(diagnostic.message).toBe("registry_warn");
   });

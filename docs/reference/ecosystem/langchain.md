@@ -10,17 +10,18 @@ npm install @langchain/core @langchain/community
 
 ## Features Supported
 
-| Feature             | Support    | Notes                                                              |
-| :------------------ | :--------- | :----------------------------------------------------------------- |
-| **Models**          | ✅ Full    | `BaseChatModel` supported.                                         |
-| **Tools**           | ✅ Full    | `DynamicTool`, `StructuredTool` supported.                         |
-| **Embeddings**      | ✅ Full    | `EmbeddingsInterface` supported.                                   |
-| **Retrievers**      | ✅ Full    | `BaseRetriever` supported.                                         |
-| **Vector Stores**   | ✅ Full    | `VectorStore` (write path) supported.                              |
-| **Output Parsers**  | ✅ Full    | `BaseOutputParser` supported.                                      |
-| **Memory**          | ⚠️ Partial | `BaseListChatMessageHistory` supported (simple).                   |
-| **Chains/Runnable** | ❌ Opaque  | Chains are treated as black boxes; use `llm-core` recipes instead. |
-| **Callbacks**       | ❌ Ignored | LangChain callbacks are not bridged to `llm-core` traces.          |
+| Feature              | Support    | Notes                                                              |
+| :------------------- | :--------- | :----------------------------------------------------------------- |
+| **Models**           | ✅ Full    | `BaseChatModel` supported.                                         |
+| **Tools**            | ✅ Full    | `DynamicTool`, `StructuredTool` supported.                         |
+| **Embeddings**       | ✅ Full    | `EmbeddingsInterface` supported.                                   |
+| **Retrievers**       | ✅ Full    | `BaseRetriever` supported.                                         |
+| **Vector Stores**    | ✅ Full    | `VectorStore` (write path) supported.                              |
+| **Structured Query** | ✅ Full    | `StructuredQuery` IR conversion supported.                         |
+| **Output Parsers**   | ✅ Full    | `BaseOutputParser` supported.                                      |
+| **Memory**           | ⚠️ Partial | `BaseListChatMessageHistory` supported (simple).                   |
+| **Chains/Runnable**  | ❌ Opaque  | Chains are treated as black boxes; use `llm-core` recipes instead. |
+| **Callbacks**        | ❌ Ignored | LangChain callbacks are not bridged to `llm-core` traces.          |
 
 ## Quick Start (Tools)
 

@@ -1,13 +1,8 @@
 import type { AdapterDiagnostic, ModelMeta, ModelTelemetry, ModelUsage } from "../types";
-
-const warn = (message: string, data?: unknown): AdapterDiagnostic => ({
-  level: "warn",
-  message,
-  data,
-});
+import { warnDiagnostic } from "../utils";
 
 export const toDiagnostics = (warnings?: unknown[]): AdapterDiagnostic[] =>
-  warnings?.map((warning) => warn("provider_warning", warning)) ?? [];
+  warnings?.map((warning) => warnDiagnostic("provider_warning", warning)) ?? [];
 
 type TelemetryInput = {
   request?: { body?: unknown };

@@ -10,8 +10,6 @@ import {
   buildMessages,
   mapToolCalls,
   normalizeTimestamp,
-  readNumber,
-  readString,
   readStructuredText,
   toResponseFormatSchema,
   tryParseJson,
@@ -19,6 +17,7 @@ import {
 import { ModelCallHelper } from "../modeling";
 import { toLlamaIndexMessage } from "./messages";
 import { toLlamaIndexTool } from "./tools";
+import { readNumber, readString } from "../utils";
 
 export type LlamaIndexExecResult = {
   newMessages: ChatMessage[];

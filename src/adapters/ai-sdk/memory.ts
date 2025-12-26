@@ -14,6 +14,7 @@ import {
   validateMemoryProvider,
   validateThreadId,
 } from "../input-validation";
+import { readString } from "../utils";
 
 type AiSdkMemoryOptions = {
   scope?: MemoryScope;
@@ -25,8 +26,6 @@ type MemoryIdentifiers = {
   userId?: string;
   scope: MemoryScope;
 };
-
-const readString = (value: unknown) => (typeof value === "string" ? value : undefined);
 
 const readChatId = (input: Record<string, unknown>) =>
   readString(input.chatId) ?? readString(input.threadId);

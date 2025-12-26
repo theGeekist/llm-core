@@ -1,14 +1,9 @@
 import type { PipelineDiagnostic, PipelineReporter } from "@wpkernel/pipeline/core";
 import type { AdapterDiagnostic } from "../types";
+import { warnDiagnostic } from "../utils";
 
 export const createDefaultReporter = (): PipelineReporter => ({
   warn: (message, context) => console.warn(message, context),
-});
-
-export const warn = (message: string, data?: unknown): AdapterDiagnostic => ({
-  level: "warn",
-  message,
-  data,
 });
 
 export const registryDiagnostic = (
@@ -22,4 +17,4 @@ export const registryDiagnostic = (
 });
 
 export const pipelineDiagnostic = (diagnostic: PipelineDiagnostic): AdapterDiagnostic =>
-  warn("registry_pipeline_diagnostic", diagnostic);
+  warnDiagnostic("registry_pipeline_diagnostic", diagnostic);

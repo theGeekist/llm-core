@@ -1,5 +1,6 @@
 import type { AdapterDiagnostic, ModelCall } from "./types";
 import { normalizeObjectSchema, toJsonSchemaWithDiagnostics } from "./schema";
+import { warnDiagnostic } from "./utils";
 
 export type ModelValidation = {
   diagnostics: AdapterDiagnostic[];
@@ -11,14 +12,8 @@ export type ModelValidationOptions = {
   supportsToolChoice?: boolean;
 };
 
-const warn = (message: string, data?: unknown): AdapterDiagnostic => ({
-  level: "warn",
-  message,
-  data,
-});
-
 const appendDiagnostic = (diagnostics: AdapterDiagnostic[], message: string, data?: unknown) => {
-  diagnostics.push(warn(message, data));
+  diagnostics.push(warnDiagnostic(message, data));
 };
 
 const readSchema = (schema: ModelCall["responseSchema"], diagnostics: AdapterDiagnostic[]) => {
@@ -75,7 +70,7 @@ const maybeWarnNonObjectSchema = (
   normalizedSchema: ReturnType<typeof normalizeObjectSchema> | undefined,
   diagnostics: AdapterDiagnostic[],
 ) => {
-  if (!normalizedSchema || normalizedSchema.isObject) {
+  if (!normalizedSchema || normalizedSchema.isRecord) {
     return;
   }
   appendDiagnostic(diagnostics, "response_schema_not_object");

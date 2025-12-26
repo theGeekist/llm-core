@@ -39,10 +39,6 @@ export const tryParseJson = (value: string) => {
   }
 };
 
-export const readString = (value: unknown) => (typeof value === "string" ? value : undefined);
-
-export const readNumber = (value: unknown) => (typeof value === "number" ? value : undefined);
-
 export const normalizeTimestamp = (value: number) =>
   value < 1_000_000_000_000 ? value * 1000 : value;
 

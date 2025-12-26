@@ -28,6 +28,7 @@ import { mapMaybe } from "../../maybe";
 import { ModelCallHelper, ModelUsageHelper } from "../modeling";
 import { validateModelCall } from "../model-validation";
 import { toModelStreamEvents, toStreamErrorEvents } from "./stream";
+import { warnDiagnostic } from "../utils";
 
 const toModelUsage = (usage?: {
   inputTokens?: number;
@@ -74,7 +75,7 @@ type AiZodSchemaInput = Parameters<typeof zodSchema>[0];
 type NormalizedSchema = ReturnType<typeof validateModelCall>["normalizedSchema"];
 
 const toAiSdkSchema = (schema: Schema, normalizedSchema: NormalizedSchema) => {
-  if (schema.kind === "zod" && normalizedSchema?.isObject) {
+  if (schema.kind === "zod" && normalizedSchema?.isRecord) {
     return zodSchema(schema.jsonSchema as AiZodSchemaInput);
   }
   return jsonSchema((normalizedSchema?.schema ?? schema.jsonSchema) as AiJsonSchemaInput);
@@ -100,14 +101,8 @@ const toToolChoice = (value: string | undefined) => {
   return { type: "tool" as const, toolName: value };
 };
 
-const warn = (message: string, data?: unknown): AdapterDiagnostic => ({
-  level: "warn",
-  message,
-  data,
-});
-
 const toDiagnostics = (warnings?: unknown[]): AdapterDiagnostic[] =>
-  warnings?.map((warning) => warn("provider_warning", warning)) ?? [];
+  warnings?.map((warning) => warnDiagnostic("provider_warning", warning)) ?? [];
 
 const toTelemetry = (result: {
   request?: { body?: unknown };

@@ -1,5 +1,6 @@
 import { zodToJsonSchema } from "zod-to-json-schema";
 import type { AdapterDiagnostic, PromptSchema, Schema, ToolParam } from "./types";
+import { warnDiagnostic } from "./utils";
 
 type SchemaLike = {
   jsonSchema?: unknown;
@@ -10,7 +11,7 @@ type SchemaLike = {
   def?: unknown;
 };
 
-const isObject = (value: unknown): value is Record<string, unknown> =>
+const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === "object" && value !== null;
 
 export function toSchema(schema: unknown): Schema | undefined {
@@ -18,7 +19,7 @@ export function toSchema(schema: unknown): Schema | undefined {
     return undefined;
   }
 
-  if (!isObject(schema)) {
+  if (!isRecord(schema)) {
     return { jsonSchema: schema, kind: "unknown" };
   }
 
@@ -46,7 +47,7 @@ type JsonSchemaObject = Record<string, unknown>;
 const hasToJsonSchema = (
   value: unknown,
 ): value is { toJSONSchema: (params?: unknown) => unknown } =>
-  isObject(value) && typeof (value as SchemaLike).toJSONSchema === "function";
+  isRecord(value) && typeof (value as SchemaLike).toJSONSchema === "function";
 
 const isZodSchema = (candidate: SchemaLike) => {
   if (typeof candidate.safeParse !== "function") {
@@ -58,20 +59,20 @@ const isZodSchema = (candidate: SchemaLike) => {
   return "_def" in candidate || "_zod" in candidate || "def" in candidate;
 };
 
-const isObjectSchema = (schema: unknown): schema is JsonSchemaObject =>
-  isObject(schema) && (schema as { type?: string }).type === "object";
+const isRecordSchema = (schema: unknown): schema is JsonSchemaObject =>
+  isRecord(schema) && (schema as { type?: string }).type === "object";
 
 export function normalizeObjectSchema(schema: unknown): {
   schema: JsonSchemaObject;
-  isObject: boolean;
+  isRecord: boolean;
 } {
-  if (isObjectSchema(schema)) {
+  if (isRecordSchema(schema)) {
     if ("properties" in schema) {
-      return { schema, isObject: true };
+      return { schema, isRecord: true };
     }
-    return { schema: { ...schema, properties: {} }, isObject: true };
+    return { schema: { ...schema, properties: {} }, isRecord: true };
   }
-  return { schema: { type: "object", properties: {} }, isObject: false };
+  return { schema: { type: "object", properties: {} }, isRecord: false };
 }
 
 export function toJsonSchema(schema: Schema): unknown {
@@ -142,12 +143,6 @@ const buildObjectSchema = (fields: ObjectSchemaField[]) => {
 
 export const adapterParamsToJsonSchema = (params: ToolParam[] = []) => buildObjectSchema(params);
 
-const warn = (message: string, data?: unknown): AdapterDiagnostic => ({
-  level: "warn",
-  message,
-  data,
-});
-
 const isArray = Array.isArray;
 
 const isInteger = (value: unknown) => typeof value === "number" && Number.isInteger(value);
@@ -161,7 +156,7 @@ const isType = (value: unknown, type: string) => {
     case "boolean":
       return typeof value === "boolean";
     case "object":
-      return isObject(value);
+      return isRecord(value);
     case "array":
       return isArray(value);
     case "integer":
@@ -188,7 +183,7 @@ export const validatePromptInputs = (
     const value = values[input.name];
     if (input.required && value === undefined) {
       diagnostics.push(
-        warn("prompt_input_missing", {
+        warnDiagnostic("prompt_input_missing", {
           name: input.name,
           expected: input.type,
         }),
@@ -201,7 +196,7 @@ export const validatePromptInputs = (
     const expectedType = adapterParamTypeToJsonType(input.type);
     if (!isType(value, expectedType)) {
       diagnostics.push(
-        warn("prompt_input_invalid_type", {
+        warnDiagnostic("prompt_input_invalid_type", {
           name: input.name,
           expected: expectedType,
           received: typeof value,

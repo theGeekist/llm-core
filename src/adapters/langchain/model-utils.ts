@@ -14,13 +14,13 @@ import {
   mapToolCalls,
   mapToolResults,
   normalizeTimestamp,
-  readString,
   toResponseFormatSchema,
   tryParseJson,
 } from "../model-utils";
 import { ModelCallHelper } from "../modeling";
 import { toLangChainMessage } from "./messages";
 import { toLangChainTool } from "./tools";
+import { readString } from "../utils";
 
 export const toUsage = (usage: unknown): ModelUsage | undefined => {
   const typed = usage as { input_tokens?: number; output_tokens?: number; total_tokens?: number };

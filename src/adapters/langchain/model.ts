@@ -17,12 +17,7 @@ import { toAdapterTrace } from "../telemetry";
 import { bindFirst, mapMaybe } from "../../maybe";
 import { ModelUsageHelper } from "../modeling";
 import { toLangChainStreamEvents } from "./stream";
-
-const warn = (message: string, data?: unknown): AdapterDiagnostic => ({
-  level: "warn",
-  message,
-  data,
-});
+import { warnDiagnostic } from "../utils";
 
 const invokeModel = (
   model: BaseChatModel,
@@ -51,7 +46,7 @@ const toResult = (
   const text = typeof Message.content === "string" ? Message.content : Message.content.text;
   const output = tryParseOutput(text, state.responseFormat);
   if (state.responseFormat && output === undefined) {
-    state.diagnostics.push(warn("response_schema_parse_failed"));
+    state.diagnostics.push(warnDiagnostic("response_schema_parse_failed"));
   }
   const usage = toUsage((response as { usage_metadata?: unknown }).usage_metadata);
   ModelUsageHelper.warnIfMissing(state.diagnostics, usage, "langchain");

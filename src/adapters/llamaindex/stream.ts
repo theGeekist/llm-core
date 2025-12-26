@@ -1,6 +1,5 @@
 import type { ChatResponseChunk, ToolCall as LlamaToolCall } from "@llamaindex/core/llms";
 import type { AdapterDiagnostic, ModelStreamEvent, ModelUsage, ToolCall } from "../types";
-import { readNumber } from "../model-utils";
 import {
   toStreamDeltaTextEvent,
   toStreamDeltaToolCallEvent,
@@ -9,6 +8,7 @@ import {
   toStreamUsageEvent,
 } from "../stream-utils";
 import { ModelUsageHelper } from "../modeling";
+import { readNumber } from "../utils";
 
 type StreamState = {
   started: boolean;
