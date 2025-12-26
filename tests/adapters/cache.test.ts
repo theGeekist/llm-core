@@ -174,10 +174,10 @@ describe("Cache adapters", () => {
   });
 
   it("wraps LangChain stores as caches", async () => {
-    const entries = new Map<string, Blob>();
+    const entries = new Map<string, unknown>();
     const store = asLangChainStore({
       mget: (keys: string[]) => Promise.resolve(keys.map((key) => entries.get(key))),
-      mset: (pairs: Array<[string, Blob]>) => {
+      mset: (pairs: Array<[string, unknown]>) => {
         pairs.forEach(([key, value]) => entries.set(key, value));
         return Promise.resolve();
       },
@@ -197,6 +197,33 @@ describe("Cache adapters", () => {
     expect(await cache.get("lc-key")).toEqual(blob);
     await cache.delete("lc-key");
     expect(await cache.get("lc-key")).toBeUndefined();
+  });
+
+  it("respects TTL for LangChain caches", async () => {
+    const entries = new Map<string, unknown>();
+    const store = asLangChainStore({
+      mget: (keys: string[]) => Promise.resolve(keys.map((key) => entries.get(key))),
+      mset: (pairs: Array<[string, unknown]>) => {
+        pairs.forEach(([key, value]) => entries.set(key, value));
+        return Promise.resolve();
+      },
+      mdelete: (keys: string[]) => {
+        keys.forEach((key) => entries.delete(key));
+        return Promise.resolve();
+      },
+      yieldKeys: async function* () {
+        for (const key of entries.keys()) {
+          yield key;
+        }
+      },
+    });
+
+    const cache = fromLangChainStoreCache(store);
+    await cache.set("lc-ttl", blob, 5);
+    expect(await cache.get("lc-ttl")).toEqual(blob);
+
+    await new Promise((resolve) => setTimeout(resolve, 10));
+    expect(await cache.get("lc-ttl")).toBeUndefined();
   });
 
   it("returns undefined when LangChain cache values are not blobs", async () => {
@@ -234,15 +261,17 @@ describe("Cache adapters", () => {
   });
 
   it("wraps LlamaIndex kv stores as caches", async () => {
-    const entries = new Map<string, Blob>();
+    const entries = new Map<string, unknown>();
     const store = asLlamaIndexKVStore({
-      put: (key: string, value: Blob) => {
+      put: (key: string, value: unknown) => {
         entries.set(key, value);
         return Promise.resolve();
       },
       get: (key: string) => Promise.resolve(entries.get(key) ?? null),
       getAll: () =>
-        Promise.resolve(Object.fromEntries(Array.from(entries.entries())) as Record<string, Blob>),
+        Promise.resolve(
+          Object.fromEntries(Array.from(entries.entries())) as Record<string, unknown>,
+        ),
       delete: (key: string) => Promise.resolve(entries.delete(key)),
     });
 
@@ -253,6 +282,28 @@ describe("Cache adapters", () => {
     expect(await cache.get("li-key")).toBeUndefined();
   });
 
+  it("respects TTL for LlamaIndex caches", async () => {
+    const entries = new Map<string, unknown>();
+    const store = asLlamaIndexKVStore({
+      put: (key: string, value: unknown) => {
+        entries.set(key, value);
+        return Promise.resolve();
+      },
+      get: (key: string) => Promise.resolve(entries.get(key) ?? null),
+      getAll: () =>
+        Promise.resolve(
+          Object.fromEntries(Array.from(entries.entries())) as Record<string, unknown>,
+        ),
+      delete: (key: string) => Promise.resolve(entries.delete(key)),
+    });
+
+    const cache = fromLlamaIndexKVStoreCache(store);
+    await cache.set("li-ttl", blob, 5);
+    expect(await cache.get("li-ttl")).toEqual(blob);
+
+    await new Promise((resolve) => setTimeout(resolve, 10));
+    expect(await cache.get("li-ttl")).toBeUndefined();
+  });
   it("returns undefined when LlamaIndex cache values are not blobs", async () => {
     const store = asLlamaIndexKVStore({
       put: () => Promise.resolve(),

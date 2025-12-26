@@ -10,7 +10,45 @@ type LlamaIndexCacheOptions = {
 const toUndefined = () => undefined;
 const isBlob = (value: unknown): value is Blob =>
   typeof value === "object" && value !== null && value instanceof Object && "bytes" in value;
+
+type CacheEnvelope = {
+  value: Blob;
+  expiresAt?: number;
+};
+
+const isEnvelope = (value: unknown): value is CacheEnvelope =>
+  typeof value === "object" && value !== null && "value" in value;
+
+const readEnvelope = (value: unknown) => (isEnvelope(value) ? value : undefined);
+
 const readStoredValue = (value: unknown) => (isBlob(value) ? value : undefined);
+
+const toEnvelope = (value: Blob, ttlMs?: number): CacheEnvelope => ({
+  value,
+  expiresAt: typeof ttlMs === "number" ? Date.now() + ttlMs : undefined,
+});
+
+const isExpired = (envelope: CacheEnvelope | undefined) =>
+  typeof envelope?.expiresAt === "number" && Date.now() > envelope.expiresAt;
+
+const deleteEntry = (store: BaseKVStore, collection: string | undefined, key: string) =>
+  mapMaybe(fromPromiseLike(store.delete(key, collection)), toUndefined);
+
+const readEntry = (
+  store: BaseKVStore,
+  collection: string | undefined,
+  key: string,
+  value: unknown,
+) => {
+  const envelope = readEnvelope(value);
+  if (envelope) {
+    if (isExpired(envelope)) {
+      return mapMaybe(deleteEntry(store, collection, key), toUndefined);
+    }
+    return envelope.value;
+  }
+  return readStoredValue(value);
+};
 
 const cacheGet = (
   store: BaseKVStore,
@@ -23,7 +61,8 @@ const cacheGet = (
     reportDiagnostics(context, diagnostics);
     return undefined;
   }
-  return mapMaybe(fromPromiseLike(store.get(key, collection)), readStoredValue);
+  const handleEntry = bindFirst(bindFirst(bindFirst(readEntry, store), collection), key);
+  return mapMaybe(fromPromiseLike(store.get(key, collection)), handleEntry);
 };
 
 const cacheSet = (
@@ -31,16 +70,16 @@ const cacheSet = (
   collection: string | undefined,
   key: string,
   value: Blob,
-  _ttlMs?: number,
+  ttlMs?: number,
   context?: AdapterCallContext,
 ) => {
-  void _ttlMs;
   const diagnostics = validateStorageKey(key, "cache.set");
   if (diagnostics.length > 0) {
     reportDiagnostics(context, diagnostics);
     return;
   }
-  return mapMaybe(fromPromiseLike(store.put(key, value, collection)), toUndefined);
+  const entry = toEnvelope(value, ttlMs);
+  return mapMaybe(fromPromiseLike(store.put(key, entry, collection)), toUndefined);
 };
 
 const cacheDelete = (

@@ -41,6 +41,7 @@ export type {
   ModelRequest,
   ModelResponse,
   ModelResult,
+  ModelStreamEvent,
   ModelTelemetry,
   PromptSchema,
   PromptTemplate,
@@ -181,6 +182,7 @@ export { fromLangChainTextSplitter } from "./langchain";
 export { fromLangChainTool } from "./langchain";
 export { fromLangChainTransformer } from "./langchain";
 export { fromLangChainVectorStore } from "./langchain";
+export { toLangChainStreamEvents } from "./langchain";
 
 export { fromLlamaIndexDocument, fromLlamaIndexNode, toLlamaIndexDocument } from "./llamaindex";
 export { fromLlamaIndexDocumentStore } from "./llamaindex";
@@ -198,4 +200,5 @@ export { fromLlamaIndexRetriever } from "./llamaindex";
 export { fromLlamaIndexTextSplitter } from "./llamaindex";
 export { fromLlamaIndexTool } from "./llamaindex";
 export { fromLlamaIndexTransformer } from "./llamaindex";
+export { toLlamaIndexStreamEvents } from "./llamaindex";
 export { fromLlamaIndexVectorStore } from "./llamaindex";

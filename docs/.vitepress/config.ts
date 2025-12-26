@@ -74,6 +74,14 @@ export default defineConfig({
           text: "Ecosystem",
           items: [
             { text: "Adapters Overview", link: "/reference/adapters" },
+            {
+              text: "Deep Dives",
+              items: [
+                { text: "AI SDK (Vercel)", link: "/reference/ecosystem/ai-sdk" },
+                { text: "LangChain", link: "/reference/ecosystem/langchain" },
+                { text: "LlamaIndex", link: "/reference/ecosystem/llamaindex" },
+              ],
+            },
             { text: "Packs & Recipes", link: "/reference/packs-and-recipes" },
             { text: "Plugin System", link: "/reference/plugins" },
             { text: "Interop Audit", link: "/reference/interop-audit" },

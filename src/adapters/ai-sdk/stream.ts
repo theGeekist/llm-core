@@ -99,7 +99,15 @@ export const toModelStreamEvents = async function* (
     diagnostics?: AdapterDiagnostic[];
   },
 ): AsyncIterable<ModelStreamEvent> {
+  let started = false;
   for await (const part of parts) {
+    if ((part.type === "text-start" || part.type === "reasoning-start") && started) {
+      yield { type: "delta", raw: part };
+      continue;
+    }
+    if (part.type === "text-start" || part.type === "reasoning-start") {
+      started = true;
+    }
     yield toEventFromPart(part);
   }
 

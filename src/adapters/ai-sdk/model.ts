@@ -246,6 +246,7 @@ export function fromAiSdkModel(model: LanguageModel): Model {
     }
 
     const usage = toModelUsage(await result.totalUsage);
+    ModelUsageHelper.warnIfMissing(state.diagnostics, usage, "ai-sdk");
     const usageEvent = toUsageEvent(usage);
     if (usageEvent) {
       yield usageEvent;

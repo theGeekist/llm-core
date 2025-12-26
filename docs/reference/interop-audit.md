@@ -9,6 +9,9 @@ The goal is to ensure **Recipes** are portable across these ecosystems.
 
 ## AI SDK (ai + provider + provider-utils)
 
+> [!TIP]
+> See the **[AI SDK Integration Guide](/reference/ecosystem/ai-sdk)** for concrete examples.
+
 Packages audited:
 
 - `ai` (core helpers + UI utilities)
@@ -40,18 +43,21 @@ Mapping to our primitives:
 - `Cache` → **partial** via `@ai-sdk-tools/cache` `CacheStore` adapters (TTL best-effort).
 - `Store` → **out of scope** (`@ai-sdk-tools/store` is a UI state layer).
 - `LangChain UI bridge` → **out of scope** (`@ai-sdk/langchain` targets UI transport + streaming).
-- `Streaming` → **not normalized** (V3 introduces stream parts).
+- `Streaming` → **covered** (normalized events across AI SDK, LangChain, LlamaIndex).
 - `UI/transport` → **out of scope** (UI-only).
 
 Gaps:
 
-- V3 streaming model shapes are not normalized in adapters.
+- V3 streaming model shapes remain provider-specific beyond the normalized event stream.
 - V3 image/speech/transcription types not wired (V2 only).
 - Provider middleware hooks exist but no adapter-level tracing bridge.
 - AI SDK tool cache now maps to CacheStore adapters (TTL best-effort).
 - AI SDK LangChain adapter is UI/transport-level; we could mirror ideas for runtime stream bridging.
 
 ## LangChain (JS/TS)
+
+> [!TIP]
+> See the **[LangChain Integration Guide](/reference/ecosystem/langchain)** for concrete examples.
 
 Packages audited:
 
@@ -84,6 +90,9 @@ Gaps:
 - Callbacks/tracers could be normalized but are currently out of scope.
 
 ## LlamaIndex (TS)
+
+> [!TIP]
+> See the **[LlamaIndex Integration Guide](/reference/ecosystem/llamaindex)** for concrete examples.
 
 Packages audited (top-level modules):
 
@@ -166,7 +175,7 @@ Legend:
 | ImageModel          | full    | missing   | missing    | AI SDK direct; LC/LI require tool wrappers.                         |
 | SpeechModel         | full    | missing   | missing    | AI SDK direct; LC via ChatOpenAI audio output.                      |
 | TranscriptionModel  | full    | missing   | missing    | AI SDK direct; LC via document loaders (shape mismatch).            |
-| Streaming (Model)   | partial | partial   | partial    | Varies by provider; no normalized streaming adapter yet.            |
+| Streaming (Model)   | full    | full      | full       | Normalized stream events; provider-specific parts remain raw.       |
 
 ## Summary: Coverage vs Gaps
 
@@ -180,7 +189,6 @@ Covered primitives (cross-ecosystem):
 
 Gaps (candidate future primitives):
 
-- `StreamingModel` (normalize V3 streams + LC/LI stream semantics).
 - `OutputParser` (LangChain), `StructuredQuery` (LangChain), `Indexing` (LC).
 - `QueryEngine` and `ResponseSynthesizer` (LlamaIndex).
 - `Callbacks/Tracers` (LangChain) → potential `TraceAdapter`.

@@ -1,4 +1,5 @@
 import type { BaseChatModel } from "@langchain/core/language_models/chat_models";
+import type { BaseMessageChunk } from "@langchain/core/messages";
 import { AIMessage, ToolMessage } from "@langchain/core/messages";
 import type { ResponseFormatConfiguration } from "@langchain/openai";
 import type {
@@ -6,6 +7,7 @@ import type {
   Model,
   ModelCall,
   ModelResult,
+  ModelStreamEvent,
   ModelTelemetry,
   ModelUsage,
   ToolCall,
@@ -14,8 +16,9 @@ import type {
 import { fromLangChainMessage, toLangChainMessage } from "./messages";
 import { toLangChainTool } from "./tools";
 import { toAdapterTrace } from "../telemetry";
-import { mapMaybe } from "../../maybe";
+import { bindFirst, mapMaybe } from "../../maybe";
 import { ModelCallHelper, ModelUsageHelper } from "../modeling";
+import { toLangChainStreamEvents } from "./stream";
 
 const toUsage = (usage: unknown): ModelUsage | undefined => {
   const typed = usage as { input_tokens?: number; output_tokens?: number; total_tokens?: number };
@@ -242,11 +245,54 @@ const toResult = (
   };
 };
 
+const toResultWithState = (
+  state: RunState,
+  response: Awaited<ReturnType<BaseChatModel["invoke"]>>,
+) => toResult(response, state);
+
+const streamModel = (
+  model: BaseChatModel,
+  state: RunState,
+): Promise<Awaited<ReturnType<BaseChatModel["stream"]>>> => {
+  const bindTools = model.bindTools?.bind(model);
+  const runnable = state.tools?.length && bindTools ? bindTools(state.tools) : model;
+  const invokeOptions = buildInvokeOptions(state.toolChoice, state.responseFormat);
+  return (runnable as { stream: NonNullable<typeof model.stream> }).stream(
+    state.messages,
+    invokeOptions as Parameters<typeof model.stream>[1],
+  );
+};
+
+const toStreamEvents = (state: RunState, stream: AsyncIterable<unknown>) =>
+  toLangChainStreamEvents(stream as AsyncIterable<BaseMessageChunk>, {
+    diagnostics: state.diagnostics,
+  });
+
+const mapStreamEvents = (state: RunState) => bindFirst(toStreamEvents, state);
+
+const toStreamUnsupported = async function* (
+  diagnostics: AdapterDiagnostic[],
+): AsyncIterable<ModelStreamEvent> {
+  yield {
+    type: "error",
+    error: new Error("streaming_unsupported_for_response_schema"),
+    diagnostics,
+  };
+};
+
 export function fromLangChainModel(model: BaseChatModel): Model {
   function generate(call: ModelCall) {
     const state = createRunState(call);
-    return mapMaybe(invokeModel(model, state), (response) => toResult(response, state));
+    return mapMaybe(invokeModel(model, state), bindFirst(toResultWithState, state));
   }
 
-  return { generate };
+  function stream(call: ModelCall) {
+    const state = createRunState(call);
+    if (state.responseFormat) {
+      return toStreamUnsupported(state.diagnostics);
+    }
+    return mapMaybe(streamModel(model, state), mapStreamEvents(state));
+  }
+
+  return { generate, stream };
 }

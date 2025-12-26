@@ -30,6 +30,25 @@ describe("Adapter AI SDK streaming", () => {
     ]);
   });
 
+  it("emits a single start event when multiple start parts are present", async () => {
+    const parts = asAsyncIterable([
+      asAiSdkStreamPart({ type: "text-start", id: "t1" }),
+      asAiSdkStreamPart({ type: "reasoning-start", id: "t1" }),
+      asAiSdkStreamPart({ type: "reasoning-delta", id: "t1", text: "think" }),
+    ]);
+
+    const events: Array<{ type: string; text?: string }> = [];
+    for await (const event of toModelStreamEvents(parts)) {
+      events.push({ type: event.type, text: "text" in event ? event.text : undefined });
+    }
+
+    expect(events).toEqual([
+      { type: "start", text: undefined },
+      { type: "delta", text: undefined },
+      { type: "delta", text: "think" },
+    ]);
+  });
+
   it("maps tool stream parts to tool call/result events", async () => {
     const parts = asAsyncIterable([
       asAiSdkStreamPart({

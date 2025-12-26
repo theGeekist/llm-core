@@ -224,6 +224,32 @@ describe("Adapter AI SDK model", () => {
     mock.restore();
   });
 
+  it("warns when streaming usage is unavailable", async () => {
+    const streamResult = makeStreamResult(
+      [asAiSdkStreamPart({ type: "text-delta", id: "t1", text: "hi" })],
+      undefined,
+    );
+    mock.module("ai", () => makeAiStreamModule(streamResult));
+
+    const { fromAiSdkModel } = await import("../../src/adapters/ai-sdk/model.ts");
+    const model = fromAiSdkModel({} as never);
+    const events = [];
+    const stream = await Promise.resolve(model.stream?.({ prompt: "hi" }));
+    if (!stream) {
+      throw new Error("Expected AI SDK model to expose stream()");
+    }
+    for await (const event of stream) {
+      events.push(event);
+    }
+
+    const endEvent = events.find((event) => event.type === "end");
+    expect(endEvent).toMatchObject({
+      type: "end",
+      diagnostics: [{ message: "usage_unavailable", level: "warn" }],
+    });
+    mock.restore();
+  });
+
   it("returns error events when streaming with response schemas", async () => {
     const streamResult = makeStreamResult([]);
     mock.module("ai", () => makeAiStreamModule(streamResult));

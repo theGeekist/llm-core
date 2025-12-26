@@ -15,3 +15,4 @@ export { fromLlamaIndexMessage } from "./messages";
 export { fromLlamaIndexMessages } from "./model-call";
 export { fromLlamaIndexNodes } from "./retrieval";
 export { fromLlamaIndexModel } from "./model";
+export { toLlamaIndexStreamEvents } from "./stream";

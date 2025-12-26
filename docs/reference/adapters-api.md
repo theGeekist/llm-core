@@ -4,6 +4,8 @@ Adapters are how llm-core keeps the ecosystem from leaking into your app.
 Most users never need this page because recipes and workflows already ship with adapters wired in.
 You only come here when you want to integrate a new provider, bridge an external SDK, or take full control.
 
+> [!IMPORTANT] > **Don't start here.** If you just want to use OpenAI, LangChain, or LlamaIndex, go to the **[Ecosystem Guides](/reference/adapters#ecosystem-deep-dives-practical-guides)**.
+
 Adapters exist to contain ecosystem differences, not expose them. They normalize wildly different concepts
 (models, tools, retrievers, messages, schemas) into a stable internal shape while keeping provider details
 available for diagnostics and tracing.
@@ -93,6 +95,53 @@ Per-run registry resolution merges registry constructs into `adapters.constructs
 
 `cache` is the adapter used to persist pause sessions for `resume()`. TTL is best‑effort and depends on
 the underlying cache implementation.
+
+### Helpers
+
+::: tabs
+== TypeScript
+
+```ts
+import {
+  createMemoryCache,
+  createCacheFromKVStore,
+  fromLangChainStoreCache,
+  fromLlamaIndexKVStoreCache,
+} from "#adapters";
+
+// 1. Simple in-memory (with TTL support)
+const mem = createMemoryCache();
+
+// 2. Wrap a generic KV store (e.g. Redis wrapper)
+const redis = createCacheFromKVStore(myRedisKv);
+
+// 3. Reuse ecosystem stores
+const lc = fromLangChainStoreCache(langChainStore);
+const li = fromLlamaIndexKVStoreCache(llamaIndexKv);
+```
+
+== JavaScript
+
+```js
+import {
+  createMemoryCache,
+  createCacheFromKVStore,
+  fromLangChainStoreCache,
+  fromLlamaIndexKVStoreCache,
+} from "#adapters";
+
+// 1. Simple in-memory (with TTL support)
+const mem = createMemoryCache();
+
+// 2. Wrap a generic KV store (e.g. Redis wrapper)
+const redis = createCacheFromKVStore(myRedisKv);
+
+// 3. Reuse ecosystem stores
+const lc = fromLangChainStoreCache(langChainStore);
+const li = fromLlamaIndexKVStoreCache(llamaIndexKv);
+```
+
+:::
 
 ## Adapter requirements (dependencies)
 
@@ -334,6 +383,7 @@ const { adapters, diagnostics } = registry.resolve({
 ```ts
 type Model = {
   generate(call: ModelCall): MaybePromise<ModelResult>;
+  stream?(call: ModelCall): MaybePromise<AsyncIterable<ModelStreamEvent>>;
 };
 ```
 
@@ -344,10 +394,18 @@ const model = {
   generate: (call) => {
     // return { text, output?, usage?, meta?, diagnostics?, trace? }
   },
+  stream: (call) => {
+    // return async iterable of ModelStreamEvent
+  },
 };
 ```
 
 :::
+
+`Model.stream` is normalized across AI SDK, LangChain, and LlamaIndex. It emits
+`ModelStreamEvent` records with a single `start` and `end`, plus `delta`, `usage`,
+and `error` events in between. Provider-specific stream payloads are preserved in
+`event.raw` when available.
 
 ### Ecosystem factory usage
 

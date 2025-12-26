@@ -7,9 +7,45 @@ const toUndefined = () => undefined;
 const isBlob = (value: unknown): value is Blob =>
   typeof value === "object" && value !== null && value instanceof Object && "bytes" in value;
 
+type CacheEnvelope = {
+  value: Blob;
+  expiresAt?: number;
+};
+
+const isEnvelope = (value: unknown): value is CacheEnvelope =>
+  typeof value === "object" && value !== null && "value" in value;
+
+const readEnvelope = (value: unknown) => (isEnvelope(value) ? value : undefined);
+
 const readBlob = (value: unknown) => (isBlob(value) ? value : undefined);
 
-const readFirst = (values: Array<unknown | undefined>) => readBlob(values[0]);
+const toEnvelope = (value: Blob, ttlMs?: number): CacheEnvelope => ({
+  value,
+  expiresAt: typeof ttlMs === "number" ? Date.now() + ttlMs : undefined,
+});
+
+const isExpired = (envelope: CacheEnvelope | undefined) =>
+  typeof envelope?.expiresAt === "number" && Date.now() > envelope.expiresAt;
+
+const deleteEntry = (store: BaseStore<string, unknown>, key: string) =>
+  mapMaybe(fromPromiseLike(store.mdelete([key])), toUndefined);
+
+const readEntry = (store: BaseStore<string, unknown>, key: string, value: unknown) => {
+  const envelope = readEnvelope(value);
+  if (envelope) {
+    if (isExpired(envelope)) {
+      return mapMaybe(deleteEntry(store, key), toUndefined);
+    }
+    return envelope.value;
+  }
+  return readBlob(value);
+};
+
+const readFirst = (
+  store: BaseStore<string, unknown>,
+  key: string,
+  values: Array<unknown | undefined>,
+) => readEntry(store, key, values[0]);
 
 const cacheGet = (store: BaseStore<string, unknown>, key: string, context?: AdapterCallContext) => {
   const diagnostics = validateStorageKey(key, "cache.get");
@@ -17,23 +53,24 @@ const cacheGet = (store: BaseStore<string, unknown>, key: string, context?: Adap
     reportDiagnostics(context, diagnostics);
     return undefined;
   }
-  return mapMaybe(fromPromiseLike(store.mget([key])), readFirst);
+  const handleEntry = bindFirst(bindFirst(readFirst, store), key);
+  return mapMaybe(fromPromiseLike(store.mget([key])), handleEntry);
 };
 
 const cacheSet = (
   store: BaseStore<string, unknown>,
   key: string,
   value: Blob,
-  _ttlMs?: number,
+  ttlMs?: number,
   context?: AdapterCallContext,
 ) => {
-  void _ttlMs;
   const diagnostics = validateStorageKey(key, "cache.set");
   if (diagnostics.length > 0) {
     reportDiagnostics(context, diagnostics);
     return;
   }
-  return mapMaybe(fromPromiseLike(store.mset([[key, value]])), toUndefined);
+  const entry = toEnvelope(value, ttlMs);
+  return mapMaybe(fromPromiseLike(store.mset([[key, entry]])), toUndefined);
 };
 
 const cacheDelete = (

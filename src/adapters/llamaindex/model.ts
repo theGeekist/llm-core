@@ -1,9 +1,16 @@
-import type { BaseTool, ChatMessage, LLM, ToolCall as LlamaToolCall } from "@llamaindex/core/llms";
+import type {
+  BaseTool,
+  ChatMessage,
+  ChatResponseChunk,
+  LLM,
+  ToolCall as LlamaToolCall,
+} from "@llamaindex/core/llms";
 import type {
   AdapterDiagnostic,
   Model,
   ModelCall,
   ModelResult,
+  ModelStreamEvent,
   ModelTelemetry,
   ModelUsage,
   ToolCall,
@@ -11,8 +18,9 @@ import type {
 import { fromLlamaIndexMessage, toLlamaIndexMessage } from "./messages";
 import { toLlamaIndexTool } from "./tools";
 import { toAdapterTrace } from "../telemetry";
-import { mapMaybe } from "../../maybe";
+import { bindFirst, mapMaybe } from "../../maybe";
 import { ModelCallHelper, ModelUsageHelper } from "../modeling";
+import { toLlamaIndexStreamEvents } from "./stream";
 
 const toToolCalls = (calls: LlamaToolCall[]): ToolCall[] =>
   calls.map((call) => ({
@@ -173,6 +181,20 @@ const getExec = (model: LLM) => {
   return exec ? exec.bind(model) : undefined;
 };
 
+const getStreamExec = (model: LLM) => {
+  const exec = (
+    model as {
+      streamExec?: (options: {
+        messages: ChatMessage[];
+        tools?: BaseTool[];
+        responseFormat?: unknown;
+        stream: true;
+      }) => Promise<{ stream: AsyncIterable<ChatResponseChunk>; toolCalls: LlamaToolCall[] }>;
+    }
+  ).streamExec;
+  return exec ? exec.bind(model) : undefined;
+};
+
 const toExecResult = (
   result: LlamaIndexExecResult,
   diagnostics: AdapterDiagnostic[],
@@ -266,6 +288,34 @@ export function fromLlamaIndexModel(model: LLM): Model {
     };
   };
 
+  const toStreamResult = (
+    stream: AsyncIterable<ChatResponseChunk>,
+    toolCalls: LlamaToolCall[] | undefined,
+    diagnostics: AdapterDiagnostic[],
+  ) =>
+    toLlamaIndexStreamEvents(stream, {
+      toolCalls,
+      diagnostics,
+    });
+
+  const mapChatStreamResult = (state: RunState, stream: AsyncIterable<ChatResponseChunk>) =>
+    toStreamResult(stream, undefined, state.diagnostics);
+
+  const mapExecStreamResult = (
+    state: RunState,
+    result: { stream: AsyncIterable<ChatResponseChunk>; toolCalls: LlamaToolCall[] },
+  ) => toStreamResult(result.stream, result.toolCalls, state.diagnostics);
+
+  const toStreamUnsupported = async function* (
+    diagnostics: AdapterDiagnostic[],
+  ): AsyncIterable<ModelStreamEvent> {
+    yield {
+      type: "error",
+      error: new Error("streaming_unsupported_for_response_schema"),
+      diagnostics,
+    };
+  };
+
   function generate(call: ModelCall) {
     const state = createRunState(call);
     const exec = getExec(model);
@@ -292,5 +342,28 @@ export function fromLlamaIndexModel(model: LLM): Model {
     );
   }
 
-  return { generate };
+  function stream(call: ModelCall) {
+    const state = createRunState(call);
+    if (state.hasResponseSchema) {
+      return toStreamUnsupported(state.diagnostics);
+    }
+    const streamExec = getStreamExec(model);
+    if (streamExec && state.tools && state.tools.length) {
+      return mapMaybe(
+        streamExec({
+          messages: state.messages,
+          tools: state.tools,
+          responseFormat: state.responseSchema,
+          stream: true,
+        }),
+        bindFirst(mapExecStreamResult, state),
+      );
+    }
+    return mapMaybe(
+      model.chat({ messages: state.messages, stream: true }),
+      bindFirst(mapChatStreamResult, state),
+    );
+  }
+
+  return { generate, stream };
 }
