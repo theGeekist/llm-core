@@ -4,8 +4,7 @@ import { bindFirst } from "../../maybe";
 
 const parseWithParser = (parser: BaseOutputParser<unknown>, text: string) => parser.parse(text);
 
-const formatWithParser = (parser: BaseOutputParser<unknown>, options?: Record<string, unknown>) =>
-  parser.getFormatInstructions(options);
+const formatWithParser = (parser: BaseOutputParser<unknown>) => parser.getFormatInstructions();
 
 export const fromLangChainOutputParser = (parser: BaseOutputParser<unknown>): OutputParser => ({
   parse: bindFirst(parseWithParser, parser),

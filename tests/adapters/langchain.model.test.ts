@@ -1,14 +1,31 @@
 import { describe, expect, it } from "bun:test";
-import { AIMessage, ToolMessage } from "@langchain/core/messages";
+import { AIMessage, AIMessageChunk, ToolMessage } from "@langchain/core/messages";
 import type { BaseChatModel } from "@langchain/core/language_models/chat_models";
-import { Tooling, toSchema } from "#adapters";
-import { fromLangChainModel } from "#adapters";
+import { Tooling, toSchema, fromLangChainModel } from "#adapters";
 
 const createModel = (handler: (messages: unknown, options?: unknown) => unknown) =>
   ({
     invoke: (messages: unknown, options?: unknown) => Promise.resolve(handler(messages, options)),
     bindTools: () => ({
       invoke: (messages: unknown, options?: unknown) => Promise.resolve(handler(messages, options)),
+    }),
+  }) as unknown as BaseChatModel;
+
+const asAsyncIterable = <T>(values: T[]): AsyncIterable<T> => ({
+  async *[Symbol.asyncIterator]() {
+    for (const value of values) {
+      yield value;
+    }
+  },
+});
+
+const createStreamModel = (
+  handler: (messages: unknown, options?: unknown) => AsyncIterable<unknown>,
+) =>
+  ({
+    stream: (messages: unknown, options?: unknown) => Promise.resolve(handler(messages, options)),
+    bindTools: () => ({
+      stream: (messages: unknown, options?: unknown) => Promise.resolve(handler(messages, options)),
     }),
   }) as unknown as BaseChatModel;
 
@@ -95,5 +112,37 @@ describe("Adapter LangChain model", () => {
 
     const result = await adapter.generate({ prompt: "hi" });
     expect(result.usage).toEqual({ inputTokens: 1, outputTokens: 2, totalTokens: 3 });
+  });
+
+  it("streams events when response schema is absent", async () => {
+    const model = createStreamModel(() => asAsyncIterable([new AIMessageChunk({ content: "hi" })]));
+    const adapter = fromLangChainModel(model);
+    if (!adapter.stream) {
+      throw new Error("stream not supported");
+    }
+    const events: Array<{ type: string }> = [];
+    const stream = await adapter.stream({ prompt: "hi" });
+    for await (const event of stream) {
+      events.push({ type: event.type });
+    }
+    expect(events[0]?.type).toBe("start");
+    expect(events.at(-1)?.type).toBe("end");
+  });
+
+  it("returns an error event when streaming with response schemas", async () => {
+    const model = createStreamModel(() => asAsyncIterable([]));
+    const adapter = fromLangChainModel(model);
+    if (!adapter.stream) {
+      throw new Error("stream not supported");
+    }
+    const events: Array<{ type: string }> = [];
+    const stream = await adapter.stream({
+      prompt: "hi",
+      responseSchema: toSchema({ type: "object", properties: {} }),
+    });
+    for await (const event of stream) {
+      events.push({ type: event.type });
+    }
+    expect(events[0]?.type).toBe("error");
   });
 });

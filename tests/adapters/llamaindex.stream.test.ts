@@ -2,6 +2,7 @@ import { describe, expect, it } from "bun:test";
 import type { ChatResponseChunk, ToolCall as LlamaToolCall } from "@llamaindex/core/llms";
 import type { AdapterDiagnostic, ModelStreamEvent } from "#adapters";
 import { toLlamaIndexStreamEvents } from "#adapters/llamaindex";
+import { readToolEvents, readUsagePayload, toUsage } from "../../src/adapters/llamaindex/stream";
 
 const collectEvents = async (events: AsyncIterable<ModelStreamEvent>) => {
   const collected: ModelStreamEvent[] = [];
@@ -57,6 +58,26 @@ describe("Adapter LlamaIndex streaming", () => {
       expect.objectContaining({
         type: "end",
         diagnostics,
+      }),
+    );
+  });
+
+  it("reads usage payloads from raw chunks", () => {
+    const usage = readUsagePayload({ usage: { input_tokens: 1 } });
+    expect(usage).toEqual({ input_tokens: 1 });
+  });
+
+  it("maps usage payloads into model usage", () => {
+    const usage = toUsage({ usage: { output_tokens: 2 } });
+    expect(usage).toEqual({ inputTokens: undefined, outputTokens: 2, totalTokens: undefined });
+  });
+
+  it("maps tool calls into delta events", () => {
+    const events = readToolEvents([{ id: "tool-1", name: "search", input: {} }]);
+    expect(events[0]).toEqual(
+      expect.objectContaining({
+        type: "delta",
+        toolCall: { id: "tool-1", name: "search", arguments: {} },
       }),
     );
   });

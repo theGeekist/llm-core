@@ -1,6 +1,7 @@
 import { describe, expect, it } from "bun:test";
 import { toModelStreamEvents } from "#adapters";
 import { asAiSdkStreamPart } from "./helpers";
+import { toToolCallFromPart, toToolResultFromPart } from "../../src/adapters/ai-sdk/stream-utils";
 
 const asAsyncIterable = <T>(values: T[]): AsyncIterable<T> => ({
   async *[Symbol.asyncIterator]() {
@@ -136,5 +137,32 @@ describe("Adapter AI SDK streaming", () => {
         toolResult: { toolCallId: "c3", name: "calc", result: 2 },
       },
     ]);
+  });
+
+  it("extracts tool call and tool result parts directly", () => {
+    const toolCall = toToolCallFromPart(
+      asAiSdkStreamPart({
+        type: "tool-call",
+        toolCallId: "c1",
+        toolName: "lookup",
+        input: { q: "hi" },
+      }),
+    );
+    expect(toolCall).toEqual({ id: "c1", name: "lookup", arguments: { q: "hi" } });
+
+    const toolResult = toToolResultFromPart(
+      asAiSdkStreamPart({
+        type: "tool-error",
+        toolCallId: "c2",
+        toolName: "fail",
+        error: "boom",
+      }),
+    );
+    expect(toolResult).toEqual({
+      toolCallId: "c2",
+      name: "fail",
+      result: "boom",
+      isError: true,
+    });
   });
 });

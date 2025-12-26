@@ -1,5 +1,13 @@
 import type { ChatResponseChunk, ToolCall as LlamaToolCall } from "@llamaindex/core/llms";
 import type { AdapterDiagnostic, ModelStreamEvent, ModelUsage, ToolCall } from "../types";
+import { readNumber } from "../model-utils";
+import {
+  toStreamDeltaTextEvent,
+  toStreamDeltaToolCallEvent,
+  toStreamEndEvent,
+  toStreamStartEvent,
+  toStreamUsageEvent,
+} from "../stream-utils";
 import { ModelUsageHelper } from "../modeling";
 
 type StreamState = {
@@ -8,9 +16,9 @@ type StreamState = {
   usageSeen: boolean;
 };
 
-const readUsageValue = (value: unknown) => (typeof value === "number" ? value : undefined);
+export const readUsageValue = (value: unknown) => readNumber(value);
 
-const readUsagePayload = (raw: unknown) => {
+export const readUsagePayload = (raw: unknown) => {
   if (typeof raw !== "object" || raw === null) {
     return undefined;
   }
@@ -28,7 +36,7 @@ const readUsagePayload = (raw: unknown) => {
   };
 };
 
-const toUsage = (raw: unknown): ModelUsage | undefined => {
+export const toUsage = (raw: unknown): ModelUsage | undefined => {
   const usage = readUsagePayload(raw);
   if (!usage) {
     return undefined;
@@ -42,54 +50,28 @@ const toUsage = (raw: unknown): ModelUsage | undefined => {
   return { inputTokens, outputTokens, totalTokens };
 };
 
-const toToolCall = (call: LlamaToolCall): ToolCall => ({
+export const toToolCall = (call: LlamaToolCall): ToolCall => ({
   id: call.id,
   name: call.name,
   arguments: call.input,
 });
 
-const toToolCallEvent = (toolCall: ToolCall): ModelStreamEvent => ({
-  type: "delta",
-  toolCall,
-});
-
-const toStartEvent = (): ModelStreamEvent => ({
-  type: "start",
-});
-
-const toDeltaEvent = (chunk: ChatResponseChunk): ModelStreamEvent => ({
-  type: "delta",
-  text: chunk.delta,
-  raw: chunk.raw,
-});
-
-const toUsageEvent = (usage: ModelUsage): ModelStreamEvent => ({
-  type: "usage",
-  usage,
-});
-
-const toEndEvent = (
-  diagnostics: AdapterDiagnostic[] | undefined,
-  raw?: unknown,
-): ModelStreamEvent => ({
-  type: "end",
-  diagnostics,
-  raw,
-});
+const toToolCallEvent = (toolCall: ToolCall): ModelStreamEvent =>
+  toStreamDeltaToolCallEvent(toolCall);
 
 export type LlamaIndexStreamOptions = {
   diagnostics?: AdapterDiagnostic[];
   toolCalls?: LlamaToolCall[];
 };
 
-const readToolEvents = (toolCalls: LlamaToolCall[] | undefined) => {
+export const readToolEvents = (toolCalls: LlamaToolCall[] | undefined) => {
   if (!toolCalls || toolCalls.length === 0) {
     return [];
   }
   return toolCalls.map(mapToolCall);
 };
 
-const mapToolCall = (call: LlamaToolCall) => toToolCallEvent(toToolCall(call));
+export const mapToolCall = (call: LlamaToolCall) => toToolCallEvent(toToolCall(call));
 
 export const toLlamaIndexStreamEvents = async function* (
   stream: AsyncIterable<ChatResponseChunk>,
@@ -99,16 +81,16 @@ export const toLlamaIndexStreamEvents = async function* (
   for await (const chunk of stream) {
     if (!state.started) {
       state.started = true;
-      yield toStartEvent();
+      yield toStreamStartEvent();
     }
-    state.lastRaw = chunk.raw;
+    state.lastRaw = chunk;
     if (chunk.delta) {
-      yield toDeltaEvent(chunk);
+      yield toStreamDeltaTextEvent(chunk.delta, chunk.raw);
     }
     const usage = toUsage(chunk.raw);
     if (usage) {
       state.usageSeen = true;
-      yield toUsageEvent(usage);
+      yield toStreamUsageEvent(usage);
     }
   }
   if (!state.usageSeen && options?.diagnostics) {
@@ -117,5 +99,5 @@ export const toLlamaIndexStreamEvents = async function* (
   for (const event of readToolEvents(options?.toolCalls)) {
     yield event;
   }
-  yield toEndEvent(options?.diagnostics, state.lastRaw);
+  yield toStreamEndEvent(options?.diagnostics, undefined, state.lastRaw);
 };

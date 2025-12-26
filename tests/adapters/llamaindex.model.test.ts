@@ -1,6 +1,6 @@
 import { describe, expect, it } from "bun:test";
-import type { ChatMessage, LLM } from "@llamaindex/core/llms";
-import { fromLlamaIndexModel, toSchema } from "#adapters";
+import type { ChatMessage, ChatResponseChunk, LLM } from "@llamaindex/core/llms";
+import { Tooling, fromLlamaIndexModel, toSchema } from "#adapters";
 
 const makeMessage = (content: ChatMessage["content"]): ChatMessage => ({
   role: "assistant",
@@ -16,6 +16,14 @@ const createModel = (handlers: Record<string, unknown>): LLM =>
     }),
     ...handlers,
   }) as unknown as LLM;
+
+const asAsyncIterable = <T>(values: T[]): AsyncIterable<T> => ({
+  async *[Symbol.asyncIterator]() {
+    for (const value of values) {
+      yield value;
+    }
+  },
+});
 
 describe("Adapter LlamaIndex model", () => {
   it("parses message text from structured content arrays", async () => {
@@ -90,5 +98,47 @@ describe("Adapter LlamaIndex model", () => {
     });
 
     expect(result.usage).toEqual({ inputTokens: 1, outputTokens: 2, totalTokens: 3 });
+  });
+
+  it("streams exec results when tools are present", async () => {
+    const model = createModel({
+      streamExec: async () => ({
+        stream: asAsyncIterable<ChatResponseChunk>([
+          { delta: "hi", raw: { usage: { input_tokens: 1 } } },
+        ]),
+        toolCalls: [],
+      }),
+    });
+    const adapter = fromLlamaIndexModel(model);
+    if (!adapter.stream) {
+      throw new Error("stream not supported");
+    }
+    const events: Array<{ type: string }> = [];
+    const stream = await adapter.stream({
+      prompt: "hi",
+      tools: [Tooling.create({ name: "search" })],
+    });
+    for await (const event of stream) {
+      events.push({ type: event.type });
+    }
+    expect(events[0]?.type).toBe("start");
+    expect(events.at(-1)?.type).toBe("end");
+  });
+
+  it("returns an error event when streaming with response schemas", async () => {
+    const model = createModel({});
+    const adapter = fromLlamaIndexModel(model);
+    if (!adapter.stream) {
+      throw new Error("stream not supported");
+    }
+    const events: Array<{ type: string }> = [];
+    const stream = await adapter.stream({
+      prompt: "hi",
+      responseSchema: toSchema({ type: "object", properties: {} }),
+    });
+    for await (const event of stream) {
+      events.push({ type: event.type });
+    }
+    expect(events[0]?.type).toBe("error");
   });
 });

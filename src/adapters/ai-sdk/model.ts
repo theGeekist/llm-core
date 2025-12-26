@@ -22,6 +22,7 @@ import type {
 } from "../types";
 import { fromAiSdkMessage, toAiSdkMessage } from "./messages";
 import { toAiSdkTools } from "./tools";
+import { mapToolCalls, mapToolResults } from "../model-utils";
 import { toAdapterTrace } from "../telemetry";
 import { mapMaybe } from "../../maybe";
 import { ModelCallHelper, ModelUsageHelper } from "../modeling";
@@ -43,23 +44,29 @@ const toModelUsage = (usage?: {
   };
 };
 
+const mapToolCall = (call: { toolCallId: string; toolName: string; input: unknown }): ToolCall => ({
+  id: call.toolCallId,
+  name: call.toolName,
+  arguments: (call.input ?? {}) as Record<string, unknown>,
+});
+
 const toToolCalls = (
   calls: Array<{ toolCallId: string; toolName: string; input: unknown }> | undefined,
-): ToolCall[] =>
-  (calls ?? []).map((call) => ({
-    id: call.toolCallId,
-    name: call.toolName,
-    arguments: (call.input ?? {}) as Record<string, unknown>,
-  }));
+) => mapToolCalls(calls, mapToolCall);
+
+const mapToolResult = (result: {
+  toolCallId: string;
+  toolName: string;
+  output: unknown;
+}): ToolResult => ({
+  toolCallId: result.toolCallId,
+  name: result.toolName,
+  result: result.output,
+});
 
 const toToolResults = (
   results: Array<{ toolCallId: string; toolName: string; output: unknown }> | undefined,
-): ToolResult[] =>
-  (results ?? []).map((result) => ({
-    toolCallId: result.toolCallId,
-    name: result.toolName,
-    result: result.output,
-  }));
+): ToolResult[] => mapToolResults(results, mapToolResult);
 
 type AiJsonSchemaInput = Parameters<typeof jsonSchema>[0];
 type AiZodSchemaInput = Parameters<typeof zodSchema>[0];
