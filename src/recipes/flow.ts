@@ -2,8 +2,11 @@ import { createHelper, type HelperApplyOptions, type HelperApplyResult } from "@
 import type { PipelineReporter } from "@wpkernel/pipeline/core";
 import type { AdapterBundle } from "../adapters/types";
 import { bindFirst, mapMaybe, type MaybePromise } from "../maybe";
+import type { DiagnosticEntry } from "../workflow/diagnostics";
+import { createRecipeDiagnostic } from "../workflow/diagnostics";
+import { getRecipe } from "../workflow/recipe-registry";
+import { createRuntime } from "../workflow/runtime";
 import type { PipelineContext, PipelineState, Plugin, RecipeName } from "../workflow/types";
-import { Workflow } from "../workflow/builder";
 
 type StepOptions = {
   context: PipelineContext;
@@ -68,7 +71,18 @@ type StepStateSource = HelperApplyOptions<
   PipelineReporter
 > & { userState?: PipelineState };
 
-const readStepState = (options: StepStateSource) => options.output ?? options.userState ?? {};
+const isPipelineState = (value: unknown): value is PipelineState =>
+  !!value && typeof value === "object" && !Array.isArray(value);
+
+const readStepState = (options: StepStateSource) => {
+  if (isPipelineState(options.output)) {
+    return options.output;
+  }
+  if (isPipelineState(options.userState)) {
+    return options.userState;
+  }
+  return {};
+};
 
 const toStepOptions = (
   options: HelperApplyOptions<PipelineContext, unknown, PipelineState, PipelineReporter>,
@@ -121,9 +135,14 @@ const createHelperForStep = (packName: string, spec: StepSpec) => {
   });
 };
 
+const appendDependencies = (current: string[], next: string[]) => [...current, ...next];
+
 const createStepBuilder = (spec: StepSpec): StepBuilder => ({
   dependsOn: (dependencies: string | string[]) =>
-    createStepBuilder({ ...spec, dependsOn: toArray(dependencies) }),
+    createStepBuilder({
+      ...spec,
+      dependsOn: appendDependencies(spec.dependsOn, toArray(dependencies)),
+    }),
   priority: (value: number) => createStepBuilder({ ...spec, priority: value }),
   override: () => createStepBuilder({ ...spec, mode: "override" }),
   extend: () => createStepBuilder({ ...spec, mode: "extend" }),
@@ -173,35 +192,36 @@ const createDefaultsPlugin = (name: string, defaults: RecipeDefaults): Plugin | 
   };
 };
 
-const applyDefaults = (
-  builder: { use: (plugin: Plugin) => unknown },
-  defaults?: RecipeDefaults,
-) => {
+const appendPlugin = (plugins: Plugin[], plugin: Plugin) => {
+  plugins.push(plugin);
+};
+
+const mergeAdapters = (base?: AdapterBundle, incoming?: AdapterBundle) => {
+  if (base && incoming) {
+    return { ...base, ...incoming };
+  }
+  return base ?? incoming;
+};
+
+const mergeDefaults = (base: RecipeDefaults, incoming: RecipeDefaults): RecipeDefaults => ({
+  adapters: mergeAdapters(base.adapters, incoming.adapters),
+  plugins:
+    base.plugins && incoming.plugins
+      ? [...base.plugins, ...incoming.plugins]
+      : (base.plugins ?? incoming.plugins),
+});
+
+const applyDefaultsToPlugins = (plugins: Plugin[], name: string, defaults?: RecipeDefaults) => {
   if (!defaults) {
     return;
   }
-  const defaultsPlugin = createDefaultsPlugin("flow", defaults);
+  const defaultsPlugin = createDefaultsPlugin(name, defaults);
   if (defaultsPlugin) {
-    builder.use(defaultsPlugin);
+    appendPlugin(plugins, defaultsPlugin);
   }
   if (defaults.plugins) {
     for (const plugin of defaults.plugins) {
-      builder.use(plugin);
-    }
-  }
-};
-
-const applyPackDefaults = (builder: { use: (plugin: Plugin) => unknown }, pack: RecipePack) => {
-  if (!pack.defaults) {
-    return;
-  }
-  const defaultsPlugin = createDefaultsPlugin(pack.name, pack.defaults);
-  if (defaultsPlugin) {
-    builder.use(defaultsPlugin);
-  }
-  if (pack.defaults.plugins) {
-    for (const plugin of pack.defaults.plugins) {
-      builder.use(plugin);
+      appendPlugin(plugins, plugin);
     }
   }
 };
@@ -209,21 +229,64 @@ const applyPackDefaults = (builder: { use: (plugin: Plugin) => unknown }, pack: 
 type FlowBuilder<N extends RecipeName> = {
   use: (pack: RecipePack) => FlowBuilder<N>;
   defaults: (defaults: RecipeDefaults) => FlowBuilder<N>;
-  build: () => ReturnType<ReturnType<typeof Workflow.recipe<N>>["build"]>;
+  build: () => ReturnType<typeof createRuntime<N>>;
+};
+
+const createDuplicatePackDiagnostic = (name: string): DiagnosticEntry =>
+  createRecipeDiagnostic(`Duplicate recipe pack name "${name}" overridden`, {
+    code: "recipe.duplicatePack",
+    pack: name,
+  });
+
+const findPackIndex = (packs: RecipePack[], name: string) =>
+  packs.findIndex((pack) => pack.name === name);
+
+const appendPack = (packs: RecipePack[], pack: RecipePack) => {
+  packs.push(pack);
+};
+
+const replacePack = (packs: RecipePack[], index: number, pack: RecipePack) => {
+  packs[index] = pack;
 };
 
 const createFlowBuilder = <N extends RecipeName>(recipeName: N): FlowBuilder<N> => {
-  let builder = Workflow.recipe<N>(recipeName);
+  const contract = getRecipe(recipeName);
+  if (!contract) {
+    throw new Error(`Unknown recipe: ${recipeName}`);
+  }
+  const packs: RecipePack[] = [];
+  const flowDefaults: RecipeDefaults = {};
+  const diagnostics: DiagnosticEntry[] = [];
+
   const use = (pack: RecipePack) => {
-    applyPackDefaults(builder, pack);
-    builder = builder.use(createStepPlugin(pack));
+    const existingIndex = findPackIndex(packs, pack.name);
+    if (existingIndex !== -1) {
+      diagnostics.push(createDuplicatePackDiagnostic(pack.name));
+      replacePack(packs, existingIndex, pack);
+    } else {
+      appendPack(packs, pack);
+    }
     return api;
   };
   const defaults = (defaultsConfig: RecipeDefaults) => {
-    applyDefaults(builder, defaultsConfig);
+    const merged = mergeDefaults(flowDefaults, defaultsConfig);
+    flowDefaults.adapters = merged.adapters;
+    flowDefaults.plugins = merged.plugins;
     return api;
   };
-  const build = () => builder.build();
+  const build = () => {
+    const plugins: Plugin[] = [...(contract.defaultPlugins ?? [])];
+    applyDefaultsToPlugins(plugins, "flow", flowDefaults);
+    for (const pack of packs) {
+      applyDefaultsToPlugins(plugins, pack.name, pack.defaults);
+      appendPlugin(plugins, createStepPlugin(pack));
+    }
+    return createRuntime<N>({
+      contract,
+      plugins: [...plugins],
+      diagnostics,
+    });
+  };
   const api: FlowBuilder<N> = { use, defaults, build };
   return api;
 };

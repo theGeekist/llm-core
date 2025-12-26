@@ -13,6 +13,7 @@ Related:
 - [Workflow API](/reference/workflow-api)
 - [Packs & Recipes](/reference/packs-and-recipes)
 - [Runtime channel](/reference/runtime)
+- [Interop Audit](/reference/interop-audit) (Parity Matrix)
 
 ## Adapter bundle (resolved on a workflow)
 
@@ -355,10 +356,10 @@ const model = {
 
 ```ts
 import { fromAiSdkModel, Adapter } from "#adapters";
-import { Workflow } from "#workflow";
+import { Recipe } from "#recipes";
 import { openai } from "@ai-sdk/openai";
 
-const wf = Workflow.recipe("agent")
+const wf = Recipe.flow("agent")
   .use(Adapter.model("openai.model", fromAiSdkModel(openai("gpt-4o-mini"))))
   .build();
 ```
@@ -367,10 +368,10 @@ const wf = Workflow.recipe("agent")
 
 ```js
 import { fromAiSdkModel, Adapter } from "#adapters";
-import { Workflow } from "#workflow";
+import { Recipe } from "#recipes";
 import { openai } from "@ai-sdk/openai";
 
-const wf = Workflow.recipe("agent")
+const wf = Recipe.flow("agent")
   .use(Adapter.model("openai.model", fromAiSdkModel(openai("gpt-4o-mini"))))
   .build();
 ```
@@ -683,14 +684,14 @@ All adapter methods may return sync or async values. Call sites should treat the
 
 ```ts
 import { fromAiSdkModel, Adapter } from "#adapters";
-import { Workflow } from "#workflow";
+import { Recipe } from "#recipes";
 import { openai } from "@ai-sdk/openai";
 
 const retriever = {
   retrieve: () => ({ documents: [{ text: "capybara facts" }] }),
 };
 
-const wf = Workflow.recipe("rag")
+const wf = Recipe.flow("rag")
   .use(Adapter.model("openai.model", fromAiSdkModel(openai("gpt-4o-mini"))))
   .use(Adapter.retriever("custom.retriever", retriever))
   .build();
@@ -702,14 +703,14 @@ const out = await wf.run({ input: "What is a capybara?" });
 
 ```js
 import { fromAiSdkModel, Adapter } from "#adapters";
-import { Workflow } from "#workflow";
+import { Recipe } from "#recipes";
 import { openai } from "@ai-sdk/openai";
 
 const retriever = {
   retrieve: () => ({ documents: [{ text: "capybara facts" }] }),
 };
 
-const wf = Workflow.recipe("rag")
+const wf = Recipe.flow("rag")
   .use(Adapter.model("openai.model", fromAiSdkModel(openai("gpt-4o-mini"))))
   .use(Adapter.retriever("custom.retriever", retriever))
   .build();

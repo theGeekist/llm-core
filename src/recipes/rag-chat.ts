@@ -1,4 +1,6 @@
-import { Workflow } from "#workflow/builder";
+import type { Plugin } from "../workflow/types";
+import { Recipe } from "./flow";
+import { createSystemPlugin } from "./system";
 
 export type RagChatConfig = {
   model?: string;
@@ -6,38 +8,36 @@ export type RagChatConfig = {
   system?: string;
 };
 
-export const ragChat = (config?: RagChatConfig) => {
-  const workflow = Workflow.recipe("rag");
+const createModelPlugin = (model: string): Plugin => ({
+  key: "config.model",
+  capabilities: {
+    model: { name: model },
+  },
+});
 
+const createRetrieverPlugin = (retriever: string): Plugin => ({
+  key: "config.retriever",
+  capabilities: {
+    retriever: { name: retriever },
+  },
+});
+
+const createRagChatPack = (config?: RagChatConfig) => {
+  const plugins: Plugin[] = [];
   if (config?.model) {
-    workflow.use({
-      key: "config.model",
-      capabilities: {
-        model: { name: config.model },
-      },
-    });
+    plugins.push(createModelPlugin(config.model));
   }
-
   if (config?.retriever) {
-    workflow.use({
-      key: "config.retriever",
-      capabilities: {
-        retriever: { name: config.retriever },
-      },
-    });
+    plugins.push(createRetrieverPlugin(config.retriever));
   }
-
   if (config?.system) {
-    const system = config.system;
-    workflow.use({
-      key: "config.system",
-      lifecycle: "init",
-      hook: ((_input: unknown, context: { system?: string }) => {
-        context.system = system;
-        return undefined;
-      }) as any, // eslint-disable-line @typescript-eslint/no-explicit-any
-    });
+    plugins.push(createSystemPlugin(config.system));
   }
+  const defaults = plugins.length > 0 ? { plugins } : undefined;
+  return Recipe.pack("rag-chat", () => ({}), defaults ? { defaults } : undefined);
+};
 
-  return workflow;
+export const ragChat = (config?: RagChatConfig) => {
+  const pack = createRagChatPack(config);
+  return Recipe.flow("rag").use(pack);
 };

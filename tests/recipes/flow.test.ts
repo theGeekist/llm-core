@@ -1,8 +1,9 @@
 import { describe, expect, it } from "bun:test";
 import type { Outcome } from "#workflow/types";
+import { createPipelineRollback } from "@wpkernel/pipeline/core";
 import { createMemoryCache } from "../../src/adapters";
 import { type StepApply, Recipe } from "../../src/recipes/flow";
-import { assertSyncOutcome } from "../workflow/helpers";
+import { assertSyncOutcome, diagnosticMessages } from "../workflow/helpers";
 
 const appendOrder = (state: Record<string, unknown>, label: string) => {
   const order = Array.isArray(state.order) ? [...state.order] : [];
@@ -28,6 +29,16 @@ const stepSecond: StepApply = ({ state }) => {
 
 const stepThird: StepApply = ({ state }) => {
   appendOrder(state, "third");
+};
+
+const stepExplicit: StepApply = ({ state }) => {
+  appendOrder(state, "explicit");
+  return { output: { order: ["ignored"] } };
+};
+
+const stepRollback: StepApply = ({ state }) => {
+  appendOrder(state, "rolled");
+  return { rollback: createPipelineRollback(() => undefined) };
 };
 
 describe("Recipe flow packs", () => {
@@ -75,5 +86,92 @@ describe("Recipe flow packs", () => {
     const runtime = Recipe.flow("agent").use(pack).build();
 
     expect(runtime.declaredAdapters().cache).toBe(cache);
+  });
+
+  it("keeps explicit helper output when provided", () => {
+    const pack = Recipe.pack("explicit", ({ step }) => ({
+      only: step("only", stepExplicit),
+    }));
+
+    const workflow = Recipe.flow("rag").use(pack).build();
+    const outcome = assertSyncOutcome(workflow.run({ input: "x", query: "x" }));
+    const ok = expectOk(outcome);
+    const order = (ok.artefact as { order?: unknown }).order;
+
+    expect(order).toEqual(["explicit"]);
+  });
+
+  it("fills output when a step only returns rollback", () => {
+    const pack = Recipe.pack("rollback", ({ step }) => ({
+      only: step("only", stepRollback),
+    }));
+
+    const workflow = Recipe.flow("rag").use(pack).build();
+    const outcome = assertSyncOutcome(workflow.run({ input: "x", query: "x" }));
+    const ok = expectOk(outcome);
+    const order = (ok.artefact as { order?: unknown }).order;
+
+    expect(order).toEqual(["rolled"]);
+  });
+
+  it("applies flow defaults and pack default plugins", () => {
+    const pluginA = { key: "defaults.flow.plugin" };
+    const pluginB = { key: "defaults.pack.plugin" };
+    const pack = Recipe.pack(
+      "defaults",
+      ({ step }) => ({
+        only: step("only", stepFirst),
+      }),
+      { defaults: { plugins: [pluginB] } },
+    );
+
+    const runtime = Recipe.flow("rag")
+      .use(pack)
+      .defaults({ plugins: [pluginA] })
+      .build();
+    const explanation = runtime.explain();
+
+    expect(explanation.plugins).toContain("defaults.flow.plugin");
+    expect(explanation.plugins).toContain("defaults.pack.plugin");
+    expect(explanation.plugins).not.toContain("recipe.defaults.flow");
+  });
+
+  it("diagnoses duplicate pack names", () => {
+    const packA = Recipe.pack("dup", ({ step }) => ({
+      first: step("first", stepFirst),
+    }));
+    const packB = Recipe.pack("dup", ({ step }) => ({
+      second: step("second", stepSecond),
+    }));
+    const runtime = Recipe.flow("rag").use(packA).use(packB).build();
+    const outcome = assertSyncOutcome(runtime.run({ input: "x", query: "x" }));
+
+    expect(outcome.status).toBe("ok");
+    const messages = diagnosticMessages(outcome.diagnostics);
+    expect(messages).toContain('Duplicate recipe pack name "dup" overridden');
+    if (outcome.status !== "ok") {
+      throw new Error("Expected ok outcome.");
+    }
+    const order = (outcome.artefact as { order?: unknown }).order;
+    expect(order).toEqual(["second"]);
+  });
+
+  it("escalates duplicate pack names in strict mode", () => {
+    const packA = Recipe.pack("dup", ({ step }) => ({
+      first: step("first", stepFirst),
+    }));
+    const packB = Recipe.pack("dup", ({ step }) => ({
+      second: step("second", stepSecond),
+    }));
+    const runtime = Recipe.flow("rag").use(packA).use(packB).build();
+    const outcome = assertSyncOutcome(
+      runtime.run({ input: "x", query: "x" }, { diagnostics: "strict" }),
+    );
+
+    if (outcome.status !== "error") {
+      throw new Error("Expected error outcome.");
+    }
+    const messages = diagnosticMessages(outcome.diagnostics);
+    expect(messages).toContain('Duplicate recipe pack name "dup" overridden');
   });
 });

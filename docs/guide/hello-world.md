@@ -21,25 +21,26 @@ import { Workflow } from "@geekist/llm-core/workflow";
 
 ## 2. Pick a Recipe
 
-Recipes are pre-built workflows. Instead of wiring up a DAG by hand, you just ask for a specialized blueprint.
-Let's ask for an `"agent"`.
+Recipes are declarative flows. We use `Recipe.flow` to start one.
+You can define your own steps, or load a standard flow like `"agent"`.
 
 ::: tabs
 == TypeScript
 
 ```ts
-import { Workflow } from "@geekist/llm-core/workflow";
+import { Recipe } from "@geekist/llm-core/recipes";
 
-// "agent" gives us a Loop + Tool Calling + Planning workflow
-const workflow = Workflow.recipe("agent");
+// "agent" is a standard Recipe flow for loop-based agents
+// We capture the "flow builder" here so we can configure it.
+const agent = Recipe.flow("agent");
 ```
 
 :::
 
 ## 3. Add the Brain (Adapters)
 
-A recipe needs capabilities to run. The "agent" recipe needs a `model`.
-We use `.use()` to plug in adapters.
+Recipes are abstract. They need **Adapter Plugs** to connect to the real world.
+The `"agent"` flow expects a `model` adapter.
 
 > [!TIP] > **Adapters** are the bridge between your code and the AI ecosystem (OpenAI, Anthropic, LangChain, etc.).
 
@@ -47,13 +48,14 @@ We use `.use()` to plug in adapters.
 == TypeScript
 
 ```ts
-import { Workflow } from "@geekist/llm-core/workflow";
-import { Adapter, fromAiSdkModel } from "#adapters";
+import { Recipe } from "@geekist/llm-core/recipes";
+import { Adapter, fromAiSdkModel } from "@geekist/llm-core/adapters";
 import { openai } from "@ai-sdk/openai";
 
-const workflow = Workflow.recipe("agent").use(
-  Adapter.model("openai.model", fromAiSdkModel(openai("gpt-4o"))),
-);
+const agent = Recipe.flow("agent");
+
+// Configure the flow with an OpenAI adapter
+const workflow = agent.use(Adapter.model("openai.model", fromAiSdkModel(openai("gpt-4o")))).build();
 ```
 
 :::
@@ -93,14 +95,21 @@ You don't need to rewrite your agent logic. Just swap the **adapter**.
 - import { openai } from "@ai-sdk/openai";
 + import { anthropic } from "@ai-sdk/anthropic";
 
-const workflow = Workflow.recipe("agent")
--  .use(Adapter.model("openai.model", fromAiSdkModel(openai("gpt-4o"))));
-+  .use(Adapter.model("anthropic.model", fromAiSdkModel(anthropic("claude-3-5-sonnet-20240620"))));
+- const agent = Recipe.flow("agent");
++ const agent = Recipe.flow("agent");
+
+const workflow = agent
+-  .use(Adapter.model("openai.model", fromAiSdkModel(openai("gpt-4o"))))
++  .use(Adapter.model("anthropic.model", fromAiSdkModel(anthropic("claude-3-5-sonnet-20240620"))))
+   .build();
 ```
 
 :::
 
 That's it. Same inputs, same outputs, different brain.
+
+> [!TIP]
+> Curious about what other adapters exist? See the **[Adapter API Reference](/reference/adapters-api)**.
 
 ## Next Steps
 

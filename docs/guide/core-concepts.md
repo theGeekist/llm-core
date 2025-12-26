@@ -30,6 +30,27 @@ graph TD
 - **Packs** contain **Steps** (the actual logic).
 - **Recipes** stitch Packs together using `Recipe.flow`.
 
+### Sidebar: The Engine (Workflow)
+
+You author with **Recipes**, but you execute with **Workflow**.
+Think of `Workflow` as the compiler and runtime. It takes your high-level recipe and turns it into a directed acyclic graph (DAG) of executable steps.
+
+```ts
+// 1. Authoring (Declarative)
+const agent = Recipe.flow("agent");
+
+// 2. Compiling (Infrastructure)
+const app = agent.build();
+
+// 3. Execution (Runtime)
+await app.run(input);
+```
+
+> [!TIP]
+> Want to see the full execution API? Check out the **[Workflow Engine Reference](/reference/workflow-api)**.
+
+This separation is why your logic is portable. The Recipe describes the intent; the Workflow handles the execution, state management, and tracing.
+
 ## 2. Principle: Adapters are Plugs
 
 This is the most common point of confusion. Here's the mental model:
@@ -118,3 +139,9 @@ if (result.status === "paused") {
 ```
 
 :::
+
+## Next Steps
+
+Now that you understand the **Assets** (Recipes), **Plugs** (Adapters), and **Uniformity** (Steps), it's time to learn how to mix and match them.
+
+- [Composing Recipes](/guide/composing-recipes) -> Learn how to override Packs and extend logic.

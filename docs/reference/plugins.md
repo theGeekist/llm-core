@@ -1,6 +1,9 @@
 # Plugins (Capabilities + Overrides)
 
-Plugins are the smallest unit of composition. A plugin is a bag of extensions: capabilities, helpers, and lifecycle hooks that a recipe can install. They describe what they add, what they need, and how they extend or override other plugins. They are deterministic: order matters, and overrides are explicit.
+**Note: This is a low-level API.** Most users should use **Packs** (`Recipe.pack`).
+Packs compile down to Plugins.
+
+Plugins are the smallest unit of composition in the Engine. A plugin is a bag of extensions: capabilities, helpers, and lifecycle hooks that a recipe can install. They describe what they add, what they need, and how they extend or override other plugins. They are deterministic: order matters, and overrides are explicit.
 
 ## The Shape
 
@@ -47,7 +50,9 @@ Example:
 == TypeScript
 
 ```ts
-const wf = Workflow.recipe("agent")
+import { Recipe } from "#recipes";
+
+const wf = Recipe.flow("agent")
   .use({ key: "model.openai", capabilities: { model: { name: "gpt-4.1" } } })
   .use({
     key: "model.openai.override",
@@ -61,7 +66,9 @@ const wf = Workflow.recipe("agent")
 == JavaScript
 
 ```js
-const wf = Workflow.recipe("agent")
+import { Recipe } from "#recipes";
+
+const wf = Recipe.flow("agent")
   .use({ key: "model.openai", capabilities: { model: { name: "gpt-4.1" } } })
   .use({
     key: "model.openai.override",

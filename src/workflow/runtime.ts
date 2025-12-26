@@ -222,9 +222,10 @@ const createExplainGetter = (explain: ReturnType<typeof buildExplainSnapshot>) =
 export const createRuntime = <N extends RecipeName>({
   contract,
   plugins,
+  diagnostics,
   pipelineFactory,
 }: RuntimeDeps<N>): WorkflowRuntime<RunInputOf<N>, ArtefactOf<N>, ResumeInputOf<N>> => {
-  const buildDiagnostics: DiagnosticEntry[] = [];
+  const buildDiagnostics: DiagnosticEntry[] = diagnostics ? [...diagnostics] : [];
   const pipeline = pipelineFactory
     ? pipelineFactory(contract, plugins)
     : createPipeline(contract, plugins);

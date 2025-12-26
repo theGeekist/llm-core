@@ -1,6 +1,7 @@
 # Runtime (Execution + Diagnostics)
 
-The runtime is the single place for operational concerns. It is passed to `run(...)` and can be reused across workflows.
+The **Runtime** is the environment that executes the DAG defined by your **Recipe**.
+It is passed to `run(...)` and is responsible for tracing, diagnostics, and maintaining the pause/resume capability.
 
 Related:
 

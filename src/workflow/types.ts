@@ -7,6 +7,7 @@ import type {
   PipelineReporter,
 } from "@wpkernel/pipeline/core";
 import type { AdapterBundle, AdapterResume } from "../adapters/types";
+import type { DiagnosticEntry } from "./diagnostics";
 import type { ExplainSnapshot } from "./explain";
 
 // Recipe inputs + artefacts
@@ -101,6 +102,7 @@ export type Plugin = {
 export type RuntimeDeps<N extends RecipeName> = {
   contract: RecipeContract & { name: N };
   plugins: Plugin[];
+  diagnostics?: DiagnosticEntry[];
   pipelineFactory?: (
     contract: RecipeContract & { name: N },
     plugins: Plugin[],

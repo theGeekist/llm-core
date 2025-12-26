@@ -8,7 +8,8 @@ export type DiagnosticKind =
   | "requirement"
   | "contract"
   | "resume"
-  | "adapter";
+  | "adapter"
+  | "recipe";
 
 export type DiagnosticEntry = {
   level: DiagnosticLevel;
@@ -51,6 +52,13 @@ export const createRequirementDiagnostic = (message: string): DiagnosticEntry =>
   level: "warn",
   kind: "requirement",
   message,
+});
+
+export const createRecipeDiagnostic = (message: string, data?: unknown): DiagnosticEntry => ({
+  level: "warn",
+  kind: "recipe",
+  message,
+  data,
 });
 
 export const createContractDiagnostic = (message: string): DiagnosticEntry => ({
@@ -105,7 +113,9 @@ export const hasErrorDiagnostics = (diagnostics: DiagnosticEntry[]) =>
   diagnostics.some((diagnostic) => diagnostic.level === "error");
 
 const shouldPromoteToError = (diagnostic: DiagnosticEntry) =>
-  diagnostic.kind === "requirement" || diagnostic.kind === "contract";
+  diagnostic.kind === "requirement" ||
+  diagnostic.kind === "contract" ||
+  diagnostic.kind === "recipe";
 
 export const applyDiagnosticsMode = (
   diagnostics: DiagnosticEntry[],

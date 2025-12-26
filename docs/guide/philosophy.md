@@ -4,9 +4,14 @@ There are two ways to build AI applications today: **Gluing** and **Orchestratin
 
 **Gluing** is easier to start. You write a script, call `openai.chat.completions.create`, parse the JSON, and maybe save it to a database. Then you add a retry loop. Then you switch to Anthropic and rewrite the prompt structure. Then you add RAG and rewrite the loop.
 
-**Orchestrating** is different. You define _what_ you want to happen, and the specialized runtime makes it happen.
+**Orchestrating** is different. You define _what_ you want to happen using declarative **Recipes**, and a specialized runtime makes it happen.
 
-`llm-core` is an **Orchestration Framework**. It imposes structure (Recipes, Packs, Steps) to give you superpowers that glue code can never support.
+`llm-core` is an **Orchestration Framework**.
+
+- **Recipes** (`Recipe.flow`) define the logic.
+- **Workflow** (`Workflow.run`) executes the logic.
+
+It imposes structure (Recipes, Packs, Steps) to give you superpowers that glue code can never support.
 
 ## The Unleashed Workflow
 

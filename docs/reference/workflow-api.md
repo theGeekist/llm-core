@@ -1,61 +1,41 @@
-# Workflow API
+# The Engine (Workflow API)
 
-The Workflow API is small on purpose. You describe _what_ you’re building (a recipe), layer in behavior, and run it. Every decision is inspectable. If you’ve used a pipeline or builder before, this will feel familiar.
-All runs return a structured outcome with trace + diagnostics. Sync or async — it’s always `MaybePromise`.
+The **Workflow** is the execution engine for `llm-core`.
+You author your logic in **Recipes**, compile them into a Workflow, and then `.run()` them.
+
+This API is for **Execution** and **Advanced Control**.
+Most of the time, you will interact with `Recipe.flow(...)` instead.
 
 Related:
 
-- [Adapter contracts + helpers](/reference/adapters-api)
-- [Runtime channel details](/reference/runtime)
+- [Packs & Recipes](/reference/packs-and-recipes) (Authoring API)
+- [Runtime API](/reference/runtime) (Context object details)
 
-## Quick Start
+## Quick Start (Execution)
 
-If this is your first pass, don’t overthink it: you only touch a few methods to get a reliable run.
+Once you have a recipe (from `Recipe.flow`), you compile and run it.
 
 ::: tabs
 == TypeScript
 
 ```ts
-import { Workflow } from "@geekist/llm-core/workflow";
-import { Outcome } from "@geekist/llm-core";
+import { Recipe } from "@geekist/llm-core/recipes";
 
-const wf = Workflow.recipe("rag")
-  .use({ key: "model.openai", capabilities: { model: { name: "gpt-4.1" } } })
-  .use({ key: "retriever.vector", capabilities: { retriever: { type: "vector" } } })
-  .build();
+// 1. Author
+const agent = Recipe.flow("agent");
 
-const out = await wf.run({ input: "What is a capybara?" });
+// 2. Compile (Build)
+const workflow = agent.build();
 
-Outcome.match(out, {
-  ok: ({ artefact }) => artefact["answer.text"],
-  paused: ({ token }) => `Paused: ${String(token)}`,
-  error: ({ error }) => `Failed: ${String(error)}`,
-});
-```
+// 3. Execute (Run)
+const result = await workflow.run({ input: "Do work" });
 
-== JavaScript
-
-```js
-import { Workflow } from "@geekist/llm-core/workflow";
-import { Outcome } from "@geekist/llm-core";
-
-const wf = Workflow.recipe("rag")
-  .use({ key: "model.openai", capabilities: { model: { name: "gpt-4.1" } } })
-  .use({ key: "retriever.vector", capabilities: { retriever: { type: "vector" } } })
-  .build();
-
-const out = await wf.run({ input: "What is a capybara?" });
-
-Outcome.match(out, {
-  ok: ({ artefact }) => artefact["answer.text"],
-  paused: ({ token }) => `Paused: ${String(token)}`,
-  error: ({ error }) => `Failed: ${String(error)}`,
-});
+if (result.status === "ok") {
+  console.log(result.artefact);
+}
 ```
 
 :::
-
-Recipes ship with minimal default plugins. `.use(...)` extends or overrides those defaults.
 
 ## Adapter helpers (DX path)
 
@@ -66,9 +46,9 @@ Register adapters without touching registry types. The workflow surface stays cl
 
 ```ts
 import { Adapter } from "#adapters";
-import { Workflow } from "#workflow";
+import { Recipe } from "#recipes";
 
-const wf = Workflow.recipe("rag")
+const wf = Recipe.flow("rag")
   .use(
     Adapter.retriever("custom.retriever", {
       retrieve: () => ({ documents: [] }),
@@ -81,9 +61,9 @@ const wf = Workflow.recipe("rag")
 
 ```js
 import { Adapter } from "#adapters";
-import { Workflow } from "#workflow";
+import { Recipe } from "#recipes";
 
-const wf = Workflow.recipe("rag")
+const wf = Recipe.flow("rag")
   .use(
     Adapter.retriever("custom.retriever", {
       retrieve: () => ({ documents: [] }),
@@ -118,13 +98,14 @@ If you give us a literal recipe name, we give you full type safety.
 == TypeScript
 
 ```ts
-const wf = Workflow.recipe("agent"); // typed input + artefacts
+const agent = Recipe.flow("agent"); // typed flow builder
+const wf = agent.build(); // typed input + artefacts
 ```
 
 == JavaScript
 
 ```js
-const wf = Workflow.recipe("agent");
+const agent = Recipe.flow("agent");
 ```
 
 :::

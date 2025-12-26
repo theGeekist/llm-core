@@ -1,7 +1,11 @@
 # Composing Recipes
 
-Because recipes are built from **Packs**, you aren't stuck with the default logic.
-You can mix and match Packs to create your own custom recipes in seconds.
+# Composing Recipes
+
+**Recipes** are just collections of **Packs**.
+This means you can share logic across teams by publishing Packs (like "ResearchPack" or "CompliancePack") and mixing them into any workflow.
+
+If you are open-sourcing logic built with `llm-core`, you publish Packs.
 
 ## The Mental Model
 
@@ -13,6 +17,9 @@ const workflow = Recipe.flow("custom-agent")
   .use(ExecutionPack) // Logic for doing
   .use(MemoryPack); // Logic for remembering
 ```
+
+> [!TIP]
+> See the **[Packs & Recipes Reference](/reference/packs-and-recipes)** for the full API on `.step()`, `.priority()`, and `.override()`.
 
 ## Tutorial: Swapping the Brain
 
@@ -98,3 +105,9 @@ const MyPack = Recipe.pack("lifecycle", ({ step }) => ({
 ````
 
 :::
+
+## Next Steps
+
+As you build more complex recipes with overrides and priority steps, you'll need to know what's happening under the hood.
+
+- [Debugging & Diagnostics](/guide/debugging) -> Learn how to trace execution and enforce strict mode.

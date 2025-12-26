@@ -51,6 +51,9 @@ export default defineConfig({
             { text: "Your First Workflow", link: "/guide/hello-world" },
             { text: "Core Concepts", link: "/guide/core-concepts" },
             { text: "Composing Recipes", link: "/guide/composing-recipes" },
+            { text: "Debugging", link: "/guide/debugging" },
+            { text: "Unified Media Inputs", link: "/guide/media-inputs" },
+            { text: "Deep Dive: Gems", link: "/guide/deep-dive" },
           ],
         },
         {

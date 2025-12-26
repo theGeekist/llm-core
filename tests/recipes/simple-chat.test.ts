@@ -1,5 +1,11 @@
 import { describe, expect, it } from "bun:test";
+import { createHelper } from "@wpkernel/pipeline";
 import { simpleChat } from "../../src/recipes/simple-chat";
+import { assertSyncOutcome } from "../workflow/helpers";
+
+const useHelper = (pipeline: unknown, helper: unknown) => {
+  (pipeline as { use: (value: unknown) => void }).use(helper);
+};
 
 describe("Simple Chat Recipe", () => {
   it("builds a workflow with default configuration", () => {
@@ -30,5 +36,37 @@ describe("Simple Chat Recipe", () => {
     const runtime = workflow.build();
     const explanation = runtime.explain();
     expect(explanation).toBeDefined();
+  });
+
+  it("adds system config plugin when system prompt is set", () => {
+    const workflow = simpleChat({ system: "Keep it short." });
+    let seen: string | undefined;
+    const readerPlugin = {
+      key: "test.read.system",
+      helperKinds: ["test.system"],
+      register: (pipeline: unknown) => {
+        useHelper(
+          pipeline,
+          createHelper({
+            key: "test.read.system",
+            kind: "test.system",
+            apply: (options) => {
+              const ctx = options.context as { system?: string };
+              seen = ctx.system;
+            },
+          }),
+        );
+      },
+    };
+    const workflowWithReader = workflow.defaults({ plugins: [readerPlugin] });
+    const runtime = workflowWithReader.build();
+    const explanation = runtime.explain();
+
+    expect(explanation.plugins).toContain("config.system");
+    const outcome = assertSyncOutcome(runtime.run({ input: "question" }));
+    if (outcome.status !== "ok") {
+      throw new Error("Expected ok outcome.");
+    }
+    expect(seen).toBe("Keep it short.");
   });
 });

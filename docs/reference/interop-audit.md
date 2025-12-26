@@ -5,6 +5,8 @@ export surface_ to our adapter primitives, highlight mismatches, and list gaps.
 This is a catalogue — not a commitment to implement every construct. Anything
 outside our adapter surface is explicitly called out.
 
+The goal is to ensure **Recipes** are portable across these ecosystems.
+
 ## AI SDK (ai + provider + provider-utils)
 
 Packages audited:

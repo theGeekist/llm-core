@@ -18,9 +18,9 @@ Register a retriever without touching registry types:
 
 ```ts
 import { Adapter } from "#adapters";
-import { Workflow } from "#workflow";
+import { Recipe } from "#recipes";
 
-const wf = Workflow.recipe("rag")
+const wf = Recipe.flow("rag")
   .use(
     Adapter.retriever("custom.retriever", {
       retrieve: () => ({ documents: [] }),
@@ -33,9 +33,9 @@ const wf = Workflow.recipe("rag")
 
 ```js
 import { Adapter } from "#adapters";
-import { Workflow } from "#workflow";
+import { Recipe } from "#recipes";
 
-const wf = Workflow.recipe("rag")
+const wf = Recipe.flow("rag")
   .use(
     Adapter.retriever("custom.retriever", {
       retrieve: () => ({ documents: [] }),

@@ -3,8 +3,8 @@ layout: home
 
 hero:
   name: llm-core
-  text: Build LLM features without glue-code regret
-  tagline: Swap providers, keep behavior, and always know why a run behaved that way.
+  text: Build AI with Recipes, not Glue.
+  tagline: Define declarative flows using Packs. Swap providers via Adapters. Stop writing spaghetti code.
   image:
     src: /logo.png
     alt: llm-core logo
@@ -17,47 +17,44 @@ hero:
       link: /guide/core-concepts
 
 features:
-  - title: Migrate Ecosystems
-    details: Move from LangChain to LlamaIndex to AI SDK without rewriting your business logic.
-  - title: Ship Stable Recipes
-    details: Stop shipping "fragile scripts". creating versioned, testable Agent Recipes that behave predictably.
-  - title: Swap Providers Instantly
-    details: OpenAI rate-limited? Switch to Anthropic or local Llama via config. No code changes.
-  - title: Unified Runtime
-    details: One way to run agents across your entire company, regardless of the underlying tools.
+  - title: Recipes are Assets
+    details: Define flows as named, versioned recipes. Share them across teams like npm packages.
+  - title: Packs are Logic
+    details: Bundle specific capabilities (like "Planning" or "Memory") into reusable Packs.
+  - title: Adapters are Plugs
+    details: Swap OpenAI for Anthropic or LangChain for LlamaIndex without rewriting your recipe.
+  - title: Execution is Deterministic
+    details: The engine runs your recipe as a DAG. Every step is traced, resumable, and explainable.
 ---
 
-## LLM workflows feel powerful until they don’t
+## Stop debugging prompts. Start orchestrating logic.
 
-Types leak. Adapters disagree. One retry changes everything. You end up debugging prompts instead of shipping features.
-llm-core is the boring, inspectable path: small surface, explicit composition, and outcomes that always tell you _why_.
+`llm-core` connects your business logic to AI models without gluing them together with fragile scripts.
+You define the **Recipe**, plug in the **Adapters**, and let the **Runtime** handle the execution.
 
 ## Quick start (TS/JS)
+
+Define a flow, plug in your adapters, and run it.
 
 ::: tabs
 == TypeScript
 
 ```ts
-import { Workflow } from "@geekist/llm-core/workflow";
+import { Recipe } from "@geekist/llm-core/recipes";
+import { Adapter, fromAiSdkModel } from "@geekist/llm-core/adapters";
+import { openai } from "@ai-sdk/openai";
 
-const workflow = Workflow.recipe("rag").build();
-const result = await workflow.run({ query: "What is Geekist?" });
+// 1. Define your flow (or load a standard one)
+const agent = Recipe.flow("agent");
 
-if (result.status === "ok") {
-  console.log(result.artefact.Answer);
-}
-```
+// 2. Plug in your adapters
+const workflow = agent.use(Adapter.model("openai.model", fromAiSdkModel(openai("gpt-4o")))).build();
 
-== JavaScript
-
-```js
-import { Workflow } from "@geekist/llm-core/workflow";
-
-const workflow = Workflow.recipe("rag").build();
-const result = await workflow.run({ query: "What is Geekist?" });
+// 3. Run it
+const result = await workflow.run({ input: "Build me a React app" });
 
 if (result.status === "ok") {
-  console.log(result.artefact.Answer);
+  console.log(result.artefact);
 }
 ```
 
@@ -68,3 +65,5 @@ if (result.status === "ok") {
 - [Workflow API](/reference/workflow-api)
 - [Adapters API](/reference/adapters-api)
 - [Runtime model](/reference/runtime)
+- [Debugging & Diagnostics](/guide/debugging)
+- [Unified Media Inputs](/guide/media-inputs)

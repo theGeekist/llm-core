@@ -1,33 +1,32 @@
-import { Workflow } from "#workflow/builder";
+import type { Plugin } from "../workflow/types";
+import { Recipe } from "./flow";
+import { createSystemPlugin } from "./system";
 
 export type SimpleChatConfig = {
   model?: string;
   system?: string;
 };
 
-export const simpleChat = (config?: SimpleChatConfig) => {
-  const workflow = Workflow.recipe("agent");
+const createModelPlugin = (model: string): Plugin => ({
+  key: "config.model",
+  capabilities: {
+    model: { name: model },
+  },
+});
 
+const createSimpleChatPack = (config?: SimpleChatConfig) => {
+  const plugins: Plugin[] = [];
   if (config?.model) {
-    workflow.use({
-      key: "config.model",
-      capabilities: {
-        model: { name: config.model },
-      },
-    });
+    plugins.push(createModelPlugin(config.model));
   }
-
   if (config?.system) {
-    const system = config.system;
-    workflow.use({
-      key: "config.system",
-      lifecycle: "init",
-      hook: ((_input: unknown, context: { system?: string }) => {
-        context.system = system;
-        return undefined;
-      }) as any, // eslint-disable-line @typescript-eslint/no-explicit-any
-    });
+    plugins.push(createSystemPlugin(config.system));
   }
+  const defaults = plugins.length > 0 ? { plugins } : undefined;
+  return Recipe.pack("simple-chat", () => ({}), defaults ? { defaults } : undefined);
+};
 
-  return workflow;
+export const simpleChat = (config?: SimpleChatConfig) => {
+  const pack = createSimpleChatPack(config);
+  return Recipe.flow("agent").use(pack);
 };
