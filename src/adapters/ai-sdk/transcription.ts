@@ -1,17 +1,17 @@
-import type { JSONValue, TranscriptionModelV2 } from "@ai-sdk/provider";
+import type { JSONValue, TranscriptionModelV3 } from "@ai-sdk/provider";
 import type {
   AdapterCallContext,
   TranscriptionCall,
   TranscriptionModel,
   TranscriptionResult,
 } from "../types";
-import { fromPromiseLike, mapMaybe } from "../../maybe";
+import { bindFirst, fromPromiseLike, mapMaybe } from "../../maybe";
 import { toAdapterTrace } from "../telemetry";
 import { validateTranscriptionInput } from "../input-validation";
 import { toDiagnostics, toMeta, toTelemetry } from "./telemetry";
 
 const toTranscriptionResult = (
-  result: Awaited<ReturnType<TranscriptionModelV2["doGenerate"]>>,
+  result: Awaited<ReturnType<TranscriptionModelV3["doGenerate"]>>,
   diagnostics: ReturnType<typeof validateTranscriptionInput>,
 ): TranscriptionResult => {
   const mergedDiagnostics = diagnostics.concat(toDiagnostics(result.warnings));
@@ -42,7 +42,12 @@ const toTranscriptionResult = (
 const toProviderOptions = (options?: Record<string, Record<string, unknown>>) =>
   (options ?? {}) as Record<string, Record<string, JSONValue>>;
 
-export function fromAiSdkTranscriptionModel(model: TranscriptionModelV2): TranscriptionModel {
+const mapTranscriptionResult = (
+  diagnostics: ReturnType<typeof validateTranscriptionInput>,
+  result: Awaited<ReturnType<TranscriptionModelV3["doGenerate"]>>,
+): TranscriptionResult => toTranscriptionResult(result, diagnostics);
+
+export function fromAiSdkTranscriptionModel(model: TranscriptionModelV3): TranscriptionModel {
   function generate(call: TranscriptionCall, _context?: AdapterCallContext) {
     void _context;
     const diagnostics = validateTranscriptionInput(call.audio);
@@ -56,7 +61,7 @@ export function fromAiSdkTranscriptionModel(model: TranscriptionModelV2): Transc
           abortSignal: call.abortSignal,
         }),
       ),
-      (result) => toTranscriptionResult(result, diagnostics),
+      bindFirst(mapTranscriptionResult, diagnostics),
     );
   }
 

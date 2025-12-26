@@ -75,11 +75,12 @@ export default defineConfig({
           items: [
             { text: "Adapters Overview", link: "/reference/adapters" },
             {
-              text: "Deep Dives",
+              text: "Capabilities",
               items: [
-                { text: "AI SDK (Vercel)", link: "/reference/ecosystem/ai-sdk" },
-                { text: "LangChain", link: "/reference/ecosystem/langchain" },
-                { text: "LlamaIndex", link: "/reference/ecosystem/llamaindex" },
+                { text: "Models (AI SDK / LC / LI)", link: "/reference/adapters/models" },
+                { text: "Retrieval (RAG)", link: "/reference/adapters/retrieval" },
+                { text: "Tools & Parsers", link: "/reference/adapters/tools" },
+                { text: "Storage & Memory", link: "/reference/adapters/storage" },
               ],
             },
             { text: "Packs & Recipes", link: "/reference/packs-and-recipes" },

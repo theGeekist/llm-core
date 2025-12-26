@@ -4,7 +4,7 @@ Adapters are how llm-core keeps the ecosystem from leaking into your app.
 Most users never need this page because recipes and workflows already ship with adapters wired in.
 You only come here when you want to integrate a new provider, bridge an external SDK, or take full control.
 
-> [!IMPORTANT] > **Don't start here.** If you just want to use OpenAI, LangChain, or LlamaIndex, go to the **[Ecosystem Guides](/reference/adapters#ecosystem-deep-dives-practical-guides)**.
+> [!IMPORTANT] > **Don't start here.** If you just want to use OpenAI, LangChain, or LlamaIndex, browse the **[Adapters Overview](/reference/adapters)** by capability.
 
 Adapters exist to contain ecosystem differences, not expose them. They normalize wildly different concepts
 (models, tools, retrievers, messages, schemas) into a stable internal shape while keeping provider details
@@ -645,48 +645,6 @@ type Tool = {
 };
 ```
 
-== JavaScript
-
-```js
-const tool = {
-  name: "search",
-  description: "Search the web",
-  params: [{ name: "query", type: "string", required: true }],
-  inputSchema: { jsonSchema: { type: "object", properties: {} } },
-  outputSchema: { jsonSchema: { type: "object", properties: {} } },
-  execute: (input) => ({ ok: true, input }),
-};
-```
-
-:::
-
-Param schemas normalize to object‑typed JSON schema when needed. Parameter types expect JSON Schema
-primitives; unknown types fall back to `"string"`.
-
-AI SDK tool adapters accept either AI SDK schema wrappers or raw JSON schema objects; both normalize
-through `toSchema`.
-
-### Tool helpers
-
-::: tabs
-== TypeScript
-
-```ts
-import { Tooling } from "#adapters";
-
-const params = [Tooling.param("query", "string", { required: true })];
-const tool = Tooling.create({ name: "search", params });
-```
-
-== JavaScript
-
-```js
-import { Tooling } from "#adapters";
-
-const params = [Tooling.param("query", "string", { required: true })];
-const tool = Tooling.create({ name: "search", params });
-```
-
 :::
 
 ## Messages (structured content)
@@ -703,180 +661,8 @@ type Message = {
 };
 ```
 
-== JavaScript
-
-```js
-const message = {
-  role: "user",
-  content: "Find me a doc about capybaras.",
-  name: "user-1",
-};
-```
-
 :::
-
-Structured content carries text plus parts (text, images, files, tool calls, tool results).
-Binary image/file parts are preserved and base64‑encoded in adapters.
-
-## Schemas
-
-`Schema` accepts JSON schema or Zod.
-
-::: tabs
-== TypeScript
-
-```ts
-type Schema = {
-  name?: string;
-  jsonSchema: unknown;
-  kind?: "json-schema" | "zod" | "unknown";
-};
-```
-
-== JavaScript
-
-```js
-const schema = {
-  name: "AnswerSchema",
-  jsonSchema: { type: "object", properties: { answer: { type: "string" } } },
-};
-```
-
-:::
-
-Normalization guarantees object schemas include `properties`.
-
-## Prompt schemas
-
-Prompt templates can expose input schemas. LangChain and LlamaIndex only provide variable names,
-so adapters default types to `string`. AI SDK does not expose prompt templates.
-
-::: tabs
-== TypeScript
-
-```ts
-import { toPromptInputSchema, validatePromptInputs } from "#adapters";
-
-const inputSchema = toPromptInputSchema(prompt.schema!);
-const diagnostics = validatePromptInputs(prompt.schema!, { name: "Ada" });
-```
-
-== JavaScript
-
-```js
-import { toPromptInputSchema, validatePromptInputs } from "#adapters";
-
-const inputSchema = toPromptInputSchema(prompt.schema);
-const diagnostics = validatePromptInputs(prompt.schema, { name: "Ada" });
-```
-
-:::
-
-## Telemetry + trace
-
-Adapters expose provider metadata in `result.telemetry`.
-Trace events are derived from telemetry where possible:
-
-::: tabs
-== TypeScript
-
-```ts
-type ModelTelemetry = {
-  request?: { body?: unknown };
-  response?: { id?: string; modelId?: string; timestamp?: number; body?: unknown };
-  usage?: { inputTokens?: number; outputTokens?: number; totalTokens?: number };
-  totalUsage?: { inputTokens?: number; outputTokens?: number; totalTokens?: number };
-  warnings?: AdapterDiagnostic[];
-  providerMetadata?: Record<string, unknown>;
-};
-```
-
-== JavaScript
-
-```js
-const telemetry = {
-  request: { body: {} },
-  response: { id: "req-1", modelId: "gpt-4o-mini", timestamp: Date.now() },
-  usage: { inputTokens: 10, outputTokens: 20, totalTokens: 30 },
-  warnings: [],
-  providerMetadata: {},
-};
-```
-
-:::
-
-Diagnostics may include `usage_unavailable` when a provider does not report token usage.
-
-## Adapter validation helpers
-
-::: tabs
-== TypeScript
-
-```ts
-import { hasAdapter, validateAdapters } from "#workflow/adapter-validation";
-
-const adapters = await runtime.adapters();
-hasAdapter(adapters, "tools"); // true if non-empty tools
-validateAdapters(adapters, ["model", "retriever"]);
-```
-
-== JavaScript
-
-```js
-import { hasAdapter, validateAdapters } from "#workflow/adapter-validation";
-
-const adapters = await runtime.adapters();
-hasAdapter(adapters, "tools");
-validateAdapters(adapters, ["model", "retriever"]);
-```
-
-:::
-
-## MaybePromise semantics
-
-All adapter methods may return sync or async values. Call sites should treat them as `MaybePromise`.
 
 ## One-screen wiring examples
 
-### AI SDK model + custom retriever
-
-::: tabs
-== TypeScript
-
-```ts
-import { fromAiSdkModel, Adapter } from "#adapters";
-import { Recipe } from "#recipes";
-import { openai } from "@ai-sdk/openai";
-
-const retriever = {
-  retrieve: () => ({ documents: [{ text: "capybara facts" }] }),
-};
-
-const wf = Recipe.flow("rag")
-  .use(Adapter.model("openai.model", fromAiSdkModel(openai("gpt-4o-mini"))))
-  .use(Adapter.retriever("custom.retriever", retriever))
-  .build();
-
-const out = await wf.run({ input: "What is a capybara?" });
-```
-
-== JavaScript
-
-```js
-import { fromAiSdkModel, Adapter } from "#adapters";
-import { Recipe } from "#recipes";
-import { openai } from "@ai-sdk/openai";
-
-const retriever = {
-  retrieve: () => ({ documents: [{ text: "capybara facts" }] }),
-};
-
-const wf = Recipe.flow("rag")
-  .use(Adapter.model("openai.model", fromAiSdkModel(openai("gpt-4o-mini"))))
-  .use(Adapter.retriever("custom.retriever", retriever))
-  .build();
-
-const out = await wf.run({ input: "What is a capybara?" });
-```
-
-:::
+See the capability pages: [Models](./adapters/models.md), [Retrieval](./adapters/retrieval.md), and [Tools](./adapters/tools.md).

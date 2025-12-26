@@ -10,7 +10,7 @@ The goal is to ensure **Recipes** are portable across these ecosystems.
 ## AI SDK (ai + provider + provider-utils)
 
 > [!TIP]
-> See the **[AI SDK Integration Guide](/reference/ecosystem/ai-sdk)** for concrete examples.
+> See the **[Models Adapter Page](/reference/adapters/models.md)** for implementation details.
 
 Packages audited:
 
@@ -37,7 +37,7 @@ Key export categories:
 Mapping to our primitives:
 
 - `Model`, `Embedder`, `Reranker`, `ImageModel`, `SpeechModel`, `TranscriptionModel`
-  → **covered** (V2/V3 mixed).
+  → **covered** (V3 canonical).
 - `Messages`, `Tools`, `Schema`, `PromptTemplate` → **covered**.
 - `Memory` → **partial** via `@ai-sdk-tools/memory` (working memory + history provider).
 - `Cache` → **partial** via `@ai-sdk-tools/cache` `CacheStore` adapters (TTL best-effort).
@@ -48,16 +48,13 @@ Mapping to our primitives:
 
 Gaps:
 
-- V3 streaming model shapes remain provider-specific beyond the normalized event stream.
-- V3 image/speech/transcription types not wired (V2 only).
 - Provider middleware hooks exist but no adapter-level tracing bridge.
-- AI SDK tool cache now maps to CacheStore adapters (TTL best-effort).
 - AI SDK LangChain adapter is UI/transport-level; we could mirror ideas for runtime stream bridging.
 
 ## LangChain (JS/TS)
 
 > [!TIP]
-> See the **[LangChain Integration Guide](/reference/ecosystem/langchain)** for concrete examples.
+> See the **[Retrieval](/reference/adapters/retrieval.md)** and **[Tools](/reference/adapters/tools.md)** adapter pages.
 
 Packages audited:
 
@@ -92,7 +89,7 @@ Gaps:
 ## LlamaIndex (TS)
 
 > [!TIP]
-> See the **[LlamaIndex Integration Guide](/reference/ecosystem/llamaindex)** for concrete examples.
+> See the **[Retrieval Adapter Page](/reference/adapters/retrieval.md)** for implementation details.
 
 Packages audited (top-level modules):
 
@@ -117,9 +114,9 @@ Gaps:
 
 ### AI SDK
 
-- Image: `ImageModelV2` (provider: `@ai-sdk/provider`)
-- Speech (TTS): `SpeechModelV2`
-- Transcription (STT): `TranscriptionModelV2`
+- Image: `ImageModelV3` (provider: `@ai-sdk/provider`)
+- Speech (TTS): `SpeechModelV3`
+- Transcription (STT): `TranscriptionModelV3`
 
 Additional AI SDK interfaces worth tracking:
 

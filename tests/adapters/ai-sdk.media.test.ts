@@ -15,7 +15,7 @@ const makeBlob = (bytes: number[], contentType?: string): Blob => ({
 describe("Adapter AI SDK media models", () => {
   it("maps AI SDK image models to ImageModel", async () => {
     const model = asAiSdkImageModel({
-      specificationVersion: "v2",
+      specificationVersion: "v3",
       provider: "test",
       modelId: "image-1",
       maxImagesPerCall: 4,
@@ -34,7 +34,7 @@ describe("Adapter AI SDK media models", () => {
 
   it("maps AI SDK speech models to SpeechModel", async () => {
     const model = asAiSdkSpeechModel({
-      specificationVersion: "v2",
+      specificationVersion: "v3",
       provider: "test",
       modelId: "speech-1",
       doGenerate: () =>
@@ -51,7 +51,7 @@ describe("Adapter AI SDK media models", () => {
 
   it("maps AI SDK transcription models to TranscriptionModel", async () => {
     const model = asAiSdkTranscriptionModel({
-      specificationVersion: "v2",
+      specificationVersion: "v3",
       provider: "test",
       modelId: "transcribe-1",
       doGenerate: () =>

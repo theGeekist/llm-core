@@ -9,14 +9,6 @@ Related:
 - [Adapter Interfaces](/reference/adapters-api)
 - [Packs & Recipes](/reference/packs-and-recipes)
 
-## Ecosystem Deep Dives (Practical Guides)
-
-If you are looking for specific integration guides:
-
-- **[AI SDK (Vercel)](/reference/ecosystem/ai-sdk)**: The recommended path.
-- **[LangChain](/reference/ecosystem/langchain)**: For tools and retrievers.
-- **[LlamaIndex](/reference/ecosystem/llamaindex)**: For vector stores and data ingestion.
-
 ## Quick start (value-first helpers)
 
 Register a retriever without touching registry types:

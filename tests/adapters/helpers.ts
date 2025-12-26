@@ -142,13 +142,13 @@ export const asAiSdkMessage = (message: unknown) => message as ModelMessage;
 export const asAiSdkPrompt = (prompt: unknown) => prompt as Prompt;
 
 export const asAiSdkImageModel = (model: unknown) =>
-  model as import("@ai-sdk/provider").ImageModelV2;
+  model as import("@ai-sdk/provider").ImageModelV3;
 
 export const asAiSdkSpeechModel = (model: unknown) =>
-  model as import("@ai-sdk/provider").SpeechModelV2;
+  model as import("@ai-sdk/provider").SpeechModelV3;
 
 export const asAiSdkTranscriptionModel = (model: unknown) =>
-  model as import("@ai-sdk/provider").TranscriptionModelV2;
+  model as import("@ai-sdk/provider").TranscriptionModelV3;
 
 export const asAiSdkReranker = (model: unknown) =>
   model as import("@ai-sdk/provider").RerankingModelV3;
