@@ -16,6 +16,7 @@ const bundleKeys = new Set<keyof AdapterBundle>([
   "image",
   "trace",
   "prompts",
+  "outputParser",
   "schemas",
   "textSplitter",
   "embedder",

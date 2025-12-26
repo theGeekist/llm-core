@@ -77,15 +77,16 @@ Core module inventory (from `@langchain/core/*.d.ts`):
 Mapping to our primitives:
 
 - `Model`, `Embedder`, `Retriever`, `Reranker`, `TextSplitter`, `Transformer`,
-  `DocumentLoader`, `VectorStore`, `Memory`, `KVStore`, `Cache`, `Tool`, `PromptTemplate`
+  `DocumentLoader`, `VectorStore`, `Memory`, `KVStore`, `Cache`, `Tool`, `PromptTemplate`,
+  `OutputParser`
   → **covered**.
-- `OutputParser`, `Runnable`, `StructuredQuery`, `Indexing/Record managers`,
+- `Runnable`, `StructuredQuery`, `Indexing/Record managers`,
   `Callbacks/Tracers`, `Agents`, `ChatHistory`
   → **not covered**.
 
 Gaps:
 
-- Output parsers and structured query translators are not modeled.
+- Structured query translators are not modeled.
 - Runnables/chains/agents are higher-level composition constructs.
 - Callbacks/tracers could be normalized but are currently out of scope.
 
@@ -171,6 +172,7 @@ Legend:
 | KV                  | missing | full      | full       | AI SDK has no KV adapter; UI store is out of scope.                 |
 | Memory              | partial | full      | full       | AI SDK has a memory provider (`@ai-sdk-tools/memory`), mapped.      |
 | Tools               | full    | full      | full       | Safe; tool schemas normalize across ecosystems.                     |
+| OutputParser        | missing | full      | missing    | LangChain parsers only; other ecosystems lack a parser interface.   |
 | VectorStore (write) | missing | full      | partial    | AI SDK has none; LC full; LI delete filters not supported.          |
 | ImageModel          | full    | missing   | missing    | AI SDK direct; LC/LI require tool wrappers.                         |
 | SpeechModel         | full    | missing   | missing    | AI SDK direct; LC via ChatOpenAI audio output.                      |
@@ -185,10 +187,11 @@ Covered primitives (cross-ecosystem):
 - `TextSplitter`, `Transformer`, `DocumentLoader`
 - `VectorStore` (write path), `Memory` (LC/LI), `KVStore` (LC/LI), `Cache` (partial)
 - `Tool`, `PromptTemplate`, `Schema`, `Messages`
+- `OutputParser` (LangChain only)
 - `ImageModel`, `SpeechModel`, `TranscriptionModel` (AI SDK direct; LC/LI provider-specific)
 
 Gaps (candidate future primitives):
 
-- `OutputParser` (LangChain), `StructuredQuery` (LangChain), `Indexing` (LC).
+- `StructuredQuery` (LangChain), `Indexing` (LC).
 - `QueryEngine` and `ResponseSynthesizer` (LlamaIndex).
 - `Callbacks/Tracers` (LangChain) → potential `TraceAdapter`.

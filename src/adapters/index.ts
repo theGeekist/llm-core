@@ -43,6 +43,7 @@ export type {
   ModelResult,
   ModelStreamEvent,
   ModelTelemetry,
+  OutputParser,
   PromptSchema,
   PromptTemplate,
   Reranker,
@@ -91,16 +92,20 @@ export {
 } from "../maybe";
 export type { MaybePromise } from "../maybe";
 
-export { toJsonSchema, toSchema } from "./schema";
+export {
+  adapterParamTypeToJsonType,
+  adapterParamsToJsonSchema,
+  toJsonSchema,
+  toPromptInputSchema,
+  toSchema,
+  validatePromptInputs,
+} from "./schema";
 export { readAdapterRequirements, validateAdapterRequirements } from "./requirements";
 export { toMessageContent } from "./message-content";
-export { toPromptInputSchema, validatePromptInputs } from "./prompt-schema";
 export { toQueryText } from "./retrieval-query";
 export { toAdapterTrace } from "./telemetry";
 export { validateModelCall } from "./model-validation";
 export { ModelHelper, ModelCallHelper, ModelUsageHelper } from "./modeling";
-
-export { adapterParamTypeToJsonType, adapterParamsToJsonSchema } from "./tool-params-schema";
 
 export {
   reportDiagnostics,
@@ -175,6 +180,7 @@ export { fromLangChainMessage } from "./langchain";
 export { fromLangChainMessages } from "./langchain";
 export { fromLangChainModel } from "./langchain";
 export { fromLangChainPromptTemplate } from "./langchain";
+export { fromLangChainOutputParser } from "./langchain";
 export { fromLangChainReranker } from "./langchain";
 export { fromLangChainRetriever } from "./langchain";
 export { fromLangChainStore } from "./langchain";

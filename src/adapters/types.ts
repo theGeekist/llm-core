@@ -148,6 +148,16 @@ export type PromptTemplate = {
 };
 
 /* -------------------------------------------------------------------------------------------------
+ * Output parsers
+ * ------------------------------------------------------------------------------------------------- */
+
+export type OutputParser = {
+  parse: (text: string, context?: AdapterCallContext) => MaybePromise<unknown>;
+  formatInstructions?: (options?: Record<string, unknown>) => MaybePromise<string>;
+  metadata?: AdapterMetadata;
+};
+
+/* -------------------------------------------------------------------------------------------------
  * Tools
  * ------------------------------------------------------------------------------------------------- */
 
@@ -570,6 +580,7 @@ export type AdapterBundle = {
   memory?: Memory;
   messages?: Message[];
   model?: Model;
+  outputParser?: OutputParser;
   prompts?: PromptTemplate[];
   reranker?: Reranker;
   retriever?: Retriever;

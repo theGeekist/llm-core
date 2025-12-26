@@ -105,6 +105,20 @@ const wrapTextSplitter = (splitter: AdapterBundle["textSplitter"], context: Adap
   };
 };
 
+const wrapOutputParser = (
+  outputParser: AdapterBundle["outputParser"],
+  context: AdapterCallContext,
+) => {
+  if (!outputParser) {
+    return undefined;
+  }
+  return {
+    ...outputParser,
+    parse: wrapRequiredOne(outputParser.parse, context),
+    formatInstructions: outputParser.formatInstructions,
+  };
+};
+
 const wrapTransformer = (
   transformer: AdapterBundle["transformer"],
   context: AdapterCallContext,
@@ -230,6 +244,7 @@ export const attachAdapterContext = (
   retriever: wrapRetriever(adapters.retriever, context),
   reranker: wrapReranker(adapters.reranker, context),
   textSplitter: wrapTextSplitter(adapters.textSplitter, context),
+  outputParser: wrapOutputParser(adapters.outputParser, context),
   transformer: wrapTransformer(adapters.transformer, context),
   storage: wrapStorage(adapters.storage, context),
   cache: wrapCache(adapters.cache, context),

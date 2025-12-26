@@ -1,4 +1,4 @@
-# Adapter API (Contracts + Helpers)
+# Adapter API (Interfaces & Helpers)
 
 Adapters are how llm-core keeps the ecosystem from leaking into your app.
 Most users never need this page because recipes and workflows already ship with adapters wired in.
@@ -35,6 +35,7 @@ type AdapterBundle = {
   documents?: Document[];
   trace?: AdapterTraceSink;
   prompts?: PromptTemplate[];
+  outputParser?: OutputParser;
   schemas?: Schema[];
   cache?: Cache;
   image?: ImageModel;
@@ -64,6 +65,7 @@ const adapterBundle = {
   documents: [],
   trace: undefined,
   prompts: [],
+  outputParser: undefined,
   schemas: [],
   cache: undefined,
   image: undefined,
@@ -90,6 +92,35 @@ Capabilities treat list-like adapters as presence flags (e.g., `tools: true` if 
 Custom constructs are stored under `constructs` to avoid widening core types.
 Per-run registry resolution merges registry constructs into `adapters.constructs` before pipeline execution.
 `constructs` expects a record map; non-object values are wrapped as `{ value }` for convenience.
+
+## Output parser (LangChain only)
+
+Output parsers are LangChain-specific and are exposed as an adapter so you can reuse them with other
+ecosystems when you already have an adapter model. Use them to parse structured outputs or apply
+formatting logic downstream.
+
+::: tabs
+== TypeScript
+
+```ts
+import { fromLangChainOutputParser } from "#adapters";
+import { StringOutputParser } from "@langchain/core/output_parsers";
+
+const parser = fromLangChainOutputParser(new StringOutputParser());
+const value = await parser.parse("hello");
+```
+
+== JavaScript
+
+```js
+import { fromLangChainOutputParser } from "#adapters";
+import { StringOutputParser } from "@langchain/core/output_parsers";
+
+const parser = fromLangChainOutputParser(new StringOutputParser());
+const value = await parser.parse("hello");
+```
+
+:::
 
 ## Cache adapters (resume persistence)
 
@@ -466,7 +497,7 @@ const call = {
 
 :::
 
-### Structured output contract
+### Structured output behavior
 
 - If `responseSchema` is provided, structured output is returned in `result.output`.
 - `result.text` always returns a readable string representation (JSON string for structured results).
@@ -525,6 +556,32 @@ const adapter = ModelHelper.create(async (input) => {
 :::
 
 `ModelCallHelper.prepare` resolves prompt vs messages (messages win, even if empty) and bundles validation diagnostics.
+
+## Output Parsers (Standalone)
+
+Most users don't need this because `Model` handles structured output natively.
+However, if you are migrating existing LangChain parsers, we support them as a distinct primitive.
+
+::: tabs
+== TypeScript
+
+```ts
+type OutputParser = {
+  parse: (text: string, context?: AdapterCallContext) => MaybePromise<unknown>;
+  formatInstructions?: (options?: Record<string, unknown>) => MaybePromise<string>;
+};
+```
+
+== JavaScript
+
+```js
+const parser = {
+  parse: (text) => JSON.parse(text),
+  formatInstructions: () => "Return JSON",
+};
+```
+
+:::
 
 ## Tools
 

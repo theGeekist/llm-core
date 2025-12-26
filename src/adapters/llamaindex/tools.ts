@@ -3,8 +3,12 @@ import { tool as defineTool } from "@llamaindex/core/tools";
 import type { JSONValue } from "@llamaindex/core/global";
 import type { AdapterCallContext, Schema, Tool } from "../types";
 import { identity, mapMaybe } from "../../maybe";
-import { normalizeObjectSchema, toSchema, toJsonSchema } from "../schema";
-import { adapterParamsToJsonSchema } from "../tool-params-schema";
+import {
+  adapterParamsToJsonSchema,
+  normalizeObjectSchema,
+  toJsonSchema,
+  toSchema,
+} from "../schema";
 import { reportDiagnostics, validateToolInput } from "../input-validation";
 
 export function fromLlamaIndexTool(tool: BaseTool): Tool {

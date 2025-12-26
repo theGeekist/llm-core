@@ -6,7 +6,7 @@ This is the high-level entry point; the detailed contracts live in [Adapters API
 Related:
 
 - [Workflow API](/reference/workflow-api)
-- [Adapter contracts](/reference/adapters-api)
+- [Adapter Interfaces](/reference/adapters-api)
 - [Packs & Recipes](/reference/packs-and-recipes)
 
 ## Ecosystem Deep Dives (Practical Guides)

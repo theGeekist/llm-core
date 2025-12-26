@@ -4,6 +4,7 @@ import type {
   Model,
   ImageModel,
   Memory,
+  OutputParser,
   Retriever,
   SpeechModel,
   Tool,
@@ -34,6 +35,7 @@ const bundleKeys = new Set<keyof AdapterBundle>([
   "image",
   "trace",
   "prompts",
+  "outputParser",
   "schemas",
   "textSplitter",
   "embedder",
@@ -99,6 +101,13 @@ export const Adapter = {
   },
   tools(key: string, tools: Tool[], options?: AdapterPluginOptions): AdapterPlugin {
     return makePlugin(key, { tools }, options);
+  },
+  outputParser(
+    key: string,
+    outputParser: OutputParser,
+    options?: AdapterPluginOptions,
+  ): AdapterPlugin {
+    return makePlugin(key, { outputParser }, options);
   },
   retriever(key: string, retriever: Retriever, options?: AdapterPluginOptions): AdapterPlugin {
     return makePlugin(key, { retriever }, options);

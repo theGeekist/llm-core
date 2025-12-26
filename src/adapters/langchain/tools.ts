@@ -2,8 +2,12 @@ import { tool as defineTool } from "@langchain/core/tools";
 import type { AdapterCallContext, Tool } from "../types";
 import { identity, mapMaybe, type MaybePromise } from "../../maybe";
 import { reportDiagnostics, validateToolInput } from "../input-validation";
-import { normalizeObjectSchema, toSchema, toJsonSchema } from "../schema";
-import { adapterParamsToJsonSchema } from "../tool-params-schema";
+import {
+  adapterParamsToJsonSchema,
+  normalizeObjectSchema,
+  toJsonSchema,
+  toSchema,
+} from "../schema";
 
 type LangChainToolLike<TInput = unknown, TOutput = unknown> = {
   name: string;

@@ -6,7 +6,7 @@ It is passed to `run(...)` and is responsible for tracing, diagnostics, and main
 Related:
 
 - [Workflow API](/reference/workflow-api)
-- [Adapter contracts](/reference/adapters-api)
+- [Adapter Interfaces](/reference/adapters-api)
 
 ## Runtime Channel
 

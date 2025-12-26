@@ -1,8 +1,12 @@
 import { jsonSchema, tool as defineTool, zodSchema } from "ai";
 import type { Tool as AiTool } from "ai";
 import type { Schema, Tool } from "../types";
-import { normalizeObjectSchema, toSchema, toJsonSchema } from "../schema";
-import { adapterParamsToJsonSchema } from "../tool-params-schema";
+import {
+  adapterParamsToJsonSchema,
+  normalizeObjectSchema,
+  toJsonSchema,
+  toSchema,
+} from "../schema";
 
 type AiJsonSchemaInput = Parameters<typeof jsonSchema>[0];
 type AiZodSchemaInput = Parameters<typeof zodSchema>[0];

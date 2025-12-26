@@ -17,6 +17,7 @@ npm install @langchain/core @langchain/community
 | **Embeddings**      | ✅ Full    | `EmbeddingsInterface` supported.                                   |
 | **Retrievers**      | ✅ Full    | `BaseRetriever` supported.                                         |
 | **Vector Stores**   | ✅ Full    | `VectorStore` (write path) supported.                              |
+| **Output Parsers**  | ✅ Full    | `BaseOutputParser` supported.                                      |
 | **Memory**          | ⚠️ Partial | `BaseListChatMessageHistory` supported (simple).                   |
 | **Chains/Runnable** | ❌ Opaque  | Chains are treated as black boxes; use `llm-core` recipes instead. |
 | **Callbacks**       | ❌ Ignored | LangChain callbacks are not bridged to `llm-core` traces.          |
@@ -56,4 +57,3 @@ const wf = Recipe.flow("rag")
 ## Known Limitations
 
 - **Chains**: We do not recommend wrapping `RunnableSequence` or `LLMChain` inside `llm-core`. It hides the logic. Instead, break the chain apart: use the LangChain _components_ (Model, Prompt, Retriever) but let `llm-core` manage the _flow_.
-- **Output Parsers**: Not supported. `llm-core` handles structured output parsing at the Model Adapter layer.
