@@ -1,4 +1,5 @@
 import type { AdapterBundle } from "../../adapters/types";
+import { createEventStreamFromTraceSink } from "../../adapters";
 import type { DiagnosticEntry } from "../diagnostics";
 import type { RecipeContract } from "../types";
 import { applyAdapterPresence } from "../capabilities";
@@ -19,7 +20,7 @@ export const applyAdapterOverrides = (resolved: AdapterBundle, overrides?: Adapt
   };
 };
 
-export const toResolvedAdapters = (resolution: {
+const mergeResolvedConstructs = (resolution: {
   adapters: AdapterBundle;
   constructs: Record<string, unknown>;
 }): AdapterBundle => ({
@@ -29,6 +30,21 @@ export const toResolvedAdapters = (resolution: {
     ...resolution.constructs,
   },
 });
+
+const applyEventStreamFallback = (adapters: AdapterBundle): AdapterBundle => {
+  if (adapters.eventStream || !adapters.trace) {
+    return adapters;
+  }
+  return {
+    ...adapters,
+    eventStream: createEventStreamFromTraceSink(adapters.trace),
+  };
+};
+
+export const toResolvedAdapters = (resolution: {
+  adapters: AdapterBundle;
+  constructs: Record<string, unknown>;
+}): AdapterBundle => applyEventStreamFallback(mergeResolvedConstructs(resolution));
 
 export const buildResolvedCapabilities = (
   declaredCapabilities: Record<string, unknown>,

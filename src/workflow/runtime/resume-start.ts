@@ -40,6 +40,8 @@ type ResumeValueInput<N extends RecipeName> = {
 const readPauseKind = (session: ActiveResumeSession): PauseKind | undefined =>
   session.kind === "iterator" ? session.session.pauseKind : session.snapshot.pauseKind;
 
+const readInterruptStrategy = (adapters: AdapterBundle) => adapters.interrupt;
+
 const handleVerifySnapshot = <N extends RecipeName>(
   input: ResumeStartInput<N>,
   snapshot: unknown,
@@ -155,6 +157,7 @@ const resumeFromSession = <N extends RecipeName>(
       token,
       resumeInput,
       pauseKind: readPauseKind(session as ActiveResumeSession),
+      interrupt: readInterruptStrategy(resolvedAdapters),
       resumeSnapshot: session.kind === "snapshot" ? session.snapshot : undefined,
       runtime,
       adapters: resolvedAdapters,

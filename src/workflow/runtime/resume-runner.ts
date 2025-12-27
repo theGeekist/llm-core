@@ -31,6 +31,7 @@ export type ResumedPipelineDeps<TArtefact> = {
     providers?: Record<string, string>,
   ) => MaybePromise<AdapterResolution>;
   applyAdapterOverrides: (resolved: AdapterBundle, overrides?: AdapterBundle) => AdapterBundle;
+  toResolvedAdapters: (resolution: AdapterResolution) => AdapterBundle;
   readContractDiagnostics: (adapters: AdapterBundle) => DiagnosticEntry[];
   buildDiagnostics: DiagnosticEntry[];
   strictErrorMessage: string;
@@ -87,13 +88,7 @@ const handleResumeResolution = <TArtefact>(
   input: ResumeResolutionInput<TArtefact>,
   resolution: AdapterResolution,
 ) => {
-  const resolvedAdapters: AdapterBundle = {
-    ...resolution.adapters,
-    constructs: {
-      ...(resolution.adapters.constructs ?? {}),
-      ...resolution.constructs,
-    },
-  };
+  const resolvedAdapters = input.deps.toResolvedAdapters(resolution);
   const mergedAdapters = input.deps.applyAdapterOverrides(
     resolvedAdapters,
     input.resumeOptions.adapters,

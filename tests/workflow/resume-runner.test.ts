@@ -5,6 +5,7 @@ import type { TraceEvent } from "#workflow/trace";
 import type { Outcome } from "#workflow/types";
 import { runResumedPipeline } from "#workflow/runtime/resume-runner";
 import { diagnosticMessages, resolveMaybe } from "./helpers";
+import { toResolvedAdapters } from "#workflow/runtime/adapters";
 
 describe("Workflow resume runner", () => {
   const buildDiagnostics: DiagnosticEntry[] = [
@@ -29,6 +30,7 @@ describe("Workflow resume runner", () => {
         constructs: {},
       }),
       applyAdapterOverrides: (resolved: AdapterBundle) => resolved,
+      toResolvedAdapters,
       readContractDiagnostics: () => [],
       buildDiagnostics,
       strictErrorMessage: "resume strict failure",
@@ -97,6 +99,7 @@ describe("Workflow resume runner", () => {
         constructs: {},
       }),
       applyAdapterOverrides: (resolved: AdapterBundle) => resolved,
+      toResolvedAdapters,
       readContractDiagnostics: () => [],
       buildDiagnostics,
       strictErrorMessage: "resume strict failure",

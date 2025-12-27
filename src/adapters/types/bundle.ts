@@ -58,6 +58,7 @@ export type AdapterBundle = {
 export type AdapterResumeRequest = {
   adapters?: AdapterBundle;
   declaredAdapters?: AdapterBundle;
+  interrupt?: InterruptStrategy;
   pauseKind?: PauseKind;
   resumeSnapshot?: ResumeSnapshot;
   resumeInput?: unknown;

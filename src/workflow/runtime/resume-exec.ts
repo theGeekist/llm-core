@@ -147,6 +147,7 @@ const continueResumedPipeline = <N extends RecipeName>(
       providers?: Record<string, string>,
     ) => MaybePromise<AdapterResolution>;
     applyAdapterOverrides: (resolved: AdapterBundle, overrides?: AdapterBundle) => AdapterBundle;
+    toResolvedAdapters: (resolution: AdapterResolution) => AdapterBundle;
     readContractDiagnostics: (adapters: AdapterBundle) => DiagnosticEntry[];
     buildDiagnostics: DiagnosticEntry[];
     strictErrorMessage: string;
@@ -222,6 +223,7 @@ const runResumeWithAdapters = <N extends RecipeName>(
     pipeline: input.deps.pipeline,
     resolveAdaptersForRun: input.deps.resolveAdaptersForRun,
     applyAdapterOverrides: input.deps.applyAdapterOverrides,
+    toResolvedAdapters: input.deps.toResolvedAdapters,
     readContractDiagnostics: input.deps.readContractDiagnostics,
     buildDiagnostics: input.deps.buildDiagnostics,
     strictErrorMessage: input.deps.strictErrorMessage,

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "bun:test";
-import type { AdapterBundle } from "#adapters";
+import { createBuiltinTrace, type AdapterBundle, type AdapterTraceEvent } from "#adapters";
 import { getRecipe } from "#workflow/recipe-registry";
 import {
   applyAdapterOverrides,
@@ -24,6 +24,17 @@ describe("Workflow runtime adapter helpers", () => {
       constructs: { extra: 1 },
     });
     expect(resolved.constructs).toEqual({ base: true, extra: 1 });
+  });
+
+  it("derives event streams from trace sinks when missing", async () => {
+    const trace = createBuiltinTrace();
+    const resolved = toResolvedAdapters({
+      adapters: { trace, constructs: {} },
+      constructs: {},
+    });
+    const event: AdapterTraceEvent = { name: "run.start", timestamp: Date.now() };
+    await resolved.eventStream?.emit(event);
+    expect(trace.events).toContainEqual(event);
   });
 
   it("derives runtime capabilities from adapter presence", () => {

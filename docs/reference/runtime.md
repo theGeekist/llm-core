@@ -24,6 +24,7 @@ type Runtime = {
     resolve: (request: {
       token: unknown;
       resumeInput?: unknown;
+      interrupt?: InterruptStrategy;
       adapters?: unknown;
       declaredAdapters?: unknown;
       providers?: Record<string, string>;
@@ -40,7 +41,9 @@ const runtime = {
   diagnostics: "default",
   budget: { maxTokens: 2000 },
   resume: {
-    resolve: ({ token, resumeInput }) => ({ input: { token, resumeInput } }),
+    resolve: ({ token, resumeInput, interrupt }) => ({
+      input: { token, resumeInput, interrupt },
+    }),
   },
 };
 ```
@@ -93,6 +96,9 @@ const out = await wf.run({ input: "..." }, runtime);
 ```
 
 :::
+
+`interrupt` is the resolved `InterruptStrategy` from adapters and lets resume adapters decide whether
+to restart, continue, or otherwise alter how a paused run resumes.
 
 ## Trace
 
