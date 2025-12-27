@@ -82,6 +82,16 @@ export type {
   TextSplitter,
 } from "./types/retrieval";
 
+export type { Indexing, IndexingInput, IndexingOptions, IndexingResult } from "./types/indexing";
+
+export type {
+  QueryEngine,
+  QueryResult,
+  QueryStreamEvent,
+  ResponseSynthesizer,
+  SynthesisInput,
+} from "./types/engines";
+
 export type {
   VectorRecord,
   VectorStore,

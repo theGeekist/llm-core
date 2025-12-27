@@ -30,6 +30,10 @@ export type {
   DocumentLoader,
   DocumentTransformer,
   Embedder,
+  Indexing,
+  IndexingInput,
+  IndexingOptions,
+  IndexingResult,
   KVStore,
   Cache,
   Memory,
@@ -45,10 +49,14 @@ export type {
   OutputParser,
   PromptSchema,
   PromptTemplate,
+  QueryEngine,
+  QueryResult,
+  QueryStreamEvent,
   Reranker,
   RetrievalQuery,
   RetrievalResult,
   Retriever,
+  ResponseSynthesizer,
   Schema,
   Storage,
   StreamChunk,
@@ -73,6 +81,7 @@ export type {
   VectorStoreUpsertInput,
   VectorStoreUpsertResult,
   PauseKind,
+  SynthesisInput,
 } from "./types";
 
 export type { AiSdkCacheStore } from "./ai-sdk/cache";
@@ -111,13 +120,16 @@ export {
   validateEmbedderBatchInput,
   validateEmbedderInput,
   validateImageInput,
+  validateIndexingInput,
   validateKvKeys,
   validateKvPairs,
   validateMemoryLoadInput,
   validateMemorySaveInput,
   validateMemoryTurn,
+  validateQueryEngineInput,
   validateRerankerInput,
   validateRetrieverInput,
+  validateResponseSynthesizerInput,
   validateSpeechInput,
   validateStorageKey,
   validateTextSplitterBatchInput,
@@ -181,6 +193,7 @@ export { fromLangChainModel } from "./langchain";
 export { fromLangChainPromptTemplate } from "./langchain";
 export { fromLangChainOutputParser } from "./langchain";
 export { fromLangChainStructuredQuery } from "./langchain";
+export { fromLangChainCallbackHandler } from "./langchain";
 export { fromLangChainReranker } from "./langchain";
 export { fromLangChainRetriever } from "./langchain";
 export { fromLangChainStore } from "./langchain";
@@ -188,6 +201,7 @@ export { fromLangChainTextSplitter } from "./langchain";
 export { fromLangChainTool } from "./langchain";
 export { fromLangChainTransformer } from "./langchain";
 export { fromLangChainVectorStore } from "./langchain";
+export { fromLangChainIndexing } from "./langchain";
 export { toLangChainStreamEvents } from "./langchain";
 
 export { fromLlamaIndexDocument, fromLlamaIndexNode, toLlamaIndexDocument } from "./llamaindex";
@@ -201,8 +215,10 @@ export { fromLlamaIndexMessages } from "./llamaindex";
 export { fromLlamaIndexModel } from "./llamaindex";
 export { fromLlamaIndexNodes } from "./llamaindex";
 export { fromLlamaIndexPromptTemplate } from "./llamaindex";
+export { fromLlamaIndexQueryEngine } from "./llamaindex";
 export { fromLlamaIndexReranker } from "./llamaindex";
 export { fromLlamaIndexRetriever } from "./llamaindex";
+export { fromLlamaIndexResponseSynthesizer } from "./llamaindex";
 export { fromLlamaIndexTextSplitter } from "./llamaindex";
 export { fromLlamaIndexTool } from "./llamaindex";
 export { fromLlamaIndexTransformer } from "./llamaindex";

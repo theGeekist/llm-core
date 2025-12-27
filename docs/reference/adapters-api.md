@@ -39,6 +39,7 @@ type AdapterBundle = {
   schemas?: Schema[];
   cache?: Cache;
   image?: ImageModel;
+  indexing?: Indexing;
   textSplitter?: TextSplitter;
   embedder?: Embedder;
   retriever?: Retriever;
@@ -46,6 +47,8 @@ type AdapterBundle = {
   loader?: DocumentLoader;
   transformer?: DocumentTransformer;
   memory?: Memory;
+  queryEngine?: QueryEngine;
+  responseSynthesizer?: ResponseSynthesizer;
   speech?: SpeechModel;
   storage?: Storage;
   transcription?: TranscriptionModel;
@@ -69,6 +72,7 @@ const adapterBundle = {
   schemas: [],
   cache: undefined,
   image: undefined,
+  indexing: undefined,
   textSplitter: undefined,
   embedder: undefined,
   retriever: undefined,
@@ -76,6 +80,8 @@ const adapterBundle = {
   loader: undefined,
   transformer: undefined,
   memory: undefined,
+  queryEngine: undefined,
+  responseSynthesizer: undefined,
   speech: undefined,
   storage: undefined,
   transcription: undefined,

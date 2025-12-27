@@ -81,6 +81,7 @@ export default defineConfig({
                 { text: "Retrieval (RAG)", link: "/reference/adapters/retrieval" },
                 { text: "Tools & Parsers", link: "/reference/adapters/tools" },
                 { text: "Storage & Memory", link: "/reference/adapters/storage" },
+                { text: "Observability (Tracing)", link: "/reference/adapters/observability" },
               ],
             },
             { text: "Packs & Recipes", link: "/reference/packs-and-recipes" },

@@ -2,6 +2,7 @@ import type {
   AdapterCallContext,
   AdapterDiagnostic,
   Document,
+  IndexingInput,
   RetrievalQuery,
   Tool,
   Turn,
@@ -27,6 +28,14 @@ export const validateRetrieverInput = (query: RetrievalQuery | undefined) => {
   const text = toQueryText(query ?? "");
   if (isBlank(text)) {
     return [warnDiagnostic("retriever_query_missing")];
+  }
+  return [];
+};
+
+export const validateQueryEngineInput = (query: RetrievalQuery | undefined) => {
+  const text = toQueryText(query ?? "");
+  if (isBlank(text)) {
+    return [warnDiagnostic("query_engine_query_missing")];
   }
   return [];
 };
@@ -65,6 +74,34 @@ export const validateTransformerInput = (documents: Document[] | undefined) => {
     return [warnDiagnostic("transformer_documents_missing")];
   }
   return [];
+};
+
+export const validateIndexingInput = (input: IndexingInput | undefined) => {
+  if (!input) {
+    return [warnDiagnostic("indexing_input_missing")];
+  }
+  if (!input.documents && !input.loader) {
+    return [warnDiagnostic("indexing_input_missing")];
+  }
+  if (input.documents && input.documents.length === 0) {
+    return [warnDiagnostic("indexing_documents_missing")];
+  }
+  return [];
+};
+
+export const validateResponseSynthesizerInput = (
+  query: RetrievalQuery | undefined,
+  documents: Document[] | undefined,
+) => {
+  const diagnostics: AdapterDiagnostic[] = [];
+  const text = toQueryText(query ?? "");
+  if (isBlank(text)) {
+    diagnostics.push(warnDiagnostic("response_synthesizer_query_missing"));
+  }
+  if (!documents || documents.length === 0) {
+    diagnostics.push(warnDiagnostic("response_synthesizer_documents_missing"));
+  }
+  return diagnostics;
 };
 
 export const validateVectorStoreUpsertInput = (input: unknown) => {

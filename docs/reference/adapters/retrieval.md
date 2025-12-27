@@ -108,7 +108,77 @@ await store.upsert({
 
 ---
 
-## 3. Embedders
+## 3. Indexing (The Sync Problem)
+
+**Why isn't `store.upsert` enough?**
+
+Naive RAG pipelines blindly upsert documents every time they run. This is dangerous because:
+
+1.  **Cost**: You pay to re-embed text that hasn't changed.
+2.  **Duplicates**: If a file moves or changes slightly, you might get ghost records.
+3.  **Deletions**: If you delete a source file, the vector stays in the DB forever (hallucination risk).
+
+**The Solution: Indexing Adapters**
+
+An Indexing Adapter sits between your Source and your Vector Store. It tracks a hash of every document to ensure strict synchronization.
+
+`Source Docs` -> **`Indexing Adapter`** -> `Vector Store`
+
+### Integrations
+
+**LangChain (`RecordManager`)**
+
+LangChain's Record Manager is the industry standard for this pattern. Our adapter expects a **LangChain VectorStore** instance (not the llm-core `VectorStore` adapter). You can still mix-and-match models and other adapters in the workflow, but indexing itself is currently LangChain-native.
+
+::: tabs
+== TypeScript
+
+```ts
+import { Adapter, fromLangChainIndexing } from "@geekist/llm-core/adapters";
+import type { Indexing, IndexingResult } from "@geekist/llm-core/adapters";
+
+// 1. Define the Indexing logic
+const indexing: Indexing = Adapter.indexing(
+  "custom.indexing",
+  fromLangChainIndexing(recordManager, langChainVectorStore),
+);
+
+// 2. Run the sync job
+const result: IndexingResult = await indexing.index({
+  documents: myDocs,
+  options: {
+    cleanup: "full",
+    sourceIdKey: "source",
+  },
+});
+```
+
+== JavaScript
+
+```js
+import { Adapter, fromLangChainIndexing } from "@geekist/llm-core/adapters";
+
+// 1. Define the Indexing logic
+const indexing = Adapter.indexing(
+  "custom.indexing",
+  fromLangChainIndexing(recordManager, langChainVectorStore),
+);
+
+// 2. Run the sync job
+const result = await indexing.index({
+  documents: myDocs,
+  options: {
+    cleanup: "full",
+    sourceIdKey: "source",
+  },
+});
+```
+
+:::
+
+---
+
+## 4. Embedders
 
 **The Meaning Maker**
 
@@ -248,6 +318,95 @@ const query = fromLangChainStructuredQuery(lcQuery);
 
 You can pass the resulting `StructuredQuery` into your own retriever filters or recipe steps,
 regardless of whether your **Model** adapter comes from AI SDK, LangChain, or LlamaIndex.
+
+---
+
+## 6. Query Engines (The "Black Box")
+
+**When to use a Query Engine?**
+
+In `llm-core`, we usually encourage you to build **Recipes**—explicit workflows where you control the `Retrieve -> Rerank -> Generate` chain.
+
+However, frameworks like LlamaIndex offer pre-packaged "Engines" that encapsulate highly complex retrieval logic (e.g., Sub-Question Query Engines, Multi-Step Reasoning).
+
+Use a **Query Engine Adapter** when:
+
+1.  You want to use a specific, advanced LlamaIndex strategy.
+2.  You don't want to reimplement the orchestration logic yourself.
+3.  You treat the retrieval subsystem as an opaque "Oracle".
+
+::: tabs
+== TypeScript
+
+```ts
+import { Adapter, fromLlamaIndexQueryEngine } from "@geekist/llm-core/adapters";
+import type { QueryEngine, QueryResult } from "@geekist/llm-core/adapters";
+
+// 1. Create the complex engine upstream
+const complexEngine = /* any LlamaIndex query engine instance */;
+
+// 2. Wrap it as a simple "Query In -> Answer Out" adapter
+const queryEngine: QueryEngine = Adapter.queryEngine(
+  "my.complex.engine",
+  fromLlamaIndexQueryEngine(complexEngine)
+);
+
+// 3. Use it in your workflow
+const result: QueryResult = await queryEngine.query({ text: "Compare Q1 revenue for Apple and Google" });
+console.log(result.text);
+```
+
+== JavaScript
+
+```js
+import { Adapter, fromLlamaIndexQueryEngine } from "@geekist/llm-core/adapters";
+import { SubQuestionQueryEngine } from "llamaindex";
+
+// 1. Create the complex engine upstream
+const complexEngine = SubQuestionQueryEngine.fromDefaults({ ... });
+
+// 2. Wrap it as a simple "Query In -> Answer Out" adapter
+const queryEngine = Adapter.queryEngine(
+  "my.complex.engine",
+  fromLlamaIndexQueryEngine(complexEngine)
+);
+
+// 3. Use it in your workflow
+const result = await queryEngine.query({ text: "Compare Q1 revenue for Apple and Google" });
+console.log(result.text);
+```
+
+:::
+
+### Response Synthesizers
+
+A **Response Synthesizer** takes a query and a set of retrieved nodes, and generates a final response. It is the "Generation" half of RAG.
+
+::: tabs
+== TypeScript
+
+```ts
+import { Adapter, fromLlamaIndexResponseSynthesizer } from "@geekist/llm-core/adapters";
+import type { ResponseSynthesizer } from "@geekist/llm-core/adapters";
+
+const synthesizer: ResponseSynthesizer = Adapter.responseSynthesizer(
+  "custom.responseSynthesizer",
+  fromLlamaIndexResponseSynthesizer(synthesizerEngine),
+);
+```
+
+== JavaScript
+
+```js
+import { Adapter, fromLlamaIndexResponseSynthesizer } from "@geekist/llm-core/adapters";
+
+const synthesizer = Adapter.responseSynthesizer(
+  "custom.responseSynthesizer",
+  fromLlamaIndexResponseSynthesizer(synthesizerEngine),
+);
+```
+
+:::
 
 ## Supported Integrations (Flex)
 

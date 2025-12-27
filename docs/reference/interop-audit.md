@@ -75,16 +75,15 @@ Mapping to our primitives:
 
 - `Model`, `Embedder`, `Retriever`, `Reranker`, `TextSplitter`, `Transformer`,
   `DocumentLoader`, `VectorStore`, `Memory`, `KVStore`, `Cache`, `Tool`, `PromptTemplate`,
-  `OutputParser`, `StructuredQuery`
+  `OutputParser`, `StructuredQuery`, `Trace`, `Indexing`
   → **covered**.
-- `Runnable`, `Indexing/Record managers`,
-  `Callbacks/Tracers`, `Agents`, `ChatHistory`
+- `Runnable`, `Agents`, `ChatHistory`
   → **not covered**.
 
 Gaps:
 
 - Runnables/chains/agents are higher-level composition constructs.
-- Callbacks/tracers could be normalized but are currently out of scope.
+- Callbacks/tracers map to trace sinks (custom + `run.start`/`run.end` + `provider.response`).
 
 ## LlamaIndex (TS)
 
@@ -102,12 +101,13 @@ Mapping to our primitives:
 - `Model`, `Embedder`, `Retriever`, `Reranker`, `TextSplitter`, `Transformer`,
   `DocumentLoader`, `VectorStore`, `Memory`, `KVStore`, `Cache`, `Tool`, `PromptTemplate`
   → **covered**.
-- `QueryEngine`, `ResponseSynthesizer`, `ChatEngine`, `Agent`, `Indices`
+- `QueryEngine`, `ResponseSynthesizer`
+  → **covered**.
+- `ChatEngine`, `Agent`, `Indices`
   → **not covered**.
 
 Gaps:
 
-- Query engines and response synthesizers are higher-level, not normalized.
 - Storage context and index lifecycle helpers are not modeled.
 
 ## Media Construct Catalogue
@@ -170,10 +170,14 @@ Legend:
 | Tools               | full    | full      | full       | Safe; tool schemas normalize across ecosystems.                     |
 | OutputParser        | missing | full      | missing    | LangChain parsers only; other ecosystems lack a parser interface.   |
 | StructuredQuery     | missing | full      | missing    | LangChain structured query IR; other ecosystems lack a parser.      |
+| Indexing            | missing | full      | missing    | LangChain index + record manager; no AI SDK/LI parity yet.          |
+| QueryEngine         | missing | missing   | full       | LlamaIndex query engine; no AI SDK/LC parity yet.                   |
+| ResponseSynthesizer | missing | missing   | full       | LlamaIndex synthesizers; no AI SDK/LC parity yet.                   |
 | VectorStore (write) | missing | full      | partial    | AI SDK has none; LC full; LI delete filters not supported.          |
 | ImageModel          | full    | missing   | missing    | AI SDK direct; LC/LI require tool wrappers.                         |
 | SpeechModel         | full    | missing   | missing    | AI SDK direct; LC via ChatOpenAI audio output.                      |
 | TranscriptionModel  | full    | missing   | missing    | AI SDK direct; LC via document loaders (shape mismatch).            |
+| Trace               | missing | full      | missing    | LangChain callbacks map to trace sink; others lack a surface.       |
 | Streaming (Model)   | full    | full      | full       | Normalized stream events; provider-specific parts remain raw.       |
 
 ## Summary: Coverage vs Gaps
@@ -190,6 +194,5 @@ Covered primitives (cross-ecosystem):
 
 Gaps (candidate future primitives):
 
-- `Indexing` (LangChain).
-- `QueryEngine` and `ResponseSynthesizer` (LlamaIndex).
-- `Callbacks/Tracers` (LangChain) → potential `TraceAdapter`.
+- `Indexing` (LangChain only).
+- `QueryEngine` and `ResponseSynthesizer` (LlamaIndex only).

@@ -9,6 +9,9 @@ import { getEffectivePlugins } from "./plugins/effective";
 const adapterConstructs: Array<keyof AdapterBundle> = [
   "cache",
   "documents",
+  "image",
+  "speech",
+  "transcription",
   "messages",
   "tools",
   "model",
@@ -18,6 +21,9 @@ const adapterConstructs: Array<keyof AdapterBundle> = [
   "schemas",
   "textSplitter",
   "embedder",
+  "indexing",
+  "queryEngine",
+  "responseSynthesizer",
   "retriever",
   "reranker",
   "loader",
@@ -25,6 +31,7 @@ const adapterConstructs: Array<keyof AdapterBundle> = [
   "memory",
   "storage",
   "kv",
+  "vectorStore",
 ];
 
 const mergeLists = <T>(left: T[] | undefined, right: T[] | undefined) =>

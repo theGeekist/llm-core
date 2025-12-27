@@ -1,14 +1,17 @@
 import type {
   AdapterBundle,
+  AdapterTraceSink,
   Cache,
-  Model,
   ImageModel,
+  Indexing,
   Memory,
+  Model,
   OutputParser,
+  QueryEngine,
+  ResponseSynthesizer,
   Retriever,
   SpeechModel,
   Tool,
-  AdapterTraceSink,
   TranscriptionModel,
   VectorStore,
 } from "./types";
@@ -35,6 +38,7 @@ const bundleKeys = new Set<keyof AdapterBundle>([
   "model",
   "image",
   "trace",
+  "indexing",
   "prompts",
   "outputParser",
   "schemas",
@@ -45,6 +49,8 @@ const bundleKeys = new Set<keyof AdapterBundle>([
   "loader",
   "transformer",
   "memory",
+  "queryEngine",
+  "responseSynthesizer",
   "speech",
   "storage",
   "transcription",
@@ -107,8 +113,25 @@ export const Adapter = {
   ): AdapterPlugin {
     return makePlugin(key, { outputParser }, options);
   },
+  indexing(key: string, indexing: Indexing, options?: AdapterPluginOptions): AdapterPlugin {
+    return makePlugin(key, { indexing }, options);
+  },
   retriever(key: string, retriever: Retriever, options?: AdapterPluginOptions): AdapterPlugin {
     return makePlugin(key, { retriever }, options);
+  },
+  queryEngine(
+    key: string,
+    queryEngine: QueryEngine,
+    options?: AdapterPluginOptions,
+  ): AdapterPlugin {
+    return makePlugin(key, { queryEngine }, options);
+  },
+  responseSynthesizer(
+    key: string,
+    responseSynthesizer: ResponseSynthesizer,
+    options?: AdapterPluginOptions,
+  ): AdapterPlugin {
+    return makePlugin(key, { responseSynthesizer }, options);
   },
   memory(key: string, memory: Memory, options?: AdapterPluginOptions): AdapterPlugin {
     return makePlugin(key, { memory }, options);

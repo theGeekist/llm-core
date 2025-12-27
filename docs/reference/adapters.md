@@ -92,6 +92,88 @@ const vectorStore = Adapter.vectorStore("custom.vectorStore", {
 
 :::
 
+## Indexing (LangChain)
+
+LangChain exposes an indexing API that combines a record manager with a vector store.
+Wrap both into a single `indexing` adapter:
+
+::: tabs
+== TypeScript
+
+```ts
+import { Adapter, fromLangChainIndexing } from "#adapters";
+
+const indexing = Adapter.indexing(
+  "custom.indexing",
+  fromLangChainIndexing(recordManager, vectorStore),
+);
+```
+
+== JavaScript
+
+```js
+import { Adapter, fromLangChainIndexing } from "#adapters";
+
+const indexing = Adapter.indexing(
+  "custom.indexing",
+  fromLangChainIndexing(recordManager, vectorStore),
+);
+```
+
+:::
+
+## Query engines (LlamaIndex)
+
+Query engines return final answers from a retriever + synthesizer pipeline:
+
+::: tabs
+== TypeScript
+
+```ts
+import { Adapter, fromLlamaIndexQueryEngine } from "#adapters";
+
+const queryEngine = Adapter.queryEngine("custom.queryEngine", fromLlamaIndexQueryEngine(engine));
+```
+
+== JavaScript
+
+```js
+import { Adapter, fromLlamaIndexQueryEngine } from "#adapters";
+
+const queryEngine = Adapter.queryEngine("custom.queryEngine", fromLlamaIndexQueryEngine(engine));
+```
+
+:::
+
+## Response synthesizers (LlamaIndex)
+
+Response synthesizers focus on combining retrieved nodes into an answer:
+
+::: tabs
+== TypeScript
+
+```ts
+import { Adapter, fromLlamaIndexResponseSynthesizer } from "#adapters";
+
+const synthesizer = Adapter.responseSynthesizer(
+  "custom.responseSynthesizer",
+  fromLlamaIndexResponseSynthesizer(synthesizer),
+);
+```
+
+== JavaScript
+
+```js
+import { Adapter, fromLlamaIndexResponseSynthesizer } from "#adapters";
+
+const synthesizer = Adapter.responseSynthesizer(
+  "custom.responseSynthesizer",
+  fromLlamaIndexResponseSynthesizer(synthesizer),
+);
+```
+
+:::
+
 ## Media models (AI SDK)
 
 AI SDK exposes image, speech, and transcription models. Wrap them directly:
@@ -119,6 +201,36 @@ const speech = Adapter.speech(
   "custom.speech",
   fromAiSdkSpeechModel(openai.speech("gpt-4o-mini-tts")),
 );
+```
+
+:::
+
+## Trace sinks (LangChain callbacks)
+
+LangChain callbacks/tracers can act as trace sinks. We forward `run.start` into
+`handleChainStart` and `run.end` into `handleChainEnd` / `handleChainError`
+(based on `status`). We map `provider.response` into `handleLLMEnd`.
+All other events are emitted as custom events.
+
+::: tabs
+== TypeScript
+
+```ts
+import { Adapter, fromLangChainCallbackHandler } from "#adapters";
+import { RunCollectorCallbackHandler } from "@langchain/core/tracers/run_collector";
+
+const handler = new RunCollectorCallbackHandler();
+const trace = Adapter.trace("custom.trace", fromLangChainCallbackHandler(handler));
+```
+
+== JavaScript
+
+```js
+import { Adapter, fromLangChainCallbackHandler } from "#adapters";
+import { RunCollectorCallbackHandler } from "@langchain/core/tracers/run_collector";
+
+const handler = new RunCollectorCallbackHandler();
+const trace = Adapter.trace("custom.trace", fromLangChainCallbackHandler(handler));
 ```
 
 :::

@@ -4,13 +4,16 @@ import {
   validateEmbedderBatchInput,
   validateEmbedderInput,
   validateImageInput,
+  validateIndexingInput,
   validateKvKeys,
   validateKvPairs,
   validateMemoryLoadInput,
   validateMemorySaveInput,
   validateMemoryTurn,
+  validateQueryEngineInput,
   validateRetrieverInput,
   validateRerankerInput,
+  validateResponseSynthesizerInput,
   validateSpeechInput,
   validateStorageKey,
   validateTextSplitterBatchInput,
@@ -30,6 +33,7 @@ describe("Adapter input validation", () => {
 
   it("validates missing retriever and reranker inputs", () => {
     expect(validateRetrieverInput(" ")).toHaveLength(1);
+    expect(validateQueryEngineInput(" ")).toHaveLength(1);
     expect(validateRerankerInput("", [])).toHaveLength(2);
   });
 
@@ -70,6 +74,12 @@ describe("Adapter input validation", () => {
 
   it("validates transformer inputs", () => {
     expect(validateTransformerInput([])).toHaveLength(1);
+  });
+
+  it("validates indexing and synthesis inputs", () => {
+    expect(validateIndexingInput(undefined)).toHaveLength(1);
+    expect(validateIndexingInput({ documents: [] })).toHaveLength(1);
+    expect(validateResponseSynthesizerInput(" ", [])).toHaveLength(2);
   });
 
   it("validates vector store inputs", () => {

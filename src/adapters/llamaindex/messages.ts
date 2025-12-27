@@ -119,16 +119,16 @@ const toLlamaIndexPart = (part: MessagePart): MessageContentDetail | undefined =
   filePartFromAdapter(part) ??
   toLlamaIndexSummary(part);
 
-const toLlamaIndexContent = (content: MessageContent): LlamaIndexMessageContent => {
+export function toLlamaIndexMessageContent(content: MessageContent): LlamaIndexMessageContent {
   if (typeof content === "string") {
     return content;
   }
   const parts = content.parts.map(toLlamaIndexPart).filter(Boolean) as MessageContentDetail[];
   return parts.length ? parts : content.text;
-};
+}
 
 export function toLlamaIndexMessage(message: Message): ChatMessage {
-  const content = toLlamaIndexContent(message.content);
+  const content = toLlamaIndexMessageContent(message.content);
   if (message.role === "assistant") {
     return { role: "assistant", content };
   }

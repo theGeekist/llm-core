@@ -100,6 +100,30 @@
       "note": "CacheStore adapters via @ai-sdk-tools/cache (TTL best-effort).",
       "probe": "ai-sdk:Cache"
     },
+    {
+      "construct": "Trace",
+      "ecosystem": "ai-sdk",
+      "status": "missing",
+      "note": "No trace sink adapter in AI SDK."
+    },
+    {
+      "construct": "Indexing",
+      "ecosystem": "ai-sdk",
+      "status": "missing",
+      "note": "AI SDK has no indexing abstraction."
+    },
+    {
+      "construct": "QueryEngine",
+      "ecosystem": "ai-sdk",
+      "status": "missing",
+      "note": "AI SDK has no query engine abstraction."
+    },
+    {
+      "construct": "ResponseSynthesizer",
+      "ecosystem": "ai-sdk",
+      "status": "missing",
+      "note": "AI SDK has no response synthesizer abstraction."
+    },
 
     {
       "construct": "Model",
@@ -204,6 +228,30 @@
       "status": "partial",
       "note": "BaseStore-backed cache adapter (KV-style).",
       "probe": "langchain:Cache"
+    },
+    {
+      "construct": "Trace",
+      "ecosystem": "langchain",
+      "status": "full",
+      "probe": "langchain:Trace"
+    },
+    {
+      "construct": "Indexing",
+      "ecosystem": "langchain",
+      "status": "full",
+      "probe": "langchain:Indexing"
+    },
+    {
+      "construct": "QueryEngine",
+      "ecosystem": "langchain",
+      "status": "missing",
+      "note": "LangChain has no query engine abstraction."
+    },
+    {
+      "construct": "ResponseSynthesizer",
+      "ecosystem": "langchain",
+      "status": "missing",
+      "note": "LangChain has no response synthesizer abstraction."
     },
 
     {
@@ -315,6 +363,30 @@
       "status": "partial",
       "note": "BaseKVStore-backed cache adapter (collection optional).",
       "probe": "llamaindex:Cache"
+    },
+    {
+      "construct": "Trace",
+      "ecosystem": "llamaindex",
+      "status": "missing",
+      "note": "No trace sink adapter in LlamaIndex TS."
+    },
+    {
+      "construct": "Indexing",
+      "ecosystem": "llamaindex",
+      "status": "missing",
+      "note": "No indexing abstraction in LlamaIndex TS."
+    },
+    {
+      "construct": "QueryEngine",
+      "ecosystem": "llamaindex",
+      "status": "full",
+      "probe": "llamaindex:QueryEngine"
+    },
+    {
+      "construct": "ResponseSynthesizer",
+      "ecosystem": "llamaindex",
+      "status": "full",
+      "probe": "llamaindex:ResponseSynthesizer"
     }
   ]
 }

@@ -5,6 +5,8 @@ import type { Model } from "./model";
 import type { PromptTemplate, Schema } from "./schema";
 import type { OutputParser } from "./output-parser";
 import type { Tool } from "./tools";
+import type { QueryEngine, ResponseSynthesizer } from "./engines";
+import type { Indexing } from "./indexing";
 import type {
   DocumentLoader,
   DocumentTransformer,
@@ -27,12 +29,15 @@ export type AdapterBundle = {
   embedder?: Embedder;
   image?: ImageModel;
   kv?: KVStore;
+  indexing?: Indexing;
   loader?: DocumentLoader;
   memory?: Memory;
   messages?: Message[];
   model?: Model;
   outputParser?: OutputParser;
   prompts?: PromptTemplate[];
+  queryEngine?: QueryEngine;
+  responseSynthesizer?: ResponseSynthesizer;
   reranker?: Reranker;
   retriever?: Retriever;
   schemas?: Schema[];

@@ -34,7 +34,7 @@ describe("Adapter registration helpers", () => {
     expect(plugin.adapters.model).toBeDefined();
   });
 
-  it("supports media, tools, retriever, vector store, memory, cache, and trace helpers", () => {
+  it("supports media, tools, retriever, vector store, memory, cache, trace, and indexing helpers", () => {
     const image = Adapter.image(`${CUSTOM_PREFIX}.image`, {
       generate: () => ({ images: [] }),
     });
@@ -61,6 +61,18 @@ describe("Adapter registration helpers", () => {
       delete: () => undefined,
     });
     const trace = Adapter.trace(`${CUSTOM_PREFIX}.trace`, { emit: () => undefined });
+    const indexing = Adapter.indexing(`${CUSTOM_PREFIX}.indexing`, {
+      index: () => ({ added: 0, deleted: 0, updated: 0, skipped: 0 }),
+    });
+    const queryEngine = Adapter.queryEngine(`${CUSTOM_PREFIX}.queryEngine`, {
+      query: () => ({ text: "" }),
+    });
+    const responseSynthesizer = Adapter.responseSynthesizer(
+      `${CUSTOM_PREFIX}.responseSynthesizer`,
+      {
+        synthesize: () => ({ text: "" }),
+      },
+    );
 
     expect(image.adapters.image).toBeDefined();
     expect(speech.adapters.speech).toBeDefined();
@@ -71,6 +83,9 @@ describe("Adapter registration helpers", () => {
     expect(memory.adapters.memory).toBeDefined();
     expect(cache.adapters.cache).toBeDefined();
     expect(trace.adapters.trace).toBeDefined();
+    expect(indexing.adapters.indexing).toBeDefined();
+    expect(queryEngine.adapters.queryEngine).toBeDefined();
+    expect(responseSynthesizer.adapters.responseSynthesizer).toBeDefined();
   });
 
   it("passes through plugin options", () => {
