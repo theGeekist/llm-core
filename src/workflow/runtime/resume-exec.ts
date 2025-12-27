@@ -12,6 +12,7 @@ import { createInvalidResumeYieldOutcome } from "./resume-helpers";
 import { driveIterator } from "../driver/iterator";
 import { normalizeDiagnostics, applyDiagnosticsMode } from "../diagnostics";
 import { createFinalize } from "./helpers";
+import { createFinalizeWithInterrupt } from "./pause-metadata";
 import type { AdapterResolution, PipelineRunner, ResumeHandlerDeps } from "./resume-types";
 
 export type ActiveResumeSession = Exclude<ResumeSession, { kind: "invalid" }>;
@@ -214,9 +215,9 @@ const runResumeWithAdapters = <N extends RecipeName>(
   });
   const store = resolveSessionStore(input.resumeRuntime ?? input.runtime, effectiveAdapters);
   const recordSnapshot = createSnapshotRecorder(store, input.resumeRuntime ?? input.runtime);
-  const finalize = createFinalize<Outcome<ArtefactOf<N>>>(
-    input.deps.finalizeResult,
-    recordSnapshot,
+  const finalize = createFinalizeWithInterrupt(
+    createFinalize<Outcome<ArtefactOf<N>>>(input.deps.finalizeResult, recordSnapshot),
+    effectiveAdapters.interrupt,
   );
 
   const resumeDeps = {

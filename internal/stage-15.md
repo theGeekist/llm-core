@@ -151,7 +151,9 @@ Implement the aligned interop shapes across ecosystems:
 
 - Status: in progress
 - Notes: KV-store cache TTL enforced via metadata; added orchestration adapter surfaces plus LangGraph checkpointer
-  and LlamaIndex workflow event stream adapters; capability flags cover checkpoint/eventStream/interrupt.
+  and LlamaIndex workflow event stream adapters; LangChain event stream, LangGraph interrupt, and LlamaIndex checkpoint
+  adapters added;
+  capability flags cover checkpoint/eventStream/interrupt.
 
 ### 2) New constructs last (orchestration adapters)
 
@@ -184,8 +186,9 @@ After parity + orchestration adapters, fix pause/resume semantics and rollback u
 
 **Completion summary (fill as work lands):**
 
-- Status:
-- Notes:
+- Status: completed
+- Notes: Pause/resume now runs helper rollback stacks before returning paused outcomes (run + resume), gated by the
+  resolved interrupt strategy (`restart`); pause kind + interrupt metadata are threaded through trace/resume.
 
 ### 4) Recipes (last)
 

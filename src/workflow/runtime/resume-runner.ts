@@ -13,6 +13,7 @@ import type { ResumeOptions } from "../resume";
 import type { TraceEvent } from "../trace";
 import type { Outcome, PipelineWithExtensions, Runtime } from "../types";
 import { createDiagnosticsGetter } from "./helpers";
+import { createFinalizeWithInterrupt } from "./pause-metadata";
 
 type AdapterResolution = {
   adapters: AdapterBundle;
@@ -122,6 +123,10 @@ const handleResumeResolution = <TArtefact>(
     adapterContext.diagnostics,
     resumeExtraDiagnostics,
   ]);
+  const finalizeWithInterrupt = createFinalizeWithInterrupt(
+    input.finalize,
+    mergedAdapters.interrupt,
+  );
   return chainMaybe(
     input.deps.pipeline.run({
       input: input.resumeOptions.input,
@@ -130,7 +135,7 @@ const handleResumeResolution = <TArtefact>(
       adapters: adaptersWithContext,
     }),
     bindFirst(handleResumeFinalize<TArtefact>, {
-      finalize: input.finalize,
+      finalize: finalizeWithInterrupt,
       getDiagnostics,
       trace: input.deps.trace,
       diagnosticsMode: input.resumeDiagnosticsMode,

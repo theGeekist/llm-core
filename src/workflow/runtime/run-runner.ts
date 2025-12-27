@@ -12,6 +12,7 @@ import type { DriveIteratorInput } from "../driver/iterator";
 import type { IteratorFinalize } from "../driver/types";
 import { createSnapshotRecorder, resolveSessionStore } from "./resume-session";
 import { createDiagnosticsGetter, createFinalize, type FinalizeResult } from "./helpers";
+import { createFinalizeWithInterrupt } from "./pause-metadata";
 
 type AdapterResolution = {
   adapters: AdapterBundle;
@@ -127,7 +128,10 @@ const runPipeline = <TOutcome>(
   }
   const store = resolveSessionStore(context.ctx.runtime, resolvedAdapters);
   const recordSnapshot = createSnapshotRecorder(store, context.ctx.runtime);
-  const finalize = createFinalize(context.deps.finalizeResult, recordSnapshot);
+  const finalize = createFinalizeWithInterrupt(
+    createFinalize(context.deps.finalizeResult, recordSnapshot),
+    resolvedAdapters.interrupt,
+  );
   const handleResult = bindFirst(handlePipelineResult<TOutcome>, {
     context,
     runtimeDiagnostics,

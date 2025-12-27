@@ -1,6 +1,14 @@
 import { describe, expect, it } from "bun:test";
 import { createWorkflow } from "@llamaindex/workflow-core";
-import { fromLlamaIndexWorkflowContext } from "#adapters";
+import { BaseCallbackHandler } from "@langchain/core/callbacks/base";
+import { fromLangChainEventStream, fromLlamaIndexWorkflowContext } from "#adapters";
+
+const createLangChainHandler = (events: Array<{ name: string; data: unknown }>) =>
+  BaseCallbackHandler.fromMethods({
+    handleCustomEvent: (name, data) => {
+      events.push({ name, data });
+    },
+  });
 
 describe("Adapter event streams", () => {
   it("emits workflow events for LlamaIndex contexts", async () => {
@@ -39,5 +47,16 @@ describe("Adapter event streams", () => {
     const secondValue = secondEvent.value as { data?: unknown } | undefined;
     expect(firstValue?.data).toEqual(first);
     expect(secondValue?.data).toEqual(second);
+  });
+
+  it("emits LangChain custom events via callback handlers", async () => {
+    const events: Array<{ name: string; data: unknown }> = [];
+    const handler = createLangChainHandler(events);
+    const eventStream = fromLangChainEventStream(handler);
+    const payload = { name: "run.start", data: { ok: true } };
+
+    await eventStream.emit(payload);
+
+    expect(events).toEqual([{ name: payload.name, data: payload.data }]);
   });
 });

@@ -8,6 +8,7 @@ import { runRollbackStack } from "@wpkernel/pipeline/core";
 import type { MaybePromise } from "../../maybe";
 import { bindFirst } from "../../maybe";
 import type { RollbackEntry, RollbackState } from "./rollback-types";
+import { readRestartInterrupt } from "./pause-metadata";
 
 type RollbackResult = {
   steps?: PipelineStep[];
@@ -121,6 +122,9 @@ const createRollbackOptions = (
 const hasRollbacks = (entries: RollbackEntry[]) => entries.length > 0;
 
 export const runPauseRollback = (result: unknown): MaybePromise<void> => {
+  if (!readRestartInterrupt(result)) {
+    return undefined;
+  }
   const typed = result as RollbackResult;
   const entries = readRollbackEntries(typed);
   if (!hasRollbacks(entries)) {

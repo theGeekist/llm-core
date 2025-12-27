@@ -1,5 +1,6 @@
 import { describe, expect, it } from "bun:test";
 import { createBuiltinTrace, createInterruptStrategy } from "#adapters";
+import { createPipelineRollback } from "@wpkernel/pipeline/core";
 import {
   assertSyncOutcome,
   createResumeSnapshot,
@@ -16,6 +17,35 @@ type PauseYield = {
   token: string;
   pauseKind?: "human" | "external" | "system";
   partialArtifact?: Record<string, unknown>;
+};
+
+const createRollbackFixture = (onRollback: () => void) => {
+  const rollback = createPipelineRollback(onRollback);
+  const rollbacks = new Map([
+    [
+      "recipe.steps",
+      [
+        {
+          helper: { key: "step.pause" },
+          rollback,
+        },
+      ],
+    ],
+  ]);
+  return {
+    state: { helperRollbacks: rollbacks },
+    steps: [
+      {
+        id: "step.pause",
+        index: 0,
+        key: "step.pause",
+        kind: "recipe.steps",
+        mode: "extend",
+        priority: 0,
+        dependsOn: [],
+      },
+    ],
+  };
 };
 
 describe("Workflow runtime resume", () => {
@@ -282,5 +312,46 @@ describe("Workflow runtime resume", () => {
       trace: expect.any(Object),
       eventStream: expect.any(Object),
     });
+  });
+
+  it("runs helper rollbacks when a resumed pipeline pauses", () => {
+    const token = "token-rollback";
+    const { sessionStore } = createSessionStore();
+    sessionStore.set(token, createResumeSnapshot(token));
+    let rolledBack = false;
+    const fixture = createRollbackFixture(() => {
+      rolledBack = true;
+    });
+    const runtime = makeRuntime("hitl-gate", {
+      includeDefaults: false,
+      plugins: [
+        {
+          key: "adapter.interrupt",
+          adapters: { interrupt: createInterruptStrategy("restart") },
+        },
+      ],
+      run: () => ({
+        paused: true,
+        token,
+        artifact: { partial: true },
+        ...fixture,
+      }),
+    });
+
+    if (!runtime.resume) {
+      throw new Error(ERROR_RESUME);
+    }
+
+    const outcome = assertSyncOutcome(
+      runtime.resume(token, undefined, {
+        resume: {
+          sessionStore,
+          resolve: ({ token: resumeToken }) => ({ input: { token: resumeToken } }),
+        },
+      }),
+    );
+
+    expect(outcome.status).toBe("paused");
+    expect(rolledBack).toBe(true);
   });
 });

@@ -89,6 +89,7 @@ export type {
 } from "./types";
 
 export type { AiSdkCacheStore } from "./ai-sdk/cache";
+export type { LlamaIndexCheckpointEntry, LlamaIndexCheckpointStore } from "./llamaindex";
 
 export {
   chainMaybe,
@@ -200,6 +201,7 @@ export { fromLangChainPromptTemplate } from "./langchain";
 export { fromLangChainOutputParser } from "./langchain";
 export { fromLangChainStructuredQuery } from "./langchain";
 export { fromLangChainCallbackHandler } from "./langchain";
+export { fromLangChainEventStream } from "./langchain";
 export { fromLangChainReranker } from "./langchain";
 export { fromLangChainRetriever } from "./langchain";
 export { fromLangChainStore } from "./langchain";
@@ -210,6 +212,7 @@ export { fromLangChainVectorStore } from "./langchain";
 export { fromLangChainIndexing } from "./langchain";
 export { toLangChainStreamEvents } from "./langchain";
 export { fromLangGraphCheckpointer } from "./langchain";
+export { fromLangGraphInterrupt } from "./langchain";
 
 export { fromLlamaIndexDocument, fromLlamaIndexNode, toLlamaIndexDocument } from "./llamaindex";
 export { fromLlamaIndexDocumentStore } from "./llamaindex";
@@ -231,4 +234,6 @@ export { fromLlamaIndexTool } from "./llamaindex";
 export { fromLlamaIndexTransformer } from "./llamaindex";
 export { toLlamaIndexStreamEvents } from "./llamaindex";
 export { fromLlamaIndexWorkflowContext } from "./llamaindex";
+export { fromLlamaIndexCheckpointStore } from "./llamaindex";
+export { fromLlamaIndexTraceSink } from "./llamaindex";
 export { fromLlamaIndexVectorStore } from "./llamaindex";

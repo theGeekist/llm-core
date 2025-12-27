@@ -134,6 +134,42 @@ const trace = Adapter.trace("custom.trace", fromLangChainCallbackHandler(handler
 
 ## Supported Integrations
 
-| Ecosystem     | Adapter Factory                | Deep Link                                                                                 |
-| :------------ | :----------------------------- | :---------------------------------------------------------------------------------------- |
-| **LangChain** | `fromLangChainCallbackHandler` | [Docs](https://api.js.langchain.com/classes/core_callbacks_base.BaseCallbackHandler.html) |
+| Ecosystem      | Adapter Factory                | Deep Link                                                                                 |
+| :------------- | :----------------------------- | :---------------------------------------------------------------------------------------- |
+| **LangChain**  | `fromLangChainCallbackHandler` | [Docs](https://api.js.langchain.com/classes/core_callbacks_base.BaseCallbackHandler.html) |
+| **LlamaIndex** | `fromLlamaIndexTraceSink`      | [Docs](https://ts.llamaindex.ai/docs/api/modules/workflow_core_middleware_trace_events)   |
+
+---
+
+## LlamaIndex Bridge
+
+LlamaIndex workflows can emit trace events via trace plugins. This adapter maps workflow handler events to `AdapterTraceEvent`.
+
+### Usage
+
+::: tabs
+== TypeScript
+
+```ts
+import { Adapter, createBuiltinTrace, fromLlamaIndexTraceSink } from "@geekist/llm-core/adapters";
+import { createWorkflow } from "@llamaindex/workflow-core";
+import { withTraceEvents } from "@llamaindex/workflow-core/middleware/trace-events";
+
+const builtin = createBuiltinTrace();
+const trace = Adapter.trace("custom.trace", fromLlamaIndexTraceSink(builtin));
+const workflow = withTraceEvents(createWorkflow(), { plugins: [trace] });
+```
+
+== JavaScript
+
+```js
+import { Adapter, createBuiltinTrace, fromLlamaIndexTraceSink } from "@geekist/llm-core/adapters";
+import { createWorkflow } from "@llamaindex/workflow-core";
+import { withTraceEvents } from "@llamaindex/workflow-core/middleware/trace-events";
+
+const builtin = createBuiltinTrace();
+const trace = Adapter.trace("custom.trace", fromLlamaIndexTraceSink(builtin));
+const workflow = withTraceEvents(createWorkflow(), { plugins: [trace] });
+```
+
+:::

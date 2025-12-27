@@ -76,7 +76,7 @@ Mapping to our primitives:
 
 - `Model`, `Embedder`, `Retriever`, `Reranker`, `TextSplitter`, `Transformer`,
   `DocumentLoader`, `VectorStore`, `Memory`, `KVStore`, `Cache`, `Tool`, `PromptTemplate`,
-  `OutputParser`, `StructuredQuery`, `Trace`, `Indexing`, `Checkpoint`
+  `OutputParser`, `StructuredQuery`, `Trace`, `EventStream`, `Indexing`, `Checkpoint`
   → **covered**.
 - `Runnable`, `Agents`, `ChatHistory`
   → **not covered**.
@@ -85,7 +85,6 @@ Gaps:
 
 - Runnables/chains/agents are higher-level composition constructs.
 - Callbacks/tracers map to trace sinks (custom + `run.start`/`run.end` + `provider.response`).
-- No workflow event stream or interrupt abstractions in LangChain.
 
 ## LlamaIndex (TS)
 
@@ -103,7 +102,7 @@ Mapping to our primitives:
 - `Model`, `Embedder`, `Retriever`, `Reranker`, `TextSplitter`, `Transformer`,
   `DocumentLoader`, `VectorStore`, `Memory`, `KVStore`, `Cache`, `Tool`, `PromptTemplate`
   → **covered**.
-- `QueryEngine`, `ResponseSynthesizer`, `EventStream`
+- `QueryEngine`, `ResponseSynthesizer`, `EventStream`, `Checkpoint`
   → **covered**.
 - `ChatEngine`, `Agent`, `Indices`
   → **not covered**.
@@ -111,7 +110,7 @@ Mapping to our primitives:
 Gaps:
 
 - Storage context and index lifecycle helpers are not modeled.
-- No checkpoint or interrupt abstractions in LlamaIndex.
+- Interrupt strategy remains core-only.
 
 ## Media Construct Catalogue
 
@@ -148,6 +147,8 @@ Additional AI SDK interfaces worth tracking:
   - Multimodal LLMs handle image inputs; still a `Model` surface, not a media model.
 - Audio / transcription:
   - No canonical speech/transcription model interface surfaced in core packages.
+- Trace:
+  - Workflow trace plugins map to `Trace` adapters (handler start/end/error).
 
 ## Parity Matrix
 
@@ -168,9 +169,9 @@ Legend:
 | Transformer         | missing | full      | full       | AI SDK has no transformer; LC/LI supported.                         |
 | Storage (KVStore)   | missing | full      | full       | AI SDK has no storage adapter.                                      |
 | Cache               | partial | partial   | partial    | AI SDK CacheStore + LC BaseStore + LI BaseKVStore; TTL best-effort. |
-| Checkpoint          | missing | full      | missing    | LangChain checkpoints only; others require core stores.             |
-| EventStream         | missing | missing   | full       | LlamaIndex workflow events only; no AI SDK/LC parity yet.           |
-| Interrupt           | missing | missing   | missing    | Core-only primitive; ecosystems have no surface today.              |
+| Checkpoint          | missing | full      | full       | LlamaIndex snapshots map via SnapshotData stores.                   |
+| EventStream         | missing | full      | full       | LangChain via callback handlers; LlamaIndex workflow events.        |
+| Interrupt           | missing | full      | missing    | LangGraph interrupt semantics map to restart strategies.            |
 | KV                  | missing | full      | full       | AI SDK has no KV adapter; UI store is out of scope.                 |
 | Memory              | partial | full      | full       | AI SDK has a memory provider (`@ai-sdk-tools/memory`), mapped.      |
 | Tools               | full    | full      | full       | Safe; tool schemas normalize across ecosystems.                     |
@@ -183,7 +184,7 @@ Legend:
 | ImageModel          | full    | missing   | missing    | AI SDK direct; LC/LI require tool wrappers.                         |
 | SpeechModel         | full    | missing   | missing    | AI SDK direct; LC via ChatOpenAI audio output.                      |
 | TranscriptionModel  | full    | missing   | missing    | AI SDK direct; LC via document loaders (shape mismatch).            |
-| Trace               | missing | full      | missing    | LangChain callbacks map to trace sink; others lack a surface.       |
+| Trace               | missing | full      | full       | LangChain callbacks + LlamaIndex trace plugins map to trace sink.   |
 | Streaming (Model)   | full    | full      | full       | Normalized stream events; provider-specific parts remain raw.       |
 
 ## Summary: Coverage vs Gaps
@@ -194,6 +195,7 @@ Covered primitives (cross-ecosystem):
 - `TextSplitter`, `Transformer`, `DocumentLoader`
 - `VectorStore` (write path), `Memory` (LC/LI), `KVStore` (LC/LI), `Cache` (partial)
 - `Tool`, `PromptTemplate`, `Schema`, `Messages`
+- `Trace` (LangChain + LlamaIndex)
 - `OutputParser` (LangChain only)
 - `StructuredQuery` (LangChain only)
 - `ImageModel`, `SpeechModel`, `TranscriptionModel` (AI SDK direct; LC/LI provider-specific)

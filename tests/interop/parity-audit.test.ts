@@ -29,6 +29,8 @@ import {
   fromLangChainTransformer,
   fromLangChainVectorStore,
   fromLangChainCallbackHandler,
+  fromLangChainEventStream,
+  fromLangGraphInterrupt,
   fromLlamaIndexDocumentStore,
   fromLlamaIndexEmbeddings,
   fromLlamaIndexKVStoreCache,
@@ -43,8 +45,10 @@ import {
   fromLlamaIndexTextSplitter,
   fromLlamaIndexTool,
   fromLlamaIndexTransformer,
+  fromLlamaIndexTraceSink,
   fromLlamaIndexVectorStore,
   fromLlamaIndexWorkflowContext,
+  fromLlamaIndexCheckpointStore,
   fromLangGraphCheckpointer,
 } from "#adapters";
 
@@ -90,6 +94,8 @@ const probes: Record<string, () => boolean> = {
   "langchain:OutputParser": () => isFunction(fromLangChainOutputParser),
   "langchain:StructuredQuery": () => isFunction(fromLangChainStructuredQuery),
   "langchain:Trace": () => isFunction(fromLangChainCallbackHandler),
+  "langchain:EventStream": () => isFunction(fromLangChainEventStream),
+  "langchain:Interrupt": () => isFunction(fromLangGraphInterrupt),
   "langchain:Indexing": () => isFunction(fromLangChainIndexing),
   "langchain:Checkpoint": () => isFunction(fromLangGraphCheckpointer),
   "llamaindex:Model": () => isFunction(fromLlamaIndexModel),
@@ -107,7 +113,9 @@ const probes: Record<string, () => boolean> = {
   "llamaindex:PromptTemplate": () => isFunction(fromLlamaIndexPromptTemplate),
   "llamaindex:QueryEngine": () => isFunction(fromLlamaIndexQueryEngine),
   "llamaindex:ResponseSynthesizer": () => isFunction(fromLlamaIndexResponseSynthesizer),
+  "llamaindex:Checkpoint": () => isFunction(fromLlamaIndexCheckpointStore),
   "llamaindex:EventStream": () => isFunction(fromLlamaIndexWorkflowContext),
+  "llamaindex:Trace": () => isFunction(fromLlamaIndexTraceSink),
 };
 
 const loadParitySpec = (): ParitySpec => {

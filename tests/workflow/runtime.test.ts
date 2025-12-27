@@ -1,5 +1,5 @@
 import { describe, expect, it } from "bun:test";
-import { createBuiltinRetriever } from "#adapters";
+import { createBuiltinRetriever, createInterruptStrategy } from "#adapters";
 import { createPipelineRollback } from "@wpkernel/pipeline/core";
 import { getRecipe, registerRecipe } from "#workflow/recipe-registry";
 import { assertSyncOutcome, diagnosticMessages, makeRuntime, makeWorkflow } from "./helpers";
@@ -127,6 +127,13 @@ describe("Workflow runtime", () => {
       },
     ];
     const runtime = makeRuntime("hitl-gate", {
+      includeDefaults: false,
+      plugins: [
+        {
+          key: "adapter.interrupt",
+          adapters: { interrupt: createInterruptStrategy("restart") },
+        },
+      ],
       run: () => ({
         paused: true,
         token: TOKEN_PAUSED,

@@ -220,14 +220,16 @@
     {
       "construct": "EventStream",
       "ecosystem": "langchain",
-      "status": "missing",
-      "note": "LangChain has no workflow event stream abstraction."
+      "status": "full",
+      "probe": "langchain:EventStream",
+      "note": "Adapter wraps callback handlers via the trace sink."
     },
     {
       "construct": "Interrupt",
       "ecosystem": "langchain",
-      "status": "missing",
-      "note": "Interrupt strategy is core-only; LangChain has no surface."
+      "status": "full",
+      "probe": "langchain:Interrupt",
+      "note": "Adapter maps LangGraph interrupt semantics to a restart strategy."
     },
     {
       "construct": "OutputParser",
@@ -367,8 +369,9 @@
     {
       "construct": "Checkpoint",
       "ecosystem": "llamaindex",
-      "status": "missing",
-      "note": "LlamaIndex has no checkpoint store abstraction."
+      "status": "full",
+      "probe": "llamaindex:Checkpoint",
+      "note": "Adapter wraps SnapshotData stores for workflow state snapshots."
     },
     {
       "construct": "EventStream",
@@ -422,8 +425,8 @@
     {
       "construct": "Trace",
       "ecosystem": "llamaindex",
-      "status": "missing",
-      "note": "No trace sink adapter in LlamaIndex TS."
+      "status": "full",
+      "probe": "llamaindex:Trace"
     },
     {
       "construct": "Indexing",
