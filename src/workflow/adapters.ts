@@ -16,6 +16,9 @@ const adapterConstructs: Array<keyof AdapterBundle> = [
   "tools",
   "model",
   "trace",
+  "checkpoint",
+  "eventStream",
+  "interrupt",
   "prompts",
   "outputParser",
   "schemas",
@@ -61,6 +64,9 @@ const mergeAdapterBundle = (
     tools: mergeIfDefined(target.tools, next.tools),
     model: replaceIfDefined(target.model, next.model),
     trace: replaceIfDefined(target.trace, next.trace),
+    checkpoint: replaceIfDefined(target.checkpoint, next.checkpoint),
+    eventStream: replaceIfDefined(target.eventStream, next.eventStream),
+    interrupt: replaceIfDefined(target.interrupt, next.interrupt),
     prompts: mergeIfDefined(target.prompts, next.prompts),
     outputParser: replaceIfDefined(target.outputParser, next.outputParser),
     schemas: mergeIfDefined(target.schemas, next.schemas),
@@ -74,6 +80,7 @@ const mergeAdapterBundle = (
     memory: replaceIfDefined(target.memory, next.memory),
     storage: replaceIfDefined(target.storage, next.storage),
     kv: replaceIfDefined(target.kv, next.kv),
+    vectorStore: replaceIfDefined(target.vectorStore, next.vectorStore),
     constructs,
   };
 };

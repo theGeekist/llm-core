@@ -74,10 +74,10 @@ const cacheGet = (
     reportDiagnostics(context, diagnostics);
     return undefined;
   }
-  const handleEntry = bindFirst(bindFirst(readEntry, store), key);
+
+  const handleEntry = (entry: CacheEntry | undefined) => readEntry(store, key, entry);
   return mapMaybe(fromPromiseLike(store.get(key)), handleEntry);
 };
-
 const cacheSet = (
   store: AiSdkCacheStore<CacheEntry>,
   options: AiSdkCacheOptions | undefined,

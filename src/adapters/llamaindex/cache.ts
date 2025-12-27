@@ -1,6 +1,6 @@
 import type { BaseKVStore } from "@llamaindex/core/storage/kv-store";
 import type { AdapterCallContext, Blob, Cache } from "../types";
-import { bindFirst, fromPromiseLike, mapMaybe } from "../../maybe";
+import { fromPromiseLike, mapMaybe } from "../../maybe";
 import { reportDiagnostics, validateStorageKey } from "../input-validation";
 
 type LlamaIndexCacheOptions = {
@@ -61,7 +61,9 @@ const cacheGet = (
     reportDiagnostics(context, diagnostics);
     return undefined;
   }
-  const handleEntry = bindFirst(bindFirst(bindFirst(readEntry, store), collection), key);
+
+  const handleEntry = (entry: unknown) => readEntry(store, collection, key, entry);
+
   return mapMaybe(fromPromiseLike(store.get(key, collection)), handleEntry);
 };
 
@@ -101,9 +103,10 @@ export function fromLlamaIndexKVStoreCache(
   options?: LlamaIndexCacheOptions,
 ): Cache {
   const collection = options?.collection;
+
   return {
-    get: bindFirst(bindFirst(cacheGet, store), collection),
-    set: bindFirst(bindFirst(cacheSet, store), collection),
-    delete: bindFirst(bindFirst(cacheDelete, store), collection),
+    get: (key, context) => cacheGet(store, collection, key, context),
+    set: (key, value, ttlMs, context) => cacheSet(store, collection, key, value, ttlMs, context),
+    delete: (key, context) => cacheDelete(store, collection, key, context),
   };
 }

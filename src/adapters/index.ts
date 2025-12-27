@@ -36,6 +36,10 @@ export type {
   IndexingResult,
   KVStore,
   Cache,
+  CheckpointStore,
+  EventStream,
+  EventStreamEvent,
+  InterruptStrategy,
   Memory,
   Message,
   MessageContent,
@@ -167,6 +171,8 @@ export { createBuiltinTools } from "./primitives/tools";
 export { createBuiltinTrace } from "./primitives/trace";
 export { createCacheFromKVStore } from "./primitives/cache";
 export { createMemoryCache } from "./primitives/cache";
+export { createEventStreamFromTraceSink } from "./primitives/event-stream";
+export { createInterruptStrategy } from "./primitives/interrupt";
 
 export { fromAiSdkCacheStore } from "./ai-sdk";
 export { fromAiSdkEmbeddings } from "./ai-sdk";
@@ -203,6 +209,7 @@ export { fromLangChainTransformer } from "./langchain";
 export { fromLangChainVectorStore } from "./langchain";
 export { fromLangChainIndexing } from "./langchain";
 export { toLangChainStreamEvents } from "./langchain";
+export { fromLangGraphCheckpointer } from "./langchain";
 
 export { fromLlamaIndexDocument, fromLlamaIndexNode, toLlamaIndexDocument } from "./llamaindex";
 export { fromLlamaIndexDocumentStore } from "./llamaindex";
@@ -223,4 +230,5 @@ export { fromLlamaIndexTextSplitter } from "./llamaindex";
 export { fromLlamaIndexTool } from "./llamaindex";
 export { fromLlamaIndexTransformer } from "./llamaindex";
 export { toLlamaIndexStreamEvents } from "./llamaindex";
+export { fromLlamaIndexWorkflowContext } from "./llamaindex";
 export { fromLlamaIndexVectorStore } from "./llamaindex";

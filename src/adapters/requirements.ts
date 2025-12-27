@@ -49,6 +49,9 @@ const listBundleEntries = (adapters: AdapterBundle): Array<[string, unknown]> =>
   ["documents", adapters.documents],
   ["messages", adapters.messages],
   ["tools", adapters.tools],
+  ["checkpoint", adapters.checkpoint],
+  ["eventStream", adapters.eventStream],
+  ["interrupt", adapters.interrupt],
   ["model", adapters.model],
   ["image", adapters.image],
   ["trace", adapters.trace],
@@ -70,6 +73,9 @@ const listBundleEntries = (adapters: AdapterBundle): Array<[string, unknown]> =>
 ];
 
 const listRequirementEntries = (adapters: AdapterBundle): Array<[string, unknown]> => [
+  ["checkpoint", adapters.checkpoint],
+  ["eventStream", adapters.eventStream],
+  ["interrupt", adapters.interrupt],
   ["model", adapters.model],
   ["image", adapters.image],
   ["trace", adapters.trace],

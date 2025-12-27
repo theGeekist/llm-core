@@ -93,6 +93,13 @@ export type {
 } from "./types/engines";
 
 export type {
+  CheckpointStore,
+  EventStream,
+  EventStreamEvent,
+  InterruptStrategy,
+} from "./types/orchestration";
+
+export type {
   VectorRecord,
   VectorStore,
   VectorStoreDeleteInput,

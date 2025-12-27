@@ -2,8 +2,11 @@ import type {
   AdapterBundle,
   AdapterTraceSink,
   Cache,
+  CheckpointStore,
+  EventStream,
   ImageModel,
   Indexing,
+  InterruptStrategy,
   Memory,
   Model,
   OutputParser,
@@ -32,7 +35,10 @@ export type AdapterPluginOptions = {
 };
 
 const bundleKeys = new Set<keyof AdapterBundle>([
+  "cache",
+  "checkpoint",
   "documents",
+  "eventStream",
   "messages",
   "tools",
   "model",
@@ -49,6 +55,7 @@ const bundleKeys = new Set<keyof AdapterBundle>([
   "loader",
   "transformer",
   "memory",
+  "interrupt",
   "queryEngine",
   "responseSynthesizer",
   "speech",
@@ -156,7 +163,28 @@ export const Adapter = {
   cache(key: string, cache: Cache, options?: AdapterPluginOptions): AdapterPlugin {
     return makePlugin(key, { cache }, options);
   },
+  checkpoint(
+    key: string,
+    checkpoint: CheckpointStore,
+    options?: AdapterPluginOptions,
+  ): AdapterPlugin {
+    return makePlugin(key, { checkpoint }, options);
+  },
   trace(key: string, trace: AdapterTraceSink, options?: AdapterPluginOptions): AdapterPlugin {
     return makePlugin(key, { trace }, options);
+  },
+  eventStream(
+    key: string,
+    eventStream: EventStream,
+    options?: AdapterPluginOptions,
+  ): AdapterPlugin {
+    return makePlugin(key, { eventStream }, options);
+  },
+  interrupt(
+    key: string,
+    interrupt: InterruptStrategy,
+    options?: AdapterPluginOptions,
+  ): AdapterPlugin {
+    return makePlugin(key, { interrupt }, options);
   },
 };

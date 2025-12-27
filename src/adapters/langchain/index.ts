@@ -20,3 +20,4 @@ export { fromLangChainDocuments } from "./retrieval";
 export { fromLangChainModel } from "./model";
 export { toLangChainStreamEvents } from "./stream";
 export { fromLangChainCallbackHandler } from "./trace";
+export { fromLangGraphCheckpointer } from "./checkpoint";

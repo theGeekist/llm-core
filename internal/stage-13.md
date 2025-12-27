@@ -1,6 +1,6 @@
 # Stage 13: Parity Tightening + Write Path
 
-Status: in progress.
+Status: complete.
 
 ## Scope
 

@@ -41,20 +41,16 @@ const readEntry = (store: BaseStore<string, unknown>, key: string, value: unknow
   return readBlob(value);
 };
 
-const readFirst = (
-  store: BaseStore<string, unknown>,
-  key: string,
-  values: Array<unknown | undefined>,
-) => readEntry(store, key, values[0]);
-
 const cacheGet = (store: BaseStore<string, unknown>, key: string, context?: AdapterCallContext) => {
   const diagnostics = validateStorageKey(key, "cache.get");
   if (diagnostics.length > 0) {
     reportDiagnostics(context, diagnostics);
     return undefined;
   }
-  const handleEntry = bindFirst(bindFirst(readFirst, store), key);
-  return mapMaybe(fromPromiseLike(store.mget([key])), handleEntry);
+
+  const handleEntries = (values: unknown[]) => readEntry(store, key, values[0]);
+
+  return mapMaybe(fromPromiseLike(store.mget([key])), handleEntries);
 };
 
 const cacheSet = (

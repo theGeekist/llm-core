@@ -29,32 +29,35 @@ This is primarily useful for validation, debugging, and tooling but not day‑to
 
 ```ts
 type AdapterBundle = {
-  model?: Model;
-  tools?: Tool[];
-  messages?: Message[];
-  documents?: Document[];
-  trace?: AdapterTraceSink;
-  prompts?: PromptTemplate[];
-  outputParser?: OutputParser;
-  schemas?: Schema[];
   cache?: Cache;
+  constructs?: Record<string, unknown>;
+  documents?: Document[];
+  embedder?: Embedder;
+  eventStream?: EventStream;
   image?: ImageModel;
   indexing?: Indexing;
+  interrupt?: InterruptStrategy;
+  checkpoint?: CheckpointStore;
   textSplitter?: TextSplitter;
-  embedder?: Embedder;
   retriever?: Retriever;
   reranker?: Reranker;
   loader?: DocumentLoader;
   transformer?: DocumentTransformer;
   memory?: Memory;
+  messages?: Message[];
+  model?: Model;
+  outputParser?: OutputParser;
+  prompts?: PromptTemplate[];
   queryEngine?: QueryEngine;
   responseSynthesizer?: ResponseSynthesizer;
   speech?: SpeechModel;
   storage?: Storage;
   transcription?: TranscriptionModel;
+  tools?: Tool[];
+  trace?: AdapterTraceSink;
   kv?: KVStore;
   vectorStore?: VectorStore;
-  constructs?: Record<string, unknown>;
+  schemas?: Schema[];
 };
 ```
 
@@ -62,32 +65,35 @@ type AdapterBundle = {
 
 ```js
 const adapterBundle = {
-  model: undefined,
-  tools: [],
-  messages: [],
-  documents: [],
-  trace: undefined,
-  prompts: [],
-  outputParser: undefined,
-  schemas: [],
   cache: undefined,
+  constructs: {},
+  documents: [],
+  embedder: undefined,
+  eventStream: undefined,
   image: undefined,
   indexing: undefined,
+  interrupt: undefined,
+  checkpoint: undefined,
   textSplitter: undefined,
-  embedder: undefined,
   retriever: undefined,
   reranker: undefined,
   loader: undefined,
   transformer: undefined,
   memory: undefined,
+  messages: [],
+  model: undefined,
+  outputParser: undefined,
+  prompts: [],
   queryEngine: undefined,
   responseSynthesizer: undefined,
   speech: undefined,
   storage: undefined,
   transcription: undefined,
+  tools: [],
+  trace: undefined,
   kv: undefined,
   vectorStore: undefined,
-  constructs: {},
+  schemas: [],
 };
 ```
 

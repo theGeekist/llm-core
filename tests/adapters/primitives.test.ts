@@ -1,5 +1,11 @@
 import { describe, expect, it } from "bun:test";
-import { createBuiltinModel, createBuiltinRetriever, createBuiltinTrace } from "#adapters";
+import {
+  createBuiltinModel,
+  createBuiltinRetriever,
+  createBuiltinTrace,
+  createEventStreamFromTraceSink,
+  createInterruptStrategy,
+} from "#adapters";
 import { assertSyncValue, captureDiagnostics, makeMessage } from "./helpers";
 
 describe("Adapter primitives", () => {
@@ -64,5 +70,45 @@ describe("Adapter primitives", () => {
     trace.emitMany?.([{ name: "run.end", timestamp: 2 }]);
 
     expect(trace.events.map((entry) => entry.name)).toEqual(["run.start", "run.end"]);
+  });
+
+  it("creates event streams from trace sinks", () => {
+    const events: Array<{ name: string }> = [];
+    const sink = {
+      emit: (event: { name: string }) => {
+        events.push(event);
+      },
+    };
+    const stream = createEventStreamFromTraceSink(sink);
+
+    stream.emit({ name: "run.start" });
+    stream.emitMany?.([{ name: "run.end" }]);
+
+    expect(events.map((event) => event.name)).toEqual(["run.start", "run.end"]);
+  });
+
+  it("prefers bulk emit when available", () => {
+    const events: Array<{ name: string }> = [];
+    const sink = {
+      emit: (event: { name: string }) => {
+        events.push(event);
+      },
+      emitMany: (batch: Array<{ name: string }>) => {
+        events.push(...batch);
+      },
+    };
+    const stream = createEventStreamFromTraceSink(sink);
+
+    stream.emitMany?.([{ name: "run.start" }, { name: "run.end" }]);
+
+    expect(events.map((event) => event.name)).toEqual(["run.start", "run.end"]);
+  });
+
+  it("builds interrupt strategies", () => {
+    const strategy = createInterruptStrategy("restart", "HITL", { step: "review" });
+
+    expect(strategy.mode).toBe("restart");
+    expect(strategy.reason).toBe("HITL");
+    expect(strategy.metadata).toEqual({ step: "review" });
   });
 });

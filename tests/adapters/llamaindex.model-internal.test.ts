@@ -1,11 +1,15 @@
 import { describe, expect, it } from "bun:test";
-import type { LLM } from "@llamaindex/core/llms";
+import type { LLM, ToolCall as LlamaToolCall } from "@llamaindex/core/llms";
 import {
   appendTelemetryResponse,
   createRunState,
   getExec,
   getStreamExec,
+  mapToolCall,
+  parseOutput,
+  readMessageText,
   readUsagePayload,
+  toToolCalls,
   toResponseTelemetry,
   toUsage,
 } from "../../src/adapters/llamaindex/model-utils";
@@ -64,5 +68,31 @@ describe("Adapter LlamaIndex model internals", () => {
     const model = createModel({});
     expect(getExec(model)).toBeUndefined();
     expect(getStreamExec(model)).toBeUndefined();
+  });
+
+  it("maps tool calls into adapter tool calls", () => {
+    const calls: LlamaToolCall[] = [
+      { id: "tool-1", name: "search", input: { q: "hi" } },
+      { id: "tool-2", name: "calc", input: { x: 2 } },
+    ];
+    const mapped = toToolCalls(calls);
+    expect(mapped[0]).toEqual({ id: "tool-1", name: "search", arguments: { q: "hi" } });
+    expect(mapped[1]).toEqual({ id: "tool-2", name: "calc", arguments: { x: 2 } });
+    expect(mapToolCall(calls[0]!)).toEqual({
+      id: "tool-1",
+      name: "search",
+      arguments: { q: "hi" },
+    });
+  });
+
+  it("reads message text from structured content", () => {
+    const content = [{ type: "text", text: "hello" }];
+    expect(readMessageText(content)).toBe("hello");
+  });
+
+  it("parses output when asked and returns objects when provided", () => {
+    expect(parseOutput('{"ok":true}', true, undefined)).toEqual({ ok: true });
+    expect(parseOutput("ignored", true, { ok: true })).toEqual({ ok: true });
+    expect(parseOutput('{"ok":true}', false, undefined)).toBeUndefined();
   });
 });

@@ -92,10 +92,9 @@ const vectorStore = Adapter.vectorStore("custom.vectorStore", {
 
 :::
 
-## Indexing (LangChain)
+## Indexing (Ingestion)
 
-LangChain exposes an indexing API that combines a record manager with a vector store.
-Wrap both into a single `indexing` adapter:
+Indexers manage the synchronization between your source documents and your vector store to prevent duplication.
 
 ::: tabs
 == TypeScript
@@ -103,9 +102,10 @@ Wrap both into a single `indexing` adapter:
 ```ts
 import { Adapter, fromLangChainIndexing } from "#adapters";
 
+// Note: Requires a raw LangChain vector store instance
 const indexing = Adapter.indexing(
   "custom.indexing",
-  fromLangChainIndexing(recordManager, vectorStore),
+  fromLangChainIndexing(recordManager, langChainVectorStore),
 );
 ```
 

@@ -7,6 +7,7 @@ import type { OutputParser } from "./output-parser";
 import type { Tool } from "./tools";
 import type { QueryEngine, ResponseSynthesizer } from "./engines";
 import type { Indexing } from "./indexing";
+import type { CheckpointStore, EventStream, InterruptStrategy } from "./orchestration";
 import type {
   DocumentLoader,
   DocumentTransformer,
@@ -24,10 +25,13 @@ import type { MaybePromise } from "../../maybe";
 
 export type AdapterBundle = {
   cache?: Cache;
+  checkpoint?: CheckpointStore;
   constructs?: Record<string, unknown>;
   documents?: Document[];
   embedder?: Embedder;
+  eventStream?: EventStream;
   image?: ImageModel;
+  interrupt?: InterruptStrategy;
   kv?: KVStore;
   indexing?: Indexing;
   loader?: DocumentLoader;

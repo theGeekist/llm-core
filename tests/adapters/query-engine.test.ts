@@ -2,6 +2,7 @@ import { describe, expect, it } from "bun:test";
 import type { BaseQueryEngine, QueryType } from "@llamaindex/core/query-engine";
 import { Document, EngineResponse } from "@llamaindex/core/schema";
 import { fromLlamaIndexQueryEngine } from "#adapters";
+import { captureDiagnostics } from "./helpers";
 
 const asAsyncIterable = <T>(values: T[]): AsyncIterable<T> => ({
   async *[Symbol.asyncIterator]() {
@@ -69,5 +70,19 @@ describe("Adapter LlamaIndex query engine", () => {
     const end = events.at(-1);
     expect(end?.type).toBe("end");
     expect(end?.diagnostics?.map((entry) => entry.message)).toContain("query_engine_query_missing");
+  });
+
+  it("returns diagnostics when query input is missing", async () => {
+    const response = EngineResponse.fromResponse("ok", false, []);
+    const engine = createQueryEngine(response, asAsyncIterable([]));
+    const adapter = fromLlamaIndexQueryEngine(engine);
+    const { context, diagnostics } = captureDiagnostics();
+
+    const result = await adapter.query(" ", context);
+    expect(result.text).toBe("");
+    expect(result.diagnostics?.map((entry) => entry.message)).toContain(
+      "query_engine_query_missing",
+    );
+    expect(diagnostics.map((entry) => entry.message)).toContain("query_engine_query_missing");
   });
 });

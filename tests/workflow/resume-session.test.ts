@@ -5,7 +5,9 @@ import {
   createSnapshotRecorder,
   readSessionStore,
   readSessionTtlMs,
+  runSessionStoreSweep,
   resolveResumeSession,
+  resolveSessionStore,
 } from "#workflow/runtime/resume-session";
 import { createResumeSnapshot, createSessionStore, resolveMaybe } from "./helpers";
 
@@ -59,6 +61,38 @@ describe("Workflow resume sessions", () => {
     const stored = sessions.get("token-1");
     expect(stored?.payload).toEqual({ step: 2 });
     expect(stored?.pauseKind).toBe("human");
+  });
+
+  it("prefers checkpoint adapters over cache stores", () => {
+    const checkpoint = {
+      get: () => undefined,
+      set: () => undefined,
+      delete: () => undefined,
+    };
+    const cache = {
+      get: () => undefined,
+      set: () => undefined,
+      delete: () => undefined,
+    };
+    const resolved = resolveSessionStore(undefined, { checkpoint, cache });
+
+    expect(resolved).toBe(checkpoint);
+  });
+
+  it("runs store sweeps when provided", () => {
+    let called = false;
+    const sweepStore = () => {
+      called = true;
+    };
+    const sessionStore = {
+      get: () => undefined,
+      set: () => undefined,
+      delete: () => undefined,
+      sweep: sweepStore,
+    };
+
+    runSessionStoreSweep(sessionStore);
+    expect(called).toBe(true);
   });
 
   it("records resume snapshots when pause snapshots are missing", () => {

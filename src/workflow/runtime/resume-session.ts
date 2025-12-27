@@ -15,7 +15,7 @@ export type SessionStore = {
   set: (token: unknown, snapshot: ResumeSnapshot, ttlMs?: number) => MaybePromise<void>;
   delete: (token: unknown) => MaybePromise<void>;
   touch?: (token: unknown, ttlMs?: number) => MaybePromise<void>;
-  sweep?: () => MaybePromise<number>;
+  sweep?: () => MaybePromise<void>;
 };
 
 // Serialization helpers
@@ -158,5 +158,11 @@ export const resolveSessionStore = (runtime: Runtime | undefined, adapters: Adap
   if (runtimeStore) {
     return runtimeStore;
   }
+  if (adapters.checkpoint) {
+    return adapters.checkpoint;
+  }
   return adapters.cache ? createSessionStoreFromCache(adapters.cache) : undefined;
 };
+
+export const runSessionStoreSweep = (store: SessionStore | undefined) =>
+  store?.sweep ? store.sweep() : undefined;

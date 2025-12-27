@@ -93,6 +93,27 @@ describe("Cache adapters", () => {
     expect(await cache.get("kv-key")).toBeUndefined();
   });
 
+  it("respects TTL for KV store caches", async () => {
+    const entries = new Map<string, Blob>();
+    const store = {
+      list: () => Array.from(entries.keys()),
+      mget: (keys: string[]) => keys.map((key) => entries.get(key)),
+      mset: (pairs: Array<[string, Blob]>) => {
+        pairs.forEach(([key, value]) => entries.set(key, value));
+      },
+      mdelete: (keys: string[]) => {
+        keys.forEach((key) => entries.delete(key));
+      },
+    };
+
+    const cache = createCacheFromKVStore(store);
+    await cache.set("kv-ttl", blob, 5);
+    expect(await cache.get("kv-ttl")).toEqual(blob);
+
+    await new Promise((resolve) => setTimeout(resolve, 10));
+    expect(await cache.get("kv-ttl")).toBeUndefined();
+  });
+
   it("wraps AI SDK cache stores and respects TTL", async () => {
     const entries = new Map<string, AiSdkCacheEntry>();
     const store = asAiSdkCacheStore<AiSdkCacheEntry>({

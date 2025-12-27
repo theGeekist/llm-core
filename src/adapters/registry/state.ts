@@ -10,11 +10,14 @@ export type RegistryState = {
 // When adding a new construct, update AdapterBundle + this list.
 const bundleKeys = new Set<keyof AdapterBundle>([
   "cache",
+  "checkpoint",
   "documents",
+  "eventStream",
   "messages",
   "tools",
   "model",
   "image",
+  "interrupt",
   "trace",
   "prompts",
   "outputParser",

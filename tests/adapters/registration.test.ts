@@ -34,7 +34,7 @@ describe("Adapter registration helpers", () => {
     expect(plugin.adapters.model).toBeDefined();
   });
 
-  it("supports media, tools, retriever, vector store, memory, cache, trace, and indexing helpers", () => {
+  it("supports media, tools, retriever, vector store, memory, cache, trace, indexing, and orchestration helpers", () => {
     const image = Adapter.image(`${CUSTOM_PREFIX}.image`, {
       generate: () => ({ images: [] }),
     });
@@ -60,6 +60,17 @@ describe("Adapter registration helpers", () => {
       set: () => undefined,
       delete: () => undefined,
     });
+    const checkpoint = Adapter.checkpoint(`${CUSTOM_PREFIX}.checkpoint`, {
+      get: () => undefined,
+      set: () => undefined,
+      delete: () => undefined,
+    });
+    const eventStream = Adapter.eventStream(`${CUSTOM_PREFIX}.eventStream`, {
+      emit: () => undefined,
+    });
+    const interrupt = Adapter.interrupt(`${CUSTOM_PREFIX}.interrupt`, {
+      mode: "continue",
+    });
     const trace = Adapter.trace(`${CUSTOM_PREFIX}.trace`, { emit: () => undefined });
     const indexing = Adapter.indexing(`${CUSTOM_PREFIX}.indexing`, {
       index: () => ({ added: 0, deleted: 0, updated: 0, skipped: 0 }),
@@ -82,6 +93,9 @@ describe("Adapter registration helpers", () => {
     expect(vectorStore.adapters.vectorStore).toBeDefined();
     expect(memory.adapters.memory).toBeDefined();
     expect(cache.adapters.cache).toBeDefined();
+    expect(checkpoint.adapters.checkpoint).toBeDefined();
+    expect(eventStream.adapters.eventStream).toBeDefined();
+    expect(interrupt.adapters.interrupt).toBeDefined();
     expect(trace.adapters.trace).toBeDefined();
     expect(indexing.adapters.indexing).toBeDefined();
     expect(queryEngine.adapters.queryEngine).toBeDefined();

@@ -261,7 +261,7 @@ Goals:
 
 ## Stage 13 — RAG Write Path + Missing Adapter Constructs
 
-Status: in progress. See `internal/stage-13.md`.
+Status: completed. See `internal/stage-13.md`.
 
 Goals:
 
@@ -278,6 +278,10 @@ Progress:
 - Updated adapter docs with write-path examples.
 - Added AI SDK image/speech/transcription adapters with validations + tests.
 - Added AI SDK reranker adapter (RerankingModelV3).
+- Added LangChain output parser + structured query adapters.
+- Added LlamaIndex query engine + response synthesizer adapters.
+- Added AI SDK memory + cache adapters and aligned cache behavior.
+- Normalized streaming events across AI SDK, LangChain, LlamaIndex.
 
 ## Ongoing Constraints
 
@@ -285,13 +289,15 @@ Progress:
 - Avoid deep nesting by splitting helpers into single-purpose functions.
 - Add short, precise comments only for non-obvious logic.
 - Update docs in each stage to prevent drift.
-- Track streaming parity separately until a normalized adapter surface is defined.
-- Track higher-level LC/LI constructs (query engines, output parsers, tracing) in
-  `docs/interop-audit.md` for future parity stages.
+- Streaming parity is now normalized; transport resume bridging remains Stage 15.
 
 ## Stage 14 — Composable Recipes (Step Packs)
 
 Status: planned. See `internal/stage-14.md`.
+
+## Stage 15 — Interrupt Parity + Rollback Semantics
+
+Status: proposed. See `internal/stage-15.md`.
 
 Goals:
 

@@ -1,11 +1,77 @@
 import type { AdapterCallContext, Blob, Cache, KVStore } from "../types";
 import { reportDiagnostics, validateStorageKey } from "../input-validation";
 import { mapMaybe } from "../../maybe";
+import { readNumber } from "../utils";
 
 type CacheEntry = {
   value: Blob;
   expiresAt?: number;
 };
+
+const toUndefined = () => undefined;
+const CACHE_EXPIRY_KEY = "__cacheExpiresAt";
+
+const toExpiresAt = (ttlMs?: number) =>
+  typeof ttlMs === "number" ? Date.now() + ttlMs : undefined;
+
+const readExpiresAt = (value: Blob | undefined) => readNumber(value?.metadata?.[CACHE_EXPIRY_KEY]);
+
+const isBlobExpired = (value: Blob | undefined) => {
+  const expiresAt = readExpiresAt(value);
+  return typeof expiresAt === "number" && Date.now() > expiresAt;
+};
+
+const withBlobExpiry = (value: Blob, ttlMs?: number): Blob => {
+  const expiresAt = toExpiresAt(ttlMs);
+  if (expiresAt === undefined) {
+    return value;
+  }
+  return {
+    ...value,
+    metadata: {
+      ...(value.metadata ?? {}),
+      [CACHE_EXPIRY_KEY]: expiresAt,
+    },
+  };
+};
+
+const stripExpiryMetadata = (value: Blob): Blob => {
+  const metadata = value.metadata;
+  if (!metadata || !(CACHE_EXPIRY_KEY in metadata)) {
+    return value;
+  }
+  const rest = { ...metadata };
+  delete rest[CACHE_EXPIRY_KEY];
+  const nextMetadata = Object.keys(rest).length > 0 ? rest : undefined;
+  return { ...value, metadata: nextMetadata };
+};
+
+const readFirst = <T>(entries: Array<T | undefined>) => entries[0];
+
+const deleteKvEntry = (store: KVStore<Blob>, key: string, context?: AdapterCallContext) =>
+  mapMaybe(store.mdelete([key], context), toUndefined);
+
+const readKvEntry = (
+  store: KVStore<Blob>,
+  key: string,
+  value: Blob | undefined,
+  context?: AdapterCallContext,
+) => {
+  if (!value) {
+    return undefined;
+  }
+  if (isBlobExpired(value)) {
+    return mapMaybe(deleteKvEntry(store, key, context), toUndefined);
+  }
+  return stripExpiryMetadata(value);
+};
+
+const readKvEntries = (
+  store: KVStore<Blob>,
+  key: string,
+  context: AdapterCallContext | undefined,
+  entries: Array<Blob | undefined>,
+) => readKvEntry(store, key, readFirst(entries), context);
 
 export const createMemoryCache = (): Cache => {
   const store = new Map<string, CacheEntry>();
@@ -58,15 +124,16 @@ export const createMemoryCache = (): Cache => {
 };
 
 export const createCacheFromKVStore = (store: KVStore<Blob>): Cache => {
-  const readFirst = (entries: Array<Blob | undefined>) => entries[0];
-  const toUndefined = () => undefined;
+  const get = (key: string, context?: AdapterCallContext) => {
+    const readEntries = (entries: Array<Blob | undefined>) =>
+      readKvEntries(store, key, context, entries);
 
-  const get = (key: string, context?: AdapterCallContext) =>
-    mapMaybe(store.mget([key], context), readFirst);
+    return mapMaybe(store.mget([key], context), readEntries);
+  };
 
   const set = (key: string, value: Blob, ttlMs?: number, context?: AdapterCallContext) => {
-    // Note: KV stores do not support ttl yet; document resume vs abort trade-offs later.
-    return mapMaybe(store.mset([[key, value]], context), toUndefined);
+    const entry = withBlobExpiry(value, ttlMs);
+    return mapMaybe(store.mset([[key, entry]], context), toUndefined);
   };
 
   const del = (key: string, context?: AdapterCallContext) =>

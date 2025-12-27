@@ -1,47 +1,28 @@
 # Stage 13 Backlog — Parity & Write-Path
 
-Status: active. This is the source of truth for what is done vs pending.
+Status: complete. This is the source of truth for what was done in Stage 13.
 
 ## Done
 
 - Vector store write-path adapter (upsert/delete) + diagnostics.
 - LangChain + LlamaIndex vector store adapters.
-- AI SDK media adapters: image, speech, transcription.
+- AI SDK media adapters: image, speech, transcription (V3).
 - AI SDK reranker adapter (RerankingModelV3).
 - AI SDK memory adapter via `@ai-sdk-tools/memory`.
-- Cache adapters: AI SDK CacheStore, LangChain BaseStore, LlamaIndex BaseKVStore.
+- Cache adapters: AI SDK CacheStore, LangChain BaseStore, LlamaIndex BaseKVStore (TTL best-effort).
 - Adapter input validations + tests for new constructs.
+- Streaming normalization across AI SDK, LangChain, LlamaIndex.
+- LangChain output parsers + structured query adapters.
+- LlamaIndex query engine + response synthesizer adapters.
+- LangChain trace adapter (callbacks/tracers as sinks).
+- AI SDK V3 canonical surface (model/image/speech/transcription/embeddings + tools schema).
 - Parity audit document (`docs/interop-audit.md`).
 
-## In Progress
+## Moved to Stage 15 (carryover)
 
-- Parity-driven audit spec + tests to enforce gaps.
-
-## Pending (Fill the Gaps)
-
-### Streaming parity
-
-- Normalize AI SDK V3 stream results (`LanguageModelV3`).
-- Define streaming adapter surface (if we keep it).
-- Map LC/LI streaming semantics (provider-specific).
-- Bridge runtime streams to AI SDK transport resume without owning resumable-stream.
-- Review @ai-sdk/langchain stream/UI bridge for transport adapter ideas.
-
-### Higher-level constructs (optional)
-
-- LangChain output parsers.
-- LangChain structured query / query translators.
-- LlamaIndex query engines + response synthesizers.
-- Tracing/callback adapters (LC + AI SDK middleware).
-
-### AI SDK V3 surface
-
-- `EmbeddingModelV3`, `ImageModelV3`, `SpeechModelV3`, `TranscriptionModelV3`
-  wiring (if we decide to normalize beyond V2).
-
-### AI SDK tools packages
-
-- Document `@ai-sdk-tools/store` as UI-only (out of scope for adapters).
+- Transport-level resume bridge (AI SDK UI streaming + resumable streams).
+- Orchestration adapters (checkpoint/interrupt/eventStream/trace extensions).
+- Rollback/pause semantics alignment.
 
 ## Notes
 

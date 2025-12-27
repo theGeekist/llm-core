@@ -2,6 +2,7 @@ import { describe, expect, it } from "bun:test";
 import type { BaseSynthesizer } from "@llamaindex/core/response-synthesizers";
 import { EngineResponse } from "@llamaindex/core/schema";
 import { fromLlamaIndexResponseSynthesizer } from "#adapters";
+import { captureDiagnostics } from "./helpers";
 
 const asAsyncIterable = <T>(values: T[]): AsyncIterable<T> => ({
   async *[Symbol.asyncIterator]() {
@@ -75,6 +76,23 @@ describe("Adapter LlamaIndex response synthesizer", () => {
     );
     expect(end?.diagnostics?.map((entry) => entry.message)).toContain(
       "response_synthesizer_documents_missing",
+    );
+  });
+
+  it("returns diagnostics when inputs are missing", async () => {
+    const response = EngineResponse.fromResponse("ok", false, []);
+    const synthesizer = createSynthesizer(response, asAsyncIterable([]));
+    const adapter = fromLlamaIndexResponseSynthesizer(synthesizer);
+    const { context, diagnostics } = captureDiagnostics();
+
+    const result = await adapter.synthesize({ query: " ", documents: [] }, context);
+
+    expect(result.text).toBe("");
+    expect(result.diagnostics?.map((entry) => entry.message)).toContain(
+      "response_synthesizer_query_missing",
+    );
+    expect(diagnostics.map((entry) => entry.message)).toContain(
+      "response_synthesizer_query_missing",
     );
   });
 });

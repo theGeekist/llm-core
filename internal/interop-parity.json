@@ -60,8 +60,9 @@
     {
       "construct": "PromptTemplate",
       "ecosystem": "ai-sdk",
-      "status": "missing",
-      "note": "AI SDK has no prompt template abstraction."
+      "status": "full",
+      "probe": "ai-sdk:PromptTemplate",
+      "note": "Prompt templates are normalized via provider-utils schema helpers."
     },
     {
       "construct": "OutputParser",

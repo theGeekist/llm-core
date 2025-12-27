@@ -18,3 +18,4 @@ export { fromLlamaIndexModel } from "./model";
 export { fromLlamaIndexQueryEngine } from "./query-engine";
 export { fromLlamaIndexResponseSynthesizer } from "./response-synthesizer";
 export { toLlamaIndexStreamEvents } from "./stream";
+export { fromLlamaIndexWorkflowContext } from "./event-stream";

@@ -182,6 +182,49 @@ describe("Adapter trace", () => {
     expect(chainErrors[0]?.error.message).toBe("boom");
   });
 
+  it("coerces non-error payloads into errors", async () => {
+    const traceEvents: TraceCapture[] = [];
+    const chainStarts: ChainStartCapture[] = [];
+    const chainEnds: ChainEndCapture[] = [];
+    const chainErrors: ChainErrorCapture[] = [];
+    const llmEnds: LlmEndCapture[] = [];
+    const handler = createLifecycleHandler(
+      traceEvents,
+      chainStarts,
+      chainEnds,
+      chainErrors,
+      llmEnds,
+    );
+    const sink = fromLangChainCallbackHandler(handler);
+
+    await sink.emit(
+      makeEvent({ name: "run.end", id: "run-error", data: { status: "error", error: "oops" } }),
+    );
+
+    expect(chainErrors).toHaveLength(1);
+    expect(chainErrors[0]?.error.message).toBe("oops");
+  });
+
+  it("normalizes undefined lifecycle payloads to empty records", async () => {
+    const traceEvents: TraceCapture[] = [];
+    const chainStarts: ChainStartCapture[] = [];
+    const chainEnds: ChainEndCapture[] = [];
+    const chainErrors: ChainErrorCapture[] = [];
+    const llmEnds: LlmEndCapture[] = [];
+    const handler = createLifecycleHandler(
+      traceEvents,
+      chainStarts,
+      chainEnds,
+      chainErrors,
+      llmEnds,
+    );
+    const sink = fromLangChainCallbackHandler(handler);
+
+    await sink.emit(makeEvent({ name: "run.start", data: undefined }));
+
+    expect(chainStarts[0]?.inputs).toEqual({});
+  });
+
   it("no-ops when the handler does not support custom events", async () => {
     const handler = createNoopHandler();
     const sink = fromLangChainCallbackHandler(handler);
