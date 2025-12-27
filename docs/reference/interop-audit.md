@@ -50,6 +50,7 @@ Gaps:
 
 - Provider middleware hooks exist but no adapter-level tracing bridge.
 - AI SDK LangChain adapter is UI/transport-level; we could mirror ideas for runtime stream bridging.
+- No checkpoint/event stream/interrupt abstractions in the AI SDK surface.
 
 ## LangChain (JS/TS)
 
@@ -75,7 +76,7 @@ Mapping to our primitives:
 
 - `Model`, `Embedder`, `Retriever`, `Reranker`, `TextSplitter`, `Transformer`,
   `DocumentLoader`, `VectorStore`, `Memory`, `KVStore`, `Cache`, `Tool`, `PromptTemplate`,
-  `OutputParser`, `StructuredQuery`, `Trace`, `Indexing`
+  `OutputParser`, `StructuredQuery`, `Trace`, `Indexing`, `Checkpoint`
   → **covered**.
 - `Runnable`, `Agents`, `ChatHistory`
   → **not covered**.
@@ -84,6 +85,7 @@ Gaps:
 
 - Runnables/chains/agents are higher-level composition constructs.
 - Callbacks/tracers map to trace sinks (custom + `run.start`/`run.end` + `provider.response`).
+- No workflow event stream or interrupt abstractions in LangChain.
 
 ## LlamaIndex (TS)
 
@@ -101,7 +103,7 @@ Mapping to our primitives:
 - `Model`, `Embedder`, `Retriever`, `Reranker`, `TextSplitter`, `Transformer`,
   `DocumentLoader`, `VectorStore`, `Memory`, `KVStore`, `Cache`, `Tool`, `PromptTemplate`
   → **covered**.
-- `QueryEngine`, `ResponseSynthesizer`
+- `QueryEngine`, `ResponseSynthesizer`, `EventStream`
   → **covered**.
 - `ChatEngine`, `Agent`, `Indices`
   → **not covered**.
@@ -109,6 +111,7 @@ Mapping to our primitives:
 Gaps:
 
 - Storage context and index lifecycle helpers are not modeled.
+- No checkpoint or interrupt abstractions in LlamaIndex.
 
 ## Media Construct Catalogue
 
@@ -165,6 +168,9 @@ Legend:
 | Transformer         | missing | full      | full       | AI SDK has no transformer; LC/LI supported.                         |
 | Storage (KVStore)   | missing | full      | full       | AI SDK has no storage adapter.                                      |
 | Cache               | partial | partial   | partial    | AI SDK CacheStore + LC BaseStore + LI BaseKVStore; TTL best-effort. |
+| Checkpoint          | missing | full      | missing    | LangChain checkpoints only; others require core stores.             |
+| EventStream         | missing | missing   | full       | LlamaIndex workflow events only; no AI SDK/LC parity yet.           |
+| Interrupt           | missing | missing   | missing    | Core-only primitive; ecosystems have no surface today.              |
 | KV                  | missing | full      | full       | AI SDK has no KV adapter; UI store is out of scope.                 |
 | Memory              | partial | full      | full       | AI SDK has a memory provider (`@ai-sdk-tools/memory`), mapped.      |
 | Tools               | full    | full      | full       | Safe; tool schemas normalize across ecosystems.                     |

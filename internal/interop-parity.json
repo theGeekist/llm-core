@@ -102,6 +102,24 @@
       "probe": "ai-sdk:Cache"
     },
     {
+      "construct": "Checkpoint",
+      "ecosystem": "ai-sdk",
+      "status": "missing",
+      "note": "AI SDK has no checkpoint store abstraction."
+    },
+    {
+      "construct": "EventStream",
+      "ecosystem": "ai-sdk",
+      "status": "missing",
+      "note": "AI SDK has no workflow event stream abstraction."
+    },
+    {
+      "construct": "Interrupt",
+      "ecosystem": "ai-sdk",
+      "status": "missing",
+      "note": "Interrupt strategy is core-only; AI SDK has no surface."
+    },
+    {
       "construct": "Trace",
       "ecosystem": "ai-sdk",
       "status": "missing",
@@ -192,6 +210,24 @@
       "ecosystem": "langchain",
       "status": "full",
       "probe": "langchain:PromptTemplate"
+    },
+    {
+      "construct": "Checkpoint",
+      "ecosystem": "langchain",
+      "status": "full",
+      "probe": "langchain:Checkpoint"
+    },
+    {
+      "construct": "EventStream",
+      "ecosystem": "langchain",
+      "status": "missing",
+      "note": "LangChain has no workflow event stream abstraction."
+    },
+    {
+      "construct": "Interrupt",
+      "ecosystem": "langchain",
+      "status": "missing",
+      "note": "Interrupt strategy is core-only; LangChain has no surface."
     },
     {
       "construct": "OutputParser",
@@ -327,6 +363,24 @@
       "ecosystem": "llamaindex",
       "status": "full",
       "probe": "llamaindex:PromptTemplate"
+    },
+    {
+      "construct": "Checkpoint",
+      "ecosystem": "llamaindex",
+      "status": "missing",
+      "note": "LlamaIndex has no checkpoint store abstraction."
+    },
+    {
+      "construct": "EventStream",
+      "ecosystem": "llamaindex",
+      "status": "full",
+      "probe": "llamaindex:EventStream"
+    },
+    {
+      "construct": "Interrupt",
+      "ecosystem": "llamaindex",
+      "status": "missing",
+      "note": "Interrupt strategy is core-only; LlamaIndex has no surface."
     },
     {
       "construct": "OutputParser",
