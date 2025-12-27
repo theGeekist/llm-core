@@ -16,7 +16,7 @@ In `llm-core`, retrieval is not a single capability. It is a pipeline of four di
 ```mermaid
 flowchart LR
     Dataset --> Embedder
-    Embedder --> Vector[Vector Store]
+    Embedder --> Vector["Vector Store"]
     Query --> Retriever
     Retriever -- read --> Vector
     Retriever -- docs --> Reranker

@@ -7,7 +7,7 @@ It connects a **Retriever** (your database) to a **Model** (your brain).
 
 ```mermaid
 flowchart LR
-    User([User Query]) --> Retrieve[Retrieve Docs]
+    User(["User Query"]) --> Retrieve["Retrieve Docs"]
     Retrieve --> Rerank[Rerank (Optional)]
     Rerank --> Context[Build Context]
     Context --> Model[LLM Generate]

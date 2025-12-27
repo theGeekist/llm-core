@@ -53,6 +53,7 @@ import {
   toOkOutcome,
   toPausedOutcome,
 } from "./runtime/outcomes";
+import { runPauseRollback } from "./runtime/rollback";
 
 const STRICT_DIAGNOSTICS_ERROR = "Strict diagnostics failure.";
 
@@ -106,10 +107,27 @@ type PausedOutcomeInput<N extends RecipeName> = {
   trace: TraceEvent[];
   diagnostics: DiagnosticEntry[];
   readPartial: (result: unknown) => Partial<ArtefactOf<N>>;
+  recordSnapshot?: (result: unknown) => MaybePromise<void>;
 };
 
 const toPausedOutcomeAfterSnapshot = <N extends RecipeName>(input: PausedOutcomeInput<N>) =>
   toPausedOutcome(input.result, input.trace, input.diagnostics, input.readPartial);
+
+const finalizePausedSnapshot = <N extends RecipeName>(input: PausedOutcomeInput<N>) => {
+  if (!input.recordSnapshot) {
+    return toPausedOutcomeAfterSnapshot(input);
+  }
+  return chainMaybe(
+    input.recordSnapshot(input.result),
+    bindFirst(toPausedOutcomeAfterSnapshot<N>, input),
+  );
+};
+
+const runPausedRollback = <N extends RecipeName>(input: PausedOutcomeInput<N>) =>
+  runPauseRollback(input.result);
+
+const finalizePausedResult = <N extends RecipeName>(input: PausedOutcomeInput<N>) =>
+  chainMaybe(runPausedRollback(input), bindFirst(finalizePausedSnapshot<N>, input));
 
 const finalizeRuntimeResult = <N extends RecipeName>(
   input: FinalizeRuntimeInput<N>,
@@ -129,18 +147,13 @@ const finalizeRuntimeResult = <N extends RecipeName>(
   }
   if ((result as { paused?: boolean }).paused) {
     recordPauseSession(input.pauseSessions, result, iterator, getDiagnostics);
-    if (recordSnapshot) {
-      return chainMaybe(
-        recordSnapshot(result),
-        bindFirst(toPausedOutcomeAfterSnapshot<N>, {
-          result,
-          trace,
-          diagnostics,
-          readPartial: input.readPartial,
-        }),
-      );
-    }
-    return toPausedOutcome(result, trace, diagnostics, input.readPartial);
+    return finalizePausedResult<N>({
+      result,
+      trace,
+      diagnostics,
+      readPartial: input.readPartial,
+      recordSnapshot,
+    });
   }
   return toOkOutcome(result, trace, diagnostics, input.readArtefact);
 };

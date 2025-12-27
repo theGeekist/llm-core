@@ -97,8 +97,8 @@ const out = await wf.run({ input: "..." }, runtime);
 
 :::
 
-`interrupt` is the resolved `InterruptStrategy` from adapters and lets resume adapters decide whether
-to restart, continue, or otherwise alter how a paused run resumes.
+`interrupt` is the resolved `InterruptStrategy` from `adapters.interrupt`. Resume adapters can use it
+to decide whether to restart, continue in place, or adjust how a paused run resumes.
 
 ## Trace
 
@@ -161,3 +161,6 @@ if (out.status === "paused") {
 :::
 
 If a recipe supports it, `resume(token, resumeInput?, runtime?)` is exposed; it uses `runtime.resume.resolve(...)` when provided and returns an error outcome when missing (including a `resume.invalidToken` diagnostic when the token is unknown). Paused tokens are process-local unless you supply a durable resume store via runtime configuration (prefer `adapters.checkpoint`, or `adapters.cache` as a fallback).
+
+If helpers registered rollbacks, they are executed before the paused outcome is returned. Rollback
+failures are reported through the runtime reporter.

@@ -1,5 +1,6 @@
 import { describe, expect, it } from "bun:test";
 import { createBuiltinRetriever } from "#adapters";
+import { createPipelineRollback } from "@wpkernel/pipeline/core";
 import { getRecipe, registerRecipe } from "#workflow/recipe-registry";
 import { assertSyncOutcome, diagnosticMessages, makeRuntime, makeWorkflow } from "./helpers";
 
@@ -96,6 +97,48 @@ describe("Workflow runtime", () => {
     }
     expect(outcome.token).toBe(TOKEN_PAUSED);
     expect(outcome.artefact).toEqual({ partial: true });
+  });
+
+  it("runs helper rollbacks when a run pauses", async () => {
+    let rolledBack = false;
+    const rollback = createPipelineRollback(() => {
+      rolledBack = true;
+    });
+    const rollbacks = new Map([
+      [
+        "recipe.steps",
+        [
+          {
+            helper: { key: "step.pause" },
+            rollback,
+          },
+        ],
+      ],
+    ]);
+    const steps = [
+      {
+        id: "step.pause",
+        index: 0,
+        key: "step.pause",
+        kind: "recipe.steps",
+        mode: "extend",
+        priority: 0,
+        dependsOn: [],
+      },
+    ];
+    const runtime = makeRuntime("hitl-gate", {
+      run: () => ({
+        paused: true,
+        token: TOKEN_PAUSED,
+        artifact: { partial: true },
+        steps,
+        state: { helperRollbacks: rollbacks },
+      }),
+    });
+
+    const outcome = await runtime.run({ input: "gate" });
+    expect(outcome.status).toBe("paused");
+    expect(rolledBack).toBe(true);
   });
 
   it("supports generator pauses and resumes with pauseKind", async () => {

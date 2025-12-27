@@ -13,7 +13,7 @@ Think of a Pack as a "module of logic" that you can test in isolation.
 
 ```mermaid
 graph TD
-    subgraph Recipe[Agent Recipe]
+    subgraph Recipe ["Agent Recipe"]
         P1[Planning Pack]
         P2[Execution Pack]
         P3[Review Pack]
