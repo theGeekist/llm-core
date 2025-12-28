@@ -1,6 +1,6 @@
 import { describe, expect, it } from "bun:test";
 import { createHelper } from "@wpkernel/pipeline";
-import { ragChat } from "../../src/recipes/rag-chat";
+import { recipes } from "../../src/recipes";
 import { assertSyncOutcome } from "../workflow/helpers";
 
 const useHelper = (pipeline: unknown, helper: unknown) => {
@@ -9,13 +9,13 @@ const useHelper = (pipeline: unknown, helper: unknown) => {
 
 describe("RAG Chat Recipe", () => {
   it("builds a workflow with default configuration", () => {
-    const workflow = ragChat();
+    const workflow = recipes["chat.rag"]();
     const runtime = workflow.build();
     expect(runtime).toBeDefined();
   });
 
   it("configures providers", () => {
-    const workflow = ragChat({
+    const workflow = recipes["chat.rag"]({
       model: "test-model",
       retriever: "test-retriever",
     });
@@ -25,14 +25,14 @@ describe("RAG Chat Recipe", () => {
   });
 
   it("configures system prompt", () => {
-    const workflow = ragChat({ system: "System prompt" });
+    const workflow = recipes["chat.rag"]({ system: "System prompt" });
     const runtime = workflow.build();
     const explanation = runtime.explain();
     expect(explanation).toBeDefined();
   });
 
   it("adds system config plugin when system prompt is set", () => {
-    const workflow = ragChat({ system: "Prefer concise answers." });
+    const workflow = recipes["chat.rag"]({ system: "Prefer concise answers." });
     let seen: string | undefined;
     const readerPlugin = {
       key: "test.read.system",

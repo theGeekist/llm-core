@@ -1,6 +1,6 @@
 # Stage 15 — Interrupt Parity + Rollback Semantics
 
-Status: in progress.
+Status: mostly complete (recipe layer pending).
 
 ## Context
 
@@ -200,8 +200,8 @@ Only after adapters + rollback are stable:
 
 **Completion summary (fill as work lands):**
 
-- Status:
-- Notes:
+- Status: pending
+- Notes: Rollback helpers and event-stream conventions are not yet exposed at the recipe step layer.
 
 ### A) Explicit pause strategy
 

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "bun:test";
 import { createHelper } from "@wpkernel/pipeline";
-import { simpleChat } from "../../src/recipes/simple-chat";
+import { recipes } from "../../src/recipes";
 import { assertSyncOutcome } from "../workflow/helpers";
 
 const useHelper = (pipeline: unknown, helper: unknown) => {
@@ -9,7 +9,7 @@ const useHelper = (pipeline: unknown, helper: unknown) => {
 
 describe("Simple Chat Recipe", () => {
   it("builds a workflow with default configuration", () => {
-    const workflow = simpleChat();
+    const workflow = recipes["chat.simple"]();
     expect(workflow).toBeDefined();
     // Verify it targets the 'agent' contract
     // The exact internal structure depends on the builder implementation,
@@ -19,7 +19,7 @@ describe("Simple Chat Recipe", () => {
   });
 
   it("configures model provider", () => {
-    const workflow = simpleChat({ model: "test-model" });
+    const workflow = recipes["chat.simple"]({ model: "test-model" });
     const runtime = workflow.build();
     const explanation = runtime.explain();
 
@@ -32,14 +32,14 @@ describe("Simple Chat Recipe", () => {
   });
 
   it("configures system prompt", () => {
-    const workflow = simpleChat({ system: "You are a helpful assistant." });
+    const workflow = recipes["chat.simple"]({ system: "You are a helpful assistant." });
     const runtime = workflow.build();
     const explanation = runtime.explain();
     expect(explanation).toBeDefined();
   });
 
   it("adds system config plugin when system prompt is set", () => {
-    const workflow = simpleChat({ system: "Keep it short." });
+    const workflow = recipes["chat.simple"]({ system: "Keep it short." });
     let seen: string | undefined;
     const readerPlugin = {
       key: "test.read.system",

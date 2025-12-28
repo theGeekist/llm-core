@@ -1,5 +1,6 @@
 import type { Plugin } from "../workflow/types";
 import { Recipe } from "./flow";
+import { createRecipeFactory, createRecipeHandle } from "./handle";
 import { createSystemPlugin } from "./system";
 
 export type SimpleChatConfig = {
@@ -14,6 +15,8 @@ const createModelPlugin = (model: string): Plugin => ({
   },
 });
 
+const defineSimpleChatSteps = () => ({});
+
 const createSimpleChatPack = (config?: SimpleChatConfig) => {
   const plugins: Plugin[] = [];
   if (config?.model) {
@@ -23,10 +26,22 @@ const createSimpleChatPack = (config?: SimpleChatConfig) => {
     plugins.push(createSystemPlugin(config.system));
   }
   const defaults = plugins.length > 0 ? { plugins } : undefined;
-  return Recipe.pack("simple-chat", () => ({}), defaults ? { defaults } : undefined);
+  return Recipe.pack("simple-chat", defineSimpleChatSteps, {
+    defaults,
+    minimumCapabilities: ["model"],
+  });
 };
 
-export const simpleChat = (config?: SimpleChatConfig) => {
-  const pack = createSimpleChatPack(config);
-  return Recipe.flow("agent").use(pack);
-};
+const resolveSimpleChatPack = (config?: SimpleChatConfig) =>
+  config ? createSimpleChatPack(config) : SimpleChatPack;
+
+const resolveSimpleChatRecipeDefinition = (config?: SimpleChatConfig) => ({
+  packs: [resolveSimpleChatPack(config)],
+});
+
+const simpleChatRecipeFactory = createRecipeFactory("agent", resolveSimpleChatRecipeDefinition);
+
+export const simpleChat = (config?: SimpleChatConfig) =>
+  createRecipeHandle(simpleChatRecipeFactory, config);
+
+export const SimpleChatPack = createSimpleChatPack();

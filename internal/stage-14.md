@@ -1,6 +1,6 @@
 # Stage 14 — Composable Recipes (Step Packs)
 
-Status: planned.
+Status: completed.
 
 ## Context
 
@@ -84,3 +84,9 @@ const recipe = Recipe.flow("rag-agent")
 - Add a "Composable Recipes" section to workflow docs.
 - Provide a "pack" example (RAG + Agent).
 - Map "step" terminology to pipeline helpers (internal reference only).
+
+## Completion summary
+
+- Status: completed
+- Notes: Recipe packs + flows are implemented, with plan/build/run wiring, diagnostics on conflicts, and pack-level
+  minimum capabilities. Docs cover the public recipe surface and plan introspection.

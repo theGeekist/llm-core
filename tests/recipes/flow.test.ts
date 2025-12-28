@@ -21,14 +21,17 @@ const expectOk = (outcome: Outcome) => {
 
 const stepFirst: StepApply = ({ state }) => {
   appendOrder(state, "first");
+  return null;
 };
 
 const stepSecond: StepApply = ({ state }) => {
   appendOrder(state, "second");
+  return null;
 };
 
 const stepThird: StepApply = ({ state }) => {
   appendOrder(state, "third");
+  return null;
 };
 
 const stepExplicit: StepApply = ({ state }) => {

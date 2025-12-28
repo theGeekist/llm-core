@@ -1,3 +1,38 @@
 export * from "./simple-chat";
 export * from "./rag-chat";
-export * from "./flow";
+export * from "./handle";
+export * from "./agentic";
+export * from "./rag";
+export * from "./hitl";
+export * from "./ingest";
+export * from "./compress";
+
+import { simpleChat } from "./simple-chat";
+import { ragChat } from "./rag-chat";
+import {
+  createAgentRecipe,
+  createAgentPlanningRecipe,
+  createAgentToolsRecipe,
+  createAgentMemoryRecipe,
+  createAgentFinalizeRecipe,
+} from "./agentic";
+import { createRagRecipe, createRagRetrievalRecipe, createRagSynthesisRecipe } from "./rag";
+import { createHitlRecipe } from "./hitl";
+import { createIngestRecipe } from "./ingest";
+import { createCompressRecipe } from "./compress";
+
+export const recipes = {
+  agent: createAgentRecipe,
+  "agent.planning": createAgentPlanningRecipe,
+  "agent.tools": createAgentToolsRecipe,
+  "agent.memory": createAgentMemoryRecipe,
+  "agent.finalize": createAgentFinalizeRecipe,
+  rag: createRagRecipe,
+  "rag.retrieval": createRagRetrievalRecipe,
+  "rag.synthesis": createRagSynthesisRecipe,
+  hitl: createHitlRecipe,
+  ingest: createIngestRecipe,
+  compress: createCompressRecipe,
+  "chat.simple": simpleChat,
+  "chat.rag": ragChat,
+};

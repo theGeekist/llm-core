@@ -1,7 +1,7 @@
 import { createHelper, type HelperApplyOptions, type HelperApplyResult } from "@wpkernel/pipeline";
 import type { PipelineReporter } from "@wpkernel/pipeline/core";
 import type { AdapterBundle } from "../adapters/types";
-import { bindFirst, mapMaybe, type MaybePromise } from "../maybe";
+import { bindFirst, maybeMap, type MaybePromise } from "../maybe";
 import type { DiagnosticEntry } from "../workflow/diagnostics";
 import { createRecipeDiagnostic } from "../workflow/diagnostics";
 import { getRecipe } from "../workflow/recipe-registry";
@@ -15,12 +15,12 @@ type StepOptions = {
   reporter: PipelineReporter;
 };
 
-type StepNext = () => MaybePromise<void>;
+type StepNext = () => MaybePromise<unknown>;
 
 export type StepApply = (
   options: StepOptions,
   next?: StepNext,
-) => MaybePromise<HelperApplyResult<PipelineState> | void>;
+) => MaybePromise<HelperApplyResult<PipelineState> | null>;
 
 type StepSpec = {
   name: string;
@@ -28,6 +28,9 @@ type StepSpec = {
   dependsOn: string[];
   priority: number;
   mode: "extend" | "override";
+  label?: string;
+  kind?: string;
+  summary?: string;
 };
 
 type StepBuilder = {
@@ -35,6 +38,9 @@ type StepBuilder = {
   priority: (value: number) => StepBuilder;
   override: () => StepBuilder;
   extend: () => StepBuilder;
+  label: (value: string) => StepBuilder;
+  kind: (value: string) => StepBuilder;
+  summary: (value: string) => StepBuilder;
   getSpec: () => StepSpec;
 };
 
@@ -43,12 +49,29 @@ type StepFactory = (name: string, apply: StepApply) => StepBuilder;
 export type RecipePack = {
   name: string;
   steps: StepSpec[];
+  minimumCapabilities?: string[];
   defaults?: RecipeDefaults;
 };
 
 export type RecipeDefaults = {
   adapters?: AdapterBundle;
   plugins?: Plugin[];
+};
+
+export type RecipeStepPlan = {
+  id: string;
+  label?: string;
+  recipe: string;
+  kind?: string;
+  dependsOn: string[];
+  priority?: number;
+  mode?: "extend" | "override";
+  summary?: string;
+};
+
+export type RecipePlan = {
+  name: string;
+  steps: RecipeStepPlan[];
 };
 
 const STEP_KIND = "recipe.steps";
@@ -94,7 +117,7 @@ const toStepOptions = (
 });
 
 const normalizeStepResult = (
-  result: HelperApplyResult<PipelineState> | void,
+  result: HelperApplyResult<PipelineState> | null,
   state: PipelineState,
 ): HelperApplyResult<PipelineState> => {
   if (result && typeof result === "object") {
@@ -106,6 +129,16 @@ const normalizeStepResult = (
   return { output: state };
 };
 
+const applyStepResult = (state: PipelineState, result: HelperApplyResult<PipelineState> | null) =>
+  normalizeStepResult(result, state);
+
+const createStepFallback = (state: PipelineState) => ({ output: state });
+
+const resolveStepResult = (
+  state: PipelineState,
+  result: HelperApplyResult<PipelineState> | null,
+) => (result === null ? createStepFallback(state) : applyStepResult(state, result));
+
 const applyStep = (
   spec: StepSpec,
   options: HelperApplyOptions<PipelineContext, unknown, PipelineState, PipelineReporter>,
@@ -113,7 +146,7 @@ const applyStep = (
 ) => {
   const stepOptions = toStepOptions(options);
   const state = stepOptions.state;
-  return mapMaybe(spec.apply(stepOptions, next), (result) => normalizeStepResult(result, state));
+  return maybeMap(bindFirst(resolveStepResult, state), spec.apply(stepOptions, next));
 };
 
 const invokeStep = (
@@ -146,6 +179,9 @@ const createStepBuilder = (spec: StepSpec): StepBuilder => ({
   priority: (value: number) => createStepBuilder({ ...spec, priority: value }),
   override: () => createStepBuilder({ ...spec, mode: "override" }),
   extend: () => createStepBuilder({ ...spec, mode: "extend" }),
+  label: (value: string) => createStepBuilder({ ...spec, label: value }),
+  kind: (value: string) => createStepBuilder({ ...spec, kind: value }),
+  summary: (value: string) => createStepBuilder({ ...spec, summary: value }),
   getSpec: () => ({ ...spec }),
 });
 
@@ -162,6 +198,25 @@ const sortSteps = (packName: string, steps: StepSpec[]) =>
     const rightKey = normalizeStepKey(packName, right.name);
     return leftKey.localeCompare(rightKey);
   });
+
+const createStepPlan = (recipeName: string, packName: string, step: StepSpec): RecipeStepPlan => ({
+  id: normalizeStepKey(packName, step.name),
+  label: step.label,
+  recipe: recipeName,
+  kind: step.kind,
+  dependsOn: normalizeDependencies(packName, step.dependsOn),
+  priority: step.priority,
+  mode: step.mode,
+  summary: step.summary,
+});
+
+const appendPackPlans = (recipeName: string, pack: RecipePack) =>
+  sortSteps(pack.name, pack.steps).map((step) => createStepPlan(recipeName, pack.name, step));
+
+export const createRecipePlan = (recipeName: string, packs: RecipePack[]): RecipePlan => ({
+  name: recipeName,
+  steps: packs.flatMap((pack) => appendPackPlans(recipeName, pack)),
+});
 
 type PipelineUse = { use: (helper: unknown) => unknown };
 
@@ -203,7 +258,7 @@ const mergeAdapters = (base?: AdapterBundle, incoming?: AdapterBundle) => {
   return base ?? incoming;
 };
 
-const mergeDefaults = (base: RecipeDefaults, incoming: RecipeDefaults): RecipeDefaults => ({
+export const mergeDefaults = (base: RecipeDefaults, incoming: RecipeDefaults): RecipeDefaults => ({
   adapters: mergeAdapters(base.adapters, incoming.adapters),
   plugins:
     base.plugins && incoming.plugins
@@ -226,13 +281,58 @@ const applyDefaultsToPlugins = (plugins: Plugin[], name: string, defaults?: Reci
   }
 };
 
-type FlowBuilder<N extends RecipeName> = {
+export type FlowBuilder<N extends RecipeName> = {
   use: (pack: RecipePack) => FlowBuilder<N>;
   defaults: (defaults: RecipeDefaults) => FlowBuilder<N>;
   build: () => ReturnType<typeof createRuntime<N>>;
 };
 
-const createDuplicatePackDiagnostic = (name: string): DiagnosticEntry =>
+type FlowRuntimeInput<N extends RecipeName> = {
+  contract: ReturnType<typeof getRecipe<N>>;
+  packs: RecipePack[];
+  defaults: RecipeDefaults;
+  diagnostics: DiagnosticEntry[];
+};
+
+const readPackMinimums = (pack: RecipePack) => pack.minimumCapabilities ?? [];
+
+const appendMinimumCapabilities = (minimums: string[], next: string[]) => [...minimums, ...next];
+
+const dedupeMinimumCapabilities = (minimums: string[]) => [...new Set(minimums)];
+
+const collectPackMinimums = (packs: RecipePack[]) =>
+  dedupeMinimumCapabilities(
+    packs.reduce(
+      (acc, pack) => appendMinimumCapabilities(acc, readPackMinimums(pack)),
+      [] as string[],
+    ),
+  );
+
+const resolveMinimumCapabilities = (contractMinimums: string[], packs: RecipePack[]) => {
+  const packMinimums = collectPackMinimums(packs);
+  return packMinimums.length > 0 ? packMinimums : contractMinimums;
+};
+
+export const createFlowRuntime = <N extends RecipeName>(input: FlowRuntimeInput<N>) => {
+  const minimumCapabilities = resolveMinimumCapabilities(
+    input.contract.minimumCapabilities,
+    input.packs,
+  );
+  const contract = { ...input.contract, minimumCapabilities };
+  const plugins: Plugin[] = [...(input.contract.defaultPlugins ?? [])];
+  applyDefaultsToPlugins(plugins, "flow", input.defaults);
+  for (const pack of input.packs) {
+    applyDefaultsToPlugins(plugins, pack.name, pack.defaults);
+    appendPlugin(plugins, createStepPlugin(pack));
+  }
+  return createRuntime<N>({
+    contract,
+    plugins: [...plugins],
+    diagnostics: input.diagnostics,
+  });
+};
+
+export const createDuplicatePackDiagnostic = (name: string): DiagnosticEntry =>
   createRecipeDiagnostic(`Duplicate recipe pack name "${name}" overridden`, {
     code: "recipe.duplicatePack",
     pack: name,
@@ -249,56 +349,86 @@ const replacePack = (packs: RecipePack[], index: number, pack: RecipePack) => {
   packs[index] = pack;
 };
 
+type PackMergeState = {
+  packs: RecipePack[];
+  diagnostics: DiagnosticEntry[];
+};
+
+export const mergePackWithDiagnostics = (state: PackMergeState, pack: RecipePack) => {
+  const existingIndex = findPackIndex(state.packs, pack.name);
+  if (existingIndex !== -1) {
+    state.diagnostics.push(createDuplicatePackDiagnostic(pack.name));
+    replacePack(state.packs, existingIndex, pack);
+    return;
+  }
+  appendPack(state.packs, pack);
+};
+
+type FlowBuilderState<N extends RecipeName> = {
+  contract: ReturnType<typeof getRecipe<N>>;
+  packs: RecipePack[];
+  defaults: RecipeDefaults;
+  diagnostics: DiagnosticEntry[];
+};
+
+const createFlowBuilderFromState = <N extends RecipeName>(
+  state: FlowBuilderState<N>,
+): FlowBuilder<N> => ({
+  use: bindFirst(flowUsePack, state),
+  defaults: bindFirst(flowApplyDefaults, state),
+  build: bindFirst(flowBuildRuntime, state),
+});
+
+const flowUsePack = <N extends RecipeName>(state: FlowBuilderState<N>, pack: RecipePack) => {
+  mergePackWithDiagnostics({ packs: state.packs, diagnostics: state.diagnostics }, pack);
+  return createFlowBuilderFromState(state);
+};
+
+const flowApplyDefaults = <N extends RecipeName>(
+  state: FlowBuilderState<N>,
+  defaultsConfig: RecipeDefaults,
+) => {
+  const merged = mergeDefaults(state.defaults, defaultsConfig);
+  state.defaults.adapters = merged.adapters;
+  state.defaults.plugins = merged.plugins;
+  return createFlowBuilderFromState(state);
+};
+
+const flowBuildRuntime = <N extends RecipeName>(state: FlowBuilderState<N>) =>
+  createFlowRuntime({
+    contract: state.contract,
+    packs: state.packs,
+    defaults: state.defaults,
+    diagnostics: state.diagnostics,
+  });
+
 const createFlowBuilder = <N extends RecipeName>(recipeName: N): FlowBuilder<N> => {
   const contract = getRecipe(recipeName);
   if (!contract) {
     throw new Error(`Unknown recipe: ${recipeName}`);
   }
-  const packs: RecipePack[] = [];
-  const flowDefaults: RecipeDefaults = {};
-  const diagnostics: DiagnosticEntry[] = [];
-
-  const use = (pack: RecipePack) => {
-    const existingIndex = findPackIndex(packs, pack.name);
-    if (existingIndex !== -1) {
-      diagnostics.push(createDuplicatePackDiagnostic(pack.name));
-      replacePack(packs, existingIndex, pack);
-    } else {
-      appendPack(packs, pack);
-    }
-    return api;
+  const state: FlowBuilderState<N> = {
+    contract,
+    packs: [],
+    defaults: {},
+    diagnostics: [],
   };
-  const defaults = (defaultsConfig: RecipeDefaults) => {
-    const merged = mergeDefaults(flowDefaults, defaultsConfig);
-    flowDefaults.adapters = merged.adapters;
-    flowDefaults.plugins = merged.plugins;
-    return api;
-  };
-  const build = () => {
-    const plugins: Plugin[] = [...(contract.defaultPlugins ?? [])];
-    applyDefaultsToPlugins(plugins, "flow", flowDefaults);
-    for (const pack of packs) {
-      applyDefaultsToPlugins(plugins, pack.name, pack.defaults);
-      appendPlugin(plugins, createStepPlugin(pack));
-    }
-    return createRuntime<N>({
-      contract,
-      plugins: [...plugins],
-      diagnostics,
-    });
-  };
-  const api: FlowBuilder<N> = { use, defaults, build };
-  return api;
+  return createFlowBuilderFromState(state);
 };
 
 export const Recipe = {
   pack(
     name: string,
     define: (tools: { step: StepFactory }) => Record<string, StepBuilder>,
-    options?: { defaults?: RecipeDefaults },
+    options?: { defaults?: RecipeDefaults; minimumCapabilities?: string[] },
   ) {
     const steps = collectSteps(define({ step: createStep }));
-    return { name, steps, defaults: options?.defaults };
+    return {
+      name,
+      steps,
+      defaults: options?.defaults,
+      minimumCapabilities: options?.minimumCapabilities,
+    };
   },
   flow<N extends RecipeName>(name: N) {
     return createFlowBuilder<N>(name);

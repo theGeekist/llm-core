@@ -199,6 +199,26 @@ Code:
 - Implement factories per ecosystem: AI SDK, LangChain, LlamaIndex.
 - Dogfood tool calls and schemas in integration tests across all ecosystems.
 
+## Stage 14 — Composable Recipes (Step Packs)
+
+Status: completed. See `internal/stage-14.md`.
+
+Exit criteria:
+
+- Recipe packs + flows compile to pipeline helpers with deterministic ordering.
+- Pack defaults and minimum capabilities are honored.
+- Public docs describe the recipe surface without exposing pipeline internals.
+
+## Stage 15 — Interrupt Parity + Rollback Semantics
+
+Status: mostly complete (recipe layer pending). See `internal/stage-15.md`.
+
+Exit criteria:
+
+- Interrupt/checkpoint/event-stream adapter surfaces are wired across ecosystems.
+- Pause/resume uses rollback when interrupt strategy is restart.
+- Remaining recipe layer helpers are documented and implemented.
+
 Exit criteria:
 
 - Model execution works via adapters for text + embeddings + tool calls + structured outputs.
