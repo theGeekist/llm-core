@@ -87,6 +87,14 @@ const mergeDefinitions = (base: RecipeDefinition, extras: RecipeDefinition): Rec
 const resolveDefinition = <N extends RecipeName, C>(state: RecipeState<N, C>): RecipeDefinition =>
   mergeDefinitions(resolveBaseDefinition(state.factory, state.config), state.extras);
 
+const requireRecipeContract = <N extends RecipeName>(name: N) => {
+  const contract = getRecipe(name);
+  if (!contract) {
+    throw new Error(`Unknown recipe: ${name}`);
+  }
+  return contract;
+};
+
 const isRecipePack = (value: unknown): value is RecipePack =>
   !!value &&
   typeof value === "object" &&
@@ -181,7 +189,7 @@ const buildRecipeHandle = <N extends RecipeName, C>(
   state: RecipeState<N, C>,
 ): ReturnType<typeof createFlowRuntime<N>> => {
   const definition = resolveDefinition(state);
-  const contract = getRecipe(state.factory.name);
+  const contract = requireRecipeContract(state.factory.name);
   return createFlowRuntime({
     contract,
     packs: definition.packs,
@@ -196,7 +204,7 @@ const runRecipeHandle = <N extends RecipeName, C>(
   overrides?: RecipeRunOverrides,
 ): MaybePromise<Outcome<ArtefactOf<N>>> => {
   const definition = applyRunAdapters(resolveDefinition(state), overrides?.adapters);
-  const contract = getRecipe(state.factory.name);
+  const contract = requireRecipeContract(state.factory.name);
   const runtime = createFlowRuntime({
     contract,
     packs: definition.packs,

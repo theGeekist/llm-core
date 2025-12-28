@@ -11,20 +11,9 @@ There are three principles that make `llm-core` predictable:
 A **Recipe** is not just a script. It is a named, versioned composition of **Packs**.
 Think of a Pack as a "module of logic" that you can test in isolation.
 
-```mermaid
+```text
 graph TD
-    subgraph Recipe ["Agent Recipe"]
-        P1[Planning Pack]
-        P2[Execution Pack]
-        P3[Review Pack]
-
-        P1 --> P2 --> P3
-    end
-
-    style Recipe fill:#f9f,stroke:#333
-    style P1 fill:#eff,stroke:#333
-    style P2 fill:#eff,stroke:#333
-    style P3 fill:#eff,stroke:#333
+    A --> B
 ```
 
 - **Packs** contain **Steps** (the actual logic).
@@ -60,16 +49,16 @@ This is the most common point of confusion. Here's the mental model:
 - **Adapters** are the **ports** (Standard shape).
 - **Plugins** are the **appliances** (Implementation).
 
-```mermaid
+```text
 graph TD
     subgraph Workflow
-    A[Model Adapter Port]
+    A["Model Adapter Port"]
     end
 
     subgraph Ecosystem
-    O[OpenAI Plugin]
-    N[Anthropic Plugin]
-    L[LlamaIndex Plugin]
+    O["OpenAI Plugin"]
+    N["Anthropic Plugin"]
+    L["LlamaIndex Plugin"]
     end
 
     O -- fits --> A

@@ -2,8 +2,7 @@ import type { BaseCallbackHandler } from "@langchain/core/callbacks/base";
 import type { Serialized } from "@langchain/core/load/serializable";
 import type { LLMResult } from "@langchain/core/outputs";
 import type { AdapterTraceEvent, AdapterTraceSink } from "../types";
-import { bindFirst, maybeMap } from "../../maybe";
-import { maybeAll } from "@wpkernel/pipeline/core/async-utils";
+import { bindFirst, maybeMap, maybeAll } from "../../maybe";
 import { isRecord } from "../utils";
 
 type LangChainTraceMetadata = {

@@ -1,8 +1,10 @@
 import { describe, expect, it } from "bun:test";
 import type { Outcome } from "#workflow/types";
-import { createPipelineRollback } from "@wpkernel/pipeline/core";
 import { createMemoryCache } from "../../src/adapters";
+import type { AdapterTraceEvent } from "../../src/adapters/types";
+import { emitRecipeEvent, readRecipeEvents } from "../../src/recipes/events";
 import { type StepApply, Recipe } from "../../src/recipes/flow";
+import { maybeMap, toNull } from "../../src/maybe";
 import { assertSyncOutcome, diagnosticMessages } from "../workflow/helpers";
 
 const appendOrder = (state: Record<string, unknown>, label: string) => {
@@ -41,7 +43,22 @@ const stepExplicit: StepApply = ({ state }) => {
 
 const stepRollback: StepApply = ({ state }) => {
   appendOrder(state, "rolled");
-  return { rollback: createPipelineRollback(() => undefined) };
+  return { rollback: Recipe.rollback(rollbackNoop) };
+};
+
+const stepEmitEvent: StepApply = ({ context, state }) =>
+  maybeMap(toNull, emitRecipeEvent(context, state, recipeEvent));
+
+const stepRollbackBuilder: StepApply = ({ state }) => {
+  appendOrder(state, "builder");
+  return null;
+};
+
+const rollbackNoop = () => true;
+
+const recipeEvent: AdapterTraceEvent = {
+  name: "recipe.event",
+  data: { ok: true },
 };
 
 describe("Recipe flow packs", () => {
@@ -115,6 +132,53 @@ describe("Recipe flow packs", () => {
     const order = (ok.artefact as { order?: unknown }).order;
 
     expect(order).toEqual(["rolled"]);
+  });
+
+  it("applies step builder rollbacks without touching pipeline helpers", () => {
+    const pack = Recipe.pack("rollback-builder", ({ step }) => ({
+      only: step("only", stepRollbackBuilder).rollback(rollbackNoop),
+    }));
+
+    const workflow = Recipe.flow("rag").use(pack).build();
+    const outcome = assertSyncOutcome(workflow.run({ input: "x", query: "x" }));
+    const ok = expectOk(outcome);
+    const order = (ok.artefact as { order?: unknown }).order;
+
+    expect(order).toEqual(["builder"]);
+  });
+
+  it("emits recipe events into state and event streams", () => {
+    const emitted: AdapterTraceEvent[] = [];
+    const eventStream = {
+      emit: (event: AdapterTraceEvent) => {
+        emitted.push(event);
+        return true;
+      },
+    };
+    const pack = Recipe.pack("events", ({ step }) => ({
+      only: step("only", stepEmitEvent),
+    }));
+
+    const workflow = Recipe.flow("rag").use(pack).defaults({ adapters: { eventStream } }).build();
+    const outcome = assertSyncOutcome(workflow.run({ input: "x", query: "x" }));
+    const ok = expectOk(outcome);
+
+    expect(emitted).toEqual([recipeEvent]);
+    expect(readRecipeEvents(ok.artefact as Record<string, unknown>)).toEqual([recipeEvent]);
+  });
+
+  it("adds diagnostics when state validation fails", () => {
+    const validateState = () => false;
+    const pack = Recipe.pack("state", ({ step }) => ({
+      only: step("only", stepFirst),
+    }));
+
+    const workflow = Recipe.flow("rag").use(pack).state(validateState).build();
+    const outcome = assertSyncOutcome(workflow.run({ input: "x", query: "x" }));
+    const ok = expectOk(outcome);
+
+    const messages = diagnosticMessages(ok.diagnostics);
+    expect(messages).toContain("Recipe state validation failed.");
   });
 
   it("applies flow defaults and pack default plugins", () => {

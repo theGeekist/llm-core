@@ -6,6 +6,9 @@ export * from "./rag";
 export * from "./hitl";
 export * from "./ingest";
 export * from "./compress";
+export * from "./events";
+export * from "./state";
+export * from "./rollback";
 
 import { simpleChat } from "./simple-chat";
 import { ragChat } from "./rag-chat";

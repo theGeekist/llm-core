@@ -117,27 +117,9 @@ One of the hardest parts of building LLM apps is normalizing streams. Provider A
 
 `llm-core` normalizes **ALL** of them into a single lifecycle of `ModelStreamEvent` objects.
 
-```mermaid
-sequenceDiagram
-    participant App
-    participant Adapter
-    participant Provider
-
-    App->>Adapter: stream(messages)
-    Adapter->>Provider: Stream Request
-
-    Provider-->>Adapter: (Chunk 1: "Hel")
-    Adapter-->>App: Event { type: "start", meta: {...} }
-    Adapter-->>App: Event { type: "delta", text: "Hel" }
-
-    Provider-->>Adapter: (Chunk 2: "lo")
-    Adapter-->>App: Event { type: "delta", text: "lo" }
-
-    Provider-->>Adapter: (Chunk 3: Usage Info)
-    Adapter-->>App: Event { type: "usage", usage: { total: 42 } }
-
-    Provider-->>Adapter: (Stream End)
-    Adapter-->>App: Event { type: "end" }
+```text
+graph TD
+    A --> B
 ```
 
 You never have to parse chunks manually. You just consume the iterator:

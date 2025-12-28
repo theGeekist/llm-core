@@ -7,8 +7,7 @@ import type {
   VectorStoreDeleteInput,
   VectorStoreUpsertInput,
 } from "../types";
-import { maybeAll } from "@wpkernel/pipeline/core/async-utils";
-import { maybeMap, toTrue } from "../../maybe";
+import { maybeMap, toTrue, maybeAll } from "../../maybe";
 import {
   reportDiagnostics,
   validateVectorStoreDeleteInput,

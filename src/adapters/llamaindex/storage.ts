@@ -1,10 +1,10 @@
 import type { BaseDocumentStore } from "@llamaindex/core/storage/doc-store";
 import type { AdapterCallContext, KVStore } from "../types";
-import { maybeAll } from "@wpkernel/pipeline/core/async-utils";
-import { maybeMap, toTrue } from "../../maybe";
+import { maybeAll, maybeMap, toTrue, type MaybePromise } from "../../maybe";
 import { reportDiagnostics, validateKvKeys, validateKvPairs } from "../input-validation";
 
 type DocumentShape = { id_?: string };
+type DocumentResult = { toJSON: () => unknown } | undefined | null;
 
 const asDocument = (value: Record<string, unknown>, key: string) => {
   const doc = value as DocumentShape;
@@ -22,9 +22,12 @@ export function fromLlamaIndexDocumentStore(store: BaseDocumentStore): KVStore {
         reportDiagnostics(context, diagnostics);
         return [];
       }
+      const results = keys.map(
+        (key) => store.getDocument(key, false) as MaybePromise<DocumentResult>,
+      );
       return maybeMap(
-        (docs) => docs.map((doc) => (doc ? doc.toJSON() : undefined)),
-        maybeAll(keys.map((key) => store.getDocument(key, false))),
+        (docs: DocumentResult[]) => docs.map((doc) => (doc ? doc.toJSON() : undefined)),
+        maybeAll<DocumentResult>(results),
       );
     },
     mset: (pairs, context?: AdapterCallContext) => {

@@ -1,6 +1,5 @@
 import type { AdapterTraceEvent, AdapterTraceSink, EventStream } from "../types";
-import { maybeAll } from "@wpkernel/pipeline/core/async-utils";
-import { bindFirst, maybeMap } from "../../maybe";
+import { bindFirst, maybeMap, maybeAll } from "../../maybe";
 
 const toBoolean = (value: unknown): boolean | null => (value === null ? null : value !== false);
 const isFailure = (value: boolean | null) => value === false;

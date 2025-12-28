@@ -212,6 +212,44 @@ step("retrieve", applyRetrieve).dependsOn("seed").label("Retrieve documents").ki
 
 Metadata is used by `plan()` and downstream tooling but does not change behavior.
 
+## Step Rollbacks (optional)
+
+Recipes can register rollback handlers without touching pipeline internals.
+Use `step(...).rollback(...)` for static rollbacks or `Recipe.rollback(...)` inside a step:
+
+```ts
+const rollbackStep = step("only", apply).rollback(() => true);
+
+const applyWithRollback: StepApply = () => ({
+  rollback: Recipe.rollback(() => true),
+});
+```
+
+Rollback handlers are only executed when an interrupt strategy requests restart.
+
+## State Validation (optional)
+
+Flows can attach a lightweight state validator for diagnostics + trace annotation.
+
+```ts
+const validateState = (state: unknown) => ({ valid: !!state });
+
+const wf = Recipe.flow("rag").state(validateState).use(pack).build();
+```
+
+When validation fails, the run stays `ok`/`paused` but emits a recipe diagnostic
+and a `recipe.state.invalid` trace event.
+
+## Event Conventions (optional)
+
+Recipes can emit workflow events through the adapter event stream and store them
+on `state.events` for inspection:
+
+```ts
+const applyEmit: StepApply = ({ context, state }) =>
+  emitRecipeEvent(context, state, { name: "recipe.event", data: { ok: true } });
+```
+
 ## Packs & Flows (internal mechanics)
 
 Internally, recipes are composed using:

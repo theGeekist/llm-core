@@ -3,16 +3,16 @@ import type { EmbeddingsInterface } from "@langchain/core/embeddings";
 import type { BaseEmbedding } from "@llamaindex/core/embeddings";
 import { embed, embedMany, type EmbeddingModel } from "ai";
 import type { Embedder } from "#workflow";
-import { maybeMap } from "./helpers";
+import { maybeMap, identity } from "../../src/maybe";
 
 const toEmbedderFromLangChain = (embeddings: EmbeddingsInterface<number[]>): Embedder => ({
-  embed: (text) => maybeMap((value) => value, embeddings.embedQuery(text)),
-  embedMany: (texts) => maybeMap((value) => value, embeddings.embedDocuments(texts)),
+  embed: (text) => maybeMap(identity, embeddings.embedQuery(text)),
+  embedMany: (texts) => maybeMap(identity, embeddings.embedDocuments(texts)),
 });
 
 const toEmbedderFromLlama = (embedding: BaseEmbedding): Embedder => ({
-  embed: (text) => maybeMap((value) => value, embedding.getTextEmbedding(text)),
-  embedMany: (texts) => maybeMap((value) => value, embedding.getTextEmbeddings(texts)),
+  embed: (text) => maybeMap(identity, embedding.getTextEmbedding(text)),
+  embedMany: (texts) => maybeMap(identity, embedding.getTextEmbeddings(texts)),
 });
 
 const toEmbedderFromAiSdk = (model: EmbeddingModel<string>): Embedder => ({

@@ -69,4 +69,35 @@ describe("Adapter checkpoint stores", () => {
 
     expect(loaded).toEqual(snapshot);
   });
+
+  it("skips invalid LlamaIndex snapshot payloads", async () => {
+    const store: LlamaIndexCheckpointStore = {
+      get: () => undefined,
+      set: () => true,
+      delete: () => true,
+    };
+    const checkpoint = fromLlamaIndexCheckpointStore(store);
+    const snapshot = {
+      token: "li-invalid",
+      createdAt: 123,
+      payload: { ok: true },
+    };
+
+    const result = await checkpoint.set(snapshot.token, snapshot);
+    expect(result).toBe(false);
+  });
+
+  it("exposes touch and sweep when provided", async () => {
+    const store: LlamaIndexCheckpointStore = {
+      get: () => undefined,
+      set: () => true,
+      delete: () => true,
+      touch: () => true,
+      sweep: () => true,
+    };
+    const checkpoint = fromLlamaIndexCheckpointStore(store);
+
+    expect(await checkpoint.touch?.("token")).toBe(true);
+    expect(await checkpoint.sweep?.()).toBe(true);
+  });
 });

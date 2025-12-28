@@ -45,6 +45,16 @@ describe("Adapter LlamaIndex message conversions", () => {
     expect(fromLlamaIndexMessage(memory).role).toBe("system");
   });
 
+  it("maps assistant roles to assistant", () => {
+    const message: ChatMessage = { role: "assistant", content: "done" };
+    expect(fromLlamaIndexMessage(message).role).toBe("assistant");
+  });
+
+  it("maps unknown roles to tool", () => {
+    const message: ChatMessage = { role: "other" as ChatMessage["role"], content: "ok" };
+    expect(fromLlamaIndexMessage(message).role).toBe("tool");
+  });
+
   it("maps tool messages into LlamaIndex options", () => {
     const message = toLlamaIndexMessage({
       role: "tool",
@@ -84,6 +94,15 @@ describe("Adapter LlamaIndex message conversions", () => {
     expect(message.content).toBe("hello");
   });
 
+  it("returns content text when no parts are available", () => {
+    const message = toLlamaIndexMessage({
+      role: "assistant",
+      content: { text: "fallback", parts: [] },
+    });
+
+    expect(message.content).toBe("fallback");
+  });
+
   it("maps text and reasoning parts into message content", () => {
     const message = toLlamaIndexMessage({
       role: "assistant",
@@ -99,6 +118,11 @@ describe("Adapter LlamaIndex message conversions", () => {
     const parts = Array.isArray(message.content) ? message.content : [];
     expect(parts[0]).toMatchObject({ type: "text", text: "hi" });
     expect(parts[1]).toMatchObject({ type: "text", text: "think" });
+  });
+
+  it("maps system role to a system message", () => {
+    const message = toLlamaIndexMessage({ role: "system", content: "rules" });
+    expect(message.role).toBe("system");
   });
 
   it("summarizes file parts without data", () => {

@@ -1,5 +1,4 @@
-import { maybeAll } from "@wpkernel/pipeline/core/async-utils";
-import { bindFirst, maybeMap } from "../../maybe";
+import { bindFirst, maybeMap, maybeAll } from "../../maybe";
 import { Recipe } from "../flow";
 import { createRecipeFactory, createRecipeHandle } from "../handle";
 import type { RecipeDefaults, StepApply } from "../flow";
@@ -159,13 +158,11 @@ const toVectorFromValues = (doc: Document, values: number[]): VectorRecord => ({
 const embedDocument = (embedder: Embedder, doc: Document) =>
   maybeMap(bindFirst(toVectorFromValues, doc), embedder.embed(doc.text));
 
-const identity = <T>(value: T) => value;
-
 const embedDocuments = (embedder: Embedder, documents: Document[]) => {
   if (embedder.embedMany) {
     return embedDocumentsMany(embedder as EmbedderWithMany, documents);
   }
-  return maybeMap(identity, maybeAll(documents.map(bindFirst(embedDocument, embedder))));
+  return maybeAll(documents.map(bindFirst(embedDocument, embedder)));
 };
 
 const applyEmbedResult = (ingest: IngestState, vectors: VectorRecord[] | undefined) => {

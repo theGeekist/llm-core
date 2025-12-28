@@ -211,13 +211,13 @@ Exit criteria:
 
 ## Stage 15 — Interrupt Parity + Rollback Semantics
 
-Status: mostly complete (recipe layer pending). See `internal/stage-15.md`.
+Status: completed. See `internal/stage-15.md`.
 
 Exit criteria:
 
 - Interrupt/checkpoint/event-stream adapter surfaces are wired across ecosystems.
 - Pause/resume uses rollback when interrupt strategy is restart.
-- Remaining recipe layer helpers are documented and implemented.
+- Recipe layer helpers are documented and implemented.
 
 Exit criteria:
 
@@ -317,7 +317,7 @@ Status: planned. See `internal/stage-14.md`.
 
 ## Stage 15 — Interrupt Parity + Rollback Semantics
 
-Status: proposed. See `internal/stage-15.md`.
+Status: completed. See `internal/stage-15.md`.
 
 Goals:
 

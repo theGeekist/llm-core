@@ -49,9 +49,7 @@ const safeStringify = (value: unknown) => {
   }
 };
 
-const summaryGenerators: Record<MessagePart["type"], (part: MessagePart) => string> = {
-  text: (part) => (part.type === "text" ? part.text : ""),
-  reasoning: (part) => (part.type === "reasoning" ? part.text : ""),
+const summaryGenerators: Partial<Record<MessagePart["type"], (part: MessagePart) => string>> = {
   "tool-call": (part) =>
     part.type === "tool-call" ? `tool-call:${part.toolName}:${safeStringify(part.input)}` : "",
   "tool-result": (part) =>

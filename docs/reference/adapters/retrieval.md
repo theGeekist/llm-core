@@ -13,14 +13,9 @@ In `llm-core`, retrieval is not a single capability. It is a pipeline of four di
 
 ### The RAG Pipeline
 
-```mermaid
-flowchart LR
-    Dataset --> Embedder
-    Embedder --> Vector["Vector Store"]
-    Query --> Retriever
-    Retriever -- read --> Vector
-    Retriever -- docs --> Reranker
-    Reranker -- sorted docs --> LLM
+```text
+graph TD
+    A --> B
 ```
 
 ---

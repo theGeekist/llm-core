@@ -7,6 +7,10 @@ import { createRecipeDiagnostic } from "../workflow/diagnostics";
 import { getRecipe } from "../workflow/recipe-registry";
 import { createRuntime } from "../workflow/runtime";
 import type { PipelineContext, PipelineState, Plugin, RecipeName } from "../workflow/types";
+import type { StateValidator } from "./state";
+import { wrapRuntimeWithStateValidation } from "./state";
+import { attachRollback, createStepRollback } from "./rollback";
+import type { StepRollbackInput } from "./rollback";
 
 type StepOptions = {
   context: PipelineContext;
@@ -31,6 +35,7 @@ type StepSpec = {
   label?: string;
   kind?: string;
   summary?: string;
+  rollback?: StepRollbackInput;
 };
 
 type StepBuilder = {
@@ -41,6 +46,7 @@ type StepBuilder = {
   label: (value: string) => StepBuilder;
   kind: (value: string) => StepBuilder;
   summary: (value: string) => StepBuilder;
+  rollback: (rollback: StepRollbackInput) => StepBuilder;
   getSpec: () => StepSpec;
 };
 
@@ -146,7 +152,11 @@ const applyStep = (
 ) => {
   const stepOptions = toStepOptions(options);
   const state = stepOptions.state;
-  return maybeMap(bindFirst(resolveStepResult, state), spec.apply(stepOptions, next));
+  const applied = spec.apply(stepOptions, next);
+  const withRollback = spec.rollback
+    ? maybeMap(bindFirst(attachRollback, spec.rollback), applied)
+    : applied;
+  return maybeMap(bindFirst(resolveStepResult, state), withRollback);
 };
 
 const invokeStep = (
@@ -170,20 +180,54 @@ const createHelperForStep = (packName: string, spec: StepSpec) => {
 
 const appendDependencies = (current: string[], next: string[]) => [...current, ...next];
 
-const createStepBuilder = (spec: StepSpec): StepBuilder => ({
-  dependsOn: (dependencies: string | string[]) =>
-    createStepBuilder({
-      ...spec,
-      dependsOn: appendDependencies(spec.dependsOn, toArray(dependencies)),
-    }),
-  priority: (value: number) => createStepBuilder({ ...spec, priority: value }),
-  override: () => createStepBuilder({ ...spec, mode: "override" }),
-  extend: () => createStepBuilder({ ...spec, mode: "extend" }),
-  label: (value: string) => createStepBuilder({ ...spec, label: value }),
-  kind: (value: string) => createStepBuilder({ ...spec, kind: value }),
-  summary: (value: string) => createStepBuilder({ ...spec, summary: value }),
-  getSpec: () => ({ ...spec }),
-});
+class StepBuilderImpl implements StepBuilder {
+  private spec: StepSpec;
+
+  constructor(spec: StepSpec) {
+    this.spec = spec;
+  }
+
+  dependsOn(dependencies: string | string[]) {
+    return new StepBuilderImpl({
+      ...this.spec,
+      dependsOn: appendDependencies(this.spec.dependsOn, toArray(dependencies)),
+    });
+  }
+
+  priority(value: number) {
+    return new StepBuilderImpl({ ...this.spec, priority: value });
+  }
+
+  override() {
+    return new StepBuilderImpl({ ...this.spec, mode: "override" });
+  }
+
+  extend() {
+    return new StepBuilderImpl({ ...this.spec, mode: "extend" });
+  }
+
+  label(value: string) {
+    return new StepBuilderImpl({ ...this.spec, label: value });
+  }
+
+  kind(value: string) {
+    return new StepBuilderImpl({ ...this.spec, kind: value });
+  }
+
+  summary(value: string) {
+    return new StepBuilderImpl({ ...this.spec, summary: value });
+  }
+
+  rollback(rollback: StepRollbackInput) {
+    return new StepBuilderImpl({ ...this.spec, rollback });
+  }
+
+  getSpec() {
+    return { ...this.spec };
+  }
+}
+
+const createStepBuilder = (spec: StepSpec): StepBuilder => new StepBuilderImpl(spec);
 
 const createStep: StepFactory = (name, apply) =>
   createStepBuilder({ name, apply, dependsOn: [], priority: 0, mode: "extend" });
@@ -284,6 +328,7 @@ const applyDefaultsToPlugins = (plugins: Plugin[], name: string, defaults?: Reci
 export type FlowBuilder<N extends RecipeName> = {
   use: (pack: RecipePack) => FlowBuilder<N>;
   defaults: (defaults: RecipeDefaults) => FlowBuilder<N>;
+  state: (validator: StateValidator) => FlowBuilder<N>;
   build: () => ReturnType<typeof createRuntime<N>>;
 };
 
@@ -292,6 +337,7 @@ type FlowRuntimeInput<N extends RecipeName> = {
   packs: RecipePack[];
   defaults: RecipeDefaults;
   diagnostics: DiagnosticEntry[];
+  stateValidator?: StateValidator;
 };
 
 const readPackMinimums = (pack: RecipePack) => pack.minimumCapabilities ?? [];
@@ -325,11 +371,14 @@ export const createFlowRuntime = <N extends RecipeName>(input: FlowRuntimeInput<
     applyDefaultsToPlugins(plugins, pack.name, pack.defaults);
     appendPlugin(plugins, createStepPlugin(pack));
   }
-  return createRuntime<N>({
-    contract,
-    plugins: [...plugins],
-    diagnostics: input.diagnostics,
-  });
+  return wrapRuntimeWithStateValidation(
+    createRuntime<N>({
+      contract,
+      plugins: [...plugins],
+      diagnostics: input.diagnostics,
+    }),
+    input.stateValidator,
+  );
 };
 
 export const createDuplicatePackDiagnostic = (name: string): DiagnosticEntry =>
@@ -369,6 +418,7 @@ type FlowBuilderState<N extends RecipeName> = {
   packs: RecipePack[];
   defaults: RecipeDefaults;
   diagnostics: DiagnosticEntry[];
+  stateValidator?: StateValidator;
 };
 
 const createFlowBuilderFromState = <N extends RecipeName>(
@@ -376,6 +426,7 @@ const createFlowBuilderFromState = <N extends RecipeName>(
 ): FlowBuilder<N> => ({
   use: bindFirst(flowUsePack, state),
   defaults: bindFirst(flowApplyDefaults, state),
+  state: bindFirst(flowApplyStateValidator, state),
   build: bindFirst(flowBuildRuntime, state),
 });
 
@@ -394,12 +445,21 @@ const flowApplyDefaults = <N extends RecipeName>(
   return createFlowBuilderFromState(state);
 };
 
+const flowApplyStateValidator = <N extends RecipeName>(
+  state: FlowBuilderState<N>,
+  validator: StateValidator,
+) => {
+  state.stateValidator = validator;
+  return createFlowBuilderFromState(state);
+};
+
 const flowBuildRuntime = <N extends RecipeName>(state: FlowBuilderState<N>) =>
   createFlowRuntime({
     contract: state.contract,
     packs: state.packs,
     defaults: state.defaults,
     diagnostics: state.diagnostics,
+    stateValidator: state.stateValidator,
   });
 
 const createFlowBuilder = <N extends RecipeName>(recipeName: N): FlowBuilder<N> => {
@@ -412,11 +472,13 @@ const createFlowBuilder = <N extends RecipeName>(recipeName: N): FlowBuilder<N> 
     packs: [],
     defaults: {},
     diagnostics: [],
+    stateValidator: undefined,
   };
   return createFlowBuilderFromState(state);
 };
 
 export const Recipe = {
+  rollback: createStepRollback,
   pack(
     name: string,
     define: (tools: { step: StepFactory }) => Record<string, StepBuilder>,

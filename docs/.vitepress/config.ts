@@ -99,7 +99,11 @@ export default defineConfig({
           text: "Recipes",
           items: [
             { text: "Back to Guide", link: "/guide/hello-world" },
-            { text: "RAG Deep Dive", link: "/recipes/rag" },
+            { text: "Building a Chatbot", link: "/recipes/simple-chat" },
+            { text: "Chatting with Data (RAG)", link: "/recipes/rag" },
+            { text: "Building an Agent", link: "/recipes/agent" },
+            { text: "Human-in-the-Loop", link: "/recipes/hitl" },
+            { text: "The Data Pipeline", link: "/recipes/ingest" },
           ],
         },
       ],

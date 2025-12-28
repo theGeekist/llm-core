@@ -13,17 +13,9 @@ In technical terms, a Tool consists of:
 
 ### The Logic Loop
 
-```mermaid
-sequenceDiagram
-    participant Model
-    participant Workflow
-    participant Tool
-
-    Model->>Workflow: Call "get_weather({ city: 'London' })"
-    Workflow->>Tool: Execute Function
-    Tool-->>Workflow: Result: "15°C, Raining"
-    Workflow->>Model: Here is the result. Continue.
-    Model-->>User: "It is currently 15°C and raining in London."
+```text
+graph TD
+    A --> B
 ```
 
 ---
