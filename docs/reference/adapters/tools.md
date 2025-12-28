@@ -13,9 +13,12 @@ In technical terms, a Tool consists of:
 
 ### The Logic Loop
 
-```text
-graph TD
-    A --> B
+```mermaid
+graph LR
+    LLM[Model] -->|1. Call| Router{Router}
+    Router -->|JSON| Tool[Tool Execution]
+    Tool -->|Result| LLM
+    Router -->|Text| User([User])
 ```
 
 ---

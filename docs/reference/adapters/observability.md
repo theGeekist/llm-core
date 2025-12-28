@@ -112,10 +112,14 @@ Wrap any `BaseCallbackHandler` into a Trace Sink:
 
 ```ts
 import { Adapter, fromLangChainCallbackHandler } from "@geekist/llm-core/adapters";
+import type { AdapterTraceSink } from "@geekist/llm-core/adapters";
 import { RunCollectorCallbackHandler } from "@langchain/core/tracers/run_collector";
 
 const handler = new RunCollectorCallbackHandler();
-const trace = Adapter.trace("custom.trace", fromLangChainCallbackHandler(handler));
+const trace: AdapterTraceSink = Adapter.trace(
+  "custom.trace",
+  fromLangChainCallbackHandler(handler),
+);
 ```
 
 == JavaScript
@@ -152,11 +156,12 @@ LlamaIndex workflows can emit trace events via trace plugins. This adapter maps 
 
 ```ts
 import { Adapter, createBuiltinTrace, fromLlamaIndexTraceSink } from "@geekist/llm-core/adapters";
+import type { AdapterTraceSink } from "@geekist/llm-core/adapters";
 import { createWorkflow } from "@llamaindex/workflow-core";
 import { withTraceEvents } from "@llamaindex/workflow-core/middleware/trace-events";
 
 const builtin = createBuiltinTrace();
-const trace = Adapter.trace("custom.trace", fromLlamaIndexTraceSink(builtin));
+const trace: AdapterTraceSink = Adapter.trace("custom.trace", fromLlamaIndexTraceSink(builtin));
 const workflow = withTraceEvents(createWorkflow(), { plugins: [trace] });
 ```
 

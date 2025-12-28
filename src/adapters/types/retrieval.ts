@@ -42,7 +42,7 @@ export type Reranker = {
 };
 
 export type DocumentLoader = {
-  load(): MaybePromise<Document[]>;
+  load(context?: AdapterCallContext): MaybePromise<Document[]>;
   metadata?: AdapterMetadata;
 };
 

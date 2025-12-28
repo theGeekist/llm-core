@@ -1,67 +1,284 @@
-# Tutorial: Building an Agent
+# Recipe: Agent (Reason + Act)
 
-An **Agent** is an LLM that can allow itself to "do" things.
-While a Chatbot just talks, an Agent can search the web, query databases, or update tickets.
+> [!NOTE] > **Goal**: Build a tool-calling agent that can plan, act, and finalize with clean diagnostics and a stable recipe surface.
 
-In `llm-core`, an Agent is constructed from three distinct capabilities:
+The Agent recipe is the most complete example of the **recipe-first** API. It runs a ReAct-style loop:
+plan -> tool-call -> tool-exec -> respond, while keeping diagnostics and trace attached to every outcome.
 
-1.  **Tools**: The hands (Functions it can call).
-2.  **Planning**: The brain (How it decides what to call).
-3.  **Memory**: The notebook (Remembering past actions).
+If you're new to recipes, read the [Recipes API](/reference/recipes-api) once, then treat this page as the
+recipe-specific README.
 
-## 1. "Teach it to use a Calculator" (Tools)
+---
 
-The most common customization is giving the Agent tools.
-We support standard schemas (Zod/JSON Schema).
+## 1) Quick start (one model + one tool)
+
+This is the minimum: a model adapter + a tool adapter, then `run()`.
+
+::: tabs
+== TypeScript
 
 ```ts
+import { recipes } from "@geekist/llm-core";
+import { fromAiSdkModel, fromAiSdkTool } from "@geekist/llm-core/adapters";
+import { openai } from "@ai-sdk/openai";
 import { tool } from "ai";
 import { z } from "zod";
 
-// 1. Define the tool
-const calculator = tool({
-  description: "Add two numbers",
-  parameters: z.object({ a: z.number(), b: z.number() }),
-  execute: async ({ a, b }) => a + b,
+const agent = recipes.agent().defaults({
+  adapters: {
+    model: fromAiSdkModel(openai("gpt-4o-mini")),
+    tools: [
+      fromAiSdkTool(
+        "get_weather",
+        tool({
+          description: "Get weather by city",
+          parameters: z.object({ city: z.string() }),
+          execute: async ({ city }) => ({ city, summary: "Sunny, 25C" }),
+        }),
+      ),
+    ],
+  },
 });
 
-// 2. Give it to the Recipe
-const mathAgent = recipes.agent().defaults({
+const outcome = await agent.run({ input: "What's the weather in Tokyo?" });
+```
+
+== JavaScript
+
+```js
+import { recipes } from "@geekist/llm-core";
+import { fromAiSdkModel, fromAiSdkTool } from "@geekist/llm-core/adapters";
+import { openai } from "@ai-sdk/openai";
+import { tool } from "ai";
+import { z } from "zod";
+
+const agent = recipes.agent().defaults({
   adapters: {
-    // The recipe automatically registers these with the Model
-    tools: { calculator },
+    model: fromAiSdkModel(openai("gpt-4o-mini")),
+    tools: [
+      fromAiSdkTool(
+        "get_weather",
+        tool({
+          description: "Get weather by city",
+          parameters: z.object({ city: z.string() }),
+          execute: async ({ city }) => ({ city, summary: "Sunny, 25C" }),
+        }),
+      ),
+    ],
+  },
+});
+
+const outcome = await agent.run({ input: "What's the weather in Tokyo?" });
+```
+
+:::
+
+Related: [Adapters overview](/reference/adapters) - [Adapters API](/reference/adapters-api)
+
+---
+
+## 2) Configure per-pack defaults (typed)
+
+`configure()` is **recipe-specific** and scoped to the agent's internal packs (planning/tools/memory/finalize).
+Use this when you want defaults that apply only to specific packs.
+
+::: tabs
+== TypeScript
+
+```ts
+import { recipes } from "@geekist/llm-core";
+import type { AgentRecipeConfig } from "@geekist/llm-core/recipes";
+
+const agent = recipes.agent().configure({
+  tools: {
+    defaults: {
+      adapters: {
+        tools: [
+          /* tool adapters */
+        ], // e.g. fromAiSdkTool(...) or fromLangChainTool(...)
+      },
+    },
+  },
+  memory: {
+    defaults: {
+      adapters: {
+        memory: myMemoryAdapter, // e.g. fromLangChainMemory(...)
+      },
+    },
+  },
+} satisfies AgentRecipeConfig);
+```
+
+== JavaScript
+
+```js
+import { recipes } from "@geekist/llm-core";
+
+const agent = recipes.agent().configure({
+  tools: {
+    defaults: {
+      adapters: {
+        tools: [
+          /* tool adapters */
+        ],
+      },
+    },
+  },
+  memory: {
+    defaults: {
+      adapters: {
+        memory: myMemoryAdapter,
+      },
+    },
   },
 });
 ```
 
-## 2. "It needs to remember me" (Memory)
+:::
 
-By default, an Agent is stateless. If the server restarts, it forgets everything.
-To make it persistent, you plug in a **Memory Native Adapter**.
+Why this exists: it keeps **pack-level defaults** separate from **run-level overrides**.
+See [Recipe handles](/reference/recipes-api#recipe-handles-the-public-surface).
+
+---
+
+## 3) Mix-and-match adapters (ecosystem-agnostic)
+
+You can combine adapters from different ecosystems as long as they implement the same adapter shape.
+Below, the model is AI SDK while tools come from LangChain.
+
+::: tabs
+== TypeScript
 
 ```ts
-const redisMemory = {
-  // Simple interface: load() and save()
-  load: async (id) => redis.get(`chat:${id}`),
-  save: async (id, messages) => redis.set(`chat:${id}`, messages),
-};
+import { recipes } from "@geekist/llm-core";
+import { fromAiSdkModel, fromLangChainTool } from "@geekist/llm-core/adapters";
+import { openai } from "@ai-sdk/openai";
+import { tool as lcTool } from "@langchain/core/tools";
+import { z } from "zod";
 
-const persistentAgent = recipes.agent().defaults({
-  adapters: { memory: redisMemory },
+const langChainTool = lcTool(async ({ city }: { city: string }) => ({ city, summary: "Sunny" }), {
+  name: "get_weather",
+  description: "Weather lookup",
+  schema: z.object({ city: z.string() }),
+});
+
+const agent = recipes.agent().defaults({
+  adapters: {
+    model: fromAiSdkModel(openai("gpt-4o-mini")),
+    tools: [fromLangChainTool(langChainTool)],
+  },
 });
 ```
 
-Now, when you run `activeAgent.run({ input: "Hi", threadId: "session-123" })`, it automatically hydrates its history from Redis.
+== JavaScript
 
-## 3. The Architecture
+```js
+import { recipes } from "@geekist/llm-core";
+import { fromAiSdkModel, fromLangChainTool } from "@geekist/llm-core/adapters";
+import { openai } from "@ai-sdk/openai";
+import { tool as lcTool } from "@langchain/core/tools";
+import { z } from "zod";
 
-The Agent recipe is a sophisticated orchestration of multiple Packs. Notice the strict ordering: Memory loads _before_ Tools are registered, which happens _before_ Planning begins.
+const langChainTool = lcTool(async ({ city }) => ({ city, summary: "Sunny" }), {
+  name: "get_weather",
+  description: "Weather lookup",
+  schema: z.object({ city: z.string() }),
+});
 
-```text
-graph TD
-    A --> B
+const agent = recipes.agent().defaults({
+  adapters: {
+    model: fromAiSdkModel(openai("gpt-4o-mini")),
+    tools: [fromLangChainTool(langChainTool)],
+  },
+});
 ```
 
-## Source Code
+:::
 
-<<< @/../src/recipes/agentic/index.ts
+More on adapter compatibility: [Adapters overview](/reference/adapters).
+
+---
+
+## 4) Diagnostics + trace (observability you always get)
+
+Every run returns **trace** and **diagnostics**. You can also enforce strict diagnostics at runtime.
+
+::: tabs
+== TypeScript
+
+```ts
+// agent handle from above
+const outcome = await agent.run(
+  { input: "Explain our refund policy." },
+  { runtime: { diagnostics: "strict" } },
+);
+
+if (outcome.status === "error") {
+  console.error(outcome.diagnostics);
+}
+
+console.log(outcome.trace);
+```
+
+== JavaScript
+
+```js
+// agent handle from above
+const outcome = await agent.run(
+  { input: "Explain our refund policy." },
+  { runtime: { diagnostics: "strict" } },
+);
+
+if (outcome.status === "error") {
+  console.error(outcome.diagnostics);
+}
+
+console.log(outcome.trace);
+```
+
+:::
+
+Read more: [Runtime -> Diagnostics](/reference/runtime#diagnostics) - [Runtime -> Trace](/reference/runtime#trace)
+
+---
+
+## 5) Composition + plan (power without magic)
+
+Recipes are composable. `.use()` merges packs and defaults; `.plan()` shows the resulting DAG.
+
+::: tabs
+== TypeScript
+
+```ts
+import { recipes } from "@geekist/llm-core";
+
+const supportAgent = recipes.agent().use(recipes.rag()).use(recipes.hitl());
+
+const plan = supportAgent.plan();
+console.log(plan.steps.map((step) => step.id));
+```
+
+== JavaScript
+
+```js
+import { recipes } from "@geekist/llm-core";
+
+const supportAgent = recipes.agent().use(recipes.rag()).use(recipes.hitl());
+
+const plan = supportAgent.plan();
+console.log(plan.steps.map((step) => step.id));
+```
+
+:::
+
+Related: [Plan API](/reference/recipes-api#plan-see-the-graph) - [Packs & Recipes](/reference/packs-and-recipes)
+
+---
+
+## Implementation
+
+- Source: [`src/recipes/agentic/agent/index.ts`](https://github.com/theGeekist/llm-core/blob/main/src/recipes/agentic/agent/index.ts)
+- Packs: [`src/recipes/agentic/planning`](https://github.com/theGeekist/llm-core/blob/main/src/recipes/agentic/planning)
+  - [`tools`](https://github.com/theGeekist/llm-core/blob/main/src/recipes/agentic/tools)
+  - [`finalize`](https://github.com/theGeekist/llm-core/blob/main/src/recipes/agentic/finalize)
+  - [`memory`](https://github.com/theGeekist/llm-core/blob/main/src/recipes/agentic/memory)

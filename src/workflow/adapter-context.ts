@@ -1,4 +1,23 @@
-import type { AdapterBundle, AdapterCallContext, Blob } from "../adapters/types";
+import type {
+  AdapterBundle,
+  AdapterCallContext,
+  RetryConfig,
+  RetryMetadata,
+  RetryPolicy,
+} from "../adapters/types";
+import type { MaybePromise } from "../maybe";
+import { bindFirst } from "../maybe";
+import type { TraceEvent } from "./trace";
+import {
+  type RetryWrapperInput,
+  type RetryAdapterKind,
+  mergeRetryConfig,
+  selectRetryConfig,
+  wrapRetryCallOne,
+  wrapRetryCallZero,
+  wrapRetryCallThree,
+  wrapRetryCallTwo,
+} from "./runtime/retry";
 import { createAdapterDiagnostic, type DiagnosticEntry } from "./diagnostics";
 
 const createContextState = () => {
@@ -11,223 +30,456 @@ const createContextState = () => {
   return { context, diagnostics };
 };
 
-const wrapRequiredOne =
-  <TInput, TResult>(
-    fn: (input: TInput, context?: AdapterCallContext) => TResult,
-    context: AdapterCallContext,
-  ) =>
-  (input: TInput, ctx?: AdapterCallContext) =>
-    fn(input, ctx ?? context);
+type AdapterContextOptions = {
+  retry?: RetryConfig;
+  retryDefaults?: RetryConfig;
+  trace?: TraceEvent[];
+};
+
+type RetryWrapContext = {
+  context: AdapterCallContext;
+  retry?: RetryConfig;
+  retryDefaults?: RetryConfig;
+  trace?: TraceEvent[];
+};
+
+type AdapterFnOne<TInput, TResult> = (
+  input: TInput,
+  context?: AdapterCallContext,
+) => MaybePromise<TResult>;
+
+type AdapterFnZero<TResult> = (context?: AdapterCallContext) => MaybePromise<TResult>;
+
+type AdapterFnTwo<TFirst, TSecond, TResult> = (
+  first: TFirst,
+  second: TSecond,
+  context?: AdapterCallContext,
+) => MaybePromise<TResult>;
+
+type AdapterFnThree<TFirst, TSecond, TThird, TResult> = (
+  first: TFirst,
+  second: TSecond,
+  third: TThird,
+  context?: AdapterCallContext,
+) => MaybePromise<TResult>;
+
+const createRetryWrapContext = (
+  context: AdapterCallContext,
+  options?: AdapterContextOptions,
+): RetryWrapContext => ({
+  context,
+  retry: mergeRetryConfig(options?.retryDefaults, options?.retry),
+  retryDefaults: options?.retryDefaults,
+  trace: options?.trace,
+});
+
+const readRetryPolicy = (retry: RetryConfig | undefined, kind: RetryAdapterKind) =>
+  selectRetryConfig(retry, kind);
+
+const buildRetryWrapperInput = <TArgs extends unknown[], TResult>(
+  input: RetryWrapContext,
+  adapterKind: RetryAdapterKind,
+  method: string,
+  call: (...args: [...TArgs, AdapterCallContext?]) => MaybePromise<TResult>,
+  metadata?: RetryMetadata,
+): RetryWrapperInput<TArgs, TResult> => ({
+  adapterKind,
+  method,
+  call,
+  policy: readRetryPolicy(input.retry, adapterKind),
+  metadata,
+  trace: input.trace,
+  context: input.context,
+});
+
+const wrapRequiredOne = <TInput, TResult>(
+  input: RetryWrapContext,
+  adapterKind: RetryAdapterKind,
+  method: string,
+  fn: AdapterFnOne<TInput, TResult>,
+  metadata?: RetryMetadata,
+) =>
+  bindFirst(
+    wrapRetryCallOne<TInput, TResult>,
+    buildRetryWrapperInput<[TInput], TResult>(input, adapterKind, method, fn, metadata),
+  );
 
 const wrapOptionalOne = <TInput, TResult>(
-  fn: ((input: TInput, context?: AdapterCallContext) => TResult) | undefined,
-  context: AdapterCallContext,
-) => (fn ? (input: TInput, ctx?: AdapterCallContext) => fn(input, ctx ?? context) : undefined);
-
-const wrapRequiredTwo =
-  <TFirst, TSecond, TResult>(
-    fn: (first: TFirst, second: TSecond, context?: AdapterCallContext) => TResult,
-    context: AdapterCallContext,
-  ) =>
-  (first: TFirst, second: TSecond, ctx?: AdapterCallContext) =>
-    fn(first, second, ctx ?? context);
-
-const wrapOptionalTwo = <TFirst, TSecond, TResult>(
-  fn: ((first: TFirst, second: TSecond, context?: AdapterCallContext) => TResult) | undefined,
-  context: AdapterCallContext,
+  input: RetryWrapContext,
+  adapterKind: RetryAdapterKind,
+  method: string,
+  fn: AdapterFnOne<TInput, TResult> | undefined,
+  metadata?: RetryMetadata,
 ) =>
   fn
-    ? (first: TFirst, second: TSecond, ctx?: AdapterCallContext) =>
-        fn(first, second, ctx ?? context)
+    ? bindFirst(
+        wrapRetryCallOne<TInput, TResult>,
+        buildRetryWrapperInput<[TInput], TResult>(input, adapterKind, method, fn, metadata),
+      )
+    : undefined;
+
+const wrapRequiredZero = <TResult>(
+  input: RetryWrapContext,
+  adapterKind: RetryAdapterKind,
+  method: string,
+  fn: AdapterFnZero<TResult>,
+  metadata?: RetryMetadata,
+) =>
+  bindFirst(
+    wrapRetryCallZero<TResult>,
+    buildRetryWrapperInput<[], TResult>(input, adapterKind, method, fn, metadata),
+  );
+
+const wrapRequiredTwo = <TFirst, TSecond, TResult>(
+  input: RetryWrapContext,
+  adapterKind: RetryAdapterKind,
+  method: string,
+  fn: AdapterFnTwo<TFirst, TSecond, TResult>,
+  metadata?: RetryMetadata,
+) =>
+  bindFirst(
+    wrapRetryCallTwo<TFirst, TSecond, TResult>,
+    buildRetryWrapperInput<[TFirst, TSecond], TResult>(input, adapterKind, method, fn, metadata),
+  );
+
+const wrapRequiredThree = <TFirst, TSecond, TThird, TResult>(
+  input: RetryWrapContext,
+  adapterKind: RetryAdapterKind,
+  method: string,
+  fn: AdapterFnThree<TFirst, TSecond, TThird, TResult>,
+  metadata?: RetryMetadata,
+) =>
+  bindFirst(
+    wrapRetryCallThree<TFirst, TSecond, TThird, TResult>,
+    buildRetryWrapperInput<[TFirst, TSecond, TThird], TResult>(
+      input,
+      adapterKind,
+      method,
+      fn,
+      metadata,
+    ),
+  );
+
+const wrapOptionalTwo = <TFirst, TSecond, TResult>(
+  input: RetryWrapContext,
+  adapterKind: RetryAdapterKind,
+  method: string,
+  fn: AdapterFnTwo<TFirst, TSecond, TResult> | undefined,
+  metadata?: RetryMetadata,
+) =>
+  fn
+    ? bindFirst(
+        wrapRetryCallTwo<TFirst, TSecond, TResult>,
+        buildRetryWrapperInput<[TFirst, TSecond], TResult>(
+          input,
+          adapterKind,
+          method,
+          fn,
+          metadata,
+        ),
+      )
     : undefined;
 
 const wrapOptionalThree = <TFirst, TSecond, TThird, TResult>(
-  fn:
-    | ((first: TFirst, second: TSecond, third: TThird, context?: AdapterCallContext) => TResult)
-    | undefined,
-  context: AdapterCallContext,
+  input: RetryWrapContext,
+  adapterKind: RetryAdapterKind,
+  method: string,
+  fn: AdapterFnThree<TFirst, TSecond, TThird, TResult> | undefined,
+  metadata?: RetryMetadata,
 ) =>
   fn
-    ? (first: TFirst, second: TSecond, third: TThird, ctx?: AdapterCallContext) =>
-        fn(first, second, third, ctx ?? context)
+    ? bindFirst(
+        wrapRetryCallThree<TFirst, TSecond, TThird, TResult>,
+        buildRetryWrapperInput<[TFirst, TSecond, TThird], TResult>(
+          input,
+          adapterKind,
+          method,
+          fn,
+          metadata,
+        ),
+      )
     : undefined;
 
-const wrapEmbedder = (embedder: AdapterBundle["embedder"], context: AdapterCallContext) => {
+const canRetryStream = (policy?: RetryPolicy, metadata?: RetryMetadata) =>
+  !!policy && metadata?.restartable === true;
+
+const wrapRetryStream = <TInput, TResult>(
+  input: RetryWrapContext,
+  adapterKind: RetryAdapterKind,
+  method: string,
+  stream: AdapterFnOne<TInput, TResult> | undefined,
+  metadata: RetryMetadata | undefined,
+  policy: RetryPolicy | undefined,
+) =>
+  stream && canRetryStream(policy, metadata)
+    ? wrapRequiredOne(input, adapterKind, method, stream, metadata)
+    : stream;
+
+const wrapEmbedder = (embedder: AdapterBundle["embedder"], input: RetryWrapContext) => {
   if (!embedder) {
     return undefined;
   }
+  const metadata = embedder.metadata?.retry;
   return {
     ...embedder,
-    embed: wrapRequiredOne(embedder.embed, context),
-    embedMany: wrapOptionalOne(embedder.embedMany, context),
+    embed: wrapRequiredOne(input, "embedder", "embed", embedder.embed, metadata),
+    embedMany: wrapOptionalOne(input, "embedder", "embedMany", embedder.embedMany, metadata),
   };
 };
 
-const wrapImage = (image: AdapterBundle["image"], context: AdapterCallContext) => {
+const wrapImage = (image: AdapterBundle["image"], input: RetryWrapContext) => {
   if (!image) {
     return undefined;
   }
+  const metadata = image.metadata?.retry;
   return {
     ...image,
-    generate: wrapRequiredOne(image.generate, context),
+    generate: wrapRequiredOne(input, "image", "generate", image.generate, metadata),
   };
 };
 
-const wrapRetriever = (retriever: AdapterBundle["retriever"], context: AdapterCallContext) => {
+const wrapRetriever = (retriever: AdapterBundle["retriever"], input: RetryWrapContext) => {
   if (!retriever) {
     return undefined;
   }
+  const metadata = retriever.metadata?.retry;
   return {
     ...retriever,
-    retrieve: wrapRequiredOne(retriever.retrieve, context),
+    retrieve: wrapRequiredOne(input, "retriever", "retrieve", retriever.retrieve, metadata),
   };
 };
 
-const wrapReranker = (reranker: AdapterBundle["reranker"], context: AdapterCallContext) => {
+const wrapReranker = (reranker: AdapterBundle["reranker"], input: RetryWrapContext) => {
   if (!reranker) {
     return undefined;
   }
+  const metadata = reranker.metadata?.retry;
   return {
     ...reranker,
-    rerank: wrapRequiredTwo(reranker.rerank, context),
+    rerank: wrapRequiredTwo(input, "reranker", "rerank", reranker.rerank, metadata),
   };
 };
 
-const wrapTextSplitter = (splitter: AdapterBundle["textSplitter"], context: AdapterCallContext) => {
+const wrapTextSplitter = (splitter: AdapterBundle["textSplitter"], input: RetryWrapContext) => {
   if (!splitter) {
     return undefined;
   }
+  const metadata = splitter.metadata?.retry;
   return {
     ...splitter,
-    split: wrapRequiredOne(splitter.split, context),
-    splitBatch: wrapOptionalOne(splitter.splitBatch, context),
-    splitWithMetadata: wrapOptionalOne(splitter.splitWithMetadata, context),
+    split: wrapRequiredOne(input, "textSplitter", "split", splitter.split, metadata),
+    splitBatch: wrapOptionalOne(input, "textSplitter", "splitBatch", splitter.splitBatch, metadata),
+    splitWithMetadata: wrapOptionalOne(
+      input,
+      "textSplitter",
+      "splitWithMetadata",
+      splitter.splitWithMetadata,
+      metadata,
+    ),
   };
 };
 
-const wrapOutputParser = (
-  outputParser: AdapterBundle["outputParser"],
-  context: AdapterCallContext,
-) => {
+const wrapOutputParser = (outputParser: AdapterBundle["outputParser"], input: RetryWrapContext) => {
   if (!outputParser) {
     return undefined;
   }
+  const metadata = outputParser.metadata?.retry;
   return {
     ...outputParser,
-    parse: wrapRequiredOne(outputParser.parse, context),
+    parse: wrapRequiredOne(input, "outputParser", "parse", outputParser.parse, metadata),
     formatInstructions: outputParser.formatInstructions,
   };
 };
 
-const wrapTransformer = (
-  transformer: AdapterBundle["transformer"],
-  context: AdapterCallContext,
-) => {
-  if (!transformer) {
+const wrapModel = (model: AdapterBundle["model"], input: RetryWrapContext) => {
+  if (!model) {
     return undefined;
   }
+  const metadata = model.metadata?.retry;
+  const policy = readRetryPolicy(input.retry, "model");
+  const wrappedStream = wrapRetryStream(input, "model", "stream", model.stream, metadata, policy);
   return {
-    ...transformer,
-    transform: wrapRequiredOne(transformer.transform, context),
+    ...model,
+    generate: wrapRequiredOne(input, "model", "generate", model.generate, metadata),
+    stream: wrappedStream,
   };
 };
 
-const wrapStorage = (storage: AdapterBundle["storage"], context: AdapterCallContext) => {
+const wrapLoader = (loader: AdapterBundle["loader"], input: RetryWrapContext) => {
+  if (!loader) {
+    return undefined;
+  }
+  const metadata = loader.metadata?.retry;
+  return {
+    ...loader,
+    load: wrapRequiredZero(input, "loader", "load", loader.load, metadata),
+  };
+};
+
+const wrapTransformer = (transformer: AdapterBundle["transformer"], input: RetryWrapContext) => {
+  if (!transformer) {
+    return undefined;
+  }
+  const metadata = transformer.metadata?.retry;
+  return {
+    ...transformer,
+    transform: wrapRequiredOne(input, "transformer", "transform", transformer.transform, metadata),
+  };
+};
+
+const wrapStorage = (storage: AdapterBundle["storage"], input: RetryWrapContext) => {
   if (!storage) {
     return undefined;
   }
   return {
     ...storage,
-    get: wrapRequiredOne(storage.get, context),
-    put: wrapRequiredTwo(storage.put, context),
-    delete: wrapRequiredOne(storage.delete, context),
-    list: wrapRequiredOne(storage.list, context),
+    get: wrapRequiredOne(input, "storage", "get", storage.get),
+    put: wrapRequiredTwo(input, "storage", "put", storage.put),
+    delete: wrapRequiredOne(input, "storage", "delete", storage.delete),
+    list: wrapRequiredOne(input, "storage", "list", storage.list),
   };
 };
 
-const wrapCache = (cache: AdapterBundle["cache"], context: AdapterCallContext) => {
+const wrapCache = (cache: AdapterBundle["cache"], input: RetryWrapContext) => {
   if (!cache) {
     return undefined;
   }
   return {
     ...cache,
-    get: wrapRequiredOne(cache.get, context),
-    set: (key: string, value: Blob, ttlMs?: number, ctx?: AdapterCallContext) =>
-      cache.set(key, value, ttlMs, ctx ?? context),
-    delete: wrapRequiredOne(cache.delete, context),
+    get: wrapRequiredOne(input, "cache", "get", cache.get),
+    set: wrapRequiredThree(input, "cache", "set", cache.set),
+    delete: wrapRequiredOne(input, "cache", "delete", cache.delete),
   };
 };
 
-const wrapKv = (kv: AdapterBundle["kv"], context: AdapterCallContext) => {
+const wrapKv = (kv: AdapterBundle["kv"], input: RetryWrapContext) => {
   if (!kv) {
     return undefined;
   }
   return {
     ...kv,
-    mget: wrapRequiredOne(kv.mget, context),
-    mset: wrapRequiredOne(kv.mset, context),
-    mdelete: wrapRequiredOne(kv.mdelete, context),
-    list: wrapRequiredOne(kv.list, context),
+    mget: wrapRequiredOne(input, "kv", "mget", kv.mget),
+    mset: wrapRequiredOne(input, "kv", "mset", kv.mset),
+    mdelete: wrapRequiredOne(input, "kv", "mdelete", kv.mdelete),
+    list: wrapRequiredOne(input, "kv", "list", kv.list),
   };
 };
 
-const wrapMemory = (memory: AdapterBundle["memory"], context: AdapterCallContext) => {
+const wrapMemory = (memory: AdapterBundle["memory"], input: RetryWrapContext) => {
   if (!memory) {
     return undefined;
   }
+  const metadata = memory.metadata?.retry;
   return {
     ...memory,
-    append: wrapOptionalTwo(memory.append, context),
-    read: wrapOptionalOne(memory.read, context),
-    summarize: wrapOptionalOne(memory.summarize, context),
-    load: wrapOptionalOne(memory.load, context),
-    save: wrapOptionalThree(memory.save, context),
-    reset: wrapOptionalOne(memory.reset, context),
+    append: wrapOptionalTwo(input, "memory", "append", memory.append, metadata),
+    read: wrapOptionalOne(input, "memory", "read", memory.read, metadata),
+    summarize: wrapOptionalOne(input, "memory", "summarize", memory.summarize, metadata),
+    load: wrapOptionalOne(input, "memory", "load", memory.load, metadata),
+    save: wrapOptionalThree(input, "memory", "save", memory.save, metadata),
+    reset: wrapOptionalOne(input, "memory", "reset", memory.reset, metadata),
   };
 };
 
-const wrapSpeech = (speech: AdapterBundle["speech"], context: AdapterCallContext) => {
+const wrapSpeech = (speech: AdapterBundle["speech"], input: RetryWrapContext) => {
   if (!speech) {
     return undefined;
   }
+  const metadata = speech.metadata?.retry;
   return {
     ...speech,
-    generate: wrapRequiredOne(speech.generate, context),
+    generate: wrapRequiredOne(input, "speech", "generate", speech.generate, metadata),
   };
 };
 
 const wrapTranscription = (
   transcription: AdapterBundle["transcription"],
-  context: AdapterCallContext,
+  input: RetryWrapContext,
 ) => {
   if (!transcription) {
     return undefined;
   }
+  const metadata = transcription.metadata?.retry;
   return {
     ...transcription,
-    generate: wrapRequiredOne(transcription.generate, context),
+    generate: wrapRequiredOne(input, "transcription", "generate", transcription.generate, metadata),
   };
 };
 
-const wrapVectorStore = (store: AdapterBundle["vectorStore"], context: AdapterCallContext) => {
+const wrapVectorStore = (store: AdapterBundle["vectorStore"], input: RetryWrapContext) => {
   if (!store) {
     return undefined;
   }
+  const metadata = store.metadata?.retry;
   return {
     ...store,
-    upsert: wrapRequiredOne(store.upsert, context),
-    delete: wrapRequiredOne(store.delete, context),
+    upsert: wrapRequiredOne(input, "vectorStore", "upsert", store.upsert, metadata),
+    delete: wrapRequiredOne(input, "vectorStore", "delete", store.delete, metadata),
   };
 };
 
-const wrapTools = (tools: AdapterBundle["tools"], context: AdapterCallContext) => {
+const wrapQueryEngine = (engine: AdapterBundle["queryEngine"], input: RetryWrapContext) => {
+  if (!engine) {
+    return undefined;
+  }
+  const metadata = engine.metadata?.retry;
+  const policy = readRetryPolicy(input.retry, "queryEngine");
+  const wrappedStream = wrapRetryStream(
+    input,
+    "queryEngine",
+    "stream",
+    engine.stream,
+    metadata,
+    policy,
+  );
+  return {
+    ...engine,
+    query: wrapRequiredOne(input, "queryEngine", "query", engine.query, metadata),
+    stream: wrappedStream,
+  };
+};
+
+const wrapResponseSynthesizer = (
+  synthesizer: AdapterBundle["responseSynthesizer"],
+  input: RetryWrapContext,
+) => {
+  if (!synthesizer) {
+    return undefined;
+  }
+  const metadata = synthesizer.metadata?.retry;
+  const policy = readRetryPolicy(input.retry, "responseSynthesizer");
+  const wrappedStream = wrapRetryStream(
+    input,
+    "responseSynthesizer",
+    "stream",
+    synthesizer.stream,
+    metadata,
+    policy,
+  );
+  return {
+    ...synthesizer,
+    synthesize: wrapRequiredOne(
+      input,
+      "responseSynthesizer",
+      "synthesize",
+      synthesizer.synthesize,
+      metadata,
+    ),
+    stream: wrappedStream,
+  };
+};
+
+const wrapTools = (tools: AdapterBundle["tools"], input: RetryWrapContext) => {
   if (!tools) {
     return undefined;
   }
   return tools.map((tool) => ({
     ...tool,
     execute: tool.execute
-      ? (input: unknown, ctx?: AdapterCallContext) => tool.execute?.(input, ctx ?? context)
+      ? bindFirst(
+          wrapRetryCallOne,
+          buildRetryWrapperInput(input, "tools", "execute", tool.execute, tool.metadata?.retry),
+        )
       : undefined,
   }));
 };
@@ -237,21 +489,29 @@ export const createAdapterContext = () => createContextState();
 export const attachAdapterContext = (
   adapters: AdapterBundle,
   context: AdapterCallContext,
-): AdapterBundle => ({
-  ...adapters,
-  embedder: wrapEmbedder(adapters.embedder, context),
-  image: wrapImage(adapters.image, context),
-  retriever: wrapRetriever(adapters.retriever, context),
-  reranker: wrapReranker(adapters.reranker, context),
-  textSplitter: wrapTextSplitter(adapters.textSplitter, context),
-  outputParser: wrapOutputParser(adapters.outputParser, context),
-  transformer: wrapTransformer(adapters.transformer, context),
-  storage: wrapStorage(adapters.storage, context),
-  cache: wrapCache(adapters.cache, context),
-  kv: wrapKv(adapters.kv, context),
-  memory: wrapMemory(adapters.memory, context),
-  speech: wrapSpeech(adapters.speech, context),
-  transcription: wrapTranscription(adapters.transcription, context),
-  vectorStore: wrapVectorStore(adapters.vectorStore, context),
-  tools: wrapTools(adapters.tools, context),
-});
+  options?: AdapterContextOptions,
+): AdapterBundle => {
+  const retryContext = createRetryWrapContext(context, options);
+  return {
+    ...adapters,
+    model: wrapModel(adapters.model, retryContext),
+    embedder: wrapEmbedder(adapters.embedder, retryContext),
+    image: wrapImage(adapters.image, retryContext),
+    retriever: wrapRetriever(adapters.retriever, retryContext),
+    reranker: wrapReranker(adapters.reranker, retryContext),
+    textSplitter: wrapTextSplitter(adapters.textSplitter, retryContext),
+    outputParser: wrapOutputParser(adapters.outputParser, retryContext),
+    loader: wrapLoader(adapters.loader, retryContext),
+    transformer: wrapTransformer(adapters.transformer, retryContext),
+    storage: wrapStorage(adapters.storage, retryContext),
+    cache: wrapCache(adapters.cache, retryContext),
+    kv: wrapKv(adapters.kv, retryContext),
+    memory: wrapMemory(adapters.memory, retryContext),
+    speech: wrapSpeech(adapters.speech, retryContext),
+    transcription: wrapTranscription(adapters.transcription, retryContext),
+    vectorStore: wrapVectorStore(adapters.vectorStore, retryContext),
+    queryEngine: wrapQueryEngine(adapters.queryEngine, retryContext),
+    responseSynthesizer: wrapResponseSynthesizer(adapters.responseSynthesizer, retryContext),
+    tools: wrapTools(adapters.tools, retryContext),
+  };
+};

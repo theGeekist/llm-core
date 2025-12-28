@@ -18,8 +18,9 @@ Register a retriever without touching registry types:
 
 ```ts
 import { recipes } from "#recipes";
+import type { Retriever } from "#adapters";
 
-const retriever = {
+const retriever: Retriever = {
   retrieve: () => ({ documents: [] }),
 };
 
@@ -46,7 +47,10 @@ Custom constructs (e.g., `mcp`) go into constructs:
 == TypeScript
 
 ```ts
+import type { AdapterPlugin } from "#adapters";
+
 const plugin = Adapter.register("custom.mcp", "mcp", { client });
+plugin satisfies AdapterPlugin;
 ```
 
 == JavaScript
@@ -77,11 +81,14 @@ Vector stores let you ingest or delete embeddings without reaching for raw SDKs:
 
 ```ts
 import { Adapter } from "#adapters";
+import type { VectorStore } from "#adapters";
 
-const vectorStore = Adapter.vectorStore("custom.vectorStore", {
+const store: VectorStore = {
   upsert: ({ documents }) => ({ ids: documents.map((doc) => doc.id ?? "new") }),
   delete: ({ ids }) => console.log(ids),
-});
+};
+
+const vectorStore = Adapter.vectorStore("custom.vectorStore", store);
 ```
 
 == JavaScript
@@ -106,9 +113,10 @@ Indexers manage the synchronization between your source documents and your vecto
 
 ```ts
 import { Adapter, fromLangChainIndexing } from "#adapters";
+import type { Indexing } from "#adapters";
 
 // Note: Requires a raw LangChain vector store instance
-const indexing = Adapter.indexing(
+const indexing: Indexing = Adapter.indexing(
   "custom.indexing",
   fromLangChainIndexing(recordManager, langChainVectorStore),
 );
@@ -136,8 +144,12 @@ Query engines return final answers from a retriever + synthesizer pipeline:
 
 ```ts
 import { Adapter, fromLlamaIndexQueryEngine } from "#adapters";
+import type { QueryEngine } from "#adapters";
 
-const queryEngine = Adapter.queryEngine("custom.queryEngine", fromLlamaIndexQueryEngine(engine));
+const queryEngine: QueryEngine = Adapter.queryEngine(
+  "custom.queryEngine",
+  fromLlamaIndexQueryEngine(engine),
+);
 ```
 
 == JavaScript
@@ -159,8 +171,9 @@ Response synthesizers focus on combining retrieved nodes into an answer:
 
 ```ts
 import { Adapter, fromLlamaIndexResponseSynthesizer } from "#adapters";
+import type { ResponseSynthesizer } from "#adapters";
 
-const synthesizer = Adapter.responseSynthesizer(
+const synthesizer: ResponseSynthesizer = Adapter.responseSynthesizer(
   "custom.responseSynthesizer",
   fromLlamaIndexResponseSynthesizer(synthesizer),
 );
@@ -188,9 +201,10 @@ AI SDK exposes image, speech, and transcription models. Wrap them directly:
 
 ```ts
 import { Adapter, fromAiSdkSpeechModel } from "#adapters";
+import type { SpeechModel } from "#adapters";
 import { openai } from "@ai-sdk/openai";
 
-const speech = Adapter.speech(
+const speech: SpeechModel = Adapter.speech(
   "custom.speech",
   fromAiSdkSpeechModel(openai.speech("gpt-4o-mini-tts")),
 );
@@ -222,10 +236,14 @@ All other events are emitted as custom events.
 
 ```ts
 import { Adapter, fromLangChainCallbackHandler } from "#adapters";
+import type { AdapterTraceSink } from "#adapters";
 import { RunCollectorCallbackHandler } from "@langchain/core/tracers/run_collector";
 
 const handler = new RunCollectorCallbackHandler();
-const trace = Adapter.trace("custom.trace", fromLangChainCallbackHandler(handler));
+const trace: AdapterTraceSink = Adapter.trace(
+  "custom.trace",
+  fromLangChainCallbackHandler(handler),
+);
 ```
 
 == JavaScript
@@ -249,6 +267,7 @@ If you need explicit provider resolution, use the registry directly:
 
 ```ts
 import { createRegistryFromDefaults } from "#adapters";
+import type { Model } from "#adapters";
 
 const registry = createRegistryFromDefaults();
 registry.registerProvider({
@@ -256,7 +275,7 @@ registry.registerProvider({
   providerKey: "custom",
   id: "custom:model",
   priority: 10,
-  factory: () => myModelAdapter,
+  factory: () => myModelAdapter as Model,
 });
 ```
 

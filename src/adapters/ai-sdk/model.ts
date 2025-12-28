@@ -29,6 +29,10 @@ import { ModelCallHelper, ModelUsageHelper } from "../modeling";
 import { validateModelCall } from "../model-validation";
 import { toModelStreamEvents, toStreamErrorEvents } from "./stream";
 import { warnDiagnostic } from "../utils";
+import { readCandidateProp, readRetryPolicyFromCandidates } from "../retry-metadata";
+
+const readAiSdkRetryPolicy = (model: LanguageModel) =>
+  readRetryPolicyFromCandidates([model, readCandidateProp(model, "settings")]);
 
 const toModelUsage = (usage?: {
   inputTokens?: number;
@@ -318,5 +322,10 @@ export function fromAiSdkModel(model: LanguageModel): Model {
     );
   }
 
-  return { generate, stream };
+  const retryPolicy = readAiSdkRetryPolicy(model);
+  return {
+    generate,
+    stream,
+    metadata: retryPolicy ? { retry: { policy: retryPolicy } } : undefined,
+  };
 }

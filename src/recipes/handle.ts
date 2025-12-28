@@ -1,7 +1,7 @@
-import type { AdapterBundle } from "../adapters/types";
 import { bindFirst, type MaybePromise } from "../maybe";
-import type { DiagnosticEntry } from "../workflow/diagnostics";
 import { getRecipe } from "../workflow/recipe-registry";
+import type { AdapterBundle } from "../adapters/types";
+import type { DiagnosticEntry } from "../workflow/diagnostics";
 import type { ArtefactOf, Outcome, RecipeName, RunInputOf, Runtime } from "../workflow/types";
 import {
   createFlowRuntime,

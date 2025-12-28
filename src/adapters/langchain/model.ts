@@ -18,6 +18,16 @@ import { bindFirst, maybeMap } from "../../maybe";
 import { ModelUsageHelper } from "../modeling";
 import { toLangChainStreamEvents } from "./stream";
 import { warnDiagnostic } from "../utils";
+import { readCandidateProp, readRetryPolicyFromCandidates } from "../retry-metadata";
+
+const readLangChainRetryPolicy = (model: BaseChatModel) =>
+  readRetryPolicyFromCandidates([
+    model,
+    readCandidateProp(model, "clientConfig"),
+    readCandidateProp(model, "client"),
+    readCandidateProp(model, "kwargs"),
+    readCandidateProp(model, "lc_kwargs"),
+  ]);
 
 const invokeModel = (
   model: BaseChatModel,
@@ -120,5 +130,10 @@ export function fromLangChainModel(model: BaseChatModel): Model {
     return maybeMap(mapStreamEvents(state), streamModel(model, state));
   }
 
-  return { generate, stream };
+  const retryPolicy = readLangChainRetryPolicy(model);
+  return {
+    generate,
+    stream,
+    metadata: retryPolicy ? { retry: { policy: retryPolicy } } : undefined,
+  };
 }

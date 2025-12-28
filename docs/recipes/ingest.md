@@ -1,36 +1,199 @@
-# Tutorial: The Data Pipeline (Ingest)
+# Recipe: Ingest (ETL for RAG)
 
-Before you can "Chat with your Data" (RAG), you have to **Ingest** it.
-This is usually the messy part of AI engineering. You have file formats, dirty text, token limits, and database schemas.
+> [!NOTE] > **Goal**: Convert raw sources into vector records, with clear stages and observable failures.
 
-The **Ingest Recipe** standardizes this ETL (Extract, Transform, Load) process.
+Ingest is a classic ETL flow (load -> split -> embed -> index) built as a **recipe**.
+It is designed for repeatable ingestion and incremental re-runs.
 
-## 1. The Pipeline
+---
 
-The recipe enforces a clean, 4-stage pipeline.
+## 1) Quick start (loader + splitter + embedder + store)
 
-```text
-graph TD
-    A --> B
+::: tabs
+== TypeScript
+
+```ts
+import { recipes } from "@geekist/llm-core";
+import {
+  fromLangChainLoader,
+  fromLangChainTextSplitter,
+  fromAiSdkEmbeddings,
+  fromLangChainVectorStore,
+} from "@geekist/llm-core/adapters";
+import { openai } from "@ai-sdk/openai";
+import { PDFLoader } from "langchain/document_loaders/fs/pdf";
+import { RecursiveCharacterTextSplitter } from "@langchain/textsplitters";
+import { OpenAIEmbeddings } from "@langchain/openai";
+import { MemoryVectorStore } from "langchain/vectorstores/memory";
+
+const loader = fromLangChainLoader(new PDFLoader("./my-book.pdf"));
+const textSplitter = fromLangChainTextSplitter(
+  new RecursiveCharacterTextSplitter({ chunkSize: 800, chunkOverlap: 200 }),
+);
+const embedder = fromAiSdkEmbeddings(openai.embedding("text-embedding-3-small"));
+const vectorStore = fromLangChainVectorStore(
+  await MemoryVectorStore.fromTexts(["seed"], [{ id: "seed" }], new OpenAIEmbeddings()),
+);
+
+const ingest = recipes.ingest().defaults({
+  adapters: { loader, textSplitter, embedder, vectorStore },
+});
+
+const outcome = await ingest.run({
+  sourceId: "docs:book",
+  documents: [{ id: "intro", text: "Hello world." }],
+});
 ```
 
-## 2. Choosing your Adapters
+== JavaScript
 
-Just like the Chat recipe, you verify the logic by plugging in Adapters.
+```js
+import { recipes } from "@geekist/llm-core";
+import {
+  fromLangChainLoader,
+  fromLangChainTextSplitter,
+  fromAiSdkEmbeddings,
+  fromLangChainVectorStore,
+} from "@geekist/llm-core/adapters";
+import { openai } from "@ai-sdk/openai";
+import { PDFLoader } from "langchain/document_loaders/fs/pdf";
+import { RecursiveCharacterTextSplitter } from "@langchain/textsplitters";
+import { OpenAIEmbeddings } from "@langchain/openai";
+import { MemoryVectorStore } from "langchain/vectorstores/memory";
 
-- **Loader**: Use `fromLangChainLoader` to read PDFs, CSVs, or Notion.
-- **Splitter**: Use a standard `RecursiveCharacterTextSplitter`.
-- **Embedder**: `fromAiSdkEmbeddings` (e.g. OpenAI `text-embedding-3`).
-- **VectorStore**: The destination (Pinecone, Chroma, Postgres).
+const loader = fromLangChainLoader(new PDFLoader("./my-book.pdf"));
+const textSplitter = fromLangChainTextSplitter(
+  new RecursiveCharacterTextSplitter({ chunkSize: 800, chunkOverlap: 200 }),
+);
+const embedder = fromAiSdkEmbeddings(openai.embedding("text-embedding-3-small"));
+const vectorStore = fromLangChainVectorStore(
+  await MemoryVectorStore.fromTexts(["seed"], [{ id: "seed" }], new OpenAIEmbeddings()),
+);
 
-## 3. The "Sync" Problem
+const ingest = recipes.ingest().defaults({
+  adapters: { loader, textSplitter, embedder, vectorStore },
+});
 
-The most important part of this recipe is the **Indexer** step.
-Naive pipelines just add data. They never delete.
+const outcome = await ingest.run({
+  sourceId: "docs:book",
+  documents: [{ id: "intro", text: "Hello world." }],
+});
+```
 
-If you delete a file from your folder, does it disappear from your Vector DB?
-**With this recipe, yes.** The Indexer tracks what it has seen and automatically cleans up "ghost" records.
+:::
 
-## Source Code
+---
 
-<<< @/../src/recipes/ingest/index.ts
+## 2) Configure per-pack defaults (typed)
+
+Ingest exposes a single config for pack-level defaults. Use it when you want stable wiring
+and only override on a per-run basis.
+
+::: tabs
+== TypeScript
+
+```ts
+import { recipes } from "@geekist/llm-core";
+import type { IngestConfig } from "@geekist/llm-core/recipes";
+
+// Reuse loader/textSplitter/embedder/vectorStore from the quick start.
+const ingest = recipes.ingest().configure({
+  defaults: {
+    adapters: { loader, textSplitter, embedder, vectorStore },
+  },
+} satisfies IngestConfig);
+```
+
+== JavaScript
+
+```js
+import { recipes } from "@geekist/llm-core";
+
+// Reuse loader/textSplitter/embedder/vectorStore from the quick start.
+const ingest = recipes.ingest().configure({
+  defaults: {
+    adapters: { loader, textSplitter, embedder, vectorStore },
+  },
+});
+```
+
+:::
+
+Related: [Recipe handles](/reference/recipes-api#recipe-handles-the-public-surface) - [Adapters overview](/reference/adapters) - [Runtime -> Diagnostics](/reference/runtime#diagnostics)
+
+---
+
+## 3) Mix-and-match adapters
+
+Ingest is adapter-agnostic: you can load with LangChain, embed with AI SDK, and index with
+any supported vector store adapter.
+
+See the supported adapter shapes in [Adapters overview](/reference/adapters).
+
+---
+
+## 4) Diagnostics + trace
+
+Ingest returns full diagnostics and trace on every run. Strict mode turns warnings into failures.
+
+::: tabs
+== TypeScript
+
+```ts
+// ingest handle from above
+const outcome = await ingest.run(
+  { sourceId: "docs:book", documents: [{ id: "intro", text: "Hello world." }] },
+  { runtime: { diagnostics: "strict" } },
+);
+
+console.log(outcome.diagnostics);
+console.log(outcome.trace);
+```
+
+== JavaScript
+
+```js
+// ingest handle from above
+const outcome = await ingest.run(
+  { sourceId: "docs:book", documents: [{ id: "intro", text: "Hello world." }] },
+  { runtime: { diagnostics: "strict" } },
+);
+
+console.log(outcome.diagnostics);
+console.log(outcome.trace);
+```
+
+:::
+
+---
+
+## 5) Power: reuse + plan
+
+You can inspect the full ETL DAG with `plan()`.
+
+::: tabs
+== TypeScript
+
+```ts
+import { recipes } from "@geekist/llm-core";
+
+const plan = recipes.ingest().plan();
+console.log(plan.steps.map((step) => step.id));
+```
+
+== JavaScript
+
+```js
+import { recipes } from "@geekist/llm-core";
+
+const plan = recipes.ingest().plan();
+console.log(plan.steps.map((step) => step.id));
+```
+
+:::
+
+---
+
+## Implementation
+
+- Source: [`src/recipes/ingest/index.ts`](https://github.com/theGeekist/llm-core/blob/main/src/recipes/ingest/index.ts)

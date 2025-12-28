@@ -40,6 +40,7 @@ export type ImageResult = MediaResultBase & {
 
 export type ImageModel = {
   generate(call: ImageCall, context?: AdapterCallContext): MaybePromise<ImageResult>;
+  metadata?: AdapterMetadata;
 };
 
 export type SpeechCall = ProviderCallMeta & {
@@ -57,6 +58,7 @@ export type SpeechResult = MediaResultBase & {
 
 export type SpeechModel = {
   generate(call: SpeechCall, context?: AdapterCallContext): MaybePromise<SpeechResult>;
+  metadata?: AdapterMetadata;
 };
 
 export type TranscriptionCall = ProviderCallMeta & {
@@ -81,4 +83,5 @@ export type TranscriptionModel = {
     call: TranscriptionCall,
     context?: AdapterCallContext,
   ): MaybePromise<TranscriptionResult>;
+  metadata?: AdapterMetadata;
 };

@@ -10,8 +10,13 @@ type InterruptPayload = { __interrupt?: InterruptStrategy };
 const isObject = (value: unknown): value is Record<string, unknown> =>
   !!value && typeof value === "object";
 
+const hasInterrupt = (value: Record<string, unknown>) => "__interrupt" in value;
+
 const attachInterrupt = (interrupt: InterruptStrategy, result: unknown) => {
   if (!isObject(result)) {
+    return result;
+  }
+  if (hasInterrupt(result)) {
     return result;
   }
   return { ...result, __interrupt: interrupt };

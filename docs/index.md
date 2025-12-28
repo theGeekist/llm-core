@@ -42,13 +42,37 @@ Define a flow, plug in your adapters, and run it.
 ```ts
 import { recipes } from "@geekist/llm-core/recipes";
 import { fromAiSdkModel } from "@geekist/llm-core/adapters";
+import type { Model } from "@geekist/llm-core/adapters";
 import { openai } from "@ai-sdk/openai";
 
 // 1. Define your recipe (or load a standard one)
 const agent = recipes.agent();
 
 // 2. Plug in your adapters
-const workflow = agent.defaults({ adapters: { model: fromAiSdkModel(openai("gpt-4o")) } }).build();
+const model: Model = fromAiSdkModel(openai("gpt-4o"));
+const workflow = agent.defaults({ adapters: { model } }).build();
+
+// 3. Run it
+const result = await workflow.run({ input: "Build me a React app" });
+
+if (result.status === "ok") {
+  console.log(result.artefact);
+}
+```
+
+== JavaScript
+
+```js
+import { recipes } from "@geekist/llm-core/recipes";
+import { fromAiSdkModel } from "@geekist/llm-core/adapters";
+import { openai } from "@ai-sdk/openai";
+
+// 1. Define your recipe (or load a standard one)
+const agent = recipes.agent();
+
+// 2. Plug in your adapters
+const model = fromAiSdkModel(openai("gpt-4o"));
+const workflow = agent.defaults({ adapters: { model } }).build();
 
 // 3. Run it
 const result = await workflow.run({ input: "Build me a React app" });

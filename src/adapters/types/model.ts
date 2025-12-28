@@ -80,6 +80,7 @@ export type ModelResult = {
 export type Model = {
   generate(call: ModelCall): MaybePromise<ModelResult>;
   stream?(call: ModelCall): MaybePromise<AsyncIterable<ModelStreamEvent>>;
+  metadata?: AdapterMetadata;
 };
 
 export type StreamChunk = {

@@ -1,7 +1,8 @@
 {
   "name": "@geekist/llm-core",
-  "version": "0.1.0",
-  "description": "Composable, dependency-free TypeScript core for LLM workflows and adapters. Clean runtime, high coverage, no heavy framework deps.",
+  "version": "1.0.0",
+  "license": "Apache-2.0",
+  "description": "A compact, vendor-neutral runtime for building and shipping LLM workflows (agents, RAG, ingest, HITL) with deterministic structure, strong typing, and test-first semantics.",
   "keywords": [
     "typescript",
     "javascript",
@@ -44,7 +45,7 @@
   "private": true,
   "scripts": {
     "build": "bun run build:esm && bun run build:cjs && bun run build:types",
-    "build:esm": "bun build ./index.ts ./src/workflow/index.ts ./src/adapters/index.ts ./src/adapters/*/index.ts --outdir dist/esm --root . --sourcemap=external --splitting --format=esm --target=node",
+    "build:esm": "bun build ./index.ts ./src/workflow/index.ts ./src/adapters/index.ts ./src/adapters/*/index.ts --outdir dist/esm --root . --sourcemap=external --splitting --format=esm --target=neutral",
     "build:cjs": "bun build ./index.ts ./src/workflow/index.ts ./src/adapters/index.ts ./src/adapters/*/index.ts --outdir dist/cjs --root . --sourcemap=external --format=cjs --target=node --entry-naming=[dir]/[name].cjs --chunk-naming=[name]-[hash].cjs",
     "build:types": "tsc -p tsconfig.build.json --emitDeclarationOnly",
     "prepare": "git config core.hooksPath .githooks",
@@ -57,6 +58,11 @@
     "docs:preview": "vitepress preview docs",
     "lint": "eslint \"**/*.{ts,tsx,js,jsx}\"",
     "lint:fix": "eslint \"**/*.{ts,tsx,js,jsx}\" --fix",
+    "release:check": "bun run lint && bun run typecheck && bun run test",
+    "release:build": "bun run release:check && bun run build",
+    "publish:docs": "bun run docs:build",
+    "publish:npm": "bun run build && bun publish",
+    "publish:all": "bun run publish:npm && bun run publish:docs",
     "test": "bun test",
     "test:coverage": "bun test --coverage --coverage-reporter=text",
     "typecheck": "tsc --noEmit",
@@ -91,11 +97,13 @@
     "langchain": "^1.2.3",
     "llamaindex": "^0.12.1",
     "markdown-it-mermaid": "^0.2.5",
+    "mermaid": "^11.12.2",
     "ollama": "^0.6.3",
     "ollama-ai-provider-v2": "^1.5.5",
     "openai": "^6.15.0",
     "prettier": "3.3.3",
     "vitepress": "^1.6.4",
+    "vitepress-plugin-mermaid": "^2.0.17",
     "vitepress-plugin-tabs": "^0.7.3",
     "zod": "^4.2.1",
     "zod-to-json-schema": "^3.25.0"
@@ -104,53 +112,62 @@
     "#workflow": "./src/workflow/index.ts",
     "#workflow/*": "./src/workflow/*.ts",
     "#adapters": "./src/adapters/index.ts",
-    "#adapters/*": "./src/adapters/*/index.ts"
+    "#adapters/*": "./src/adapters/*/index.ts",
+    "#recipes": "./src/recipes/index.ts"
   },
   "exports": {
     ".": {
       "types": "./dist/types/index.d.ts",
+      "browser": "./dist/esm/index.js",
       "import": "./dist/esm/index.js",
       "require": "./dist/cjs/index.cjs",
       "default": "./dist/esm/index.js"
     },
     "./workflow": {
       "types": "./dist/types/src/workflow/index.d.ts",
+      "browser": "./dist/esm/src/workflow/index.js",
       "import": "./dist/esm/src/workflow/index.js",
       "require": "./dist/cjs/src/workflow/index.cjs",
       "default": "./dist/esm/src/workflow/index.js"
     },
     "./adapters": {
       "types": "./dist/types/src/adapters/index.d.ts",
+      "browser": "./dist/esm/src/adapters/index.js",
       "import": "./dist/esm/src/adapters/index.js",
       "require": "./dist/cjs/src/adapters/index.cjs",
       "default": "./dist/esm/src/adapters/index.js"
     },
     "./adapters/ai-sdk": {
       "types": "./dist/types/src/adapters/ai-sdk/index.d.ts",
+      "browser": "./dist/esm/src/adapters/ai-sdk/index.js",
       "import": "./dist/esm/src/adapters/ai-sdk/index.js",
       "require": "./dist/cjs/src/adapters/ai-sdk/index.cjs",
       "default": "./dist/esm/src/adapters/ai-sdk/index.js"
     },
     "./adapters/langchain": {
       "types": "./dist/types/src/adapters/langchain/index.d.ts",
+      "browser": "./dist/esm/src/adapters/langchain/index.js",
       "import": "./dist/esm/src/adapters/langchain/index.js",
       "require": "./dist/cjs/src/adapters/langchain/index.cjs",
       "default": "./dist/esm/src/adapters/langchain/index.js"
     },
     "./adapters/llamaindex": {
       "types": "./dist/types/src/adapters/llamaindex/index.d.ts",
+      "browser": "./dist/esm/src/adapters/llamaindex/index.js",
       "import": "./dist/esm/src/adapters/llamaindex/index.js",
       "require": "./dist/cjs/src/adapters/llamaindex/index.cjs",
       "default": "./dist/esm/src/adapters/llamaindex/index.js"
     },
     "./adapters/primitives": {
       "types": "./dist/types/src/adapters/primitives/index.d.ts",
+      "browser": "./dist/esm/src/adapters/primitives/index.js",
       "import": "./dist/esm/src/adapters/primitives/index.js",
       "require": "./dist/cjs/src/adapters/primitives/index.cjs",
       "default": "./dist/esm/src/adapters/primitives/index.js"
     },
     "./recipes": {
       "types": "./dist/types/src/recipes/index.d.ts",
+      "browser": "./dist/esm/src/recipes/index.js",
       "import": "./dist/esm/src/recipes/index.js",
       "require": "./dist/cjs/src/recipes/index.cjs",
       "default": "./dist/esm/src/recipes/index.js"

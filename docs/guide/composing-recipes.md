@@ -16,6 +16,15 @@ const workflow = recipes
   .use(recipes.hitl()); // Pause for approval
 ```
 
+```js
+import { recipes } from "#recipes";
+
+const workflow = recipes
+  .agent()
+  .use(recipes.rag()) // Retrieval + synthesis
+  .use(recipes.hitl()); // Pause for approval
+```
+
 > [!TIP]
 > See the **[Packs & Recipes Reference](/reference/packs-and-recipes)** for the full API on `.step()`, `.priority()`, and `.override()`.
 
@@ -34,6 +43,15 @@ You compose recipes via the unified handle.
 import { recipes } from "#recipes";
 
 const agent = recipes.agent();
+type AgentRecipeConfig = Parameters<typeof agent.configure>[0];
+```
+
+== JavaScript
+
+```js
+import { recipes } from "#recipes";
+
+const agent = recipes.agent();
 ```
 
 :::
@@ -46,6 +64,19 @@ The standard agent uses a complex `PlanningPack`. Let's override it with a custo
 == TypeScript
 
 ```ts
+import { recipes } from "#recipes";
+
+const agent = recipes
+  .agent()
+  .use(recipes["agent.planning"]()) // overrides the default planning pack
+  .build();
+
+type Runtime = Parameters<typeof agent.run>[1];
+```
+
+== JavaScript
+
+```js
 import { recipes } from "#recipes";
 
 const agent = recipes
@@ -73,6 +104,20 @@ Steps are executed based on a strict hierarchy:
 == TypeScript
 
 ```ts
+import { recipes } from "#recipes";
+
+type RecipePlan = {
+  name: string;
+  steps: Array<{ id: string; dependsOn: string[] }>;
+};
+
+const plan: RecipePlan = recipes.agent().plan();
+console.log(plan.steps);
+```
+
+== JavaScript
+
+```js
 import { recipes } from "#recipes";
 
 const plan = recipes.agent().plan();

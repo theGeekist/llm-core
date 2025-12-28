@@ -110,7 +110,11 @@ const runPipeline = <TOutcome>(
 ): MaybePromise<TOutcome> => {
   const resolvedAdapters = context.deps.toResolvedAdapters(resolution);
   const adapterContext = createAdapterContext();
-  const adaptersWithContext = attachAdapterContext(resolvedAdapters, adapterContext.context);
+  const adaptersWithContext = attachAdapterContext(resolvedAdapters, adapterContext.context, {
+    retryDefaults: context.ctx.runtime?.retryDefaults,
+    retry: context.ctx.runtime?.retry,
+    trace: context.ctx.trace,
+  });
   const adapterDiagnostics = resolution.diagnostics.map(createAdapterDiagnostic);
   const contractDiagnostics = context.deps.readContractDiagnostics(resolvedAdapters);
   const runtimeDiagnostics = adapterDiagnostics.concat(contractDiagnostics);

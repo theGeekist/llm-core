@@ -29,4 +29,5 @@ export type Memory = {
     context?: AdapterCallContext,
   ): MaybePromise<boolean | null>;
   summarize?(threadId: string, context?: AdapterCallContext): MaybePromise<string>;
+  metadata?: AdapterMetadata;
 };

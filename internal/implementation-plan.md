@@ -325,3 +325,7 @@ Goals:
 - Support composable recipe packs and multi-pack flows.
 - Keep adapter swapping intact with defaults + overrides.
 - Maintain deterministic ordering and clear conflict diagnostics.
+
+## Stage 16 — Runtime Policy + Legacy Port (llm-core)
+
+Status: planned. See `internal/stage-16.md`.

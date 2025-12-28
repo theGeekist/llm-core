@@ -95,7 +95,11 @@ const handleResumeResolution = <TArtefact>(
     input.resumeOptions.adapters,
   );
   const adapterContext = createAdapterContext();
-  const adaptersWithContext = attachAdapterContext(mergedAdapters, adapterContext.context);
+  const adaptersWithContext = attachAdapterContext(mergedAdapters, adapterContext.context, {
+    retryDefaults: input.resumeRuntime?.retryDefaults,
+    retry: input.resumeRuntime?.retry,
+    trace: input.deps.trace,
+  });
   const adapterDiagnostics = resolution.diagnostics.map(createAdapterDiagnostic);
   const contractDiagnostics = input.deps.readContractDiagnostics(mergedAdapters);
   const runtimeDiagnostics = adapterDiagnostics.concat(contractDiagnostics);

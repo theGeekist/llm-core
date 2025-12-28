@@ -328,3 +328,4 @@ export function curryK<TFirst, TSecond, TResult>(
   }
   return curryKApply(fn, first as TFirst, second as TSecond);
 }
+export const toArray = (value: string | string[]) => (Array.isArray(value) ? value : [value]);

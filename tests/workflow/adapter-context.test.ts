@@ -5,15 +5,40 @@ import type {
   AdapterCallContext,
   AdapterDiagnostic,
   ImageCall,
+  ModelCall,
+  ModelStreamEvent,
+  QueryStreamEvent,
   SpeechCall,
   TranscriptionCall,
 } from "#adapters";
+import type { RetryConfig } from "#adapters";
 
 const makeReporter = (bucket: AdapterDiagnostic[]) => ({
   report: (diagnostic: AdapterDiagnostic) => {
     bucket.push(diagnostic);
   },
 });
+
+const createEndStream =
+  <TInput>(onCall: () => void) =>
+  (_input: TInput, _context?: AdapterCallContext): AsyncIterable<QueryStreamEvent> => {
+    void _input;
+    void _context;
+    onCall();
+    return (async function* (): AsyncIterable<QueryStreamEvent> {
+      yield { type: "end", timestamp: Date.now() };
+    })();
+  };
+
+const createModelEndStream =
+  (onCall?: () => void) =>
+  (_call: ModelCall): AsyncIterable<ModelStreamEvent> => {
+    void _call;
+    onCall?.();
+    return (async function* (): AsyncIterable<ModelStreamEvent> {
+      yield { type: "end", timestamp: Date.now() };
+    })();
+  };
 
 describe("Workflow adapter context wrappers", () => {
   it("injects the default context into adapter calls", async () => {
@@ -214,5 +239,188 @@ describe("Workflow adapter context wrappers", () => {
 
     expect(diagnostics).toHaveLength(0);
     expect(overrideDiagnostics[0]?.message).toBe("embed");
+  });
+
+  it("retries adapter calls when retry policy is provided", async () => {
+    const { context } = createAdapterContext();
+    let attempts = 0;
+    const adapters: AdapterBundle = {
+      embedder: {
+        embed: () => {
+          attempts += 1;
+          if (attempts < 3) {
+            throw new Error("flaky");
+          }
+          return [0.42];
+        },
+      },
+    };
+    const retry: RetryConfig = {
+      embedder: { maxAttempts: 3, backoffMs: 0 },
+    };
+    const wrapped = attachAdapterContext(adapters, context, { retry, trace: [] });
+    const result = await wrapped.embedder?.embed("hi");
+
+    expect(result).toEqual([0.42]);
+    expect(attempts).toBe(3);
+  });
+
+  it("uses adapter retry metadata when runtime config is missing", async () => {
+    const { context } = createAdapterContext();
+    let attempts = 0;
+    const adapters: AdapterBundle = {
+      embedder: {
+        embed: () => {
+          attempts += 1;
+          if (attempts < 2) {
+            throw new Error("flaky");
+          }
+          return [0.7];
+        },
+        metadata: {
+          retry: { policy: { maxAttempts: 2, backoffMs: 0 } },
+        },
+      },
+    };
+    const wrapped = attachAdapterContext(adapters, context);
+    const result = await wrapped.embedder?.embed("hi");
+
+    expect(result).toEqual([0.7]);
+    expect(attempts).toBe(2);
+  });
+
+  it("merges retry defaults with per-run overrides", async () => {
+    const { context } = createAdapterContext();
+    let attempts = 0;
+    const adapters: AdapterBundle = {
+      embedder: {
+        embed: () => {
+          attempts += 1;
+          if (attempts < 3) {
+            throw new Error("flaky");
+          }
+          return [0.9];
+        },
+      },
+    };
+    const retryDefaults: RetryConfig = {
+      embedder: { maxAttempts: 2, backoffMs: 0 },
+    };
+    const retry: RetryConfig = {
+      embedder: { maxAttempts: 3, backoffMs: 0 },
+    };
+    const wrapped = attachAdapterContext(adapters, context, { retryDefaults, retry, trace: [] });
+    const result = await wrapped.embedder?.embed("hi");
+
+    expect(result).toEqual([0.9]);
+    expect(attempts).toBe(3);
+  });
+
+  it("keeps non-restartable streams unwrapped", () => {
+    const { context } = createAdapterContext();
+    const stream = createModelEndStream();
+    const adapters: AdapterBundle = {
+      model: {
+        generate: () => ({ text: "ok" }),
+        stream,
+        metadata: { retry: { restartable: false } },
+      },
+    };
+
+    const wrapped = attachAdapterContext(adapters, context, {
+      retry: { model: { maxAttempts: 2, backoffMs: 0 } },
+      trace: [],
+    });
+
+    expect(wrapped.model?.stream).toBe(stream);
+  });
+
+  it("wraps restartable streams when retry policies exist", async () => {
+    const { context } = createAdapterContext();
+    let called = false;
+    const stream = createModelEndStream(() => {
+      called = true;
+    });
+    const adapters: AdapterBundle = {
+      model: {
+        generate: () => ({ text: "ok" }),
+        stream,
+        metadata: { retry: { restartable: true } },
+      },
+    };
+
+    const wrapped = attachAdapterContext(adapters, context, {
+      retry: { model: { maxAttempts: 2, backoffMs: 0 } },
+      trace: [],
+    });
+
+    expect(wrapped.model?.stream).not.toBe(stream);
+    await wrapped.model?.stream?.({ prompt: "hello" });
+    expect(called).toBe(true);
+  });
+
+  it("wraps output parsers and preserves format instructions", async () => {
+    const { context } = createAdapterContext();
+    const formatInstructions = () => "format";
+    const adapters: AdapterBundle = {
+      outputParser: {
+        parse: (input) => ({ input }),
+        formatInstructions,
+      },
+    };
+
+    const wrapped = attachAdapterContext(adapters, context, { trace: [] });
+    const result = await wrapped.outputParser?.parse("hi");
+
+    expect(result).toEqual({ input: "hi" });
+    expect(wrapped.outputParser?.formatInstructions).toBe(formatInstructions);
+  });
+
+  it("wraps query engine streams when restartable", async () => {
+    const { context } = createAdapterContext();
+    let streamed = false;
+    const stream = createEndStream(() => {
+      streamed = true;
+    });
+    const adapters: AdapterBundle = {
+      queryEngine: {
+        query: () => ({ text: "ok" }),
+        stream,
+        metadata: { retry: { restartable: true } },
+      },
+    };
+
+    const wrapped = attachAdapterContext(adapters, context, {
+      retry: { queryEngine: { maxAttempts: 2, backoffMs: 0 } },
+      trace: [],
+    });
+
+    expect(wrapped.queryEngine?.stream).not.toBe(stream);
+    await wrapped.queryEngine?.stream?.("q");
+    expect(streamed).toBe(true);
+  });
+
+  it("wraps response synthesizer streams when restartable", async () => {
+    const { context } = createAdapterContext();
+    let streamed = false;
+    const stream = createEndStream(() => {
+      streamed = true;
+    });
+    const adapters: AdapterBundle = {
+      responseSynthesizer: {
+        synthesize: () => ({ text: "ok" }),
+        stream,
+        metadata: { retry: { restartable: true } },
+      },
+    };
+
+    const wrapped = attachAdapterContext(adapters, context, {
+      retry: { responseSynthesizer: { maxAttempts: 2, backoffMs: 0 } },
+      trace: [],
+    });
+
+    expect(wrapped.responseSynthesizer?.stream).not.toBe(stream);
+    await wrapped.responseSynthesizer?.stream?.({ query: "q", documents: [] });
+    expect(streamed).toBe(true);
   });
 });

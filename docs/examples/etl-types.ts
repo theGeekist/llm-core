@@ -4,14 +4,6 @@ export type Reporter = {
 
 // --- Domain: tiny in-memory "orders" ETL ---
 
-/**
- * Each source entry is a CSV-like line:
- *   orderId,customerEmail,sku,qty
- * Example:
- *   ORD-1001,alice@example.com,SKU-CHAIR,2
- */
-export type RawOrderLine = string;
-
 export type Product = {
   sku: string;
   name: string;
@@ -26,7 +18,13 @@ export type InMemoryDb = {
 };
 
 export type EtlRunOptions = {
-  source: RawOrderLine[];
+  /**
+   * Each source entry is a CSV-like line:
+   *   orderId,customerEmail,sku,qty
+   * Example:
+   *   ORD-1001,alice@example.com,SKU-CHAIR,2
+   */
+  source: string[];
   destination: InMemoryDb;
   catalogue: ProductCatalogue;
   reporter?: Reporter;
@@ -35,7 +33,7 @@ export type EtlRunOptions = {
 
 export type EtlContext = {
   reporter: Reporter;
-  source: RawOrderLine[];
+  source: string[];
   destination: InMemoryDb;
   catalogue: ProductCatalogue;
   simulateFailure: boolean;

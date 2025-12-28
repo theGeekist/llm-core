@@ -6,6 +6,10 @@ export type {
   FilePart,
   ImagePart,
   AdapterMetadata,
+  RetryConfig,
+  RetryMetadata,
+  RetryPolicy,
+  RetryReason,
   Model,
   ImageCall,
   ImageModel,
@@ -90,6 +94,7 @@ export type {
 
 export type { AiSdkCacheStore } from "./ai-sdk/cache";
 export type { LlamaIndexCheckpointEntry, LlamaIndexCheckpointStore } from "./llamaindex";
+export { type AdapterPlugin, type AdapterPluginOptions } from "./registration";
 
 export {
   maybeChain,
@@ -155,7 +160,7 @@ export {
 } from "./input-validation";
 
 export { Tooling } from "./tooling";
-export { Adapter, type AdapterPlugin, type AdapterPluginOptions } from "./registration";
+export { Adapter } from "./registration";
 
 export {
   createAdapterRegistry,

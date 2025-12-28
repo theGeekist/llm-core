@@ -49,6 +49,14 @@ const stepRollback: StepApply = ({ state }) => {
 const stepEmitEvent: StepApply = ({ context, state }) =>
   maybeMap(toNull, emitRecipeEvent(context, state, recipeEvent));
 
+const stepRetryEmbedder: StepApply = ({ context }) => {
+  const retryEmbedder = context.adapters?.embedder;
+  if (!retryEmbedder) {
+    return null;
+  }
+  return maybeMap(toNull, retryEmbedder.embed("hi"));
+};
+
 const stepRollbackBuilder: StepApply = ({ state }) => {
   appendOrder(state, "builder");
   return null;
@@ -240,5 +248,60 @@ describe("Recipe flow packs", () => {
     }
     const messages = diagnosticMessages(outcome.diagnostics);
     expect(messages).toContain('Duplicate recipe pack name "dup" overridden');
+  });
+
+  it("pauses when retry policy requests a pause", () => {
+    let attempts = 0;
+    const embedder = {
+      embed: () => {
+        attempts += 1;
+        throw new Error("flaky");
+      },
+    };
+    const pack = Recipe.pack("retry", ({ step }) => ({
+      only: step("only", stepRetryEmbedder),
+    }));
+
+    const runtime = Recipe.flow("rag").use(pack).defaults({ adapters: { embedder } }).build();
+    const outcome = assertSyncOutcome(
+      runtime.run(
+        { input: "x", query: "x" },
+        { retry: { embedder: { maxAttempts: 3, backoffMs: 100, mode: "pause" } } },
+      ),
+    );
+
+    expect(outcome.status).toBe("paused");
+    if (outcome.status !== "paused") {
+      throw new Error("Expected paused outcome.");
+    }
+    expect(outcome.token).toBeDefined();
+    expect(attempts).toBe(1);
+  });
+
+  it("applies retry defaults from recipe defaults", () => {
+    let attempts = 0;
+    const embedder = {
+      embed: () => {
+        attempts += 1;
+        if (attempts < 2) {
+          throw new Error("flaky");
+        }
+        return [0.1];
+      },
+    };
+    const pack = Recipe.pack("retry-defaults", ({ step }) => ({
+      only: step("only", stepRetryEmbedder),
+    }));
+    const runtime = Recipe.flow("rag")
+      .use(pack)
+      .defaults({
+        adapters: { embedder },
+        retryDefaults: { embedder: { maxAttempts: 2, backoffMs: 0 } },
+      })
+      .build();
+    const outcome = assertSyncOutcome(runtime.run({ input: "x", query: "x" }));
+
+    expect(outcome.status).toBe("ok");
+    expect(attempts).toBe(2);
   });
 });

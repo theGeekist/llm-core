@@ -1,6 +1,5 @@
 import { defineConfig } from "vitepress";
 import { tabsMarkdownPlugin } from "vitepress-plugin-tabs";
-import markdownItMermaid from "markdown-it-mermaid";
 
 export default defineConfig({
   title: "llm-core",
@@ -26,15 +25,31 @@ export default defineConfig({
   markdown: {
     config: (md) => {
       md.use(tabsMarkdownPlugin);
-      const mermaidPlugin =
-        typeof markdownItMermaid === "function"
-          ? markdownItMermaid
-          : (markdownItMermaid as { default?: (md: typeof md) => void }).default;
-      if (mermaidPlugin) {
-        md.use(mermaidPlugin);
-      }
+      const defaultFence =
+        md.renderer.rules.fence ||
+        ((tokens, idx, options, env, self) => {
+          return self.renderToken(tokens, idx, options);
+        });
+
+      md.renderer.rules.fence = (tokens, idx, options, env, self) => {
+        const token = tokens[idx];
+        if (token.info.trim() === "mermaid") {
+          // preserve whitespace for mermaid parsing
+          const escapeHtml = (unsafe) => {
+            return unsafe
+              .replace(/&/g, "&amp;")
+              .replace(/</g, "&lt;")
+              .replace(/>/g, "&gt;")
+              .replace(/"/g, "&quot;")
+              .replace(/'/g, "&#039;");
+          };
+          return `<pre class="mermaid" style="white-space: pre;">${escapeHtml(token.content)}</pre>`;
+        }
+        return defaultFence(tokens, idx, options, env, self);
+      };
     },
   },
+  // ... rest of config ...
   themeConfig: {
     nav: [
       { text: "Docs", link: "/" },
@@ -65,9 +80,10 @@ export default defineConfig({
         {
           text: "Core API",
           items: [
-            { text: "Workflow API", link: "/reference/workflow-api" },
             { text: "Adapters API", link: "/reference/adapters-api" },
+            { text: "Recipes API", link: "/reference/recipes-api" },
             { text: "Runtime Model", link: "/reference/runtime" },
+            { text: "Workflow API", link: "/reference/workflow-api" },
           ],
         },
         {

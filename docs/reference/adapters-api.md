@@ -132,8 +132,9 @@ formatting logic downstream.
 ```ts
 import { fromLangChainOutputParser } from "#adapters";
 import { StringOutputParser } from "@langchain/core/output_parsers";
+import type { OutputParser } from "#adapters";
 
-const parser = fromLangChainOutputParser(new StringOutputParser());
+const parser: OutputParser = fromLangChainOutputParser(new StringOutputParser());
 const value = await parser.parse("hello");
 ```
 
@@ -166,16 +167,17 @@ import {
   fromLangChainStoreCache,
   fromLlamaIndexKVStoreCache,
 } from "#adapters";
+import type { Cache } from "#adapters";
 
 // 1. Simple in-memory (with TTL support)
-const mem = createMemoryCache();
+const mem: Cache = createMemoryCache();
 
 // 2. Wrap a generic KV store (e.g. Redis wrapper)
-const redis = createCacheFromKVStore(myRedisKv);
+const redis: Cache = createCacheFromKVStore(myRedisKv);
 
 // 3. Reuse ecosystem stores
-const lc = fromLangChainStoreCache(langChainStore);
-const li = fromLlamaIndexKVStoreCache(llamaIndexKv);
+const lc: Cache = fromLangChainStoreCache(langChainStore);
+const li: Cache = fromLlamaIndexKVStoreCache(llamaIndexKv);
 ```
 
 == JavaScript
@@ -210,11 +212,15 @@ They declare hard dependencies via metadata:
 == TypeScript
 
 ```ts
+import type { AdapterRequirement } from "#adapters";
+
+const requires: AdapterRequirement[] = [
+  { kind: "construct", name: "retriever" },
+  { kind: "capability", name: "tools" },
+];
+
 metadata: {
-  requires: [
-    { kind: "construct", name: "retriever" },
-    { kind: "capability", name: "tools" },
-  ],
+  requires,
 }
 ```
 
@@ -243,6 +249,8 @@ Use this adapter when building ingestion pipelines or managing indexes.
 == TypeScript
 
 ```ts
+import type { VectorStore } from "#adapters";
+
 const store: VectorStore = {
   upsert: ({ documents }) => ({ ids: documents.map((doc) => doc.id ?? "new") }),
   delete: ({ ids }) => console.log(ids),
@@ -270,9 +278,10 @@ so other ecosystems will show “unsupported” in interop docs.
 
 ```ts
 import { fromAiSdkImageModel } from "#adapters";
+import type { ImageModel } from "#adapters";
 import { openai } from "@ai-sdk/openai";
 
-const image = fromAiSdkImageModel(openai.image("gpt-image-1"));
+const image: ImageModel = fromAiSdkImageModel(openai.image("gpt-image-1"));
 ```
 
 == JavaScript
@@ -295,6 +304,8 @@ Adapters can emit diagnostics when invoked with missing inputs using an optional
 == TypeScript
 
 ```ts
+import type { AdapterCallContext } from "#adapters";
+
 type AdapterCallContext = {
   report?: (diagnostic: AdapterDiagnostic) => void;
 };
@@ -318,8 +329,11 @@ Example (retriever):
 == TypeScript
 
 ```ts
+import type { AdapterDiagnostic, Retriever } from "#adapters";
+
 const diagnostics: AdapterDiagnostic[] = [];
 const context = { report: (entry: AdapterDiagnostic) => diagnostics.push(entry) };
+const adapter: Retriever = { retrieve: () => ({ documents: [] }) };
 const result = await adapter.retrieve("", context);
 // diagnostics includes "retriever_query_missing"
 ```
@@ -347,12 +361,14 @@ The simplest way to register adapters is via value-first helpers. These return a
 
 ```ts
 import { Adapter } from "#adapters";
+import type { Tool } from "#adapters";
 
 const retrieverPlugin = Adapter.retriever("custom.retriever", {
   retrieve: () => ({ documents: [] }),
 });
 
-const toolPlugin = Adapter.tools("custom.tools", [{ name: "search" }]);
+const tools = [{ name: "search" }] satisfies Tool[];
+const toolPlugin = Adapter.tools("custom.tools", tools);
 ```
 
 == JavaScript
@@ -375,7 +391,10 @@ For custom constructs (e.g. `mcp`), use `Adapter.register`:
 == TypeScript
 
 ```ts
+import type { AdapterPlugin } from "#adapters";
+
 const plugin = Adapter.register("custom.mcp", "mcp", { client });
+plugin satisfies AdapterPlugin;
 ```
 
 == JavaScript
@@ -397,6 +416,7 @@ llm-core avoids silent adapter conflicts and hidden overrides.
 
 ```ts
 import { createRegistryFromDefaults } from "#adapters";
+import type { Model } from "#adapters";
 
 const registry = createRegistryFromDefaults();
 registry.registerProvider({
@@ -404,7 +424,7 @@ registry.registerProvider({
   providerKey: "custom",
   id: "custom:model",
   priority: 10,
-  factory: () => myModelAdapter,
+  factory: () => myModelAdapter as Model,
 });
 
 const { adapters, diagnostics } = registry.resolve({
@@ -439,6 +459,8 @@ const { adapters, diagnostics } = registry.resolve({
 == TypeScript
 
 ```ts
+import type { Model, ModelCall, ModelResult, ModelStreamEvent } from "#adapters";
+
 type Model = {
   generate(call: ModelCall): MaybePromise<ModelResult>;
   stream?(call: ModelCall): MaybePromise<AsyncIterable<ModelStreamEvent>>;
@@ -473,9 +495,10 @@ and `error` events in between. Provider-specific stream payloads are preserved i
 ```ts
 import { fromAiSdkModel } from "#adapters";
 import { recipes } from "#recipes";
+import type { Model } from "#adapters";
 import { openai } from "@ai-sdk/openai";
 
-const model = fromAiSdkModel(openai("gpt-4o-mini"));
+const model: Model = fromAiSdkModel(openai("gpt-4o-mini"));
 const wf = recipes.agent().defaults({ adapters: { model } }).build();
 ```
 
@@ -498,6 +521,8 @@ const wf = recipes.agent().defaults({ adapters: { model } }).build();
 == TypeScript
 
 ```ts
+import type { Message, Schema, Tool } from "#adapters";
+
 type ModelCall = {
   messages?: Message[];
   prompt?: string;
@@ -537,7 +562,9 @@ const call = {
 
 ```ts
 import { validateModelCall } from "#adapters";
+import type { ModelCall } from "#adapters";
 
+const call = { prompt: "hello" } satisfies ModelCall;
 const { diagnostics, allowTools, normalizedSchema } = validateModelCall(call);
 ```
 
@@ -558,7 +585,9 @@ const { diagnostics, allowTools, normalizedSchema } = validateModelCall(call);
 
 ```ts
 import { ModelCallHelper, ModelHelper } from "#adapters";
+import type { ModelCall } from "#adapters";
 
+const call = { prompt: "hello" } satisfies ModelCall;
 const prepared = ModelCallHelper.prepare(call);
 const adapter = ModelHelper.create(async (input) => {
   // implement Model.generate
@@ -591,6 +620,8 @@ However, if you are migrating existing LangChain parsers, we support them as a d
 == TypeScript
 
 ```ts
+import type { AdapterCallContext, OutputParser } from "#adapters";
+
 type OutputParser = {
   parse: (text: string, context?: AdapterCallContext) => MaybePromise<unknown>;
   formatInstructions?: (options?: Record<string, unknown>) => MaybePromise<string>;
@@ -617,6 +648,8 @@ It normalizes filter expressions (comparisons, AND/OR logic) into a portable IR 
 == TypeScript
 
 ```ts
+import type { StructuredQuery, StructuredQueryFilter, StructuredQueryComparison } from "#adapters";
+
 type StructuredQuery = {
   query: string;
   filter?: StructuredQueryFilter;
@@ -660,6 +693,8 @@ const query = {
 == TypeScript
 
 ```ts
+import type { Schema, Tool } from "#adapters";
+
 type Tool = {
   name: string;
   description?: string;
@@ -667,6 +702,17 @@ type Tool = {
   inputSchema?: Schema;
   outputSchema?: Schema;
   execute?: (input: unknown) => MaybePromise<unknown>;
+};
+```
+
+== JavaScript
+
+```js
+const tool = {
+  name: "search",
+  description: "Search the docs",
+  params: [{ name: "query", type: "string", required: true }],
+  execute: async (input) => ({ ok: true, input }),
 };
 ```
 
@@ -678,11 +724,22 @@ type Tool = {
 == TypeScript
 
 ```ts
+import type { Message, StructuredContent } from "#adapters";
+
 type Message = {
   role: "system" | "user" | "assistant" | "tool";
   content: string | StructuredContent;
   name?: string;
   toolCallId?: string;
+};
+```
+
+== JavaScript
+
+```js
+const message = {
+  role: "user",
+  content: "hello",
 };
 ```
 

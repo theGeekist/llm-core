@@ -1,56 +1,26 @@
-import { createHelper, type HelperApplyOptions, type HelperApplyResult } from "@wpkernel/pipeline";
-import type { PipelineReporter } from "@wpkernel/pipeline/core";
-import type { AdapterBundle } from "../adapters/types";
-import { bindFirst, maybeMap, type MaybePromise } from "../maybe";
-import type { DiagnosticEntry } from "../workflow/diagnostics";
-import { createRecipeDiagnostic } from "../workflow/diagnostics";
+import { createHelper } from "@wpkernel/pipeline/core";
+import { bindFirst, maybeMap, maybeTry } from "../maybe";
+import { createRecipeDiagnostic, type DiagnosticEntry } from "../workflow/diagnostics";
 import { getRecipe } from "../workflow/recipe-registry";
 import { createRuntime } from "../workflow/runtime";
-import type { PipelineContext, PipelineState, Plugin, RecipeName } from "../workflow/types";
-import type { StateValidator } from "./state";
-import { wrapRuntimeWithStateValidation } from "./state";
+import { wrapRuntimeWithStateValidation, type StateValidator } from "./state";
 import { attachRollback, createStepRollback } from "./rollback";
-import type { StepRollbackInput } from "./rollback";
-
-type StepOptions = {
-  context: PipelineContext;
-  input: unknown;
-  state: PipelineState;
-  reporter: PipelineReporter;
-};
-
-type StepNext = () => MaybePromise<unknown>;
-
-export type StepApply = (
-  options: StepOptions,
-  next?: StepNext,
-) => MaybePromise<HelperApplyResult<PipelineState> | null>;
-
-type StepSpec = {
-  name: string;
-  apply: StepApply;
-  dependsOn: string[];
-  priority: number;
-  mode: "extend" | "override";
-  label?: string;
-  kind?: string;
-  summary?: string;
-  rollback?: StepRollbackInput;
-};
-
-type StepBuilder = {
-  dependsOn: (dependencies: string | string[]) => StepBuilder;
-  priority: (value: number) => StepBuilder;
-  override: () => StepBuilder;
-  extend: () => StepBuilder;
-  label: (value: string) => StepBuilder;
-  kind: (value: string) => StepBuilder;
-  summary: (value: string) => StepBuilder;
-  rollback: (rollback: StepRollbackInput) => StepBuilder;
-  getSpec: () => StepSpec;
-};
-
-type StepFactory = (name: string, apply: StepApply) => StepBuilder;
+import { collectSteps, createStep } from "./step-builder";
+import type { AdapterBundle, RetryConfig } from "../adapters/types";
+import type {
+  PipelineReporter,
+  HelperApplyOptions,
+  HelperApplyResult,
+} from "@wpkernel/pipeline/core";
+import type { PipelineContext, PipelineState, Plugin, RecipeName } from "../workflow/types";
+import {
+  isRetryPauseSignal,
+  mergeRetryConfig,
+  readRetryPausePayload,
+} from "../workflow/runtime/retry";
+import { toRetryPauseResult, type RetryPauseSpec } from "./retry-pause";
+import type { StepBuilder, StepFactory, StepNext, StepOptions, StepSpec } from "./step-builder";
+import { buildRuntimeDefaults, wrapRuntimeWithDefaults } from "./runtime-defaults";
 
 export type RecipePack = {
   name: string;
@@ -62,6 +32,7 @@ export type RecipePack = {
 export type RecipeDefaults = {
   adapters?: AdapterBundle;
   plugins?: Plugin[];
+  retryDefaults?: RetryConfig;
 };
 
 export type RecipeStepPlan = {
@@ -81,8 +52,6 @@ export type RecipePlan = {
 };
 
 const STEP_KIND = "recipe.steps";
-
-const toArray = (value: string | string[]) => (Array.isArray(value) ? value : [value]);
 
 const normalizeStepKey = (packName: string, stepName: string) =>
   stepName.includes(".") ? stepName : `${packName}.${stepName}`;
@@ -145,6 +114,30 @@ const resolveStepResult = (
   result: HelperApplyResult<PipelineState> | null,
 ) => (result === null ? createStepFallback(state) : applyStepResult(state, result));
 
+type StepRunInput = { spec: StepSpec; stepOptions: StepOptions; next?: StepNext };
+
+type RetryPauseContext = { spec: StepSpec; stepOptions: StepOptions; state: PipelineState };
+
+const buildRetryPauseSpec = (spec: StepSpec): RetryPauseSpec => ({
+  name: spec.name,
+  label: spec.label,
+  kind: spec.kind,
+});
+
+const handleStepError = (input: RetryPauseContext, error: unknown) => {
+  if (!isRetryPauseSignal(error)) {
+    throw error;
+  }
+  return toRetryPauseResult(
+    input.state,
+    input.stepOptions.input,
+    buildRetryPauseSpec(input.spec),
+    readRetryPausePayload(error),
+  );
+};
+
+const runStepApply = (input: StepRunInput) => input.spec.apply(input.stepOptions, input.next);
+
 const applyStep = (
   spec: StepSpec,
   options: HelperApplyOptions<PipelineContext, unknown, PipelineState, PipelineReporter>,
@@ -152,7 +145,10 @@ const applyStep = (
 ) => {
   const stepOptions = toStepOptions(options);
   const state = stepOptions.state;
-  const applied = spec.apply(stepOptions, next);
+  const applied = maybeTry(
+    bindFirst(handleStepError, { spec, stepOptions, state }),
+    bindFirst(runStepApply, { spec, stepOptions, next }),
+  );
   const withRollback = spec.rollback
     ? maybeMap(bindFirst(attachRollback, spec.rollback), applied)
     : applied;
@@ -177,63 +173,6 @@ const createHelperForStep = (packName: string, spec: StepSpec) => {
     apply: bindFirst(invokeStep, spec),
   });
 };
-
-const appendDependencies = (current: string[], next: string[]) => [...current, ...next];
-
-class StepBuilderImpl implements StepBuilder {
-  private spec: StepSpec;
-
-  constructor(spec: StepSpec) {
-    this.spec = spec;
-  }
-
-  dependsOn(dependencies: string | string[]) {
-    return new StepBuilderImpl({
-      ...this.spec,
-      dependsOn: appendDependencies(this.spec.dependsOn, toArray(dependencies)),
-    });
-  }
-
-  priority(value: number) {
-    return new StepBuilderImpl({ ...this.spec, priority: value });
-  }
-
-  override() {
-    return new StepBuilderImpl({ ...this.spec, mode: "override" });
-  }
-
-  extend() {
-    return new StepBuilderImpl({ ...this.spec, mode: "extend" });
-  }
-
-  label(value: string) {
-    return new StepBuilderImpl({ ...this.spec, label: value });
-  }
-
-  kind(value: string) {
-    return new StepBuilderImpl({ ...this.spec, kind: value });
-  }
-
-  summary(value: string) {
-    return new StepBuilderImpl({ ...this.spec, summary: value });
-  }
-
-  rollback(rollback: StepRollbackInput) {
-    return new StepBuilderImpl({ ...this.spec, rollback });
-  }
-
-  getSpec() {
-    return { ...this.spec };
-  }
-}
-
-const createStepBuilder = (spec: StepSpec): StepBuilder => new StepBuilderImpl(spec);
-
-const createStep: StepFactory = (name, apply) =>
-  createStepBuilder({ name, apply, dependsOn: [], priority: 0, mode: "extend" });
-
-const collectSteps = (map: Record<string, StepBuilder>) =>
-  Object.values(map).map((step) => step.getSpec());
 
 // Ordering relies on the pipeline DAG and priority; this sort is only a tie-breaker.
 const sortSteps = (packName: string, steps: StepSpec[]) =>
@@ -308,6 +247,7 @@ export const mergeDefaults = (base: RecipeDefaults, incoming: RecipeDefaults): R
     base.plugins && incoming.plugins
       ? [...base.plugins, ...incoming.plugins]
       : (base.plugins ?? incoming.plugins),
+  retryDefaults: mergeRetryConfig(base.retryDefaults, incoming.retryDefaults),
 });
 
 const applyDefaultsToPlugins = (plugins: Plugin[], name: string, defaults?: RecipeDefaults) => {
@@ -371,12 +311,14 @@ export const createFlowRuntime = <N extends RecipeName>(input: FlowRuntimeInput<
     applyDefaultsToPlugins(plugins, pack.name, pack.defaults);
     appendPlugin(plugins, createStepPlugin(pack));
   }
+  const runtimeDefaults = buildRuntimeDefaults(input.defaults);
+  const runtime = createRuntime<N>({
+    contract,
+    plugins: [...plugins],
+    diagnostics: input.diagnostics,
+  });
   return wrapRuntimeWithStateValidation(
-    createRuntime<N>({
-      contract,
-      plugins: [...plugins],
-      diagnostics: input.diagnostics,
-    }),
+    wrapRuntimeWithDefaults(runtime, runtimeDefaults),
     input.stateValidator,
   );
 };
@@ -442,6 +384,7 @@ const flowApplyDefaults = <N extends RecipeName>(
   const merged = mergeDefaults(state.defaults, defaultsConfig);
   state.defaults.adapters = merged.adapters;
   state.defaults.plugins = merged.plugins;
+  state.defaults.retryDefaults = merged.retryDefaults;
   return createFlowBuilderFromState(state);
 };
 
@@ -476,6 +419,8 @@ const createFlowBuilder = <N extends RecipeName>(recipeName: N): FlowBuilder<N> 
   };
   return createFlowBuilderFromState(state);
 };
+
+export type { StepApply } from "./step-builder";
 
 export const Recipe = {
   rollback: createStepRollback,

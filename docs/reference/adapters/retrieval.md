@@ -13,9 +13,13 @@ In `llm-core`, retrieval is not a single capability. It is a pipeline of four di
 
 ### The RAG Pipeline
 
-```text
-graph TD
-    A --> B
+```mermaid
+graph LR
+    Doc[Document] -->|1. Embed| Vector[Vector]
+    Vector -->|2. Ingest| DB[(Vector Store)]
+    Query([Query]) -->|3. Search| DB
+    DB -->|4. Retrieve| Context[Context]
+    Context -->|5. Rerank| TopK[Top Results]
 ```
 
 ---

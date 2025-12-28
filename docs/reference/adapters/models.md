@@ -117,9 +117,16 @@ One of the hardest parts of building LLM apps is normalizing streams. Provider A
 
 `llm-core` normalizes **ALL** of them into a single lifecycle of `ModelStreamEvent` objects.
 
-```text
-graph TD
-    A --> B
+```mermaid
+graph LR
+    subgraph Providers
+        P1[OpenAI] -->|JSON Lines| N[Normalizer]
+        P2[Anthropic] -->|SSE Events| N
+        P3[LlamaIndex] -->|Async Iter| N
+    end
+
+    N -->|Standardizes| Stream[ModelStreamEvent]
+    Stream -->|Yields| App[Your App]
 ```
 
 You never have to parse chunks manually. You just consume the iterator:

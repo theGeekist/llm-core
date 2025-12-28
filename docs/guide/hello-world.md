@@ -13,6 +13,16 @@ Start by importing the `recipes` handle. This is your entry point for authoring.
 
 ```ts
 import { recipes } from "@geekist/llm-core/recipes";
+import type { AgentRecipeConfig } from "@geekist/llm-core/recipes";
+
+// Example: keep a typed config around
+const config: AgentRecipeConfig = {};
+```
+
+== JavaScript
+
+```js
+import { recipes } from "@geekist/llm-core/recipes";
 ```
 
 :::
@@ -26,6 +36,17 @@ You can define your own steps later, or load a standard recipe like `"agent"`.
 == TypeScript
 
 ```ts
+import { recipes } from "@geekist/llm-core/recipes";
+
+// "agent" is a standard recipe for loop-based agents.
+const agent = recipes.agent();
+
+type AgentRecipeConfig = Parameters<typeof agent.configure>[0];
+```
+
+== JavaScript
+
+```js
 import { recipes } from "@geekist/llm-core/recipes";
 
 // "agent" is a standard recipe for loop-based agents.
@@ -45,6 +66,20 @@ The `"agent"` flow expects a `model` adapter.
 == TypeScript
 
 ```ts
+import { recipes } from "@geekist/llm-core/recipes";
+import { fromAiSdkModel } from "@geekist/llm-core/adapters";
+import type { Model } from "@geekist/llm-core/adapters";
+import { openai } from "@ai-sdk/openai";
+
+const model: Model = fromAiSdkModel(openai("gpt-4o"));
+
+// Configure the recipe with an OpenAI adapter
+const workflow = recipes.agent().defaults({ adapters: { model } }).build();
+```
+
+== JavaScript
+
+```js
 import { recipes } from "@geekist/llm-core/recipes";
 import { fromAiSdkModel } from "@geekist/llm-core/adapters";
 import { openai } from "@ai-sdk/openai";
@@ -72,6 +107,21 @@ const result = await workflow.run({
 });
 
 if (result.status === "ok") {
+  const answer: string | undefined = result.artefact.answer;
+  console.log(answer); // "Paris"
+}
+```
+
+== JavaScript
+
+```js
+// ... imports
+
+const result = await workflow.run({
+  input: "What is the capital of France?",
+});
+
+if (result.status === "ok") {
   console.log(result.artefact.answer); // "Paris"
 }
 ```
@@ -85,6 +135,18 @@ You don't need to rewrite your agent logic. Just swap the **adapter**.
 
 ::: tabs
 == TypeScript
+
+```diff
+- import { openai } from "@ai-sdk/openai";
++ import { anthropic } from "@ai-sdk/anthropic";
+
+- const model = fromAiSdkModel(openai("gpt-4o"));
++ const model = fromAiSdkModel(anthropic("claude-3-5-sonnet-20240620"));
+
+const workflow = recipes.agent().defaults({ adapters: { model } }).build();
+```
+
+== JavaScript
 
 ```diff
 - import { openai } from "@ai-sdk/openai";

@@ -1,4 +1,4 @@
-import type { AdapterCallContext } from "./core";
+import type { AdapterCallContext, AdapterMetadata } from "./core";
 import type { Schema, SchemaField } from "./schema";
 import type { MaybePromise } from "../../maybe";
 
@@ -11,6 +11,7 @@ export type Tool = {
   inputSchema?: Schema;
   outputSchema?: Schema;
   execute?: (input: unknown, context?: AdapterCallContext) => MaybePromise<unknown>;
+  metadata?: AdapterMetadata;
 };
 
 export type ToolCall = {

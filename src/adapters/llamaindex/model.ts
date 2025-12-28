@@ -28,6 +28,9 @@ import {
   toToolCalls,
 } from "./model-utils";
 import { warnDiagnostic } from "../utils";
+import { readRetryPolicyFromCandidates } from "../retry-metadata";
+
+const readLlamaIndexRetryPolicy = (model: LLM) => readRetryPolicyFromCandidates([model]);
 
 const toExecResult = (
   result: LlamaIndexExecResult,
@@ -165,5 +168,10 @@ export function fromLlamaIndexModel(model: LLM): Model {
     );
   }
 
-  return { generate, stream };
+  const retryPolicy = readLlamaIndexRetryPolicy(model);
+  return {
+    generate,
+    stream,
+    metadata: retryPolicy ? { retry: { policy: retryPolicy } } : undefined,
+  };
 }

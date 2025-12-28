@@ -20,6 +20,26 @@ Once you have a recipe handle, you compile and run it.
 
 ```ts
 import { recipes } from "@geekist/llm-core/recipes";
+import type { AgentRecipeConfig } from "@geekist/llm-core/recipes";
+
+// 1. Author
+const agent = recipes.agent().configure({} satisfies AgentRecipeConfig);
+
+// 2. Compile (Build)
+const workflow = agent.build();
+
+// 3. Execute (Run)
+const result = await workflow.run({ input: "Do work" });
+
+if (result.status === "ok") {
+  console.log(result.artefact);
+}
+```
+
+== JavaScript
+
+```js
+import { recipes } from "@geekist/llm-core/recipes";
 
 // 1. Author
 const agent = recipes.agent();
@@ -46,8 +66,9 @@ Register adapters without touching registry types. The workflow surface stays cl
 
 ```ts
 import { recipes } from "#recipes";
+import type { Retriever } from "#adapters";
 
-const retriever = {
+const retriever: Retriever = {
   retrieve: () => ({ documents: [] }),
 };
 
@@ -169,6 +190,7 @@ Outcome.mapOk(out, (artefact) => artefact);
 
 ```ts
 const out = wf.run({ input: "sync-call" });
+type SyncOutcome = typeof out;
 if (out.status === "ok") {
   // no await required
 }
@@ -193,6 +215,8 @@ Runtime carries operational concerns so plugins stay pure.
 == TypeScript
 
 ```ts
+import type { Runtime } from "#workflow";
+
 const runtime = {
   reporter: { warn: (msg, ctx) => console.warn(msg, ctx) },
   diagnostics: "default",
@@ -206,7 +230,7 @@ const runtime = {
   resume: {
     /* adapter */
   },
-};
+} satisfies Runtime;
 
 await wf.run({ input: "..." }, runtime);
 ```
@@ -243,10 +267,13 @@ You can override providers per run without widening the core API:
 == TypeScript
 
 ```ts
-const out = await wf.run(
-  { input: "..." },
-  { providers: { model: "ai-sdk:openai:gpt-4o-mini", retriever: "llamaindex:vector" } },
-);
+import type { Runtime } from "#workflow";
+
+const overrides = {
+  providers: { model: "ai-sdk:openai:gpt-4o-mini", retriever: "llamaindex:vector" },
+} satisfies Runtime;
+
+const out = await wf.run({ input: "..." }, overrides);
 ```
 
 == JavaScript

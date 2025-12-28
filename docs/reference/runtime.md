@@ -14,12 +14,16 @@ Related:
 == TypeScript
 
 ```ts
+import type { InterruptStrategy, RetryConfig } from "#adapters";
+
 type Runtime = {
   reporter?: { warn: (message: string, context?: unknown) => void };
   diagnostics?: "default" | "strict";
   budget?: unknown;
   persistence?: unknown;
   traceSink?: unknown;
+  retryDefaults?: RetryConfig;
+  retry?: RetryConfig;
   resume?: {
     resolve: (request: {
       token: unknown;
@@ -40,6 +44,8 @@ const runtime = {
   reporter: { warn: (message, context) => console.warn(message, context) },
   diagnostics: "default",
   budget: { maxTokens: 2000 },
+  retryDefaults: { model: { maxAttempts: 3, backoffMs: 100 } },
+  retry: { model: { maxAttempts: 2, backoffMs: 0 } },
   resume: {
     resolve: ({ token, resumeInput, interrupt }) => ({
       input: { token, resumeInput, interrupt },
@@ -56,6 +62,8 @@ Use it like this:
 == TypeScript
 
 ```ts
+import type { Runtime } from "#workflow";
+
 const runtime = {
   reporter: { warn: (msg, ctx) => console.warn(msg, ctx) },
   diagnostics: "default",
@@ -66,10 +74,12 @@ const runtime = {
   traceSink: {
     /* sink */
   },
+  retryDefaults: { model: { maxAttempts: 3, backoffMs: 100 } },
+  retry: { model: { maxAttempts: 2, backoffMs: 0 } },
   resume: {
     /* adapter */
   },
-};
+} satisfies Runtime;
 
 const out = await wf.run({ input: "..." }, runtime);
 ```
@@ -87,6 +97,8 @@ const runtime = {
   traceSink: {
     /* sink */
   },
+  retryDefaults: { model: { maxAttempts: 3, backoffMs: 100 } },
+  retry: { model: { maxAttempts: 2, backoffMs: 0 } },
   resume: {
     /* adapter */
   },
@@ -164,3 +176,16 @@ If a recipe supports it, `resume(token, resumeInput?, runtime?)` is exposed; it 
 
 If helpers registered rollbacks, they are executed before the paused outcome is returned when the
 resolved interrupt strategy is `restart`. Rollback failures are reported through the runtime reporter.
+
+## Retry
+
+`retryDefaults` provides per-recipe runtime defaults and `retry` provides per-run overrides.
+Resolution order for a given adapter kind is:
+
+1. `runtime.retry` (per-run overrides)
+2. `runtime.retryDefaults` (recipe defaults)
+3. adapter metadata (`adapter.metadata.retry`, fallback only)
+
+Adapter metadata is only consulted when runtime policy is missing; it does not veto or further
+constrain a runtime policy. If no policy is resolved, retries are disabled for that adapter call.
+When streaming, retries are only applied if the adapter declares `metadata.retry.restartable = true`.

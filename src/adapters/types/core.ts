@@ -6,7 +6,49 @@ export type AdapterRequirement =
 
 export type AdapterMetadata = {
   requires?: AdapterRequirement[];
+  retry?: RetryMetadata;
   [key: string]: unknown;
+};
+
+export type RetryReason = "timeout" | "rate_limit" | "network" | "5xx" | "unknown";
+
+export type RetryPolicy = {
+  maxAttempts: number;
+  backoffMs: number;
+  maxBackoffMs?: number;
+  jitter?: "none" | "full";
+  mode?: "internal" | "pause";
+  retryOn?: RetryReason[];
+  timeoutMs?: number;
+};
+
+export type RetryConfig = {
+  model?: RetryPolicy;
+  embedder?: RetryPolicy;
+  retriever?: RetryPolicy;
+  reranker?: RetryPolicy;
+  textSplitter?: RetryPolicy;
+  loader?: RetryPolicy;
+  transformer?: RetryPolicy;
+  vectorStore?: RetryPolicy;
+  cache?: RetryPolicy;
+  kv?: RetryPolicy;
+  memory?: RetryPolicy;
+  storage?: RetryPolicy;
+  outputParser?: RetryPolicy;
+  queryEngine?: RetryPolicy;
+  responseSynthesizer?: RetryPolicy;
+  image?: RetryPolicy;
+  speech?: RetryPolicy;
+  transcription?: RetryPolicy;
+  tools?: RetryPolicy;
+};
+
+export type RetryMetadata = {
+  allowed?: boolean;
+  retryOn?: RetryReason[];
+  restartable?: boolean;
+  policy?: RetryPolicy;
 };
 
 export type AdapterDiagnostic = {

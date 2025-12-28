@@ -6,7 +6,7 @@ import type {
   PipelineExtensionRegisterOutput,
   PipelineReporter,
 } from "@wpkernel/pipeline/core";
-import type { AdapterBundle, AdapterResume } from "../adapters/types";
+import type { AdapterBundle, AdapterResume, RetryConfig } from "../adapters/types";
 import type { DiagnosticEntry } from "./diagnostics";
 import type { ExplainSnapshot } from "./explain";
 
@@ -169,6 +169,8 @@ export type Runtime = {
   traceSink?: unknown;
   resume?: AdapterResume;
   providers?: Record<string, string>;
+  retryDefaults?: RetryConfig;
+  retry?: RetryConfig;
 };
 
 // PipelineReporter is imported for Runtime typing; do not re-export to avoid drift.

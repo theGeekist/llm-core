@@ -6,6 +6,10 @@ export type {
   AdapterTraceEvent,
   AdapterTraceSink,
   PauseKind,
+  RetryConfig,
+  RetryMetadata,
+  RetryPolicy,
+  RetryReason,
   ResumeSnapshot,
 } from "./types/core";
 

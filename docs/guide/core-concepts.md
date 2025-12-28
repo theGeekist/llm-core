@@ -11,9 +11,14 @@ There are three principles that make `llm-core` predictable:
 A **Recipe** is not just a script. It is a named, versioned composition of **Packs**.
 Think of a Pack as a "module of logic" that you can test in isolation.
 
-```text
+```mermaid
 graph TD
-    A --> B
+    subgraph Recipe Anatomy
+        Config[Type-Safe Config] --> Factory[Recipe Factory]
+        Deps[Dependency Container] --> Factory
+        Factory --> Workflow[Workflow Instance]
+        Workflow --> Plugins[Plugins (Wrappers)]
+    end
 ```
 
 - **Packs** contain **Steps** (the actual logic).
@@ -28,13 +33,28 @@ Think of `Workflow` as the compiler and runtime. It takes your high-level recipe
 // 1. Authoring (Declarative)
 import { recipes } from "@geekist/llm-core/recipes";
 
+const agent = recipes.agent(); // typed recipe handle
+
+// 2. Compiling (Infrastructure)
+const app = agent.build(); // runnable workflow
+
+// 3. Execution (Runtime)
+await app.run({ input: "Do work" });
+```
+
+== JavaScript
+
+```js
+// 1. Authoring (Declarative)
+import { recipes } from "@geekist/llm-core/recipes";
+
 const agent = recipes.agent();
 
 // 2. Compiling (Infrastructure)
 const app = agent.build();
 
 // 3. Execution (Runtime)
-await app.run(input);
+await app.run({ input: "Do work" });
 ```
 
 > [!TIP]
@@ -49,7 +69,7 @@ This is the most common point of confusion. Here's the mental model:
 - **Adapters** are the **ports** (Standard shape).
 - **Plugins** are the **appliances** (Implementation).
 
-```text
+```mermaid
 graph TD
     subgraph Workflow
     A["Model Adapter Port"]
@@ -83,6 +103,24 @@ In `llm-core`, every execution step has the same shape. You never have to worry 
 == TypeScript
 
 ```ts
+type StepApply = (_: unknown, options: { input: string }) => unknown;
+
+// This step is sync
+const ValidationStep: StepApply = (_, { input }) => {
+  if (input.length > 100) return { error: "Too long" };
+};
+
+// This step is async
+const DatabaseStep: StepApply = async (_, { input }) => {
+  await db.save(input);
+};
+
+// The framework runs both without you changing how you compose them.
+```
+
+== JavaScript
+
+```js
 // This step is sync
 const ValidationStep = (_, { input }) => {
   if (input.length > 100) return { error: "Too long" };
@@ -121,7 +159,19 @@ With `paused`, we serialize the state so you can resume execution hours (or days
 == TypeScript
 
 ```ts
-const result = await workflow.run(input);
+const result = await workflow.run({ input: "..." });
+
+if (result.status === "paused") {
+  const token: unknown = result.token;
+  // Save token to DB, email the user
+  await db.save(result.token);
+}
+```
+
+== JavaScript
+
+```js
+const result = await workflow.run({ input: "..." });
 
 if (result.status === "paused") {
   // Save token to DB, email the user

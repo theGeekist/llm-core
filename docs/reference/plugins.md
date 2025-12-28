@@ -11,17 +11,18 @@ Plugins are the smallest unit of composition in the Engine. A plugin is a bag of
 == TypeScript
 
 ```ts
-type Plugin = {
-  key: string;                        // stable identifier (namespaced)
-  mode?: "extend" | "override";       // extend = add, override = replace
-  overrideKey?: string;               // which plugin this one replaces
-  capabilities?: Record<string, unknown>; // config / declared capabilities bag
-  requires?: string[];                // capabilities this plugin expects
-  emits?: string[];                   // capabilities this plugin contributes
-  helperKinds?: string[];             // pipeline helpers this plugin installs
-  lifecycle?: string;                 // lifecycle this plugin hooks into
-  hook?: PipelineExtensionHook<...>;  // simple lifecycle hook
-  register?: (...) => ...;            // full pipeline extension / helper wiring
+import type { Plugin } from "#workflow";
+
+const plugin: Plugin = {
+  key: "model.openai", // stable identifier (namespaced)
+  mode: "extend", // extend = add, override = replace
+  overrideKey: "model.openai", // which plugin this one replaces
+  capabilities: { model: { name: "gpt-4.1" } }, // config / declared capabilities bag
+  requires: ["tools"], // capabilities this plugin expects
+  emits: ["model"], // capabilities this plugin contributes
+  helperKinds: ["recipe.steps"], // pipeline helpers this plugin installs
+  lifecycle: "beforeAnswer", // lifecycle this plugin hooks into
+  hook: ({ state }) => console.log(state), // simple lifecycle hook
 };
 ```
 
@@ -51,19 +52,22 @@ Example:
 
 ```ts
 import { recipes } from "#recipes";
+import type { Plugin } from "#workflow";
+
+const plugins: Plugin[] = [
+  { key: "model.openai", capabilities: { model: { name: "gpt-4.1" } } },
+  {
+    key: "model.openai.override",
+    mode: "override",
+    overrideKey: "model.openai",
+    capabilities: { model: { name: "gpt-4.1-mini" } },
+  },
+];
 
 const wf = recipes
   .agent()
   .defaults({
-    plugins: [
-      { key: "model.openai", capabilities: { model: { name: "gpt-4.1" } } },
-      {
-        key: "model.openai.override",
-        mode: "override",
-        overrideKey: "model.openai",
-        capabilities: { model: { name: "gpt-4.1-mini" } },
-      },
-    ],
+    plugins,
   })
   .build();
 ```
@@ -109,7 +113,9 @@ Plugins can hook into recipe lifecycles:
 == TypeScript
 
 ```ts
-const tracePlugin = {
+import type { Plugin } from "#workflow";
+
+const tracePlugin: Plugin = {
   key: "trace.console",
   lifecycle: "beforeAnswer",
   hook: async ({ state }) => {

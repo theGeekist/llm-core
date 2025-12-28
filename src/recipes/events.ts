@@ -1,5 +1,5 @@
-import type { AdapterTraceEvent, EventStream } from "../adapters/types";
 import { maybeMap, maybeAll } from "../maybe";
+import type { AdapterTraceEvent, EventStream } from "../adapters/types";
 import type { PipelineContext, PipelineState } from "../workflow/types";
 
 const EVENTS_STATE_KEY = "recipe.events";
