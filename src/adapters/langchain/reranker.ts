@@ -1,6 +1,6 @@
 import type { BaseDocumentCompressor } from "@langchain/core/retrievers/document_compressors";
 import type { AdapterCallContext, Document, Reranker, RetrievalQuery } from "../types";
-import { mapMaybeArray } from "../../maybe";
+import { maybeMapArray } from "../../maybe";
 import { toQueryText } from "../retrieval-query";
 import { toLangChainDocument } from "./documents";
 import { reportDiagnostics, validateRerankerInput } from "../input-validation";
@@ -13,13 +13,13 @@ export function fromLangChainReranker(compressor: BaseDocumentCompressor): Reran
       return [];
     }
     const langchainDocs = documents.map(toLangChainDocument);
-    return mapMaybeArray(
-      compressor.compressDocuments(langchainDocs, toQueryText(query)),
+    return maybeMapArray(
       (doc) => ({
         id: doc.id,
         text: doc.pageContent,
         metadata: doc.metadata,
       }),
+      compressor.compressDocuments(langchainDocs, toQueryText(query)),
     );
   }
 

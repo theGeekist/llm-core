@@ -1,20 +1,32 @@
 import type { AdapterTraceEvent, AdapterTraceSink, EventStream } from "../types";
-import { bindFirst, mapMaybe, maybeAll } from "../../maybe";
+import { maybeAll } from "@wpkernel/pipeline/core/async-utils";
+import { bindFirst, maybeMap } from "../../maybe";
 
-const toUndefined = () => undefined;
+const toBoolean = (value: unknown): boolean | null => (value === null ? null : value !== false);
+const isFailure = (value: boolean | null) => value === false;
+const isUnknown = (value: boolean | null) => value === null;
+const allSuccessful = (values: Array<boolean | null>) => {
+  if (values.some(isFailure)) {
+    return false;
+  }
+  if (values.some(isUnknown)) {
+    return null;
+  }
+  return true;
+};
 
 const emitTraceEvent = (sink: AdapterTraceSink, event: AdapterTraceEvent) =>
-  mapMaybe(sink.emit(event), toUndefined);
+  maybeMap(toBoolean, sink.emit(event));
 
 const emitTraceEvents = (sink: AdapterTraceSink, events: AdapterTraceEvent[]) => {
   if (sink.emitMany) {
-    return mapMaybe(sink.emitMany(events), toUndefined);
+    return maybeMap(toBoolean, sink.emitMany(events));
   }
   const results: Array<ReturnType<typeof emitTraceEvent>> = [];
   for (const event of events) {
     results.push(emitTraceEvent(sink, event));
   }
-  return mapMaybe(maybeAll(results), toUndefined);
+  return maybeMap(allSuccessful, maybeAll(results) as Array<boolean | null>);
 };
 
 export const createEventStreamFromTraceSink = (sink: AdapterTraceSink): EventStream => ({

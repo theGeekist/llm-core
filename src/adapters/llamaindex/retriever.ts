@@ -1,6 +1,6 @@
 import type { BaseRetriever } from "@llamaindex/core/retriever";
 import type { AdapterCallContext, RetrievalQuery, Retriever } from "../types";
-import { mapMaybe } from "../../maybe";
+import { maybeMap } from "../../maybe";
 import { fromLlamaIndexNodes } from "./retrieval";
 import { toQueryText } from "../retrieval-query";
 import { reportDiagnostics, validateRetrieverInput } from "../input-validation";
@@ -13,7 +13,7 @@ export function fromLlamaIndexRetriever(retriever: BaseRetriever): Retriever {
       return { query, documents: [] };
     }
     const textQuery = toQueryText(query);
-    return mapMaybe(retriever.retrieve(textQuery), (nodes) => fromLlamaIndexNodes(nodes, query));
+    return maybeMap((nodes) => fromLlamaIndexNodes(nodes, query), retriever.retrieve(textQuery));
   }
 
   return { retrieve };

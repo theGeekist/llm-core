@@ -7,7 +7,8 @@ import type {
   Blob,
   ModelUsage,
 } from "../types";
-import { bindFirst, fromPromiseLike, mapMaybe } from "../../maybe";
+import { bindFirst, maybeMap } from "../../maybe";
+import type { MaybePromise } from "../../maybe";
 import { toAdapterTrace } from "../telemetry";
 import { validateImageInput } from "../input-validation";
 import { toBytes } from "../binary";
@@ -72,22 +73,20 @@ export function fromAiSdkImageModel(model: ImageModelV3): ImageModel {
   function generate(call: ImageCall, _context?: AdapterCallContext) {
     void _context;
     const diagnostics = validateImageInput(call.prompt);
-    return mapMaybe(
-      fromPromiseLike(
-        model.doGenerate({
-          prompt: call.prompt,
-          n: call.count ?? 1,
-          size: toSize(call.size),
-          aspectRatio: toAspectRatio(call.aspectRatio),
-          seed: call.seed,
-          files: undefined,
-          mask: undefined,
-          providerOptions: toProviderOptions(call.providerOptions),
-          headers: call.headers,
-          abortSignal: call.abortSignal,
-        }),
-      ),
+    return maybeMap(
       bindFirst(mapImageResult, diagnostics),
+      model.doGenerate({
+        prompt: call.prompt,
+        n: call.count ?? 1,
+        size: toSize(call.size),
+        aspectRatio: toAspectRatio(call.aspectRatio),
+        seed: call.seed,
+        files: undefined,
+        mask: undefined,
+        providerOptions: toProviderOptions(call.providerOptions),
+        headers: call.headers,
+        abortSignal: call.abortSignal,
+      }) as MaybePromise<Awaited<ReturnType<ImageModelV3["doGenerate"]>>>,
     );
   }
 

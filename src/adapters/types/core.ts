@@ -41,6 +41,6 @@ export type AdapterTraceEvent = TraceIdentity & {
 };
 
 export type AdapterTraceSink = {
-  emit(event: AdapterTraceEvent): MaybePromise<void>;
-  emitMany?(events: AdapterTraceEvent[]): MaybePromise<void>;
+  emit(event: AdapterTraceEvent): MaybePromise<boolean | null>;
+  emitMany?(events: AdapterTraceEvent[]): MaybePromise<boolean | null>;
 };

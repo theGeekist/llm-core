@@ -1,6 +1,6 @@
 import type { BaseQueryEngine } from "@llamaindex/core/query-engine";
 import type { AdapterCallContext, QueryEngine, QueryResult, RetrievalQuery } from "../types";
-import { bindFirst, mapMaybe } from "../../maybe";
+import { bindFirst, maybeMap } from "../../maybe";
 import { reportDiagnostics, validateQueryEngineInput } from "../input-validation";
 import {
   toLlamaIndexQueryType,
@@ -43,7 +43,7 @@ function queryWithDeps(deps: QueryEngineDeps, input: RetrievalQuery, context?: A
     return emptyResult(input, diagnostics);
   }
   const queryType = toLlamaIndexQueryType(input);
-  return mapMaybe(deps.engine.query({ query: queryType }), bindFirst(mapQueryResponse, input));
+  return maybeMap(bindFirst(mapQueryResponse, input), deps.engine.query({ query: queryType }));
 }
 
 function streamWithDeps(
@@ -57,8 +57,8 @@ function streamWithDeps(
     return toQueryDiagnosticStreamEvents(diagnostics, undefined);
   }
   const queryType = toLlamaIndexQueryType(input);
-  return mapMaybe(
-    deps.engine.query({ query: queryType, stream: true }),
+  return maybeMap(
     bindFirst(mapQueryStream, input),
+    deps.engine.query({ query: queryType, stream: true }),
   );
 }

@@ -4,30 +4,35 @@ import type { Memory as LlamaMemory } from "@llamaindex/core/memory";
 import * as AiSdk from "ai";
 import * as AiSdkMemory from "@ai-sdk-tools/memory";
 import type { Memory } from "#workflow";
-import { mapMaybe } from "./helpers";
+import { maybeMap } from "./helpers";
+
+const toNull = () => null;
 
 const toMemoryFromLangChain = (memory: LangChainMemory): Memory => ({
-  load: (input) => mapMaybe(memory.loadMemoryVariables(input), (value) => value),
-  save: (input, output) => mapMaybe(memory.saveContext(input, output), () => undefined),
+  load: (input) => maybeMap((value) => value, memory.loadMemoryVariables(input)),
+  save: (input, output) => maybeMap(toNull, memory.saveContext(input, output)),
 });
 
 const toMemoryFromLlama = (memory: LlamaMemory): Memory => ({
   read: (threadId) => {
     void threadId;
-    return mapMaybe(memory.getLLM(), (messages) => ({
-      id: "default",
-      turns: messages.map((message) => ({
-        role: message.role === "memory" || message.role === "developer" ? "system" : message.role,
-        content: typeof message.content === "string" ? message.content : "",
-      })),
-    }));
+    return maybeMap(
+      (messages) => ({
+        id: "default",
+        turns: messages.map((message) => ({
+          role: message.role === "memory" || message.role === "developer" ? "system" : message.role,
+          content: typeof message.content === "string" ? message.content : "",
+        })),
+      }),
+      memory.getLLM(),
+    );
   },
   append: (_threadId, turn) => {
     void _threadId;
     const role = turn.role === "tool" ? "assistant" : turn.role;
-    return memory.add({ role, content: turn.content });
+    return maybeMap(toNull, memory.add({ role, content: turn.content }));
   },
-  reset: () => memory.clear(),
+  reset: () => maybeMap(toNull, memory.clear()),
 });
 
 describe("Interop memory", () => {

@@ -18,7 +18,7 @@ describe("Adapter memory", () => {
     const adapter = fromLangChainMemory(memory);
     const loaded = await adapter.load?.({ input: "hi" });
     expect(loaded).toEqual({ history: [] });
-    await expect(adapter.save?.({ input: "hi" }, { output: "ok" })).resolves.toBeUndefined();
+    await expect(adapter.save?.({ input: "hi" }, { output: "ok" })).resolves.toBe(true);
   });
 
   it("maps LlamaIndex memory", async () => {
@@ -40,10 +40,8 @@ describe("Adapter memory", () => {
       { role: "system", content: "memo" },
       { role: "user", content: "" },
     ]);
-    await expect(
-      adapter.append?.("thread", { role: "user", content: "hi" }),
-    ).resolves.toBeUndefined();
-    await expect(adapter.reset?.()).resolves.toBeUndefined();
+    await expect(adapter.append?.("thread", { role: "user", content: "hi" })).resolves.toBe(true);
+    await expect(adapter.reset?.()).resolves.toBe(true);
   });
 
   it("warns when memory thread id is missing", async () => {
@@ -117,7 +115,7 @@ describe("Adapter memory", () => {
 
     await expect(
       adapter.append?.("thread-1", { role: "assistant", content: "ok", timestamp: 999 }),
-    ).resolves.toBeUndefined();
+    ).resolves.toBe(true);
     expect(savedMessage).toEqual({
       chatId: "thread-1",
       userId: "user-1",
@@ -134,7 +132,7 @@ describe("Adapter memory", () => {
 
     await expect(
       adapter.save?.({ threadId: "thread-1" }, { workingMemory: "updated" }),
-    ).resolves.toBeUndefined();
+    ).resolves.toBe(true);
     expect(savedWorkingMemory).toEqual({
       chatId: "thread-1",
       userId: "user-1",

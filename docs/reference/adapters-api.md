@@ -105,6 +105,21 @@ Custom constructs are stored under `constructs` to avoid widening core types.
 Per-run registry resolution merges registry constructs into `adapters.constructs` before pipeline execution.
 `constructs` expects a record map; non-object values are wrapped as `{ value }` for convenience.
 
+## Effect return semantics
+
+Effectful adapter operations return `MaybePromise<boolean | null>`:
+
+- `true`: the operation succeeded.
+- `false`: the operation failed (validation errors, missing inputs, or upstream failure).
+- `null`: not applicable (capability not supported or intentionally skipped).
+
+Examples:
+
+- Cache/storage writes and deletes: `set`, `delete`, `put`, `mset`, `mdelete`.
+- Memory writes: `append`, `reset`, `save`.
+- Orchestration: checkpoint `set/delete/touch/sweep`, event streams `emit/emitMany`, trace sinks `emit/emitMany`.
+- Vector store deletes: `delete` returns `true/false/null` (upsert returns data or `null`).
+
 ## Output parser (LangChain only)
 
 Output parsers are LangChain-specific and are exposed as an adapter so you can reuse them with other
@@ -456,25 +471,23 @@ and `error` events in between. Provider-specific stream payloads are preserved i
 == TypeScript
 
 ```ts
-import { fromAiSdkModel, Adapter } from "#adapters";
-import { Recipe } from "#recipes";
+import { fromAiSdkModel } from "#adapters";
+import { recipes } from "#recipes";
 import { openai } from "@ai-sdk/openai";
 
-const wf = Recipe.flow("agent")
-  .use(Adapter.model("openai.model", fromAiSdkModel(openai("gpt-4o-mini"))))
-  .build();
+const model = fromAiSdkModel(openai("gpt-4o-mini"));
+const wf = recipes.agent().defaults({ adapters: { model } }).build();
 ```
 
 == JavaScript
 
 ```js
-import { fromAiSdkModel, Adapter } from "#adapters";
-import { Recipe } from "#recipes";
+import { fromAiSdkModel } from "#adapters";
+import { recipes } from "#recipes";
 import { openai } from "@ai-sdk/openai";
 
-const wf = Recipe.flow("agent")
-  .use(Adapter.model("openai.model", fromAiSdkModel(openai("gpt-4o-mini"))))
-  .build();
+const model = fromAiSdkModel(openai("gpt-4o-mini"));
+const wf = recipes.agent().defaults({ adapters: { model } }).build();
 ```
 
 :::

@@ -2,7 +2,7 @@ import type { ArtefactOf, Outcome, RecipeName, ResumeInputOf, Runtime } from "..
 import type { AdapterBundle, PauseKind } from "../../adapters/types";
 import type { TraceEvent } from "../trace";
 import type { PauseSession } from "../driver/types";
-import { bindFirst, chainMaybe } from "../../maybe";
+import { bindFirst, maybeChain } from "../../maybe";
 import {
   readSessionStore,
   resolveResumeSession,
@@ -84,9 +84,9 @@ const startResumeAfterAdapters = <N extends RecipeName>(
     ...input,
     resolvedAdapters,
   };
-  return chainMaybe(
-    resolveResumeSession(input.token, input.pauseSession, store),
+  return maybeChain(
     bindFirst(startResumeAfterSession, resumeInput),
+    resolveResumeSession(input.token, input.pauseSession, store),
   );
 };
 
@@ -95,9 +95,9 @@ const startResumeAfterExtensions = <N extends RecipeName>(
   _extensions: unknown,
 ) => {
   void _extensions;
-  return chainMaybe(
-    input.deps.resolveAdaptersForRun(input.runtime),
+  return maybeChain(
     bindFirst(startResumeAfterAdapters, input),
+    input.deps.resolveAdaptersForRun(input.runtime),
   );
 };
 
@@ -108,7 +108,7 @@ const startResumeAfterVerify = <N extends RecipeName>(
   if (earlyError) {
     return earlyError;
   }
-  return chainMaybe(input.deps.extensionRegistration, bindFirst(startResumeAfterExtensions, input));
+  return maybeChain(bindFirst(startResumeAfterExtensions, input), input.deps.extensionRegistration);
 };
 
 const resumeFromSession = <N extends RecipeName>(
@@ -152,7 +152,8 @@ const resumeFromSession = <N extends RecipeName>(
     trace,
     deps,
   };
-  return chainMaybe(
+  return maybeChain(
+    bindFirst(handleResumeValue, resumeValueInput),
     required.adapter.resolve({
       token,
       resumeInput,
@@ -164,7 +165,6 @@ const resumeFromSession = <N extends RecipeName>(
       declaredAdapters: deps.baseAdapters,
       providers: runtime?.providers,
     }),
-    bindFirst(handleResumeValue, resumeValueInput),
   );
 };
 
@@ -206,7 +206,7 @@ export const startResumePipeline = <N extends RecipeName>(
   const runtimeStore = readSessionStore(runtime);
   const verifyToken =
     runtimeStore && !pauseSession
-      ? chainMaybe(runtimeStore.get(token), bindFirst(handleVerifySnapshot, input))
+      ? maybeChain(bindFirst(handleVerifySnapshot, input), runtimeStore.get(token))
       : undefined;
-  return chainMaybe(verifyToken, bindFirst(startResumeAfterVerify, input));
+  return maybeChain(bindFirst(startResumeAfterVerify, input), verifyToken);
 };

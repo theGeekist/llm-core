@@ -10,7 +10,7 @@ import {
   fromLlamaIndexResponseSynthesizer,
 } from "#adapters";
 import { Recipe } from "../../src/recipes/flow";
-import { bindFirst, mapMaybe } from "../../src/maybe";
+import { bindFirst, maybeMap } from "../../src/maybe";
 import { expectTelemetryPresence, itIfEnvAll } from "./helpers";
 
 const itWithOpenAI = itIfEnvAll("OPENAI_API_KEY");
@@ -39,12 +39,12 @@ const buildPack = () =>
       if (!synthesizer) {
         throw new Error("Missing responseSynthesizer adapter.");
       }
-      return mapMaybe(
+      return maybeMap(
+        bindFirst(writeSynthesis, state),
         synthesizer.synthesize({
           query: "Summarize the docs.",
           documents: [{ text: "Adapter-first design keeps parity." }],
         }),
-        bindFirst(writeSynthesis, state),
       );
     }),
     summarize: step("summarize", ({ state, context }) => {
@@ -54,7 +54,7 @@ const buildPack = () =>
       }
       const synthesis = state.synthesisResult as { text?: string } | undefined;
       const prompt = `Rewrite: ${synthesis?.text ?? ""}`;
-      return mapMaybe(model.generate({ prompt }), bindFirst(writeModelResult, state));
+      return maybeMap(bindFirst(writeModelResult, state), model.generate({ prompt }));
     }).dependsOn("synthesize"),
   }));
 

@@ -1,10 +1,10 @@
-import { mapMaybe, mapMaybeArray as adapterMapMaybeArray } from "#adapters";
+import { maybeMap, maybeMapArray as adapterMapMaybeArray } from "#adapters";
 import type { MaybePromise } from "#adapters";
 
-export { mapMaybe };
+export { maybeMap };
 
-export const mapMaybeArray = <T, R>(value: MaybePromise<T[]>, map: (value: T) => R) =>
-  adapterMapMaybeArray(value, map);
+export const maybeMapArray = <T, R>(map: (value: T) => R, value: MaybePromise<T[]>) =>
+  adapterMapMaybeArray(map, value);
 
 export const asLangChainVectorStore = (store: unknown) =>
   store as import("@langchain/core/vectorstores").VectorStoreInterface;

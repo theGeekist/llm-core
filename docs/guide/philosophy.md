@@ -8,7 +8,7 @@ There are two ways to build AI applications today: **Gluing** and **Orchestratin
 
 `llm-core` is an **Orchestration Framework**.
 
-- **Recipes** (`Recipe.flow`) define the logic.
+- **Recipes** (`recipes.*()`) define the logic.
 - **Workflow** (`Workflow.run`) executes the logic.
 
 It imposes structure (Recipes, Packs, Steps) to give you superpowers that glue code can never support.

@@ -14,7 +14,7 @@ import {
   tryParseOutput,
 } from "./model-utils";
 import { toAdapterTrace } from "../telemetry";
-import { bindFirst, mapMaybe } from "../../maybe";
+import { bindFirst, maybeMap } from "../../maybe";
 import { ModelUsageHelper } from "../modeling";
 import { toLangChainStreamEvents } from "./stream";
 import { warnDiagnostic } from "../utils";
@@ -109,7 +109,7 @@ const toStreamUnsupported = async function* (
 export function fromLangChainModel(model: BaseChatModel): Model {
   function generate(call: ModelCall) {
     const state = createRunState(call);
-    return mapMaybe(invokeModel(model, state), bindFirst(toResultWithState, state));
+    return maybeMap(bindFirst(toResultWithState, state), invokeModel(model, state));
   }
 
   function stream(call: ModelCall) {
@@ -117,7 +117,7 @@ export function fromLangChainModel(model: BaseChatModel): Model {
     if (state.responseFormat) {
       return toStreamUnsupported(state.diagnostics);
     }
-    return mapMaybe(streamModel(model, state), mapStreamEvents(state));
+    return maybeMap(mapStreamEvents(state), streamModel(model, state));
   }
 
   return { generate, stream };

@@ -1,6 +1,6 @@
 import type { NodeParser } from "@llamaindex/core/node-parser";
 import type { AdapterCallContext, Document, DocumentTransformer } from "../types";
-import { mapMaybeArray } from "../../maybe";
+import { maybeMapArray } from "../../maybe";
 import { toLlamaIndexDocument } from "./documents";
 import { reportDiagnostics, validateTransformerInput } from "../input-validation";
 
@@ -12,11 +12,14 @@ export function fromLlamaIndexTransformer(parser: NodeParser): DocumentTransform
       return [];
     }
     const nodes = parser.getNodesFromDocuments(documents.map(toLlamaIndexDocument));
-    return mapMaybeArray(nodes, (node) => ({
-      id: node.id_,
-      text: node.text ?? "",
-      metadata: node.metadata,
-    }));
+    return maybeMapArray(
+      (node) => ({
+        id: node.id_,
+        text: node.text ?? "",
+        metadata: node.metadata,
+      }),
+      nodes,
+    );
   }
 
   return { transform };

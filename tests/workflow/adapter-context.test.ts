@@ -74,11 +74,11 @@ describe("Workflow adapter context wrappers", () => {
         },
         put: (_key, _value, ctx) => {
           ctx?.report?.({ level: "warn", message: "put" });
-          return undefined;
+          return null;
         },
         delete: (_key, ctx) => {
           ctx?.report?.({ level: "warn", message: "delete" });
-          return undefined;
+          return null;
         },
         list: (_prefix, ctx) => {
           ctx?.report?.({ level: "warn", message: "list" });
@@ -92,11 +92,11 @@ describe("Workflow adapter context wrappers", () => {
         },
         mset: (_pairs, ctx) => {
           ctx?.report?.({ level: "warn", message: "mset" });
-          return undefined;
+          return null;
         },
         mdelete: (_keys, ctx) => {
           ctx?.report?.({ level: "warn", message: "mdelete" });
-          return undefined;
+          return null;
         },
         list: (_prefix, ctx) => {
           ctx?.report?.({ level: "warn", message: "listKv" });
@@ -106,7 +106,7 @@ describe("Workflow adapter context wrappers", () => {
       memory: {
         append: (_threadId, _turn, ctx) => {
           ctx?.report?.({ level: "warn", message: "append" });
-          return undefined;
+          return null;
         },
         read: (_threadId, ctx) => {
           ctx?.report?.({ level: "warn", message: "read" });
@@ -122,11 +122,11 @@ describe("Workflow adapter context wrappers", () => {
         },
         save: (_input, _output, ctx) => {
           ctx?.report?.({ level: "warn", message: "save" });
-          return undefined;
+          return null;
         },
         reset: (ctx) => {
           ctx?.report?.({ level: "warn", message: "reset" });
-          return undefined;
+          return null;
         },
       },
       speech: {
@@ -157,7 +157,7 @@ describe("Workflow adapter context wrappers", () => {
         },
         delete: (_input, ctx) => {
           ctx?.report?.({ level: "warn", message: "vectorDelete" });
-          return undefined;
+          return null;
         },
       },
     };

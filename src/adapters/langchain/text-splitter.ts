@@ -1,7 +1,8 @@
 import type { Document } from "@langchain/core/documents";
 import type { TextSplitter as LanchainTextSplitter } from "@langchain/textsplitters";
 import type { AdapterCallContext, TextSplitter } from "../types";
-import { mapMaybe, maybeAll } from "../../maybe";
+import { maybeAll } from "@wpkernel/pipeline/core/async-utils";
+import { maybeMap } from "../../maybe";
 import {
   reportDiagnostics,
   validateTextSplitterBatchInput,
@@ -19,7 +20,7 @@ export function fromLangChainTextSplitter(splitter: LanchainTextSplitter): TextS
       reportDiagnostics(context, diagnostics);
       return [];
     }
-    return mapMaybe(splitter.splitText(text), (chunks) => chunks);
+    return maybeMap((chunks) => chunks, splitter.splitText(text));
   }
 
   function splitBatch(texts: string[], context?: AdapterCallContext) {
@@ -28,7 +29,7 @@ export function fromLangChainTextSplitter(splitter: LanchainTextSplitter): TextS
       reportDiagnostics(context, diagnostics);
       return [];
     }
-    return mapMaybe(maybeAll(texts.map((text) => splitter.splitText(text))), (chunks) => chunks);
+    return maybeMap((chunks) => chunks, maybeAll(texts.map((text) => splitter.splitText(text))));
   }
 
   function splitWithMetadata(text: string, context?: AdapterCallContext) {
@@ -37,7 +38,7 @@ export function fromLangChainTextSplitter(splitter: LanchainTextSplitter): TextS
       reportDiagnostics(context, diagnostics);
       return [];
     }
-    return mapMaybe(splitter.createDocuments([text], [{ source: "langchain" }]), toWithMetadata);
+    return maybeMap(toWithMetadata, splitter.createDocuments([text], [{ source: "langchain" }]));
   }
 
   return { split, splitBatch, splitWithMetadata };

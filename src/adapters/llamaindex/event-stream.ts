@@ -10,10 +10,12 @@ const toWorkflowEventData = (event: AdapterTraceEvent) => ADAPTER_TRACE_EVENT.wi
 
 const emitEvent = (context: WorkflowContext, event: AdapterTraceEvent) => {
   context.sendEvent(toWorkflowEventData(event));
+  return true;
 };
 
 const emitManyEvents = (context: WorkflowContext, events: AdapterTraceEvent[]) => {
   context.sendEvent(...events.map(toWorkflowEventData));
+  return true;
 };
 
 export const fromLlamaIndexWorkflowContext = (context: WorkflowContext): EventStream => ({

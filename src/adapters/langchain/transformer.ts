@@ -1,6 +1,6 @@
 import type { BaseDocumentTransformer } from "@langchain/core/documents";
 import type { AdapterCallContext, Document, DocumentTransformer } from "../types";
-import { mapMaybeArray } from "../../maybe";
+import { maybeMapArray } from "../../maybe";
 import { toLangChainDocument } from "./documents";
 import { reportDiagnostics, validateTransformerInput } from "../input-validation";
 
@@ -14,11 +14,14 @@ export function fromLangChainTransformer(
       return [];
     }
     const langchainDocs = documents.map(toLangChainDocument);
-    return mapMaybeArray(transformer.transformDocuments(langchainDocs), (doc) => ({
-      id: doc.id,
-      text: doc.pageContent,
-      metadata: doc.metadata,
-    }));
+    return maybeMapArray(
+      (doc) => ({
+        id: doc.id,
+        text: doc.pageContent,
+        metadata: doc.metadata,
+      }),
+      transformer.transformDocuments(langchainDocs),
+    );
   }
 
   return { transform };

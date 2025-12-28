@@ -1,6 +1,6 @@
 import type { AdapterCallContext, Blob, Cache, KVStore } from "../types";
 import { reportDiagnostics, validateStorageKey } from "../input-validation";
-import { mapMaybe } from "../../maybe";
+import { maybeMap, toNull, toTrue } from "../../maybe";
 import { readNumber } from "../utils";
 
 type CacheEntry = {
@@ -8,8 +8,9 @@ type CacheEntry = {
   expiresAt?: number;
 };
 
-const toUndefined = () => undefined;
 const CACHE_EXPIRY_KEY = "__cacheExpiresAt";
+
+const toBoolean = (value: unknown): boolean | null => (value === null ? null : value !== false);
 
 const toExpiresAt = (ttlMs?: number) =>
   typeof ttlMs === "number" ? Date.now() + ttlMs : undefined;
@@ -49,7 +50,7 @@ const stripExpiryMetadata = (value: Blob): Blob => {
 const readFirst = <T>(entries: Array<T | undefined>) => entries[0];
 
 const deleteKvEntry = (store: KVStore<Blob>, key: string, context?: AdapterCallContext) =>
-  mapMaybe(store.mdelete([key], context), toUndefined);
+  maybeMap(toBoolean, store.mdelete([key], context));
 
 const readKvEntry = (
   store: KVStore<Blob>,
@@ -58,10 +59,10 @@ const readKvEntry = (
   context?: AdapterCallContext,
 ) => {
   if (!value) {
-    return undefined;
+    return null;
   }
   if (isBlobExpired(value)) {
-    return mapMaybe(deleteKvEntry(store, key, context), toUndefined);
+    return maybeMap(toNull, deleteKvEntry(store, key, context));
   }
   return stripExpiryMetadata(value);
 };
@@ -84,17 +85,17 @@ export const createMemoryCache = (): Cache => {
     const diagnostics = validateStorageKey(key, "cache.get");
     if (diagnostics.length > 0) {
       reportDiagnostics(context, diagnostics);
-      return undefined;
+      return null;
     }
 
     const entry = store.get(key);
     if (!entry) {
-      return undefined;
+      return null;
     }
 
     if (isExpired(entry)) {
       store.delete(key);
-      return undefined;
+      return null;
     }
 
     return entry.value;
@@ -104,20 +105,20 @@ export const createMemoryCache = (): Cache => {
     const diagnostics = validateStorageKey(key, "cache.set");
     if (diagnostics.length > 0) {
       reportDiagnostics(context, diagnostics);
-      return;
+      return false;
     }
 
     const expiresAt = typeof ttlMs === "number" ? Date.now() + ttlMs : undefined;
-    store.set(key, { value, expiresAt });
+    return maybeMap(toTrue, store.set(key, { value, expiresAt }));
   };
 
   const del = (key: string, context?: AdapterCallContext) => {
     const diagnostics = validateStorageKey(key, "cache.delete");
     if (diagnostics.length > 0) {
       reportDiagnostics(context, diagnostics);
-      return;
+      return false;
     }
-    store.delete(key);
+    return maybeMap(toTrue, store.delete(key));
   };
 
   return { get, set, delete: del };
@@ -128,16 +129,16 @@ export const createCacheFromKVStore = (store: KVStore<Blob>): Cache => {
     const readEntries = (entries: Array<Blob | undefined>) =>
       readKvEntries(store, key, context, entries);
 
-    return mapMaybe(store.mget([key], context), readEntries);
+    return maybeMap(readEntries, store.mget([key], context));
   };
 
   const set = (key: string, value: Blob, ttlMs?: number, context?: AdapterCallContext) => {
     const entry = withBlobExpiry(value, ttlMs);
-    return mapMaybe(store.mset([[key, entry]], context), toUndefined);
+    return maybeMap(toBoolean, store.mset([[key, entry]], context));
   };
 
   const del = (key: string, context?: AdapterCallContext) =>
-    mapMaybe(store.mdelete([key], context), toUndefined);
+    maybeMap(toBoolean, store.mdelete([key], context));
 
   return { get, set, delete: del };
 };

@@ -50,28 +50,28 @@ describe("Adapter registration helpers", () => {
     });
     const vectorStore = Adapter.vectorStore(`${CUSTOM_PREFIX}.vectorStore`, {
       upsert: () => ({ ids: [] }),
-      delete: () => undefined,
+      delete: () => null,
     });
     const memory = Adapter.memory(`${CUSTOM_PREFIX}.memory`, {
-      append: () => undefined,
+      append: () => null,
     });
     const cache = Adapter.cache(`${CUSTOM_PREFIX}.cache`, {
-      get: () => undefined,
-      set: () => undefined,
-      delete: () => undefined,
+      get: () => null,
+      set: () => null,
+      delete: () => null,
     });
     const checkpoint = Adapter.checkpoint(`${CUSTOM_PREFIX}.checkpoint`, {
       get: () => undefined,
-      set: () => undefined,
-      delete: () => undefined,
+      set: () => null,
+      delete: () => null,
     });
     const eventStream = Adapter.eventStream(`${CUSTOM_PREFIX}.eventStream`, {
-      emit: () => undefined,
+      emit: () => null,
     });
     const interrupt = Adapter.interrupt(`${CUSTOM_PREFIX}.interrupt`, {
       mode: "continue",
     });
-    const trace = Adapter.trace(`${CUSTOM_PREFIX}.trace`, { emit: () => undefined });
+    const trace = Adapter.trace(`${CUSTOM_PREFIX}.trace`, { emit: () => null });
     const indexing = Adapter.indexing(`${CUSTOM_PREFIX}.indexing`, {
       index: () => ({ added: 0, deleted: 0, updated: 0, skipped: 0 }),
     });

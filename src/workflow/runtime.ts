@@ -30,7 +30,7 @@ import {
   type DiagnosticEntry,
 } from "./diagnostics";
 import type { TraceEvent } from "./trace";
-import { bindFirst, chainMaybe, mapMaybe } from "../maybe";
+import { bindFirst, maybeChain, maybeMap } from "../maybe";
 import type { MaybePromise } from "../maybe";
 import {
   collectAdapters,
@@ -49,6 +49,7 @@ import {
 import {
   readArtifact,
   readPartialArtifact,
+  readPauseFlag,
   toErrorOutcome,
   toOkOutcome,
   toPausedOutcome,
@@ -107,7 +108,7 @@ type PausedOutcomeInput<N extends RecipeName> = {
   trace: TraceEvent[];
   diagnostics: DiagnosticEntry[];
   readPartial: (result: unknown) => Partial<ArtefactOf<N>>;
-  recordSnapshot?: (result: unknown) => MaybePromise<void>;
+  recordSnapshot?: (result: unknown) => MaybePromise<boolean | null>;
 };
 
 const toPausedOutcomeAfterSnapshot = <N extends RecipeName>(input: PausedOutcomeInput<N>) =>
@@ -117,9 +118,9 @@ const finalizePausedSnapshot = <N extends RecipeName>(input: PausedOutcomeInput<
   if (!input.recordSnapshot) {
     return toPausedOutcomeAfterSnapshot(input);
   }
-  return chainMaybe(
-    input.recordSnapshot(input.result),
+  return maybeChain(
     bindFirst(toPausedOutcomeAfterSnapshot<N>, input),
+    input.recordSnapshot(input.result),
   );
 };
 
@@ -127,7 +128,7 @@ const runPausedRollback = <N extends RecipeName>(input: PausedOutcomeInput<N>) =
   runPauseRollback(input.result);
 
 const finalizePausedResult = <N extends RecipeName>(input: PausedOutcomeInput<N>) =>
-  chainMaybe(runPausedRollback(input), bindFirst(finalizePausedSnapshot<N>, input));
+  maybeChain(bindFirst(finalizePausedSnapshot<N>, input), runPausedRollback(input));
 
 const finalizeRuntimeResult = <N extends RecipeName>(
   input: FinalizeRuntimeInput<N>,
@@ -136,7 +137,7 @@ const finalizeRuntimeResult = <N extends RecipeName>(
   trace: TraceEvent[],
   diagnosticsMode: "default" | "strict",
   iterator?: ExecutionIterator,
-  recordSnapshot?: (result: unknown) => MaybePromise<void>,
+  recordSnapshot?: (result: unknown) => MaybePromise<boolean | null>,
 ) => {
   const diagnostics = applyDiagnosticsMode(
     input.readDiagnostics(result).concat(getDiagnostics()),
@@ -145,7 +146,7 @@ const finalizeRuntimeResult = <N extends RecipeName>(
   if (diagnosticsMode === "strict" && hasErrorDiagnostics(diagnostics)) {
     return input.errorOutcome(new Error(STRICT_DIAGNOSTICS_ERROR), trace, diagnostics);
   }
-  if ((result as { paused?: boolean }).paused) {
+  if (readPauseFlag(result)) {
     recordPauseSession(input.pauseSessions, result, iterator, getDiagnostics);
     return finalizePausedResult<N>({
       result,
@@ -186,7 +187,7 @@ type AdapterResolution = {
 
 const resolveAdaptersSnapshot = (
   resolveAdaptersForRun: (runtime?: Runtime) => MaybePromise<AdapterResolution>,
-) => mapMaybe(resolveAdaptersForRun(undefined), toResolvedAdapters);
+) => maybeMap(toResolvedAdapters, resolveAdaptersForRun(undefined));
 
 const resolveCapabilitiesSnapshot = (
   declaredCapabilities: Record<string, unknown>,
@@ -199,7 +200,7 @@ type CapabilitiesInput = {
 };
 
 const getCapabilities = (input: CapabilitiesInput) =>
-  mapMaybe(input.resolveAdaptersSnapshotFn(), input.resolveCapabilitiesSnapshotFn);
+  maybeMap(input.resolveCapabilitiesSnapshotFn, input.resolveAdaptersSnapshotFn());
 
 const createCapabilitiesGetter = (
   resolveAdaptersSnapshotFn: () => MaybePromise<AdapterBundle>,

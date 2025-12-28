@@ -42,9 +42,11 @@ describe("Adapter checkpoint stores", () => {
       get: (token) => entries.get(String(token)),
       set: (token, entry) => {
         entries.set(String(token), entry);
+        return true;
       },
       delete: (token) => {
         entries.delete(String(token));
+        return true;
       },
     };
     const checkpoint = fromLlamaIndexCheckpointStore(store);

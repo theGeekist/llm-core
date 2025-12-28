@@ -6,16 +6,16 @@ import type {
   ResumeSnapshot,
 } from "../../adapters/types";
 import type { MaybePromise } from "../../maybe";
-import { mapMaybe, mapMaybeOr } from "../../maybe";
+import { maybeMap, maybeMapOr } from "../../maybe";
 import type { PauseSession } from "../driver";
 import type { Runtime } from "../types";
 
 export type SessionStore = {
   get: (token: unknown) => MaybePromise<ResumeSnapshot | undefined>;
-  set: (token: unknown, snapshot: ResumeSnapshot, ttlMs?: number) => MaybePromise<void>;
-  delete: (token: unknown) => MaybePromise<void>;
-  touch?: (token: unknown, ttlMs?: number) => MaybePromise<void>;
-  sweep?: () => MaybePromise<void>;
+  set: (token: unknown, snapshot: ResumeSnapshot, ttlMs?: number) => MaybePromise<boolean | null>;
+  delete: (token: unknown) => MaybePromise<boolean | null>;
+  touch?: (token: unknown, ttlMs?: number) => MaybePromise<boolean | null>;
+  sweep?: () => MaybePromise<boolean | null>;
 };
 
 // Serialization helpers
@@ -25,7 +25,7 @@ const serialize = (snapshot: ResumeSnapshot): { value: AdapterBlob } => {
   return { value: { bytes, contentType: "application/json" } };
 };
 
-const deserialize = (blob: AdapterBlob | undefined): ResumeSnapshot | undefined => {
+const deserialize = (blob: AdapterBlob | null): ResumeSnapshot | undefined => {
   if (!blob) return undefined;
   try {
     const json = new TextDecoder().decode(blob.bytes);
@@ -40,22 +40,22 @@ export const createSessionStoreFromCache = (cache: Cache): SessionStore => ({
     if (typeof token !== "string" && typeof token !== "number") {
       return undefined;
     }
-    return mapMaybe(cache.get(String(token)), (blob) => deserialize(blob));
+    return maybeMap(deserialize, cache.get(String(token)));
   },
   set: (token: unknown, snapshot: ResumeSnapshot, ttlMs?: number) => {
     if (typeof token !== "string" && typeof token !== "number") {
-      return undefined;
+      return false;
     }
     try {
       const serialized = serialize(snapshot);
       return cache.set(String(token), serialized.value, ttlMs);
     } catch {
-      return undefined;
+      return false;
     }
   },
   delete: (token: unknown) => {
     if (typeof token !== "string" && typeof token !== "number") {
-      return undefined;
+      return false;
     }
     return cache.delete(String(token));
   },
@@ -115,14 +115,14 @@ const createResumeSnapshot = (
 export const createSnapshotRecorder = (store: SessionStore | undefined, runtime?: Runtime) => {
   if (!store) {
     return function recordSnapshot() {
-      return undefined;
+      return null;
     };
   }
   const ttlMs = readSessionTtlMs(runtime);
   return function recordSnapshot(result: unknown) {
     const token = (result as { token?: unknown }).token;
     if (token === undefined) {
-      return undefined;
+      return false;
     }
     const pauseKind = (result as { pauseKind?: PauseKind }).pauseKind;
     const payload = readPauseSnapshotPayload(result);
@@ -130,7 +130,7 @@ export const createSnapshotRecorder = (store: SessionStore | undefined, runtime?
     try {
       return store.set(token, createResumeSnapshot(token, pauseKind, payload), ttlMs);
     } catch {
-      return undefined;
+      return false;
     }
   };
 };
@@ -146,10 +146,10 @@ export const resolveResumeSession = (
   if (!store) {
     return { kind: "invalid" };
   }
-  return mapMaybeOr<ResumeSnapshot, ResumeSession>(
-    store.get(token),
+  return maybeMapOr<ResumeSnapshot, ResumeSession>(
     (snapshot) => ({ kind: "snapshot", snapshot, store }),
     () => ({ kind: "invalid" }),
+    store.get(token),
   );
 };
 
@@ -165,4 +165,4 @@ export const resolveSessionStore = (runtime: Runtime | undefined, adapters: Adap
 };
 
 export const runSessionStoreSweep = (store: SessionStore | undefined) =>
-  store?.sweep ? store.sweep() : undefined;
+  store?.sweep ? store.sweep() : null;

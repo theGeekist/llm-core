@@ -5,7 +5,7 @@ import type { NodeParser } from "@llamaindex/core/node-parser";
 import { Document as LlamaDocument } from "@llamaindex/core/schema";
 import * as AiSdk from "ai";
 import type { DocumentTransformer } from "#workflow";
-import { mapMaybe } from "./helpers";
+import { maybeMap } from "./helpers";
 
 const toAdapterTransformerFromLangChain = (
   transformer: BaseDocumentTransformer,
@@ -19,12 +19,14 @@ const toAdapterTransformerFromLangChain = (
           id: doc.id,
         }),
     );
-    return mapMaybe(transformer.transformDocuments(langchainDocs), (result) =>
-      result.map((doc) => ({
-        id: doc.id,
-        text: doc.pageContent,
-        metadata: doc.metadata,
-      })),
+    return maybeMap(
+      (result) =>
+        result.map((doc) => ({
+          id: doc.id,
+          text: doc.pageContent,
+          metadata: doc.metadata,
+        })),
+      transformer.transformDocuments(langchainDocs),
     );
   },
 });
@@ -34,12 +36,14 @@ const toAdapterTransformerFromLlama = (parser: NodeParser): DocumentTransformer 
     const llamaDocs = documents.map(
       (doc) => new LlamaDocument({ text: doc.text, metadata: doc.metadata }),
     );
-    return mapMaybe(parser.getNodesFromDocuments(llamaDocs), (nodes) =>
-      nodes.map((node) => ({
-        id: node.id_,
-        text: node.text ?? "",
-        metadata: node.metadata,
-      })),
+    return maybeMap(
+      (nodes) =>
+        nodes.map((node) => ({
+          id: node.id_,
+          text: node.text ?? "",
+          metadata: node.metadata,
+        })),
+      parser.getNodesFromDocuments(llamaDocs),
     );
   },
 });

@@ -1,5 +1,6 @@
 import type { BaseStore } from "@langchain/core/stores";
 import type { AdapterCallContext, KVStore } from "../types";
+import { maybeMap, toTrue } from "../../maybe";
 import { reportDiagnostics, validateKvKeys, validateKvPairs } from "../input-validation";
 
 const collectKeys = async (store: BaseStore<string, unknown>, prefix?: string) => {
@@ -30,17 +31,17 @@ export function fromLangChainStore(store: BaseStore<string, unknown>): KVStore {
       const diagnostics = validateKvPairs(pairs);
       if (diagnostics.length > 0) {
         reportDiagnostics(context, diagnostics);
-        return;
+        return false;
       }
-      return store.mset(pairs);
+      return maybeMap(toTrue, store.mset(pairs));
     },
     mdelete: (keys, context) => {
       const diagnostics = validateKvKeys(keys, "mdelete");
       if (diagnostics.length > 0) {
         reportDiagnostics(context, diagnostics);
-        return;
+        return false;
       }
-      return store.mdelete(keys);
+      return maybeMap(toTrue, store.mdelete(keys));
     },
     list,
   };

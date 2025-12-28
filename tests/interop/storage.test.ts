@@ -3,19 +3,22 @@ import type { BaseStore } from "@langchain/core/stores";
 import type { BaseDocumentStore } from "@llamaindex/core/storage/doc-store";
 import * as AiSdk from "ai";
 import type { KVStore } from "#workflow";
-import { mapMaybe } from "./helpers";
+import { maybeMap } from "./helpers";
+
+const toNull = () => null;
 
 const toAdapterKVFromLangChain = (store: BaseStore<string, unknown>): KVStore => ({
   mget: (keys) => store.mget(keys),
-  mset: (pairs) => store.mset(pairs),
-  mdelete: (keys) => store.mdelete(keys),
+  mset: (pairs) => maybeMap(toNull, store.mset(pairs)),
+  mdelete: (keys) => maybeMap(toNull, store.mdelete(keys)),
   list: (prefix) => collectAsyncKeys(store, prefix),
 });
 
 const toAdapterKVFromLlamaDocStore = (store: BaseDocumentStore): KVStore => ({
   mget: (keys) =>
-    mapMaybe(Promise.all(keys.map((key) => store.getDocument(key, false))), (docs) =>
-      docs.map((doc) => (doc ? doc.toJSON() : undefined)),
+    maybeMap(
+      (docs) => docs.map((doc) => (doc ? doc.toJSON() : undefined)),
+      Promise.all(keys.map((key) => store.getDocument(key, false))),
     ),
   mset: (pairs) => {
     const docs = pairs
@@ -30,11 +33,11 @@ const toAdapterKVFromLlamaDocStore = (store: BaseDocumentStore): KVStore => ({
         }
         return doc;
       });
-    return store.addDocuments(docs as never, true);
+    return maybeMap(toNull, store.addDocuments(docs as never, true));
   },
   mdelete: (keys) =>
-    mapMaybe(Promise.all(keys.map((key) => store.deleteDocument(key, false))), () => undefined),
-  list: () => mapMaybe(store.docs(), (docs) => Object.keys(docs)),
+    maybeMap(toNull, Promise.all(keys.map((key) => store.deleteDocument(key, false)))),
+  list: () => maybeMap((docs) => Object.keys(docs), store.docs()),
 });
 
 const collectAsyncKeys = async (

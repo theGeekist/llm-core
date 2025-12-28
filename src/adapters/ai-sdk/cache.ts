@@ -1,5 +1,5 @@
 import type { AdapterCallContext, Blob, Cache } from "../types";
-import { fromPromiseLike, mapMaybe, bindFirst } from "../../maybe";
+import { bindFirst, maybeMap, toNull, toTrue } from "../../maybe";
 import { reportDiagnostics, validateStorageKey } from "../input-validation";
 
 export type AiSdkCacheStore<T = unknown> = {
@@ -24,7 +24,7 @@ type CacheEntry = {
   key: string;
 };
 
-const toUndefined = () => undefined;
+const toBoolean = (value: unknown): boolean | null => (value === null ? null : value !== false);
 
 const toEntry = (key: string, value: Blob, ttlMs?: number): CacheEntry => ({
   key,
@@ -40,10 +40,10 @@ const readEnvelope = (entry: CacheEntry | undefined): CacheEnvelope | undefined 
 const isExpired = (envelope: CacheEnvelope | undefined) =>
   typeof envelope?.expiresAt === "number" && Date.now() > envelope.expiresAt;
 
-const readValue = (envelope: CacheEnvelope | undefined) => envelope?.value;
+const readValue = (envelope: CacheEnvelope) => envelope.value;
 
 const deleteEntry = (store: AiSdkCacheStore<CacheEntry>, key: string) =>
-  mapMaybe(fromPromiseLike(store.delete(key)), toUndefined);
+  maybeMap(toBoolean, store.delete(key));
 
 const readEntry = (
   store: AiSdkCacheStore<CacheEntry>,
@@ -52,10 +52,10 @@ const readEntry = (
 ) => {
   const envelope = readEnvelope(entry);
   if (!envelope) {
-    return undefined;
+    return null;
   }
   if (isExpired(envelope)) {
-    return mapMaybe(deleteEntry(store, key), toUndefined);
+    return maybeMap(toNull, deleteEntry(store, key));
   }
   return readValue(envelope);
 };
@@ -72,11 +72,11 @@ const cacheGet = (
   const diagnostics = validateStorageKey(key, "cache.get");
   if (diagnostics.length > 0) {
     reportDiagnostics(context, diagnostics);
-    return undefined;
+    return null;
   }
 
   const handleEntry = (entry: CacheEntry | undefined) => readEntry(store, key, entry);
-  return mapMaybe(fromPromiseLike(store.get(key)), handleEntry);
+  return maybeMap(handleEntry, store.get(key));
 };
 const cacheSet = (
   store: AiSdkCacheStore<CacheEntry>,
@@ -89,11 +89,11 @@ const cacheSet = (
   const diagnostics = validateStorageKey(key, "cache.set");
   if (diagnostics.length > 0) {
     reportDiagnostics(context, diagnostics);
-    return;
+    return false;
   }
   const ttl = ttlMs ?? options?.defaultTtlMs ?? store.getDefaultTTL?.();
   const entry = toEntry(key, value, ttl);
-  return mapMaybe(fromPromiseLike(store.set(key, entry)), toUndefined);
+  return maybeMap(toTrue, store.set(key, entry));
 };
 
 const cacheDelete = (
@@ -104,10 +104,18 @@ const cacheDelete = (
   const diagnostics = validateStorageKey(key, "cache.delete");
   if (diagnostics.length > 0) {
     reportDiagnostics(context, diagnostics);
-    return;
+    return false;
   }
-  return mapMaybe(fromPromiseLike(store.delete(key)), toUndefined);
+  return maybeMap(toBoolean, store.delete(key));
 };
+
+const cacheSetWithOptions = (
+  input: { store: AiSdkCacheStore<CacheEntry>; options?: AiSdkCacheOptions },
+  key: string,
+  value: Blob,
+  ttlMs?: number,
+  context?: AdapterCallContext,
+) => cacheSet(input.store, input.options, key, value, ttlMs, context);
 
 export function fromAiSdkCacheStore(
   store: AiSdkCacheStore<CacheEntry>,
@@ -115,7 +123,7 @@ export function fromAiSdkCacheStore(
 ): Cache {
   return {
     get: bindFirst(cacheGet, store),
-    set: bindFirst(bindFirst(cacheSet, store), options),
+    set: bindFirst(cacheSetWithOptions, { store, options }),
     delete: bindFirst(cacheDelete, store),
   };
 }

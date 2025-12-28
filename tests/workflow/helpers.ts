@@ -63,9 +63,11 @@ export const createSessionStore = () => {
     get: (token: unknown) => sessions.get(token),
     set: (token: unknown, snapshot: ResumeSnapshot) => {
       sessions.set(token, snapshot);
+      return null;
     },
     delete: (token: unknown) => {
       sessions.delete(token);
+      return null;
     },
   };
   return { sessions, sessionStore };

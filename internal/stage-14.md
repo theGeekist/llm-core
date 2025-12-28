@@ -77,6 +77,7 @@ const recipe = Recipe.flow("rag-agent")
 - dependsOn ordering is honored by pipeline.
 - Multiple packs compose into a single flow.
 - Adapter defaults are merged and can be overridden.
+- Dogfood the unified `recipes.*` facade in recipe tests (one test per recipe handle).
 
 ## Docs
 

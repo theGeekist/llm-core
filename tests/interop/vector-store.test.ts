@@ -5,7 +5,7 @@ import { asLangChainVectorStore, asLlamaIndexVectorStore } from "./helpers";
 
 const makeVectorStore = (): VectorStore => ({
   upsert: () => ({ ids: [] }),
-  delete: () => undefined,
+  delete: () => null,
 });
 
 describe("Interop vector store", () => {

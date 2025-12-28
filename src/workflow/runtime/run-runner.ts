@@ -1,6 +1,6 @@
 import type { AdapterBundle, AdapterDiagnostic } from "../../adapters/types";
 import type { MaybePromise } from "../../maybe";
-import { bindFirst, chainMaybe, curryK, tryMaybe } from "../../maybe";
+import { bindFirst, maybeChain, curryK, maybeTry } from "../../maybe";
 import { attachAdapterContext, createAdapterContext } from "../adapter-context";
 import type { DiagnosticEntry } from "../diagnostics";
 import { applyDiagnosticsMode, createAdapterDiagnostic, hasErrorDiagnostics } from "../diagnostics";
@@ -138,14 +138,14 @@ const runPipeline = <TOutcome>(
     contextDiagnostics: adapterContext.diagnostics,
     finalize,
   });
-  return chainMaybe(
+  return maybeChain(
+    handleResult,
     context.deps.pipeline.run({
       input: context.ctx.input,
       runtime: context.ctx.runtime,
       reporter: context.ctx.runtime?.reporter,
       adapters: adaptersWithContext,
     }),
-    handleResult,
   );
 };
 
@@ -159,18 +159,18 @@ const handlePipelineResult = <TOutcome>(input: RunPipelineInput<TOutcome>, resul
   );
 
 const runWithAdapters = <TOutcome>(context: RunContext<TOutcome>) =>
-  chainMaybe(
-    context.deps.resolveAdaptersForRun(context.ctx.runtime),
+  maybeChain(
     curryK(handleAdapters<TOutcome>)(context),
+    context.deps.resolveAdaptersForRun(context.ctx.runtime),
   );
 
 const handleAdapters = <TOutcome>(context: RunContext<TOutcome>, resolution: AdapterResolution) =>
   runPipeline(context, resolution);
 
 const runWithExtensions = <TOutcome>(context: RunContext<TOutcome>) =>
-  chainMaybe(
-    context.deps.extensionRegistration,
+  maybeChain(
     curryK(handleExtensionRegistration<TOutcome>)(context),
+    context.deps.extensionRegistration,
   );
 
 const handleExtensionRegistration = <TOutcome>(
@@ -186,5 +186,5 @@ export const runWorkflow = <TOutcome>(
   ctx: RunWorkflowContext<TOutcome>,
 ) => {
   const context: RunContext<TOutcome> = { deps, ctx };
-  return tryMaybe(bindFirst(runWithExtensions<TOutcome>, context), ctx.handleError);
+  return maybeTry(ctx.handleError, bindFirst(runWithExtensions<TOutcome>, context));
 };

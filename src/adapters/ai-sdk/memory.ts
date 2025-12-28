@@ -5,7 +5,7 @@ import type {
   WorkingMemory,
 } from "@ai-sdk-tools/memory";
 import type { AdapterCallContext, Memory, Turn, Thread } from "../types";
-import { fromPromiseLike, mapMaybe } from "../../maybe";
+import { maybeMap, toTrue } from "../../maybe";
 import {
   reportDiagnostics,
   validateMemoryLoadInput,
@@ -84,8 +84,6 @@ const reportProviderMissing = (
   reportDiagnostics(context, validateMemoryProvider(method, action));
 };
 
-const toUndefined = () => undefined;
-
 export function fromAiSdkMemory(provider: MemoryProvider, options?: AiSdkMemoryOptions): Memory {
   function read(threadId: string, context?: AdapterCallContext) {
     const diagnostics = validateThreadId(threadId, "read");
@@ -97,9 +95,9 @@ export function fromAiSdkMemory(provider: MemoryProvider, options?: AiSdkMemoryO
       reportProviderMissing(context, "getMessages", "read");
       return undefined;
     }
-    return mapMaybe(
-      fromPromiseLike(provider.getMessages({ chatId: threadId, userId: options?.userId })),
+    return maybeMap(
       (messages) => toThread(threadId, messages),
+      provider.getMessages({ chatId: threadId, userId: options?.userId }),
     );
   }
 
@@ -107,11 +105,11 @@ export function fromAiSdkMemory(provider: MemoryProvider, options?: AiSdkMemoryO
     const diagnostics = validateThreadId(threadId, "append").concat(validateMemoryTurn(turn));
     if (diagnostics.length > 0) {
       reportDiagnostics(context, diagnostics);
-      return;
+      return false;
     }
     if (!provider.saveMessage) {
       reportProviderMissing(context, "saveMessage", "append");
-      return;
+      return null;
     }
     const timestamp = new Date(turn.timestamp ?? Date.now());
     const message: ConversationMessage = {
@@ -121,7 +119,7 @@ export function fromAiSdkMemory(provider: MemoryProvider, options?: AiSdkMemoryO
       content: turn.content,
       timestamp,
     };
-    return mapMaybe(fromPromiseLike(provider.saveMessage(message)), toUndefined);
+    return maybeMap(toTrue, provider.saveMessage(message));
   }
 
   function load(input: Record<string, unknown>, context?: AdapterCallContext) {
@@ -139,15 +137,13 @@ export function fromAiSdkMemory(provider: MemoryProvider, options?: AiSdkMemoryO
       reportThreadMissing(context, "load");
       return {};
     }
-    return mapMaybe(
-      fromPromiseLike(
-        provider.getWorkingMemory({
-          chatId: ids.chatId,
-          userId: ids.userId,
-          scope: ids.scope,
-        }),
-      ),
+    return maybeMap(
       toWorkingMemoryRecord,
+      provider.getWorkingMemory({
+        chatId: ids.chatId,
+        userId: ids.userId,
+        scope: ids.scope,
+      }),
     );
   }
 
@@ -159,31 +155,29 @@ export function fromAiSdkMemory(provider: MemoryProvider, options?: AiSdkMemoryO
     const diagnostics = validateMemorySaveInput(input, output);
     if (diagnostics.length > 0) {
       reportDiagnostics(context, diagnostics);
-      return;
+      return false;
     }
     if (!provider.updateWorkingMemory) {
       reportProviderMissing(context, "updateWorkingMemory", "save");
-      return;
+      return null;
     }
     const ids = toIdentifiers(input, options);
     if (ids.scope === "chat" && !ids.chatId) {
       reportThreadMissing(context, "save");
-      return;
+      return false;
     }
     const content = readWorkingMemoryContent(output);
     if (content === undefined) {
-      return;
+      return false;
     }
-    return mapMaybe(
-      fromPromiseLike(
-        provider.updateWorkingMemory({
-          chatId: ids.chatId,
-          userId: ids.userId,
-          scope: ids.scope,
-          content,
-        }),
-      ),
-      toUndefined,
+    return maybeMap(
+      toTrue,
+      provider.updateWorkingMemory({
+        chatId: ids.chatId,
+        userId: ids.userId,
+        scope: ids.scope,
+        content,
+      }),
     );
   }
 

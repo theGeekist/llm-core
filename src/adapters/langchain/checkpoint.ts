@@ -5,7 +5,7 @@ import type {
   CheckpointMetadata,
 } from "@langchain/langgraph-checkpoint";
 import type { CheckpointStore, ResumeSnapshot } from "../types";
-import { bindFirst, mapMaybe } from "../../maybe";
+import { bindFirst, maybeMap, toTrue } from "../../maybe";
 import { isRecord } from "../utils";
 
 const CHECKPOINT_CHANNEL = "llm_core_snapshot";
@@ -70,21 +70,19 @@ const storeSnapshot = (
 const deleteSnapshot = (checkpointer: BaseCheckpointSaver, token: unknown) =>
   checkpointer.deleteThread(toThreadId(token));
 
-const toUndefined = () => undefined;
-
 const readSnapshot = (checkpointer: BaseCheckpointSaver, token: unknown) => {
   const config = toCheckpointConfig(token);
-  return mapMaybe(checkpointer.get(config), toSnapshot);
+  return maybeMap(toSnapshot, checkpointer.get(config));
 };
 
 const storeSnapshotValue = (
   checkpointer: BaseCheckpointSaver,
   token: unknown,
   snapshot: ResumeSnapshot,
-) => mapMaybe(storeSnapshot(checkpointer, token, snapshot), toUndefined);
+) => maybeMap(toTrue, storeSnapshot(checkpointer, token, snapshot));
 
 const deleteSnapshotValue = (checkpointer: BaseCheckpointSaver, token: unknown) =>
-  mapMaybe(deleteSnapshot(checkpointer, token), toUndefined);
+  maybeMap(toTrue, deleteSnapshot(checkpointer, token));
 
 export const fromLangGraphCheckpointer = (checkpointer: BaseCheckpointSaver): CheckpointStore => ({
   get: bindFirst(readSnapshot, checkpointer),

@@ -5,7 +5,7 @@ import type {
   ResponseSynthesizer,
   SynthesisInput,
 } from "../types";
-import { bindFirst, mapMaybe } from "../../maybe";
+import { bindFirst, maybeMap } from "../../maybe";
 import { reportDiagnostics, validateResponseSynthesizerInput } from "../input-validation";
 import {
   toLlamaIndexNodes,
@@ -59,9 +59,9 @@ function synthesizeWithDeps(
   }
   const queryType = toLlamaIndexQueryType(input.query);
   const nodes = toLlamaIndexNodes(input.documents);
-  return mapMaybe(
-    deps.synthesizer.synthesize({ query: queryType, nodes }),
+  return maybeMap(
     bindFirst(mapSynthesisResponse, input),
+    deps.synthesizer.synthesize({ query: queryType, nodes }),
   );
 }
 
@@ -77,8 +77,8 @@ function streamWithDeps(
   }
   const queryType = toLlamaIndexQueryType(input.query);
   const nodes = toLlamaIndexNodes(input.documents);
-  return mapMaybe(
-    deps.synthesizer.synthesize({ query: queryType, nodes }, true),
+  return maybeMap(
     bindFirst(mapSynthesisStream, input),
+    deps.synthesizer.synthesize({ query: queryType, nodes }, true),
   );
 }

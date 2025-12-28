@@ -5,24 +5,30 @@ import type { BaseReader } from "@llamaindex/core/schema";
 import { Document as LlamaDocument } from "@llamaindex/core/schema";
 import * as AiSdk from "ai";
 import type { DocumentLoader } from "#workflow";
-import { mapMaybeArray } from "./helpers";
+import { maybeMapArray } from "./helpers";
 
 const toAdapterLoaderFromLangChain = (loader: BaseDocumentLoader): DocumentLoader => ({
   load: () =>
-    mapMaybeArray(loader.load(), (doc) => ({
-      id: doc.id,
-      text: doc.pageContent,
-      metadata: doc.metadata,
-    })),
+    maybeMapArray(
+      (doc) => ({
+        id: doc.id,
+        text: doc.pageContent,
+        metadata: doc.metadata,
+      }),
+      loader.load(),
+    ),
 });
 
 const toAdapterLoaderFromLlama = (reader: BaseReader): DocumentLoader => ({
   load: () =>
-    mapMaybeArray(reader.loadData(), (doc) => ({
-      id: doc.id_,
-      text: doc.text ?? "",
-      metadata: doc.metadata,
-    })),
+    maybeMapArray(
+      (doc) => ({
+        id: doc.id_,
+        text: doc.text ?? "",
+        metadata: doc.metadata,
+      }),
+      reader.loadData(),
+    ),
 });
 
 describe("Interop loader", () => {

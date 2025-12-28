@@ -1,6 +1,6 @@
 import type { BaseMemory } from "@langchain/core/memory";
 import type { AdapterCallContext, Memory } from "../types";
-import { mapMaybe } from "../../maybe";
+import { maybeMap, toTrue } from "../../maybe";
 import {
   reportDiagnostics,
   validateMemoryLoadInput,
@@ -14,7 +14,7 @@ export function fromLangChainMemory(memory: BaseMemory): Memory {
       reportDiagnostics(context, diagnostics);
       return {};
     }
-    return mapMaybe(memory.loadMemoryVariables(input), toRecord);
+    return maybeMap(toRecord, memory.loadMemoryVariables(input));
   }
 
   function save(
@@ -25,9 +25,9 @@ export function fromLangChainMemory(memory: BaseMemory): Memory {
     const diagnostics = validateMemorySaveInput(input, output);
     if (diagnostics.length > 0) {
       reportDiagnostics(context, diagnostics);
-      return;
+      return false;
     }
-    return mapMaybe(memory.saveContext(input, output), () => undefined);
+    return maybeMap(toTrue, memory.saveContext(input, output));
   }
 
   return { load, save };

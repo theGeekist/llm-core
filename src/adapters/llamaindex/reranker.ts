@@ -1,7 +1,7 @@
 import type { BaseNodePostprocessor } from "@llamaindex/core/postprocessor";
 import { MetadataMode, type BaseNode } from "@llamaindex/core/schema";
 import type { AdapterCallContext, Document, Reranker, RetrievalQuery } from "../types";
-import { mapMaybeArray } from "../../maybe";
+import { maybeMapArray } from "../../maybe";
 import { toQueryText } from "../retrieval-query";
 import { toLlamaIndexDocument } from "./documents";
 import { reportDiagnostics, validateRerankerInput } from "../input-validation";
@@ -24,12 +24,15 @@ export function fromLlamaIndexReranker(reranker: BaseNodePostprocessor): Reranke
       node: toLlamaIndexDocument(doc),
       score: doc.score,
     }));
-    return mapMaybeArray(reranker.postprocessNodes(nodes, toQueryText(query)), (entry) => ({
-      id: entry.node.id_,
-      text: getNodeText(entry.node),
-      metadata: entry.node.metadata,
-      score: entry.score,
-    }));
+    return maybeMapArray(
+      (entry) => ({
+        id: entry.node.id_,
+        text: getNodeText(entry.node),
+        metadata: entry.node.metadata,
+        score: entry.score,
+      }),
+      reranker.postprocessNodes(nodes, toQueryText(query)),
+    );
   }
 
   return {

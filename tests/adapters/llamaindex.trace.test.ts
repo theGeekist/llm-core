@@ -13,6 +13,7 @@ let stopEventRef: ReturnType<typeof workflowEvent<string>> | undefined;
 
 const recordTraceEvent = (events: AdapterTraceEvent[], event: AdapterTraceEvent) => {
   events.push(event);
+  return null;
 };
 
 const recordTraceEventAt = (events: AdapterTraceEvent[], name: string) =>

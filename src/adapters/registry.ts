@@ -5,7 +5,7 @@ import {
   type PipelineReporter,
 } from "@wpkernel/pipeline/core";
 import type { AdapterBundle, AdapterDiagnostic } from "./types";
-import { mapMaybe, type MaybePromise } from "../maybe";
+import { maybeMap, type MaybePromise } from "../maybe";
 import { createBuiltinModel } from "./primitives/model";
 import { createBuiltinTools } from "./primitives/tools";
 import { createBuiltinRetriever } from "./primitives/retriever";
@@ -226,14 +226,14 @@ export const createAdapterRegistry = (
               return;
             }
             state.providers[requirement.name] = selected.id;
-            return mapMaybe(
+            return maybeMap(
+              (value) => addAdapterValue(state, requirement.name, value),
               selected.factory({
                 construct: requirement.name,
                 providerKey: selected.providerKey,
                 providerId: selected.id,
                 requirement: req,
               }),
-              (value) => addAdapterValue(state, requirement.name, value),
             );
           },
         }),

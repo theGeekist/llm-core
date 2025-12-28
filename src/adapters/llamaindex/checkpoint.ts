@@ -1,7 +1,7 @@
 import type { SnapshotData } from "@llamaindex/workflow-core/middleware/state";
 import type { CheckpointStore, PauseKind, ResumeSnapshot } from "../types";
 import type { MaybePromise } from "../../maybe";
-import { bindFirst, mapMaybeOr } from "../../maybe";
+import { bindFirst, maybeMap } from "../../maybe";
 import { isRecord } from "../utils";
 
 export type LlamaIndexCheckpointEntry = {
@@ -13,10 +13,14 @@ export type LlamaIndexCheckpointEntry = {
 
 export type LlamaIndexCheckpointStore = {
   get: (token: unknown) => MaybePromise<LlamaIndexCheckpointEntry | undefined>;
-  set: (token: unknown, entry: LlamaIndexCheckpointEntry, ttlMs?: number) => MaybePromise<void>;
-  delete: (token: unknown) => MaybePromise<void>;
-  touch?: (token: unknown, ttlMs?: number) => MaybePromise<void>;
-  sweep?: () => MaybePromise<void>;
+  set: (
+    token: unknown,
+    entry: LlamaIndexCheckpointEntry,
+    ttlMs?: number,
+  ) => MaybePromise<boolean | null>;
+  delete: (token: unknown) => MaybePromise<boolean | null>;
+  touch?: (token: unknown, ttlMs?: number) => MaybePromise<boolean | null>;
+  sweep?: () => MaybePromise<boolean | null>;
 };
 
 const isSnapshotData = (value: unknown): value is SnapshotData => {
@@ -56,10 +60,11 @@ const toResumeSnapshot = (token: unknown, entry: LlamaIndexCheckpointEntry): Res
 const toResumeSnapshotWithToken = (token: unknown, entry: LlamaIndexCheckpointEntry) =>
   toResumeSnapshot(token, entry);
 
-const returnUndefined = () => undefined;
+const toResumeSnapshotMaybe = (token: unknown, entry: LlamaIndexCheckpointEntry | undefined) =>
+  entry ? toResumeSnapshotWithToken(token, entry) : undefined;
 
 const readEntry = (store: LlamaIndexCheckpointStore, token: unknown) =>
-  mapMaybeOr(store.get(token), bindFirst(toResumeSnapshotWithToken, token), returnUndefined);
+  maybeMap(bindFirst(toResumeSnapshotMaybe, token), store.get(token));
 
 const storeEntry = (
   store: LlamaIndexCheckpointStore,
@@ -69,7 +74,7 @@ const storeEntry = (
 ) => {
   const entry = toCheckpointEntry(snapshot);
   if (!entry) {
-    return undefined;
+    return false;
   }
   return store.set(token, entry, ttlMs);
 };
@@ -77,10 +82,9 @@ const storeEntry = (
 const deleteEntry = (store: LlamaIndexCheckpointStore, token: unknown) => store.delete(token);
 
 const touchEntry = (store: LlamaIndexCheckpointStore, token: unknown, ttlMs?: number) =>
-  store.touch ? store.touch(token, ttlMs) : undefined;
+  store.touch ? store.touch(token, ttlMs) : null;
 
-const sweepEntries = (store: LlamaIndexCheckpointStore) =>
-  store.sweep ? store.sweep() : undefined;
+const sweepEntries = (store: LlamaIndexCheckpointStore) => (store.sweep ? store.sweep() : null);
 
 export const fromLlamaIndexCheckpointStore = (
   store: LlamaIndexCheckpointStore,

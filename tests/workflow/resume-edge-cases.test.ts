@@ -19,7 +19,7 @@ describe("Resume Edge Cases", () => {
 
       await expect(
         Promise.resolve(recorder({ token: "token-circular", pauseSnapshot: circular })),
-      ).resolves.toBeUndefined();
+      ).resolves.toBe(false);
     });
 
     it("should handle BigInt without crashing", async () => {
@@ -31,7 +31,7 @@ describe("Resume Edge Cases", () => {
 
       await expect(
         Promise.resolve(recorder({ token: "token-bigint", pauseSnapshot: payload })),
-      ).resolves.toBeUndefined();
+      ).resolves.toBe(false);
     });
   });
 
@@ -110,7 +110,7 @@ describe("Resume Edge Cases", () => {
       expect(result).toBeUndefined();
 
       const deleteResult = await store.delete(invalidToken);
-      expect(deleteResult).toBeUndefined();
+      expect(deleteResult).toBe(false);
     });
   });
 

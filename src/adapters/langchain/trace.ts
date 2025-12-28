@@ -2,7 +2,8 @@ import type { BaseCallbackHandler } from "@langchain/core/callbacks/base";
 import type { Serialized } from "@langchain/core/load/serializable";
 import type { LLMResult } from "@langchain/core/outputs";
 import type { AdapterTraceEvent, AdapterTraceSink } from "../types";
-import { bindFirst, fromPromiseLike, mapMaybe, maybeAll } from "../../maybe";
+import { bindFirst, maybeMap } from "../../maybe";
+import { maybeAll } from "@wpkernel/pipeline/core/async-utils";
 import { isRecord } from "../utils";
 
 type LangChainTraceMetadata = {
@@ -109,39 +110,35 @@ function emitTraceEvent(handler: BaseCallbackHandler, event: AdapterTraceEvent) 
     return undefined;
   }
   const metadata = toTraceMetadata(event);
-  return fromPromiseLike(
-    handler.handleCustomEvent(event.name, event.data, toRunId(event), undefined, metadata),
-  );
+  return handler.handleCustomEvent(event.name, event.data, toRunId(event), undefined, metadata);
 }
 
 function emitChainStart(handler: BaseCallbackHandler, event: AdapterTraceEvent) {
   if (!canHandleChainStart(handler)) {
     return undefined;
   }
-  return fromPromiseLike(
-    handler.handleChainStart(WORKFLOW_SERIALIZED, toRecord(event.data), toRunId(event)),
-  );
+  return handler.handleChainStart(WORKFLOW_SERIALIZED, toRecord(event.data), toRunId(event));
 }
 
 function emitChainEnd(handler: BaseCallbackHandler, event: AdapterTraceEvent) {
   if (!canHandleChainEnd(handler)) {
     return undefined;
   }
-  return fromPromiseLike(handler.handleChainEnd(toRecord(event.data), toRunId(event)));
+  return handler.handleChainEnd(toRecord(event.data), toRunId(event));
 }
 
 function emitChainError(handler: BaseCallbackHandler, event: AdapterTraceEvent) {
   if (!canHandleChainError(handler)) {
     return undefined;
   }
-  return fromPromiseLike(handler.handleChainError(toErrorFromEvent(event), toRunId(event)));
+  return handler.handleChainError(toErrorFromEvent(event), toRunId(event));
 }
 
 function emitLlmEnd(handler: BaseCallbackHandler, event: AdapterTraceEvent) {
   if (!canHandleLLMEnd(handler)) {
     return undefined;
   }
-  return fromPromiseLike(handler.handleLLMEnd(toLLMResult(event), toRunId(event)));
+  return handler.handleLLMEnd(toLLMResult(event), toRunId(event));
 }
 
 function readRunStatus(event: AdapterTraceEvent): string | undefined {
@@ -172,20 +169,28 @@ function emitLifecycleEvent(handler: BaseCallbackHandler, event: AdapterTraceEve
   return undefined;
 }
 
-function returnUndefined() {
-  return undefined;
-}
+const isFailure = (value: boolean | null) => value === false;
+const isUnknown = (value: boolean | null) => value === null;
+const combineResults = (values: Array<boolean | null>) => {
+  if (values.some(isFailure)) {
+    return false;
+  }
+  if (values.some(isUnknown)) {
+    return null;
+  }
+  return true;
+};
 
 function emitTracePair(handler: BaseCallbackHandler, event: AdapterTraceEvent) {
-  return mapMaybe(
+  return maybeMap(
+    combineResults,
     maybeAll([emitTraceEvent(handler, event), emitLifecycleEvent(handler, event)]),
-    returnUndefined,
   );
 }
 
 function emitTraceEvents(handler: BaseCallbackHandler, events: AdapterTraceEvent[]) {
   const emit = bindFirst(emitTracePair, handler);
-  return mapMaybe(maybeAll(events.map(emit)), returnUndefined);
+  return maybeMap(combineResults, maybeAll(events.map(emit)));
 }
 
 export function fromLangChainCallbackHandler(handler: BaseCallbackHandler): AdapterTraceSink {

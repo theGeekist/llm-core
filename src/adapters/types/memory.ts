@@ -16,17 +16,17 @@ export type Thread = {
 };
 
 export type Memory = {
-  append?(threadId: string, turn: Turn, context?: AdapterCallContext): MaybePromise<void>;
+  append?(threadId: string, turn: Turn, context?: AdapterCallContext): MaybePromise<boolean | null>;
   load?(
     input: Record<string, unknown>,
     context?: AdapterCallContext,
   ): MaybePromise<Record<string, unknown>>;
   read?(threadId: string, context?: AdapterCallContext): MaybePromise<Thread | undefined>;
-  reset?(context?: AdapterCallContext): MaybePromise<void>;
+  reset?(context?: AdapterCallContext): MaybePromise<boolean | null>;
   save?(
     input: Record<string, unknown>,
     output: Record<string, unknown>,
     context?: AdapterCallContext,
-  ): MaybePromise<void>;
+  ): MaybePromise<boolean | null>;
   summarize?(threadId: string, context?: AdapterCallContext): MaybePromise<string>;
 };

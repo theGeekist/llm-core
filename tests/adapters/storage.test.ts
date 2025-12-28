@@ -15,8 +15,8 @@ describe("Adapter storage", () => {
 
     const adapter = fromLangChainStore(store);
     await expect(adapter.mget(["key"])).resolves.toEqual([undefined]);
-    await expect(adapter.mset([["key", { ok: true }]])).resolves.toBeUndefined();
-    await expect(adapter.mdelete(["key"])).resolves.toBeUndefined();
+    await expect(adapter.mset([["key", { ok: true }]])).resolves.toBe(true);
+    await expect(adapter.mdelete(["key"])).resolves.toBe(true);
     await expect(adapter.list?.()).resolves.toEqual(["key"]);
     await expect(adapter.list?.("pref")).resolves.toEqual(["pref:one"]);
   });
@@ -78,12 +78,12 @@ describe("Adapter storage", () => {
         ["doc-1", { text: "doc-1" }],
         ["doc-2", { text: "skip" }],
       ]),
-    ).resolves.toBeUndefined();
+    ).resolves.toBe(true);
     expect(saved).toMatchObject([
       { id_: "doc-1", text: "doc-1" },
       { id_: "doc-2", text: "skip" },
     ]);
-    await expect(adapter.mdelete?.(["doc-1"])).resolves.toBeUndefined();
+    await expect(adapter.mdelete?.(["doc-1"])).resolves.toBe(true);
     await expect(adapter.list?.()).resolves.toEqual(["doc-1", "doc-2"]);
   });
 

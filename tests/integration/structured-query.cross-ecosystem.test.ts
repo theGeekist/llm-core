@@ -10,7 +10,7 @@ import {
   fromLlamaIndexModel,
 } from "#adapters";
 import { Recipe } from "../../src/recipes/flow";
-import { bindFirst, mapMaybe } from "../../src/maybe";
+import { bindFirst, maybeMap } from "../../src/maybe";
 import { expectTelemetryPresence, itIfEnvAll } from "./helpers";
 
 const itWithOpenAI = itIfEnvAll("OPENAI_API_KEY");
@@ -26,10 +26,12 @@ const buildPack = () =>
   Recipe.pack("structured", ({ step }) => ({
     query: step("query", ({ state }) => {
       state.query = buildQuery();
+      return null;
     }),
     prompt: step("prompt", ({ state }) => {
       const query = state.query as { query?: string } | undefined;
       state.prompt = `Summarize: ${query?.query ?? ""}`;
+      return null;
     }).dependsOn("query"),
     run: step("run", ({ state, context }) => {
       const prompt = String(state.prompt ?? "");
@@ -37,7 +39,7 @@ const buildPack = () =>
       if (!model) {
         throw new Error("Missing model adapter.");
       }
-      return mapMaybe(model.generate({ prompt }), bindFirst(writeModelResult, state));
+      return maybeMap(bindFirst(writeModelResult, state), model.generate({ prompt }));
     }).dependsOn("prompt"),
   }));
 

@@ -24,7 +24,7 @@ import { fromAiSdkMessage, toAiSdkMessage } from "./messages";
 import { toAiSdkTools } from "./tools";
 import { mapToolCalls, mapToolResults } from "../model-utils";
 import { toAdapterTrace } from "../telemetry";
-import { mapMaybe } from "../../maybe";
+import { maybeMap } from "../../maybe";
 import { ModelCallHelper, ModelUsageHelper } from "../modeling";
 import { validateModelCall } from "../model-validation";
 import { toModelStreamEvents, toStreamErrorEvents } from "./stream";
@@ -268,7 +268,8 @@ export function fromAiSdkModel(model: LanguageModel): Model {
   function generate(call: ModelCall) {
     const state = createRunState(call);
     if (call.responseSchema) {
-      return mapMaybe(
+      return maybeMap(
+        (result) => toSchemaResult(result, state),
         generateObject({
           model,
           system: call.system,
@@ -278,11 +279,11 @@ export function fromAiSdkModel(model: LanguageModel): Model {
           topP: call.topP,
           maxOutputTokens: call.maxTokens,
         }),
-        (result) => toSchemaResult(result, state),
       );
     }
 
-    return mapMaybe(
+    return maybeMap(
+      (result) => toTextResult(result, state),
       generateText({
         model,
         system: call.system,
@@ -293,7 +294,6 @@ export function fromAiSdkModel(model: LanguageModel): Model {
         topP: call.topP,
         maxOutputTokens: call.maxTokens,
       }),
-      (result) => toTextResult(result, state),
     );
   }
 
@@ -303,7 +303,8 @@ export function fromAiSdkModel(model: LanguageModel): Model {
       return toStreamUnsupported(state);
     }
 
-    return mapMaybe(
+    return maybeMap(
+      (result) => toStreamEvents(result, state),
       streamText({
         model,
         system: call.system,
@@ -314,7 +315,6 @@ export function fromAiSdkModel(model: LanguageModel): Model {
         topP: call.topP,
         maxOutputTokens: call.maxTokens,
       }),
-      (result) => toStreamEvents(result, state),
     );
   }
 

@@ -1,13 +1,11 @@
 import type { BaseKVStore } from "@llamaindex/core/storage/kv-store";
 import type { AdapterCallContext, Blob, Cache } from "../types";
-import { fromPromiseLike, mapMaybe } from "../../maybe";
+import { maybeMap, toNull, toTrue } from "../../maybe";
 import { reportDiagnostics, validateStorageKey } from "../input-validation";
 
 type LlamaIndexCacheOptions = {
   collection?: string;
 };
-
-const toUndefined = () => undefined;
 const isBlob = (value: unknown): value is Blob =>
   typeof value === "object" && value !== null && value instanceof Object && "bytes" in value;
 
@@ -28,11 +26,13 @@ const toEnvelope = (value: Blob, ttlMs?: number): CacheEnvelope => ({
   expiresAt: typeof ttlMs === "number" ? Date.now() + ttlMs : undefined,
 });
 
+const toBoolean = (value: unknown): boolean | null => (value === null ? null : value !== false);
+
 const isExpired = (envelope: CacheEnvelope | undefined) =>
   typeof envelope?.expiresAt === "number" && Date.now() > envelope.expiresAt;
 
 const deleteEntry = (store: BaseKVStore, collection: string | undefined, key: string) =>
-  mapMaybe(fromPromiseLike(store.delete(key, collection)), toUndefined);
+  maybeMap(toBoolean, store.delete(key, collection));
 
 const readEntry = (
   store: BaseKVStore,
@@ -43,11 +43,11 @@ const readEntry = (
   const envelope = readEnvelope(value);
   if (envelope) {
     if (isExpired(envelope)) {
-      return mapMaybe(deleteEntry(store, collection, key), toUndefined);
+      return maybeMap(toNull, deleteEntry(store, collection, key));
     }
     return envelope.value;
   }
-  return readStoredValue(value);
+  return readStoredValue(value) ?? null;
 };
 
 const cacheGet = (
@@ -59,12 +59,12 @@ const cacheGet = (
   const diagnostics = validateStorageKey(key, "cache.get");
   if (diagnostics.length > 0) {
     reportDiagnostics(context, diagnostics);
-    return undefined;
+    return null;
   }
 
   const handleEntry = (entry: unknown) => readEntry(store, collection, key, entry);
 
-  return mapMaybe(fromPromiseLike(store.get(key, collection)), handleEntry);
+  return maybeMap(handleEntry, store.get(key, collection));
 };
 
 const cacheSet = (
@@ -78,10 +78,10 @@ const cacheSet = (
   const diagnostics = validateStorageKey(key, "cache.set");
   if (diagnostics.length > 0) {
     reportDiagnostics(context, diagnostics);
-    return;
+    return false;
   }
   const entry = toEnvelope(value, ttlMs);
-  return mapMaybe(fromPromiseLike(store.put(key, entry, collection)), toUndefined);
+  return maybeMap(toTrue, store.put(key, entry, collection));
 };
 
 const cacheDelete = (
@@ -93,9 +93,9 @@ const cacheDelete = (
   const diagnostics = validateStorageKey(key, "cache.delete");
   if (diagnostics.length > 0) {
     reportDiagnostics(context, diagnostics);
-    return;
+    return false;
   }
-  return mapMaybe(fromPromiseLike(store.delete(key, collection)), toUndefined);
+  return maybeMap(toBoolean, store.delete(key, collection));
 };
 
 export function fromLlamaIndexKVStoreCache(

@@ -1,6 +1,7 @@
 import type { JSONValue, SpeechModelV3 } from "@ai-sdk/provider";
 import type { AdapterCallContext, SpeechCall, SpeechModel, SpeechResult, Blob } from "../types";
-import { bindFirst, fromPromiseLike, mapMaybe } from "../../maybe";
+import { bindFirst, maybeMap } from "../../maybe";
+import type { MaybePromise } from "../../maybe";
 import { toAdapterTrace } from "../telemetry";
 import { validateSpeechInput } from "../input-validation";
 import { toBytes } from "../binary";
@@ -75,21 +76,19 @@ export function fromAiSdkSpeechModel(model: SpeechModelV3): SpeechModel {
     const diagnostics = validateSpeechInput(call.text);
     const contentType = toAudioType(call.outputFormat);
     const resultContext: SpeechResultContext = { diagnostics, contentType };
-    return mapMaybe(
-      fromPromiseLike(
-        model.doGenerate({
-          text: call.text,
-          voice: call.voice,
-          outputFormat: call.outputFormat,
-          instructions: call.instructions,
-          speed: call.speed,
-          language: call.language,
-          providerOptions: toProviderOptions(call.providerOptions),
-          headers: call.headers,
-          abortSignal: call.abortSignal,
-        }),
-      ),
+    return maybeMap(
       bindFirst(mapSpeechResult, resultContext),
+      model.doGenerate({
+        text: call.text,
+        voice: call.voice,
+        outputFormat: call.outputFormat,
+        instructions: call.instructions,
+        speed: call.speed,
+        language: call.language,
+        providerOptions: toProviderOptions(call.providerOptions),
+        headers: call.headers,
+        abortSignal: call.abortSignal,
+      }) as MaybePromise<Awaited<ReturnType<SpeechModelV3["doGenerate"]>>>,
     );
   }
 

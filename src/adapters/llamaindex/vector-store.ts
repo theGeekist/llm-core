@@ -7,7 +7,8 @@ import type {
   VectorStoreDeleteInput,
   VectorStoreUpsertInput,
 } from "../types";
-import { mapMaybe, maybeAll } from "../../maybe";
+import { maybeAll } from "@wpkernel/pipeline/core/async-utils";
+import { maybeMap, toTrue } from "../../maybe";
 import {
   reportDiagnostics,
   validateVectorStoreDeleteInput,
@@ -56,8 +57,6 @@ const toDeletePayload = (input: VectorStoreDeleteInput): VectorDeletePayload => 
   return { filter: input.filter };
 };
 
-const toVoid = () => undefined;
-
 const toUpsertResult = (ids: string[]) => ({ ids });
 
 const deleteVectorIds = (store: BaseVectorStore, ids: string[]) => {
@@ -77,20 +76,23 @@ export function fromLlamaIndexVectorStore(store: BaseVectorStore): VectorStore {
     const diagnostics = validateVectorStoreUpsertInput(input);
     reportDiagnostics(context, diagnostics);
     const payload = toUpsertPayload(input);
-    return mapMaybe(store.add(payload.nodes), toUpsertResult);
+    return maybeMap(toUpsertResult, store.add(payload.nodes));
   };
 
   const remove = (input: VectorStoreDeleteInput, context?: AdapterCallContext) => {
     const diagnostics = validateVectorStoreDeleteInput(input);
     reportDiagnostics(context, diagnostics);
+    if (diagnostics.length > 0) {
+      return false;
+    }
     const payload = toDeletePayload(input);
     if (payload.ids && payload.ids.length > 0) {
-      return mapMaybe(deleteVectorIds(store, payload.ids), toVoid);
+      return maybeMap(toTrue, deleteVectorIds(store, payload.ids));
     }
     if (payload.filter) {
       reportDeleteFilterUnsupported(context);
     }
-    return undefined;
+    return null;
   };
 
   return {

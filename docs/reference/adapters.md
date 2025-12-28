@@ -17,31 +17,25 @@ Register a retriever without touching registry types:
 == TypeScript
 
 ```ts
-import { Adapter } from "#adapters";
-import { Recipe } from "#recipes";
+import { recipes } from "#recipes";
 
-const wf = Recipe.flow("rag")
-  .use(
-    Adapter.retriever("custom.retriever", {
-      retrieve: () => ({ documents: [] }),
-    }),
-  )
-  .build();
+const retriever = {
+  retrieve: () => ({ documents: [] }),
+};
+
+const wf = recipes.rag().defaults({ adapters: { retriever } }).build();
 ```
 
 == JavaScript
 
 ```js
-import { Adapter } from "#adapters";
-import { Recipe } from "#recipes";
+import { recipes } from "#recipes";
 
-const wf = Recipe.flow("rag")
-  .use(
-    Adapter.retriever("custom.retriever", {
-      retrieve: () => ({ documents: [] }),
-    }),
-  )
-  .build();
+const retriever = {
+  retrieve: () => ({ documents: [] }),
+};
+
+const wf = recipes.rag().defaults({ adapters: { retriever } }).build();
 ```
 
 :::
@@ -62,6 +56,17 @@ const plugin = Adapter.register("custom.mcp", "mcp", { client });
 ```
 
 :::
+
+## Effect return semantics
+
+Effectful adapter operations return `MaybePromise<boolean | null>`:
+
+- `true`: the operation succeeded.
+- `false`: the operation failed (validation errors, missing inputs, or upstream failure).
+- `null`: not applicable (capability not supported or intentionally skipped).
+
+This applies to cache/storage writes and deletes, memory writes, checkpoint/event-stream/trace emits, and
+vector store deletes.
 
 ## Write path (vector store)
 

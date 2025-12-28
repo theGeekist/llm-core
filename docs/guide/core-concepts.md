@@ -28,7 +28,7 @@ graph TD
 ```
 
 - **Packs** contain **Steps** (the actual logic).
-- **Recipes** stitch Packs together using `Recipe.flow`.
+- **Recipes** stitch Packs together internally. You use `recipes.*()` to build them.
 
 ### Sidebar: The Engine (Workflow)
 
@@ -37,7 +37,9 @@ Think of `Workflow` as the compiler and runtime. It takes your high-level recipe
 
 ```ts
 // 1. Authoring (Declarative)
-const agent = Recipe.flow("agent");
+import { recipes } from "@geekist/llm-core/recipes";
+
+const agent = recipes.agent();
 
 // 2. Compiling (Infrastructure)
 const app = agent.build();

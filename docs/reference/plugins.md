@@ -1,6 +1,6 @@
 # Plugins (Capabilities + Overrides)
 
-**Note: This is a low-level API.** Most users should use **Packs** (`Recipe.pack`).
+**Note: This is a low-level API.** Most users should use **Recipes** (`recipes.*()`).
 Packs compile down to Plugins.
 
 Plugins are the smallest unit of composition in the Engine. A plugin is a bag of extensions: capabilities, helpers, and lifecycle hooks that a recipe can install. They describe what they add, what they need, and how they extend or override other plugins. They are deterministic: order matters, and overrides are explicit.
@@ -50,15 +50,20 @@ Example:
 == TypeScript
 
 ```ts
-import { Recipe } from "#recipes";
+import { recipes } from "#recipes";
 
-const wf = Recipe.flow("agent")
-  .use({ key: "model.openai", capabilities: { model: { name: "gpt-4.1" } } })
-  .use({
-    key: "model.openai.override",
-    mode: "override",
-    overrideKey: "model.openai",
-    capabilities: { model: { name: "gpt-4.1-mini" } },
+const wf = recipes
+  .agent()
+  .defaults({
+    plugins: [
+      { key: "model.openai", capabilities: { model: { name: "gpt-4.1" } } },
+      {
+        key: "model.openai.override",
+        mode: "override",
+        overrideKey: "model.openai",
+        capabilities: { model: { name: "gpt-4.1-mini" } },
+      },
+    ],
   })
   .build();
 ```
@@ -66,15 +71,20 @@ const wf = Recipe.flow("agent")
 == JavaScript
 
 ```js
-import { Recipe } from "#recipes";
+import { recipes } from "#recipes";
 
-const wf = Recipe.flow("agent")
-  .use({ key: "model.openai", capabilities: { model: { name: "gpt-4.1" } } })
-  .use({
-    key: "model.openai.override",
-    mode: "override",
-    overrideKey: "model.openai",
-    capabilities: { model: { name: "gpt-4.1-mini" } },
+const wf = recipes
+  .agent()
+  .defaults({
+    plugins: [
+      { key: "model.openai", capabilities: { model: { name: "gpt-4.1" } } },
+      {
+        key: "model.openai.override",
+        mode: "override",
+        overrideKey: "model.openai",
+        capabilities: { model: { name: "gpt-4.1-mini" } },
+      },
+    ],
   })
   .build();
 ```
@@ -131,8 +141,8 @@ In most cases you don’t construct plugins by hand. Instead, higher-level helpe
 - Adapter.retriever("qdrant", ...)
 - These produce plugins that install adapters and their helperKinds.
 - Workflow helpers (higher-level):
-- Workflow.recipe("agent").use({ key: "model.openai", ... })
-- Recipe.pack("rag", ({ step }) => ({ ...steps })) compiles “steps” into helpers and wrap them in a plugin.
+- recipes.agent().defaults({ plugins: [{ key: "model.openai", ... }] })
+- Recipe.pack("rag", ({ step }) => ({ ...steps })) compiles steps into helpers and wraps them in a plugin.
 
 At runtime, Workflow.build() always sees just a list of plugins. The engine doesn’t care whether they came from Adapter.\*, Recipe.pack, or custom code.
 

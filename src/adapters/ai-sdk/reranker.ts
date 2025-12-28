@@ -1,7 +1,8 @@
 import type { RerankingModelV3 } from "@ai-sdk/provider";
 import type { AdapterCallContext, Document, Reranker, RetrievalQuery } from "../types";
 import { toQueryText } from "../retrieval-query";
-import { fromPromiseLike, mapMaybe } from "../../maybe";
+import { maybeMap } from "../../maybe";
+import type { MaybePromise } from "../../maybe";
 import { reportDiagnostics, validateRerankerInput } from "../input-validation";
 
 type RerankResult = Awaited<ReturnType<RerankingModelV3["doRerank"]>>;
@@ -24,13 +25,11 @@ export function fromAiSdkReranker(model: RerankingModelV3): Reranker {
       return [];
     }
     const textQuery = toQueryText(query);
-    const rerankResult = fromPromiseLike(
-      model.doRerank({
-        query: textQuery,
-        documents: { type: "text", values: documents.map((document) => document.text) },
-      }),
-    );
-    return mapMaybe(rerankResult, (result) => mapRanking(documents, result.ranking));
+    const rerankResult = model.doRerank({
+      query: textQuery,
+      documents: { type: "text", values: documents.map((document) => document.text) },
+    }) as MaybePromise<RerankResult>;
+    return maybeMap((result) => mapRanking(documents, result.ranking), rerankResult);
   }
 
   return { rerank };

@@ -1,6 +1,6 @@
 import { embed, embedMany, type EmbeddingModel } from "ai";
 import type { AdapterCallContext, Embedder } from "../types";
-import { mapMaybe } from "../../maybe";
+import { maybeMap } from "../../maybe";
 import {
   reportDiagnostics,
   validateEmbedderBatchInput,
@@ -25,7 +25,7 @@ export function fromAiSdkEmbeddings(model: EmbeddingModel<string>): Embedder {
       reportDiagnostics(context, diagnostics);
       return [];
     }
-    return mapMaybe(embed({ model, value: text }), pickEmbedding);
+    return maybeMap(pickEmbedding, embed({ model, value: text }));
   }
 
   function embedManyTexts(texts: string[], context?: AdapterCallContext) {
@@ -34,7 +34,7 @@ export function fromAiSdkEmbeddings(model: EmbeddingModel<string>): Embedder {
       reportDiagnostics(context, diagnostics);
       return [];
     }
-    return mapMaybe(embedMany({ model, values: texts }), pickEmbeddings);
+    return maybeMap(pickEmbeddings, embedMany({ model, values: texts }));
   }
 
   return { embed: embedOne, embedMany: embedManyTexts };

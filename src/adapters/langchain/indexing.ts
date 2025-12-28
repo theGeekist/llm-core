@@ -8,7 +8,7 @@ import type {
   IndexingInput,
   IndexingResult,
 } from "../types";
-import { bindFirst, mapMaybe } from "../../maybe";
+import { bindFirst, maybeMap } from "../../maybe";
 import { reportDiagnostics, validateIndexingInput } from "../input-validation";
 import { toLangChainDocument } from "./documents";
 
@@ -52,14 +52,14 @@ function readDocuments(input: IndexingInput) {
 
 function runIndexing(deps: IndexingDeps, documents: Document[]) {
   const langchainDocs = toLangChainDocs(documents);
-  return mapMaybe(
+  return maybeMap(
+    mapIndexingResult,
     runIndex({
       docsSource: langchainDocs,
       recordManager: deps.recordManager,
       vectorStore: deps.vectorStore,
       options: deps.options,
     }),
-    mapIndexingResult,
   );
 }
 
@@ -71,7 +71,7 @@ function runIndexAfterSchema(deps: IndexingDeps, documents: Document[], _value: 
 function runSchemaThenIndex(deps: IndexingDeps, documents: Document[]) {
   const withDeps = bindFirst(runIndexAfterSchema, deps);
   const withDocuments = bindFirst(withDeps, documents);
-  return mapMaybe(deps.recordManager.createSchema(), withDocuments);
+  return maybeMap(withDocuments, deps.recordManager.createSchema());
 }
 
 export function fromLangChainIndexing(
@@ -92,5 +92,5 @@ function indexWithDeps(deps: IndexingDeps, input: IndexingInput, context?: Adapt
     ...deps,
     options: input.options,
   };
-  return mapMaybe(readDocuments(input), bindFirst(runSchemaThenIndex, withOptions));
+  return maybeMap(bindFirst(runSchemaThenIndex, withOptions), readDocuments(input));
 }

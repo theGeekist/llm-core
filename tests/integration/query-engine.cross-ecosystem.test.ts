@@ -13,7 +13,7 @@ import {
   fromLlamaIndexQueryEngine,
 } from "#adapters";
 import { Recipe } from "../../src/recipes/flow";
-import { bindFirst, mapMaybe } from "../../src/maybe";
+import { bindFirst, maybeMap } from "../../src/maybe";
 import { expectTelemetryPresence, itIfEnvAll } from "./helpers";
 
 const itWithOpenAI = itIfEnvAll("OPENAI_API_KEY");
@@ -62,7 +62,7 @@ const buildPack = () =>
       if (!engine) {
         throw new Error("Missing queryEngine adapter.");
       }
-      return mapMaybe(engine.query("Summarize the greeting."), bindFirst(writeQueryResult, state));
+      return maybeMap(bindFirst(writeQueryResult, state), engine.query("Summarize the greeting."));
     }),
     summarize: step("summarize", ({ state, context }) => {
       const model = context.adapters?.model;
@@ -71,7 +71,7 @@ const buildPack = () =>
       }
       const queryResult = state.queryResult as { text?: string } | undefined;
       const prompt = `Summarize: ${queryResult?.text ?? ""}`;
-      return mapMaybe(model.generate({ prompt }), bindFirst(writeModelResult, state));
+      return maybeMap(bindFirst(writeModelResult, state), model.generate({ prompt }));
     }).dependsOn("query"),
   }));
 

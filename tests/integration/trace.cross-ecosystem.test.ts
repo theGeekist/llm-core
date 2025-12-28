@@ -10,7 +10,7 @@ import {
   fromLlamaIndexModel,
 } from "#adapters";
 import { Recipe } from "../../src/recipes/flow";
-import { bindFirst, mapMaybe } from "../../src/maybe";
+import { bindFirst, maybeMap } from "../../src/maybe";
 import { expectTelemetryPresence, itIfEnvAll } from "./helpers";
 
 const itWithOpenAI = itIfEnvAll("OPENAI_API_KEY");
@@ -61,14 +61,14 @@ const buildPack = () =>
       if (!trace || !trace.emitMany) {
         throw new Error("Missing trace adapter.");
       }
-      return mapMaybe(trace.emitMany(traceEvents), bindFirst(writeTraceResult, state));
+      return maybeMap(bindFirst(writeTraceResult, state), trace.emitMany(traceEvents));
     }),
     model: step("model", ({ state, context }) => {
       const model = context.adapters?.model;
       if (!model) {
         throw new Error("Missing model adapter.");
       }
-      return mapMaybe(model.generate({ prompt: "Say hello." }), bindFirst(writeModelResult, state));
+      return maybeMap(bindFirst(writeModelResult, state), model.generate({ prompt: "Say hello." }));
     }).dependsOn("trace"),
   }));
 

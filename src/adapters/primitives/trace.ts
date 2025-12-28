@@ -6,9 +6,11 @@ export const createBuiltinTrace = () => {
     events,
     emit(event) {
       events.push(event);
+      return true;
     },
     emitMany(many) {
       events.push(...many);
+      return true;
     },
   };
   return sink;

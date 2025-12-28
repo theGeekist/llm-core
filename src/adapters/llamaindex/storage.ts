@@ -1,6 +1,7 @@
 import type { BaseDocumentStore } from "@llamaindex/core/storage/doc-store";
 import type { AdapterCallContext, KVStore } from "../types";
-import { mapMaybe, maybeAll } from "../../maybe";
+import { maybeAll } from "@wpkernel/pipeline/core/async-utils";
+import { maybeMap, toTrue } from "../../maybe";
 import { reportDiagnostics, validateKvKeys, validateKvPairs } from "../input-validation";
 
 type DocumentShape = { id_?: string };
@@ -21,15 +22,16 @@ export function fromLlamaIndexDocumentStore(store: BaseDocumentStore): KVStore {
         reportDiagnostics(context, diagnostics);
         return [];
       }
-      return mapMaybe(maybeAll(keys.map((key) => store.getDocument(key, false))), (docs) =>
-        docs.map((doc) => (doc ? doc.toJSON() : undefined)),
+      return maybeMap(
+        (docs) => docs.map((doc) => (doc ? doc.toJSON() : undefined)),
+        maybeAll(keys.map((key) => store.getDocument(key, false))),
       );
     },
     mset: (pairs, context?: AdapterCallContext) => {
       const diagnostics = validateKvPairs(pairs);
       if (diagnostics.length > 0) {
         reportDiagnostics(context, diagnostics);
-        return;
+        return false;
       }
       const docs = pairs
         .filter(
@@ -37,19 +39,16 @@ export function fromLlamaIndexDocumentStore(store: BaseDocumentStore): KVStore {
             typeof pair[1] === "object" && !!pair[1],
         )
         .map(([key, value]) => asDocument(value, key));
-      return store.addDocuments(docs as never, true);
+      return maybeMap(toTrue, store.addDocuments(docs as never, true));
     },
     mdelete: (keys, context?: AdapterCallContext) => {
       const diagnostics = validateKvKeys(keys, "mdelete");
       if (diagnostics.length > 0) {
         reportDiagnostics(context, diagnostics);
-        return;
+        return false;
       }
-      return mapMaybe(
-        maybeAll(keys.map((key) => store.deleteDocument(key, false))),
-        () => undefined,
-      );
+      return maybeMap(toTrue, maybeAll(keys.map((key) => store.deleteDocument(key, false))));
     },
-    list: () => mapMaybe(store.docs(), (docs) => Object.keys(docs)),
+    list: () => maybeMap((docs) => Object.keys(docs), store.docs()),
   };
 }

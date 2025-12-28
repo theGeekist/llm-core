@@ -77,6 +77,7 @@ describe("Adapter primitives", () => {
     const sink = {
       emit: (event: { name: string }) => {
         events.push(event);
+        return null;
       },
     };
     const stream = createEventStreamFromTraceSink(sink);
@@ -92,9 +93,11 @@ describe("Adapter primitives", () => {
     const sink = {
       emit: (event: { name: string }) => {
         events.push(event);
+        return null;
       },
       emitMany: (batch: Array<{ name: string }>) => {
         events.push(...batch);
+        return null;
       },
     };
     const stream = createEventStreamFromTraceSink(sink);

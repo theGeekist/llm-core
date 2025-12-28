@@ -1,6 +1,6 @@
 import type { AdapterBundle, AdapterDiagnostic } from "../../adapters/types";
 import type { MaybePromise } from "../../maybe";
-import { bindFirst, chainMaybe } from "../../maybe";
+import { bindFirst, maybeChain } from "../../maybe";
 import { attachAdapterContext, createAdapterContext } from "../adapter-context";
 import {
   applyDiagnosticsMode,
@@ -65,9 +65,9 @@ export const runResumedPipeline = <TArtefact>(
     resumeDiagnosticsMode,
     finalize,
   });
-  return chainMaybe(
-    deps.resolveAdaptersForRun(resumeRuntime, resumeOptions.providers),
+  return maybeChain(
     handleResolution,
+    deps.resolveAdaptersForRun(resumeRuntime, resumeOptions.providers),
   );
 };
 
@@ -127,18 +127,18 @@ const handleResumeResolution = <TArtefact>(
     input.finalize,
     mergedAdapters.interrupt,
   );
-  return chainMaybe(
-    input.deps.pipeline.run({
-      input: input.resumeOptions.input,
-      runtime: input.resumeRuntime,
-      reporter: input.resumeRuntime?.reporter,
-      adapters: adaptersWithContext,
-    }),
+  return maybeChain(
     bindFirst(handleResumeFinalize<TArtefact>, {
       finalize: finalizeWithInterrupt,
       getDiagnostics,
       trace: input.deps.trace,
       diagnosticsMode: input.resumeDiagnosticsMode,
+    }),
+    input.deps.pipeline.run({
+      input: input.resumeOptions.input,
+      runtime: input.resumeRuntime,
+      reporter: input.resumeRuntime?.reporter,
+      adapters: adaptersWithContext,
     }),
   );
 };

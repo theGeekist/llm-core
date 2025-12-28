@@ -16,6 +16,12 @@ type RunResult = PipelineRunState<PipelineState, PipelineDiagnostic> & {
   state: Record<string, unknown>;
 };
 
+type HelperStageState = {
+  context: PipelineContext;
+  runOptions: RunOptions;
+  userState: PipelineState;
+};
+
 const collectHelperKinds = (contract: RecipeContract, plugins: Plugin[]) => {
   const kinds = new Set(contract.helperKinds ?? []);
   const effectivePlugins = getEffectivePlugins(plugins);
@@ -51,12 +57,24 @@ const recordHelperRollbacks = (
   return state;
 };
 
+const createHelperArgs = (state: HelperStageState) =>
+  function buildHelperArgs(_helper: unknown) {
+    void _helper;
+    return {
+      context: state.context,
+      input: state.runOptions.input,
+      output: state.userState,
+      reporter: state.context.reporter,
+    };
+  };
+
 const makeHelperStage = (
   kind: string,
   deps: { makeHelperStage: (kind: string, spec: unknown) => unknown },
 ) =>
   deps.makeHelperStage(kind, {
     onVisited: bindFirst(recordHelperRollbacks, kind),
+    makeArgs: createHelperArgs,
   });
 
 const makeCreateStages = (contract: RecipeContract, plugins: Plugin[]) =>

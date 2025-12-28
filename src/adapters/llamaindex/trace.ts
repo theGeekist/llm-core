@@ -3,17 +3,17 @@ import {
   createHandlerDecorator,
   type TracePlugin,
 } from "@llamaindex/workflow-core/middleware/trace-events";
-import { bindFirst, chainMaybe, fromPromiseLike, mapMaybe, tryMaybe } from "../../maybe";
+import { bindFirst, maybeChain, maybeMap, maybeTap, maybeTry } from "../../maybe";
 import { isRecord, readString } from "../utils";
 
 type TraceDecoratorConfig = Parameters<typeof createHandlerDecorator>[0];
 type WorkflowHandler = Parameters<TraceDecoratorConfig["onBeforeHandler"]>[0];
 type HandlerContext = Parameters<TraceDecoratorConfig["onBeforeHandler"]>[1];
 
-const toUndefined = () => undefined;
+const toBoolean = (value: unknown): boolean | null => (value === null ? null : value !== false);
 
 const emitTrace = (sink: AdapterTraceSink, event: AdapterTraceEvent) =>
-  mapMaybe(fromPromiseLike(sink.emit(event)), toUndefined);
+  maybeMap(toBoolean, sink.emit(event));
 
 const readHandlerName = (context: HandlerContext): string | undefined => {
   const handler = context.handler;
@@ -91,12 +91,17 @@ const buildInvocation = (
 const invokeHandler = (invocation: HandlerInvocation) =>
   invocation.handler(...invocation.args) as ReturnType<WorkflowHandler>;
 
+const emitEndWithContext = (input: { sink: AdapterTraceSink; context: HandlerContext }) =>
+  emitEnd(input.sink, input.context);
+
 const emitEndForInvocation = (
   invocation: HandlerInvocation,
   value: ReturnType<WorkflowHandler>,
 ) => {
-  void value;
-  return emitEnd(invocation.sink, invocation.context);
+  return maybeTap(
+    bindFirst(emitEndWithContext, { sink: invocation.sink, context: invocation.context }),
+    value,
+  );
 };
 
 const raiseError = <T>(error: unknown): T => {
@@ -104,19 +109,19 @@ const raiseError = <T>(error: unknown): T => {
 };
 
 const emitErrorForInvocation = (invocation: HandlerInvocation, error: unknown) =>
-  chainMaybe(
-    emitError(invocation.sink, invocation.context, error),
+  maybeChain(
     bindFirst(raiseError<ReturnType<WorkflowHandler>>, error),
+    emitError(invocation.sink, invocation.context, error),
   );
 
 const runAfterStart = (invocation: HandlerInvocation) =>
-  mapMaybe(
-    tryMaybe(bindFirst(invokeHandler, invocation), bindFirst(emitErrorForInvocation, invocation)),
+  maybeMap(
     bindFirst(emitEndForInvocation, invocation),
+    maybeTry(bindFirst(emitErrorForInvocation, invocation), bindFirst(invokeHandler, invocation)),
   );
 
 const runWithTrace = (invocation: HandlerInvocation) =>
-  chainMaybe(emitStart(invocation.sink, invocation.context), bindFirst(runAfterStart, invocation));
+  maybeChain(bindFirst(runAfterStart, invocation), emitStart(invocation.sink, invocation.context));
 
 const runHandlerWithArgs = (
   sink: AdapterTraceSink,
@@ -126,12 +131,17 @@ const runHandlerWithArgs = (
 ): ReturnType<WorkflowHandler> =>
   runWithTrace(buildInvocation(sink, context, handler, args)) as ReturnType<WorkflowHandler>;
 
+const runHandlerWithArgsInput = (
+  input: { sink: AdapterTraceSink; context: HandlerContext; handler: WorkflowHandler },
+  ...args: Parameters<WorkflowHandler>
+) => runHandlerWithArgs(input.sink, input.context, input.handler, ...args);
+
 const wrapHandler = (
   sink: AdapterTraceSink,
   context: HandlerContext,
   handler: WorkflowHandler,
 ): WorkflowHandler =>
-  bindFirst(bindFirst(bindFirst(runHandlerWithArgs, sink), context), handler) as WorkflowHandler;
+  bindFirst(runHandlerWithArgsInput, { sink, context, handler }) as WorkflowHandler;
 
 const onBeforeHandler = (
   sink: AdapterTraceSink,

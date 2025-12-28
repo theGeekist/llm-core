@@ -28,10 +28,10 @@ describe("MemoryCache", () => {
     expect(result).toEqual(blob);
   });
 
-  it("returns undefined for missing keys", async () => {
+  it("returns null for missing keys", async () => {
     const cache = createMemoryCache();
     const result = await cache.get("missing");
-    expect(result).toBeUndefined();
+    expect(result).toBeNull();
   });
 
   it("deletes values", async () => {
@@ -39,7 +39,7 @@ describe("MemoryCache", () => {
     await cache.set("key1", blob);
     await cache.delete("key1");
     const result = await cache.get("key1");
-    expect(result).toBeUndefined();
+    expect(result).toBeNull();
   });
 
   it("respects TTL", async () => {
@@ -53,7 +53,7 @@ describe("MemoryCache", () => {
     await new Promise((resolve) => setTimeout(resolve, 20));
 
     // Should be gone
-    expect(await cache.get("key1")).toBeUndefined();
+    expect(await cache.get("key1")).toBeNull();
   });
 
   it("validates keys", async () => {
@@ -66,7 +66,7 @@ describe("MemoryCache", () => {
     await cache.set("", blob, undefined, context);
     await cache.delete("", context);
     expect(diagnostics.length).toBeGreaterThan(0);
-    expect(await cache.get("")).toBeUndefined();
+    expect(await cache.get("")).toBeNull();
   });
 });
 
@@ -80,9 +80,11 @@ describe("Cache adapters", () => {
       mget: (keys: string[]) => keys.map((key) => entries.get(key)),
       mset: (pairs: Array<[string, Blob]>) => {
         pairs.forEach(([key, value]) => entries.set(key, value));
+        return null;
       },
       mdelete: (keys: string[]) => {
         keys.forEach((key) => entries.delete(key));
+        return null;
       },
     };
 
@@ -90,7 +92,7 @@ describe("Cache adapters", () => {
     await cache.set("kv-key", blob);
     expect(await cache.get("kv-key")).toEqual(blob);
     await cache.delete("kv-key");
-    expect(await cache.get("kv-key")).toBeUndefined();
+    expect(await cache.get("kv-key")).toBeNull();
   });
 
   it("respects TTL for KV store caches", async () => {
@@ -100,9 +102,11 @@ describe("Cache adapters", () => {
       mget: (keys: string[]) => keys.map((key) => entries.get(key)),
       mset: (pairs: Array<[string, Blob]>) => {
         pairs.forEach(([key, value]) => entries.set(key, value));
+        return null;
       },
       mdelete: (keys: string[]) => {
         keys.forEach((key) => entries.delete(key));
+        return null;
       },
     };
 
@@ -111,7 +115,7 @@ describe("Cache adapters", () => {
     expect(await cache.get("kv-ttl")).toEqual(blob);
 
     await new Promise((resolve) => setTimeout(resolve, 10));
-    expect(await cache.get("kv-ttl")).toBeUndefined();
+    expect(await cache.get("kv-ttl")).toBeNull();
   });
 
   it("wraps AI SDK cache stores and respects TTL", async () => {
@@ -133,7 +137,7 @@ describe("Cache adapters", () => {
     expect(await cache.get("ai-key")).toEqual(blob);
 
     await new Promise((resolve) => setTimeout(resolve, 10));
-    expect(await cache.get("ai-key")).toBeUndefined();
+    expect(await cache.get("ai-key")).toBeNull();
   });
 
   it("uses AI SDK default TTL when no ttl is provided", async () => {
@@ -156,7 +160,7 @@ describe("Cache adapters", () => {
     expect(await cache.get("ai-default-ttl")).toEqual(blob);
 
     await new Promise((resolve) => setTimeout(resolve, 5));
-    expect(await cache.get("ai-default-ttl")).toBeUndefined();
+    expect(await cache.get("ai-default-ttl")).toBeNull();
   });
 
   it("warns when AI SDK cache keys are missing", async () => {
@@ -191,7 +195,7 @@ describe("Cache adapters", () => {
       keys: () => [],
     });
     const cache = fromAiSdkCacheStore(store);
-    expect(await cache.get("missing")).toBeUndefined();
+    expect(await cache.get("missing")).toBeNull();
   });
 
   it("wraps LangChain stores as caches", async () => {
@@ -217,7 +221,7 @@ describe("Cache adapters", () => {
     await cache.set("lc-key", blob);
     expect(await cache.get("lc-key")).toEqual(blob);
     await cache.delete("lc-key");
-    expect(await cache.get("lc-key")).toBeUndefined();
+    expect(await cache.get("lc-key")).toBeNull();
   });
 
   it("respects TTL for LangChain caches", async () => {
@@ -244,7 +248,7 @@ describe("Cache adapters", () => {
     expect(await cache.get("lc-ttl")).toEqual(blob);
 
     await new Promise((resolve) => setTimeout(resolve, 10));
-    expect(await cache.get("lc-ttl")).toBeUndefined();
+    expect(await cache.get("lc-ttl")).toBeNull();
   });
 
   it("returns undefined when LangChain cache values are not blobs", async () => {
@@ -258,7 +262,7 @@ describe("Cache adapters", () => {
     });
 
     const cache = fromLangChainStoreCache(store);
-    expect(await cache.get("key")).toBeUndefined();
+    expect(await cache.get("key")).toBeNull();
   });
 
   it("warns when LangChain cache keys are missing", async () => {
@@ -300,7 +304,7 @@ describe("Cache adapters", () => {
     await cache.set("li-key", blob);
     expect(await cache.get("li-key")).toEqual(blob);
     await cache.delete("li-key");
-    expect(await cache.get("li-key")).toBeUndefined();
+    expect(await cache.get("li-key")).toBeNull();
   });
 
   it("respects TTL for LlamaIndex caches", async () => {
@@ -323,7 +327,7 @@ describe("Cache adapters", () => {
     expect(await cache.get("li-ttl")).toEqual(blob);
 
     await new Promise((resolve) => setTimeout(resolve, 10));
-    expect(await cache.get("li-ttl")).toBeUndefined();
+    expect(await cache.get("li-ttl")).toBeNull();
   });
   it("returns undefined when LlamaIndex cache values are not blobs", async () => {
     const store = asLlamaIndexKVStore({
@@ -334,7 +338,7 @@ describe("Cache adapters", () => {
     });
 
     const cache = fromLlamaIndexKVStoreCache(store);
-    expect(await cache.get("key")).toBeUndefined();
+    expect(await cache.get("key")).toBeNull();
   });
 
   it("warns when LlamaIndex cache keys are missing", async () => {

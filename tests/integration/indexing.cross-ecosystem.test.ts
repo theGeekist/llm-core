@@ -11,7 +11,7 @@ import {
   fromLlamaIndexModel,
 } from "#adapters";
 import { Recipe } from "../../src/recipes/flow";
-import { bindFirst, mapMaybe } from "../../src/maybe";
+import { bindFirst, maybeMap } from "../../src/maybe";
 import { expectTelemetryPresence, itIfEnvAll } from "./helpers";
 
 const itWithOpenAI = itIfEnvAll("OPENAI_API_KEY");
@@ -61,9 +61,9 @@ const buildPack = () =>
       if (!indexing) {
         throw new Error("Missing indexing adapter.");
       }
-      return mapMaybe(
-        indexing.index({ documents: [{ text: "Indexable document." }] }),
+      return maybeMap(
         bindFirst(writeIndexResult, state),
+        indexing.index({ documents: [{ text: "Indexable document." }] }),
       );
     }),
     summarize: step("summarize", ({ state, context }) => {
@@ -73,7 +73,7 @@ const buildPack = () =>
       }
       const indexResult = state.indexResult as { added?: number } | undefined;
       const prompt = `Indexed ${indexResult?.added ?? 0} documents. Summarize this.`;
-      return mapMaybe(model.generate({ prompt }), bindFirst(writeModelResult, state));
+      return maybeMap(bindFirst(writeModelResult, state), model.generate({ prompt }));
     }).dependsOn("index"),
   }));
 

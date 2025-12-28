@@ -6,33 +6,30 @@ We'll build a **tool-calling agent** that uses OpenAI, then we'll swap it to Ant
 
 ## 1. The Blank Slate
 
-Start by importing the `Workflow` builder. This is your entry point for everything.
+Start by importing the `recipes` handle. This is your entry point for authoring.
 
 ::: tabs
 == TypeScript
 
 ```ts
-import { Workflow } from "@geekist/llm-core/workflow";
-
-// This won't run yet—it needs a recipe!
+import { recipes } from "@geekist/llm-core/recipes";
 ```
 
 :::
 
 ## 2. Pick a Recipe
 
-Recipes are declarative flows. We use `Recipe.flow` to start one.
-You can define your own steps, or load a standard flow like `"agent"`.
+Recipes are declarative flows. We use `recipes.*()` to start one.
+You can define your own steps later, or load a standard recipe like `"agent"`.
 
 ::: tabs
 == TypeScript
 
 ```ts
-import { Recipe } from "@geekist/llm-core/recipes";
+import { recipes } from "@geekist/llm-core/recipes";
 
-// "agent" is a standard Recipe flow for loop-based agents
-// We capture the "flow builder" here so we can configure it.
-const agent = Recipe.flow("agent");
+// "agent" is a standard recipe for loop-based agents.
+const agent = recipes.agent();
 ```
 
 :::
@@ -48,14 +45,14 @@ The `"agent"` flow expects a `model` adapter.
 == TypeScript
 
 ```ts
-import { Recipe } from "@geekist/llm-core/recipes";
-import { Adapter, fromAiSdkModel } from "@geekist/llm-core/adapters";
+import { recipes } from "@geekist/llm-core/recipes";
+import { fromAiSdkModel } from "@geekist/llm-core/adapters";
 import { openai } from "@ai-sdk/openai";
 
-const agent = Recipe.flow("agent");
+const model = fromAiSdkModel(openai("gpt-4o"));
 
-// Configure the flow with an OpenAI adapter
-const workflow = agent.use(Adapter.model("openai.model", fromAiSdkModel(openai("gpt-4o")))).build();
+// Configure the recipe with an OpenAI adapter
+const workflow = recipes.agent().defaults({ adapters: { model } }).build();
 ```
 
 :::
@@ -70,9 +67,7 @@ Build the workflow and run it with an input.
 ```ts
 // ... imports
 
-const app = workflow.build();
-
-const result = await app.run({
+const result = await workflow.run({
   input: "What is the capital of France?",
 });
 
@@ -95,13 +90,10 @@ You don't need to rewrite your agent logic. Just swap the **adapter**.
 - import { openai } from "@ai-sdk/openai";
 + import { anthropic } from "@ai-sdk/anthropic";
 
-- const agent = Recipe.flow("agent");
-+ const agent = Recipe.flow("agent");
+- const model = fromAiSdkModel(openai("gpt-4o"));
++ const model = fromAiSdkModel(anthropic("claude-3-5-sonnet-20240620"));
 
-const workflow = agent
--  .use(Adapter.model("openai.model", fromAiSdkModel(openai("gpt-4o"))))
-+  .use(Adapter.model("anthropic.model", fromAiSdkModel(anthropic("claude-3-5-sonnet-20240620"))))
-   .build();
+const workflow = recipes.agent().defaults({ adapters: { model } }).build();
 ```
 
 :::

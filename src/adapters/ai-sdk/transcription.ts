@@ -5,7 +5,8 @@ import type {
   TranscriptionModel,
   TranscriptionResult,
 } from "../types";
-import { bindFirst, fromPromiseLike, mapMaybe } from "../../maybe";
+import { bindFirst, maybeMap } from "../../maybe";
+import type { MaybePromise } from "../../maybe";
 import { toAdapterTrace } from "../telemetry";
 import { validateTranscriptionInput } from "../input-validation";
 import { toDiagnostics, toMeta, toTelemetry } from "./telemetry";
@@ -51,17 +52,15 @@ export function fromAiSdkTranscriptionModel(model: TranscriptionModelV3): Transc
   function generate(call: TranscriptionCall, _context?: AdapterCallContext) {
     void _context;
     const diagnostics = validateTranscriptionInput(call.audio);
-    return mapMaybe(
-      fromPromiseLike(
-        model.doGenerate({
-          audio: call.audio.bytes,
-          mediaType: call.audio.contentType ?? "application/octet-stream",
-          providerOptions: toProviderOptions(call.providerOptions),
-          headers: call.headers,
-          abortSignal: call.abortSignal,
-        }),
-      ),
+    return maybeMap(
       bindFirst(mapTranscriptionResult, diagnostics),
+      model.doGenerate({
+        audio: call.audio.bytes,
+        mediaType: call.audio.contentType ?? "application/octet-stream",
+        providerOptions: toProviderOptions(call.providerOptions),
+        headers: call.headers,
+        abortSignal: call.abortSignal,
+      }) as MaybePromise<Awaited<ReturnType<TranscriptionModelV3["doGenerate"]>>>,
     );
   }
 

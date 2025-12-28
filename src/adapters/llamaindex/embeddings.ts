@@ -1,6 +1,6 @@
 import type { BaseEmbedding } from "@llamaindex/core/embeddings";
 import type { AdapterCallContext, Embedder } from "../types";
-import { identity, mapMaybe } from "../../maybe";
+import { identity, maybeMap } from "../../maybe";
 import {
   reportDiagnostics,
   validateEmbedderBatchInput,
@@ -14,7 +14,7 @@ export function fromLlamaIndexEmbeddings(embedding: BaseEmbedding): Embedder {
       reportDiagnostics(context, diagnostics);
       return [];
     }
-    return mapMaybe(embedding.getTextEmbedding(text), identity);
+    return maybeMap(identity, embedding.getTextEmbedding(text));
   }
 
   function embedMany(texts: string[], context?: AdapterCallContext) {
@@ -23,7 +23,7 @@ export function fromLlamaIndexEmbeddings(embedding: BaseEmbedding): Embedder {
       reportDiagnostics(context, diagnostics);
       return [];
     }
-    return mapMaybe(embedding.getTextEmbeddings(texts), identity);
+    return maybeMap(identity, embedding.getTextEmbeddings(texts));
   }
 
   return { embed, embedMany };

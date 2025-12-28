@@ -10,12 +10,12 @@ export type FinalizeResult<TOutcome> = (
   trace: TraceEvent[],
   diagnosticsMode: "default" | "strict",
   iterator?: ExecutionIterator,
-  recordSnapshot?: (result: unknown) => MaybePromise<void>,
+  recordSnapshot?: (result: unknown) => MaybePromise<boolean | null>,
 ) => MaybePromise<TOutcome>;
 
 type FinalizeInput<TOutcome> = {
   finalizeResult: FinalizeResult<TOutcome>;
-  recordSnapshot: (result: unknown) => MaybePromise<void>;
+  recordSnapshot: (result: unknown) => MaybePromise<boolean | null>;
 };
 
 const finalizeWithSnapshot = <TOutcome>(
@@ -30,7 +30,7 @@ const finalizeWithSnapshot = <TOutcome>(
 
 export const createFinalize = <TOutcome>(
   finalizeResult: FinalizeResult<TOutcome>,
-  recordSnapshot: (result: unknown) => MaybePromise<void>,
+  recordSnapshot: (result: unknown) => MaybePromise<boolean | null>,
 ) =>
   bindFirst(finalizeWithSnapshot, {
     finalizeResult,

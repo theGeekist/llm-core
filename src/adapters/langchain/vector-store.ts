@@ -7,7 +7,7 @@ import type {
   VectorStoreDeleteInput,
   VectorStoreUpsertInput,
 } from "../types";
-import { mapMaybe } from "../../maybe";
+import { maybeMap, toTrue } from "../../maybe";
 import {
   reportDiagnostics,
   validateVectorStoreDeleteInput,
@@ -38,8 +38,6 @@ const toVectorDocument = (record: VectorRecord) => {
 };
 
 const buildNamespaceOptions = (namespace?: string) => (namespace ? { namespace } : undefined);
-
-const toVoid = () => undefined;
 
 const toUpsertResult = (ids: unknown) => ({
   ids: Array.isArray(ids) ? (ids as string[]) : undefined,
@@ -87,19 +85,22 @@ export function fromLangChainVectorStore(store: VectorStoreInterface): VectorSto
     reportDiagnostics(context, diagnostics);
     const payload = toUpsertPayload(input);
     if (payload.kind === "documents") {
-      return mapMaybe(store.addDocuments(payload.documents, payload.options), toUpsertResult);
+      return maybeMap(toUpsertResult, store.addDocuments(payload.documents, payload.options));
     }
-    return mapMaybe(
-      store.addVectors(payload.vectors ?? [], payload.documents, payload.options),
+    return maybeMap(
       toUpsertResult,
+      store.addVectors(payload.vectors ?? [], payload.documents, payload.options),
     );
   };
 
   const remove = (input: VectorStoreDeleteInput, context?: AdapterCallContext) => {
     const diagnostics = validateVectorStoreDeleteInput(input);
     reportDiagnostics(context, diagnostics);
+    if (diagnostics.length > 0) {
+      return false;
+    }
     const payload = toDeletePayload(input);
-    return mapMaybe(store.delete(payload.options), toVoid);
+    return maybeMap(toTrue, store.delete(payload.options));
   };
 
   return {

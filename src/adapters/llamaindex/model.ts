@@ -14,7 +14,7 @@ import type {
 } from "../types";
 import { fromLlamaIndexMessage } from "./messages";
 import { toAdapterTrace } from "../telemetry";
-import { bindFirst, mapMaybe } from "../../maybe";
+import { bindFirst, maybeMap } from "../../maybe";
 import { ModelUsageHelper } from "../modeling";
 import { toLlamaIndexStreamEvents } from "./stream";
 import type { LlamaIndexExecResult } from "./model-utils";
@@ -119,12 +119,7 @@ export function fromLlamaIndexModel(model: LLM): Model {
     const state = createRunState(model, call);
     const exec = getExec(model);
     if (exec && ((state.tools && state.tools.length) || state.responseSchema)) {
-      return mapMaybe(
-        exec({
-          messages: state.messages as ChatMessage[],
-          tools: state.tools,
-          responseFormat: state.responseSchema,
-        }),
+      return maybeMap(
         (result) =>
           toExecResult(
             result,
@@ -133,11 +128,17 @@ export function fromLlamaIndexModel(model: LLM): Model {
             state.modelId,
             state.hasResponseSchema,
           ),
+        exec({
+          messages: state.messages as ChatMessage[],
+          tools: state.tools,
+          responseFormat: state.responseSchema,
+        }),
       );
     }
 
-    return mapMaybe(model.chat({ messages: state.messages }), (response) =>
-      toChatResult(response, state.diagnostics, state.telemetry, state.modelId),
+    return maybeMap(
+      (response) => toChatResult(response, state.diagnostics, state.telemetry, state.modelId),
+      model.chat({ messages: state.messages }),
     );
   }
 
@@ -148,19 +149,19 @@ export function fromLlamaIndexModel(model: LLM): Model {
     }
     const streamExec = getStreamExec(model);
     if (streamExec && state.tools && state.tools.length) {
-      return mapMaybe(
+      return maybeMap(
+        bindFirst(mapExecStreamResult, state),
         streamExec({
           messages: state.messages as ChatMessage[],
           tools: state.tools,
           responseFormat: state.responseSchema,
           stream: true,
         }),
-        bindFirst(mapExecStreamResult, state),
       );
     }
-    return mapMaybe(
-      model.chat({ messages: state.messages, stream: true }),
+    return maybeMap(
       bindFirst(mapChatStreamResult, state),
+      model.chat({ messages: state.messages, stream: true }),
     );
   }
 

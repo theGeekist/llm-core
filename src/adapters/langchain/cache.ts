@@ -1,9 +1,8 @@
 import type { BaseStore } from "@langchain/core/stores";
 import type { AdapterCallContext, Blob, Cache } from "../types";
-import { bindFirst, fromPromiseLike, mapMaybe } from "../../maybe";
+import { bindFirst, maybeMap, toNull, toTrue } from "../../maybe";
 import { reportDiagnostics, validateStorageKey } from "../input-validation";
 
-const toUndefined = () => undefined;
 const isBlob = (value: unknown): value is Blob =>
   typeof value === "object" && value !== null && value instanceof Object && "bytes" in value;
 
@@ -24,33 +23,35 @@ const toEnvelope = (value: Blob, ttlMs?: number): CacheEnvelope => ({
   expiresAt: typeof ttlMs === "number" ? Date.now() + ttlMs : undefined,
 });
 
+const toBoolean = (value: unknown): boolean | null => (value === null ? null : value !== false);
+
 const isExpired = (envelope: CacheEnvelope | undefined) =>
   typeof envelope?.expiresAt === "number" && Date.now() > envelope.expiresAt;
 
 const deleteEntry = (store: BaseStore<string, unknown>, key: string) =>
-  mapMaybe(fromPromiseLike(store.mdelete([key])), toUndefined);
+  maybeMap(toBoolean, store.mdelete([key]));
 
 const readEntry = (store: BaseStore<string, unknown>, key: string, value: unknown) => {
   const envelope = readEnvelope(value);
   if (envelope) {
     if (isExpired(envelope)) {
-      return mapMaybe(deleteEntry(store, key), toUndefined);
+      return maybeMap(toNull, deleteEntry(store, key));
     }
     return envelope.value;
   }
-  return readBlob(value);
+  return readBlob(value) ?? null;
 };
 
 const cacheGet = (store: BaseStore<string, unknown>, key: string, context?: AdapterCallContext) => {
   const diagnostics = validateStorageKey(key, "cache.get");
   if (diagnostics.length > 0) {
     reportDiagnostics(context, diagnostics);
-    return undefined;
+    return null;
   }
 
   const handleEntries = (values: unknown[]) => readEntry(store, key, values[0]);
 
-  return mapMaybe(fromPromiseLike(store.mget([key])), handleEntries);
+  return maybeMap(handleEntries, store.mget([key]));
 };
 
 const cacheSet = (
@@ -63,10 +64,10 @@ const cacheSet = (
   const diagnostics = validateStorageKey(key, "cache.set");
   if (diagnostics.length > 0) {
     reportDiagnostics(context, diagnostics);
-    return;
+    return false;
   }
   const entry = toEnvelope(value, ttlMs);
-  return mapMaybe(fromPromiseLike(store.mset([[key, entry]])), toUndefined);
+  return maybeMap(toTrue, store.mset([[key, entry]]));
 };
 
 const cacheDelete = (
@@ -77,9 +78,9 @@ const cacheDelete = (
   const diagnostics = validateStorageKey(key, "cache.delete");
   if (diagnostics.length > 0) {
     reportDiagnostics(context, diagnostics);
-    return;
+    return false;
   }
-  return mapMaybe(fromPromiseLike(store.mdelete([key])), toUndefined);
+  return maybeMap(toBoolean, store.mdelete([key]));
 };
 
 export function fromLangChainStoreCache(store: BaseStore<string, unknown>): Cache {

@@ -92,16 +92,23 @@ export type { AiSdkCacheStore } from "./ai-sdk/cache";
 export type { LlamaIndexCheckpointEntry, LlamaIndexCheckpointStore } from "./llamaindex";
 
 export {
-  chainMaybe,
-  composeK,
+  maybeChain,
   identity,
-  isPromiseLike,
-  mapMaybe,
-  mapMaybeArray,
-  maybeAll,
-  maybeThen,
+  maybeMap,
+  maybeMapArray,
   maybeTry,
-  processSequentially,
+  maybeMapOr,
+  maybeTap,
+  tryWrap,
+  bindFirst,
+  partialK,
+  curryK,
+  toNull,
+  toTrue,
+  toFalse,
+  isNull,
+  isFalse,
+  toUndefined,
 } from "../maybe";
 export type { MaybePromise } from "../maybe";
 

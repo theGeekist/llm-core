@@ -10,7 +10,7 @@ import {
 } from "@llamaindex/core/schema";
 import { fromAiSdkReranker } from "#adapters";
 import type { Reranker } from "#workflow";
-import { mapMaybe } from "./helpers";
+import { maybeMap } from "./helpers";
 
 const toRerankerFromLangChain = (compressor: BaseDocumentCompressor): Reranker => ({
   rerank: (query, documents) => {
@@ -22,12 +22,14 @@ const toRerankerFromLangChain = (compressor: BaseDocumentCompressor): Reranker =
           id: doc.id,
         }),
     );
-    return mapMaybe(compressor.compressDocuments(langchainDocs, String(query)), (result) =>
-      result.map((doc) => ({
-        id: doc.id,
-        text: doc.pageContent,
-        metadata: doc.metadata,
-      })),
+    return maybeMap(
+      (result) =>
+        result.map((doc) => ({
+          id: doc.id,
+          text: doc.pageContent,
+          metadata: doc.metadata,
+        })),
+      compressor.compressDocuments(langchainDocs, String(query)),
     );
   },
 });
@@ -38,13 +40,15 @@ const toRerankerFromLlama = (reranker: BaseNodePostprocessor): Reranker => ({
       node: new LlamaDocument({ text: doc.text, metadata: doc.metadata }),
       score: doc.score,
     }));
-    return mapMaybe(reranker.postprocessNodes(nodes, String(query)), (ranked) =>
-      ranked.map((entry) => ({
-        id: entry.node.id_,
-        text: getLlamaNodeText(entry.node),
-        metadata: entry.node.metadata,
-        score: entry.score,
-      })),
+    return maybeMap(
+      (ranked) =>
+        ranked.map((entry) => ({
+          id: entry.node.id_,
+          text: getLlamaNodeText(entry.node),
+          metadata: entry.node.metadata,
+          score: entry.score,
+        })),
+      reranker.postprocessNodes(nodes, String(query)),
     );
   },
 });

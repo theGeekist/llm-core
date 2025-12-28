@@ -11,8 +11,8 @@ export const readPartialArtifact = <N extends RecipeName>(
   result: unknown,
   readArtifactValue: (result: unknown) => ArtefactOf<N>,
 ): Partial<ArtefactOf<N>> =>
-  ((result as { partialArtifact?: Partial<ArtefactOf<N>> }).partialArtifact ??
-    readArtifactValue(result)) as Partial<ArtefactOf<N>>;
+  (result as { partialArtifact?: Partial<ArtefactOf<N>> }).partialArtifact ??
+  readArtifactValue(result);
 
 export const toOkOutcome = <N extends RecipeName>(
   result: unknown,
@@ -30,18 +30,48 @@ export const toOkOutcome = <N extends RecipeName>(
   };
 };
 
+const readPauseMeta = (result: unknown) => {
+  const direct = result as { token?: unknown; pauseKind?: PauseKind };
+  if (direct.token !== undefined || direct.pauseKind !== undefined) {
+    return { token: direct.token, pauseKind: direct.pauseKind };
+  }
+  const artifact = (
+    result as { artifact?: { __pause?: { token?: unknown; pauseKind?: PauseKind } } }
+  ).artifact;
+  if (artifact?.__pause) {
+    return { token: artifact.__pause.token, pauseKind: artifact.__pause.pauseKind };
+  }
+  const state = (result as { state?: { __pause?: { token?: unknown; pauseKind?: PauseKind } } })
+    .state;
+  return { token: state?.__pause?.token, pauseKind: state?.__pause?.pauseKind };
+};
+
+export const readPauseFlag = (result: unknown) => {
+  const direct = (result as { paused?: boolean }).paused;
+  if (direct !== undefined) {
+    return direct;
+  }
+  const artifact = (result as { artifact?: { __pause?: { paused?: boolean } } }).artifact;
+  if (artifact?.__pause?.paused !== undefined) {
+    return artifact.__pause.paused;
+  }
+  const state = (result as { state?: { __pause?: { paused?: boolean } } }).state;
+  return state?.__pause?.paused;
+};
+
 export const toPausedOutcome = <N extends RecipeName>(
   result: unknown,
   trace: TraceEvent[],
   diagnostics: DiagnosticEntry[],
   readPartial: (result: unknown) => Partial<ArtefactOf<N>>,
 ): Outcome<ArtefactOf<N>> => {
-  const pauseKind = (result as { pauseKind?: PauseKind }).pauseKind;
+  const pauseMeta = readPauseMeta(result);
+  const pauseKind = pauseMeta.pauseKind;
   addTraceEvent(trace, "run.paused", pauseKind ? { pauseKind } : undefined);
   addTraceEvent(trace, "run.end", { status: "paused" });
   return {
     status: "paused",
-    token: (result as { token?: unknown }).token,
+    token: pauseMeta.token,
     artefact: readPartial(result),
     trace,
     diagnostics,

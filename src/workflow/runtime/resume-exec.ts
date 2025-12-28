@@ -4,7 +4,7 @@ import type { DiagnosticEntry } from "../diagnostics";
 import type { TraceEvent } from "../trace";
 import type { MaybePromise } from "../../maybe";
 import type { IteratorFinalize, PauseSession } from "../driver/types";
-import { bindFirst, chainMaybe, mapMaybe, tapMaybe, tryMaybe } from "../../maybe";
+import { bindFirst, maybeChain, maybeMap, maybeTap, maybeTry } from "../../maybe";
 import { createSnapshotRecorder, resolveSessionStore, type ResumeSession } from "./resume-session";
 import { readResumeOptions, type ResumeOptions } from "../resume";
 import { runResumedPipeline } from "./resume-runner";
@@ -83,14 +83,14 @@ const createResumeError = <N extends RecipeName>(
 const createResumeDeletion = <N extends RecipeName>(
   session: ActiveResumeSession,
   token: unknown,
-): ((outcome: Outcome<ArtefactOf<N>>) => MaybePromise<void>) | undefined => {
+): ((outcome: Outcome<ArtefactOf<N>>) => MaybePromise<boolean | null>) | undefined => {
   const store = session.store;
   if (!store) {
     return undefined;
   }
   return function deleteResumeSession(outcome: Outcome<ArtefactOf<N>>) {
     if (outcome.status !== "ok") {
-      return undefined;
+      return false;
     }
     return store.delete(token);
   };
@@ -102,7 +102,7 @@ const deleteSessionOnSuccess = <N extends RecipeName>(
   outcome: MaybePromise<Outcome<ArtefactOf<N>>>,
 ) => {
   const deleteResumeSession = createResumeDeletion<N>(session, token);
-  return deleteResumeSession ? tapMaybe(outcome, deleteResumeSession) : outcome;
+  return deleteResumeSession ? maybeTap(deleteResumeSession, outcome) : outcome;
 };
 
 const continueIterator = <N extends RecipeName>(
@@ -181,9 +181,9 @@ const resolveAdaptersFromProviders = <N extends RecipeName>(
   runtime: Runtime | undefined,
   providers: Record<string, string>,
 ) =>
-  mapMaybe(
-    deps.resolveAdaptersForRun(runtime, providers),
+  maybeMap(
     bindFirst(selectResolvedAdapters<N>, deps),
+    deps.resolveAdaptersForRun(runtime, providers),
   );
 
 const selectResolvedAdapters = <N extends RecipeName>(
@@ -263,7 +263,8 @@ const runResumeWithResolvedAdapters = <N extends RecipeName>(input: ResumeExecut
   if (input.session.kind === "iterator") {
     return runResumeWithAdapters(input, input.resolvedAdapters);
   }
-  return chainMaybe(
+  return maybeChain(
+    bindFirst(runResumeWithAdapters<N>, input),
     resolveEffectiveAdapters<N>(
       input.deps,
       input.resolvedAdapters,
@@ -271,7 +272,6 @@ const runResumeWithResolvedAdapters = <N extends RecipeName>(input: ResumeExecut
       input.runtime,
       input.resumeRuntime,
     ),
-    bindFirst(runResumeWithAdapters<N>, input),
   );
 };
 
@@ -305,7 +305,8 @@ export const executeResumePipeline = <N extends RecipeName>(
     deps.errorOutcome,
   );
 
-  return tryMaybe(
+  return maybeTry(
+    resumeError,
     bindFirst(runResumeExecutor<N>, {
       deps,
       resolvedAdapters,
@@ -321,6 +322,5 @@ export const executeResumePipeline = <N extends RecipeName>(
       resumeError,
       resumeInvalidYield,
     }),
-    resumeError,
   );
 };

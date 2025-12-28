@@ -1,21 +1,19 @@
 # Composing Recipes
 
-# Composing Recipes
-
-**Recipes** are just collections of **Packs**.
-This means you can share logic across teams by publishing Packs (like "ResearchPack" or "CompliancePack") and mixing them into any workflow.
-
-If you are open-sourcing logic built with `llm-core`, you publish Packs.
+**Recipes** are composable units of behavior. Most users share and reuse full recipes.
+Packs exist for advanced authors who want to define new step-level logic.
 
 ## The Mental Model
 
-A Recipe is just a container. You fill it with Packs.
+A Recipe is a container for steps (via packs). You compose recipes together.
 
 ```ts
-const workflow = Recipe.flow("custom-agent")
-  .use(PlanningPack) // Logic for thinking
-  .use(ExecutionPack) // Logic for doing
-  .use(MemoryPack); // Logic for remembering
+import { recipes } from "#recipes";
+
+const workflow = recipes
+  .agent()
+  .use(recipes.rag()) // Retrieval + synthesis
+  .use(recipes.hitl()); // Pause for approval
 ```
 
 > [!TIP]
@@ -23,24 +21,24 @@ const workflow = Recipe.flow("custom-agent")
 
 ## Tutorial: Swapping the Brain
 
-Let's say you like the standard **Agent Recipe**, but you want to replace its "Planning" logic with your own simpler version.
+Let's say you like the standard **Agent Recipe**, but you want to replace its "Planning" logic with your own version.
 
-### 1. Import the Recipe Flow
+### 1. Import Recipes
 
-Instead of `Workflow.recipe`, we use `Recipe.flow` to access the composable builder.
+You compose recipes via the unified handle.
 
 ::: tabs
 == TypeScript
 
 ```ts
-import { Recipe } from "#recipes";
+import { recipes } from "#recipes";
 
-const agent = Recipe.flow("agent");
+const agent = recipes.agent();
 ```
 
 :::
 
-### 2. Override a Pack
+### 2. Override the Planning Recipe
 
 The standard agent uses a complex `PlanningPack`. Let's override it with a custom one.
 
@@ -48,43 +46,20 @@ The standard agent uses a complex `PlanningPack`. Let's override it with a custo
 == TypeScript
 
 ```ts
-import { Recipe } from "#recipes";
+import { recipes } from "#recipes";
 
-// Define a simple custom pack
-const SimplePlanPack = Recipe.pack("planning", ({ step }) => ({
-  plan: step("plan", async ({ context }) => {
-    context.plan = "Do everything immediately.";
-  }),
-}));
-
-// Compose the agent
-const agent = Recipe.flow("agent")
-  .use(SimplePlanPack) // <--- This overrides the default "planning" pack!
+const agent = recipes
+  .agent()
+  .use(recipes["agent.planning"]()) // overrides the default planning pack
   .build();
 ```
 
 :::
 
-## Extending Behavior
+## Extending Behavior (Advanced)
 
-You can also just **add** steps to an existing pack without replacing it.
-
-::: tabs
-== TypeScript
-
-```ts
-import { Recipe } from "#recipes";
-
-const SafetyPack = Recipe.pack("safety", ({ step }) => ({
-  check: step("check", async ({ input }) => {
-    if (input.includes("danger")) throw new Error("Unsafe!");
-  }).priority(100), // Run before everything else
-}));
-
-const safeAgent = Recipe.flow("agent").use(SafetyPack).build();
-```
-
-````
+Custom packs are an internal authoring primitive. Most users compose recipes and override existing packs via `.use(...)`.
+If you need step-level authoring, treat it as an internal API and follow the packs reference.
 
 ## Execution Order
 
@@ -96,13 +71,13 @@ Steps are executed based on a strict hierarchy:
 
 ::: tabs
 == TypeScript
+
 ```ts
-const MyPack = Recipe.pack("lifecycle", ({ step }) => ({
-  first: step("first", ...).priority(100),
-  second: step("second", ...).priority(10),
-  last: step("last", ...).dependsOn("first"), // DAG wins over priority
-}));
-````
+import { recipes } from "#recipes";
+
+const plan = recipes.agent().plan();
+console.log(plan.steps);
+```
 
 :::
 

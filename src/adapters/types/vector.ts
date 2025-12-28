@@ -32,8 +32,8 @@ export type VectorStore = {
   upsert(
     input: VectorStoreUpsertInput,
     context?: AdapterCallContext,
-  ): MaybePromise<VectorStoreUpsertResult | void>;
-  delete(input: VectorStoreDeleteInput, context?: AdapterCallContext): MaybePromise<void>;
+  ): MaybePromise<VectorStoreUpsertResult | null>;
+  delete(input: VectorStoreDeleteInput, context?: AdapterCallContext): MaybePromise<boolean | null>;
   info?: VectorStoreInfo;
   metadata?: AdapterMetadata;
 };

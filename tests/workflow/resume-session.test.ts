@@ -66,13 +66,13 @@ describe("Workflow resume sessions", () => {
   it("prefers checkpoint adapters over cache stores", () => {
     const checkpoint = {
       get: () => undefined,
-      set: () => undefined,
-      delete: () => undefined,
+      set: () => null,
+      delete: () => null,
     };
     const cache = {
-      get: () => undefined,
-      set: () => undefined,
-      delete: () => undefined,
+      get: () => null,
+      set: () => null,
+      delete: () => null,
     };
     const resolved = resolveSessionStore(undefined, { checkpoint, cache });
 
@@ -83,11 +83,12 @@ describe("Workflow resume sessions", () => {
     let called = false;
     const sweepStore = () => {
       called = true;
+      return null;
     };
     const sessionStore = {
       get: () => undefined,
-      set: () => undefined,
-      delete: () => undefined,
+      set: () => null,
+      delete: () => null,
       sweep: sweepStore,
     };
 

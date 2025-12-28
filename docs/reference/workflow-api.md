@@ -4,7 +4,7 @@ The **Workflow** is the execution engine for `llm-core`.
 You author your logic in **Recipes**, compile them into a Workflow, and then `.run()` them.
 
 This API is for **Execution** and **Advanced Control**.
-Most of the time, you will interact with `Recipe.flow(...)` instead.
+Most of the time, you will interact with `recipes.*()` instead.
 
 Related:
 
@@ -13,16 +13,16 @@ Related:
 
 ## Quick Start (Execution)
 
-Once you have a recipe (from `Recipe.flow`), you compile and run it.
+Once you have a recipe handle, you compile and run it.
 
 ::: tabs
 == TypeScript
 
 ```ts
-import { Recipe } from "@geekist/llm-core/recipes";
+import { recipes } from "@geekist/llm-core/recipes";
 
 // 1. Author
-const agent = Recipe.flow("agent");
+const agent = recipes.agent();
 
 // 2. Compile (Build)
 const workflow = agent.build();
@@ -45,31 +45,25 @@ Register adapters without touching registry types. The workflow surface stays cl
 == TypeScript
 
 ```ts
-import { Adapter } from "#adapters";
-import { Recipe } from "#recipes";
+import { recipes } from "#recipes";
 
-const wf = Recipe.flow("rag")
-  .use(
-    Adapter.retriever("custom.retriever", {
-      retrieve: () => ({ documents: [] }),
-    }),
-  )
-  .build();
+const retriever = {
+  retrieve: () => ({ documents: [] }),
+};
+
+const wf = recipes.rag().defaults({ adapters: { retriever } }).build();
 ```
 
 == JavaScript
 
 ```js
-import { Adapter } from "#adapters";
-import { Recipe } from "#recipes";
+import { recipes } from "#recipes";
 
-const wf = Recipe.flow("rag")
-  .use(
-    Adapter.retriever("custom.retriever", {
-      retrieve: () => ({ documents: [] }),
-    }),
-  )
-  .build();
+const retriever = {
+  retrieve: () => ({ documents: [] }),
+};
+
+const wf = recipes.rag().defaults({ adapters: { retriever } }).build();
 ```
 
 :::
@@ -98,14 +92,14 @@ If you give us a literal recipe name, we give you full type safety.
 == TypeScript
 
 ```ts
-const agent = Recipe.flow("agent"); // typed flow builder
+const agent = recipes.agent(); // typed recipe handle
 const wf = agent.build(); // typed input + artefacts
 ```
 
 == JavaScript
 
 ```js
-const agent = Recipe.flow("agent");
+const agent = recipes.agent();
 ```
 
 :::

@@ -11,15 +11,11 @@ Tracing lets you visualize the execution flow of your recipe.
 The simplest way to see what's happening is to enable the console tracer.
 
 ```ts
-import { Recipe } from "@geekist/llm-core";
+import { recipes } from "@geekist/llm-core/recipes";
+import { createBuiltinTrace } from "@geekist/llm-core/adapters";
 
-const workflow = Recipe.flow("my-workflow")
-  .plugin(
-    Recipe.plugin("trace", {
-      trace: { sink: "console" },
-    }),
-  )
-  .build();
+const trace = createBuiltinTrace();
+const workflow = recipes.agent().defaults({ adapters: { trace } }).build();
 
 await workflow.run({ input: "hello" });
 ```
@@ -48,18 +44,14 @@ In production, you often want **Strict Mode**, which treats warnings as errors a
 You can enable strict mode at the **Workflow** level:
 
 ```ts
-const workflow = Recipe.flow("my-workflow")
-  .settings({
-    diagnostics: "strict",
-  })
-  .build();
+const workflow = recipes.agent().build();
 ```
 
 Or at the **Run** level (overriding the workflow default):
 
 ```ts
 await workflow.run(input, {
-  diagnosticsMode: "strict",
+  diagnostics: "strict",
 });
 ```
 

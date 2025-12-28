@@ -3,22 +3,22 @@ import type { EmbeddingsInterface } from "@langchain/core/embeddings";
 import type { BaseEmbedding } from "@llamaindex/core/embeddings";
 import { embed, embedMany, type EmbeddingModel } from "ai";
 import type { Embedder } from "#workflow";
-import { mapMaybe } from "./helpers";
+import { maybeMap } from "./helpers";
 
 const toEmbedderFromLangChain = (embeddings: EmbeddingsInterface<number[]>): Embedder => ({
-  embed: (text) => mapMaybe(embeddings.embedQuery(text), (value) => value),
-  embedMany: (texts) => mapMaybe(embeddings.embedDocuments(texts), (value) => value),
+  embed: (text) => maybeMap((value) => value, embeddings.embedQuery(text)),
+  embedMany: (texts) => maybeMap((value) => value, embeddings.embedDocuments(texts)),
 });
 
 const toEmbedderFromLlama = (embedding: BaseEmbedding): Embedder => ({
-  embed: (text) => mapMaybe(embedding.getTextEmbedding(text), (value) => value),
-  embedMany: (texts) => mapMaybe(embedding.getTextEmbeddings(texts), (value) => value),
+  embed: (text) => maybeMap((value) => value, embedding.getTextEmbedding(text)),
+  embedMany: (texts) => maybeMap((value) => value, embedding.getTextEmbeddings(texts)),
 });
 
 const toEmbedderFromAiSdk = (model: EmbeddingModel<string>): Embedder => ({
-  embed: (text) => mapMaybe(embed({ model, value: text }), (result) => result.embedding),
+  embed: (text) => maybeMap((result) => result.embedding, embed({ model, value: text })),
   embedMany: (texts) =>
-    mapMaybe(embedMany({ model, values: texts }), (result) => result.embeddings),
+    maybeMap((result) => result.embeddings, embedMany({ model, values: texts })),
 });
 
 describe("Interop embeddings", () => {

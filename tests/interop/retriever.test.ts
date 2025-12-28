@@ -10,31 +10,37 @@ import {
 } from "@llamaindex/core/schema";
 import * as AiSdk from "ai";
 import type { Retriever } from "#workflow";
-import { mapMaybe } from "./helpers";
+import { maybeMap } from "./helpers";
 
 const toRetrieverFromLangChain = (retriever: BaseRetrieverInterface): Retriever => ({
   retrieve: (query) =>
-    mapMaybe(retriever.invoke(String(query)), (docs) => ({
-      query,
-      documents: docs.map((doc) => ({
-        id: doc.id,
-        text: doc.pageContent,
-        metadata: doc.metadata,
-      })),
-    })),
+    maybeMap(
+      (docs) => ({
+        query,
+        documents: docs.map((doc) => ({
+          id: doc.id,
+          text: doc.pageContent,
+          metadata: doc.metadata,
+        })),
+      }),
+      retriever.invoke(String(query)),
+    ),
 });
 
 const toRetrieverFromLlama = (retriever: LlamaRetriever): Retriever => ({
   retrieve: (query) =>
-    mapMaybe(retriever.retrieve(String(query)), (nodes) => ({
-      query,
-      documents: nodes.map((entry) => ({
-        id: entry.node.id_,
-        text: getLlamaNodeText(entry.node),
-        metadata: entry.node.metadata,
-        score: entry.score,
-      })),
-    })),
+    maybeMap(
+      (nodes) => ({
+        query,
+        documents: nodes.map((entry) => ({
+          id: entry.node.id_,
+          text: getLlamaNodeText(entry.node),
+          metadata: entry.node.metadata,
+          score: entry.score,
+        })),
+      }),
+      retriever.retrieve(String(query)),
+    ),
 });
 
 const getLlamaNodeText = (node: BaseNode): string => {
