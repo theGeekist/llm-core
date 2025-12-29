@@ -1,26 +1,15 @@
 import { describe, expect, it } from "bun:test";
 import type { AdapterBundle } from "#adapters";
 import type { DiagnosticEntry } from "#workflow/diagnostics";
-import type { DriveIteratorInput } from "#workflow/driver/iterator";
-import type { ExecutionIterator } from "#workflow/driver/types";
 import type { TraceEvent } from "#workflow/trace";
 import type { Outcome } from "#workflow/types";
 import { runWorkflow, type RunWorkflowDeps } from "#workflow/runtime/run-runner";
 
 describe("Workflow run runner", () => {
-  it("reports invalid iterator yields as errors", async () => {
-    const readDiagnosticCode = (value: unknown) => {
-      if (!value || typeof value !== "object") {
-        return undefined;
-      }
-      const typed = value as { data?: { code?: string } };
-      return typed.data?.code;
-    };
+  it("finalizes pipeline results with diagnostics", async () => {
     const deps: RunWorkflowDeps<Outcome> = {
       pipeline: {
-        run: () => ({
-          next: () => ({ done: false, value: { paused: false } }),
-        }),
+        run: () => ({ artifact: { ok: true } }),
       },
       extensionRegistration: [],
       resolveAdaptersForRun: () => ({
@@ -51,13 +40,10 @@ describe("Workflow run runner", () => {
         trace: TraceEvent[],
       ): Outcome => ({
         status: "ok",
-        artefact: { result },
+        artefact: { result, diagnostics: getDiagnostics() },
         trace,
         diagnostics: getDiagnostics(),
       }),
-      isExecutionIterator: (_value: unknown): _value is ExecutionIterator => true,
-      driveIterator: (input: DriveIteratorInput<Outcome>) =>
-        input.onInvalidYield({ paused: false }),
     };
 
     const ctx = {
@@ -74,7 +60,12 @@ describe("Workflow run runner", () => {
     };
 
     const outcome = await runWorkflow(deps, ctx);
-    expect(outcome.status).toBe("error");
-    expect(outcome.diagnostics.map(readDiagnosticCode)).toContain("resume.invalidYield");
+    expect(outcome.status).toBe("ok");
+    if (outcome.status !== "ok") {
+      throw new Error("Expected ok outcome.");
+    }
+    expect(outcome.artefact).toMatchObject({
+      result: { artifact: { ok: true } },
+    });
   });
 });

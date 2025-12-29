@@ -9,6 +9,7 @@ import type { MaybePromise } from "../../maybe";
 import { bindFirst, maybeMap, toTrue } from "../../maybe";
 import type { RollbackEntry, RollbackState } from "./rollback-types";
 import { readRestartInterrupt } from "./pause-metadata";
+import { readPipelinePauseSnapshot } from "../pause";
 
 type RollbackResult = {
   steps?: PipelineStep[];
@@ -25,8 +26,17 @@ type RollbackError = {
 const isRollbackState = (value: unknown): value is RollbackState =>
   !!value && typeof value === "object";
 
+const readPausedRollbackState = (result: unknown) => {
+  const snapshot = readPipelinePauseSnapshot(result);
+  if (!snapshot) {
+    return undefined;
+  }
+  const pausedState = (snapshot.state as { userState?: RollbackState }).userState;
+  return isRollbackState(pausedState) ? pausedState : undefined;
+};
+
 const readRollbackState = (result: RollbackResult) =>
-  isRollbackState(result.state) ? result.state : undefined;
+  isRollbackState(result.state) ? result.state : readPausedRollbackState(result);
 
 const readRollbackMap = (state: RollbackState | undefined) => state?.helperRollbacks;
 
@@ -49,7 +59,17 @@ const readRollbackEntries = (result: RollbackResult) => {
   return collectRollbackEntries(map);
 };
 
-const readSteps = (result: RollbackResult) => (result.steps ? [...result.steps] : []);
+const readPausedSteps = (result: unknown) => {
+  const snapshot = readPipelinePauseSnapshot(result);
+  if (!snapshot) {
+    return [];
+  }
+  const pausedSteps = (snapshot.state as { steps?: PipelineStep[] }).steps;
+  return pausedSteps ? [...pausedSteps] : [];
+};
+
+const readSteps = (result: RollbackResult) =>
+  result.steps ? [...result.steps] : readPausedSteps(result);
 
 const addEntry = (map: Map<string, RollbackEntry[]>, entry: RollbackEntry) => {
   const list = map.get(entry.helper.key);
@@ -99,7 +119,16 @@ const toRollbackStack = (entries: RollbackEntry[], steps: PipelineStep[]) => {
   return stack;
 };
 
-const readReporter = (result: RollbackResult) => result.context?.reporter;
+const readPausedReporter = (result: unknown) => {
+  const snapshot = readPipelinePauseSnapshot(result);
+  if (!snapshot) {
+    return undefined;
+  }
+  return (snapshot.state as { context?: { reporter?: PipelineReporter } }).context?.reporter;
+};
+
+const readReporter = (result: RollbackResult) =>
+  result.context?.reporter ?? readPausedReporter(result);
 
 const warnRollbackFailure = (reporter: PipelineReporter, input: RollbackError) => {
   reporter.warn?.("Helper rollback failed during pause", {

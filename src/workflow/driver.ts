@@ -1,3 +1,2 @@
-export type { ExecutionIterator, PauseSession, IteratorFinalize } from "./driver/types";
-export { driveIterator } from "./driver/iterator";
-export { createPauseSessions, isExecutionIterator, recordPauseSession } from "./driver/sessions";
+export type { PauseSession } from "./driver/types";
+export { createPauseSessions, recordPauseSession } from "./driver/sessions";

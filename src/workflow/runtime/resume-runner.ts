@@ -14,6 +14,7 @@ import type { TraceEvent } from "../trace";
 import type { Outcome, PipelineWithExtensions, Runtime } from "../types";
 import { createDiagnosticsGetter } from "./helpers";
 import { createFinalizeWithInterrupt } from "./pause-metadata";
+import type { FinalizeResult } from "./helpers";
 
 type AdapterResolution = {
   adapters: AdapterBundle;
@@ -50,12 +51,7 @@ export const runResumedPipeline = <TArtefact>(
   resumeDiagnostics: DiagnosticEntry[],
   resumeRuntime: Runtime | undefined,
   resumeDiagnosticsMode: "default" | "strict",
-  finalize: (
-    result: unknown,
-    getDiagnostics: () => DiagnosticEntry[],
-    trace: TraceEvent[],
-    diagnosticsMode: "default" | "strict",
-  ) => MaybePromise<Outcome<TArtefact>>,
+  finalize: FinalizeResult<Outcome<TArtefact>>,
 ) => {
   const handleResolution = bindFirst(handleResumeResolution<TArtefact>, {
     deps,

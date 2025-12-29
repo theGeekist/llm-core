@@ -52,25 +52,3 @@ export const invalidResumeTokenOutcome = <N extends RecipeName>(
   );
   return errorOutcome(new Error(message), trace, diagnostics);
 };
-
-export const createInvalidResumeYieldOutcome = <N extends RecipeName>(
-  trace: TraceEvent[],
-  diagnosticsMode: "default" | "strict",
-  buildDiagnostics: DiagnosticEntry[],
-  errorOutcome: (
-    error: unknown,
-    trace: TraceEvent[],
-    diagnostics?: DiagnosticEntry[],
-  ) => Outcome<ArtefactOf<N>>,
-) =>
-  function invalidResumeYieldOutcome(value: unknown) {
-    void value;
-    const message = "Iterator yielded a non-paused value.";
-    const diagnostics = createInvalidResumeDiagnostics(
-      buildDiagnostics,
-      diagnosticsMode,
-      message,
-      "resume.invalidYield",
-    );
-    return errorOutcome(new Error(message), trace, diagnostics);
-  };

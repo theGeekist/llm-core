@@ -9,4 +9,6 @@ node_modules/
 !.agent/rules/**
 coverage/
 llm-core/
+pipeline
+pipeline/
 docs/.vitepress/cache/

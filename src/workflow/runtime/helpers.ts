@@ -2,14 +2,11 @@ import type { MaybePromise } from "../../maybe";
 import { bindFirst } from "../../maybe";
 import type { DiagnosticEntry } from "../diagnostics";
 import type { TraceEvent } from "../trace";
-import type { ExecutionIterator } from "../driver/types";
-
 export type FinalizeResult<TOutcome> = (
   result: unknown,
   getDiagnostics: () => DiagnosticEntry[],
   trace: TraceEvent[],
   diagnosticsMode: "default" | "strict",
-  iterator?: ExecutionIterator,
   recordSnapshot?: (result: unknown) => MaybePromise<boolean | null>,
 ) => MaybePromise<TOutcome>;
 
@@ -24,9 +21,7 @@ const finalizeWithSnapshot = <TOutcome>(
   getDiagnostics: () => DiagnosticEntry[],
   runtimeTrace: TraceEvent[],
   mode: "default" | "strict",
-  iterator?: ExecutionIterator,
-) =>
-  input.finalizeResult(result, getDiagnostics, runtimeTrace, mode, iterator, input.recordSnapshot);
+) => input.finalizeResult(result, getDiagnostics, runtimeTrace, mode, input.recordSnapshot);
 
 export const createFinalize = <TOutcome>(
   finalizeResult: FinalizeResult<TOutcome>,

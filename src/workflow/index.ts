@@ -15,7 +15,14 @@ export { createContractView } from "./contract.ts";
 export { buildExplainSnapshot } from "./explain.ts";
 export { getRecipe, registerRecipe } from "./recipe-registry.ts";
 export { Outcome } from "./outcome.ts";
-export type { Outcome as OutcomeType, Plugin, RecipeContract, RecipeName, Runtime } from "./types";
+export type {
+  AgentInput,
+  Outcome as OutcomeType,
+  Plugin,
+  RecipeContract,
+  RecipeName,
+  Runtime,
+} from "./types";
 export type {
   AdapterBundle,
   AdapterDiagnostic,

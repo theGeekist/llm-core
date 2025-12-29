@@ -1,9 +1,9 @@
-import {
-  makePipeline,
-  type PipelineDiagnostic,
-  type PipelineReporter,
-  type PipelineStep,
-  type PipelineRunState,
+import { makeResumablePipeline } from "@wpkernel/pipeline";
+import type {
+  PipelineDiagnostic,
+  PipelineReporter,
+  PipelineStep,
+  PipelineRunState,
 } from "@wpkernel/pipeline/core";
 import type { PipelineContext, PipelineState, Plugin, RecipeContract, RunOptions } from "./types";
 import { getEffectivePlugins } from "./plugins/effective";
@@ -106,7 +106,7 @@ const createRunResult = (options: {
 });
 
 export const createPipeline = (contract: RecipeContract, plugins: Plugin[]) =>
-  makePipeline<
+  makeResumablePipeline<
     RunOptions,
     PipelineContext,
     PipelineReporter,

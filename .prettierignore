@@ -2,3 +2,4 @@ llm-core/**
 pipeline
 pipeline/**
 dist/**
+coverage/**

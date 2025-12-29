@@ -4,12 +4,8 @@ import { bindFirst, maybeChain, curryK, maybeTry } from "../../maybe";
 import { attachAdapterContext, createAdapterContext } from "../adapter-context";
 import type { DiagnosticEntry } from "../diagnostics";
 import { applyDiagnosticsMode, createAdapterDiagnostic, hasErrorDiagnostics } from "../diagnostics";
-import { createInvalidResumeDiagnostics } from "./resume-diagnostics";
 import type { TraceEvent } from "../trace";
 import type { PipelineWithExtensions, Runtime } from "../types";
-import type { ExecutionIterator } from "../driver";
-import type { DriveIteratorInput } from "../driver/iterator";
-import type { IteratorFinalize } from "../driver/types";
 import { createSnapshotRecorder, resolveSessionStore } from "./resume-session";
 import { createDiagnosticsGetter, createFinalize, type FinalizeResult } from "./helpers";
 import { createFinalizeWithInterrupt } from "./pause-metadata";
@@ -41,8 +37,6 @@ export type RunWorkflowDeps<TOutcome> = {
     diagnostics?: DiagnosticEntry[],
   ) => TOutcome;
   finalizeResult: FinalizeResult<TOutcome>;
-  isExecutionIterator: (value: unknown) => value is ExecutionIterator;
-  driveIterator: (input: DriveIteratorInput<TOutcome>) => MaybePromise<TOutcome>;
 };
 
 export type RunWorkflowContext<TOutcome> = {
@@ -62,7 +56,7 @@ type RunPipelineInput<TOutcome> = {
   context: RunContext<TOutcome>;
   runtimeDiagnostics: DiagnosticEntry[];
   contextDiagnostics: DiagnosticEntry[];
-  finalize: IteratorFinalize<TOutcome>;
+  finalize: FinalizeResult<TOutcome>;
 };
 
 const runPipelineResult = <TOutcome>(
@@ -70,38 +64,10 @@ const runPipelineResult = <TOutcome>(
   runtimeDiagnostics: DiagnosticEntry[],
   contextDiagnostics: DiagnosticEntry[],
   result: unknown,
-  finalize: IteratorFinalize<TOutcome>,
+  finalize: FinalizeResult<TOutcome>,
 ): MaybePromise<TOutcome> => {
   const getDiagnostics = createDiagnosticsGetter([runtimeDiagnostics, contextDiagnostics]);
-  const handleInvalidYield = bindFirst(buildInvalidYieldOutcome<TOutcome>, context);
-  if (context.deps.isExecutionIterator(result)) {
-    return context.deps.driveIterator({
-      iterator: result,
-      input: undefined,
-      trace: context.ctx.trace,
-      getDiagnostics,
-      diagnosticsMode: context.ctx.diagnosticsMode,
-      finalize,
-      onError: context.ctx.handleError,
-      onInvalidYield: handleInvalidYield,
-    });
-  }
   return finalize(result, getDiagnostics, context.ctx.trace, context.ctx.diagnosticsMode);
-};
-
-const buildInvalidYieldOutcome = <TOutcome>(context: RunContext<TOutcome>, value: unknown) => {
-  void value;
-  const diagnostics = createInvalidResumeDiagnostics(
-    context.deps.buildDiagnostics,
-    context.ctx.diagnosticsMode,
-    "Iterator yielded a non-paused value.",
-    "resume.invalidYield",
-  );
-  return context.deps.toErrorOutcome(
-    new Error("Iterator yielded a non-paused value."),
-    context.ctx.trace,
-    diagnostics,
-  );
 };
 
 const runPipeline = <TOutcome>(

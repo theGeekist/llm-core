@@ -1,6 +1,6 @@
 import { describe, expect, it } from "bun:test";
 import { createBuiltinTrace, createInterruptStrategy } from "#adapters";
-import { createPipelineRollback } from "@wpkernel/pipeline/core";
+import { createPipelineRollback, type PipelinePauseSnapshot } from "@wpkernel/pipeline/core";
 import {
   assertSyncOutcome,
   createResumeSnapshot,
@@ -11,13 +11,6 @@ import {
 } from "./helpers";
 
 const ERROR_RESUME = "Expected resume to be available.";
-
-type PauseYield = {
-  paused: true;
-  token: string;
-  pauseKind?: "human" | "external" | "system";
-  partialArtifact?: Record<string, unknown>;
-};
 
 const createRollbackFixture = (onRollback: () => void) => {
   const rollback = createPipelineRollback(onRollback);
@@ -61,13 +54,16 @@ describe("Workflow runtime resume", () => {
 
   it("returns an error outcome when resume has no adapter", () => {
     const resumable = makeRuntime("hitl-gate", {
-      run: () => {
-        function* pauseSequence(): Generator<PauseYield, { artifact: { ok: true } }, unknown> {
-          yield { paused: true, token: TOKEN_PAUSED };
-          return { artifact: { ok: true } };
-        }
-        return pauseSequence();
-      },
+      run: () => ({
+        __paused: true,
+        snapshot: {
+          stageIndex: 0,
+          state: { userState: { ok: true } },
+          token: TOKEN_PAUSED,
+          pauseKind: "human",
+          createdAt: Date.now(),
+        } satisfies PipelinePauseSnapshot<unknown>,
+      }),
     });
     if (!resumable.resume) {
       throw new Error(ERROR_RESUME);
@@ -101,12 +97,19 @@ describe("Workflow runtime resume", () => {
   });
 
   it("uses the resume adapter to resume runs", () => {
-    let captured: unknown;
+    let capturedRequest: unknown;
     const { sessionStore } = createSessionStore();
-    sessionStore.set(
-      "token-1",
-      createResumeSnapshot("token-1", { pending: true }, { pauseKind: "human" }),
-    );
+    const pauseSnapshot: PipelinePauseSnapshot<unknown> = {
+      stageIndex: 0,
+      state: { userState: { pending: true } },
+      token: "token-1",
+      pauseKind: "human",
+      createdAt: Date.now(),
+    };
+    sessionStore.set("token-1", {
+      ...createResumeSnapshot("token-1", { pending: true }, { pauseKind: "human" }),
+      snapshot: pauseSnapshot,
+    });
     const runtime = makeRuntime("hitl-gate", {
       includeDefaults: false,
       plugins: [
@@ -118,10 +121,8 @@ describe("Workflow runtime resume", () => {
           },
         },
       ],
-      run: (options) => {
-        captured = options;
-        return { artifact: { ok: true } };
-      },
+      run: () => ({ artifact: { ok: true } }),
+      resume: (_snapshot, resumeInput) => ({ artifact: { resumed: resumeInput } }),
     });
 
     if (!runtime.resume) {
@@ -135,22 +136,24 @@ describe("Workflow runtime resume", () => {
         {
           resume: {
             sessionStore,
-            resolve: ({ token, resumeInput, interrupt }) => ({
-              input: { token, resumeInput, interrupt },
-            }),
+            resolve: (request) => {
+              capturedRequest = request;
+              return { input: request.resumeInput };
+            },
           },
         },
       ),
     );
 
     expect(outcome.status).toBe("ok");
-    expect(captured).toMatchObject({
-      input: {
-        token: "token-1",
-        resumeInput: { decision: "approve" },
-        interrupt: { mode: "restart", reason: "test" },
-      },
-      adapters: { tools: [{ name: "search" }] },
+    expect(capturedRequest).toMatchObject({
+      token: "token-1",
+      pauseKind: "human",
+      interrupt: { mode: "restart", reason: "test" },
+    });
+    expect(outcome).toMatchObject({
+      status: "ok",
+      artefact: { resumed: { decision: "approve" } },
     });
   });
 

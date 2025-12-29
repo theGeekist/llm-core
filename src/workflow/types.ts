@@ -5,6 +5,7 @@ import type {
   PipelineExtensionHook,
   PipelineExtensionRegisterOutput,
   PipelineReporter,
+  PipelinePauseSnapshot,
 } from "@wpkernel/pipeline/core";
 import type { AdapterBundle, AdapterResume, RetryConfig } from "../adapters/types";
 import type { DiagnosticEntry } from "./diagnostics";
@@ -114,6 +115,10 @@ export type PipelineWithExtensions = {
     use: (extension: unknown) => unknown;
   };
   run: (options: RunOptions) => MaybePromise<unknown>;
+  resume?: (
+    snapshot: PipelinePauseSnapshot<unknown>,
+    resumeInput?: unknown,
+  ) => MaybePromise<unknown>;
 };
 
 // Explain/capabilities

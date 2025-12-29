@@ -3,6 +3,7 @@ import type { AdapterBundle, PauseKind } from "../../adapters/types";
 import type { TraceEvent } from "../trace";
 import type { PauseSession } from "../driver/types";
 import { bindFirst, maybeChain } from "../../maybe";
+import { toPauseKind } from "../pause";
 import {
   readSessionStore,
   resolveResumeSession,
@@ -37,8 +38,11 @@ type ResumeValueInput<N extends RecipeName> = {
   deps: ResumeHandlerDeps<N>;
 };
 
-const readPauseKind = (session: ActiveResumeSession): PauseKind | undefined =>
-  session.kind === "iterator" ? session.session.pauseKind : session.snapshot.pauseKind;
+const readPauseKind = (session: ActiveResumeSession): PauseKind | undefined => {
+  const pauseKind =
+    session.kind === "pause" ? session.session.snapshot.pauseKind : session.snapshot.pauseKind;
+  return toPauseKind(pauseKind);
+};
 
 const readInterruptStrategy = (adapters: AdapterBundle) => adapters.interrupt;
 

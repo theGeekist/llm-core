@@ -93,6 +93,7 @@ export const makeRuntime = (
   options?: {
     plugins?: Plugin[];
     run?: (options: TestRunOptions) => unknown;
+    resume?: (snapshot: unknown, resumeInput?: unknown) => unknown;
     includeDefaults?: boolean;
   },
 ) => {
@@ -101,11 +102,15 @@ export const makeRuntime = (
   const basePlugins = includeDefaults ? (contract.defaultPlugins ?? []) : [];
   const plugins = [...basePlugins, ...(options?.plugins ?? [])];
   const run = options?.run;
+  const resume = options?.resume;
   const pipelineFactory = run
     ? withFactory(
         () =>
           ({
             run: (runOptions: TestRunOptions) => run(runOptions),
+            resume: resume
+              ? (snapshot: unknown, resumeInput?: unknown) => resume(snapshot, resumeInput)
+              : undefined,
             extensions: { use: () => undefined },
           }) as never,
       )

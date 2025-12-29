@@ -11,13 +11,7 @@ import type {
 } from "./types";
 import type { AdapterBundle } from "../adapters/types";
 import { createPipeline } from "./pipeline";
-import {
-  createPauseSessions,
-  driveIterator,
-  isExecutionIterator,
-  recordPauseSession,
-  type ExecutionIterator,
-} from "./driver";
+import { createPauseSessions, recordPauseSession } from "./driver";
 import type { PauseSession } from "./driver/types";
 import { createContractView } from "./contract";
 import { buildCapabilities } from "./capabilities";
@@ -136,7 +130,6 @@ const finalizeRuntimeResult = <N extends RecipeName>(
   getDiagnostics: () => DiagnosticEntry[],
   trace: TraceEvent[],
   diagnosticsMode: "default" | "strict",
-  iterator?: ExecutionIterator,
   recordSnapshot?: (result: unknown) => MaybePromise<boolean | null>,
 ) => {
   const diagnostics = applyDiagnosticsMode(
@@ -147,7 +140,7 @@ const finalizeRuntimeResult = <N extends RecipeName>(
     return input.errorOutcome(new Error(STRICT_DIAGNOSTICS_ERROR), trace, diagnostics);
   }
   if (readPauseFlag(result)) {
-    recordPauseSession(input.pauseSessions, result, iterator, getDiagnostics);
+    recordPauseSession(input.pauseSessions, result, getDiagnostics);
     return finalizePausedResult<N>({
       result,
       trace,
@@ -243,13 +236,9 @@ export const createRuntime = <N extends RecipeName>({
   const pipeline = pipelineFactory
     ? pipelineFactory(contract, plugins)
     : createPipeline(contract, plugins);
+  const pipelineRunner = pipeline as unknown as PipelineWithExtensions;
   const extensionRegistration =
-    registerExtensions(
-      pipeline as unknown as PipelineWithExtensions,
-      plugins,
-      contract.extensionPoints,
-      buildDiagnostics,
-    ) ?? [];
+    registerExtensions(pipelineRunner, plugins, contract.extensionPoints, buildDiagnostics) ?? [];
   const capabilitySnapshot = buildCapabilities(plugins);
   const declaredCapabilities = capabilitySnapshot.resolved;
   const baseAdapters = collectAdapters(plugins);
@@ -298,7 +287,7 @@ export const createRuntime = <N extends RecipeName>({
 
   const run = createRunHandler<N>({
     contractName: contract.name,
-    pipeline,
+    pipeline: pipelineRunner,
     extensionRegistration,
     resolveAdaptersForRun,
     toResolvedAdapters,
@@ -309,8 +298,6 @@ export const createRuntime = <N extends RecipeName>({
     finalizeResult,
     errorOutcome,
     readErrorDiagnostics,
-    isExecutionIterator,
-    driveIterator,
   });
 
   const resume =
@@ -318,7 +305,7 @@ export const createRuntime = <N extends RecipeName>({
       ? createResumeHandler<N>({
           contractName: contract.name,
           extensionRegistration,
-          pipeline,
+          pipeline: pipelineRunner,
           resolveAdaptersForRun,
           toResolvedAdapters,
           applyAdapterOverrides,

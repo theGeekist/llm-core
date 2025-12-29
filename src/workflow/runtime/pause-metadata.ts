@@ -1,9 +1,9 @@
 import type { InterruptStrategy } from "../../adapters/types";
 import type { MaybePromise } from "../../maybe";
 import { bindFirst } from "../../maybe";
-import type { ExecutionIterator, IteratorFinalize } from "../driver/types";
 import type { DiagnosticEntry } from "../diagnostics";
 import type { TraceEvent } from "../trace";
+import type { FinalizeResult } from "./helpers";
 
 type InterruptPayload = { __interrupt?: InterruptStrategy };
 
@@ -23,7 +23,7 @@ const attachInterrupt = (interrupt: InterruptStrategy, result: unknown) => {
 };
 
 type FinalizeWithInterrupt<TOutcome> = {
-  finalize: IteratorFinalize<TOutcome>;
+  finalize: FinalizeResult<TOutcome>;
   attach: (result: unknown) => unknown;
 };
 
@@ -33,12 +33,11 @@ const finalizeWithInterrupt = <TOutcome>(
   getDiagnostics: () => DiagnosticEntry[],
   trace: TraceEvent[],
   diagnosticsMode: "default" | "strict",
-  iterator?: ExecutionIterator,
 ): MaybePromise<TOutcome> =>
-  input.finalize(input.attach(result), getDiagnostics, trace, diagnosticsMode, iterator);
+  input.finalize(input.attach(result), getDiagnostics, trace, diagnosticsMode);
 
 export const createFinalizeWithInterrupt = <TOutcome>(
-  finalize: IteratorFinalize<TOutcome>,
+  finalize: FinalizeResult<TOutcome>,
   interrupt?: InterruptStrategy,
 ) => {
   if (!interrupt) {

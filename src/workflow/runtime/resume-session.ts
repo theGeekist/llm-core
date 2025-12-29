@@ -9,6 +9,7 @@ import type { MaybePromise } from "../../maybe";
 import { maybeMap, maybeMapOr } from "../../maybe";
 import type { PauseSession } from "../driver";
 import type { Runtime } from "../types";
+import { readPipelinePauseSnapshot, toPauseKind } from "../pause";
 
 export type SessionStore = {
   get: (token: unknown) => MaybePromise<ResumeSnapshot | undefined>;
@@ -62,7 +63,7 @@ export const createSessionStoreFromCache = (cache: Cache): SessionStore => ({
 });
 
 export type ResumeSession =
-  | { kind: "iterator"; session: PauseSession; store?: SessionStore }
+  | { kind: "pause"; session: PauseSession; store?: SessionStore }
   | { kind: "snapshot"; snapshot: ResumeSnapshot; store: SessionStore }
   | { kind: "invalid" };
 
@@ -101,6 +102,7 @@ const createResumeSnapshot = (
   token: unknown,
   pauseKind: PauseKind | undefined,
   payload: unknown,
+  snapshot?: unknown,
 ): ResumeSnapshot => {
   const createdAt = Date.now();
   return {
@@ -109,6 +111,7 @@ const createResumeSnapshot = (
     createdAt,
     lastAccessedAt: createdAt,
     payload,
+    snapshot,
   };
 };
 
@@ -120,15 +123,19 @@ export const createSnapshotRecorder = (store: SessionStore | undefined, runtime?
   }
   const ttlMs = readSessionTtlMs(runtime);
   return function recordSnapshot(result: unknown) {
-    const token = (result as { token?: unknown }).token;
+    const pipelineSnapshot = readPipelinePauseSnapshot(result);
+    const token = pipelineSnapshot ? pipelineSnapshot.token : (result as { token?: unknown }).token;
     if (token === undefined) {
       return false;
     }
-    const pauseKind = (result as { pauseKind?: PauseKind }).pauseKind;
-    const payload = readPauseSnapshotPayload(result);
+    const pauseKind = pipelineSnapshot
+      ? toPauseKind(pipelineSnapshot.pauseKind)
+      : (result as { pauseKind?: PauseKind }).pauseKind;
+    const payload = pipelineSnapshot ? pipelineSnapshot.payload : readPauseSnapshotPayload(result);
+    const snapshot = pipelineSnapshot ?? (result as { snapshot?: unknown }).snapshot;
     // Guard against store errors or serialization failures
     try {
-      return store.set(token, createResumeSnapshot(token, pauseKind, payload), ttlMs);
+      return store.set(token, createResumeSnapshot(token, pauseKind, payload, snapshot), ttlMs);
     } catch {
       return false;
     }
@@ -141,7 +148,7 @@ export const resolveResumeSession = (
   store: SessionStore | undefined,
 ): MaybePromise<ResumeSession> => {
   if (session) {
-    return { kind: "iterator", session, store };
+    return { kind: "pause", session, store };
   }
   if (!store) {
     return { kind: "invalid" };

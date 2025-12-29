@@ -10,6 +10,7 @@ import {
   resolveSessionStore,
 } from "#workflow/runtime/resume-session";
 import { createResumeSnapshot, createSessionStore, resolveMaybe } from "./helpers";
+import type { PipelinePauseSnapshot } from "@wpkernel/pipeline/core";
 
 describe("Workflow resume sessions", () => {
   it("ignores invalid session stores", () => {
@@ -63,6 +64,31 @@ describe("Workflow resume sessions", () => {
     expect(stored?.pauseKind).toBe("human");
   });
 
+  it("records pipeline pause snapshots with stored snapshots", () => {
+    const { sessions, sessionStore } = createSessionStore();
+    const runtime = {
+      resume: {
+        resolve: () => ({ input: "ok" }),
+        sessionStore,
+      },
+    } satisfies Runtime;
+    const record = createSnapshotRecorder(sessionStore, runtime);
+    const snapshot: PipelinePauseSnapshot<unknown> = {
+      stageIndex: 1,
+      state: { userState: { ok: true } },
+      token: "token-pause",
+      pauseKind: "external",
+      createdAt: Date.now(),
+      payload: { step: "paused" },
+    };
+
+    record({ __paused: true, snapshot });
+    const stored = sessions.get("token-pause");
+    expect(stored?.pauseKind).toBe("external");
+    expect(stored?.payload).toEqual({ step: "paused" });
+    expect(stored?.snapshot).toBe(snapshot);
+  });
+
   it("prefers checkpoint adapters over cache stores", () => {
     const checkpoint = {
       get: () => undefined,
@@ -111,18 +137,22 @@ describe("Workflow resume sessions", () => {
     expect(stored?.payload).toEqual({ step: 3 });
   });
 
-  it("resolves iterator sessions before store snapshots", async () => {
+  it("resolves pause sessions before store snapshots", async () => {
     const { sessionStore } = createSessionStore();
-    const iterator = [1].values();
     const pauseSession: PauseSession = {
-      iterator,
+      snapshot: {
+        stageIndex: 0,
+        state: {},
+        token: "token",
+        createdAt: Date.now(),
+      },
       getDiagnostics: () => [],
       createdAt: Date.now(),
     };
     const resolved = await resolveMaybe(resolveResumeSession("token", pauseSession, sessionStore));
 
-    expect(resolved.kind).toBe("iterator");
-    if (resolved.kind === "iterator") {
+    expect(resolved.kind).toBe("pause");
+    if (resolved.kind === "pause") {
       expect(resolved.session).toBe(pauseSession);
       expect(resolved.store).toBe(sessionStore);
     }

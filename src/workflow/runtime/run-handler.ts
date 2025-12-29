@@ -13,8 +13,6 @@ import type { TraceEvent } from "../trace";
 import type { MaybePromise } from "../../maybe";
 import { addTraceEvent, createTrace } from "../trace";
 import { runWorkflow, type RunWorkflowContext } from "./run-runner";
-import type { ExecutionIterator } from "../driver/types";
-import type { DriveIteratorInput } from "../driver/iterator";
 import { createRunErrorHandler } from "./outcomes";
 import { applyDiagnosticsMode } from "../diagnostics";
 import type { FinalizeResult } from "./helpers";
@@ -51,10 +49,6 @@ export type RunHandlerDeps<N extends RecipeName> = {
     diagnostics?: DiagnosticEntry[],
   ) => Outcome<ArtefactOf<N>>;
   readErrorDiagnostics: (error: unknown) => DiagnosticEntry[];
-  isExecutionIterator: (value: unknown) => value is ExecutionIterator;
-  driveIterator: (
-    input: DriveIteratorInput<Outcome<ArtefactOf<N>>>,
-  ) => MaybePromise<Outcome<ArtefactOf<N>>>;
 };
 
 export const createRunHandler =
@@ -82,8 +76,6 @@ export const createRunHandler =
       strictErrorMessage: deps.strictErrorMessage,
       toErrorOutcome: deps.errorOutcome,
       finalizeResult: deps.finalizeResult,
-      isExecutionIterator: deps.isExecutionIterator,
-      driveIterator: deps.driveIterator,
     };
     const ctx: RunWorkflowContext<Outcome<ArtefactOf<N>>> = {
       input,

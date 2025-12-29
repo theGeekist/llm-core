@@ -1,3 +1,4 @@
 [test]
+root = "tests" 
 coverageReporter = ["text", "lcov"]
 coveragePathIgnorePatterns = ["tests/**", "**/*.test.ts", "**/tests/**"]

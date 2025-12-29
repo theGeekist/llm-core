@@ -7,18 +7,12 @@ import { createResumeHandler } from "../../src/workflow/runtime/resume-handler";
 import { toResolvedAdapters } from "../../src/workflow/runtime/adapters";
 import { createResumeSnapshot, diagnosticMessages } from "./helpers";
 import type { PauseSession } from "../../src/workflow/driver/types";
+import type { PipelinePauseSnapshot } from "@wpkernel/pipeline/core";
 
 describe("Workflow resume handler", () => {
   const baseAdapters: AdapterBundle = { constructs: {} };
   const tokenIterator = "token-iterator";
   const tokenSnapshot = "token-snapshot";
-  const readDiagnosticCode = (value: unknown) => {
-    if (!value || typeof value !== "object") {
-      return undefined;
-    }
-    const typed = value as { data?: { code?: string } };
-    return typed.data?.code;
-  };
   const readErrorDiagnostics = () => [] as DiagnosticEntry[];
   const errorOutcome = (
     error: unknown,
@@ -35,11 +29,9 @@ describe("Workflow resume handler", () => {
     getDiagnostics: () => DiagnosticEntry[],
     runtimeTrace: TraceEvent[],
     mode: "default" | "strict",
-    iterator?: unknown,
     recordSnapshot?: (value: unknown) => unknown,
   ): Outcome<Record<string, unknown>> => {
     void mode;
-    void iterator;
     void recordSnapshot;
     return {
       status: "ok",
@@ -49,16 +41,24 @@ describe("Workflow resume handler", () => {
     };
   };
 
-  it("continues iterator sessions through store deletes", async () => {
-    const pauseSessions = new Map<unknown, PauseSession>();
-    const iterator = {
-      next: () => ({ done: true, value: { ok: true } }),
+  const createPauseSession = (token: string): PauseSession => {
+    const snapshot: PipelinePauseSnapshot<unknown> = {
+      stageIndex: 0,
+      state: {},
+      token,
+      pauseKind: "human",
+      createdAt: Date.now(),
     };
-    pauseSessions.set(tokenIterator, {
-      iterator,
+    return {
+      snapshot,
       getDiagnostics: () => [],
       createdAt: Date.now(),
-    });
+    };
+  };
+
+  it("continues pause sessions through store deletes", async () => {
+    const pauseSessions = new Map<unknown, PauseSession>();
+    pauseSessions.set(tokenIterator, createPauseSession(tokenIterator));
     let deleted = false;
     const runtime = {
       resume: {
@@ -76,7 +76,10 @@ describe("Workflow resume handler", () => {
     const handler = createResumeHandler({
       contractName: "agent",
       extensionRegistration: [],
-      pipeline: { run: () => ({ artifact: { ok: true } }) },
+      pipeline: {
+        run: () => ({ artifact: { ok: true } }),
+        resume: () => ({ artifact: { ok: true } }),
+      },
       resolveAdaptersForRun: () => ({
         adapters: baseAdapters,
         diagnostics: [],
@@ -120,7 +123,10 @@ describe("Workflow resume handler", () => {
     const handler = createResumeHandler({
       contractName: "agent",
       extensionRegistration: [],
-      pipeline: { run: () => ({ artifact: { ok: true } }) },
+      pipeline: {
+        run: () => ({ artifact: { ok: true } }),
+        resume: () => ({ artifact: { ok: true } }),
+      },
       resolveAdaptersForRun: () => ({
         adapters: baseAdapters,
         diagnostics: [],
@@ -143,16 +149,9 @@ describe("Workflow resume handler", () => {
     expect(diagnosticMessages(outcome.diagnostics)).toContain("resume error");
   });
 
-  it("ignores provider overrides for iterator resumes", async () => {
+  it("ignores provider overrides for pause resumes", async () => {
     const pauseSessions = new Map<unknown, PauseSession>();
-    const iterator = {
-      next: () => ({ done: true, value: { ok: true } }),
-    };
-    pauseSessions.set(tokenIterator, {
-      iterator,
-      getDiagnostics: () => [],
-      createdAt: Date.now(),
-    });
+    pauseSessions.set(tokenIterator, createPauseSession(tokenIterator));
     let resolveCalls = 0;
     const runtime = {
       resume: {
@@ -163,7 +162,10 @@ describe("Workflow resume handler", () => {
     const handler = createResumeHandler({
       contractName: "agent",
       extensionRegistration: [],
-      pipeline: { run: () => ({ artifact: { ok: true } }) },
+      pipeline: {
+        run: () => ({ artifact: { ok: true } }),
+        resume: () => ({ artifact: { ok: true } }),
+      },
       resolveAdaptersForRun: () => {
         resolveCalls += 1;
         return {
@@ -207,7 +209,10 @@ describe("Workflow resume handler", () => {
     const handler = createResumeHandler({
       contractName: "agent",
       extensionRegistration: [],
-      pipeline: { run: () => ({ artifact: { ok: true } }) },
+      pipeline: {
+        run: () => ({ artifact: { ok: true } }),
+        resume: () => ({ artifact: { ok: true } }),
+      },
       resolveAdaptersForRun: () => ({
         adapters: baseAdapters,
         diagnostics: [],
@@ -248,7 +253,10 @@ describe("Workflow resume handler", () => {
     const handler = createResumeHandler({
       contractName: "agent",
       extensionRegistration: [],
-      pipeline: { run: () => ({ artifact: { ok: true } }) },
+      pipeline: {
+        run: () => ({ artifact: { ok: true } }),
+        resume: () => ({ artifact: { ok: true } }),
+      },
       resolveAdaptersForRun: () => ({
         adapters: baseAdapters,
         diagnostics: [],
@@ -261,11 +269,10 @@ describe("Workflow resume handler", () => {
       strictErrorMessage: "strict",
       readErrorDiagnostics,
       errorOutcome,
-      finalizeResult: (result, getDiagnostics, runtimeTrace, mode, iterator, recordSnapshot) => {
+      finalizeResult: (result, getDiagnostics, runtimeTrace, mode, recordSnapshot) => {
         void result;
         void getDiagnostics;
         void mode;
-        void iterator;
         void recordSnapshot;
         return {
           status: "error",
@@ -283,16 +290,9 @@ describe("Workflow resume handler", () => {
     expect(deleted).toBe(false);
   });
 
-  it("returns an error when an iterator yields a non-paused value", async () => {
+  it("returns paused outcomes when resume yields paused", async () => {
     const pauseSessions = new Map<unknown, PauseSession>();
-    const iterator = {
-      next: () => ({ done: false, value: { paused: false } }),
-    };
-    pauseSessions.set(tokenIterator, {
-      iterator,
-      getDiagnostics: () => [],
-      createdAt: Date.now(),
-    });
+    pauseSessions.set(tokenIterator, createPauseSession(tokenIterator));
     let deleted = false;
     const runtime = {
       resume: {
@@ -310,58 +310,19 @@ describe("Workflow resume handler", () => {
     const handler = createResumeHandler({
       contractName: "agent",
       extensionRegistration: [],
-      pipeline: { run: () => ({ artifact: { ok: true } }) },
-      resolveAdaptersForRun: () => ({
-        adapters: baseAdapters,
-        diagnostics: [],
-        constructs: {},
-      }),
-      toResolvedAdapters,
-      applyAdapterOverrides: (resolved) => resolved,
-      readContractDiagnostics: () => [],
-      buildDiagnostics: [],
-      strictErrorMessage: "strict",
-      readErrorDiagnostics,
-      errorOutcome,
-      finalizeResult,
-      baseAdapters,
-      pauseSessions,
-    });
-
-    const outcome = await handler(tokenIterator, undefined, runtime);
-    expect(outcome.status).toBe("error");
-    expect(outcome.diagnostics.map(readDiagnosticCode)).toContain("resume.invalidYield");
-    expect(deleted).toBe(false);
-  });
-
-  it("keeps iterator sessions when a resume yields paused", async () => {
-    const pauseSessions = new Map<unknown, PauseSession>();
-    const iterator = {
-      next: () => ({ done: false, value: { paused: true, token: "paused" } }),
-    };
-    pauseSessions.set(tokenIterator, {
-      iterator,
-      getDiagnostics: () => [],
-      createdAt: Date.now(),
-    });
-    let deleted = false;
-    const runtime = {
-      resume: {
-        resolve: () => ({ input: "resume" }),
-        sessionStore: {
-          get: () => undefined,
-          set: () => undefined,
-          delete: () => {
-            deleted = true;
+      pipeline: {
+        run: () => ({ artifact: { ok: true } }),
+        resume: () => ({
+          __paused: true,
+          snapshot: {
+            stageIndex: 0,
+            state: {},
+            token: "paused",
+            pauseKind: "human",
+            createdAt: Date.now(),
           },
-        },
+        }),
       },
-    } satisfies Runtime;
-
-    const handler = createResumeHandler({
-      contractName: "agent",
-      extensionRegistration: [],
-      pipeline: { run: () => ({ artifact: { ok: true } }) },
       resolveAdaptersForRun: () => ({
         adapters: baseAdapters,
         diagnostics: [],
@@ -374,22 +335,14 @@ describe("Workflow resume handler", () => {
       strictErrorMessage: "strict",
       readErrorDiagnostics,
       errorOutcome,
-      finalizeResult: (
-        result,
-        getDiagnostics,
-        runtimeTrace,
-        mode,
-        iteratorResult,
-        recordSnapshot,
-      ) => {
+      finalizeResult: (result, getDiagnostics, runtimeTrace, mode, recordSnapshot) => {
         void mode;
-        void iteratorResult;
         void recordSnapshot;
         const diagnostics = getDiagnostics();
-        return (result as { paused?: boolean }).paused
+        return (result as { __paused?: boolean }).__paused
           ? {
               status: "paused",
-              token: (result as { token?: unknown }).token,
+              token: (result as { snapshot?: { token?: unknown } }).snapshot?.token,
               artefact: {},
               trace: runtimeTrace,
               diagnostics,

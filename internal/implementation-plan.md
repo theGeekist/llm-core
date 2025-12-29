@@ -329,3 +329,7 @@ Goals:
 ## Stage 16 — Runtime Policy + Legacy Port (llm-core)
 
 Status: planned. See `internal/stage-16.md`.
+
+## Stage 17 — Docs Snippets + Import Rewrite
+
+Status: in progress. See `internal/stage-17.md`.

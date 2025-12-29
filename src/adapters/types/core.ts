@@ -65,6 +65,7 @@ export type ResumeSnapshot = {
   createdAt: number;
   lastAccessedAt?: number;
   payload?: unknown;
+  snapshot?: unknown;
 };
 
 export type AdapterCallContext = {

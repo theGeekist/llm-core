@@ -1,6 +1,6 @@
 import { describe, expect, it } from "bun:test";
 import { createBuiltinRetriever, createInterruptStrategy } from "#adapters";
-import { createPipelineRollback } from "@wpkernel/pipeline/core";
+import { createPipelineRollback, type PipelinePauseSnapshot } from "@wpkernel/pipeline/core";
 import { getRecipe, registerRecipe } from "#workflow/recipe-registry";
 import { assertSyncOutcome, diagnosticMessages, makeRuntime, makeWorkflow } from "./helpers";
 
@@ -9,13 +9,6 @@ describe("Workflow runtime", () => {
   const ERROR_RESUME = "Expected resume to be available.";
   const ERROR_EXPECTED_OK = "Expected ok outcome.";
   const ERROR_EXPECTED_PAUSED = "Expected paused outcome.";
-  type ResumeDecision = { decision: "approve" | "deny" };
-  type PauseYield = {
-    paused: true;
-    token: string;
-    pauseKind?: "human" | "external" | "system";
-    partialArtifact?: Record<string, unknown>;
-  };
 
   it("supports sync workflows without requiring await", () => {
     const runtime = makeWorkflow("agent");
@@ -148,24 +141,19 @@ describe("Workflow runtime", () => {
     expect(rolledBack).toBe(true);
   });
 
-  it("supports generator pauses and resumes with pauseKind", async () => {
+  it("supports pipeline pauses and resumes with pauseKind", async () => {
     let capturedPauseKind: unknown;
-    function* pauseSequence(): Generator<
-      PauseYield,
-      { artifact: { resumed: ResumeDecision } },
-      ResumeDecision
-    > {
-      const resumeValue = yield {
-        paused: true,
-        token: TOKEN_PAUSED,
-        pauseKind: "external",
-        partialArtifact: { pending: true },
-      };
-      return { artifact: { resumed: resumeValue } };
-    }
+    const snapshot: PipelinePauseSnapshot<unknown> = {
+      stageIndex: 0,
+      state: { userState: { pending: true } },
+      token: TOKEN_PAUSED,
+      pauseKind: "external",
+      createdAt: Date.now(),
+    };
 
     const runtime = makeRuntime("hitl-gate", {
-      run: () => pauseSequence(),
+      run: () => ({ __paused: true, snapshot }),
+      resume: (_resumeSnapshot, resumeInput) => ({ artifact: { resumed: resumeInput } }),
     });
 
     const paused = await runtime.run({ input: "gate" });
@@ -203,22 +191,19 @@ describe("Workflow runtime", () => {
     expect(resumed.artefact).toEqual({ resumed: { decision: "approve" } });
   });
 
-  it("supports async generator pauses during resume", async () => {
+  it("supports pipeline pauses during resume", async () => {
     const token = "token-async";
-    async function* pauseSequence(): AsyncGenerator<
-      { paused: true; token: string },
-      { artifact: { resumed: ResumeDecision } },
-      ResumeDecision
-    > {
-      const resumeValue = yield {
-        paused: true,
-        token,
-      };
-      return { artifact: { resumed: resumeValue } };
-    }
+    const snapshot: PipelinePauseSnapshot<unknown> = {
+      stageIndex: 0,
+      state: { userState: { pending: true } },
+      token,
+      pauseKind: "external",
+      createdAt: Date.now(),
+    };
 
     const runtime = makeRuntime("hitl-gate", {
-      run: () => pauseSequence(),
+      run: () => ({ __paused: true, snapshot }),
+      resume: (_resumeSnapshot, resumeInput) => ({ artifact: { resumed: resumeInput } }),
     });
 
     const paused = await runtime.run({ input: "gate" });
@@ -280,23 +265,22 @@ describe("Workflow runtime", () => {
     expect(diagnosticMessages(outcome.diagnostics)).toContain("retriever_query_missing");
   });
 
-  it("reports adapter input diagnostics during generator pauses", async () => {
+  it("reports adapter input diagnostics during paused runs", async () => {
     const retriever = createBuiltinRetriever();
     const runtime = makeRuntime("hitl-gate", {
       includeDefaults: false,
       plugins: [{ key: "adapter.retriever", adapters: { retriever } }],
       run: (options) => {
         const adapters = options.adapters as { retriever?: typeof retriever };
-        function* pauseWithDiagnostics(): Generator<
-          PauseYield,
-          { artifact: { ok: true } },
-          unknown
-        > {
-          adapters.retriever?.retrieve(" ");
-          yield { paused: true, token: TOKEN_PAUSED };
-          return { artifact: { ok: true } };
-        }
-        return pauseWithDiagnostics();
+        adapters.retriever?.retrieve(" ");
+        const pauseSnapshot: PipelinePauseSnapshot<unknown> = {
+          stageIndex: 0,
+          state: { userState: {} },
+          token: TOKEN_PAUSED,
+          pauseKind: "human",
+          createdAt: Date.now(),
+        };
+        return { __paused: true, snapshot: pauseSnapshot };
       },
     });
 

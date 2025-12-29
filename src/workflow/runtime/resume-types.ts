@@ -14,6 +14,7 @@ export type AdapterResolution = {
 
 export type PipelineRunner = {
   run: PipelineWithExtensions["run"];
+  resume?: PipelineWithExtensions["resume"];
 };
 
 export type ResumeHandlerDeps<N extends RecipeName> = {
