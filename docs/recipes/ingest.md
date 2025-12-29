@@ -25,88 +25,11 @@ datasets, or batch ingestion for a new tenant. If RAG is the read path, ingest i
 ::: tabs
 == TypeScript
 
-```ts
-import { recipes } from "@geekist/llm-core";
-import {
-  fromLangChainLoader,
-  fromLangChainTextSplitter,
-  fromAiSdkEmbeddings,
-  fromLangChainVectorStore,
-} from "@geekist/llm-core/adapters";
-import { openai } from "@ai-sdk/openai";
-import { PDFLoader } from "langchain/document_loaders/fs/pdf";
-import { RecursiveCharacterTextSplitter } from "@langchain/textsplitters";
-import { OpenAIEmbeddings } from "@langchain/openai";
-import { MemoryVectorStore } from "langchain/vectorstores/memory";
-
-const loader = fromLangChainLoader(new PDFLoader("./my-book.pdf"));
-const textSplitter = fromLangChainTextSplitter(
-  new RecursiveCharacterTextSplitter({ chunkSize: 800, chunkOverlap: 200 }),
-);
-const embedder = fromAiSdkEmbeddings(openai.embedding("text-embedding-3-small"));
-const vectorStore = fromLangChainVectorStore(
-  await MemoryVectorStore.fromTexts(["seed"], [{ id: "seed" }], new OpenAIEmbeddings()),
-);
-
-const ingest = recipes.ingest().defaults({
-  adapters: { loader, textSplitter, embedder, vectorStore },
-});
-
-const outcome = await ingest.run({
-  sourceId: "docs:book",
-  documents: [{ id: "intro", text: "Hello world." }],
-});
-```
+<<< @/snippets/recipes/ingest/quick-start.ts#docs
 
 == JavaScript
 
-```js
-import { recipes } from "@geekist/llm-core";
-import {
-  fromLangChainLoader,
-  fromLangChainTextSplitter,
-  fromAiSdkEmbeddings,
-  fromLangChainVectorStore,
-} from "@geekist/llm-core/adapters";
-import { openai } from "@ai-sdk/openai";
-import { PDFLoader } from "langchain/document_loaders/fs/pdf";
-import { RecursiveCharacterTextSplitter } from "@langchain/textsplitters";
-import { OpenAIEmbeddings } from "@langchain/openai";
-import { MemoryVectorStore } from "langchain/vectorstores/memory";
-
-const loader = fromLangChainLoader(new PDFLoader("./my-book.pdf"));
-const textSplitter = fromLangChainTextSplitter(
-  new RecursiveCharacterTextSplitter({ chunkSize: 800, chunkOverlap: 200 }),
-);
-const embedder = fromAiSdkEmbeddings(openai.embedding("text-embedding-3-small"));
-const vectorStore = fromLangChainVectorStore(
-  await MemoryVectorStore.fromTexts(["seed"], [{ id: "seed" }], new OpenAIEmbeddings()),
-);
-
-const ingest = recipes.ingest().defaults({
-  adapters: { loader, textSplitter, embedder, vectorStore },
-});
-
-const outcome = await ingest.run({
-  sourceId: "docs:book",
-  documents: [{ id: "intro", text: "Hello world." }],
-});
-```
-
-:::
-
-Outcomes are explicit: `{ status, artefact, diagnostics, trace }`. A successful run carries
-`ingest.chunks`, `ingest.embeddings`, and `ingest.upserted` in the artefact, alongside trace and
-diagnostics that explain what happened at each stage. Errors and pauses keep the same trace and
-diagnostics attached, so ingestion is always explainable.
-
-If you want a minimal “success‑path” check, this is enough:
-
-```ts
-if (outcome.status === "ok") {
-  console.log(outcome.artefact["ingest.upserted"]);
-}
-```
+<<< @/snippets/recipes/ingest/quick-start.js#docs
 
 ---
 
@@ -118,32 +41,11 @@ and only override on a per-run basis.
 ::: tabs
 == TypeScript
 
-```ts
-import { recipes } from "@geekist/llm-core";
-import type { IngestConfig } from "@geekist/llm-core/recipes";
-
-// Reuse loader/textSplitter/embedder/vectorStore from the quick start.
-const config = {
-  defaults: {
-    adapters: { loader, textSplitter, embedder, vectorStore },
-  },
-} satisfies IngestConfig;
-
-const ingest = recipes.ingest().configure(config);
-```
+<<< @/snippets/recipes/ingest/defaults.ts
 
 == JavaScript
 
-```js
-import { recipes } from "@geekist/llm-core";
-
-// Reuse loader/textSplitter/embedder/vectorStore from the quick start.
-const ingest = recipes.ingest().configure({
-  defaults: {
-    adapters: { loader, textSplitter, embedder, vectorStore },
-  },
-});
-```
+<<< @/snippets/recipes/ingest/defaults.js
 
 :::
 
@@ -183,29 +85,11 @@ metadata, or failed upserts surface immediately.
 ::: tabs
 == TypeScript
 
-```ts
-// ingest handle from above
-const outcome = await ingest.run(
-  { sourceId: "docs:book", documents: [{ id: "intro", text: "Hello world." }] },
-  { runtime: { diagnostics: "strict" } },
-);
-
-console.log(outcome.diagnostics);
-console.log(outcome.trace);
-```
+<<< @/snippets/recipes/ingest/diagnostics.ts
 
 == JavaScript
 
-```js
-// ingest handle from above
-const outcome = await ingest.run(
-  { sourceId: "docs:book", documents: [{ id: "intro", text: "Hello world." }] },
-  { runtime: { diagnostics: "strict" } },
-);
-
-console.log(outcome.diagnostics);
-console.log(outcome.trace);
-```
+<<< @/snippets/recipes/ingest/diagnostics.js
 
 :::
 
@@ -230,21 +114,11 @@ flowchart LR
 ::: tabs
 == TypeScript
 
-```ts
-import { recipes } from "@geekist/llm-core";
-
-const plan = recipes.ingest().plan();
-console.log(plan.steps.map((step) => step.id));
-```
+<<< @/snippets/recipes/ingest/composition.ts
 
 == JavaScript
 
-```js
-import { recipes } from "@geekist/llm-core";
-
-const plan = recipes.ingest().plan();
-console.log(plan.steps.map((step) => step.id));
-```
+<<< @/snippets/recipes/ingest/composition.js
 
 :::
 

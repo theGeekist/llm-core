@@ -22,5 +22,13 @@ module.exports = {
     "sonarjs/no-nested-conditional": "off",
     "sonarjs/void-use": "off",
     "sonarjs/no-empty-test-file": "off",
+    "@typescript-eslint/no-unused-vars": [
+      "error",
+      {
+        "argsIgnorePattern": "^_",
+        "varsIgnorePattern": "^_",
+        "caughtErrorsIgnorePattern": "^_"
+      }
+    ],
   },
 };

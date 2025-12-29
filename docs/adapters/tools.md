@@ -39,34 +39,11 @@ If you are writing a tool from scratch (e.g., an API wrapper for your app), use 
 ::: tabs
 == TypeScript
 
-```ts
-import { tool } from "ai";
-import type { CoreTool } from "ai";
-import { z } from "zod";
-
-const weatherTool: CoreTool = tool({
-  description: "Get current weather",
-  parameters: z.object({ city: z.string() }),
-  execute: async ({ city }: { city: string }) => fetchWeather(city),
-});
-
-// Pass directly to llm-core - it works natively!
-```
+<<< @/snippets/adapters/tool-ai-sdk.ts
 
 == JavaScript
 
-```js
-import { tool } from "ai";
-import { z } from "zod";
-
-const weatherTool = tool({
-  description: "Get current weather",
-  parameters: z.object({ city: z.string() }),
-  execute: async ({ city }) => fetchWeather(city),
-});
-
-// Pass directly to llm-core - it works natively!
-```
+<<< @/snippets/adapters/tool-ai-sdk.js
 
 :::
 
@@ -81,24 +58,11 @@ LangChain has thousands of pre-written tools (Google Search, Wikipedia, Zapier, 
 ::: tabs
 == TypeScript
 
-```ts
-import { fromLangChainTool } from "@geekist/llm-core/adapters";
-import type { Tool } from "@geekist/llm-core/adapters";
-import { Calculator } from "@langchain/community/tools/calculator";
-
-// Wrap it to make it compatible with llm-core flows
-const calculator: Tool = fromLangChainTool(new Calculator());
-```
+<<< @/snippets/adapters/tool-langchain.ts
 
 == JavaScript
 
-```js
-import { fromLangChainTool } from "@geekist/llm-core/adapters";
-import { Calculator } from "@langchain/community/tools/calculator";
-
-// Wrap it to make it compatible with llm-core flows
-const calculator = fromLangChainTool(new Calculator());
-```
+<<< @/snippets/adapters/tool-langchain.js
 
 :::
 
@@ -121,34 +85,11 @@ Today, you should mostly rely on **Native Structured Output** (supported by our 
 ::: tabs
 == TypeScript
 
-```ts
-import { fromLangChainOutputParser } from "@geekist/llm-core/adapters";
-import type { OutputParser } from "@geekist/llm-core/adapters";
-import { StringOutputParser } from "@langchain/core/output_parsers";
-import { CommaSeparatedListOutputParser } from "@langchain/core/output_parsers";
-
-// Example: Force a model to return a Javascript Array
-const listParser: OutputParser<string[]> = fromLangChainOutputParser(
-  new CommaSeparatedListOutputParser(),
-);
-
-// When the model returns "apple, banana, cherry"
-// The parser converts it to: ["apple", "banana", "cherry"]
-```
+<<< @/snippets/adapters/parser-langchain.ts
 
 == JavaScript
 
-```js
-import { fromLangChainOutputParser } from "@geekist/llm-core/adapters";
-import { StringOutputParser } from "@langchain/core/output_parsers";
-import { CommaSeparatedListOutputParser } from "@langchain/core/output_parsers";
-
-// Example: Force a model to return a Javascript Array
-const listParser = fromLangChainOutputParser(new CommaSeparatedListOutputParser());
-
-// When the model returns "apple, banana, cherry"
-// The parser converts it to: ["apple", "banana", "cherry"]
-```
+<<< @/snippets/adapters/parser-langchain.js
 
 :::
 

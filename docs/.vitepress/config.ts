@@ -35,7 +35,7 @@ export default defineConfig({
         const token = tokens[idx];
         if (token.info.trim() === "mermaid") {
           // preserve whitespace for mermaid parsing
-          const escapeHtml = (unsafe) => {
+          const escapeHtml = (unsafe: string) => {
             return unsafe
               .replace(/&/g, "&amp;")
               .replace(/</g, "&lt;")
@@ -46,6 +46,20 @@ export default defineConfig({
           return `<pre class="mermaid" style="white-space: pre;">${escapeHtml(token.content)}</pre>`;
         }
         return defaultFence(tokens, idx, options, env, self);
+      };
+
+      const defaultHighlight = md.options.highlight;
+      md.options.highlight = (str, lang, attrs) => {
+        if (/^(ts|typescript|js|javascript)/.test(lang)) {
+          str = str.replace(
+            /from\s+["']#(adapters|recipes|workflow)(.*?)["']/g,
+            (match, p1, p2) => `from "@geekist/llm-core/${p1}${p2}"`,
+          );
+        }
+        if (defaultHighlight) {
+          return defaultHighlight(str, lang, attrs);
+        }
+        return ""; // should not happen
       };
     },
   },

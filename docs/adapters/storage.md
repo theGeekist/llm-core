@@ -43,32 +43,11 @@ We recommend passing LangChain Stores into our adapter.
 ::: tabs
 == TypeScript
 
-```ts
-import { fromLangChainStore } from "@geekist/llm-core/adapters";
-import type { KVStore } from "@geekist/llm-core/adapters";
-import { RedisStore } from "@langchain/redis";
-import { createClient } from "redis";
-
-const client = createClient({ url: "redis://localhost:6379" });
-const store: KVStore = fromLangChainStore(new RedisStore({ client }));
-
-// Store arbitrary session data
-await store.set("user:123:preferences", { theme: "dark" });
-```
+<<< @/snippets/adapters/storage-redis.ts#docs
 
 == JavaScript
 
-```js
-import { fromLangChainStore } from "@geekist/llm-core/adapters";
-import { RedisStore } from "@langchain/redis";
-import { createClient } from "redis";
-
-const client = createClient({ url: "redis://localhost:6379" });
-const store = fromLangChainStore(new RedisStore({ client }));
-
-// Store arbitrary session data
-await store.set("user:123:preferences", { theme: "dark" });
-```
+<<< @/snippets/adapters/storage-redis.js#docs
 
 :::
 
@@ -87,28 +66,11 @@ We utilize a simple `Cache` interface that can sit in front of any operation.
 ::: tabs
 == TypeScript
 
-```ts
-import { createMemoryCache } from "@geekist/llm-core/adapters";
-import type { Cache } from "@geekist/llm-core/adapters";
-
-// 1. Create a cache (TTL = 60 seconds)
-const cache: Cache = createMemoryCache({ ttl: 60_000 });
-
-// 2. Use it in a workflow (example conceptual usage)
-// The workflow engine checks this cache before calling the model
-```
+<<< @/snippets/adapters/cache-memory.ts
 
 == JavaScript
 
-```js
-import { createMemoryCache } from "@geekist/llm-core/adapters";
-
-// 1. Create a cache (TTL = 60 seconds)
-const cache = createMemoryCache({ ttl: 60_000 });
-
-// 2. Use it in a workflow (example conceptual usage)
-// The workflow engine checks this cache before calling the model
-```
+<<< @/snippets/adapters/cache-memory.js
 
 :::
 
@@ -117,28 +79,11 @@ We also support **Persistent Caching** by wrapping a `KVStore`:
 ::: tabs
 == TypeScript
 
-```ts
-import { createCacheFromKVStore, fromLangChainStore } from "@geekist/llm-core/adapters";
-import type { Cache } from "@geekist/llm-core/adapters";
-import { RedisStore } from "@langchain/redis";
-
-// Turn a Redis connection into a robust cache
-const redisCache: Cache = createCacheFromKVStore(
-  fromLangChainStore(new RedisStore({ ... }))
-);
-```
+<<< @/snippets/adapters/cache-persistent.ts#docs
 
 == JavaScript
 
-```js
-import { createCacheFromKVStore, fromLangChainStore } from "@geekist/llm-core/adapters";
-import { RedisStore } from "@langchain/redis";
-
-// Turn a Redis connection into a robust cache
-const redisCache = createCacheFromKVStore(
-  fromLangChainStore(new RedisStore({ ... }))
-);
-```
+<<< @/snippets/adapters/cache-persistent.js#docs
 
 :::
 

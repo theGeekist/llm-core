@@ -29,58 +29,11 @@ Use a LangChain retriever and an AI SDK model in the same run.
 ::: tabs
 == TypeScript
 
-```ts
-import { recipes } from "@geekist/llm-core";
-import type { RagInput } from "@geekist/llm-core/workflow";
-import { fromAiSdkModel, fromLangChainRetriever } from "@geekist/llm-core/adapters";
-import { openai } from "@ai-sdk/openai";
-import { OpenAIEmbeddings } from "@langchain/openai";
-import { MemoryVectorStore } from "langchain/vectorstores/memory";
-
-const vectorStore = await MemoryVectorStore.fromTexts(
-  ["Refunds are issued within 30 days."],
-  [{ id: "policy" }],
-  new OpenAIEmbeddings(),
-);
-
-const rag = recipes.rag();
-
-const input: RagInput = { input: "What is the refund policy?" };
-const outcome = await rag.run(input, {
-  adapters: {
-    retriever: fromLangChainRetriever(vectorStore.asRetriever()),
-    model: fromAiSdkModel(openai("gpt-4o-mini")),
-  },
-});
-```
+<<< @/snippets/recipes/rag/quick-start.ts#docs
 
 == JavaScript
 
-```js
-import { recipes } from "@geekist/llm-core";
-import { fromAiSdkModel, fromLangChainRetriever } from "@geekist/llm-core/adapters";
-import { openai } from "@ai-sdk/openai";
-import { OpenAIEmbeddings } from "@langchain/openai";
-import { MemoryVectorStore } from "langchain/vectorstores/memory";
-
-const vectorStore = await MemoryVectorStore.fromTexts(
-  ["Refunds are issued within 30 days."],
-  [{ id: "policy" }],
-  new OpenAIEmbeddings(),
-);
-
-const rag = recipes.rag();
-
-const outcome = await rag.run(
-  { input: "What is the refund policy?" },
-  {
-    adapters: {
-      retriever: fromLangChainRetriever(vectorStore.asRetriever()),
-      model: fromAiSdkModel(openai("gpt-4o-mini")),
-    },
-  },
-);
-```
+<<< @/snippets/recipes/rag/quick-start.js#docs
 
 :::
 
@@ -107,52 +60,11 @@ Treat config as **behaviour** (how retrieval and synthesis run), not extra input
 ::: tabs
 == TypeScript
 
-```ts
-import { recipes } from "@geekist/llm-core";
-import type { RagRecipeConfig } from "@geekist/llm-core/recipes";
-
-const config = {
-  retrieval: {
-    defaults: {
-      adapters: {
-        retriever: myRetriever,
-      },
-    },
-  },
-  synthesis: {
-    defaults: {
-      adapters: {
-        model: myModel,
-      },
-    },
-  },
-} satisfies RagRecipeConfig;
-
-const rag = recipes.rag().configure(config);
-```
+<<< @/snippets/recipes/rag/defaults.ts#docs
 
 == JavaScript
 
-```js
-import { recipes } from "@geekist/llm-core";
-
-const rag = recipes.rag().configure({
-  retrieval: {
-    defaults: {
-      adapters: {
-        retriever: myRetriever,
-      },
-    },
-  },
-  synthesis: {
-    defaults: {
-      adapters: {
-        model: myModel,
-      },
-    },
-  },
-});
-```
+<<< @/snippets/recipes/rag/defaults.js#docs
 
 :::
 
@@ -170,62 +82,11 @@ The recipe surface is adapter-agnostic. This allows you to upgrade your model (e
 ::: tabs
 == TypeScript
 
-```ts
-import { recipes } from "@geekist/llm-core";
-import { fromAiSdkModel, fromLlamaIndexRetriever } from "@geekist/llm-core/adapters";
-import { openai } from "@ai-sdk/openai";
-import { BaseRetriever } from "@llamaindex/core/retriever";
-import { QueryBundle } from "@llamaindex/core/query-engine";
-import { Document } from "@llamaindex/core/schema";
-
-class SimpleRetriever extends BaseRetriever {
-  constructor() {
-    super();
-  }
-
-  async _retrieve(_query: QueryBundle) {
-    return [{ node: new Document({ text: "Refunds are issued within 30 days." }), score: 0.9 }];
-  }
-}
-
-const retriever = new SimpleRetriever();
-
-const rag = recipes.rag().defaults({
-  adapters: {
-    retriever: fromLlamaIndexRetriever(retriever),
-    model: fromAiSdkModel(openai("gpt-4o-mini")),
-  },
-});
-```
+<<< @/snippets/recipes/rag/adapters.ts#docs
 
 == JavaScript
 
-```js
-import { recipes } from "@geekist/llm-core";
-import { fromAiSdkModel, fromLlamaIndexRetriever } from "@geekist/llm-core/adapters";
-import { openai } from "@ai-sdk/openai";
-import { BaseRetriever } from "@llamaindex/core/retriever";
-import { Document } from "@llamaindex/core/schema";
-
-class SimpleRetriever extends BaseRetriever {
-  constructor() {
-    super();
-  }
-
-  async _retrieve(_query) {
-    return [{ node: new Document({ text: "Refunds are issued within 30 days." }), score: 0.9 }];
-  }
-}
-
-const retriever = new SimpleRetriever();
-
-const rag = recipes.rag().defaults({
-  adapters: {
-    retriever: fromLlamaIndexRetriever(retriever),
-    model: fromAiSdkModel(openai("gpt-4o-mini")),
-  },
-});
-```
+<<< @/snippets/recipes/rag/adapters.js#docs
 
 :::
 
@@ -242,35 +103,11 @@ This is where missing retrievers, reranker requirements, or schema problems show
 ::: tabs
 == TypeScript
 
-```ts
-// rag handle from above
-const outcome = await rag.run(
-  { input: "Summarize the refund policy." },
-  { runtime: { diagnostics: "strict" } },
-);
-
-if (outcome.status === "error") {
-  console.error(outcome.diagnostics);
-}
-
-console.log(outcome.trace);
-```
+<<< @/snippets/recipes/rag/diagnostics.ts#docs
 
 == JavaScript
 
-```js
-// rag handle from above
-const outcome = await rag.run(
-  { input: "Summarize the refund policy." },
-  { runtime: { diagnostics: "strict" } },
-);
-
-if (outcome.status === "error") {
-  console.error(outcome.diagnostics);
-}
-
-console.log(outcome.trace);
-```
+<<< @/snippets/recipes/rag/diagnostics.js#docs
 
 :::
 
@@ -291,27 +128,11 @@ flowchart LR
 ::: tabs
 == TypeScript
 
-```ts
-import { recipes } from "@geekist/llm-core";
-
-const retrieval = recipes["rag.retrieval"]();
-const synthesis = recipes["rag.synthesis"]();
-
-const plan = recipes.rag().plan();
-console.log(plan.steps.map((step) => step.id));
-```
+<<< @/snippets/recipes/rag/composition.ts#docs
 
 == JavaScript
 
-```js
-import { recipes } from "@geekist/llm-core";
-
-const retrieval = recipes["rag.retrieval"]();
-const synthesis = recipes["rag.synthesis"]();
-
-const plan = recipes.rag().plan();
-console.log(plan.steps.map((step) => step.id));
-```
+<<< @/snippets/recipes/rag/composition.js#docs
 
 :::
 

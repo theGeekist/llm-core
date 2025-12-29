@@ -27,46 +27,11 @@ flowchart LR
 ::: tabs
 == TypeScript
 
-```ts
-import { recipes } from "@geekist/llm-core";
-import type { Outcome } from "@geekist/llm-core/workflow";
-
-const gate = recipes.hitl();
-
-const first: Outcome<Record<string, unknown>> = await gate.run({
-  input: "Draft a policy update.",
-});
-
-if (first.status === "paused") {
-  const token = first.token;
-
-  const resumed = await gate.resume?.(token, {
-    decision: "approve",
-  });
-
-  console.log(resumed?.status);
-}
-```
+<<< @/snippets/recipes/hitl/quick-start.ts#docs
 
 == JavaScript
 
-```js
-import { recipes } from "@geekist/llm-core";
-
-const gate = recipes.hitl();
-
-const first = await gate.run({ input: "Draft a policy update." });
-
-if (first.status === "paused") {
-  const token = first.token;
-
-  const resumed = await gate.resume?.(token, {
-    decision: "approve",
-  });
-
-  console.log(resumed?.status);
-}
-```
+<<< @/snippets/recipes/hitl/quick-start.js#docs
 
 :::
 
@@ -100,62 +65,11 @@ By default, pause tokens are process-local. To resume across restarts, provide a
 ::: tabs
 == TypeScript
 
-```ts
-import { createMemoryCache } from "@geekist/llm-core/adapters";
-
-const gate = recipes.hitl().defaults({
-  adapters: {
-    cache: createMemoryCache(),
-  },
-});
-```
+<<< @/snippets/recipes/hitl/durable.ts#docs
 
 == JavaScript
 
-```js
-import { createMemoryCache } from "@geekist/llm-core/adapters";
-
-const gate = recipes.hitl().defaults({
-  adapters: {
-    cache: createMemoryCache(),
-  },
-});
-```
-
-:::
-
-If you’re already using LangGraph, you can back HITL with a LangGraph checkpointer:
-
-::: tabs
-== TypeScript
-
-```ts
-import { MemorySaver } from "@langchain/langgraph-checkpoint";
-import { fromLangGraphCheckpointer } from "@geekist/llm-core/adapters";
-
-const checkpointer = new MemorySaver();
-
-const gate = recipes.hitl().defaults({
-  adapters: {
-    checkpoint: fromLangGraphCheckpointer(checkpointer),
-  },
-});
-```
-
-== JavaScript
-
-```js
-import { MemorySaver } from "@langchain/langgraph-checkpoint";
-import { fromLangGraphCheckpointer } from "@geekist/llm-core/adapters";
-
-const checkpointer = new MemorySaver();
-
-const gate = recipes.hitl().defaults({
-  adapters: {
-    checkpoint: fromLangGraphCheckpointer(checkpointer),
-  },
-});
-```
+<<< @/snippets/recipes/hitl/durable.js#docs
 
 :::
 
@@ -171,23 +85,11 @@ You can inspect pause events and reason about why the gate paused.
 ::: tabs
 == TypeScript
 
-```ts
-// gate handle from above
-const out = await gate.run({ input: "Draft a policy update." });
-
-console.log(out.trace);
-console.log(out.diagnostics);
-```
+<<< @/snippets/recipes/hitl/diagnostics.ts#docs
 
 == JavaScript
 
-```js
-// gate handle from above
-const out = await gate.run({ input: "Draft a policy update." });
-
-console.log(out.trace);
-console.log(out.diagnostics);
-```
+<<< @/snippets/recipes/hitl/diagnostics.js#docs
 
 :::
 
@@ -206,19 +108,11 @@ Drop the gate into any recipe with `.use()`.
 ::: tabs
 == TypeScript
 
-```ts
-import { recipes } from "@geekist/llm-core";
-
-const guarded = recipes.rag().use(recipes.hitl());
-```
+<<< @/snippets/recipes/hitl/composition.ts#docs
 
 == JavaScript
 
-```js
-import { recipes } from "@geekist/llm-core";
-
-const guarded = recipes.rag().use(recipes.hitl());
-```
+<<< @/snippets/recipes/hitl/composition.js#docs
 
 :::
 

@@ -22,40 +22,11 @@ flowchart LR
 ::: tabs
 == TypeScript
 
-```ts
-import { recipes } from "@geekist/llm-core/recipes";
-import type { SimpleChatConfig } from "@geekist/llm-core/recipes";
-import { fromAiSdkModel } from "@geekist/llm-core/adapters";
-import { openai } from "@ai-sdk/openai";
-
-const config = {
-  system: "You are a helpful coding assistant.",
-  model: "gpt-4o-mini",
-} satisfies SimpleChatConfig;
-
-const chat = recipes["chat.simple"](config).defaults({
-  adapters: {
-    model: fromAiSdkModel(openai("gpt-4o-mini")),
-  },
-});
-```
+<<< ../snippets/recipes/simple-chat/quick-start.ts#docs
 
 == JavaScript
 
-```js
-import { recipes } from "@geekist/llm-core/recipes";
-import { fromAiSdkModel } from "@geekist/llm-core/adapters";
-import { openai } from "@ai-sdk/openai";
-
-const chat = recipes["chat.simple"]({
-  system: "You are a helpful coding assistant.",
-  model: "gpt-4o-mini",
-}).defaults({
-  adapters: {
-    model: fromAiSdkModel(openai("gpt-4o-mini")),
-  },
-});
-```
+<<< ../snippets/recipes/simple-chat/quick-start.js#docs
 
 :::
 
@@ -88,36 +59,11 @@ without changing the recipe’s outcome guarantees.
 ::: tabs
 == TypeScript
 
-```ts
-import type { ModelStreamEvent } from "@geekist/llm-core/adapters";
-import { fromAiSdkModel } from "@geekist/llm-core/adapters";
-import { openai } from "@ai-sdk/openai";
-
-const model = fromAiSdkModel(openai("gpt-4o-mini"));
-const stream = await model.stream({ prompt: "Explain DSP in one paragraph." });
-
-for await (const event of stream) {
-  if ((event as ModelStreamEvent).type === "delta") {
-    process.stdout.write(event.text ?? "");
-  }
-}
-```
+<<< ../snippets/recipes/simple-chat/streaming.ts#docs
 
 == JavaScript
 
-```js
-import { fromAiSdkModel } from "@geekist/llm-core/adapters";
-import { openai } from "@ai-sdk/openai";
-
-const model = fromAiSdkModel(openai("gpt-4o-mini"));
-const stream = await model.stream({ prompt: "Explain DSP in one paragraph." });
-
-for await (const event of stream) {
-  if (event.type === "delta") {
-    process.stdout.write(event.text || "");
-  }
-}
-```
+<<< ../snippets/recipes/simple-chat/streaming.js#docs
 
 :::
 
@@ -132,27 +78,11 @@ Because Simple Chat only wires defaults, pair it with another recipe's steps.
 ::: tabs
 == TypeScript
 
-```ts
-import { recipes } from "@geekist/llm-core/recipes";
-
-const chat = recipes["chat.simple"]({
-  system: "You are a helpful coding assistant.",
-}).use(recipes.agent());
-
-const outcome = await chat.run({ input: "Explain DSP." });
-```
+<<< ../snippets/recipes/simple-chat/compose.ts#docs
 
 == JavaScript
 
-```js
-import { recipes } from "@geekist/llm-core/recipes";
-
-const chat = recipes["chat.simple"]({
-  system: "You are a helpful coding assistant.",
-}).use(recipes.agent());
-
-const outcome = await chat.run({ input: "Explain DSP." });
-```
+<<< ../snippets/recipes/simple-chat/compose.js#docs
 
 :::
 
@@ -165,23 +95,11 @@ Even when used as a preset, you still get full diagnostics and trace from the co
 ::: tabs
 == TypeScript
 
-```ts
-// chat handle from above
-const outcome = await chat.run({ input: "Explain DSP." }, { runtime: { diagnostics: "strict" } });
-
-console.log(outcome.diagnostics);
-console.log(outcome.trace);
-```
+<<< ../snippets/recipes/simple-chat/diagnostics.ts#docs
 
 == JavaScript
 
-```js
-// chat handle from above
-const outcome = await chat.run({ input: "Explain DSP." }, { runtime: { diagnostics: "strict" } });
-
-console.log(outcome.diagnostics);
-console.log(outcome.trace);
-```
+<<< ../snippets/recipes/simple-chat/diagnostics.js#docs
 
 :::
 

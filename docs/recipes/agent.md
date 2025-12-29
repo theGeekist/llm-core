@@ -36,71 +36,11 @@ separate from wiring. If you only want the “agent loop” and nothing else, th
 ::: tabs
 == TypeScript
 
-```ts
-import { recipes } from "@geekist/llm-core";
-import type { AgentInput } from "@geekist/llm-core/workflow";
-import { fromAiSdkModel, fromAiSdkTool } from "@geekist/llm-core/adapters";
-import { openai } from "@ai-sdk/openai";
-import { tool } from "ai";
-import { z } from "zod";
-
-// Configure once, reuse across requests.
-const agent = recipes.agent().defaults({
-  adapters: {
-    model: fromAiSdkModel(openai("gpt-4o-mini")),
-    tools: [
-      fromAiSdkTool(
-        "get_weather",
-        tool({
-          description: "Get weather by city",
-          parameters: z.object({ city: z.string() }),
-          execute: async ({ city }) => ({ city, summary: "Sunny, 25C" }),
-        }),
-      ),
-    ],
-  },
-});
-
-const input: AgentInput = { input: "What's the weather in Tokyo?" };
-const outcome = await agent.run(input);
-
-if (outcome.status === "ok") {
-  console.log(outcome.artefact.text); // "The weather in Tokyo is..."
-}
-```
+<<< @/snippets/recipes/agent/quick-start.ts#docs
 
 == JavaScript
 
-```js
-import { recipes } from "@geekist/llm-core";
-import { fromAiSdkModel, fromAiSdkTool } from "@geekist/llm-core/adapters";
-import { openai } from "@ai-sdk/openai";
-import { tool } from "ai";
-import { z } from "zod";
-
-// Configure once, reuse across requests.
-const agent = recipes.agent().defaults({
-  adapters: {
-    model: fromAiSdkModel(openai("gpt-4o-mini")),
-    tools: [
-      fromAiSdkTool(
-        "get_weather",
-        tool({
-          description: "Get weather by city",
-          parameters: z.object({ city: z.string() }),
-          execute: async ({ city }) => ({ city, summary: "Sunny, 25C" }),
-        }),
-      ),
-    ],
-  },
-});
-
-const outcome = await agent.run({ input: "What's the weather in Tokyo?" });
-
-if (outcome.status === "ok") {
-  console.log(outcome.artefact.text); // "The weather in Tokyo is..."
-}
-```
+<<< @/snippets/recipes/agent/quick-start.js#docs
 
 :::
 
@@ -125,56 +65,11 @@ global “mega config” for recipes.
 ::: tabs
 == TypeScript
 
-```ts
-import { recipes } from "@geekist/llm-core";
-import type { AgentRecipeConfig } from "@geekist/llm-core/recipes";
-
-const config = {
-  tools: {
-    defaults: {
-      adapters: {
-        tools: [
-          /* tool adapters */
-        ],
-      },
-    },
-  },
-  memory: {
-    defaults: {
-      adapters: {
-        memory: myMemoryAdapter,
-      },
-    },
-  },
-} satisfies AgentRecipeConfig;
-
-const agent = recipes.agent().configure(config);
-```
+<<< @/snippets/recipes/agent/defaults.ts#docs
 
 == JavaScript
 
-```js
-import { recipes } from "@geekist/llm-core";
-
-const agent = recipes.agent().configure({
-  tools: {
-    defaults: {
-      adapters: {
-        tools: [
-          /* tool adapters */
-        ],
-      },
-    },
-  },
-  memory: {
-    defaults: {
-      adapters: {
-        memory: myMemoryAdapter,
-      },
-    },
-  },
-});
-```
+<<< @/snippets/recipes/agent/defaults.js#docs
 
 :::
 
@@ -197,56 +92,11 @@ invert that or swap in LangChain without changing the agent.
 ::: tabs
 == TypeScript
 
-```ts
-import { recipes } from "@geekist/llm-core";
-import { fromAiSdkModel, fromLlamaIndexTool } from "@geekist/llm-core/adapters";
-import { openai } from "@ai-sdk/openai";
-import type { BaseTool } from "@llamaindex/core/llms";
-
-const llamaTool: BaseTool = {
-  metadata: {
-    name: "get_weather",
-    description: "Weather lookup",
-    parameters: {
-      type: "object",
-      properties: { city: { type: "string" } },
-      required: ["city"],
-    },
-  },
-  call: ({ city }: { city: string }) => ({ city, summary: "Sunny" }),
-};
-
-const agent = recipes.agent().defaults({
-  adapters: {
-    model: fromAiSdkModel(openai("gpt-4o-mini")),
-    tools: [fromLlamaIndexTool(llamaTool)],
-  },
-});
-```
+<<< @/snippets/recipes/agent/adapters.ts#docs
 
 == JavaScript
 
-```js
-import { recipes } from "@geekist/llm-core";
-import { fromAiSdkModel, fromLlamaIndexTool } from "@geekist/llm-core/adapters";
-import { openai } from "@ai-sdk/openai";
-import { tool as defineTool } from "@llamaindex/core/tools";
-import { z } from "zod";
-
-const llamaTool = defineTool({
-  name: "get_weather",
-  description: "Weather lookup",
-  parameters: z.object({ city: z.string() }),
-  execute: ({ city }) => ({ city, summary: "Sunny" }),
-});
-
-const agent = recipes.agent().defaults({
-  adapters: {
-    model: fromAiSdkModel(openai("gpt-4o-mini")),
-    tools: [fromLlamaIndexTool(llamaTool)],
-  },
-});
-```
+<<< @/snippets/recipes/agent/adapters.js#docs
 
 :::
 
@@ -266,35 +116,11 @@ resume continues the same context. See [Pause & Resume](/reference/runtime#resum
 ::: tabs
 == TypeScript
 
-```ts
-// agent handle from above
-const outcome = await agent.run(
-  { input: "Explain our refund policy." },
-  { runtime: { diagnostics: "strict" } },
-);
-
-if (outcome.status === "error") {
-  console.error(outcome.diagnostics);
-}
-
-console.log(outcome.trace);
-```
+<<< @/snippets/recipes/agent/diagnostics.ts#docs
 
 == JavaScript
 
-```js
-// agent handle from above
-const outcome = await agent.run(
-  { input: "Explain our refund policy." },
-  { runtime: { diagnostics: "strict" } },
-);
-
-if (outcome.status === "error") {
-  console.error(outcome.diagnostics);
-}
-
-console.log(outcome.trace);
-```
+<<< @/snippets/recipes/agent/diagnostics.js#docs
 
 :::
 
@@ -326,25 +152,11 @@ flowchart LR
 ::: tabs
 == TypeScript
 
-```ts
-import { recipes } from "@geekist/llm-core";
-
-const supportAgent = recipes.agent().use(recipes.rag()).use(recipes.hitl());
-
-const plan = supportAgent.plan();
-console.log(plan.steps.map((step) => step.id));
-```
+<<< @/snippets/recipes/agent/composition.ts#docs
 
 == JavaScript
 
-```js
-import { recipes } from "@geekist/llm-core";
-
-const supportAgent = recipes.agent().use(recipes.rag()).use(recipes.hitl());
-
-const plan = supportAgent.plan();
-console.log(plan.steps.map((step) => step.id));
-```
+<<< @/snippets/recipes/agent/composition.js#docs
 
 :::
 

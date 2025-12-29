@@ -60,48 +60,11 @@ Here is how you wire up a LangChain Memory store to ingest data:
 ::: tabs
 == TypeScript
 
-```ts
-import { fromLangChainVectorStore } from "@geekist/llm-core/adapters";
-import type { VectorStore } from "@geekist/llm-core/adapters";
-import { MemoryVectorStore } from "langchain/vectorstores/memory";
-import { OpenAIEmbeddings } from "@langchain/openai";
-
-// 1. Wrap the ecosystem Store
-const store: VectorStore = fromLangChainVectorStore(new MemoryVectorStore(new OpenAIEmbeddings()));
-
-// 2. Use it in an Ingestion Workflow
-interface MyDoc {
-  id: string;
-  text: string;
-  metadata: { author: string };
-}
-
-await store.upsert({
-  documents: [
-    { id: "doc-1", text: "Jason likes coffee.", metadata: { author: "Jason" } },
-    { id: "doc-2", text: "Jason hates tea.", metadata: { author: "Jason" } },
-  ] as MyDoc[],
-});
-```
+<<< @/snippets/adapters/vector-store-langchain.ts
 
 == JavaScript
 
-```js
-import { fromLangChainVectorStore } from "@geekist/llm-core/adapters";
-import { MemoryVectorStore } from "langchain/vectorstores/memory";
-import { OpenAIEmbeddings } from "@langchain/openai";
-
-// 1. Wrap the ecosystem Store
-const store = fromLangChainVectorStore(new MemoryVectorStore(new OpenAIEmbeddings()));
-
-// 2. Use it in an Ingestion Workflow
-await store.upsert({
-  documents: [
-    { id: "doc-1", text: "Jason likes coffee.", metadata: { author: "Jason" } },
-    { id: "doc-2", text: "Jason hates tea.", metadata: { author: "Jason" } },
-  ],
-});
-```
+<<< @/snippets/adapters/vector-store-langchain.js
 
 :::
 
@@ -132,46 +95,11 @@ LangChain's Record Manager is the industry standard for this pattern. Our adapte
 ::: tabs
 == TypeScript
 
-```ts
-import { Adapter, fromLangChainIndexing } from "@geekist/llm-core/adapters";
-import type { Indexing, IndexingResult } from "@geekist/llm-core/adapters";
-
-// 1. Define the Indexing logic
-const indexing: Indexing = Adapter.indexing(
-  "custom.indexing",
-  fromLangChainIndexing(recordManager, langChainVectorStore),
-);
-
-// 2. Run the sync job
-const result: IndexingResult = await indexing.index({
-  documents: myDocs,
-  options: {
-    cleanup: "full",
-    sourceIdKey: "source",
-  },
-});
-```
+<<< @/snippets/adapters/indexing-usage.ts
 
 == JavaScript
 
-```js
-import { Adapter, fromLangChainIndexing } from "@geekist/llm-core/adapters";
-
-// 1. Define the Indexing logic
-const indexing = Adapter.indexing(
-  "custom.indexing",
-  fromLangChainIndexing(recordManager, langChainVectorStore),
-);
-
-// 2. Run the sync job
-const result = await indexing.index({
-  documents: myDocs,
-  options: {
-    cleanup: "full",
-    sourceIdKey: "source",
-  },
-});
-```
+<<< @/snippets/adapters/indexing-usage.js
 
 :::
 
@@ -199,30 +127,11 @@ When choosing an embedder, you must ensure the **dimensions** (e.g., 1536 for Op
 ::: tabs
 == TypeScript
 
-```ts
-import { fromAiSdkEmbeddings } from "@geekist/llm-core/adapters";
-import type { Embedder } from "@geekist/llm-core/adapters";
-import { openai } from "@ai-sdk/openai";
-
-// Create an embedder capable of batching
-const embedder: Embedder = fromAiSdkEmbeddings(openai.embedding("text-embedding-3-small"));
-
-// Embed a batch of text
-const vectors: number[][] = await embedder.embedMany(["Hello", "World"]);
-```
+<<< @/snippets/adapters/embedder-ai-sdk.ts
 
 == JavaScript
 
-```js
-import { fromAiSdkEmbeddings } from "@geekist/llm-core/adapters";
-import { openai } from "@ai-sdk/openai";
-
-// Create an embedder capable of batching
-const embedder = fromAiSdkEmbeddings(openai.embedding("text-embedding-3-small"));
-
-// Embed a batch of text
-const vectors = await embedder.embedMany(["Hello", "World"]);
-```
+<<< @/snippets/adapters/embedder-ai-sdk.js
 
 :::
 
@@ -245,28 +154,11 @@ We align with the **AI SDK Reranker** standard (`RerankingModelV3`).
 ::: tabs
 == TypeScript
 
-```ts
-import { fromAiSdkReranker } from "@geekist/llm-core/adapters";
-import type { Reranker, Document } from "@geekist/llm-core/adapters";
-import { cohere } from "@ai-sdk/cohere"; // Example provider
-
-const reranker: Reranker = fromAiSdkReranker(cohere.reranker("rerank-english-v3.0"));
-
-// In a custom recipe step:
-const refinedDocs: Document[] = await reranker.rerank(userQuery, retrievedDocs);
-```
+<<< @/snippets/adapters/reranker-ai-sdk.ts
 
 == JavaScript
 
-```js
-import { fromAiSdkReranker } from "@geekist/llm-core/adapters";
-import { cohere } from "@ai-sdk/cohere"; // Example provider
-
-const reranker = fromAiSdkReranker(cohere.reranker("rerank-english-v3.0"));
-
-// In a custom recipe step:
-const refinedDocs = await reranker.rerank(userQuery, retrievedDocs);
-```
+<<< @/snippets/adapters/reranker-ai-sdk.js
 
 :::
 
@@ -282,36 +174,11 @@ We normalize it so you can keep the same filter shape while mixing in **any** mo
 ::: tabs
 == TypeScript
 
-```ts
-import { StructuredQuery as LangChainStructuredQuery } from "@langchain/core/structured_query";
-import { fromLangChainStructuredQuery } from "@geekist/llm-core/adapters";
-import type { StructuredQuery } from "@geekist/llm-core/adapters";
-
-const lcQuery = new LangChainStructuredQuery("find docs", {
-  type: "comparison",
-  comparator: "eq",
-  attribute: "category",
-  value: "policies",
-});
-
-const query: StructuredQuery = fromLangChainStructuredQuery(lcQuery);
-```
+<<< @/snippets/adapters/structured-query-langchain.ts
 
 == JavaScript
 
-```js
-import { StructuredQuery as LangChainStructuredQuery } from "@langchain/core/structured_query";
-import { fromLangChainStructuredQuery } from "@geekist/llm-core/adapters";
-
-const lcQuery = new LangChainStructuredQuery("find docs", {
-  type: "comparison",
-  comparator: "eq",
-  attribute: "category",
-  value: "policies",
-});
-
-const query = fromLangChainStructuredQuery(lcQuery);
-```
+<<< @/snippets/adapters/structured-query-langchain.js
 
 :::
 
@@ -337,43 +204,11 @@ Use a **Query Engine Adapter** when:
 ::: tabs
 == TypeScript
 
-```ts
-import { Adapter, fromLlamaIndexQueryEngine } from "@geekist/llm-core/adapters";
-import type { QueryEngine, QueryResult } from "@geekist/llm-core/adapters";
-
-// 1. Create the complex engine upstream
-const complexEngine = /* any LlamaIndex query engine instance */;
-
-// 2. Wrap it as a simple "Query In -> Answer Out" adapter
-const queryEngine: QueryEngine = Adapter.queryEngine(
-  "my.complex.engine",
-  fromLlamaIndexQueryEngine(complexEngine)
-);
-
-// 3. Use it in your workflow
-const result: QueryResult = await queryEngine.query({ text: "Compare Q1 revenue for Apple and Google" });
-console.log(result.text);
-```
+<<< @/snippets/adapters/query-engine-llamaindex.ts#docs
 
 == JavaScript
 
-```js
-import { Adapter, fromLlamaIndexQueryEngine } from "@geekist/llm-core/adapters";
-import { SubQuestionQueryEngine } from "llamaindex";
-
-// 1. Create the complex engine upstream
-const complexEngine = SubQuestionQueryEngine.fromDefaults({ ... });
-
-// 2. Wrap it as a simple "Query In -> Answer Out" adapter
-const queryEngine = Adapter.queryEngine(
-  "my.complex.engine",
-  fromLlamaIndexQueryEngine(complexEngine)
-);
-
-// 3. Use it in your workflow
-const result = await queryEngine.query({ text: "Compare Q1 revenue for Apple and Google" });
-console.log(result.text);
-```
+<<< @/snippets/adapters/query-engine-llamaindex.js#docs
 
 :::
 
@@ -384,26 +219,11 @@ A **Response Synthesizer** takes a query and a set of retrieved nodes, and gener
 ::: tabs
 == TypeScript
 
-```ts
-import { Adapter, fromLlamaIndexResponseSynthesizer } from "@geekist/llm-core/adapters";
-import type { ResponseSynthesizer } from "@geekist/llm-core/adapters";
-
-const synthesizer: ResponseSynthesizer = Adapter.responseSynthesizer(
-  "custom.responseSynthesizer",
-  fromLlamaIndexResponseSynthesizer(synthesizerEngine),
-);
-```
+<<< @/snippets/adapters/response-synthesizer-llamaindex.ts#docs
 
 == JavaScript
 
-```js
-import { Adapter, fromLlamaIndexResponseSynthesizer } from "@geekist/llm-core/adapters";
-
-const synthesizer = Adapter.responseSynthesizer(
-  "custom.responseSynthesizer",
-  fromLlamaIndexResponseSynthesizer(synthesizerEngine),
-);
-```
+<<< @/snippets/adapters/response-synthesizer-llamaindex.js#docs
 
 :::
 

@@ -36,24 +36,11 @@ The Vercel AI SDK is our preferred driver for text generation. It creates the li
 ::: tabs
 == TypeScript
 
-```ts
-import { fromAiSdkModel } from "@geekist/llm-core/adapters";
-import type { Model } from "@geekist/llm-core/adapters";
-import { anthropic } from "@ai-sdk/anthropic";
-
-// The 'driver' for your workflow
-const model: Model = fromAiSdkModel(anthropic("claude-3-5-sonnet-20240620"));
-```
+<<< @/snippets/adapters/model-ai-sdk.ts
 
 == JavaScript
 
-```js
-import { fromAiSdkModel } from "@geekist/llm-core/adapters";
-import { anthropic } from "@ai-sdk/anthropic";
-
-// The 'driver' for your workflow
-const model = fromAiSdkModel(anthropic("claude-3-5-sonnet-20240620"));
-```
+<<< @/snippets/adapters/model-ai-sdk.js
 
 :::
 
@@ -70,32 +57,11 @@ LangChain has the largest catalog of integrations. If you need to connect to AWS
 ::: tabs
 == TypeScript
 
-```ts
-import { fromLangChainModel } from "@geekist/llm-core/adapters";
-import type { Model } from "@geekist/llm-core/adapters";
-import { ChatBedrock } from "@langchain/community/chat_models/bedrock";
-
-const model: Model = fromLangChainModel(
-  new ChatBedrock({
-    model: "anthropic.claude-v2",
-    region: "us-east-1",
-  }),
-);
-```
+<<< @/snippets/adapters/model-langchain.ts
 
 == JavaScript
 
-```js
-import { fromLangChainModel } from "@geekist/llm-core/adapters";
-import { ChatBedrock } from "@langchain/community/chat_models/bedrock";
-
-const model = fromLangChainModel(
-  new ChatBedrock({
-    model: "anthropic.claude-v2",
-    region: "us-east-1",
-  }),
-);
-```
+<<< @/snippets/adapters/model-langchain.js
 
 :::
 
@@ -134,24 +100,11 @@ You never have to parse chunks manually. You just consume the iterator:
 ::: tabs
 == TypeScript
 
-```ts
-import type { ModelStreamEvent } from "@geekist/llm-core/adapters";
-
-for await (const event of model.stream(call)) {
-  // Narrowing the union type
-  if ((event as ModelStreamEvent).type === "delta") {
-    process.stdout.write(event.text ?? "");
-  }
-}
-```
+<<< @/snippets/adapters/model-stream.ts
 
 == JavaScript
 
-```js
-for await (const event of model.stream(call)) {
-  if (event.type === "delta") process.stdout.write(event.text ?? "");
-}
-```
+<<< @/snippets/adapters/model-stream.js
 
 :::
 
@@ -171,22 +124,11 @@ Generates images from text prompts (DALL-E, Midjourney wrappers).
 ::: tabs
 == TypeScript
 
-```ts
-import { fromAiSdkImageModel } from "@geekist/llm-core/adapters";
-import type { ImageModel } from "@geekist/llm-core/adapters";
-import { openai } from "@ai-sdk/openai";
-
-const imageModel: ImageModel = fromAiSdkImageModel(openai.image("dall-e-3"));
-```
+<<< @/snippets/adapters/model-image.ts
 
 == JavaScript
 
-```js
-import { fromAiSdkImageModel } from "@geekist/llm-core/adapters";
-import { openai } from "@ai-sdk/openai";
-
-const imageModel = fromAiSdkImageModel(openai.image("dall-e-3"));
-```
+<<< @/snippets/adapters/model-image.js
 
 :::
 
