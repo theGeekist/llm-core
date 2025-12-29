@@ -31,7 +31,7 @@ Keep MaybePromise semantics, no any, and no type explosion.
 
 ## Data model / API changes
 
-- New Model with generate(call: ModelCall): MaybePromise<ModelResult>.
+- New Model with `generate(call: ModelCall): MaybePromise<ModelResult>`.
 - Extend ModelResult to include toolCalls/toolResults and reasoning (optional).
 - New factory exports: fromAiSdkModel, fromLangChainModel, fromLlamaIndexModel.
 

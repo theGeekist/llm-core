@@ -53,6 +53,8 @@ export default defineConfig({
   themeConfig: {
     nav: [
       { text: "Docs", link: "/" },
+      { text: "Recipes", link: "/recipes/simple-chat" },
+      { text: "Adapters", link: "/adapters/" },
       { text: "Guide", link: "/guide/hello-world" },
       { text: "Reference", link: "/reference/workflow-api" },
       { text: "GitHub", link: "https://github.com/theGeekist/llm-core" },
@@ -73,7 +75,13 @@ export default defineConfig({
         },
         {
           text: "Recipes",
-          items: [{ text: "RAG Deep Dive", link: "/recipes/rag" }],
+          items: [
+            { text: "Simple Chat", link: "/recipes/simple-chat" },
+            { text: "RAG", link: "/recipes/rag" },
+            { text: "Agent", link: "/recipes/agent" },
+            { text: "HITL", link: "/recipes/hitl" },
+            { text: "Ingest", link: "/recipes/ingest" },
+          ],
         },
       ],
       "/reference/": [
@@ -89,15 +97,14 @@ export default defineConfig({
         {
           text: "Ecosystem",
           items: [
-            { text: "Adapters Overview", link: "/reference/adapters" },
             {
               text: "Capabilities",
               items: [
-                { text: "Models (AI SDK / LC / LI)", link: "/reference/adapters/models" },
-                { text: "Retrieval (RAG)", link: "/reference/adapters/retrieval" },
-                { text: "Tools & Parsers", link: "/reference/adapters/tools" },
-                { text: "Storage & Memory", link: "/reference/adapters/storage" },
-                { text: "Observability (Tracing)", link: "/reference/adapters/observability" },
+                { text: "Models (AI SDK / LC / LI)", link: "/adapters/models" },
+                { text: "Retrieval (RAG)", link: "/adapters/retrieval" },
+                { text: "Tools & Parsers", link: "/adapters/tools" },
+                { text: "Storage & Memory", link: "/adapters/storage" },
+                { text: "Observability (Tracing)", link: "/adapters/observability" },
               ],
             },
             { text: "Packs & Recipes", link: "/reference/packs-and-recipes" },
@@ -120,6 +127,19 @@ export default defineConfig({
             { text: "Building an Agent", link: "/recipes/agent" },
             { text: "Human-in-the-Loop", link: "/recipes/hitl" },
             { text: "The Data Pipeline", link: "/recipes/ingest" },
+          ],
+        },
+      ],
+      "/adapters/": [
+        {
+          text: "Adapters",
+          items: [
+            { text: "Overview", link: "/adapters/" },
+            { text: "Models (AI SDK / LC / LI)", link: "/adapters/models" },
+            { text: "Retrieval (RAG)", link: "/adapters/retrieval" },
+            { text: "Tools & Parsers", link: "/adapters/tools" },
+            { text: "Storage & Memory", link: "/adapters/storage" },
+            { text: "Observability (Tracing)", link: "/adapters/observability" },
           ],
         },
       ],

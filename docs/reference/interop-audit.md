@@ -10,7 +10,7 @@ The goal is to ensure **Recipes** are portable across these ecosystems.
 ## AI SDK (ai + provider + provider-utils)
 
 > [!TIP]
-> See the **[Models Adapter Page](/reference/adapters/models.md)** for implementation details.
+> See the **[Models Adapter Page](/adapters/models)** for implementation details.
 
 Packages audited:
 
@@ -55,7 +55,7 @@ Gaps:
 ## LangChain (JS/TS)
 
 > [!TIP]
-> See the **[Retrieval](/reference/adapters/retrieval.md)** and **[Tools](/reference/adapters/tools.md)** adapter pages.
+> See the **[Retrieval](/adapters/retrieval)** and **[Tools](/adapters/tools)** adapter pages.
 
 Packages audited:
 
@@ -89,7 +89,7 @@ Gaps:
 ## LlamaIndex (TS)
 
 > [!TIP]
-> See the **[Retrieval Adapter Page](/reference/adapters/retrieval.md)** for implementation details.
+> See the **[Retrieval Adapter Page](/adapters/retrieval)** for implementation details.
 
 Packages audited (top-level modules):
 

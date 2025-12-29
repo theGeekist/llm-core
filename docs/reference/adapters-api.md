@@ -4,7 +4,7 @@ Adapters are how llm-core keeps the ecosystem from leaking into your app.
 Most users never need this page because recipes and workflows already ship with adapters wired in.
 You only come here when you want to integrate a new provider, bridge an external SDK, or take full control.
 
-> [!IMPORTANT] > **Don't start here.** If you just want to use OpenAI, LangChain, or LlamaIndex, browse the **[Adapters Overview](/reference/adapters)** by capability.
+> [!IMPORTANT] > **Don't start here.** If you just want to use OpenAI, LangChain, or LlamaIndex, browse the **[Adapters Overview](/adapters/)** by capability.
 
 Adapters exist to contain ecosystem differences, not expose them. They normalize wildly different concepts
 (models, tools, retrievers, messages, schemas) into a stable internal shape while keeping provider details
@@ -747,4 +747,4 @@ const message = {
 
 ## One-screen wiring examples
 
-See the capability pages: [Models](./adapters/models.md), [Retrieval](./adapters/retrieval.md), and [Tools](./adapters/tools.md).
+See the capability pages: [Models](/adapters/models), [Retrieval](/adapters/retrieval), and [Tools](/adapters/tools).

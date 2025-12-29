@@ -3,12 +3,17 @@
 > [!NOTE] > **Goal**: A minimal, low-friction entry point that wires model/system defaults.
 
 Simple Chat is intentionally small: it **does not introduce extra steps**. Instead, it provides a
-recipe handle that sets model/system defaults and can be composed into richer flows.
+recipe handle that sets model/system defaults and can be composed into richer flows. You use it when
+you want a clean baseline: quick assistants, prototypes, or a stable fallback before you add RAG or tools.
 
-If you want a full agentic loop, see the [Agent recipe](/recipes/agent). If you want RAG + chat, see
+If you want a full agentic loop, see [Agent](/recipes/agent). If you want RAG + chat, see
 [RAG](/recipes/rag).
 
-If you're new to recipes, skim the [Recipes API](/reference/recipes-api) for the handle surface.
+```mermaid
+flowchart LR
+  Config["System + Model"] --> Run["run()"]
+  Run --> Answer(["Outcome"])
+```
 
 ---
 
@@ -18,17 +23,17 @@ If you're new to recipes, skim the [Recipes API](/reference/recipes-api) for the
 == TypeScript
 
 ```ts
-import { simpleChat } from "@geekist/llm-core/recipes";
+import { recipes } from "@geekist/llm-core/recipes";
+import type { SimpleChatConfig } from "@geekist/llm-core/recipes";
 import { fromAiSdkModel } from "@geekist/llm-core/adapters";
 import { openai } from "@ai-sdk/openai";
-import type { SimpleChatConfig } from "@geekist/llm-core/recipes";
 
 const config = {
   system: "You are a helpful coding assistant.",
   model: "gpt-4o-mini",
 } satisfies SimpleChatConfig;
 
-const chat = simpleChat(config).defaults({
+const chat = recipes["chat.simple"](config).defaults({
   adapters: {
     model: fromAiSdkModel(openai("gpt-4o-mini")),
   },
@@ -38,11 +43,11 @@ const chat = simpleChat(config).defaults({
 == JavaScript
 
 ```js
-import { simpleChat } from "@geekist/llm-core/recipes";
+import { recipes } from "@geekist/llm-core/recipes";
 import { fromAiSdkModel } from "@geekist/llm-core/adapters";
 import { openai } from "@ai-sdk/openai";
 
-const chat = simpleChat({
+const chat = recipes["chat.simple"]({
   system: "You are a helpful coding assistant.",
   model: "gpt-4o-mini",
 }).defaults({
@@ -54,11 +59,73 @@ const chat = simpleChat({
 
 :::
 
-Related: [Recipes API](/reference/recipes-api) - [Adapters overview](/reference/adapters)
+Outcomes are explicit: `{ status, artefact, diagnostics, trace }`. A successful run carries
+`answer.text` in the artefact; paused and error outcomes keep the same trace and diagnostics so you
+can always explain what happened.
+If you see `model: "gpt-4o-mini"` in config, think of it as a label/selector for the recipe surface;
+the actual inference happens through the adapter you pass in defaults.
+
+Related: [Recipes API](/reference/recipes-api), [Runtime Outcomes](/reference/runtime#outcomes), and
+[Adapters overview](/adapters/).
 
 ---
 
-## 2) Use it as a base (compose with other recipes)
+## 2) Configure and tune (common tweaks)
+
+Simple Chat accepts a recipe‑specific config that stays intentionally small: a system prompt,
+model defaults, and any response formatting you want to standardize. This is where you set
+the “voice” of your app. If you want strict enforcement, run with `runtime.diagnostics = "strict"`
+so missing adapters or schema mismatches fail early.
+
+---
+
+## 3) Streaming (the cleanest place to learn it)
+
+This is the simplest recipe to experiment with streaming. Streaming lives on the **model adapter**,
+and you can use the same adapter you already wired into the recipe. That gives you streaming output
+without changing the recipe’s outcome guarantees.
+
+::: tabs
+== TypeScript
+
+```ts
+import type { ModelStreamEvent } from "@geekist/llm-core/adapters";
+import { fromAiSdkModel } from "@geekist/llm-core/adapters";
+import { openai } from "@ai-sdk/openai";
+
+const model = fromAiSdkModel(openai("gpt-4o-mini"));
+const stream = await model.stream({ prompt: "Explain DSP in one paragraph." });
+
+for await (const event of stream) {
+  if ((event as ModelStreamEvent).type === "delta") {
+    process.stdout.write(event.text ?? "");
+  }
+}
+```
+
+== JavaScript
+
+```js
+import { fromAiSdkModel } from "@geekist/llm-core/adapters";
+import { openai } from "@ai-sdk/openai";
+
+const model = fromAiSdkModel(openai("gpt-4o-mini"));
+const stream = await model.stream({ prompt: "Explain DSP in one paragraph." });
+
+for await (const event of stream) {
+  if (event.type === "delta") {
+    process.stdout.write(event.text || "");
+  }
+}
+```
+
+:::
+
+See: [Models -> Streaming](/adapters/models#the-streaming-lifecycle).
+
+---
+
+## 4) Use it as a base (compose with other recipes)
 
 Because Simple Chat only wires defaults, pair it with another recipe's steps.
 
@@ -66,9 +133,9 @@ Because Simple Chat only wires defaults, pair it with another recipe's steps.
 == TypeScript
 
 ```ts
-import { recipes, simpleChat } from "@geekist/llm-core/recipes";
+import { recipes } from "@geekist/llm-core/recipes";
 
-const chat = simpleChat({
+const chat = recipes["chat.simple"]({
   system: "You are a helpful coding assistant.",
 }).use(recipes.agent());
 
@@ -78,9 +145,9 @@ const outcome = await chat.run({ input: "Explain DSP." });
 == JavaScript
 
 ```js
-import { recipes, simpleChat } from "@geekist/llm-core/recipes";
+import { recipes } from "@geekist/llm-core/recipes";
 
-const chat = simpleChat({
+const chat = recipes["chat.simple"]({
   system: "You are a helpful coding assistant.",
 }).use(recipes.agent());
 
@@ -91,7 +158,7 @@ const outcome = await chat.run({ input: "Explain DSP." });
 
 ---
 
-## 3) Diagnostics + trace
+## 5) Diagnostics + trace
 
 Even when used as a preset, you still get full diagnostics and trace from the composed recipe.
 
@@ -118,7 +185,27 @@ console.log(outcome.trace);
 
 :::
 
-Related: [Runtime -> Diagnostics](/reference/runtime#diagnostics) - [Runtime -> Trace](/reference/runtime#trace)
+Related: [Runtime -> Diagnostics](/reference/runtime#diagnostics) and
+[Runtime -> Trace](/reference/runtime#trace).
+
+---
+
+## 6) Plan (explicit, single step)
+
+Even in its simplest form, the plan is visible. This keeps “no hidden steps” as a constant.
+
+```mermaid
+flowchart LR
+  Step["simple-chat.respond"] --> Outcome(["Outcome"])
+```
+
+---
+
+## 7) Why Simple Chat is special
+
+Simple Chat is the canonical “hello world” recipe. It is the quickest way to validate adapters,
+diagnostics, and streaming without any other moving parts, and it gives you a stable baseline
+before you move to RAG or agentic flows.
 
 ---
 
