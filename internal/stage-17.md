@@ -1,6 +1,6 @@
 # Stage 17 — Docs Snippets + Import Rewrite (VitePress)
 
-Status: in progress.
+Status: complete.
 
 Goal: Make docs code blocks come from real snippet files, typechecked locally, while rendering npm-style
 imports in the published docs. This keeps snippets correct and prevents drift without forcing authors to
@@ -35,8 +35,8 @@ At render time, rewrite these in code fences only. The docs should always show n
 - [x] Add `docs/snippets/` (initial set for recipes + adapters).
 - [x] Add VitePress plugin to rewrite imports in code fences.
 - [x] Add `docs:snippets:typecheck` script.
-- [/] Update recipe/adapters docs to include snippets via `<<<`.
-- [ ] Update `internal/implementation-plan.md` with Stage 17 status.
+- [x] Update recipe/adapters docs to include snippets via `<<<`.
+- [x] Update `internal/implementation-plan.md` with Stage 17 status.
 
 ## Notes
 

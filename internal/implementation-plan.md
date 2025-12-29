@@ -22,7 +22,7 @@ for understanding, but the npm package is the runtime contract.
 - Runner stages and lifecycle stages: `node_modules/@wpkernel/pipeline/dist/core/runner/program.js`
 - Helper rollbacks and extension rollback: `node_modules/@wpkernel/pipeline/dist/core/runner/rollback.js`
 
-## Pseudo Modules (Proposed)
+## Pseudo Modules
 
 Keep each module under 500 SLOC.
 
@@ -116,6 +116,8 @@ Exit criteria:
 
 Status: completed. See `docs/stage-2.md` for the detailed checklist.
 
+Context: Implemented the core `Adapter` pattern that maps external constructs (models, tools) into pipeline-compatible extensions and helpers.
+
 ## Stage 3 — Runtime + Outcome + Diagnostics
 
 Status: completed. See `docs/stage-3.md` for the detailed checklist.
@@ -125,13 +127,19 @@ Note: explain() + contract() were completed as part of Stage 3.
 
 Status: completed. See `docs/stage-4.md` for the detailed checklist.
 
+Context: Defined recipe capabilities and minimum requirements to ensure type-safe and runtime-safe execution of workflows.
+
 ## Stage 5 — Recipes + Plugin Catalogue Wiring
 
 Status: completed. See `docs/stage-5.md` for the detailed checklist.
 
+Context: Wired the recipe catalog to the plugin system, enabling seamless discovery and dynamic loading of recipe packs.
+
 ## Stage 6 — Tests + SLOC Discipline
 
 Status: completed. See `docs/stage-6.md` for the detailed checklist.
+
+Context: Established testing patterns (unit, integration) and enforced strict SLOC limits to maintain code quality and testability.
 
 ## Stage 7 — Interface Discovery (Code + Docs)
 
@@ -249,7 +257,7 @@ Goals:
 
 ## Stage 10b — Brand + Infra
 
-Status: in progress. See `docs/stage-10b.md`.
+Status: completed. See `docs/stage-10b.md`.
 
 Goals:
 
@@ -259,7 +267,7 @@ Goals:
 
 ## Stage 11 — Paused/Resume Mechanics (Internal Driver)
 
-Status: planned. See `internal/stage-11.md`.
+Status: completed. See `internal/stage-11.md`.
 
 Goals:
 
@@ -313,7 +321,7 @@ Progress:
 
 ## Stage 14 — Composable Recipes (Step Packs)
 
-Status: planned. See `internal/stage-14.md`.
+Status: completed. See `internal/stage-14.md`.
 
 ## Stage 15 — Interrupt Parity + Rollback Semantics
 
@@ -330,6 +338,16 @@ Goals:
 
 Status: planned. See `internal/stage-16.md`.
 
+Context: Porting the legacy `llm-core` logic to the new architecture and enforcing strict runtime policies for production readiness.
+
 ## Stage 17 — Docs Snippets + Import Rewrite
 
-Status: in progress. See `internal/stage-17.md`.
+Status: completed. See `internal/stage-17.md`.
+
+Context: Standardized documentation code snippets with real, type-checked files and automatic import rewriting for consistent examples.
+
+## Stage 18 — Refactor Resume Mechanics (Updated Pipeline)
+
+Status: in progress. See `internal/stage-18.md`.
+
+Context: Refactored resume mechanics to use the updated pipeline version, ensuring robust pause/resume handling for HITL flows and better state management during interruptions.

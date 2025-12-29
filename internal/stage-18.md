@@ -1,6 +1,6 @@
 # Stage 18 — Pipeline Pause/Resume Core
 
-Status: planned.
+Status: in progress (epipe integration landed; remaining follow-ups tracked below).
 
 Goal: Move generator-based pause/resume semantics into `@wpkernel/pipeline` without changing
 standard-pipeline usage or requiring downstream migrations.
@@ -141,21 +141,30 @@ Epipe runtime changes (follow-up stage):
 
 ## Implementation Steps
 
-- [ ] Add internal pause types and `pause()` to `StageEnv`.
-- [ ] Refactor runner program to iterative stage execution.
-- [ ] Add pause snapshot creation with stage index and rollback state.
-- [ ] Add resume entrypoint (new export or feature flag).
-- [ ] Keep standard-pipeline run path identical for non-paused runs.
-- [ ] Add unit tests: pause mid-stage, resume continues, rollback behavior preserved.
+- [x] Add internal pause types and `pause()` to `StageEnv` (pipeline core, shipped in
+      `@wpkernel/pipeline@1.1.0`).
+- [x] Refactor runner program to iterative stage execution (pipeline core).
+- [x] Add pause snapshot creation with stage index and rollback state (pipeline core).
+- [x] Add resume entrypoint (new export or feature flag; implemented as `makeResumablePipeline`).
+- [x] Keep standard-pipeline run path identical for non-paused runs (standard-pipeline unchanged).
+- [x] Add unit tests: pause mid-stage, resume continues, rollback behavior preserved (pipeline).
 - [ ] Update pipeline README with pause/resume optional API.
 
 ## Epipe Scope of Work (follow-up)
 
-- Replace iterator-driven pause handling in `src/workflow/driver/*` with pipeline pause snapshots.
-- Map `PipelinePaused` to workflow paused outcomes in `src/workflow/runtime/outcomes.ts`.
-- Remove `ExecutionIterator` path from `src/workflow/runtime/run-runner.ts` once pipeline resume lands.
-- Update resume session storage to persist the pipeline pause snapshot (token + pauseKind + payload).
-- Keep diagnostics + trace semantics unchanged.
+- [x] Replace iterator-driven pause handling in `src/workflow/driver/*` with pipeline pause
+      snapshots.
+- [x] Map `PipelinePaused` to workflow paused outcomes in `src/workflow/runtime/outcomes.ts`.
+- [x] Remove `ExecutionIterator` path from `src/workflow/runtime/run-runner.ts`.
+- [x] Update resume session storage to persist the pipeline pause snapshot (token + pauseKind +
+      payload).
+- [x] Keep diagnostics + trace semantics unchanged.
+
+## Integration Notes (epipe)
+
+- `src/workflow/pause.ts` centralizes pause snapshot detection and pauseKind narrowing.
+- Resume now prefers pipeline snapshots when present; falls back to normal run when absent.
+- Pause rollbacks read from pipeline pause snapshots, preserving helper rollback state.
 
 ## Risks
 
