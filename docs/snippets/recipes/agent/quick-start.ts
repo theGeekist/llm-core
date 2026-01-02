@@ -5,9 +5,7 @@ import { fromAiSdkModel, fromAiSdkTool } from "#adapters";
 import { openai } from "@ai-sdk/openai";
 import { tool } from "ai";
 import { z } from "zod";
-// #endregion docs
 
-// #region docs
 // Configure once, reuse across requests.
 const agent = recipes.agent().defaults({
   adapters: {
@@ -27,13 +25,12 @@ const agent = recipes.agent().defaults({
     ],
   },
 });
-// #endregion docs
 
-// #region docs
 const input: AgentInput = { input: "What's the weather in Tokyo?" };
 const outcome = await agent.run(input);
 
 if (outcome.status === "ok") {
-  console.log(outcome.artefact.text); // "The weather in Tokyo is..."
+  const agentOutput = outcome.artefact.agent as { response?: string } | undefined;
+  console.log(agentOutput?.response); // "The weather in Tokyo is..."
 }
 // #endregion docs

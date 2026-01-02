@@ -1,3 +1,4 @@
+// #region docs
 import { recipes } from "#recipes";
 import type { IngestConfig } from "#recipes";
 import type { AdapterBundle } from "#adapters";
@@ -16,5 +17,7 @@ const config = {
 } satisfies IngestConfig;
 
 const ingest = recipes.ingest().configure(config);
+
+// #endregion docs
 
 void ingest;

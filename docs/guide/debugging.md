@@ -95,8 +95,12 @@ if (result.status === "paused") {
 }
 ```
 
+## Key Takeaways
+
+- [ ] **Strict Mode**: Use it in CI to catch broken references before they ship.
+- [ ] **Tracing**: Don't use `console.log`. Use the tracegraph to see inputs/outputs of every step.
+- [ ] **Diagnostics**: Warnings aren't just noise; they often predict runtime failures (like missing keys).
+
 ## Next Steps
 
-You have the tools to build, compose, and debug. Now, see the hidden gems that power the entire engine.
-
-- [Deep Dive: Hidden Gems](/guide/deep-dive) -> Explore the internals of introspection, state, and adapters.
+- [Unified Media Inputs](/guide/media-inputs) -> Handling images & files images, audio, and mixed content.

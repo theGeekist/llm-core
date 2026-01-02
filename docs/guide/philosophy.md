@@ -2,7 +2,7 @@
 
 There are two ways to build AI applications today: **Gluing** and **Orchestrating**.
 
-**Gluing** is easier to start. You write a script, call `openai.chat.completions.create`, parse the JSON, and maybe save it to a database. Then you add a retry loop. Then you switch to Anthropic and rewrite the prompt structure. Then you add RAG and rewrite the loop.
+**Gluing** is easier to start. You write a script, manually call `openai.chat.completions.create`, parse the JSON, and maybe save it to a database. Then you add a retry loop. Then you switch to Anthropic and rewrite the prompt structure. Then you add RAG and rewrite the loop.
 
 **Orchestrating** is different. You define _what_ you want to happen using declarative **Recipes**, and a specialized runtime makes it happen.
 
@@ -15,7 +15,7 @@ It imposes structure (Recipes, Packs, Steps) to give you superpowers that glue c
 
 ## The Unleashed Workflow
 
-When you adopt `llm-core`, you stop fighting API differences and start building portable assets.
+When you adopt `llm-core`, you unify API differences and start building portable assets.
 
 ### 1. Portability: Verify Logic, Not Frameworks
 
@@ -46,3 +46,17 @@ Because every workflow is built from small, testable **Steps**, you can unit tes
 If you remember when frontend development moved from manual DOM manipulation (jQuery) to declarative state management, you know the feeling of trading "easy" for "predictable".
 
 `llm-core` is that shift for AI. It asks you to accept constraints—explicit inputs, typed outcomes, defined steps—in exchange for a system that is predictable, inspectable, and robust.
+
+## Key Takeaways
+
+- [ ] **Orchestrate, Don't Glue**: Use declarative recipes, not scripts.
+- [ ] **Portable Assets**: Verify logic once, run anywhere.
+- [ ] **Infrastructure**: Treat experiments and prompts as versioned assets.
+
+## Next Steps
+
+Now that you understand the "Why", let's look at the "How".
+
+- [Core Concepts](/guide/core-concepts) -> Visualizing the pipeline
+- [Why llm-core?](/guide/philosophy) -> Understand the design philosophy
+- [RAG Recipe](/recipes/rag) -> Building a chat-with-docs app.

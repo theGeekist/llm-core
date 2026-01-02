@@ -65,22 +65,24 @@ const buildRetryPauseInterrupt = (payload: RetryPausePayload) =>
     method: payload.method,
   });
 
-export const toRetryPauseResult = (
-  state: PipelineState,
-  input: unknown,
-  spec: RetryPauseSpec,
-  payload: RetryPausePayload,
-): PausedStepResult => {
+type RetryPauseResultInput = {
+  state: PipelineState;
+  input: unknown;
+  spec: RetryPauseSpec;
+  payload: RetryPausePayload;
+};
+
+export const toRetryPauseResult = (input: RetryPauseResultInput): PausedStepResult => {
   const token = createRetryPauseToken();
-  const pauseState = buildRetryPauseState(payload, token);
-  state.__pause = pauseState;
+  const pauseState = buildRetryPauseState(input.payload, token);
+  input.state.__pause = pauseState;
   return {
-    output: state,
+    output: input.state,
     paused: true,
     pauseKind: pauseState.pauseKind,
     token,
-    pauseSnapshot: buildRetryPauseSnapshot(payload, input, spec),
-    partialArtifact: state,
-    __interrupt: buildRetryPauseInterrupt(payload),
+    pauseSnapshot: buildRetryPauseSnapshot(input.payload, input.input, input.spec),
+    partialArtifact: input.state,
+    __interrupt: buildRetryPauseInterrupt(input.payload),
   };
 };

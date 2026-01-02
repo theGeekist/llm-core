@@ -26,25 +26,27 @@ const describeMissingLifecycle = (lifecycle: string) =>
     ? `default lifecycle "${DEFAULT_LIFECYCLE}" not scheduled`
     : `lifecycle "${lifecycle}" not scheduled`;
 
-const registerPluginExtension = (
-  pipeline: PipelineWithExtensions,
-  plugin: Plugin,
-  lifecycleSet: Set<string>,
-  diagnostics: DiagnosticEntry[],
-  pending: MaybePromise<unknown>[],
-) => {
-  if (plugin.lifecycle && !isLifecycleScheduled(lifecycleSet, plugin.lifecycle)) {
-    diagnostics.push(
+type RegisterExtensionInput = {
+  pipeline: PipelineWithExtensions;
+  plugin: Plugin;
+  lifecycleSet: Set<string>;
+  diagnostics: DiagnosticEntry[];
+  pending: MaybePromise<unknown>[];
+};
+
+const registerPluginExtension = (input: RegisterExtensionInput) => {
+  if (input.plugin.lifecycle && !isLifecycleScheduled(input.lifecycleSet, input.plugin.lifecycle)) {
+    input.diagnostics.push(
       createLifecycleDiagnostic(
-        createLifecycleMessage(plugin, `lifecycle "${plugin.lifecycle}" not scheduled`),
+        createLifecycleMessage(input.plugin, `lifecycle "${input.plugin.lifecycle}" not scheduled`),
       ),
     );
   }
   trackMaybePromise(
-    pending,
-    pipeline.extensions.use({
-      key: plugin.key,
-      register: plugin.register as never,
+    input.pending,
+    input.pipeline.extensions.use({
+      key: input.plugin.key,
+      register: input.plugin.register as never,
     }),
   );
 };
@@ -57,56 +59,67 @@ const makeHookRegister = (lifecycle: string, hook: Plugin["hook"]) =>
     };
   };
 
-const registerHookExtension = (
-  pipeline: PipelineWithExtensions,
-  plugin: Plugin,
-  lifecycleSet: Set<string>,
-  diagnostics: DiagnosticEntry[],
-  pending: MaybePromise<unknown>[],
-) => {
-  const lifecycle = plugin.lifecycle ?? DEFAULT_LIFECYCLE;
-  if (!isLifecycleScheduled(lifecycleSet, lifecycle)) {
-    diagnostics.push(
+const registerHookExtension = (input: RegisterExtensionInput) => {
+  const lifecycle = input.plugin.lifecycle ?? DEFAULT_LIFECYCLE;
+  if (!isLifecycleScheduled(input.lifecycleSet, lifecycle)) {
+    input.diagnostics.push(
       createLifecycleDiagnostic(
-        createLifecycleMessage(plugin, describeMissingLifecycle(lifecycle)),
+        createLifecycleMessage(input.plugin, describeMissingLifecycle(lifecycle)),
       ),
     );
     return;
   }
-  const register = makeHookRegister(lifecycle, plugin.hook);
-  trackMaybePromise(pending, pipeline.extensions.use({ key: plugin.key, register }));
+  const register = makeHookRegister(lifecycle, input.plugin.hook);
+  trackMaybePromise(
+    input.pending,
+    input.pipeline.extensions.use({ key: input.plugin.key, register }),
+  );
 };
 
 export const createDefaultReporter = (): PipelineReporter => ({
   warn: (message, context) => console.warn(message, context),
 });
 
-export const registerExtensions = (
-  pipeline: PipelineWithExtensions,
-  plugins: Plugin[],
-  extensionPoints: string[],
-  diagnostics: DiagnosticEntry[],
-) => {
-  if (!hasExtensions(pipeline)) {
-    diagnostics.push(
+type RegisterExtensionsInput = {
+  pipeline: PipelineWithExtensions;
+  plugins: Plugin[];
+  extensionPoints: string[];
+  diagnostics: DiagnosticEntry[];
+};
+
+export const registerExtensions = (input: RegisterExtensionsInput) => {
+  if (!hasExtensions(input.pipeline)) {
+    input.diagnostics.push(
       createLifecycleDiagnostic("Pipeline extensions unavailable; plugin extensions skipped."),
     );
     return;
   }
 
-  const effectivePlugins = getEffectivePlugins(plugins);
-  const lifecycleSet = new Set(extensionPoints);
+  const effectivePlugins = getEffectivePlugins(input.plugins);
+  const lifecycleSet = new Set(input.extensionPoints);
   const pending: MaybePromise<unknown>[] = [];
 
   for (const plugin of effectivePlugins) {
     if (plugin.register) {
-      registerPluginExtension(pipeline, plugin, lifecycleSet, diagnostics, pending);
+      registerPluginExtension({
+        pipeline: input.pipeline,
+        plugin,
+        lifecycleSet,
+        diagnostics: input.diagnostics,
+        pending,
+      });
       continue;
     }
     if (!plugin.hook) {
       continue;
     }
-    registerHookExtension(pipeline, plugin, lifecycleSet, diagnostics, pending);
+    registerHookExtension({
+      pipeline: input.pipeline,
+      plugin,
+      lifecycleSet,
+      diagnostics: input.diagnostics,
+      pending,
+    });
   }
 
   return maybeAll(pending);

@@ -1,8 +1,9 @@
-import type { AdapterDiagnostic, AdapterMetadata, AdapterTraceEvent } from "./core";
+import type { AdapterDiagnostic, AdapterMetadata, AdapterTraceEvent, TraceIdentity } from "./core";
 import type { Message } from "./messages";
 import type { Schema } from "./schema";
 import type { Tool, ToolCall, ToolResult } from "./tools";
-import type { MaybePromise } from "../../maybe";
+import type { StreamEvent } from "./stream";
+import type { MaybeAsyncIterable, MaybePromise } from "../../maybe";
 
 type ModelCallBase = {
   model?: string;
@@ -36,20 +37,14 @@ export type ModelMeta = {
   [key: string]: unknown;
 };
 
-type TraceIdentity = {
-  id?: string;
-  modelId?: string;
-  timestamp?: number;
-};
-
 export type ModelRequest = {
   body?: unknown;
   headers?: Record<string, string>;
 };
 
 export type ModelResponse = TraceIdentity & {
-  headers?: Record<string, string>;
   body?: unknown;
+  headers?: Record<string, string>;
 };
 
 export type ModelTelemetry = {
@@ -79,47 +74,8 @@ export type ModelResult = {
 
 export type Model = {
   generate(call: ModelCall): MaybePromise<ModelResult>;
-  stream?(call: ModelCall): MaybePromise<AsyncIterable<ModelStreamEvent>>;
+  stream?(call: ModelCall): MaybeAsyncIterable<StreamEvent>;
   metadata?: AdapterMetadata;
 };
 
-export type StreamChunk = {
-  textDelta?: string;
-  toolCallDelta?: ToolCall;
-  raw?: unknown;
-};
-
-export type ModelStreamEvent =
-  | {
-      type: "start";
-      id?: string;
-      modelId?: string;
-      timestamp?: number;
-    }
-  | {
-      type: "delta";
-      text?: string;
-      reasoning?: string;
-      toolCall?: ToolCall;
-      toolResult?: ToolResult;
-      raw?: unknown;
-      timestamp?: number;
-    }
-  | {
-      type: "usage";
-      usage: ModelUsage;
-    }
-  | {
-      type: "end";
-      finishReason?: string;
-      raw?: unknown;
-      timestamp?: number;
-      diagnostics?: AdapterDiagnostic[];
-    }
-  | {
-      type: "error";
-      error: unknown;
-      diagnostics?: AdapterDiagnostic[];
-      raw?: unknown;
-      timestamp?: number;
-    };
+export type ModelStreamEvent = StreamEvent;

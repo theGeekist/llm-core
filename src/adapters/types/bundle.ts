@@ -20,46 +20,64 @@ import type { Cache, KVStore, Storage } from "./storage";
 import type { Memory } from "./memory";
 import type { ImageModel, SpeechModel, TranscriptionModel } from "./media";
 import type { VectorStore } from "./vector";
-import type { AdapterTraceSink } from "./core";
 import type { MaybePromise } from "../../maybe";
 
-export type AdapterBundle = {
-  cache?: Cache;
-  checkpoint?: CheckpointStore;
-  constructs?: Record<string, unknown>;
+type AdapterDataBundle = {
   documents?: Document[];
-  embedder?: Embedder;
-  eventStream?: EventStream;
-  image?: ImageModel;
-  interrupt?: InterruptStrategy;
-  kv?: KVStore;
-  indexing?: Indexing;
-  loader?: DocumentLoader;
-  memory?: Memory;
   messages?: Message[];
-  model?: Model;
-  outputParser?: OutputParser;
   prompts?: PromptTemplate[];
+  schemas?: Schema[];
+  constructs?: Record<string, unknown>;
+};
+
+type AdapterModelBundle = {
+  model?: Model;
+  tools?: Tool[];
+  outputParser?: OutputParser;
+};
+
+type AdapterRetrievalBundle = {
+  loader?: DocumentLoader;
+  textSplitter?: TextSplitter;
+  transformer?: DocumentTransformer;
+  embedder?: Embedder;
+  retriever?: Retriever;
+  reranker?: Reranker;
+  vectorStore?: VectorStore;
+  indexing?: Indexing;
   queryEngine?: QueryEngine;
   responseSynthesizer?: ResponseSynthesizer;
-  reranker?: Reranker;
-  retriever?: Retriever;
-  schemas?: Schema[];
-  speech?: SpeechModel;
-  storage?: Storage;
-  textSplitter?: TextSplitter;
-  transcription?: TranscriptionModel;
-  tools?: Tool[];
-  trace?: AdapterTraceSink;
-  transformer?: DocumentTransformer;
-  vectorStore?: VectorStore;
 };
+
+type AdapterMediaBundle = {
+  image?: ImageModel;
+  speech?: SpeechModel;
+  transcription?: TranscriptionModel;
+};
+
+type AdapterOrchestrationBundle = {
+  cache?: Cache;
+  kv?: KVStore;
+  storage?: Storage;
+  memory?: Memory;
+  trace?: EventStream;
+  checkpoint?: CheckpointStore;
+  eventStream?: EventStream;
+  interrupt?: InterruptStrategy;
+};
+
+export type AdapterBundle = AdapterDataBundle &
+  AdapterModelBundle &
+  AdapterRetrievalBundle &
+  AdapterMediaBundle &
+  AdapterOrchestrationBundle;
 
 export type AdapterResumeRequest = {
   adapters?: AdapterBundle;
   declaredAdapters?: AdapterBundle;
   interrupt?: InterruptStrategy;
   pauseKind?: PauseKind;
+  resumeKey?: string;
   resumeSnapshot?: ResumeSnapshot;
   resumeInput?: unknown;
   providers?: Record<string, string>;

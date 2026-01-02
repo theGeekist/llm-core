@@ -45,25 +45,27 @@ export type ResumedPipelineDeps<TArtefact> = {
   ) => Outcome<TArtefact>;
 };
 
-export const runResumedPipeline = <TArtefact>(
-  deps: ResumedPipelineDeps<TArtefact>,
-  resumeOptions: ResumeOptions,
-  resumeDiagnostics: DiagnosticEntry[],
-  resumeRuntime: Runtime | undefined,
-  resumeDiagnosticsMode: "default" | "strict",
-  finalize: FinalizeResult<Outcome<TArtefact>>,
-) => {
+type RunResumedPipelineInput<TArtefact> = {
+  deps: ResumedPipelineDeps<TArtefact>;
+  resumeOptions: ResumeOptions;
+  resumeDiagnostics: DiagnosticEntry[];
+  resumeRuntime: Runtime | undefined;
+  resumeDiagnosticsMode: "default" | "strict";
+  finalize: FinalizeResult<Outcome<TArtefact>>;
+};
+
+export const runResumedPipeline = <TArtefact>(input: RunResumedPipelineInput<TArtefact>) => {
   const handleResolution = bindFirst(handleResumeResolution<TArtefact>, {
-    deps,
-    resumeOptions,
-    resumeDiagnostics,
-    resumeRuntime,
-    resumeDiagnosticsMode,
-    finalize,
+    deps: input.deps,
+    resumeOptions: input.resumeOptions,
+    resumeDiagnostics: input.resumeDiagnostics,
+    resumeRuntime: input.resumeRuntime,
+    resumeDiagnosticsMode: input.resumeDiagnosticsMode,
+    finalize: input.finalize,
   });
   return maybeChain(
     handleResolution,
-    deps.resolveAdaptersForRun(resumeRuntime, resumeOptions.providers),
+    input.deps.resolveAdaptersForRun(input.resumeRuntime, input.resumeOptions.providers),
   );
 };
 
@@ -73,12 +75,7 @@ type ResumeResolutionInput<TArtefact> = {
   resumeDiagnostics: DiagnosticEntry[];
   resumeRuntime: Runtime | undefined;
   resumeDiagnosticsMode: "default" | "strict";
-  finalize: (
-    result: unknown,
-    getDiagnostics: () => DiagnosticEntry[],
-    trace: TraceEvent[],
-    diagnosticsMode: "default" | "strict",
-  ) => MaybePromise<Outcome<TArtefact>>;
+  finalize: FinalizeResult<Outcome<TArtefact>>;
 };
 
 const handleResumeResolution = <TArtefact>(
@@ -144,16 +141,16 @@ const handleResumeResolution = <TArtefact>(
 };
 
 type ResumeFinalizeInput<TArtefact> = {
-  finalize: (
-    result: unknown,
-    getDiagnostics: () => DiagnosticEntry[],
-    trace: TraceEvent[],
-    diagnosticsMode: "default" | "strict",
-  ) => MaybePromise<Outcome<TArtefact>>;
+  finalize: FinalizeResult<Outcome<TArtefact>>;
   getDiagnostics: () => DiagnosticEntry[];
   trace: TraceEvent[];
   diagnosticsMode: "default" | "strict";
 };
 
 const handleResumeFinalize = <TArtefact>(input: ResumeFinalizeInput<TArtefact>, result: unknown) =>
-  input.finalize(result, input.getDiagnostics, input.trace, input.diagnosticsMode);
+  input.finalize({
+    result,
+    getDiagnostics: input.getDiagnostics,
+    trace: input.trace,
+    diagnosticsMode: input.diagnosticsMode,
+  });

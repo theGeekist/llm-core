@@ -2,13 +2,16 @@ import type { MaybePromise } from "../../maybe";
 import { bindFirst } from "../../maybe";
 import type { DiagnosticEntry } from "../diagnostics";
 import type { TraceEvent } from "../trace";
-export type FinalizeResult<TOutcome> = (
-  result: unknown,
-  getDiagnostics: () => DiagnosticEntry[],
-  trace: TraceEvent[],
-  diagnosticsMode: "default" | "strict",
-  recordSnapshot?: (result: unknown) => MaybePromise<boolean | null>,
-) => MaybePromise<TOutcome>;
+
+export type FinalizeResultInput = {
+  result: unknown;
+  getDiagnostics: () => DiagnosticEntry[];
+  trace: TraceEvent[];
+  diagnosticsMode: "default" | "strict";
+  recordSnapshot?: (result: unknown) => MaybePromise<boolean | null>;
+};
+
+export type FinalizeResult<TOutcome> = (input: FinalizeResultInput) => MaybePromise<TOutcome>;
 
 type FinalizeInput<TOutcome> = {
   finalizeResult: FinalizeResult<TOutcome>;
@@ -17,11 +20,12 @@ type FinalizeInput<TOutcome> = {
 
 const finalizeWithSnapshot = <TOutcome>(
   input: FinalizeInput<TOutcome>,
-  result: unknown,
-  getDiagnostics: () => DiagnosticEntry[],
-  runtimeTrace: TraceEvent[],
-  mode: "default" | "strict",
-) => input.finalizeResult(result, getDiagnostics, runtimeTrace, mode, input.recordSnapshot);
+  payload: FinalizeResultInput,
+) =>
+  input.finalizeResult({
+    ...payload,
+    recordSnapshot: input.recordSnapshot,
+  });
 
 export const createFinalize = <TOutcome>(
   finalizeResult: FinalizeResult<TOutcome>,

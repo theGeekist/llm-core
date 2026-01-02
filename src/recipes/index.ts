@@ -6,9 +6,12 @@ export * from "./rag";
 export * from "./hitl";
 export * from "./ingest";
 export * from "./compress";
+export * from "./eval";
+export * from "./loop";
 export * from "./events";
 export * from "./state";
 export * from "./rollback";
+export type * from "./types";
 
 import { simpleChat } from "./simple-chat";
 import { ragChat } from "./rag-chat";
@@ -23,6 +26,8 @@ import { createRagRecipe, createRagRetrievalRecipe, createRagSynthesisRecipe } f
 import { createHitlRecipe } from "./hitl";
 import { createIngestRecipe } from "./ingest";
 import { createCompressRecipe } from "./compress";
+import { createEvalRecipe } from "./eval";
+import { createLoopRecipe } from "./loop";
 
 export const recipes = {
   agent: createAgentRecipe,
@@ -36,6 +41,8 @@ export const recipes = {
   hitl: createHitlRecipe,
   ingest: createIngestRecipe,
   compress: createCompressRecipe,
+  eval: createEvalRecipe,
+  loop: createLoopRecipe,
   "chat.simple": simpleChat,
   "chat.rag": ragChat,
 };

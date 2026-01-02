@@ -2,16 +2,17 @@ import type { AdapterMetadata } from "./core";
 
 export type MessageRole = "system" | "user" | "assistant" | "tool";
 
-type MediaPartBase = {
-  data?: string;
+type MediaFields = {
   mimeType?: string;
   mediaType?: string;
 };
 
-type BinaryPartBase = {
+type MediaPartBase = MediaFields & {
+  data?: string;
+};
+
+type BinaryPartBase = MediaFields & {
   data: string;
-  mimeType?: string;
-  mediaType?: string;
 };
 
 export type TextPart = {

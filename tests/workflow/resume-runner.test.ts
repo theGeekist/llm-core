@@ -48,7 +48,12 @@ describe("Workflow resume runner", () => {
         }) satisfies Outcome<unknown>,
     };
 
-    const finalize = () => {
+    const finalize = (_input: {
+      result: unknown;
+      getDiagnostics: () => DiagnosticEntry[];
+      trace: TraceEvent[];
+      diagnosticsMode: "default" | "strict";
+    }) => {
       finalized = true;
       return {
         status: "ok",
@@ -59,7 +64,14 @@ describe("Workflow resume runner", () => {
     };
 
     const outcome = await resolveMaybe(
-      runResumedPipeline(deps, { input: "resume" }, [], undefined, "strict", finalize),
+      runResumedPipeline({
+        deps,
+        resumeOptions: { input: "resume" },
+        resumeDiagnostics: [],
+        resumeRuntime: undefined,
+        resumeDiagnosticsMode: "strict",
+        finalize,
+      }),
     );
 
     expect(ran).toBe(false);
@@ -117,27 +129,28 @@ describe("Workflow resume runner", () => {
         }) satisfies Outcome<unknown>,
     };
 
-    const finalize = (
-      result: unknown,
-      getDiagnostics: () => DiagnosticEntry[],
-      traceEntries: TraceEvent[],
-    ) =>
+    const finalize = (input: {
+      result: unknown;
+      getDiagnostics: () => DiagnosticEntry[];
+      trace: TraceEvent[];
+      diagnosticsMode: "default" | "strict";
+    }) =>
       ({
         status: "ok",
-        artefact: result,
-        trace: traceEntries,
-        diagnostics: getDiagnostics(),
+        artefact: input.result,
+        trace: input.trace,
+        diagnostics: input.getDiagnostics(),
       }) satisfies Outcome<unknown>;
 
     const outcome = await resolveMaybe(
-      runResumedPipeline(
+      runResumedPipeline({
         deps,
-        { input: "resume" },
+        resumeOptions: { input: "resume" },
         resumeDiagnostics,
-        undefined,
-        "default",
+        resumeRuntime: undefined,
+        resumeDiagnosticsMode: "default",
         finalize,
-      ),
+      }),
     );
 
     expect(outcome.status).toBe("ok");

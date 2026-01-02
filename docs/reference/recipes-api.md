@@ -7,9 +7,8 @@ some are composite, but the public surface is the same.
 
 Related:
 
-- [Workflow API](/reference/workflow-api)
 - [Adapters API](/reference/adapters-api)
-- [Packs & Recipes](/reference/packs-and-recipes)
+- [Composition Model](/reference/composition-model)
 
 ## Recipe handles (the public surface)
 

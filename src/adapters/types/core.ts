@@ -61,6 +61,7 @@ export type PauseKind = "human" | "external" | "system";
 
 export type ResumeSnapshot = {
   token: unknown;
+  resumeKey?: string;
   pauseKind?: PauseKind;
   createdAt: number;
   lastAccessedAt?: number;
@@ -72,7 +73,7 @@ export type AdapterCallContext = {
   report?: (diagnostic: AdapterDiagnostic) => void;
 };
 
-type TraceIdentity = {
+export type TraceIdentity = {
   id?: string;
   modelId?: string;
   timestamp?: number;
@@ -83,7 +84,9 @@ export type AdapterTraceEvent = TraceIdentity & {
   data?: Record<string, unknown>;
 };
 
-export type AdapterTraceSink = {
-  emit(event: AdapterTraceEvent): MaybePromise<boolean | null>;
-  emitMany?(events: AdapterTraceEvent[]): MaybePromise<boolean | null>;
+export interface EventStreamEvent extends AdapterTraceEvent {}
+
+export type EventStream = {
+  emit(event: EventStreamEvent): MaybePromise<boolean | null>;
+  emitMany?(events: EventStreamEvent[]): MaybePromise<boolean | null>;
 };

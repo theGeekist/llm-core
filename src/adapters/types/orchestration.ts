@@ -1,5 +1,5 @@
 import type { MaybePromise } from "../../maybe";
-import type { AdapterTraceEvent, ResumeSnapshot } from "./core";
+import type { EventStream, EventStreamEvent, ResumeSnapshot } from "./core";
 
 export type CheckpointStore = {
   get: (token: unknown) => MaybePromise<ResumeSnapshot | undefined>;
@@ -15,9 +15,4 @@ export type InterruptStrategy = {
   metadata?: Record<string, unknown>;
 };
 
-export type EventStreamEvent = AdapterTraceEvent;
-
-export type EventStream = {
-  emit: (event: EventStreamEvent) => MaybePromise<boolean | null>;
-  emitMany?: (events: EventStreamEvent[]) => MaybePromise<boolean | null>;
-};
+export type { EventStreamEvent, EventStream };

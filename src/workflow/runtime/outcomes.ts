@@ -24,19 +24,23 @@ export const readPartialArtifact = <N extends RecipeName>(
   (readPausedUserState(result) as Partial<ArtefactOf<N>> | undefined) ??
   readArtifactValue(result);
 
+type OkOutcomeInput<N extends RecipeName> = {
+  result: unknown;
+  trace: TraceEvent[];
+  diagnostics: DiagnosticEntry[];
+  readArtifactValue: (result: unknown) => ArtefactOf<N>;
+};
+
 export const toOkOutcome = <N extends RecipeName>(
-  result: unknown,
-  trace: TraceEvent[],
-  diagnostics: DiagnosticEntry[],
-  readArtifactValue: (result: unknown) => ArtefactOf<N>,
+  input: OkOutcomeInput<N>,
 ): Outcome<ArtefactOf<N>> => {
-  addTraceEvent(trace, "run.ok");
-  addTraceEvent(trace, "run.end", { status: "ok" });
+  addTraceEvent(input.trace, "run.ok");
+  addTraceEvent(input.trace, "run.end", { status: "ok" });
   return {
     status: "ok",
-    artefact: readArtifactValue(result),
-    trace,
-    diagnostics,
+    artefact: input.readArtifactValue(input.result),
+    trace: input.trace,
+    diagnostics: input.diagnostics,
   };
 };
 
@@ -76,52 +80,66 @@ export const readPauseFlag = (result: unknown) => {
   return state?.__pause?.paused;
 };
 
+type PausedOutcomeInput<N extends RecipeName> = {
+  result: unknown;
+  trace: TraceEvent[];
+  diagnostics: DiagnosticEntry[];
+  readPartial: (result: unknown) => Partial<ArtefactOf<N>>;
+};
+
 export const toPausedOutcome = <N extends RecipeName>(
-  result: unknown,
-  trace: TraceEvent[],
-  diagnostics: DiagnosticEntry[],
-  readPartial: (result: unknown) => Partial<ArtefactOf<N>>,
+  input: PausedOutcomeInput<N>,
 ): Outcome<ArtefactOf<N>> => {
-  const pauseMeta = readPauseMeta(result);
+  const pauseMeta = readPauseMeta(input.result);
   const pauseKind = pauseMeta.pauseKind;
-  addTraceEvent(trace, "run.paused", pauseKind ? { pauseKind } : undefined);
-  addTraceEvent(trace, "run.end", { status: "paused" });
+  addTraceEvent(input.trace, "run.paused", pauseKind ? { pauseKind } : undefined);
+  addTraceEvent(input.trace, "run.end", { status: "paused" });
   return {
     status: "paused",
     token: pauseMeta.token,
-    artefact: readPartial(result),
-    trace,
-    diagnostics,
+    artefact: input.readPartial(input.result),
+    trace: input.trace,
+    diagnostics: input.diagnostics,
   };
+};
+
+type ErrorOutcomeInput = {
+  error: unknown;
+  trace: TraceEvent[];
+  diagnostics: DiagnosticEntry[] | undefined;
+  readErrorDiagnostics: (error: unknown) => DiagnosticEntry[];
 };
 
 export const toErrorOutcome = <N extends RecipeName>(
-  error: unknown,
-  trace: TraceEvent[],
-  diagnostics: DiagnosticEntry[] | undefined,
-  readErrorDiagnostics: (error: unknown) => DiagnosticEntry[],
+  input: ErrorOutcomeInput,
 ): Outcome<ArtefactOf<N>> => {
-  addTraceEvent(trace, "run.error", { error });
-  addTraceEvent(trace, "run.end", { status: "error" });
+  addTraceEvent(input.trace, "run.error", { error: input.error });
+  addTraceEvent(input.trace, "run.end", { status: "error" });
   return {
     status: "error",
-    error,
-    trace,
-    diagnostics: diagnostics ?? readErrorDiagnostics(error),
+    error: input.error,
+    trace: input.trace,
+    diagnostics: input.diagnostics ?? input.readErrorDiagnostics(input.error),
   };
 };
 
-export const createRunErrorHandler = <N extends RecipeName>(
-  trace: TraceEvent[],
-  diagnosticsMode: "default" | "strict",
-  readErrorDiagnostics: (error: unknown) => DiagnosticEntry[],
-  applyMode: (diagnostics: DiagnosticEntry[], mode: "default" | "strict") => DiagnosticEntry[],
+type RunErrorHandlerInput<N extends RecipeName> = {
+  trace: TraceEvent[];
+  diagnosticsMode: "default" | "strict";
+  readErrorDiagnostics: (error: unknown) => DiagnosticEntry[];
+  applyMode: (diagnostics: DiagnosticEntry[], mode: "default" | "strict") => DiagnosticEntry[];
   errorOutcome: (
     error: unknown,
     trace: TraceEvent[],
     diagnostics?: DiagnosticEntry[],
-  ) => Outcome<ArtefactOf<N>>,
-) =>
+  ) => Outcome<ArtefactOf<N>>;
+};
+
+export const createRunErrorHandler = <N extends RecipeName>(input: RunErrorHandlerInput<N>) =>
   function handleRunError(error: unknown) {
-    return errorOutcome(error, trace, applyMode(readErrorDiagnostics(error), diagnosticsMode));
+    return input.errorOutcome(
+      error,
+      input.trace,
+      input.applyMode(input.readErrorDiagnostics(error), input.diagnosticsMode),
+    );
   };

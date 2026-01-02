@@ -12,8 +12,7 @@ available for diagnostics and tracing.
 
 Related:
 
-- [Workflow API](/reference/workflow-api)
-- [Packs & Recipes](/reference/packs-and-recipes)
+- [Composition Model](/reference/composition-model)
 - [Runtime channel](/reference/runtime)
 - [Interop Audit](/reference/interop-audit) (Parity Matrix)
 
@@ -54,7 +53,7 @@ type AdapterBundle = {
   storage?: Storage;
   transcription?: TranscriptionModel;
   tools?: Tool[];
-  trace?: AdapterTraceSink;
+  trace?: EventStream;
   kv?: KVStore;
   vectorStore?: VectorStore;
   schemas?: Schema[];

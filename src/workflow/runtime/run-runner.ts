@@ -59,15 +59,27 @@ type RunPipelineInput<TOutcome> = {
   finalize: FinalizeResult<TOutcome>;
 };
 
+type RunPipelineResultInput<TOutcome> = {
+  context: RunContext<TOutcome>;
+  runtimeDiagnostics: DiagnosticEntry[];
+  contextDiagnostics: DiagnosticEntry[];
+  result: unknown;
+  finalize: FinalizeResult<TOutcome>;
+};
+
 const runPipelineResult = <TOutcome>(
-  context: RunContext<TOutcome>,
-  runtimeDiagnostics: DiagnosticEntry[],
-  contextDiagnostics: DiagnosticEntry[],
-  result: unknown,
-  finalize: FinalizeResult<TOutcome>,
+  input: RunPipelineResultInput<TOutcome>,
 ): MaybePromise<TOutcome> => {
-  const getDiagnostics = createDiagnosticsGetter([runtimeDiagnostics, contextDiagnostics]);
-  return finalize(result, getDiagnostics, context.ctx.trace, context.ctx.diagnosticsMode);
+  const getDiagnostics = createDiagnosticsGetter([
+    input.runtimeDiagnostics,
+    input.contextDiagnostics,
+  ]);
+  return input.finalize({
+    result: input.result,
+    getDiagnostics,
+    trace: input.context.ctx.trace,
+    diagnosticsMode: input.context.ctx.diagnosticsMode,
+  });
 };
 
 const runPipeline = <TOutcome>(
@@ -120,13 +132,13 @@ const runPipeline = <TOutcome>(
 };
 
 const handlePipelineResult = <TOutcome>(input: RunPipelineInput<TOutcome>, result: unknown) =>
-  runPipelineResult(
-    input.context,
-    input.runtimeDiagnostics,
-    input.contextDiagnostics,
+  runPipelineResult({
+    context: input.context,
+    runtimeDiagnostics: input.runtimeDiagnostics,
+    contextDiagnostics: input.contextDiagnostics,
     result,
-    input.finalize,
-  );
+    finalize: input.finalize,
+  });
 
 const runWithAdapters = <TOutcome>(context: RunContext<TOutcome>) =>
   maybeChain(

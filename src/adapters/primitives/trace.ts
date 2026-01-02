@@ -1,8 +1,8 @@
-import type { AdapterTraceEvent, AdapterTraceSink } from "../types";
+import type { AdapterTraceEvent, EventStream } from "../types";
 
 export const createBuiltinTrace = () => {
   const events: AdapterTraceEvent[] = [];
-  const sink: AdapterTraceSink & { events: AdapterTraceEvent[] } = {
+  const sink: EventStream & { events: AdapterTraceEvent[] } = {
     events,
     emit(event) {
       events.push(event);

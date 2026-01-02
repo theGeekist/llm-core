@@ -17,7 +17,7 @@ graph TD
         Config[Type-Safe Config] --> Factory[Recipe Factory]
         Deps[Dependency Container] --> Factory
         Factory --> Workflow[Workflow Instance]
-        Workflow --> Plugins[Plugins (Wrappers)]
+        Workflow --> Plugins["Plugins (Wrappers)"]
     end
 ```
 
@@ -57,9 +57,6 @@ const app = agent.build();
 await app.run({ input: "Do work" });
 ```
 
-> [!TIP]
-> Want to see the full execution API? Check out the **[Workflow Engine Reference](/reference/workflow-api)**.
-
 This separation is why your logic is portable. The Recipe describes the intent; the Workflow handles the execution, state management, and tracing.
 
 ## 2. Principle: Adapters are Plugs
@@ -91,13 +88,13 @@ Because the port is standard, you can swap the appliance without rewiring the ho
 
 ## 3. Principle: Steps are Uniform (MaybePromise)
 
-In `llm-core`, every execution step has the same shape. You never have to worry if a function is sync or async.
+In `llm-core`, every execution step has the same shape. Functions can be sync or async transparently.
 
 **The Rule**: Business logic should look synchronous unless it _needs_ to wait.
 
 - **Input**: You can return `T` OR `Promise<T>`.
 - **Execution**: The runtime handles the `await`.
-- **Benefit**: You write plain functions. You don't have to poison your entire codebase with `async/await` just because one edge function uses a network call.
+- **Benefit**: You write plain functions. This prevents "function coloring" issues where async logic poisons standard utilities.
 
 ::: tabs
 == TypeScript
@@ -138,7 +135,7 @@ const DatabaseStep = async (_, { input }) => {
 
 ## The Outcome (No Throws)
 
-We hate `try/catch` in async workflows. It makes tracing impossible.
+We favor explicit failure states over `try/catch` blocks in async workflows. This ensures tracing remains intact.
 Instead, every run returns an **Outcome** object.
 
 It has three states:
@@ -180,6 +177,13 @@ if (result.status === "paused") {
 ```
 
 :::
+
+## Key Takeaways
+
+- [ ] **Recipes** are the Logic (Brain). They are portable assets.
+- [ ] **Adapters** are the Capabilities (Hands). They plug into specific providers.
+- [ ] **Steps** are the atomic units of execution.
+- [ ] **Outcome** is the typed result, which can be `ok`, `error`, or `paused`.
 
 ## Next Steps
 

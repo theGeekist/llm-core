@@ -4,17 +4,14 @@ import { fromAiSdkModel, fromLlamaIndexRetriever } from "#adapters";
 import { openai } from "@ai-sdk/openai";
 import { BaseRetriever } from "@llamaindex/core/retriever";
 import { Document } from "@llamaindex/core/schema";
-// #endregion docs
 
-// #region docs
 class SimpleRetriever extends BaseRetriever {
   constructor() {
     super();
   }
 
-  /** @param {any} query */
-  async _retrieve(query) {
-    void query;
+  /** @param {any} _query */
+  async _retrieve(_query) {
     return [{ node: new Document({ text: "Refunds are issued within 30 days." }), score: 0.9 }];
   }
 }

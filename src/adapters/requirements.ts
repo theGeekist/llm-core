@@ -32,17 +32,23 @@ const readMetadataRequirements = (value: unknown): AdapterRequirement[] => {
   return metadata.requires.filter(isRequirement);
 };
 
-const addSource = (
-  sources: RequirementSource[],
-  construct: string,
-  providerId: string | undefined,
-  value: unknown,
-) => {
-  const requirements = readMetadataRequirements(value);
+type AddSourceInput = {
+  sources: RequirementSource[];
+  construct: string;
+  providerId: string | undefined;
+  value: unknown;
+};
+
+const addSource = (input: AddSourceInput) => {
+  const requirements = readMetadataRequirements(input.value);
   if (requirements.length === 0) {
     return;
   }
-  sources.push({ construct, providerId, requirements });
+  input.sources.push({
+    construct: input.construct,
+    providerId: input.providerId,
+    requirements,
+  });
 };
 
 const listBundleEntries = (adapters: AdapterBundle): Array<[string, unknown]> => [
@@ -129,10 +135,10 @@ export const readAdapterRequirements = (
 ): RequirementSource[] => {
   const sources: RequirementSource[] = [];
   for (const [key, value] of listRequirementEntries(adapters)) {
-    addSource(sources, key, providers[key], value);
+    addSource({ sources, construct: key, providerId: providers[key], value });
   }
   for (const [key, value] of Object.entries(constructs)) {
-    addSource(sources, key, providers[key], value);
+    addSource({ sources, construct: key, providerId: providers[key], value });
   }
   return sources;
 };

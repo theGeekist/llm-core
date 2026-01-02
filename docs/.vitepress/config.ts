@@ -66,35 +66,39 @@ export default defineConfig({
   // ... rest of config ...
   themeConfig: {
     nav: [
-      { text: "Docs", link: "/" },
       { text: "Recipes", link: "/recipes/simple-chat" },
       { text: "Adapters", link: "/adapters/" },
       { text: "Guide", link: "/guide/hello-world" },
-      { text: "Reference", link: "/reference/workflow-api" },
+      { text: "Ecosystem", link: "/adapters/models" },
+      { text: "Reference", link: "/reference/recipes-api" },
       { text: "GitHub", link: "https://github.com/theGeekist/llm-core" },
     ],
     sidebar: {
       "/guide/": [
         {
-          text: "Get Started",
+          text: "Quick Start",
+          items: [{ text: "Your First Workflow", link: "/guide/hello-world" }],
+        },
+        {
+          text: "Fundamentals",
           items: [
             { text: "Why llm-core?", link: "/guide/philosophy" },
-            { text: "Your First Workflow", link: "/guide/hello-world" },
             { text: "Core Concepts", link: "/guide/core-concepts" },
-            { text: "Composing Recipes", link: "/guide/composing-recipes" },
-            { text: "Debugging", link: "/guide/debugging" },
-            { text: "Unified Media Inputs", link: "/guide/media-inputs" },
-            { text: "Deep Dive: Gems", link: "/guide/deep-dive" },
           ],
         },
         {
-          text: "Recipes",
+          text: "Techniques",
           items: [
-            { text: "Simple Chat", link: "/recipes/simple-chat" },
-            { text: "RAG", link: "/recipes/rag" },
-            { text: "Agent", link: "/recipes/agent" },
-            { text: "HITL", link: "/recipes/hitl" },
-            { text: "Ingest", link: "/recipes/ingest" },
+            { text: "Composing Recipes", link: "/guide/composing-recipes" },
+            { text: "Debugging", link: "/guide/debugging" },
+            { text: "Unified Media Inputs", link: "/guide/media-inputs" },
+          ],
+        },
+        {
+          text: "Architecture",
+          items: [
+            { text: "Advanced Features", link: "/guide/advanced-features" },
+            { text: "Plugin System", link: "/reference/plugins" },
           ],
         },
       ],
@@ -104,8 +108,15 @@ export default defineConfig({
           items: [
             { text: "Adapters API", link: "/reference/adapters-api" },
             { text: "Recipes API", link: "/reference/recipes-api" },
+          ],
+        },
+        {
+          text: "Framework Internals",
+          collapsed: true,
+          items: [
             { text: "Runtime Model", link: "/reference/runtime" },
             { text: "Workflow API", link: "/reference/workflow-api" },
+            { text: "Composition Model", link: "/reference/composition-model" },
           ],
         },
         {
@@ -121,8 +132,7 @@ export default defineConfig({
                 { text: "Observability (Tracing)", link: "/adapters/observability" },
               ],
             },
-            { text: "Packs & Recipes", link: "/reference/packs-and-recipes" },
-            { text: "Plugin System", link: "/reference/plugins" },
+
             { text: "Interop Audit", link: "/reference/interop-audit" },
           ],
         },
@@ -141,6 +151,8 @@ export default defineConfig({
             { text: "Building an Agent", link: "/recipes/agent" },
             { text: "Human-in-the-Loop", link: "/recipes/hitl" },
             { text: "The Data Pipeline", link: "/recipes/ingest" },
+            { text: "Evaluation & Scoring", link: "/recipes/eval" },
+            { text: "Looping & Iteration", link: "/recipes/loop" },
           ],
         },
       ],

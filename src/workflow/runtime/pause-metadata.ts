@@ -1,9 +1,7 @@
 import type { InterruptStrategy } from "../../adapters/types";
 import type { MaybePromise } from "../../maybe";
 import { bindFirst } from "../../maybe";
-import type { DiagnosticEntry } from "../diagnostics";
-import type { TraceEvent } from "../trace";
-import type { FinalizeResult } from "./helpers";
+import type { FinalizeResult, FinalizeResultInput } from "./helpers";
 
 type InterruptPayload = { __interrupt?: InterruptStrategy };
 
@@ -29,12 +27,12 @@ type FinalizeWithInterrupt<TOutcome> = {
 
 const finalizeWithInterrupt = <TOutcome>(
   input: FinalizeWithInterrupt<TOutcome>,
-  result: unknown,
-  getDiagnostics: () => DiagnosticEntry[],
-  trace: TraceEvent[],
-  diagnosticsMode: "default" | "strict",
+  payload: FinalizeResultInput,
 ): MaybePromise<TOutcome> =>
-  input.finalize(input.attach(result), getDiagnostics, trace, diagnosticsMode);
+  input.finalize({
+    ...payload,
+    result: input.attach(payload.result),
+  });
 
 export const createFinalizeWithInterrupt = <TOutcome>(
   finalize: FinalizeResult<TOutcome>,

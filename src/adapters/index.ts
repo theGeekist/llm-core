@@ -28,7 +28,9 @@ export type {
   ResumeSnapshot,
   Tool,
   AdapterTraceEvent,
-  AdapterTraceSink,
+  EventStream,
+  EventStreamEvent,
+  StreamEvent,
   Blob,
   Document,
   DocumentLoader,
@@ -41,8 +43,6 @@ export type {
   KVStore,
   Cache,
   CheckpointStore,
-  EventStream,
-  EventStreamEvent,
   InterruptStrategy,
   Memory,
   Message,
@@ -67,7 +67,6 @@ export type {
   ResponseSynthesizer,
   Schema,
   Storage,
-  StreamChunk,
   StructuredContent,
   TextPart,
   TextSplitter,
@@ -115,7 +114,7 @@ export {
   isFalse,
   toUndefined,
 } from "../maybe";
-export type { MaybePromise } from "../maybe";
+export type { MaybeAsyncIterable, MaybePromise } from "../maybe";
 
 export {
   adapterParamTypeToJsonType,

@@ -20,7 +20,7 @@ const applyRetrieve: StepApply = ({ context, state }) => {
   const retriever = RagStateHelpers.readRetriever(context);
   const reranker = RagStateHelpers.readReranker(context);
   const query = RagStateHelpers.resolveQuery(rag);
-  return RagStateHelpers.runRetrieve(retriever, query, rag, reranker);
+  return RagStateHelpers.runRetrieve({ retriever, query, rag, reranker });
 };
 
 type PackTools = Parameters<typeof Recipe.pack>[1] extends (tools: infer T) => unknown ? T : never;

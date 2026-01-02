@@ -26,6 +26,7 @@ import {
 import type { TraceEvent } from "./trace";
 import { bindFirst, maybeChain, maybeMap } from "../maybe";
 import type { MaybePromise } from "../maybe";
+import type { FinalizeResultInput } from "./runtime/helpers";
 import {
   collectAdapters,
   createRegistryFromPlugins,
@@ -78,12 +79,34 @@ type ErrorOutcomeInput = {
   readErrorDiagnostics: (error: unknown) => DiagnosticEntry[];
 };
 
+type ErrorOutcomeWithDiagnosticsInput = {
+  input: ErrorOutcomeInput;
+  error: unknown;
+  trace: TraceEvent[];
+  diagnostics?: DiagnosticEntry[];
+};
+
 const toErrorOutcomeWithDiagnostics = <N extends RecipeName>(
-  input: ErrorOutcomeInput,
-  error: unknown,
-  trace: TraceEvent[],
-  diagnostics?: DiagnosticEntry[],
-) => toErrorOutcome<N>(error, trace, diagnostics, input.readErrorDiagnostics);
+  payload: ErrorOutcomeWithDiagnosticsInput,
+) =>
+  toErrorOutcome<N>({
+    error: payload.error,
+    trace: payload.trace,
+    diagnostics: payload.diagnostics,
+    readErrorDiagnostics: payload.input.readErrorDiagnostics,
+  });
+
+const createErrorOutcome = <N extends RecipeName>(
+  readErrorDiagnostics: (error: unknown) => DiagnosticEntry[],
+) =>
+  function errorOutcome(error: unknown, trace: TraceEvent[], diagnostics?: DiagnosticEntry[]) {
+    return toErrorOutcomeWithDiagnostics<N>({
+      input: { readErrorDiagnostics },
+      error,
+      trace,
+      diagnostics,
+    });
+  };
 
 type FinalizeRuntimeInput<N extends RecipeName> = {
   readDiagnostics: (result: unknown) => DiagnosticEntry[];
@@ -106,7 +129,12 @@ type PausedOutcomeInput<N extends RecipeName> = {
 };
 
 const toPausedOutcomeAfterSnapshot = <N extends RecipeName>(input: PausedOutcomeInput<N>) =>
-  toPausedOutcome(input.result, input.trace, input.diagnostics, input.readPartial);
+  toPausedOutcome({
+    result: input.result,
+    trace: input.trace,
+    diagnostics: input.diagnostics,
+    readPartial: input.readPartial,
+  });
 
 const finalizePausedSnapshot = <N extends RecipeName>(input: PausedOutcomeInput<N>) => {
   if (!input.recordSnapshot) {
@@ -126,30 +154,31 @@ const finalizePausedResult = <N extends RecipeName>(input: PausedOutcomeInput<N>
 
 const finalizeRuntimeResult = <N extends RecipeName>(
   input: FinalizeRuntimeInput<N>,
-  result: unknown,
-  getDiagnostics: () => DiagnosticEntry[],
-  trace: TraceEvent[],
-  diagnosticsMode: "default" | "strict",
-  recordSnapshot?: (result: unknown) => MaybePromise<boolean | null>,
+  payload: FinalizeResultInput,
 ) => {
   const diagnostics = applyDiagnosticsMode(
-    input.readDiagnostics(result).concat(getDiagnostics()),
-    diagnosticsMode,
+    input.readDiagnostics(payload.result).concat(payload.getDiagnostics()),
+    payload.diagnosticsMode,
   );
-  if (diagnosticsMode === "strict" && hasErrorDiagnostics(diagnostics)) {
-    return input.errorOutcome(new Error(STRICT_DIAGNOSTICS_ERROR), trace, diagnostics);
+  if (payload.diagnosticsMode === "strict" && hasErrorDiagnostics(diagnostics)) {
+    return input.errorOutcome(new Error(STRICT_DIAGNOSTICS_ERROR), payload.trace, diagnostics);
   }
-  if (readPauseFlag(result)) {
-    recordPauseSession(input.pauseSessions, result, getDiagnostics);
+  if (readPauseFlag(payload.result)) {
+    recordPauseSession(input.pauseSessions, payload.result, payload.getDiagnostics);
     return finalizePausedResult<N>({
-      result,
-      trace,
+      result: payload.result,
+      trace: payload.trace,
       diagnostics,
       readPartial: input.readPartial,
-      recordSnapshot,
+      recordSnapshot: payload.recordSnapshot,
     });
   }
-  return toOkOutcome(result, trace, diagnostics, input.readArtefact);
+  return toOkOutcome({
+    result: payload.result,
+    trace: payload.trace,
+    diagnostics,
+    readArtifactValue: input.readArtefact,
+  });
 };
 
 type ResolveAdaptersInput = {
@@ -238,7 +267,12 @@ export const createRuntime = <N extends RecipeName>({
     : createPipeline(contract, plugins);
   const pipelineRunner = pipeline as unknown as PipelineWithExtensions;
   const extensionRegistration =
-    registerExtensions(pipelineRunner, plugins, contract.extensionPoints, buildDiagnostics) ?? [];
+    registerExtensions({
+      pipeline: pipelineRunner,
+      plugins,
+      extensionPoints: contract.extensionPoints,
+      diagnostics: buildDiagnostics,
+    }) ?? [];
   const capabilitySnapshot = buildCapabilities(plugins);
   const declaredCapabilities = capabilitySnapshot.resolved;
   const baseAdapters = collectAdapters(plugins);
@@ -263,7 +297,7 @@ export const createRuntime = <N extends RecipeName>({
   const readErrorDiagnostics = bindFirst(readErrorDiagnosticsFromError, { buildDiagnostics });
   const readArtefact = readArtefactFromResult<N>;
   const readPartial = bindFirst(readPartialFromResult<N>, readArtefact);
-  const errorOutcome = bindFirst(toErrorOutcomeWithDiagnostics<N>, { readErrorDiagnostics });
+  const errorOutcome = createErrorOutcome<N>(readErrorDiagnostics);
 
   const resolveAdaptersForRun = createResolveAdaptersForRun({
     registry,

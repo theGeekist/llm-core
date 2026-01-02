@@ -128,12 +128,12 @@ const handleStepError = (input: RetryPauseContext, error: unknown) => {
   if (!isRetryPauseSignal(error)) {
     throw error;
   }
-  return toRetryPauseResult(
-    input.state,
-    input.stepOptions.input,
-    buildRetryPauseSpec(input.spec),
-    readRetryPausePayload(error),
-  );
+  return toRetryPauseResult({
+    state: input.state,
+    input: input.stepOptions.input,
+    spec: buildRetryPauseSpec(input.spec),
+    payload: readRetryPausePayload(error),
+  });
 };
 
 const runStepApply = (input: StepRunInput) => input.spec.apply(input.stepOptions, input.next);

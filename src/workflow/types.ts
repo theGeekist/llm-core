@@ -8,34 +8,30 @@ import type {
   PipelinePauseSnapshot,
 } from "@wpkernel/pipeline/core";
 import type { AdapterBundle, AdapterResume, RetryConfig } from "../adapters/types";
+import type {
+  AgentInput,
+  EvalInput,
+  HitlGateInput,
+  IngestInput,
+  LoopInput,
+  RagInput,
+} from "../recipes/types";
 import type { DiagnosticEntry } from "./diagnostics";
 import type { ExplainSnapshot } from "./explain";
 
 // Recipe inputs + artefacts
-export type AgentInput = { input: string; context?: string };
-export type RagInput = { input: string; query?: string; topK?: number };
-export type EvalInput = { prompt: string; datasetId?: string; candidates?: number };
-export type HitlGateInput = { input: string; policy?: string };
-export type LoopInput = { input: string; maxIterations?: number };
-export type IngestInput = {
-  sourceId: string;
-  documents: Array<{ id: string; text: string }>;
-  chunking?: "default" | "byHeading";
-};
-
-export type AgentResumeInput = { decision: "approve" | "deny" | "edit"; notes?: string };
-export type HitlGateResumeInput = { decision: string; notes?: string };
+export type { AgentInput, RagInput, EvalInput, HitlGateInput, LoopInput, IngestInput };
 
 export type RecipeContracts = {
-  agent: { input: AgentInput; artefact: Record<string, unknown>; resumeInput?: AgentResumeInput };
+  agent: { input: AgentInput; artefact: Record<string, unknown>; resumeInput?: AgentInput };
   rag: { input: RagInput; artefact: Record<string, unknown>; resumeInput?: never };
   eval: { input: EvalInput; artefact: Record<string, unknown>; resumeInput?: never };
   "hitl-gate": {
     input: HitlGateInput;
     artefact: Record<string, unknown>;
-    resumeInput: HitlGateResumeInput;
+    resumeInput: HitlGateInput;
   };
-  loop: { input: LoopInput; artefact: Record<string, unknown>; resumeInput?: unknown };
+  loop: { input: LoopInput; artefact: Record<string, unknown>; resumeInput?: LoopInput };
   ingest: { input: IngestInput; artefact: Record<string, unknown>; resumeInput?: never };
 };
 

@@ -2,11 +2,11 @@
 
 This guide will show you how to build a production-ready LLM workflow in less than 20 lines of code.
 
-We'll build a **tool-calling agent** that uses OpenAI, then we'll swap it to Anthropic without changing any business logic.
+We'll build a **tool-calling agent** (a loop that can use tools to solve problems) that uses OpenAI, then we'll swap it to Anthropic without changing any business logic.
 
 ## 1. The Blank Slate
 
-Start by importing the `recipes` handle. This is your entry point for authoring.
+To build anything, we need the standard library. Start by importing the `recipes` handle. This gives you access to pre-built logic blueprints.
 
 ::: tabs
 == TypeScript
@@ -29,8 +29,8 @@ import { recipes } from "@geekist/llm-core/recipes";
 
 ## 2. Pick a Recipe
 
-Recipes are declarative flows. We use `recipes.*()` to start one.
-You can define your own steps later, or load a standard recipe like `"agent"`.
+**Recipes** are declarative blueprints for your workflow. We use `recipes.*()` to start one.
+You can define your own logic later, but we'll load a standard **Agent Recipe**—a pre-built loop that knows how to think and act.
 
 ::: tabs
 == TypeScript
@@ -57,10 +57,10 @@ const agent = recipes.agent();
 
 ## 3. Add the Brain (Adapters)
 
-Recipes are abstract. They need **Adapter Plugs** to connect to the real world.
-The `"agent"` flow expects a `model` adapter.
+Recipes define _logic_, but they need **Adapters** to talk to the real world.
+The `"agent"` flow expects a `model` adapter—a unified interface that wraps any LLM provider.
 
-> [!TIP] > **Adapters** are the bridge between your code and the AI ecosystem (OpenAI, Anthropic, LangChain, etc.).
+> [!TIP] > **Adapters** are like power plugs. They let your standard recipe connect to the specific AI ecosystem (OpenAI, Anthropic, LangChain, etc.) you want to use.
 
 ::: tabs
 == TypeScript
@@ -131,7 +131,7 @@ if (result.status === "ok") {
 ## 5. The "Aha" Moment: Swapping Providers
 
 Your boss wants to switch to Anthropic? No problem.
-You don't need to rewrite your agent logic. Just swap the **adapter**.
+Your agent logic remains unchanged. Just swap the **adapter**.
 
 ::: tabs
 == TypeScript
@@ -165,9 +165,18 @@ That's it. Same inputs, same outputs, different brain.
 > [!TIP]
 > Curious about what other adapters exist? See the **[Adapter API Reference](/reference/adapters-api)**.
 
+## Key Takeaways
+
+- [ ] **Recipes** are the blueprint (logic).
+- [ ] **Adapters** are the plugs (providers).
+- [ ] **Swapping** offers resilience without code rewrites.
+
 ## Next Steps
 
 Now that you've built your first agent, let's understand how data actually flows through it.
 
 - [Core Concepts](/guide/core-concepts) -> Visualizing the pipeline
+- [Building a Chatbot](/recipes/simple-chat) -> See more recipe options
+- [Adapters Overview](/adapters/) -> See supported providers
+- [Why llm-core?](/guide/philosophy) -> Understand the design philosophy
 - [RAG Recipe](/recipes/rag) -> Building a chat-with-docs app

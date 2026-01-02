@@ -1,6 +1,6 @@
 # Recipe: RAG (Retrieval + Synthesis)
 
-> [!NOTE] > **Goal**: Answer questions using private data by composing retrieval and synthesis into a single recipe.
+> [!NOTE] > Goal: Answer questions using private data by composing retrieval and synthesis into a single recipe.
 
 RAG in llm-core composes two steps: retrieval fetches relevant documents, synthesis turns them into an answer.
 You reach for it when you want grounded answers, consistent citations, and a repeatable data path that does
@@ -27,13 +27,13 @@ and any scenario where “show me where this came from” matters as much as the
 Use a LangChain retriever and an AI SDK model in the same run.
 
 ::: tabs
-== TypeScript
-
-<<< @/snippets/recipes/rag/quick-start.ts#docs
-
 == JavaScript
 
 <<< @/snippets/recipes/rag/quick-start.js#docs
+
+== TypeScript
+
+<<< @/snippets/recipes/rag/quick-start.ts#docs
 
 :::
 
@@ -58,13 +58,13 @@ to a pack. This is where you set the “shape” of RAG: retrieval knobs (topK, 
 Treat config as **behaviour** (how retrieval and synthesis run), not extra input.
 
 ::: tabs
-== TypeScript
-
-<<< @/snippets/recipes/rag/defaults.ts#docs
-
 == JavaScript
 
 <<< @/snippets/recipes/rag/defaults.js#docs
+
+== TypeScript
+
+<<< @/snippets/recipes/rag/defaults.ts#docs
 
 :::
 
@@ -80,13 +80,13 @@ reranker requirements, or schema issues become errors instead of warnings.
 The recipe surface is adapter-agnostic. This allows you to upgrade your model (e.g. gpt-4 -> gpt-5) without touching your vector store, or swap vector stores (Memory -> Pinecone) without breaking your prompt logic.
 
 ::: tabs
-== TypeScript
-
-<<< @/snippets/recipes/rag/adapters.ts#docs
-
 == JavaScript
 
 <<< @/snippets/recipes/rag/adapters.js#docs
+
+== TypeScript
+
+<<< @/snippets/recipes/rag/adapters.ts#docs
 
 :::
 
@@ -100,16 +100,7 @@ simple: `rag.run(input, { adapters: { model: fastModel } })`.
 Diagnostics and trace are always attached. Strict mode turns requirement warnings into failures.
 This is where missing retrievers, reranker requirements, or schema problems show up early and clearly.
 
-::: tabs
-== TypeScript
-
-<<< @/snippets/recipes/rag/diagnostics.ts#docs
-
-== JavaScript
-
 <<< @/snippets/recipes/rag/diagnostics.js#docs
-
-:::
 
 Related: [Runtime -> Diagnostics](/reference/runtime#diagnostics) and [Runtime -> Trace](/reference/runtime#trace).
 
@@ -125,16 +116,7 @@ flowchart LR
   Retrieve --> Synthesize[rag-synthesis.synthesize]
 ```
 
-::: tabs
-== TypeScript
-
-<<< @/snippets/recipes/rag/composition.ts#docs
-
-== JavaScript
-
 <<< @/snippets/recipes/rag/composition.js#docs
-
-:::
 
 RAG composes cleanly with other recipes. It is most often plugged into [Agent](/recipes/agent) so tool calls
 and retrieval happen in one flow, or gated with [HITL](/recipes/hitl) when you want a human check before final

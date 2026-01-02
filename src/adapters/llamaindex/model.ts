@@ -32,58 +32,62 @@ import { readRetryPolicyFromCandidates } from "../retry-metadata";
 
 const readLlamaIndexRetryPolicy = (model: LLM) => readRetryPolicyFromCandidates([model]);
 
-const toExecResult = (
-  result: LlamaIndexExecResult,
-  diagnostics: AdapterDiagnostic[],
-  telemetry: ModelTelemetry | undefined,
-  modelId: string | undefined,
-  shouldParseOutput: boolean,
-): ModelResult => {
-  const newMessages = result.newMessages.map(fromLlamaIndexMessage);
+type ExecResultInput = {
+  result: LlamaIndexExecResult;
+  diagnostics: AdapterDiagnostic[];
+  telemetry: ModelTelemetry | undefined;
+  modelId: string | undefined;
+  shouldParseOutput: boolean;
+};
+
+const toExecResult = (input: ExecResultInput): ModelResult => {
+  const newMessages = input.result.newMessages.map(fromLlamaIndexMessage);
   const lastMessage = newMessages.at(-1);
   const text = lastMessage
     ? typeof lastMessage.content === "string"
       ? lastMessage.content
       : lastMessage.content.text
     : "";
-  const output = parseOutput(text, shouldParseOutput, result.object);
-  if (shouldParseOutput && output === undefined) {
-    diagnostics.push(warnDiagnostic("response_schema_parse_failed"));
+  const output = parseOutput(text, input.shouldParseOutput, input.result.object);
+  if (input.shouldParseOutput && output === undefined) {
+    input.diagnostics.push(warnDiagnostic("response_schema_parse_failed"));
   }
-  const nextTelemetry = appendTelemetryResponse(telemetry, result.raw);
-  ModelUsageHelper.warnIfMissing(diagnostics, nextTelemetry?.usage, "llamaindex");
+  const nextTelemetry = appendTelemetryResponse(input.telemetry, input.result.raw);
+  ModelUsageHelper.warnIfMissing(input.diagnostics, nextTelemetry?.usage, "llamaindex");
   return {
     text,
     messages: newMessages,
-    toolCalls: toToolCalls(result.toolCalls),
+    toolCalls: toToolCalls(input.result.toolCalls),
     output,
-    diagnostics,
+    diagnostics: input.diagnostics,
     telemetry: nextTelemetry,
     trace: toAdapterTrace(nextTelemetry),
     usage: nextTelemetry?.usage,
-    meta: { provider: "llamaindex", modelId },
-    raw: result,
+    meta: { provider: "llamaindex", modelId: input.modelId },
+    raw: input.result,
   };
 };
 
-const toChatResult = (
-  response: Awaited<ReturnType<LLM["chat"]>>,
-  diagnostics: AdapterDiagnostic[],
-  telemetry: ModelTelemetry | undefined,
-  modelId: string | undefined,
-): ModelResult => {
-  const Message = fromLlamaIndexMessage(response.message);
-  const nextTelemetry = appendTelemetryResponse(telemetry, response.raw);
-  ModelUsageHelper.warnIfMissing(diagnostics, nextTelemetry?.usage, "llamaindex");
+type ChatResultInput = {
+  response: Awaited<ReturnType<LLM["chat"]>>;
+  diagnostics: AdapterDiagnostic[];
+  telemetry: ModelTelemetry | undefined;
+  modelId: string | undefined;
+};
+
+const toChatResult = (input: ChatResultInput): ModelResult => {
+  const Message = fromLlamaIndexMessage(input.response.message);
+  const nextTelemetry = appendTelemetryResponse(input.telemetry, input.response.raw);
+  ModelUsageHelper.warnIfMissing(input.diagnostics, nextTelemetry?.usage, "llamaindex");
   return {
-    text: readMessageText(response.message.content),
+    text: readMessageText(input.response.message.content),
     messages: [Message],
-    diagnostics,
+    diagnostics: input.diagnostics,
     telemetry: nextTelemetry,
     trace: toAdapterTrace(nextTelemetry),
     usage: nextTelemetry?.usage,
-    meta: { provider: "llamaindex", modelId },
-    raw: response,
+    meta: { provider: "llamaindex", modelId: input.modelId },
+    raw: input.response,
   };
 };
 
@@ -95,6 +99,25 @@ const toStreamResult = (
   toLlamaIndexStreamEvents(stream, {
     toolCalls,
     diagnostics,
+  });
+
+type RunState = ReturnType<typeof createRunState>;
+
+const mapExecResult = (state: RunState, result: LlamaIndexExecResult) =>
+  toExecResult({
+    result,
+    diagnostics: state.diagnostics,
+    telemetry: state.telemetry,
+    modelId: state.modelId,
+    shouldParseOutput: state.hasResponseSchema,
+  });
+
+const mapChatResult = (state: RunState, response: Awaited<ReturnType<LLM["chat"]>>) =>
+  toChatResult({
+    response,
+    diagnostics: state.diagnostics,
+    telemetry: state.telemetry,
+    modelId: state.modelId,
   });
 
 const mapChatStreamResult = (
@@ -123,14 +146,7 @@ export function fromLlamaIndexModel(model: LLM): Model {
     const exec = getExec(model);
     if (exec && ((state.tools && state.tools.length) || state.responseSchema)) {
       return maybeMap(
-        (result) =>
-          toExecResult(
-            result,
-            state.diagnostics,
-            state.telemetry,
-            state.modelId,
-            state.hasResponseSchema,
-          ),
+        bindFirst(mapExecResult, state),
         exec({
           messages: state.messages as ChatMessage[],
           tools: state.tools,
@@ -139,10 +155,7 @@ export function fromLlamaIndexModel(model: LLM): Model {
       );
     }
 
-    return maybeMap(
-      (response) => toChatResult(response, state.diagnostics, state.telemetry, state.modelId),
-      model.chat({ messages: state.messages }),
-    );
+    return maybeMap(bindFirst(mapChatResult, state), model.chat({ messages: state.messages }));
   }
 
   function stream(call: ModelCall) {

@@ -34,15 +34,15 @@ describe("Workflow run runner", () => {
         trace,
         diagnostics: diagnostics ?? [],
       }),
-      finalizeResult: (
-        result: unknown,
-        getDiagnostics: () => DiagnosticEntry[],
-        trace: TraceEvent[],
-      ): Outcome => ({
+      finalizeResult: (input: {
+        result: unknown;
+        getDiagnostics: () => DiagnosticEntry[];
+        trace: TraceEvent[];
+      }): Outcome => ({
         status: "ok",
-        artefact: { result, diagnostics: getDiagnostics() },
-        trace,
-        diagnostics: getDiagnostics(),
+        artefact: { result: input.result, diagnostics: input.getDiagnostics() },
+        trace: input.trace,
+        diagnostics: input.getDiagnostics(),
       }),
     };
 

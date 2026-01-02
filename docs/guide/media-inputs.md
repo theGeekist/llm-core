@@ -4,6 +4,16 @@ One of the hardest parts of working with LLMs is juggling input formats. Some AP
 
 `llm-core` handles this for you. You pass what you have; the framework makes it work.
 
+> **Real-World Story: The Avatar Upload Problem**
+> You're building a profile analysis agent. The user can:
+>
+> 1. Link to their GitHub avatar (URL).
+> 2. Upload a file from their desktop (File/Buffer).
+> 3. Paste a screenshot from their clipboard (Data URI).
+>
+> **Without llm-core**: You write 3 `if` statements, standardizing to Base64 manually, handling clean-up yourself.
+> **With llm-core**: You just pass `input.avatar` to the workflow. The **Content Normalizer** automatically detects the format, fetches URLs if the adapter needs raw bytes, or keeps them as URLs if the provider supports it. No conditional logic required.
+
 ## The Principle: "Just Pass It"
 
 The library uses a **Universal Content Normalizer** that runs before any adapter sees your data. This means you can be agnostic about how your data is stored.
@@ -32,7 +42,7 @@ await workflow.run({
 
 ### Mixed Content (Multi-modal)
 
-You don't need to manually construct complex API objects. Use the `toMessageContent` helper to unify text and images.
+Use the `toMessageContent` helper to unify text and images without manually constructing complex API objects.
 
 ```ts
 import { toMessageContent } from "@geekist/llm-core/adapters";
@@ -64,8 +74,17 @@ await workflow.run({
 });
 ```
 
+```
+
+## Key Takeaways
+
+- [ ] **Just Pass It**: Strings, Buffers, URLs—the framework normalizes them.
+- [ ] **One Format**: Internally, everything becomes a standard `MessageContent`.
+- [ ] **Lazy**: Conversions (like Base64) only happen if the specific adapter needs them.
+
 ## Next Steps
 
 Unified Media is just one part of the "Universal Normalisation" story.
 
-- [Deep Dive: Hidden Gems](/guide/deep-dive#5-putting-it-together-the-doc-review-story) -> See how Unified Media combines with Pause/Resume in a real "Doc Review" story.
+- [Advanced Features & Internals](/guide/advanced-features) -> deep dive into the engine.
+```

@@ -6,7 +6,7 @@ import type {
   ResumeSnapshot,
 } from "../../adapters/types";
 import type { MaybePromise } from "../../maybe";
-import { maybeMap, maybeMapOr } from "../../maybe";
+import { bindFirst, maybeChain, maybeMap, maybeMapOr } from "../../maybe";
 import type { PauseSession } from "../driver";
 import type { Runtime } from "../types";
 import { readPipelinePauseSnapshot, toPauseKind } from "../pause";
@@ -17,6 +17,20 @@ export type SessionStore = {
   delete: (token: unknown) => MaybePromise<boolean | null>;
   touch?: (token: unknown, ttlMs?: number) => MaybePromise<boolean | null>;
   sweep?: () => MaybePromise<boolean | null>;
+};
+
+type SnapshotWriteInput = {
+  store: SessionStore;
+  token: unknown;
+  resumeKey?: string;
+  snapshot: ResumeSnapshot;
+  ttlMs?: number;
+};
+
+type ResumeSessionSnapshotInput = {
+  store: SessionStore;
+  token: unknown;
+  resumeKey?: string;
 };
 
 // Serialization helpers
@@ -93,26 +107,113 @@ export const readSessionTtlMs = (
   return typeof ttl === "number" ? ttl : undefined;
 };
 
+const isResumeKey = (value: unknown): value is string =>
+  typeof value === "string" && value.length > 0;
+
+const readResumeKeyFromState = (state: unknown): string | undefined => {
+  if (!state || typeof state !== "object") {
+    return undefined;
+  }
+  const resumeKey = (state as { __pause?: { resumeKey?: unknown } }).__pause?.resumeKey;
+  return isResumeKey(resumeKey) ? resumeKey : undefined;
+};
+
+const readResumeKeyFromSnapshot = (
+  snapshot: ReturnType<typeof readPipelinePauseSnapshot>,
+): string | undefined => readResumeKeyFromState(snapshot?.state);
+
+const readResumeKeyFromResult = (result: unknown): string | undefined => {
+  const snapshot = readPipelinePauseSnapshot(result);
+  if (snapshot) {
+    const resumeKey = readResumeKeyFromSnapshot(snapshot);
+    if (resumeKey) {
+      return resumeKey;
+    }
+  }
+  const directResumeKey = (result as { resumeKey?: unknown }).resumeKey;
+  if (isResumeKey(directResumeKey)) {
+    return directResumeKey;
+  }
+  const artifactResumeKey = (result as { artifact?: { __pause?: { resumeKey?: unknown } } })
+    .artifact?.__pause?.resumeKey;
+  if (isResumeKey(artifactResumeKey)) {
+    return artifactResumeKey;
+  }
+  const stateResumeKey = (result as { state?: { __pause?: { resumeKey?: unknown } } }).state
+    ?.__pause?.resumeKey;
+  return isResumeKey(stateResumeKey) ? stateResumeKey : undefined;
+};
+
 const readPauseSnapshotPayload = (result: unknown) => {
   const typed = result as { pauseSnapshot?: unknown; resumeSnapshot?: unknown };
   return typed.pauseSnapshot ?? typed.resumeSnapshot;
 };
 
-const createResumeSnapshot = (
-  token: unknown,
-  pauseKind: PauseKind | undefined,
-  payload: unknown,
-  snapshot?: unknown,
-): ResumeSnapshot => {
+type CreateResumeSnapshotInput = {
+  token: unknown;
+  pauseKind: PauseKind | undefined;
+  payload: unknown;
+  snapshot?: unknown;
+  resumeKey?: string;
+};
+
+const createResumeSnapshot = (input: CreateResumeSnapshotInput): ResumeSnapshot => {
   const createdAt = Date.now();
   return {
-    token,
-    pauseKind,
+    token: input.token,
+    resumeKey: input.resumeKey,
+    pauseKind: input.pauseKind,
     createdAt,
     lastAccessedAt: createdAt,
-    payload,
-    snapshot,
+    payload: input.payload,
+    snapshot: input.snapshot,
   };
+};
+
+const canWriteResumeKey = (input: SnapshotWriteInput) =>
+  isResumeKey(input.resumeKey) && input.resumeKey !== input.token;
+
+const writeSnapshotPrimary = (input: SnapshotWriteInput) =>
+  input.store.set(input.token, input.snapshot, input.ttlMs);
+
+const writeSnapshotAlias = (input: SnapshotWriteInput) =>
+  input.store.set(input.resumeKey as string, input.snapshot, input.ttlMs);
+
+const writeSnapshotWithResumeKey = (input: SnapshotWriteInput) => {
+  const primary = writeSnapshotPrimary(input);
+  if (!canWriteResumeKey(input)) {
+    return primary;
+  }
+  return maybeChain(bindFirst(writeSnapshotAlias, input), primary);
+};
+
+const toSnapshotSession = (store: SessionStore, snapshot: ResumeSnapshot): ResumeSession => ({
+  kind: "snapshot",
+  snapshot,
+  store,
+});
+
+const toInvalidSession = (): ResumeSession => ({ kind: "invalid" });
+
+const resolveSnapshotSessionByKey = (input: ResumeSessionSnapshotInput, key: unknown) =>
+  maybeMapOr<ResumeSnapshot, ResumeSession>(
+    bindFirst(toSnapshotSession, input.store),
+    toInvalidSession,
+    input.store.get(key),
+  );
+
+const resolveSnapshotSessionByToken = (input: ResumeSessionSnapshotInput) =>
+  resolveSnapshotSessionByKey(input, input.token);
+
+const resolveResumeSessionFromStore = (input: ResumeSessionSnapshotInput) => {
+  if (!input.resumeKey) {
+    return resolveSnapshotSessionByToken(input);
+  }
+  return maybeMapOr<ResumeSnapshot, ResumeSession>(
+    bindFirst(toSnapshotSession, input.store),
+    bindFirst(resolveSnapshotSessionByToken, input),
+    input.store.get(input.resumeKey),
+  );
 };
 
 export const createSnapshotRecorder = (store: SessionStore | undefined, runtime?: Runtime) => {
@@ -133,31 +234,49 @@ export const createSnapshotRecorder = (store: SessionStore | undefined, runtime?
       : (result as { pauseKind?: PauseKind }).pauseKind;
     const payload = pipelineSnapshot ? pipelineSnapshot.payload : readPauseSnapshotPayload(result);
     const snapshot = pipelineSnapshot ?? (result as { snapshot?: unknown }).snapshot;
+    const resumeKey = readResumeKeyFromResult(result);
     // Guard against store errors or serialization failures
     try {
-      return store.set(token, createResumeSnapshot(token, pauseKind, payload, snapshot), ttlMs);
+      return writeSnapshotWithResumeKey({
+        store,
+        token,
+        resumeKey,
+        snapshot: createResumeSnapshot({
+          token,
+          pauseKind,
+          payload,
+          snapshot,
+          resumeKey,
+        }),
+        ttlMs,
+      });
     } catch {
       return false;
     }
   };
 };
 
+type ResolveResumeSessionInput = {
+  token: unknown;
+  resumeKey?: string;
+  session?: PauseSession;
+  store?: SessionStore;
+};
+
 export const resolveResumeSession = (
-  token: unknown,
-  session: PauseSession | undefined,
-  store: SessionStore | undefined,
+  input: ResolveResumeSessionInput,
 ): MaybePromise<ResumeSession> => {
-  if (session) {
-    return { kind: "pause", session, store };
+  if (input.session) {
+    return { kind: "pause", session: input.session, store: input.store };
   }
-  if (!store) {
+  if (!input.store) {
     return { kind: "invalid" };
   }
-  return maybeMapOr<ResumeSnapshot, ResumeSession>(
-    (snapshot) => ({ kind: "snapshot", snapshot, store }),
-    () => ({ kind: "invalid" }),
-    store.get(token),
-  );
+  return resolveResumeSessionFromStore({
+    store: input.store,
+    token: input.token,
+    resumeKey: isResumeKey(input.resumeKey) ? input.resumeKey : undefined,
+  });
 };
 
 export const resolveSessionStore = (runtime: Runtime | undefined, adapters: AdapterBundle) => {

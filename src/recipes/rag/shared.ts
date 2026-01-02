@@ -2,6 +2,7 @@ import type { Document, Model, RetrievalResult, Retriever, Reranker } from "../.
 import { toQueryText } from "../../adapters/retrieval-query";
 import { bindFirst, maybeMap } from "../../maybe";
 import type { PipelineContext, PipelineState } from "../../workflow/types";
+import type { RagInput } from "../types";
 
 const RAG_STATE_KEY = "rag";
 
@@ -11,8 +12,6 @@ export type RagState = {
   documents?: Document[];
   response?: string;
 };
-
-type RagInput = { input?: string; query?: string };
 
 const readInputRecord = (value: unknown): Record<string, unknown> | undefined =>
   typeof value === "object" && value !== null ? (value as Record<string, unknown>) : undefined;
@@ -107,18 +106,20 @@ const handleRetrieved = (context: RetrieveContext, result: RetrievalResult) =>
     runRerank(context.reranker, context.query, applyRetrievedDocuments(context.rag, result)),
   );
 
-const runRetrieve = (
-  retriever: Retriever | undefined,
-  query: string,
-  rag: RagState,
-  reranker: Reranker | undefined,
-) => {
-  if (!retriever) {
+type RunRetrieveInput = {
+  retriever: Retriever | undefined;
+  query: string;
+  rag: RagState;
+  reranker: Reranker | undefined;
+};
+
+const runRetrieve = (input: RunRetrieveInput) => {
+  if (!input.retriever) {
     return null;
   }
   return maybeMap(
-    bindFirst(handleRetrieved, createRetrieveContext(rag, query, reranker)),
-    retriever.retrieve(toQueryText(query)),
+    bindFirst(handleRetrieved, createRetrieveContext(input.rag, input.query, input.reranker)),
+    input.retriever.retrieve(toQueryText(input.query)),
   );
 };
 

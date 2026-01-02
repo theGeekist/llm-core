@@ -8,47 +8,60 @@ type ResumeAdapterRequired<N extends RecipeName> =
   | { ok: true; adapter: NonNullable<Runtime["resume"]> }
   | { ok: false; outcome: Outcome<ArtefactOf<N>> };
 
-export const requireResumeAdapter = <N extends RecipeName>(
-  resumeAdapter: Runtime["resume"] | undefined,
-  trace: TraceEvent[],
-  diagnosticsMode: "default" | "strict",
-  buildDiagnostics: DiagnosticEntry[],
+type RequireResumeAdapterInput<N extends RecipeName> = {
+  resumeAdapter: Runtime["resume"] | undefined;
+  trace: TraceEvent[];
+  diagnosticsMode: "default" | "strict";
+  buildDiagnostics: DiagnosticEntry[];
   errorOutcome: (
     error: unknown,
     trace: TraceEvent[],
     diagnostics?: DiagnosticEntry[],
-  ) => Outcome<ArtefactOf<N>>,
+  ) => Outcome<ArtefactOf<N>>;
+};
+
+export const requireResumeAdapter = <N extends RecipeName>(
+  input: RequireResumeAdapterInput<N>,
 ): ResumeAdapterRequired<N> => {
+  const resumeAdapter = input.resumeAdapter;
   if (resumeAdapter && typeof resumeAdapter.resolve === "function") {
     return { ok: true, adapter: resumeAdapter };
   }
   const diagnostics = applyDiagnosticsMode(
-    [...buildDiagnostics, createResumeDiagnostic("Resume requires a resume adapter.")],
-    diagnosticsMode,
+    [...input.buildDiagnostics, createResumeDiagnostic("Resume requires a resume adapter.")],
+    input.diagnosticsMode,
   );
   return {
     ok: false,
-    outcome: errorOutcome(new Error("Resume requires a resume adapter."), trace, diagnostics),
+    outcome: input.errorOutcome(
+      new Error("Resume requires a resume adapter."),
+      input.trace,
+      diagnostics,
+    ),
   };
 };
 
-export const invalidResumeTokenOutcome = <N extends RecipeName>(
-  trace: TraceEvent[],
-  diagnosticsMode: "default" | "strict",
-  buildDiagnostics: DiagnosticEntry[],
-  message: string,
-  code: string,
+type InvalidResumeTokenInput<N extends RecipeName> = {
+  trace: TraceEvent[];
+  diagnosticsMode: "default" | "strict";
+  buildDiagnostics: DiagnosticEntry[];
+  message: string;
+  code: string;
   errorOutcome: (
     error: unknown,
     trace: TraceEvent[],
     diagnostics?: DiagnosticEntry[],
-  ) => Outcome<ArtefactOf<N>>,
+  ) => Outcome<ArtefactOf<N>>;
+};
+
+export const invalidResumeTokenOutcome = <N extends RecipeName>(
+  input: InvalidResumeTokenInput<N>,
 ) => {
-  const diagnostics = createInvalidResumeDiagnostics(
-    buildDiagnostics,
-    diagnosticsMode,
-    message,
-    code,
-  );
-  return errorOutcome(new Error(message), trace, diagnostics);
+  const diagnostics = createInvalidResumeDiagnostics({
+    buildDiagnostics: input.buildDiagnostics,
+    diagnosticsMode: input.diagnosticsMode,
+    message: input.message,
+    code: input.code,
+  });
+  return input.errorOutcome(new Error(input.message), input.trace, diagnostics);
 };

@@ -131,7 +131,7 @@ Alignment map (no behavior change yet):
 
 **Completion summary (fill as work lands):**
 
-- Status: completed (interop shapes landed).
+- Status: completed.
 - Notes: Added orchestration adapter types (checkpoint/eventStream/interrupt), registry wiring, and capability
   presence flags; added LangGraph checkpointer + LlamaIndex event stream adapters; documented AdapterBundle update.
 
@@ -149,11 +149,10 @@ Implement the aligned interop shapes across ecosystems:
 
 **Completion summary (fill as work lands):**
 
-- Status: in progress
+- Status: completed.
 - Notes: KV-store cache TTL enforced via metadata; added orchestration adapter surfaces plus LangGraph checkpointer
   and LlamaIndex workflow event stream adapters; LangChain event stream, LangGraph interrupt, and LlamaIndex checkpoint
-  adapters added;
-  capability flags cover checkpoint/eventStream/interrupt.
+  adapters added; capability flags cover checkpoint/eventStream/interrupt.
 
 ### 2) New constructs last (orchestration adapters)
 
@@ -173,8 +172,8 @@ Build the orchestration adapters after parity is in place:
 
 **Completion summary (fill as work lands):**
 
-- Status: in progress
-- Notes: Orchestration adapters are implemented; interrupt strategy wiring + recipe/event conventions remain.
+- Status: completed.
+- Notes: Orchestration adapters are implemented; interrupt strategy wiring + recipe/event conventions are in place.
 
 ### 3) Rollback + pause semantics (runtime)
 
@@ -266,6 +265,9 @@ Concrete work:
 
 - Extend resume adapter input to accept `resumeKey?: string`.
 - Map `resumeKey` to token in session store (if provided).
+
+**Status:** completed.
+Notes: Resume accepts a `resumeKey` (token envelope). Snapshots are stored under both token and resumeKey; resume requests pass both values to the adapter and delete both keys on success.
 
 ## Tests
 

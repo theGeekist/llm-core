@@ -52,27 +52,37 @@ const readFirst = <T>(entries: Array<T | undefined>) => entries[0];
 const deleteKvEntry = (store: KVStore<Blob>, key: string, context?: AdapterCallContext) =>
   maybeMap(toBoolean, store.mdelete([key], context));
 
-const readKvEntry = (
-  store: KVStore<Blob>,
-  key: string,
-  value: Blob | undefined,
-  context?: AdapterCallContext,
-) => {
-  if (!value) {
-    return null;
-  }
-  if (isBlobExpired(value)) {
-    return maybeMap(toNull, deleteKvEntry(store, key, context));
-  }
-  return stripExpiryMetadata(value);
+type ReadKvEntryInput = {
+  store: KVStore<Blob>;
+  key: string;
+  value: Blob | undefined;
+  context?: AdapterCallContext;
 };
 
-const readKvEntries = (
-  store: KVStore<Blob>,
-  key: string,
-  context: AdapterCallContext | undefined,
-  entries: Array<Blob | undefined>,
-) => readKvEntry(store, key, readFirst(entries), context);
+const readKvEntry = (input: ReadKvEntryInput) => {
+  if (!input.value) {
+    return null;
+  }
+  if (isBlobExpired(input.value)) {
+    return maybeMap(toNull, deleteKvEntry(input.store, input.key, input.context));
+  }
+  return stripExpiryMetadata(input.value);
+};
+
+type ReadKvEntriesInput = {
+  store: KVStore<Blob>;
+  key: string;
+  context: AdapterCallContext | undefined;
+  entries: Array<Blob | undefined>;
+};
+
+const readKvEntries = (input: ReadKvEntriesInput) =>
+  readKvEntry({
+    store: input.store,
+    key: input.key,
+    value: readFirst(input.entries),
+    context: input.context,
+  });
 
 export const createMemoryCache = (): Cache => {
   const store = new Map<string, CacheEntry>();
@@ -101,7 +111,13 @@ export const createMemoryCache = (): Cache => {
     return entry.value;
   };
 
-  const set = (key: string, value: Blob, ttlMs?: number, context?: AdapterCallContext) => {
+  const set = (
+    ...args: [key: string, value: Blob, ttlMs?: number, context?: AdapterCallContext]
+  ) => {
+    const key = args[0];
+    const value = args[1];
+    const ttlMs = args[2];
+    const context = args[3];
     const diagnostics = validateStorageKey(key, "cache.set");
     if (diagnostics.length > 0) {
       reportDiagnostics(context, diagnostics);
@@ -127,18 +143,29 @@ export const createMemoryCache = (): Cache => {
 export const createCacheFromKVStore = (store: KVStore<Blob>): Cache => {
   const get = (key: string, context?: AdapterCallContext) => {
     const readEntries = (entries: Array<Blob | undefined>) =>
-      readKvEntries(store, key, context, entries);
+      readKvEntries({
+        store,
+        key,
+        context,
+        entries,
+      });
 
     return maybeMap(readEntries, store.mget([key], context));
   };
 
-  const set = (key: string, value: Blob, ttlMs?: number, context?: AdapterCallContext) => {
+  const set = (
+    ...args: [key: string, value: Blob, ttlMs?: number, context?: AdapterCallContext]
+  ) => {
+    const key = args[0];
+    const value = args[1];
+    const ttlMs = args[2];
+    const context = args[3];
     const entry = withBlobExpiry(value, ttlMs);
     return maybeMap(toBoolean, store.mset([[key, entry]], context));
   };
 
-  const del = (key: string, context?: AdapterCallContext) =>
-    maybeMap(toBoolean, store.mdelete([key], context));
+  const del = (...args: [key: string, context?: AdapterCallContext]) =>
+    maybeMap(toBoolean, store.mdelete([args[0]], args[1]));
 
   return { get, set, delete: del };
 };

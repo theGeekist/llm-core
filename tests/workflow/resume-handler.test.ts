@@ -24,20 +24,20 @@ describe("Workflow resume handler", () => {
     trace: runtimeTrace,
     diagnostics: diagnostics ?? [],
   });
-  const finalizeResult = (
-    result: unknown,
-    getDiagnostics: () => DiagnosticEntry[],
-    runtimeTrace: TraceEvent[],
-    mode: "default" | "strict",
-    recordSnapshot?: (value: unknown) => unknown,
-  ): Outcome<Record<string, unknown>> => {
-    void mode;
-    void recordSnapshot;
+  const finalizeResult = (input: {
+    result: unknown;
+    getDiagnostics: () => DiagnosticEntry[];
+    trace: TraceEvent[];
+    diagnosticsMode: "default" | "strict";
+    recordSnapshot?: (value: unknown) => unknown;
+  }): Outcome<Record<string, unknown>> => {
+    void input.diagnosticsMode;
+    void input.recordSnapshot;
     return {
       status: "ok",
-      artefact: { value: result },
-      trace: runtimeTrace,
-      diagnostics: getDiagnostics(),
+      artefact: { value: input.result },
+      trace: input.trace,
+      diagnostics: input.getDiagnostics(),
     };
   };
 
@@ -269,15 +269,13 @@ describe("Workflow resume handler", () => {
       strictErrorMessage: "strict",
       readErrorDiagnostics,
       errorOutcome,
-      finalizeResult: (result, getDiagnostics, runtimeTrace, mode, recordSnapshot) => {
-        void result;
-        void getDiagnostics;
-        void mode;
-        void recordSnapshot;
+      finalizeResult: (input) => {
+        void input.diagnosticsMode;
+        void input.recordSnapshot;
         return {
           status: "error",
           error: new Error("resume failed"),
-          trace: runtimeTrace,
+          trace: input.trace,
           diagnostics: [],
         };
       },
@@ -335,22 +333,22 @@ describe("Workflow resume handler", () => {
       strictErrorMessage: "strict",
       readErrorDiagnostics,
       errorOutcome,
-      finalizeResult: (result, getDiagnostics, runtimeTrace, mode, recordSnapshot) => {
-        void mode;
-        void recordSnapshot;
-        const diagnostics = getDiagnostics();
-        return (result as { __paused?: boolean }).__paused
+      finalizeResult: (input) => {
+        void input.diagnosticsMode;
+        void input.recordSnapshot;
+        const diagnostics = input.getDiagnostics();
+        return (input.result as { __paused?: boolean }).__paused
           ? {
               status: "paused",
-              token: (result as { snapshot?: { token?: unknown } }).snapshot?.token,
+              token: (input.result as { snapshot?: { token?: unknown } }).snapshot?.token,
               artefact: {},
-              trace: runtimeTrace,
+              trace: input.trace,
               diagnostics,
             }
           : {
               status: "ok",
-              artefact: { value: result },
-              trace: runtimeTrace,
+              artefact: { value: input.result },
+              trace: input.trace,
               diagnostics,
             };
       },

@@ -1,6 +1,6 @@
 # Recipe: Agent (Reason + Act)
 
-> [!NOTE] > **Goal**: Build a tool-calling agent that can plan, act, and finalize with clean diagnostics and a stable recipe surface.
+> [!NOTE] > Goal: Build a tool-calling agent that can plan, act, and finalize with clean diagnostics and a stable recipe surface.
 
 The Agent recipe is the most complete example of the **recipe-first** API. It runs a ReAct-style loop
 (plan -> tool-call -> tool-exec -> respond) while keeping diagnostics and trace attached to every outcome.
@@ -34,13 +34,13 @@ is configured once and then reused across many requests, so you can keep input c
 separate from wiring. If you only want the “agent loop” and nothing else, this is enough.
 
 ::: tabs
-== TypeScript
-
-<<< @/snippets/recipes/agent/quick-start.ts#docs
-
 == JavaScript
 
 <<< @/snippets/recipes/agent/quick-start.js#docs
+
+== TypeScript
+
+<<< @/snippets/recipes/agent/quick-start.ts#docs
 
 :::
 
@@ -63,13 +63,13 @@ The type is explicit and local: `AgentRecipeConfig` is the only config accepted 
 global “mega config” for recipes.
 
 ::: tabs
-== TypeScript
-
-<<< @/snippets/recipes/agent/defaults.ts#docs
-
 == JavaScript
 
 <<< @/snippets/recipes/agent/defaults.js#docs
+
+== TypeScript
+
+<<< @/snippets/recipes/agent/defaults.ts#docs
 
 :::
 
@@ -90,13 +90,13 @@ still behaves the same way. Below, the model is AI SDK while tools come from Lla
 invert that or swap in LangChain without changing the agent.
 
 ::: tabs
-== TypeScript
-
-<<< @/snippets/recipes/agent/adapters.ts#docs
-
 == JavaScript
 
 <<< @/snippets/recipes/agent/adapters.js#docs
+
+== TypeScript
+
+<<< @/snippets/recipes/agent/adapters.ts#docs
 
 :::
 
@@ -113,16 +113,7 @@ schema mismatches, or invalid tool calls as hard failures, use strict diagnostic
 If the agent pauses (HITL or long‑wait), the paused outcome still carries trace and diagnostics, and
 resume continues the same context. See [Pause & Resume](/reference/runtime#resume).
 
-::: tabs
-== TypeScript
-
-<<< @/snippets/recipes/agent/diagnostics.ts#docs
-
-== JavaScript
-
 <<< @/snippets/recipes/agent/diagnostics.js#docs
-
-:::
 
 Read more: [Runtime -> Diagnostics](/reference/runtime#diagnostics) and
 [Runtime -> Trace](/reference/runtime#trace).
@@ -149,19 +140,10 @@ flowchart LR
   Agent --> HITL[HITL]
 ```
 
-::: tabs
-== TypeScript
-
-<<< @/snippets/recipes/agent/composition.ts#docs
-
-== JavaScript
-
 <<< @/snippets/recipes/agent/composition.js#docs
 
-:::
-
 Related: [Plan API](/reference/recipes-api#plan-see-the-graph) and
-[Packs & Recipes](/reference/packs-and-recipes).
+[Composition Model](/reference/composition-model).
 
 If you prefer a quick mental model, think of `recipes.rag()` as retrieval and `recipes.hitl()` as a gate.
 Dropping them into the agent keeps the flow explicit while letting you tune each piece independently.

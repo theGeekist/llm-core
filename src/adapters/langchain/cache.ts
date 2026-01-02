@@ -42,51 +42,93 @@ const readEntry = (store: BaseStore<string, unknown>, key: string, value: unknow
   return readBlob(value) ?? null;
 };
 
-const cacheGet = (store: BaseStore<string, unknown>, key: string, context?: AdapterCallContext) => {
-  const diagnostics = validateStorageKey(key, "cache.get");
+type CacheGetInput = {
+  store: BaseStore<string, unknown>;
+  key: string;
+  context?: AdapterCallContext;
+};
+
+const cacheGet = (input: CacheGetInput) => {
+  const diagnostics = validateStorageKey(input.key, "cache.get");
   if (diagnostics.length > 0) {
-    reportDiagnostics(context, diagnostics);
+    reportDiagnostics(input.context, diagnostics);
     return null;
   }
 
-  const handleEntries = (values: unknown[]) => readEntry(store, key, values[0]);
+  const handleEntries = (values: unknown[]) => readEntry(input.store, input.key, values[0]);
 
-  return maybeMap(handleEntries, store.mget([key]));
+  return maybeMap(handleEntries, input.store.mget([input.key]));
 };
 
-const cacheSet = (
-  store: BaseStore<string, unknown>,
-  key: string,
-  value: Blob,
-  ttlMs?: number,
-  context?: AdapterCallContext,
-) => {
-  const diagnostics = validateStorageKey(key, "cache.set");
+type CacheSetInput = {
+  store: BaseStore<string, unknown>;
+  key: string;
+  value: Blob;
+  ttlMs?: number;
+  context?: AdapterCallContext;
+};
+
+const cacheSet = (input: CacheSetInput) => {
+  const diagnostics = validateStorageKey(input.key, "cache.set");
   if (diagnostics.length > 0) {
-    reportDiagnostics(context, diagnostics);
+    reportDiagnostics(input.context, diagnostics);
     return false;
   }
-  const entry = toEnvelope(value, ttlMs);
-  return maybeMap(toTrue, store.mset([[key, entry]]));
+  const entry = toEnvelope(input.value, input.ttlMs);
+  return maybeMap(toTrue, input.store.mset([[input.key, entry]]));
 };
 
-const cacheDelete = (
-  store: BaseStore<string, unknown>,
-  key: string,
-  context?: AdapterCallContext,
-) => {
-  const diagnostics = validateStorageKey(key, "cache.delete");
+type CacheDeleteInput = {
+  store: BaseStore<string, unknown>;
+  key: string;
+  context?: AdapterCallContext;
+};
+
+const cacheDelete = (input: CacheDeleteInput) => {
+  const diagnostics = validateStorageKey(input.key, "cache.delete");
   if (diagnostics.length > 0) {
-    reportDiagnostics(context, diagnostics);
+    reportDiagnostics(input.context, diagnostics);
     return false;
   }
-  return maybeMap(toBoolean, store.mdelete([key]));
+  return maybeMap(toBoolean, input.store.mdelete([input.key]));
 };
+
+const cacheGetArgs = (
+  store: BaseStore<string, unknown>,
+  ...args: [key: string, context?: AdapterCallContext]
+) =>
+  cacheGet({
+    store,
+    key: args[0],
+    context: args[1],
+  });
+
+const cacheSetArgs = (
+  store: BaseStore<string, unknown>,
+  ...args: [key: string, value: Blob, ttlMs?: number, context?: AdapterCallContext]
+) =>
+  cacheSet({
+    store,
+    key: args[0],
+    value: args[1],
+    ttlMs: args[2],
+    context: args[3],
+  });
+
+const cacheDeleteArgs = (
+  store: BaseStore<string, unknown>,
+  ...args: [key: string, context?: AdapterCallContext]
+) =>
+  cacheDelete({
+    store,
+    key: args[0],
+    context: args[1],
+  });
 
 export function fromLangChainStoreCache(store: BaseStore<string, unknown>): Cache {
   return {
-    get: bindFirst(cacheGet, store),
-    set: bindFirst(cacheSet, store),
-    delete: bindFirst(cacheDelete, store),
+    get: bindFirst(cacheGetArgs, store),
+    set: bindFirst(cacheSetArgs, store),
+    delete: bindFirst(cacheDeleteArgs, store),
   };
 }

@@ -1,8 +1,6 @@
 // #region docs
 import { recipes } from "#recipes";
-// #endregion docs
 
-// #region docs
 const gate = recipes.hitl();
 const runtime = gate.build();
 

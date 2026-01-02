@@ -39,19 +39,21 @@ const buildPauseSnapshot = (input: {
   createdAt: Date.now(),
 });
 
-const buildRollbackResult = (
-  steps: Array<{ key: string; index: number }>,
-  entries: Array<{ helper: { key: string }; rollback: unknown }>,
-  reporter?: { warn?: (message: string, context?: unknown) => void },
-  interrupt?: { mode: "continue" | "restart" },
-): RollbackResult =>
+type RollbackResultInput = {
+  steps: Array<{ key: string; index: number }>;
+  entries: Array<{ helper: { key: string }; rollback: unknown }>;
+  reporter?: { warn?: (message: string, context?: unknown) => void };
+  interrupt?: { mode: "continue" | "restart" };
+};
+
+const buildRollbackResult = (input: RollbackResultInput): RollbackResult =>
   ({
-    steps,
+    steps: input.steps,
     state: {
-      helperRollbacks: new Map([["recipe.steps", entries]]),
+      helperRollbacks: new Map([["recipe.steps", input.entries]]),
     },
-    context: reporter ? { reporter } : undefined,
-    __interrupt: interrupt,
+    context: input.reporter ? { reporter: input.reporter } : undefined,
+    __interrupt: input.interrupt,
   }) as RollbackResult;
 
 describe("Workflow pause rollbacks", () => {
@@ -90,15 +92,14 @@ describe("Workflow pause rollbacks", () => {
         order.push("orphan");
       }),
     ];
-    const result = buildRollbackResult(
-      [
+    const result = buildRollbackResult({
+      steps: [
         { key: "step.missing", index: 0 },
         { key: "step.alpha", index: 1 },
       ],
       entries,
-      undefined,
-      { mode: "restart" },
-    );
+      interrupt: { mode: "restart" },
+    });
 
     await runPauseRollback(result);
     expect(order).toEqual(["orphan", "alpha-2", "alpha-1"]);
@@ -111,7 +112,10 @@ describe("Workflow pause rollbacks", () => {
         ran = true;
       }),
     ];
-    const result = buildRollbackResult([{ key: "step.alpha", index: 0 }], entries);
+    const result = buildRollbackResult({
+      steps: [{ key: "step.alpha", index: 0 }],
+      entries,
+    });
 
     await runPauseRollback(result);
     expect(ran).toBe(false);
@@ -133,8 +137,10 @@ describe("Workflow pause rollbacks", () => {
         ran = true;
       }),
     ];
-    const result = buildRollbackResult([{ key: "step.orphan", index: 0 }], entries, undefined, {
-      mode: "restart",
+    const result = buildRollbackResult({
+      steps: [{ key: "step.orphan", index: 0 }],
+      entries,
+      interrupt: { mode: "restart" },
     });
 
     await runPauseRollback(result);
@@ -153,8 +159,11 @@ describe("Workflow pause rollbacks", () => {
         throw new Error("rollback failed");
       }),
     ];
-    const result = buildRollbackResult([{ key: "step.alpha", index: 0 }], entries, reporter, {
-      mode: "restart",
+    const result = buildRollbackResult({
+      steps: [{ key: "step.alpha", index: 0 }],
+      entries,
+      reporter,
+      interrupt: { mode: "restart" },
     });
 
     await runPauseRollback(result);

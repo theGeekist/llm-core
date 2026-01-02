@@ -20,6 +20,7 @@ type ResumeHandlerErrorInput<N extends RecipeName> = {
 
 type PerformResumeInput<N extends RecipeName> = {
   token: unknown;
+  resumeKey?: string;
   resumeInput?: ResumeInputOf<N>;
   runtime?: Runtime;
   pauseSession: ReturnType<ResumeHandlerDeps<N>["pauseSessions"]["get"]>;
@@ -38,6 +39,23 @@ const handleResumeHandlerError = <N extends RecipeName>(
     applyDiagnosticsMode(input.deps.readErrorDiagnostics(error), input.diagnosticsMode),
   );
 
+type ResumeTokenEnvelope = {
+  token?: unknown;
+  resumeKey?: unknown;
+};
+
+const isObject = (value: unknown): value is Record<string, unknown> =>
+  typeof value === "object" && value !== null;
+
+const readResumeTokenInput = (value: unknown): { token: unknown; resumeKey?: string } => {
+  if (!isObject(value) || !("resumeKey" in value)) {
+    return { token: value };
+  }
+  const typed = value as ResumeTokenEnvelope;
+  const resumeKey = typeof typed.resumeKey === "string" ? typed.resumeKey : undefined;
+  return { token: "token" in typed ? typed.token : value, resumeKey };
+};
+
 export const createResumeHandler =
   <N extends RecipeName>(
     deps: ResumeHandlerDeps<N>,
@@ -46,7 +64,8 @@ export const createResumeHandler =
     const trace = createTrace();
     addTraceEvent(trace, "run.start", { recipe: deps.contractName, resume: true });
     const diagnosticsMode = runtime?.diagnostics ?? "default";
-    const pauseSession = deps.pauseSessions.get(token);
+    const tokenInput = readResumeTokenInput(token);
+    const pauseSession = deps.pauseSessions.get(tokenInput.token);
     const handleError = bindFirst(handleResumeHandlerError, {
       deps,
       trace,
@@ -54,7 +73,8 @@ export const createResumeHandler =
     });
 
     const performResume = bindFirst(performResumePipeline<N>, {
-      token,
+      token: tokenInput.token,
+      resumeKey: tokenInput.resumeKey,
       resumeInput,
       runtime,
       pauseSession,
@@ -67,12 +87,13 @@ export const createResumeHandler =
   };
 
 const performResumePipeline = <N extends RecipeName>(input: PerformResumeInput<N>) =>
-  startResumePipeline(
-    input.token,
-    input.resumeInput,
-    input.runtime,
-    input.pauseSession,
-    input.trace,
-    input.diagnosticsMode,
-    input.deps,
-  );
+  startResumePipeline({
+    token: input.token,
+    resumeKey: input.resumeKey,
+    resumeInput: input.resumeInput,
+    runtime: input.runtime,
+    pauseSession: input.pauseSession,
+    trace: input.trace,
+    diagnosticsMode: input.diagnosticsMode,
+    deps: input.deps,
+  });

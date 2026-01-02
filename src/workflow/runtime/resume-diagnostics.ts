@@ -1,12 +1,14 @@
 import { applyDiagnosticsMode, createResumeDiagnostic, type DiagnosticEntry } from "../diagnostics";
 
-export const createInvalidResumeDiagnostics = (
-  buildDiagnostics: DiagnosticEntry[],
-  diagnosticsMode: "default" | "strict",
-  message: string,
-  code: string,
-) =>
+type InvalidResumeDiagnosticsInput = {
+  buildDiagnostics: DiagnosticEntry[];
+  diagnosticsMode: "default" | "strict";
+  message: string;
+  code: string;
+};
+
+export const createInvalidResumeDiagnostics = (input: InvalidResumeDiagnosticsInput) =>
   applyDiagnosticsMode(
-    [...buildDiagnostics, createResumeDiagnostic(message, { code })],
-    diagnosticsMode,
+    [...input.buildDiagnostics, createResumeDiagnostic(input.message, { code: input.code })],
+    input.diagnosticsMode,
   );

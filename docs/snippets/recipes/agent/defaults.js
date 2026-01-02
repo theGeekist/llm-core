@@ -1,11 +1,8 @@
 // #region docs
 import { recipes } from "#recipes";
-// #endregion docs
-
 /** @type {any} */
 const myMemoryAdapter = {};
 
-// #region docs
 const agent = recipes.agent().configure({
   tools: {
     defaults: {
@@ -24,6 +21,6 @@ const agent = recipes.agent().configure({
     },
   },
 });
-// #endregion docs
 
+// #endregion docs
 void agent;

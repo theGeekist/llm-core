@@ -10,6 +10,8 @@ import {
   toUndefined,
   partialK,
   maybeTap,
+  maybeToAsyncIterable,
+  toAsyncIterable,
   maybeTry,
   tryWrap,
 } from "../src/maybe";
@@ -121,5 +123,38 @@ describe("Maybe utilities", () => {
   it("tryWrap supports partial application", () => {
     const safe = tryWrap(recoverWithFallback)(throwError);
     expect(safe()).toBe("fallback");
+  });
+
+  it("toAsyncIterable wraps sync iterables", async () => {
+    const iterable = [1, 2, 3];
+    const output = toAsyncIterable(iterable);
+    const collected: number[] = [];
+    for await (const item of output) {
+      collected.push(item);
+    }
+    expect(collected).toEqual([1, 2, 3]);
+  });
+
+  it("toAsyncIterable preserves async iterables", async () => {
+    const stream = (async function* () {
+      yield 4;
+      yield 5;
+    })();
+    const output = toAsyncIterable(stream);
+    expect(output).toBe(stream);
+    const collected: number[] = [];
+    for await (const item of output) {
+      collected.push(item);
+    }
+    expect(collected).toEqual([4, 5]);
+  });
+
+  it("maybeToAsyncIterable handles promised iterables", async () => {
+    const output = await maybeToAsyncIterable(Promise.resolve(["a", "b"]));
+    const collected: string[] = [];
+    for await (const item of output) {
+      collected.push(item);
+    }
+    expect(collected).toEqual(["a", "b"]);
   });
 });

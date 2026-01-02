@@ -1,8 +1,6 @@
 // #region docs
 import { recipes } from "#recipes";
-// #endregion docs
 
-// #region docs
 const agent = recipes.agent();
 
 // agent handle from above

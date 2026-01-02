@@ -383,18 +383,19 @@ export const wrapRetryCallZero = <TResult>(
 
 export const wrapRetryCallTwo = <TFirst, TSecond, TResult>(
   input: RetryWrapperInput<[TFirst, TSecond], TResult>,
-  first: TFirst,
-  second: TSecond,
-  ctx?: AdapterCallContext,
-) => callWithRetry(input, [first, second, ctx ?? input.context], ctx);
+  ...args: [first: TFirst, second: TSecond, ctx?: AdapterCallContext]
+) => {
+  const ctx = args[2];
+  return callWithRetry(input, [args[0], args[1], ctx ?? input.context], ctx);
+};
 
 export const wrapRetryCallThree = <TFirst, TSecond, TThird, TResult>(
   input: RetryWrapperInput<[TFirst, TSecond, TThird], TResult>,
-  first: TFirst,
-  second: TSecond,
-  third: TThird,
-  ctx?: AdapterCallContext,
-) => callWithRetry(input, [first, second, third, ctx ?? input.context], ctx);
+  ...args: [first: TFirst, second: TSecond, third: TThird, ctx?: AdapterCallContext]
+) => {
+  const ctx = args[3];
+  return callWithRetry(input, [args[0], args[1], args[2], ctx ?? input.context], ctx);
+};
 
 export const selectRetryConfig = (config: RetryConfig | undefined, kind: RetryAdapterKind) => {
   if (!config) {

@@ -51,12 +51,31 @@ const runWithRuntimeDefaults = <N extends RecipeName>(
   runtime?: Runtime,
 ) => input.runtime.run(runInput, mergeRuntimeDefaults(input.defaults, runtime));
 
+type ResumeWithDefaultsPayload<N extends RecipeName> = {
+  token: unknown;
+  resumeInput?: ResumeInputOf<N>;
+  runtime?: Runtime;
+};
+
 const resumeWithRuntimeDefaults = <N extends RecipeName>(
   input: RuntimeDefaultsResumeInput<N>,
-  token: unknown,
-  resumeInput?: ResumeInputOf<N>,
-  runtime?: Runtime,
-) => input.runtime.resume(token, resumeInput, mergeRuntimeDefaults(input.defaults, runtime));
+  payload: ResumeWithDefaultsPayload<N>,
+) =>
+  input.runtime.resume(
+    payload.token,
+    payload.resumeInput,
+    mergeRuntimeDefaults(input.defaults, payload.runtime),
+  );
+
+const resumeWithRuntimeDefaultsArgs = <N extends RecipeName>(
+  input: RuntimeDefaultsResumeInput<N>,
+  ...args: [token: unknown, resumeInput?: ResumeInputOf<N>, runtime?: Runtime]
+) =>
+  resumeWithRuntimeDefaults(input, {
+    token: args[0],
+    resumeInput: args[1],
+    runtime: args[2],
+  });
 
 const createRuntimeDefaultsInput = <N extends RecipeName>(
   runtime: WorkflowRuntime<RunInputOf<N>, ArtefactOf<N>, ResumeInputOf<N>>,
@@ -80,6 +99,6 @@ export const wrapRuntimeWithDefaults = <N extends RecipeName>(
   return {
     ...runtime,
     run: bindFirst(runWithRuntimeDefaults<N>, input),
-    resume: resumeInput ? bindFirst(resumeWithRuntimeDefaults<N>, resumeInput) : undefined,
+    resume: resumeInput ? bindFirst(resumeWithRuntimeDefaultsArgs<N>, resumeInput) : undefined,
   };
 };

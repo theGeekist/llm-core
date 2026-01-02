@@ -5,16 +5,13 @@ import { openai } from "@ai-sdk/openai";
 import { BaseRetriever } from "@llamaindex/core/retriever";
 import type { QueryBundle } from "@llamaindex/core/query-engine";
 import { Document } from "@llamaindex/core/schema";
-// #endregion docs
 
-// #region docs
 class SimpleRetriever extends BaseRetriever {
   constructor() {
     super();
   }
 
-  async _retrieve(query: QueryBundle) {
-    void query;
+  async _retrieve(_query: QueryBundle) {
     return [{ node: new Document({ text: "Refunds are issued within 30 days." }), score: 0.9 }];
   }
 }

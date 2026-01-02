@@ -13,11 +13,7 @@ export type SchemaField = {
   required?: boolean;
 };
 
-export type PromptOutputField = {
-  name: string;
-  type: string;
-  description?: string;
-};
+export interface PromptOutputField extends SchemaField {}
 
 export type PromptSchema = {
   name: string;

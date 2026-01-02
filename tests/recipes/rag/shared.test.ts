@@ -15,7 +15,12 @@ describe("RAG state helpers", () => {
 
   it("returns null when retriever is missing", () => {
     const rag = RagStateHelpers.readRagState({});
-    const result = RagStateHelpers.runRetrieve(undefined, "query", rag, undefined);
+    const result = RagStateHelpers.runRetrieve({
+      retriever: undefined,
+      query: "query",
+      rag,
+      reranker: undefined,
+    });
 
     expect(result).toBeNull();
   });
@@ -28,7 +33,12 @@ describe("RAG state helpers", () => {
     const reranker: Reranker = {
       rerank: (_query, documents) => [documents[0]!],
     };
-    const result = RagStateHelpers.runRetrieve(retriever, "query", rag, reranker);
+    const result = RagStateHelpers.runRetrieve({
+      retriever,
+      query: "query",
+      rag,
+      reranker,
+    });
 
     expect(result).toBeDefined();
     expect(rag.documents?.length).toBe(1);

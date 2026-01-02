@@ -1,6 +1,6 @@
 # Recipe: Simple Chat (Preset + Base Handle)
 
-> [!NOTE] > **Goal**: A minimal, low-friction entry point that wires model/system defaults.
+> [!NOTE] > Goal: A minimal, low-friction entry point that wires model/system defaults.
 
 Simple Chat is intentionally small: it **does not introduce extra steps**. Instead, it provides a
 recipe handle that sets model/system defaults and can be composed into richer flows. You use it when
@@ -20,13 +20,13 @@ flowchart LR
 ## 1) Quick start (system + model defaults)
 
 ::: tabs
-== TypeScript
-
-<<< ../snippets/recipes/simple-chat/quick-start.ts#docs
-
 == JavaScript
 
 <<< ../snippets/recipes/simple-chat/quick-start.js#docs
+
+== TypeScript
+
+<<< ../snippets/recipes/simple-chat/quick-start.ts#docs
 
 :::
 
@@ -56,16 +56,7 @@ This is the simplest recipe to experiment with streaming. Streaming lives on the
 and you can use the same adapter you already wired into the recipe. That gives you streaming output
 without changing the recipe’s outcome guarantees.
 
-::: tabs
-== TypeScript
-
-<<< ../snippets/recipes/simple-chat/streaming.ts#docs
-
-== JavaScript
-
 <<< ../snippets/recipes/simple-chat/streaming.js#docs
-
-:::
 
 See: [Models -> Streaming](/adapters/models#the-streaming-lifecycle).
 
@@ -75,16 +66,7 @@ See: [Models -> Streaming](/adapters/models#the-streaming-lifecycle).
 
 Because Simple Chat only wires defaults, pair it with another recipe's steps.
 
-::: tabs
-== TypeScript
-
-<<< ../snippets/recipes/simple-chat/compose.ts#docs
-
-== JavaScript
-
 <<< ../snippets/recipes/simple-chat/compose.js#docs
-
-:::
 
 ---
 
@@ -92,16 +74,7 @@ Because Simple Chat only wires defaults, pair it with another recipe's steps.
 
 Even when used as a preset, you still get full diagnostics and trace from the composed recipe.
 
-::: tabs
-== TypeScript
-
-<<< ../snippets/recipes/simple-chat/diagnostics.ts#docs
-
-== JavaScript
-
 <<< ../snippets/recipes/simple-chat/diagnostics.js#docs
-
-:::
 
 Related: [Runtime -> Diagnostics](/reference/runtime#diagnostics) and
 [Runtime -> Trace](/reference/runtime#trace).

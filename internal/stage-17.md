@@ -9,7 +9,7 @@ hand-edit import paths in every doc.
 ## Scope
 
 - Add a snippet directory with real TypeScript/JavaScript files.
-- Wire a VitePress markdown-it plugin to rewrite local alias imports to npm imports at render time.
+- Wire a VitePress markdown config hook to rewrite local alias imports to npm imports at render time.
 - Update docs to include snippets via `<<<` where appropriate (start with recipes + adapters).
 - Add a docs snippet typecheck command so CI can validate snippet files.
 
@@ -41,5 +41,5 @@ At render time, rewrite these in code fences only. The docs should always show n
 ## Notes
 
 - Keep snippet imports local so they can resolve against `src/` and the current codebase.
-- The rewrite plugin should be minimal and deterministic (no AST parsing required).
+- The rewrite hook should be minimal and deterministic (no AST parsing required).
 - Apply rewrites only to code fences (not prose).

@@ -1,6 +1,5 @@
 import type {
   AdapterBundle,
-  AdapterTraceSink,
   Cache,
   CheckpointStore,
   EventStream,
@@ -32,6 +31,36 @@ export type AdapterPluginOptions = {
   capabilities?: Record<string, unknown>;
   mode?: "extend" | "override";
   overrideKey?: string;
+};
+
+type RegisterInput = {
+  key: string;
+  construct: string;
+  value: unknown;
+  options?: AdapterPluginOptions;
+};
+
+type RegisterArgs =
+  | [key: string, construct: string, value: unknown, options?: AdapterPluginOptions]
+  | [input: RegisterInput];
+
+const readRegisterInput = (args: RegisterArgs): RegisterInput => {
+  const first = args[0];
+  if (args.length === 1 && isRecord(first)) {
+    const input = first as RegisterInput;
+    return {
+      key: input.key,
+      construct: input.construct,
+      value: input.value,
+      options: input.options,
+    };
+  }
+  return {
+    key: args[0] as string,
+    construct: args[1] as string,
+    value: args[2],
+    options: args[3] as AdapterPluginOptions | undefined,
+  };
 };
 
 const bundleKeys = new Set<keyof AdapterBundle>([
@@ -96,13 +125,9 @@ export const Adapter = {
   plugin(key: string, adapters: AdapterBundle, options?: AdapterPluginOptions): AdapterPlugin {
     return makePlugin(key, adapters, options);
   },
-  register(
-    key: string,
-    construct: string,
-    value: unknown,
-    options?: AdapterPluginOptions,
-  ): AdapterPlugin {
-    return makePlugin(key, buildBundle(construct, value), options);
+  register(...args: RegisterArgs): AdapterPlugin {
+    const input = readRegisterInput(args);
+    return makePlugin(input.key, buildBundle(input.construct, input.value), input.options);
   },
   model(key: string, model: Model, options?: AdapterPluginOptions): AdapterPlugin {
     return makePlugin(key, { model }, options);
@@ -170,7 +195,7 @@ export const Adapter = {
   ): AdapterPlugin {
     return makePlugin(key, { checkpoint }, options);
   },
-  trace(key: string, trace: AdapterTraceSink, options?: AdapterPluginOptions): AdapterPlugin {
+  trace(key: string, trace: EventStream, options?: AdapterPluginOptions): AdapterPlugin {
     return makePlugin(key, { trace }, options);
   },
   eventStream(

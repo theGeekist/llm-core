@@ -2,6 +2,7 @@ import { Recipe } from "../flow";
 import { createRecipeFactory, createRecipeHandle } from "../handle";
 import type { RecipeDefaults, StepApply } from "../flow";
 import type { PauseKind } from "../../adapters/types";
+import { isRecord, readString } from "../../adapters/utils";
 
 export type HitlConfig = {
   defaults?: RecipeDefaults;
@@ -18,7 +19,7 @@ const HITL_STATE_KEY = "hitl";
 
 const readStateRecord = (state: Record<string, unknown>): HitlState => {
   const raw = state[HITL_STATE_KEY];
-  if (raw && typeof raw === "object") {
+  if (isRecord(raw)) {
     return raw as HitlState;
   }
   const fresh: HitlState = {};
@@ -27,10 +28,9 @@ const readStateRecord = (state: Record<string, unknown>): HitlState => {
 };
 
 const readDecision = (input: unknown) => {
-  if (input && typeof input === "object") {
-    const record = input as Record<string, unknown>;
-    const decision = typeof record.decision === "string" ? record.decision : undefined;
-    const notes = typeof record.notes === "string" ? record.notes : undefined;
+  if (isRecord(input)) {
+    const decision = readString(input.decision);
+    const notes = readString(input.notes);
     return { decision, notes };
   }
   return { decision: undefined, notes: undefined };

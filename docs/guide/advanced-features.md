@@ -1,6 +1,14 @@
-# Deep Dive: Hidden Gems
+# Advanced Features & Internals
 
-You know about Recipes and Adapters. But `llm-core` has some "hidden gems"—advanced features and safeguards that solve hard problems so you don't have to.
+You know about Recipes and Adapters. But `llm-core` has some "advanced capabilities"—safeguards and internals that solve hard problems so you don't have to.
+
+| Feature              | Best For...                                                  |
+| :------------------- | :----------------------------------------------------------- |
+| **Introspection**    | Debugging why a specific plugin was used or ignored.         |
+| **Lifecycle Safety** | Preventing bugs where hooks don't fire.                      |
+| **Telemetry**        | Getting consistent token counts across OpenAI/Anthropic.     |
+| **Hot-State**        | Pausing an agent to wait for human approval (HITL).          |
+| **Content Norm.**    | handling Image/Text/Buffer inputs without conditional logic. |
 
 ## 1. Introspection & Control
 
@@ -9,6 +17,12 @@ You know about Recipes and Adapters. But `llm-core` has some "hidden gems"—adv
 When you compose complex recipes with plugins overriding other plugins, it's hard to know what the final configuration looks like. `llm-core` builds an **Explain Snapshot** for every runtime.
 
 **Why you care:** You can debug exactly which plugin replaced which, without guessing.
+
+> **Real-World Story: The Silent Plugin Failure**
+> You installed a "Security Redaction" plugin to mask PII, but your logs still show emails. Why?
+> Another plugin loaded later and silently overrode the tokenizer configuration associated with your security plugin.
+>
+> **The Fix**: You call `runtime.explain()`. The snapshot reveals that `analytics-plugin` (Priority 10) accidentally replaced `security-plugin` (Priority 5). You fix it by bumping the security priority or using `mode: "override"` explicitly.
 
 ```ts
 const runtime = agent.build();
@@ -143,3 +157,10 @@ How do these gems combine in real life? Consider a **Legal Doc Review Agent**.
 5.  **Resume**: The Partner clicks "Approve" in your UI. You call `workflow.resume({ token, input: "Approved" })`. The agent wakes up instantly (in-memory if possible) and finishes the job.
 
 **This is the `llm-core` promise**: Complex, long-running, multi-modal workflows made to feel like simple function calls.
+
+## Key Takeaways
+
+- [ ] **Explainability**: Use `runtime.explain()` to debug config overrides.
+- [ ] **Safety**: Lifecycle hooks prevent dead code.
+- [ ] **Hot-State**: Pause and resume without database boilerplate.
+- [ ] **Normalization**: Telemetry and Content are unified across all providers.

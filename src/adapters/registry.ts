@@ -185,15 +185,19 @@ export const createAdapterRegistry = (
       const defaults = request.defaults ?? {};
       const entries = listProviders(requirement.name);
       const { diagnostics, report, reportConflict } = createReporters(requirement);
-      const preselection = resolveProviderSelection(
+      const preselection = resolveProviderSelection({
         requirement,
         entries,
         overrides,
         defaults,
         report,
         reportConflict,
-      );
-      const selected = validateCapabilities(requirement, preselection.selected, report);
+      });
+      const selected = validateCapabilities({
+        requirement,
+        selected: preselection.selected,
+        report,
+      });
       const dependencyList = requirement.dependsOn ?? [];
       if (selected && dependencyList.length > 0) {
         const available = new Set(requirements.keys());

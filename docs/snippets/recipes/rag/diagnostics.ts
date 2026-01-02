@@ -1,8 +1,6 @@
 // #region docs
 import { recipes } from "#recipes";
-// #endregion docs
 
-// #region docs
 const rag = recipes.rag();
 
 // rag handle from above

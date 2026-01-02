@@ -66,18 +66,25 @@ const toResumeSnapshotMaybe = (token: unknown, entry: LlamaIndexCheckpointEntry 
 const readEntry = (store: LlamaIndexCheckpointStore, token: unknown) =>
   maybeMap(bindFirst(toResumeSnapshotMaybe, token), store.get(token));
 
-const storeEntry = (
-  store: LlamaIndexCheckpointStore,
-  token: unknown,
-  snapshot: ResumeSnapshot,
-  ttlMs?: number,
-) => {
-  const entry = toCheckpointEntry(snapshot);
+type StoreEntryInput = {
+  store: LlamaIndexCheckpointStore;
+  token: unknown;
+  snapshot: ResumeSnapshot;
+  ttlMs?: number;
+};
+
+const storeEntry = (input: StoreEntryInput) => {
+  const entry = toCheckpointEntry(input.snapshot);
   if (!entry) {
     return false;
   }
-  return store.set(token, entry, ttlMs);
+  return input.store.set(input.token, entry, input.ttlMs);
 };
+
+const storeEntryArgs = (
+  store: LlamaIndexCheckpointStore,
+  ...args: [token: unknown, snapshot: ResumeSnapshot, ttlMs?: number]
+) => storeEntry({ store, token: args[0], snapshot: args[1], ttlMs: args[2] });
 
 const deleteEntry = (store: LlamaIndexCheckpointStore, token: unknown) => store.delete(token);
 
@@ -90,7 +97,7 @@ export const fromLlamaIndexCheckpointStore = (
   store: LlamaIndexCheckpointStore,
 ): CheckpointStore => ({
   get: bindFirst(readEntry, store),
-  set: bindFirst(storeEntry, store),
+  set: bindFirst(storeEntryArgs, store),
   delete: bindFirst(deleteEntry, store),
   touch: store.touch ? bindFirst(touchEntry, store) : undefined,
   sweep: store.sweep ? bindFirst(sweepEntries, store) : undefined,

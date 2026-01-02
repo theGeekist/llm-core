@@ -1,4 +1,5 @@
 import { bindFirst, maybeMap } from "../maybe";
+import { isRecord } from "../adapters/utils";
 import { createRecipeDiagnostic } from "../workflow/diagnostics";
 import { addTraceEvent } from "../workflow/trace";
 import type { TraceEvent } from "../workflow/trace";
@@ -18,9 +19,6 @@ export type StateValidationResult = {
 };
 
 export type StateValidator = (state: unknown) => StateValidationResult | boolean;
-
-const isRecord = (value: unknown): value is Record<string, unknown> =>
-  !!value && typeof value === "object";
 
 const isStateValidationResult = (value: unknown): value is StateValidationResult =>
   isRecord(value) && typeof (value as { valid?: unknown }).valid === "boolean";
@@ -85,16 +83,30 @@ const runWithStateValidation = <N extends RecipeName>(
     input.runtime.run(runInput, runtime),
   );
 
+type ResumeStateValidationPayload<N extends RecipeName> = {
+  token: unknown;
+  resumeInput?: ResumeInputOf<N>;
+  runtime?: Runtime;
+};
+
 const resumeWithStateValidation = <N extends RecipeName>(
   input: RuntimeValidationWithResumeInput<N>,
-  token: unknown,
-  resumeInput?: ResumeInputOf<N>,
-  runtime?: Runtime,
+  payload: ResumeStateValidationPayload<N>,
 ) =>
   maybeMap(
     bindFirst(applyStateValidationToOutcome, input.validator),
-    input.runtime.resume(token, resumeInput, runtime),
+    input.runtime.resume(payload.token, payload.resumeInput, payload.runtime),
   );
+
+const resumeWithStateValidationArgs = <N extends RecipeName>(
+  input: RuntimeValidationWithResumeInput<N>,
+  ...args: [token: unknown, resumeInput?: ResumeInputOf<N>, runtime?: Runtime]
+) =>
+  resumeWithStateValidation(input, {
+    token: args[0],
+    resumeInput: args[1],
+    runtime: args[2],
+  });
 
 const createRuntimeValidationInput = <N extends RecipeName>(
   runtime: WorkflowRuntime<RunInputOf<N>, ArtefactOf<N>, ResumeInputOf<N>>,
@@ -118,6 +130,6 @@ export const wrapRuntimeWithStateValidation = <N extends RecipeName>(
   return {
     ...runtime,
     run: bindFirst(runWithStateValidation<N>, input),
-    resume: resumeInput ? bindFirst(resumeWithStateValidation<N>, resumeInput) : undefined,
+    resume: resumeInput ? bindFirst(resumeWithStateValidationArgs<N>, resumeInput) : undefined,
   };
 };

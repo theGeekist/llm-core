@@ -4,7 +4,8 @@ export type {
   AdapterMetadata,
   AdapterRequirement,
   AdapterTraceEvent,
-  AdapterTraceSink,
+  EventStream,
+  EventStreamEvent,
   PauseKind,
   RetryConfig,
   RetryMetadata,
@@ -52,8 +53,9 @@ export type {
   ModelStreamEvent,
   ModelTelemetry,
   ModelUsage,
-  StreamChunk,
 } from "./types/model";
+
+export type { StreamEvent } from "./types/stream";
 
 export type {
   ImageCall,
@@ -96,12 +98,7 @@ export type {
   SynthesisInput,
 } from "./types/engines";
 
-export type {
-  CheckpointStore,
-  EventStream,
-  EventStreamEvent,
-  InterruptStrategy,
-} from "./types/orchestration";
+export type { CheckpointStore, InterruptStrategy } from "./types/orchestration";
 
 export type {
   VectorRecord,

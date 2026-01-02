@@ -30,60 +30,127 @@ type LlmEndCapture = {
   output: unknown;
 };
 
-const recordTraceEvent = (
+type TraceEventInput = {
+  events: TraceCapture[];
+  eventName: string;
+  data: unknown;
+  runId: string;
+  tags?: string[];
+  metadata?: Record<string, unknown>;
+};
+
+const recordTraceEvent = (input: TraceEventInput) => {
+  void input.tags;
+  input.events.push({
+    name: input.eventName,
+    data: input.data,
+    runId: input.runId,
+    metadata: input.metadata,
+  });
+};
+
+const recordTraceEventArgs = (
   events: TraceCapture[],
-  eventName: string,
-  data: unknown,
-  runId: string,
-  _tags?: string[],
-  metadata?: Record<string, unknown>,
-) => {
-  events.push({ name: eventName, data, runId, metadata });
+  ...args: [
+    eventName: string,
+    data: unknown,
+    runId: string,
+    tags?: string[],
+    metadata?: Record<string, unknown>,
+  ]
+) =>
+  recordTraceEvent({
+    events,
+    eventName: args[0],
+    data: args[1],
+    runId: args[2],
+    tags: args[3],
+    metadata: args[4],
+  });
+
+type ChainStartInput = {
+  events: ChainStartCapture[];
+  chain: unknown;
+  inputs: Record<string, unknown>;
+  runId: string;
 };
 
-const recordChainStart = (
+const recordChainStart = (input: ChainStartInput) => {
+  void input.chain;
+  input.events.push({ runId: input.runId, inputs: input.inputs });
+};
+
+const recordChainStartArgs = (
   events: ChainStartCapture[],
-  _chain: unknown,
-  inputs: Record<string, unknown>,
-  runId: string,
-) => {
-  events.push({ runId, inputs });
+  ...args: [chain: unknown, inputs: Record<string, unknown>, runId: string]
+) => recordChainStart({ events, chain: args[0], inputs: args[1], runId: args[2] });
+
+type ChainEndInput = {
+  events: ChainEndCapture[];
+  outputs: Record<string, unknown>;
+  runId: string;
 };
 
-const recordChainEnd = (
+const recordChainEnd = (input: ChainEndInput) => {
+  input.events.push({ runId: input.runId, outputs: input.outputs });
+};
+
+const recordChainEndArgs = (
   events: ChainEndCapture[],
-  outputs: Record<string, unknown>,
-  runId: string,
-) => {
-  events.push({ runId, outputs });
+  ...args: [outputs: Record<string, unknown>, runId: string]
+) => recordChainEnd({ events, outputs: args[0], runId: args[1] });
+
+type ChainErrorInput = {
+  events: ChainErrorCapture[];
+  error: unknown;
+  runId: string;
 };
 
-const recordChainError = (events: ChainErrorCapture[], error: unknown, runId: string) => {
-  events.push({ runId, error: error instanceof Error ? error : new Error(String(error)) });
+const recordChainError = (input: ChainErrorInput) => {
+  input.events.push({
+    runId: input.runId,
+    error: input.error instanceof Error ? input.error : new Error(String(input.error)),
+  });
 };
 
-const recordLlmEnd = (events: LlmEndCapture[], output: unknown, runId: string) => {
-  events.push({ runId, output });
+const recordChainErrorArgs = (
+  events: ChainErrorCapture[],
+  ...args: [error: unknown, runId: string]
+) => recordChainError({ events, error: args[0], runId: args[1] });
+
+type LlmEndInput = {
+  events: LlmEndCapture[];
+  output: unknown;
+  runId: string;
 };
+
+const recordLlmEnd = (input: LlmEndInput) => {
+  input.events.push({ runId: input.runId, output: input.output });
+};
+
+const recordLlmEndArgs = (events: LlmEndCapture[], ...args: [output: unknown, runId: string]) =>
+  recordLlmEnd({ events, output: args[0], runId: args[1] });
 
 const createHandler = (events: TraceCapture[]) =>
   BaseCallbackHandler.fromMethods({
-    handleCustomEvent: bindFirst(recordTraceEvent, events),
+    handleCustomEvent: bindFirst(recordTraceEventArgs, events),
   });
 
-const createLifecycleHandler = (
-  traceEvents: TraceCapture[],
-  chainStarts: ChainStartCapture[],
-  chainEnds: ChainEndCapture[],
-  chainErrors: ChainErrorCapture[],
-  llmEnds: LlmEndCapture[],
-) =>
+type LifecycleHandlerInput = {
+  traceEvents: TraceCapture[];
+  chainStarts: ChainStartCapture[];
+  chainEnds: ChainEndCapture[];
+  chainErrors: ChainErrorCapture[];
+  llmEnds: LlmEndCapture[];
+};
+
+const createLifecycleHandler = (input: LifecycleHandlerInput) =>
   BaseCallbackHandler.fromMethods({
-    handleCustomEvent: bindFirst(recordTraceEvent, traceEvents),
-    handleChainStart: bindFirst(recordChainStart, chainStarts),
-    handleChainEnd: bindFirst(recordChainEnd, chainEnds),
-    handleChainError: bindFirst(recordChainError, chainErrors),
-    handleLLMEnd: bindFirst(recordLlmEnd, llmEnds),
+    handleCustomEvent: bindFirst(recordTraceEventArgs, input.traceEvents),
+    handleChainStart: bindFirst(recordChainStartArgs, input.chainStarts),
+    handleChainEnd: bindFirst(recordChainEndArgs, input.chainEnds),
+    handleChainError: bindFirst(recordChainErrorArgs, input.chainErrors),
+    handleLLMEnd: bindFirst(recordLlmEndArgs, input.llmEnds),
   });
 
 const createNoopHandler = () => BaseCallbackHandler.fromMethods({});
@@ -131,13 +198,13 @@ describe("Adapter trace", () => {
     const chainEnds: ChainEndCapture[] = [];
     const chainErrors: ChainErrorCapture[] = [];
     const llmEnds: LlmEndCapture[] = [];
-    const handler = createLifecycleHandler(
+    const handler = createLifecycleHandler({
       traceEvents,
       chainStarts,
       chainEnds,
       chainErrors,
       llmEnds,
-    );
+    });
     const sink = fromLangChainCallbackHandler(handler);
 
     await sink.emit(makeEvent({ name: "run.start", id: "run-start", data: { input: "hi" } }));
@@ -163,13 +230,13 @@ describe("Adapter trace", () => {
     const chainEnds: ChainEndCapture[] = [];
     const chainErrors: ChainErrorCapture[] = [];
     const llmEnds: LlmEndCapture[] = [];
-    const handler = createLifecycleHandler(
+    const handler = createLifecycleHandler({
       traceEvents,
       chainStarts,
       chainEnds,
       chainErrors,
       llmEnds,
-    );
+    });
     const sink = fromLangChainCallbackHandler(handler);
     const error = new Error("boom");
 
@@ -188,13 +255,13 @@ describe("Adapter trace", () => {
     const chainEnds: ChainEndCapture[] = [];
     const chainErrors: ChainErrorCapture[] = [];
     const llmEnds: LlmEndCapture[] = [];
-    const handler = createLifecycleHandler(
+    const handler = createLifecycleHandler({
       traceEvents,
       chainStarts,
       chainEnds,
       chainErrors,
       llmEnds,
-    );
+    });
     const sink = fromLangChainCallbackHandler(handler);
 
     await sink.emit(
@@ -211,13 +278,13 @@ describe("Adapter trace", () => {
     const chainEnds: ChainEndCapture[] = [];
     const chainErrors: ChainErrorCapture[] = [];
     const llmEnds: LlmEndCapture[] = [];
-    const handler = createLifecycleHandler(
+    const handler = createLifecycleHandler({
       traceEvents,
       chainStarts,
       chainEnds,
       chainErrors,
       llmEnds,
-    );
+    });
     const sink = fromLangChainCallbackHandler(handler);
 
     await sink.emit(makeEvent({ name: "run.start", data: undefined }));

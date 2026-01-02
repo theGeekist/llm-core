@@ -1,6 +1,6 @@
 # Recipe: HITL (Human-in-the-Loop Gate)
 
-> [!NOTE] > **Goal**: Pause a workflow, wait for external input, then resume deterministically.
+> [!NOTE] > Goal: Pause a workflow, wait for external input, then resume deterministically.
 
 HITL is a reusable gate recipe. It returns a **paused** outcome until a decision arrives, then resumes
 with that decision as input. You reach for it when you need explicit approvals, manual verification,
@@ -24,16 +24,7 @@ flowchart LR
 
 ## 1) Quick start (pause + resume)
 
-::: tabs
-== TypeScript
-
-<<< @/snippets/recipes/hitl/quick-start.ts#docs
-
-== JavaScript
-
 <<< @/snippets/recipes/hitl/quick-start.js#docs
-
-:::
 
 Outcomes are explicit: `{ status, artefact, diagnostics, trace }`. When the gate pauses, you get a
 token and a **partial artefact** snapshot, plus trace/diagnostics that explain why it paused. When you
@@ -62,16 +53,7 @@ collect a decision, and resume with that decision payload.
 
 By default, pause tokens are process-local. To resume across restarts, provide a cache or checkpoint adapter.
 
-::: tabs
-== TypeScript
-
-<<< @/snippets/recipes/hitl/durable.ts#docs
-
-== JavaScript
-
 <<< @/snippets/recipes/hitl/durable.js#docs
-
-:::
 
 See: [Adapters -> Cache](/reference/adapters-api#cache-adapters-resume-persistence) and
 [Runtime](/reference/runtime).
@@ -82,16 +64,7 @@ See: [Adapters -> Cache](/reference/adapters-api#cache-adapters-resume-persisten
 
 You can inspect pause events and reason about why the gate paused.
 
-::: tabs
-== TypeScript
-
-<<< @/snippets/recipes/hitl/diagnostics.ts#docs
-
-== JavaScript
-
 <<< @/snippets/recipes/hitl/diagnostics.js#docs
-
-:::
 
 Diagnostics are the guardrails here: missing cache adapters, invalid tokens, or incompatible resume
 inputs surface immediately in the outcome, and the trace shows exactly where the gate paused.
@@ -105,16 +78,7 @@ with a token that was produced by that pause. There are no hidden states or impl
 
 Drop the gate into any recipe with `.use()`.
 
-::: tabs
-== TypeScript
-
-<<< @/snippets/recipes/hitl/composition.ts#docs
-
-== JavaScript
-
 <<< @/snippets/recipes/hitl/composition.js#docs
-
-:::
 
 HITL is a checkpoint, not a transformer. You usually drop it into a larger flow — [Agent](/recipes/agent)
 for tool approvals, [RAG](/recipes/rag) for high‑risk answers, or [Ingest](/recipes/ingest) when you need

@@ -26,7 +26,7 @@ const workflow = recipes
 ```
 
 > [!TIP]
-> See the **[Packs & Recipes Reference](/reference/packs-and-recipes)** for the full API on `.step()`, `.priority()`, and `.override()`.
+> For the full mental model of how steps and packs interact, and the full API on `.step()`, `.priority()`, and `.override()`, see [Composition Model](/reference/composition-model).
 
 ## Tutorial: Swapping the Brain
 
@@ -126,8 +126,13 @@ console.log(plan.steps);
 
 :::
 
+## Key Takeaways
+
+- [ ] **Start Standard**: Use `recipes.agent()` or similar for 90% of cases.
+- [ ] **Configure Behavior**: Use `.configure()` for prompts, roles, and strategy.
+- [ ] **Wire Infra**: Use `.defaults()` for adapters (LLMs, Databases).
+- [ ] **Override Runtime**: pass a second arg to `.run()` to swap adapters per-request.
+
 ## Next Steps
 
-As you build more complex recipes with overrides and priority steps, you'll need to know what's happening under the hood.
-
-- [Debugging & Diagnostics](/guide/debugging) -> Learn how to trace execution and enforce strict mode.
+- [Debugging & Tracing](/guide/debugging) -> How to fix it when it breaksce execution and enforce strict mode.

@@ -21,7 +21,10 @@ type TryWrapConfig<Args extends unknown[], T> = {
   fn: (...args: Args) => MaybePromise<T>;
 };
 
+type AnyIterable<T> = Iterable<T> | AsyncIterable<T>;
+
 export type { MaybePromise };
+export type MaybeAsyncIterable<T> = MaybePromise<AnyIterable<T>>;
 
 type TryWrapInput<Args extends unknown[], T> = {
   fn: (...args: Args) => MaybePromise<T>;
@@ -136,6 +139,21 @@ const curryKFactory = <TFirst, TSecond, TResult>(fn: MaybeBinary<TFirst, TSecond
   bindUnsafe(curryKWith as (...args: unknown[]) => unknown, fn) as (
     first: TFirst,
   ) => (second: TSecond) => MaybePromise<TResult>;
+
+const isAsyncIterable = (value: unknown): value is AsyncIterable<unknown> =>
+  !!value && typeof (value as AsyncIterable<unknown>)[Symbol.asyncIterator] === "function";
+
+const toAsyncIterableFromIterable = async function* <T>(iterable: Iterable<T>): AsyncIterable<T> {
+  for (const item of iterable) {
+    yield item;
+  }
+};
+
+export const toAsyncIterable = <T>(iterable: AnyIterable<T>): AsyncIterable<T> =>
+  isAsyncIterable(iterable) ? iterable : toAsyncIterableFromIterable(iterable);
+
+export const maybeToAsyncIterable = <T>(value: MaybeAsyncIterable<T>) =>
+  maybeMap(toAsyncIterable, value);
 
 export function maybeMap<TIn, TOut>(
   map: MaybeHandler<TIn, TOut>,

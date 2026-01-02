@@ -1,4 +1,4 @@
-import type { AdapterTraceEvent, AdapterTraceSink, EventStream } from "../types";
+import type { AdapterTraceEvent, EventStream } from "../types";
 import { bindFirst, maybeMap, maybeAll } from "../../maybe";
 
 const toBoolean = (value: unknown): boolean | null => (value === null ? null : value !== false);
@@ -14,10 +14,10 @@ const allSuccessful = (values: Array<boolean | null>) => {
   return true;
 };
 
-const emitTraceEvent = (sink: AdapterTraceSink, event: AdapterTraceEvent) =>
+const emitTraceEvent = (sink: EventStream, event: AdapterTraceEvent) =>
   maybeMap(toBoolean, sink.emit(event));
 
-const emitTraceEvents = (sink: AdapterTraceSink, events: AdapterTraceEvent[]) => {
+const emitTraceEvents = (sink: EventStream, events: AdapterTraceEvent[]) => {
   if (sink.emitMany) {
     return maybeMap(toBoolean, sink.emitMany(events));
   }
@@ -28,7 +28,7 @@ const emitTraceEvents = (sink: AdapterTraceSink, events: AdapterTraceEvent[]) =>
   return maybeMap(allSuccessful, maybeAll(results) as Array<boolean | null>);
 };
 
-export const createEventStreamFromTraceSink = (sink: AdapterTraceSink): EventStream => ({
+export const createEventStreamFromTraceSink = (sink: EventStream): EventStream => ({
   emit: bindFirst(emitTraceEvent, sink),
   emitMany: bindFirst(emitTraceEvents, sink),
 });

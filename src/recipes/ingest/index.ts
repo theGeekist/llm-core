@@ -3,6 +3,7 @@ import { Recipe } from "../flow";
 import { createRecipeFactory, createRecipeHandle } from "../handle";
 import type { RecipeDefaults, StepApply } from "../flow";
 import type { Document, Embedder, TextSplitter, VectorRecord } from "../../adapters/types";
+import { isRecord, readString } from "../../adapters/utils";
 
 export type IngestConfig = {
   defaults?: RecipeDefaults;
@@ -13,7 +14,7 @@ type IngestState = Record<string, unknown>;
 const INGEST_STATE_PREFIX = "ingest.";
 
 const readInputRecord = (value: unknown): Record<string, unknown> | undefined =>
-  typeof value === "object" && value !== null ? (value as Record<string, unknown>) : undefined;
+  isRecord(value) ? value : undefined;
 
 const isDocument = (value: unknown): value is Document =>
   !!value && typeof value === "object" && typeof (value as Document).text === "string";
@@ -38,8 +39,9 @@ const readIngestValue = <T>(state: IngestState, key: string) =>
 
 const seedInput = (ingest: IngestState, input: unknown) => {
   const record = readInputRecord(input);
-  if (record?.sourceId && typeof record.sourceId === "string") {
-    setIngestValue(ingest, "sourceId", record.sourceId);
+  const sourceId = readString(record?.sourceId);
+  if (sourceId) {
+    setIngestValue(ingest, "sourceId", sourceId);
   }
   if (record?.documents) {
     setIngestValue(ingest, "documents", readDocuments(record.documents));

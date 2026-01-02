@@ -5,9 +5,8 @@ This is the high-level entry point; the detailed contracts live in [Adapters API
 
 Related:
 
-- [Workflow API](/reference/workflow-api)
 - [Adapter Interfaces](/reference/adapters-api)
-- [Packs & Recipes](/reference/packs-and-recipes)
+- [Composition Model](/reference/composition-model)
 
 ## Quick start (value-first helpers)
 

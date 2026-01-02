@@ -1,13 +1,11 @@
 // #region docs
 import { recipes } from "#recipes";
-// #endregion docs
 
 /** @type {any} */
 const myRetriever = {};
 /** @type {any} */
 const myModel = {};
 
-// #region docs
 const rag = recipes.rag().configure({
   retrieval: {
     defaults: {
@@ -24,6 +22,6 @@ const rag = recipes.rag().configure({
     },
   },
 });
-// #endregion docs
 
+// #endregion docs
 void rag;

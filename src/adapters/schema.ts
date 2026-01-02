@@ -1,6 +1,6 @@
 import { zodToJsonSchema } from "zod-to-json-schema";
 import type { AdapterDiagnostic, PromptSchema, Schema, ToolParam } from "./types";
-import { warnDiagnostic } from "./utils";
+import { isRecord, warnDiagnostic } from "./utils";
 
 type SchemaLike = {
   jsonSchema?: unknown;
@@ -10,9 +10,6 @@ type SchemaLike = {
   _zod?: unknown;
   def?: unknown;
 };
-
-const isRecord = (value: unknown): value is Record<string, unknown> =>
-  typeof value === "object" && value !== null;
 
 export function toSchema(schema: unknown): Schema | undefined {
   if (schema === undefined || schema === null) {

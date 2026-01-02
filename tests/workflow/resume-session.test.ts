@@ -58,10 +58,17 @@ describe("Workflow resume sessions", () => {
     record({ pauseSnapshot: { step: 1 } });
     expect(sessions.size).toBe(0);
 
-    record({ token: "token-1", pauseKind: "human", pauseSnapshot: { step: 2 } });
+    record({
+      token: "token-1",
+      pauseKind: "human",
+      pauseSnapshot: { step: 2 },
+      resumeKey: "thread-1",
+    });
     const stored = sessions.get("token-1");
     expect(stored?.payload).toEqual({ step: 2 });
     expect(stored?.pauseKind).toBe("human");
+    expect(stored?.resumeKey).toBe("thread-1");
+    expect(sessions.get("thread-1")?.token).toBe("token-1");
   });
 
   it("records pipeline pause snapshots with stored snapshots", () => {
@@ -149,7 +156,13 @@ describe("Workflow resume sessions", () => {
       getDiagnostics: () => [],
       createdAt: Date.now(),
     };
-    const resolved = await resolveMaybe(resolveResumeSession("token", pauseSession, sessionStore));
+    const resolved = await resolveMaybe(
+      resolveResumeSession({
+        token: "token",
+        session: pauseSession,
+        store: sessionStore,
+      }),
+    );
 
     expect(resolved.kind).toBe("pause");
     if (resolved.kind === "pause") {
@@ -163,9 +176,12 @@ describe("Workflow resume sessions", () => {
     const snapshot = createResumeSnapshot("token-3", { step: 4 });
 
     const resolved = await resolveMaybe(
-      resolveResumeSession("token-3", undefined, {
-        ...sessionStore,
-        get: () => snapshot,
+      resolveResumeSession({
+        token: "token-3",
+        store: {
+          ...sessionStore,
+          get: () => snapshot,
+        },
       }),
     );
     expect(resolved.kind).toBe("snapshot");
@@ -175,8 +191,31 @@ describe("Workflow resume sessions", () => {
   });
 
   it("marks sessions invalid when no store is available", async () => {
-    const resolved = await resolveMaybe(resolveResumeSession("token-4", undefined, undefined));
+    const resolved = await resolveMaybe(
+      resolveResumeSession({
+        token: "token-4",
+      }),
+    );
     expect(resolved.kind).toBe("invalid");
+  });
+
+  it("resolves snapshots using resume keys", async () => {
+    const { sessionStore } = createSessionStore();
+    const snapshot = createResumeSnapshot("token-7", { step: 5 }, { resumeKey: "thread-7" });
+    const resolved = await resolveMaybe(
+      resolveResumeSession({
+        token: "token-7",
+        resumeKey: "thread-7",
+        store: {
+          ...sessionStore,
+          get: (token) => (token === "thread-7" ? snapshot : undefined),
+        },
+      }),
+    );
+    expect(resolved.kind).toBe("snapshot");
+    if (resolved.kind === "snapshot") {
+      expect(resolved.snapshot).toBe(snapshot);
+    }
   });
 
   it("exposes pause sessions storage when needed", () => {

@@ -11,6 +11,7 @@ import type {
 import { isRecord, readString } from "../../adapters/utils";
 import { bindFirst, maybeAll, maybeMap, type MaybePromise } from "../../maybe";
 import type { PipelineContext, PipelineState } from "../../workflow/types";
+import type { AgentInput } from "../types";
 
 const AGENT_STATE_KEY = "agent";
 const DEFAULT_THREAD_ID = "default";
@@ -26,8 +27,6 @@ export type AgentState = {
   response?: string;
   threadId?: string;
 };
-
-type AgentInput = { input?: string; context?: string; threadId?: string };
 
 const readInputRecord = (value: unknown): Record<string, unknown> | undefined =>
   isRecord(value) ? value : undefined;

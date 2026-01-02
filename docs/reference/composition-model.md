@@ -1,8 +1,24 @@
-# Packs, Recipes & Plugins
+# Composition Model (Packs & Recipes)
 
 This reference explains the final compositional shape of `llm-core`: **one unified Recipe surface** with explicit ordering, introspection, and configuration.
 
 The goal is low complexity with full fidelity: no hidden ordering, no implicit wiring, and no pack-vs-flow confusion at the call site.
+
+> [!TIP] > **Summary**: Use this model to understand how `recipes.agent()` actually works under the hood. It clarifies the relationship between **Recipes** (what you buy), **Packs** (how they are organized), and **Steps** (what actually runs).
+
+```mermaid
+graph TD
+    User -->|Calls| R[Recipe Handle]
+    R -->|Configures| P[Pack / Flow]
+    P -->|Contains| S1[Step A]
+    P -->|Contains| S2[Step B]
+    R -->|Uses (.use)| R2[Sub-Recipe]
+    R2 -->|Resolves to| S3[Step C]
+
+    style R fill:#d4e6f1,stroke:#3498db
+    style S1 fill:#f9e79f,stroke:#f1c40f
+    style S2 fill:#f9e79f,stroke:#f1c40f
+```
 
 ## Why this shape
 
@@ -136,6 +152,8 @@ const out = await agent.run(
 
 ## Composition: Recipes Use Recipes
 
+> **Why this matters**: This is how you build complex agents from simple blocks.
+
 Packs are an internal composition primitive. Publicly, everything is a Recipe handle.
 Packs and flows are primarily for recipe authors and internal composition. Most users only touch `recipes.*`.
 
@@ -177,6 +195,8 @@ const out = await supportAgent.run({ input: "Investigate the outage" });
 :::
 
 ## Step Ordering: dependsOn + priority + mode
+
+> **Why this matters**: Controls exactly when code runs, preventing "race conditions" in your logic.
 
 Execution is still step-level and DAG-driven. Ordering is never hidden.
 
@@ -285,7 +305,8 @@ const applyEmit: StepApply = ({ context, state }) =>
   emitRecipeEvent(context, state, { name: "recipe.event", data: { ok: true } });
 ```
 
-## Packs & Flows (internal mechanics)
+::: details Internal Mechanics: Packs & Flows
+**Note**: These are implementation details. Publicly, every exported recipe is a unified handle with the same surface.
 
 Internally, recipes are composed using:
 
@@ -294,11 +315,9 @@ Internally, recipes are composed using:
 
 Pack options can also declare minimum capabilities. These requirements are merged across packs
 and become the effective recipe requirements at runtime.
+:::
 
-These are implementation details. Publicly, every exported recipe is a unified handle with the same surface.
-
-## Plugin API (low level)
-
+::: details Internal API: Plugins
 Packs compile down to Plugins. You rarely write these directly unless you are extending the core.
 
 :::tabs
@@ -338,4 +357,5 @@ const plugin = {
 };
 ```
 
+:::
 :::

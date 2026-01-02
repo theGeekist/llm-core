@@ -64,66 +64,99 @@ export type AiSdkCacheOptions = {
   defaultTtlMs?: number;
 };
 
-const cacheGet = (
-  store: AiSdkCacheStore<CacheEntry>,
-  key: string,
-  context?: AdapterCallContext,
-) => {
-  const diagnostics = validateStorageKey(key, "cache.get");
+type CacheGetInput = {
+  store: AiSdkCacheStore<CacheEntry>;
+  key: string;
+  context?: AdapterCallContext;
+};
+
+const cacheGet = (input: CacheGetInput) => {
+  const diagnostics = validateStorageKey(input.key, "cache.get");
   if (diagnostics.length > 0) {
-    reportDiagnostics(context, diagnostics);
+    reportDiagnostics(input.context, diagnostics);
     return null;
   }
 
-  const handleEntry = (entry: CacheEntry | undefined) => readEntry(store, key, entry);
-  return maybeMap(handleEntry, store.get(key));
-};
-const cacheSet = (
-  store: AiSdkCacheStore<CacheEntry>,
-  options: AiSdkCacheOptions | undefined,
-  key: string,
-  value: Blob,
-  ttlMs?: number,
-  context?: AdapterCallContext,
-) => {
-  const diagnostics = validateStorageKey(key, "cache.set");
-  if (diagnostics.length > 0) {
-    reportDiagnostics(context, diagnostics);
-    return false;
-  }
-  const ttl = ttlMs ?? options?.defaultTtlMs ?? store.getDefaultTTL?.();
-  const entry = toEntry(key, value, ttl);
-  return maybeMap(toTrue, store.set(key, entry));
+  const handleEntry = (entry: CacheEntry | undefined) => readEntry(input.store, input.key, entry);
+  return maybeMap(handleEntry, input.store.get(input.key));
 };
 
-const cacheDelete = (
+const cacheGetArgs = (
   store: AiSdkCacheStore<CacheEntry>,
-  key: string,
-  context?: AdapterCallContext,
-) => {
-  const diagnostics = validateStorageKey(key, "cache.delete");
+  ...args: [key: string, context?: AdapterCallContext]
+) =>
+  cacheGet({
+    store,
+    key: args[0],
+    context: args[1],
+  });
+type CacheSetInput = {
+  store: AiSdkCacheStore<CacheEntry>;
+  options: AiSdkCacheOptions | undefined;
+  key: string;
+  value: Blob;
+  ttlMs?: number;
+  context?: AdapterCallContext;
+};
+
+const cacheSet = (input: CacheSetInput) => {
+  const diagnostics = validateStorageKey(input.key, "cache.set");
   if (diagnostics.length > 0) {
-    reportDiagnostics(context, diagnostics);
+    reportDiagnostics(input.context, diagnostics);
     return false;
   }
-  return maybeMap(toBoolean, store.delete(key));
+  const ttl = input.ttlMs ?? input.options?.defaultTtlMs ?? input.store.getDefaultTTL?.();
+  const entry = toEntry(input.key, input.value, ttl);
+  return maybeMap(toTrue, input.store.set(input.key, entry));
 };
+
+type CacheDeleteInput = {
+  store: AiSdkCacheStore<CacheEntry>;
+  key: string;
+  context?: AdapterCallContext;
+};
+
+const cacheDelete = (input: CacheDeleteInput) => {
+  const diagnostics = validateStorageKey(input.key, "cache.delete");
+  if (diagnostics.length > 0) {
+    reportDiagnostics(input.context, diagnostics);
+    return false;
+  }
+  return maybeMap(toBoolean, input.store.delete(input.key));
+};
+
+const cacheDeleteArgs = (
+  store: AiSdkCacheStore<CacheEntry>,
+  ...args: [key: string, context?: AdapterCallContext]
+) =>
+  cacheDelete({
+    store,
+    key: args[0],
+    context: args[1],
+  });
+
+type CacheSetArgs = [key: string, value: Blob, ttlMs?: number, context?: AdapterCallContext];
 
 const cacheSetWithOptions = (
   input: { store: AiSdkCacheStore<CacheEntry>; options?: AiSdkCacheOptions },
-  key: string,
-  value: Blob,
-  ttlMs?: number,
-  context?: AdapterCallContext,
-) => cacheSet(input.store, input.options, key, value, ttlMs, context);
+  ...args: CacheSetArgs
+) =>
+  cacheSet({
+    store: input.store,
+    options: input.options,
+    key: args[0],
+    value: args[1],
+    ttlMs: args[2],
+    context: args[3],
+  });
 
 export function fromAiSdkCacheStore(
   store: AiSdkCacheStore<CacheEntry>,
   options?: AiSdkCacheOptions,
 ): Cache {
   return {
-    get: bindFirst(cacheGet, store),
+    get: bindFirst(cacheGetArgs, store),
     set: bindFirst(cacheSetWithOptions, { store, options }),
-    delete: bindFirst(cacheDelete, store),
+    delete: bindFirst(cacheDeleteArgs, store),
   };
 }

@@ -36,80 +36,102 @@ const hasPriorityConflict = (
   return providers.filter((provider) => (provider.priority ?? 0) === priority).length > 1;
 };
 
-const selectById = (
-  requirement: ConstructRequirement,
-  entries: AdapterProviderRegistration[],
-  providerId: string,
-  report: (code: string, data?: Record<string, unknown>) => void,
-) => {
-  const selected = entries.find((entry) => entry.id === providerId);
+type SelectByIdInput = {
+  requirement: ConstructRequirement;
+  entries: AdapterProviderRegistration[];
+  providerId: string;
+  report: (code: string, data?: Record<string, unknown>) => void;
+};
+
+const selectById = (input: SelectByIdInput) => {
+  const selected = input.entries.find((entry) => entry.id === input.providerId);
   if (!selected) {
-    report("construct_provider_not_found", { construct: requirement.name, providerId });
+    input.report("construct_provider_not_found", {
+      construct: input.requirement.name,
+      providerId: input.providerId,
+    });
   }
   return selected;
 };
 
-const selectByPriority = (
-  requirement: ConstructRequirement,
-  entries: AdapterProviderRegistration[],
-  report: (code: string, data?: Record<string, unknown>) => void,
-  reportConflict: (entry: AdapterProviderRegistration) => void,
-) => {
-  const candidates = entries.filter((entry) =>
-    hasCapabilities(requirement.capabilities, entry.capabilities),
+type SelectByPriorityInput = {
+  requirement: ConstructRequirement;
+  entries: AdapterProviderRegistration[];
+  report: (code: string, data?: Record<string, unknown>) => void;
+  reportConflict: (entry: AdapterProviderRegistration) => void;
+};
+
+const selectByPriority = (input: SelectByPriorityInput) => {
+  const candidates = input.entries.filter((entry) =>
+    hasCapabilities(input.requirement.capabilities, entry.capabilities),
   );
   if (candidates.length === 0) {
-    if (entries.length > 0 && requirement.capabilities?.length) {
-      report("construct_capability_missing", {
-        construct: requirement.name,
-        missing: requirement.capabilities,
+    if (input.entries.length > 0 && input.requirement.capabilities?.length) {
+      input.report("construct_capability_missing", {
+        construct: input.requirement.name,
+        missing: input.requirement.capabilities,
       });
     } else {
-      report("construct_provider_missing", { construct: requirement.name });
+      input.report("construct_provider_missing", { construct: input.requirement.name });
     }
     return undefined;
   }
   const selected = pickHighestPriority(candidates);
   if (!selected) {
-    report("construct_provider_missing", { construct: requirement.name });
+    input.report("construct_provider_missing", { construct: input.requirement.name });
     return undefined;
   }
   if (hasPriorityConflict(candidates, selected)) {
-    reportConflict(selected);
+    input.reportConflict(selected);
   }
   return selected;
 };
 
-export const validateCapabilities = (
-  requirement: ConstructRequirement,
-  selected: AdapterProviderRegistration | undefined,
-  report: (code: string, data?: Record<string, unknown>) => void,
-) => {
-  if (!selected) {
+type ValidateCapabilitiesInput = {
+  requirement: ConstructRequirement;
+  selected: AdapterProviderRegistration | undefined;
+  report: (code: string, data?: Record<string, unknown>) => void;
+};
+
+export const validateCapabilities = (input: ValidateCapabilitiesInput) => {
+  if (!input.selected) {
     return undefined;
   }
-  if (hasCapabilities(requirement.capabilities, selected.capabilities)) {
-    return selected;
+  if (hasCapabilities(input.requirement.capabilities, input.selected.capabilities)) {
+    return input.selected;
   }
-  report("construct_capability_missing", {
-    construct: requirement.name,
-    providerId: selected.id,
-    missing: requirement.capabilities ?? [],
+  input.report("construct_capability_missing", {
+    construct: input.requirement.name,
+    providerId: input.selected.id,
+    missing: input.requirement.capabilities ?? [],
   });
   return undefined;
 };
 
-export const resolveProviderSelection = (
-  requirement: ConstructRequirement,
-  entries: AdapterProviderRegistration[],
-  overrides: Record<string, string>,
-  defaults: Record<string, string>,
-  report: (code: string, data?: Record<string, unknown>) => void,
-  reportConflict: (entry: AdapterProviderRegistration) => void,
-) => {
-  const providerId = overrides[requirement.name] ?? defaults[requirement.name];
+type ResolveProviderSelectionInput = {
+  requirement: ConstructRequirement;
+  entries: AdapterProviderRegistration[];
+  overrides: Record<string, string>;
+  defaults: Record<string, string>;
+  report: (code: string, data?: Record<string, unknown>) => void;
+  reportConflict: (entry: AdapterProviderRegistration) => void;
+};
+
+export const resolveProviderSelection = (input: ResolveProviderSelectionInput) => {
+  const providerId =
+    input.overrides[input.requirement.name] ?? input.defaults[input.requirement.name];
   const selected = providerId
-    ? selectById(requirement, entries, providerId, report)
-    : selectByPriority(requirement, entries, report, reportConflict);
+    ? selectById({
+        requirement: input.requirement,
+        entries: input.entries,
+        providerId,
+        report: input.report,
+      })
+    : selectByPriority({
+        requirement: input.requirement,
+        entries: input.entries,
+        report: input.report,
+        reportConflict: input.reportConflict,
+      });
   return { selected, providerId };
 };

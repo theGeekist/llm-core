@@ -1,6 +1,5 @@
 // #region docs
 import { recipes } from "#recipes";
-// #endregion docs
 
 /** @type {import("@geekist/llm-core/adapters").DocumentLoader} */
 const loader = {
@@ -27,13 +26,11 @@ const vectorStore = {
 };
 
 // Reuse loader/textSplitter/embedder/vectorStore from the quick start.
-// #region docs
-// Reuse loader/textSplitter/embedder/vectorStore from the quick start.
 const ingest = recipes.ingest().configure({
   defaults: {
     adapters: { loader, textSplitter, embedder, vectorStore },
   },
 });
-// #endregion docs
 
+// #endregion docs
 void ingest;

@@ -3,6 +3,7 @@ import { Recipe } from "../flow";
 import { createRecipeFactory, createRecipeHandle } from "../handle";
 import type { RecipeDefaults, StepApply } from "../flow";
 import type { Model, ModelResult } from "../../adapters/types";
+import { isRecord, readString } from "../../adapters/utils";
 
 export type CompressConfig = {
   defaults?: RecipeDefaults;
@@ -16,10 +17,7 @@ type CompressState = {
 const COMPRESS_STATE_KEY = "compress";
 
 const readInputRecord = (value: unknown): Record<string, unknown> | undefined =>
-  typeof value === "object" && value !== null ? (value as Record<string, unknown>) : undefined;
-
-const readString = (value: unknown): string | undefined =>
-  typeof value === "string" ? value : undefined;
+  isRecord(value) ? value : undefined;
 
 const readCompressState = (state: Record<string, unknown>): CompressState => {
   const raw = state[COMPRESS_STATE_KEY];

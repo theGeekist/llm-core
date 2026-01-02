@@ -3,9 +3,7 @@ import { recipes } from "#recipes";
 import { createMemoryCache } from "#adapters";
 import { MemorySaver } from "@langchain/langgraph-checkpoint";
 import { fromLangGraphCheckpointer } from "#adapters";
-// #endregion docs
 
-// #region docs
 const gate = recipes.hitl().defaults({
   adapters: {
     cache: createMemoryCache(),
@@ -19,7 +17,7 @@ const gateWithCheckpoint = recipes.hitl().defaults({
     checkpoint: fromLangGraphCheckpointer(checkpointer),
   },
 });
-// #endregion docs
 
+// #endregion docs
 void gate;
 void gateWithCheckpoint;

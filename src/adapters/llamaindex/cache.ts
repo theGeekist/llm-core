@@ -1,6 +1,6 @@
 import type { BaseKVStore } from "@llamaindex/core/storage/kv-store";
 import type { AdapterCallContext, Blob, Cache } from "../types";
-import { maybeMap, toNull, toTrue } from "../../maybe";
+import { bindFirst, maybeMap, toNull, toTrue } from "../../maybe";
 import { reportDiagnostics, validateStorageKey } from "../input-validation";
 
 type LlamaIndexCacheOptions = {
@@ -34,69 +34,123 @@ const isExpired = (envelope: CacheEnvelope | undefined) =>
 const deleteEntry = (store: BaseKVStore, collection: string | undefined, key: string) =>
   maybeMap(toBoolean, store.delete(key, collection));
 
-const readEntry = (
-  store: BaseKVStore,
-  collection: string | undefined,
-  key: string,
-  value: unknown,
-) => {
-  const envelope = readEnvelope(value);
+type ReadEntryInput = {
+  store: BaseKVStore;
+  collection: string | undefined;
+  key: string;
+  value: unknown;
+};
+
+const readEntry = (input: ReadEntryInput) => {
+  const envelope = readEnvelope(input.value);
   if (envelope) {
     if (isExpired(envelope)) {
-      return maybeMap(toNull, deleteEntry(store, collection, key));
+      return maybeMap(toNull, deleteEntry(input.store, input.collection, input.key));
     }
     return envelope.value;
   }
-  return readStoredValue(value) ?? null;
+  return readStoredValue(input.value) ?? null;
 };
 
-const cacheGet = (
-  store: BaseKVStore,
-  collection: string | undefined,
-  key: string,
-  context?: AdapterCallContext,
-) => {
-  const diagnostics = validateStorageKey(key, "cache.get");
+type CacheGetInput = {
+  store: BaseKVStore;
+  collection: string | undefined;
+  key: string;
+  context?: AdapterCallContext;
+};
+
+const cacheGet = (input: CacheGetInput) => {
+  const diagnostics = validateStorageKey(input.key, "cache.get");
   if (diagnostics.length > 0) {
-    reportDiagnostics(context, diagnostics);
+    reportDiagnostics(input.context, diagnostics);
     return null;
   }
 
-  const handleEntry = (entry: unknown) => readEntry(store, collection, key, entry);
+  const handleEntry = (entry: unknown) =>
+    readEntry({
+      store: input.store,
+      collection: input.collection,
+      key: input.key,
+      value: entry,
+    });
 
-  return maybeMap(handleEntry, store.get(key, collection));
+  return maybeMap(handleEntry, input.store.get(input.key, input.collection));
 };
 
-const cacheSet = (
-  store: BaseKVStore,
-  collection: string | undefined,
-  key: string,
-  value: Blob,
-  ttlMs?: number,
-  context?: AdapterCallContext,
-) => {
-  const diagnostics = validateStorageKey(key, "cache.set");
+type CacheSetInput = {
+  store: BaseKVStore;
+  collection: string | undefined;
+  key: string;
+  value: Blob;
+  ttlMs?: number;
+  context?: AdapterCallContext;
+};
+
+const cacheSet = (input: CacheSetInput) => {
+  const diagnostics = validateStorageKey(input.key, "cache.set");
   if (diagnostics.length > 0) {
-    reportDiagnostics(context, diagnostics);
+    reportDiagnostics(input.context, diagnostics);
     return false;
   }
-  const entry = toEnvelope(value, ttlMs);
-  return maybeMap(toTrue, store.put(key, entry, collection));
+  const entry = toEnvelope(input.value, input.ttlMs);
+  return maybeMap(toTrue, input.store.put(input.key, entry, input.collection));
 };
 
-const cacheDelete = (
-  store: BaseKVStore,
-  collection: string | undefined,
-  key: string,
-  context?: AdapterCallContext,
-) => {
-  const diagnostics = validateStorageKey(key, "cache.delete");
+type CacheDeleteInput = {
+  store: BaseKVStore;
+  collection: string | undefined;
+  key: string;
+  context?: AdapterCallContext;
+};
+
+const cacheDelete = (input: CacheDeleteInput) => {
+  const diagnostics = validateStorageKey(input.key, "cache.delete");
   if (diagnostics.length > 0) {
-    reportDiagnostics(context, diagnostics);
+    reportDiagnostics(input.context, diagnostics);
     return false;
   }
-  return maybeMap(toBoolean, store.delete(key, collection));
+  return maybeMap(toBoolean, input.store.delete(input.key, input.collection));
 };
+
+type CacheStoreInput = {
+  store: BaseKVStore;
+  collection: string | undefined;
+};
+
+const cacheGetArgs = (
+  input: CacheStoreInput,
+  ...args: [key: string, context?: AdapterCallContext]
+) =>
+  cacheGet({
+    store: input.store,
+    collection: input.collection,
+    key: args[0],
+    context: args[1],
+  });
+
+const cacheSetArgs = (
+  input: CacheStoreInput,
+  ...args: [key: string, value: Blob, ttlMs?: number, context?: AdapterCallContext]
+) =>
+  cacheSet({
+    store: input.store,
+    collection: input.collection,
+    key: args[0],
+    value: args[1],
+    ttlMs: args[2],
+    context: args[3],
+  });
+
+const cacheDeleteArgs = (
+  input: CacheStoreInput,
+  ...args: [key: string, context?: AdapterCallContext]
+) =>
+  cacheDelete({
+    store: input.store,
+    collection: input.collection,
+    key: args[0],
+    context: args[1],
+  });
 
 export function fromLlamaIndexKVStoreCache(
   store: BaseKVStore,
@@ -105,8 +159,8 @@ export function fromLlamaIndexKVStoreCache(
   const collection = options?.collection;
 
   return {
-    get: (key, context) => cacheGet(store, collection, key, context),
-    set: (key, value, ttlMs, context) => cacheSet(store, collection, key, value, ttlMs, context),
-    delete: (key, context) => cacheDelete(store, collection, key, context),
+    get: bindFirst(cacheGetArgs, { store, collection }),
+    set: bindFirst(cacheSetArgs, { store, collection }),
+    delete: bindFirst(cacheDeleteArgs, { store, collection }),
   };
 }

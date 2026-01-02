@@ -45,17 +45,28 @@ function createState(): PipelineState {
   return {};
 }
 
-const recordHelperRollbacks = (
-  kind: string,
-  state: RollbackState,
-  _visited: Set<string>,
-  rollbacks: RollbackEntry[],
-) => {
-  const map = state.helperRollbacks ?? new Map<string, RollbackEntry[]>();
-  map.set(kind, rollbacks);
-  state.helperRollbacks = map;
-  return state;
+type RecordHelperRollbacksInput = {
+  kind: string;
+  state: RollbackState;
+  rollbacks: RollbackEntry[];
 };
+
+const recordHelperRollbacks = (input: RecordHelperRollbacksInput) => {
+  const map = input.state.helperRollbacks ?? new Map<string, RollbackEntry[]>();
+  map.set(input.kind, input.rollbacks);
+  input.state.helperRollbacks = map;
+  return input.state;
+};
+
+const recordHelperRollbacksArgs = (
+  kind: string,
+  ...args: [state: RollbackState, _visited: Set<string>, rollbacks: RollbackEntry[]]
+) =>
+  recordHelperRollbacks({
+    kind,
+    state: args[0],
+    rollbacks: args[2],
+  });
 
 const createHelperArgs = (state: HelperStageState) =>
   function buildHelperArgs(_helper: unknown) {
@@ -73,7 +84,7 @@ const makeHelperStage = (
   deps: { makeHelperStage: (kind: string, spec: unknown) => unknown },
 ) =>
   deps.makeHelperStage(kind, {
-    onVisited: bindFirst(recordHelperRollbacks, kind),
+    onVisited: bindFirst(recordHelperRollbacksArgs, kind),
     makeArgs: createHelperArgs,
   });
 

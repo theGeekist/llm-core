@@ -1,7 +1,7 @@
 import type { BaseCallbackHandler } from "@langchain/core/callbacks/base";
 import type { Serialized } from "@langchain/core/load/serializable";
 import type { LLMResult } from "@langchain/core/outputs";
-import type { AdapterTraceEvent, AdapterTraceSink } from "../types";
+import type { AdapterTraceEvent, EventStream } from "../types";
 import { bindFirst, maybeMap, maybeAll } from "../../maybe";
 import { isRecord } from "../utils";
 
@@ -192,7 +192,7 @@ function emitTraceEvents(handler: BaseCallbackHandler, events: AdapterTraceEvent
   return maybeMap(combineResults, maybeAll(events.map(emit)));
 }
 
-export function fromLangChainCallbackHandler(handler: BaseCallbackHandler): AdapterTraceSink {
+export function fromLangChainCallbackHandler(handler: BaseCallbackHandler): EventStream {
   const emit = bindFirst(emitTracePair, handler);
   const emitMany = bindFirst(emitTraceEvents, handler);
   return {

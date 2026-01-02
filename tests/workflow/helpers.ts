@@ -76,7 +76,7 @@ export const createSessionStore = () => {
 export const createResumeSnapshot = (
   token: unknown,
   payload?: unknown,
-  options?: { pauseKind?: ResumeSnapshot["pauseKind"] },
+  options?: { pauseKind?: ResumeSnapshot["pauseKind"]; resumeKey?: string },
 ): ResumeSnapshot => {
   const createdAt = Date.now();
   return {
@@ -84,6 +84,7 @@ export const createResumeSnapshot = (
     createdAt,
     lastAccessedAt: createdAt,
     pauseKind: options?.pauseKind,
+    resumeKey: options?.resumeKey,
     payload,
   };
 };

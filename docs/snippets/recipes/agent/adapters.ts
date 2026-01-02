@@ -3,9 +3,7 @@ import { recipes } from "#recipes";
 import { fromAiSdkModel, fromLlamaIndexTool } from "#adapters";
 import { openai } from "@ai-sdk/openai";
 import type { BaseTool } from "@llamaindex/core/llms";
-// #endregion docs
 
-// #region docs
 // Create a raw ecosystem tool
 const llamaTool: BaseTool = {
   metadata: {
@@ -27,6 +25,6 @@ const agent = recipes.agent().defaults({
     tools: [fromLlamaIndexTool(llamaTool)],
   },
 });
-// #endregion docs
 
+// #endregion docs
 void agent;

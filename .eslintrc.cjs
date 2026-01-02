@@ -18,6 +18,7 @@ module.exports = {
   ],
   rules: {
     "max-lines": ["error", { max: 500, skipBlankLines: true, skipComments: true }],
+    "max-params": ["warn", 3],
     "no-console": "off",
     "sonarjs/no-nested-conditional": "off",
     "sonarjs/void-use": "off",

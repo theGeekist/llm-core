@@ -8,7 +8,7 @@ Most of the time, you will interact with `recipes.*()` instead.
 
 Related:
 
-- [Packs & Recipes](/reference/packs-and-recipes) (Authoring API)
+- [Composition Model](/reference/composition-model) (Authoring API)
 - [Runtime API](/reference/runtime) (Context object details)
 
 ## Quick Start (Execution)

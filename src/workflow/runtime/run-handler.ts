@@ -59,13 +59,13 @@ export const createRunHandler =
     const trace = createTrace();
     addTraceEvent(trace, "run.start", { recipe: deps.contractName });
     const diagnosticsMode = runtime?.diagnostics ?? "default";
-    const handleError = createRunErrorHandler(
+    const handleError = createRunErrorHandler({
       trace,
       diagnosticsMode,
-      deps.readErrorDiagnostics,
-      applyDiagnosticsMode,
-      deps.errorOutcome,
-    );
+      readErrorDiagnostics: deps.readErrorDiagnostics,
+      applyMode: applyDiagnosticsMode,
+      errorOutcome: deps.errorOutcome,
+    });
     const workflowDeps = {
       pipeline: deps.pipeline,
       extensionRegistration: deps.extensionRegistration,

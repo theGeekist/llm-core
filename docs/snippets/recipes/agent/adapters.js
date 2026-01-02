@@ -4,9 +4,7 @@ import { fromAiSdkModel, fromLlamaIndexTool } from "#adapters";
 import { openai } from "@ai-sdk/openai";
 import { tool as defineTool } from "@llamaindex/core/tools";
 import { z } from "zod";
-// #endregion docs
 
-// #region docs
 // Create a raw ecosystem tool
 const llamaTool = defineTool({
   name: "get_weather",
@@ -23,6 +21,6 @@ const agent = recipes.agent().defaults({
     tools: [fromLlamaIndexTool(llamaTool)],
   },
 });
-// #endregion docs
 
+// #endregion docs
 void agent;

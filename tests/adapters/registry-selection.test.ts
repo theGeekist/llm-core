@@ -30,24 +30,24 @@ describe("Adapter registry selection", () => {
 
   it("selects a provider by id override", () => {
     const { diagnostics, report, reportConflict } = createReporters(requirement);
-    const selection = resolveProviderSelection(
+    const selection = resolveProviderSelection({
       requirement,
-      providers,
-      { [CONSTRUCT]: PROVIDER_ONE },
-      {},
+      entries: providers,
+      overrides: { [CONSTRUCT]: PROVIDER_ONE },
+      defaults: {},
       report,
       reportConflict,
-    );
-    const validated = validateCapabilities(requirement, selection.selected, report);
+    });
+    const validated = validateCapabilities({ requirement, selected: selection.selected, report });
     expect(validated?.id).toBe(PROVIDER_ONE);
     expect(diagnostics.length).toBe(0);
   });
 
   it("reports missing capabilities", () => {
     const { diagnostics, report, reportConflict } = createReporters(requirement);
-    const selection = resolveProviderSelection(
+    const selection = resolveProviderSelection({
       requirement,
-      [
+      entries: [
         {
           construct: CONSTRUCT,
           providerKey: "test",
@@ -57,12 +57,12 @@ describe("Adapter registry selection", () => {
           factory: () => ({}),
         },
       ],
-      {},
-      {},
+      overrides: {},
+      defaults: {},
       report,
       reportConflict,
-    );
-    const validated = validateCapabilities(requirement, selection.selected, report);
+    });
+    const validated = validateCapabilities({ requirement, selected: selection.selected, report });
     expect(validated).toBeUndefined();
     expect(diagnostics.map((entry) => entry.message)).toContain("construct_capability_missing");
   });

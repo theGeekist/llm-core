@@ -5,9 +5,7 @@ import { openai } from "@ai-sdk/openai";
 import { BaseRetriever } from "@llamaindex/core/retriever";
 import type { QueryBundle } from "@llamaindex/core/query-engine";
 import { Document } from "@llamaindex/core/schema";
-// #endregion docs
 
-// #region docs
 class SimpleRetriever extends BaseRetriever {
   constructor() {
     super();
@@ -29,6 +27,6 @@ const outcome = await rag.run(input, {
     model: fromAiSdkModel(openai("gpt-4o-mini")),
   },
 });
-// #endregion docs
 
+// #endregion docs
 void outcome;

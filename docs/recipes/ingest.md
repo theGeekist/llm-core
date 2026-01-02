@@ -1,6 +1,6 @@
 # Recipe: Ingest (ETL for RAG)
 
-> [!NOTE] > **Goal**: Convert raw sources into vector records, with clear stages and observable failures.
+> [!NOTE] > Goal: Convert raw sources into vector records, with clear stages and observable failures.
 
 Ingest is a classic ETL flow (load -> split -> embed -> index) built as a **recipe**.
 It is designed for repeatable ingestion and incremental re-runs, the “write path” that powers
@@ -23,15 +23,15 @@ datasets, or batch ingestion for a new tenant. If RAG is the read path, ingest i
 ## 1) Quick start (loader + splitter + embedder + store)
 
 ::: tabs
-== TypeScript
-
-<<< @/snippets/recipes/ingest/quick-start.ts#docs
-
 == JavaScript
 
 <<< @/snippets/recipes/ingest/quick-start.js#docs
 
----
+== TypeScript
+
+<<< @/snippets/recipes/ingest/quick-start.ts#docs
+
+:::
 
 ## 2) Configure per-pack defaults (typed)
 
@@ -39,13 +39,13 @@ Ingest exposes a single config for pack-level defaults. Use it when you want sta
 and only override on a per-run basis.
 
 ::: tabs
-== TypeScript
-
-<<< @/snippets/recipes/ingest/defaults.ts
-
 == JavaScript
 
-<<< @/snippets/recipes/ingest/defaults.js
+<<< @/snippets/recipes/ingest/defaults.js#docs
+
+== TypeScript
+
+<<< @/snippets/recipes/ingest/defaults.ts#docs
 
 :::
 
@@ -82,16 +82,7 @@ Ingest returns full diagnostics and trace on every run. Strict mode turns warnin
 is a safer default for ingestion pipelines that must be correct. This is where loader errors, invalid
 metadata, or failed upserts surface immediately.
 
-::: tabs
-== TypeScript
-
-<<< @/snippets/recipes/ingest/diagnostics.ts
-
-== JavaScript
-
-<<< @/snippets/recipes/ingest/diagnostics.js
-
-:::
+<<< @/snippets/recipes/ingest/diagnostics.js#docs
 
 Related: [Runtime -> Diagnostics](/reference/runtime#diagnostics) and
 [Runtime -> Trace](/reference/runtime#trace).
@@ -111,16 +102,7 @@ flowchart LR
   Embed --> Index[ingest.index]
 ```
 
-::: tabs
-== TypeScript
-
-<<< @/snippets/recipes/ingest/composition.ts
-
-== JavaScript
-
-<<< @/snippets/recipes/ingest/composition.js
-
-:::
+<<< @/snippets/recipes/ingest/composition.js#docs
 
 Ingest composes cleanly with other recipes. Run it before [RAG](/recipes/rag) to refresh the knowledge
 base, or pair it with [Agent](/recipes/agent) when you want “ingest then answer” as a single flow.

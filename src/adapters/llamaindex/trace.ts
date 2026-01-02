@@ -1,4 +1,4 @@
-import type { AdapterTraceEvent, AdapterTraceSink } from "../types";
+import type { AdapterTraceEvent, EventStream } from "../types";
 import {
   createHandlerDecorator,
   type TracePlugin,
@@ -12,7 +12,7 @@ type HandlerContext = Parameters<TraceDecoratorConfig["onBeforeHandler"]>[1];
 
 const toBoolean = (value: unknown): boolean | null => (value === null ? null : value !== false);
 
-const emitTrace = (sink: AdapterTraceSink, event: AdapterTraceEvent) =>
+const emitTrace = (sink: EventStream, event: AdapterTraceEvent) =>
   maybeMap(toBoolean, sink.emit(event));
 
 const readHandlerName = (context: HandlerContext): string | undefined => {
@@ -60,38 +60,40 @@ const toErrorEvent = (context: HandlerContext, error: unknown): AdapterTraceEven
   },
 });
 
-const emitStart = (sink: AdapterTraceSink, context: HandlerContext) =>
+const emitStart = (sink: EventStream, context: HandlerContext) =>
   emitTrace(sink, toStartEvent(context));
 
-const emitEnd = (sink: AdapterTraceSink, context: HandlerContext) =>
+const emitEnd = (sink: EventStream, context: HandlerContext) =>
   emitTrace(sink, toEndEvent(context));
 
-const emitError = (sink: AdapterTraceSink, context: HandlerContext, error: unknown) =>
+const emitError = (sink: EventStream, context: HandlerContext, error: unknown) =>
   emitTrace(sink, toErrorEvent(context, error));
 
 type HandlerInvocation = {
-  sink: AdapterTraceSink;
+  sink: EventStream;
   context: HandlerContext;
   handler: WorkflowHandler;
   args: Parameters<WorkflowHandler>;
 };
 
-const buildInvocation = (
-  sink: AdapterTraceSink,
-  context: HandlerContext,
-  handler: WorkflowHandler,
-  args: Parameters<WorkflowHandler>,
-): HandlerInvocation => ({
-  sink,
-  context,
-  handler,
-  args,
+type BuildInvocationInput = {
+  sink: EventStream;
+  context: HandlerContext;
+  handler: WorkflowHandler;
+  args: Parameters<WorkflowHandler>;
+};
+
+const buildInvocation = (input: BuildInvocationInput): HandlerInvocation => ({
+  sink: input.sink,
+  context: input.context,
+  handler: input.handler,
+  args: input.args,
 });
 
 const invokeHandler = (invocation: HandlerInvocation) =>
   invocation.handler(...invocation.args) as ReturnType<WorkflowHandler>;
 
-const emitEndWithContext = (input: { sink: AdapterTraceSink; context: HandlerContext }) =>
+const emitEndWithContext = (input: { sink: EventStream; context: HandlerContext }) =>
   emitEnd(input.sink, input.context);
 
 const emitEndForInvocation = (
@@ -124,48 +126,38 @@ const runWithTrace = (invocation: HandlerInvocation) =>
   maybeChain(bindFirst(runAfterStart, invocation), emitStart(invocation.sink, invocation.context));
 
 const runHandlerWithArgs = (
-  sink: AdapterTraceSink,
-  context: HandlerContext,
-  handler: WorkflowHandler,
+  input: { sink: EventStream; context: HandlerContext; handler: WorkflowHandler },
   ...args: Parameters<WorkflowHandler>
 ): ReturnType<WorkflowHandler> =>
-  runWithTrace(buildInvocation(sink, context, handler, args)) as ReturnType<WorkflowHandler>;
-
-const runHandlerWithArgsInput = (
-  input: { sink: AdapterTraceSink; context: HandlerContext; handler: WorkflowHandler },
-  ...args: Parameters<WorkflowHandler>
-) => runHandlerWithArgs(input.sink, input.context, input.handler, ...args);
+  runWithTrace(buildInvocation({ ...input, args })) as ReturnType<WorkflowHandler>;
 
 const wrapHandler = (
-  sink: AdapterTraceSink,
+  sink: EventStream,
   context: HandlerContext,
   handler: WorkflowHandler,
-): WorkflowHandler =>
-  bindFirst(runHandlerWithArgsInput, { sink, context, handler }) as WorkflowHandler;
+): WorkflowHandler => bindFirst(runHandlerWithArgs, { sink, context, handler }) as WorkflowHandler;
 
-const onBeforeHandler = (
-  sink: AdapterTraceSink,
-  handler: WorkflowHandler,
-  handlerContext: HandlerContext,
-  metadata: unknown,
-) => {
+type BeforeHandlerArgs = Parameters<TraceDecoratorConfig["onBeforeHandler"]>;
+
+const onBeforeHandler = (input: { sink: EventStream }, ...args: BeforeHandlerArgs) => {
+  const [handler, handlerContext, metadata] = args;
   void metadata;
-  return wrapHandler(sink, toContextRecord(handlerContext), handler);
+  return wrapHandler(input.sink, toContextRecord(handlerContext), handler);
 };
 
 const onAfterHandler = <T>(metadata: T) => metadata;
 
 const createInitialValue = () => ({});
 
-const createTraceDecoratorConfig = (sink: AdapterTraceSink) => ({
+const createTraceDecoratorConfig = (sink: EventStream) => ({
   debugLabel: "llamaindex.trace",
   getInitialValue: createInitialValue,
-  onBeforeHandler: bindFirst(onBeforeHandler, sink),
+  onBeforeHandler: bindFirst(onBeforeHandler, { sink }),
   onAfterHandler,
 });
 
-const createTraceDecorator = (sink: AdapterTraceSink) =>
+const createTraceDecorator = (sink: EventStream) =>
   createHandlerDecorator(createTraceDecoratorConfig(sink));
 
-export const fromLlamaIndexTraceSink = (sink: AdapterTraceSink): TracePlugin =>
+export const fromLlamaIndexTraceSink = (sink: EventStream): TracePlugin =>
   createTraceDecorator(sink);

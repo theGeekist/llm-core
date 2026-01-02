@@ -85,7 +85,7 @@ describe("Recipe state validation", () => {
     if (!contract) {
       throw new Error("Expected rag recipe contract.");
     }
-    const runtime: WorkflowRuntime<{ input: string }, Record<string, unknown>, string> = {
+    const runtime: WorkflowRuntime<{ input: string }, Record<string, unknown>, never> = {
       run: () => baseOutcome,
       resume: () => baseOutcome,
       capabilities: () => ({}),

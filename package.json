@@ -45,8 +45,8 @@
   "private": true,
   "scripts": {
     "build": "bun run build:esm && bun run build:cjs && bun run build:types",
-    "build:esm": "bun build ./index.ts ./src/workflow/index.ts ./src/adapters/index.ts ./src/adapters/*/index.ts --outdir dist/esm --root . --sourcemap=external --splitting --format=esm --target=neutral",
-    "build:cjs": "bun build ./index.ts ./src/workflow/index.ts ./src/adapters/index.ts ./src/adapters/*/index.ts --outdir dist/cjs --root . --sourcemap=external --format=cjs --target=node --entry-naming=[dir]/[name].cjs --chunk-naming=[name]-[hash].cjs",
+    "build:esm": "bun build ./index.ts ./src/workflow/index.ts ./src/adapters/index.ts ./src/adapters/*/index.ts ./src/interaction/index.ts --outdir dist/esm --root . --sourcemap=external --splitting --format=esm --target=neutral",
+    "build:cjs": "bun build ./index.ts ./src/workflow/index.ts ./src/adapters/index.ts ./src/adapters/*/index.ts ./src/interaction/index.ts --outdir dist/cjs --root . --sourcemap=external --format=cjs --target=node --entry-naming=[dir]/[name].cjs --chunk-naming=[name]-[hash].cjs",
     "build:types": "tsc -p tsconfig.build.json --emitDeclarationOnly",
     "prepare": "git config core.hooksPath .githooks",
     "format": "prettier \"**/*.{ts,tsx,js,jsx,json,md}\" --write",
@@ -114,7 +114,8 @@
     "#workflow/*": "./src/workflow/*.ts",
     "#adapters": "./src/adapters/index.ts",
     "#adapters/*": "./src/adapters/*/index.ts",
-    "#recipes": "./src/recipes/index.ts"
+    "#recipes": "./src/recipes/index.ts",
+    "#interaction": "./src/interaction/index.ts"
   },
   "exports": {
     ".": {
@@ -172,6 +173,13 @@
       "import": "./dist/esm/src/recipes/index.js",
       "require": "./dist/cjs/src/recipes/index.cjs",
       "default": "./dist/esm/src/recipes/index.js"
+    },
+    "./interaction": {
+      "types": "./dist/types/src/interaction/index.d.ts",
+      "browser": "./dist/esm/src/interaction/index.js",
+      "import": "./dist/esm/src/interaction/index.js",
+      "require": "./dist/cjs/src/interaction/index.cjs",
+      "default": "./dist/esm/src/interaction/index.js"
     }
   },
   "peerDependencies": {
