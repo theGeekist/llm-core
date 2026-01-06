@@ -1,7 +1,12 @@
 import { describe, expect, it } from "bun:test";
 import type { BaseSynthesizer } from "@llamaindex/core/response-synthesizers";
 import { EngineResponse } from "@llamaindex/core/schema";
-import { fromLlamaIndexResponseSynthesizer } from "#adapters";
+import {
+  collectStep,
+  fromLlamaIndexResponseSynthesizer,
+  isPromiseLike,
+  maybeToStep,
+} from "#adapters";
 import { captureDiagnostics } from "./helpers";
 
 const asAsyncIterable = <T>(values: T[]): AsyncIterable<T> => ({
@@ -47,7 +52,11 @@ describe("Adapter LlamaIndex response synthesizer", () => {
       documents: [{ text: "doc" }],
     });
     const events: string[] = [];
-    for await (const event of stream) {
+    const stepResult = maybeToStep(stream);
+    const step = isPromiseLike(stepResult) ? await stepResult : stepResult;
+    const collected = collectStep(step);
+    const items = isPromiseLike(collected) ? await collected : collected;
+    for (const event of items) {
       events.push(event.type);
     }
     expect(events[0]).toBe("start");
@@ -63,7 +72,11 @@ describe("Adapter LlamaIndex response synthesizer", () => {
     }
     const stream = await adapter.stream({ query: " ", documents: [] });
     const events: Array<{ type: string; diagnostics?: Array<{ message: string }> }> = [];
-    for await (const event of stream) {
+    const stepResult = maybeToStep(stream);
+    const step = isPromiseLike(stepResult) ? await stepResult : stepResult;
+    const collected = collectStep(step);
+    const items = isPromiseLike(collected) ? await collected : collected;
+    for (const event of items) {
       events.push({
         type: event.type,
         diagnostics: "diagnostics" in event ? event.diagnostics : undefined,

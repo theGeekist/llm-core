@@ -65,12 +65,12 @@ export type StructuredQueryComparison = {
 export type StructuredQueryOperation = {
   type: "operation";
   operator: StructuredQueryOperator;
-  args?: StructuredQueryFilter[];
+  args?: StructuredQueryFilter[] | null;
 };
 
 export type StructuredQueryFilter = StructuredQueryComparison | StructuredQueryOperation;
 
 export type StructuredQuery = {
   query: string;
-  filter?: StructuredQueryFilter;
+  filter?: StructuredQueryFilter | null;
 };

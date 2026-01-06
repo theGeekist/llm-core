@@ -34,10 +34,11 @@ export const expectTelemetryPresence = (result: { telemetry?: unknown }) => {
 export const expectTelemetryUsage = (
   usage:
     | {
-        totalTokens?: number;
-        inputTokens?: number;
-        outputTokens?: number;
+        totalTokens?: number | null;
+        inputTokens?: number | null;
+        outputTokens?: number | null;
       }
+    | null
     | undefined,
 ) => {
   expect(usage).toBeDefined();

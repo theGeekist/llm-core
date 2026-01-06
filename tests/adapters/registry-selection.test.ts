@@ -63,7 +63,7 @@ describe("Adapter registry selection", () => {
       reportConflict,
     });
     const validated = validateCapabilities({ requirement, selected: selection.selected, report });
-    expect(validated).toBeUndefined();
+    expect(validated).toBeNull();
     expect(diagnostics.map((entry) => entry.message)).toContain("construct_capability_missing");
   });
 });

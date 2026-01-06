@@ -1,4 +1,5 @@
 import { describe, expect, it } from "bun:test";
+import { collectStep, isPromiseLike, maybeToStep } from "../../src/maybe";
 import { AIMessage, AIMessageChunk, ToolMessage } from "@langchain/core/messages";
 import type { BaseChatModel } from "@langchain/core/language_models/chat_models";
 import { Tooling, toSchema, fromLangChainModel } from "#adapters";
@@ -99,7 +100,7 @@ describe("Adapter LangChain model", () => {
     const adapter = fromLangChainModel(model);
 
     const result = await adapter.generate({ prompt: "hi" });
-    expect(result.usage).toBeUndefined();
+    expect(result.usage).toBeNull();
   });
 
   it("maps usage metadata when present", async () => {
@@ -122,9 +123,11 @@ describe("Adapter LangChain model", () => {
     }
     const events: Array<{ type: string }> = [];
     const stream = await adapter.stream({ prompt: "hi" });
-    for await (const event of stream) {
-      events.push({ type: event.type });
-    }
+    const stepResult = maybeToStep(stream);
+    const step = isPromiseLike(stepResult) ? await stepResult : stepResult;
+    const collected = collectStep(step);
+    const items = isPromiseLike(collected) ? await collected : collected;
+    events.push(...items.map((event) => ({ type: event.type })));
     expect(events[0]?.type).toBe("start");
     expect(events.at(-1)?.type).toBe("end");
   });
@@ -140,9 +143,11 @@ describe("Adapter LangChain model", () => {
       prompt: "hi",
       responseSchema: toSchema({ type: "object", properties: {} }),
     });
-    for await (const event of stream) {
-      events.push({ type: event.type });
-    }
+    const stepResult = maybeToStep(stream);
+    const step = isPromiseLike(stepResult) ? await stepResult : stepResult;
+    const collected = collectStep(step);
+    const items = isPromiseLike(collected) ? await collected : collected;
+    events.push(...items.map((event) => ({ type: event.type })));
     expect(events[0]?.type).toBe("error");
   });
 });

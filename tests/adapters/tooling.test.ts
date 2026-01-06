@@ -48,7 +48,7 @@ describe("Adapter tool helpers", () => {
     const missing = await tool.execute?.(undefined, context);
     const value = await tool.execute?.({ value: "ok" }, context);
 
-    expect(missing).toBeUndefined();
+    expect(missing).toBeNull();
     expect(value).toEqual({ value: "ok" });
     expect(diagnostics[0]?.message).toBe("tool_input_missing");
   });

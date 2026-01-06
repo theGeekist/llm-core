@@ -78,14 +78,14 @@ export function fromAiSdkImageModel(model: ImageModelV3): ImageModel {
       model.doGenerate({
         prompt: call.prompt,
         n: call.count ?? 1,
-        size: toSize(call.size),
-        aspectRatio: toAspectRatio(call.aspectRatio),
-        seed: call.seed,
+        size: toSize(call.size ?? undefined),
+        aspectRatio: toAspectRatio(call.aspectRatio ?? undefined),
+        seed: call.seed ?? undefined,
         files: undefined,
         mask: undefined,
-        providerOptions: toProviderOptions(call.providerOptions),
-        headers: call.headers,
-        abortSignal: call.abortSignal,
+        providerOptions: toProviderOptions(call.providerOptions ?? undefined),
+        headers: call.headers ?? undefined,
+        abortSignal: call.abortSignal ?? undefined,
       }) as MaybePromise<Awaited<ReturnType<ImageModelV3["doGenerate"]>>>,
     );
   }

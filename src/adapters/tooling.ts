@@ -4,11 +4,11 @@ import type { MaybePromise } from "../maybe";
 
 export type ToolCreateInput = {
   name: string;
-  description?: string;
-  params?: ToolParam[];
+  description?: string | null;
+  params?: ToolParam[] | null;
   inputSchema?: Tool["inputSchema"];
   outputSchema?: Tool["outputSchema"];
-  execute?: (input: unknown, context?: AdapterCallContext) => MaybePromise<unknown>;
+  execute?: ((input: unknown, context?: AdapterCallContext) => MaybePromise<unknown>) | null;
 };
 
 export const Tooling = {
@@ -38,11 +38,11 @@ export const Tooling = {
           );
           if (diagnostics.length > 0) {
             reportDiagnostics(context, diagnostics);
-            return undefined;
+            return null;
           }
           return input.execute?.(value, context);
         }
-      : undefined;
+      : null;
     return {
       name: input.name,
       description: input.description,

@@ -25,7 +25,7 @@ export function fromLlamaIndexTool(tool: BaseTool): Tool {
         const diagnostics = validateToolInput(adapterShape, input);
         if (diagnostics.length > 0) {
           reportDiagnostics(context, diagnostics);
-          return undefined;
+          return null;
         }
         return maybeMap(identity, tool.call?.(input));
       }

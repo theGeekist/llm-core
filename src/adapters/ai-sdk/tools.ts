@@ -55,7 +55,7 @@ export function toAiSdkTool(adapterTool: Tool): AiTool {
     ? (input: unknown) => adapterTool.execute?.(input)
     : undefined;
   const toolDefinition: AiTool = {
-    description: adapterTool.description,
+    description: adapterTool.description ?? undefined,
     inputSchema: inputSchema
       ? toAiSdkFlexibleSchema(inputSchema)
       : jsonSchema(adapterParamsToJsonSchema() as AiJsonSchemaInput),
@@ -67,7 +67,7 @@ export function toAiSdkTool(adapterTool: Tool): AiTool {
 
 export const toAiSdkTools = (tools?: Tool[]) => {
   if (!tools || tools.length === 0) {
-    return undefined;
+    return null;
   }
   const entries = tools.map((tool) => [tool.name, toAiSdkTool(tool)] as const);
   return Object.fromEntries(entries);

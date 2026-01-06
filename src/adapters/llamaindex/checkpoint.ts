@@ -33,19 +33,19 @@ const isSnapshotData = (value: unknown): value is SnapshotData => {
   return typeof value.version === "string";
 };
 
-const readSnapshotPayload = (snapshot: ResumeSnapshot): SnapshotData | undefined =>
-  isSnapshotData(snapshot.payload) ? snapshot.payload : undefined;
+const readSnapshotPayload = (snapshot: ResumeSnapshot): SnapshotData | null =>
+  isSnapshotData(snapshot.payload) ? snapshot.payload : null;
 
-const toCheckpointEntry = (snapshot: ResumeSnapshot): LlamaIndexCheckpointEntry | undefined => {
+const toCheckpointEntry = (snapshot: ResumeSnapshot): LlamaIndexCheckpointEntry | null => {
   const payload = readSnapshotPayload(snapshot);
   if (!payload) {
-    return undefined;
+    return null;
   }
   return {
     snapshot: payload,
-    pauseKind: snapshot.pauseKind,
+    pauseKind: snapshot.pauseKind ?? undefined,
     createdAt: snapshot.createdAt,
-    lastAccessedAt: snapshot.lastAccessedAt,
+    lastAccessedAt: snapshot.lastAccessedAt ?? undefined,
   };
 };
 
@@ -61,7 +61,7 @@ const toResumeSnapshotWithToken = (token: unknown, entry: LlamaIndexCheckpointEn
   toResumeSnapshot(token, entry);
 
 const toResumeSnapshotMaybe = (token: unknown, entry: LlamaIndexCheckpointEntry | undefined) =>
-  entry ? toResumeSnapshotWithToken(token, entry) : undefined;
+  entry ? toResumeSnapshotWithToken(token, entry) : null;
 
 const readEntry = (store: LlamaIndexCheckpointStore, token: unknown) =>
   maybeMap(bindFirst(toResumeSnapshotMaybe, token), store.get(token));

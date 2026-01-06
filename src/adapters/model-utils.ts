@@ -30,12 +30,12 @@ export const toResponseFormatSchema = (schema: Record<string, unknown>) => ({
 
 export const tryParseJson = (value: string) => {
   if (!value) {
-    return undefined;
+    return null;
   }
   try {
     return JSON.parse(value) as unknown;
   } catch {
-    return undefined;
+    return null;
   }
 };
 

@@ -40,11 +40,11 @@ const adapterConstructs: Array<keyof AdapterBundle> = [
 const mergeLists = <T>(left: T[] | undefined, right: T[] | undefined) =>
   right ? [...(left ?? []), ...right] : left;
 
-const replaceIfDefined = <T>(current: T | undefined, next: T | undefined) =>
-  next === undefined ? current : next;
+const replaceIfDefined = <T>(current: T | null | undefined, next: T | null | undefined) =>
+  next === undefined || next === null ? current : next;
 
-const mergeIfDefined = <T>(current: T[] | undefined, next: T[] | undefined) =>
-  next === undefined ? current : mergeLists(current, next);
+const mergeIfDefined = <T>(current: T[] | null | undefined, next: T[] | null | undefined) =>
+  next === undefined || next === null ? current : mergeLists(current ?? undefined, next);
 
 const mergeAdapterBundle = (
   target: AdapterBundle,

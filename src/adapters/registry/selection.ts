@@ -10,11 +10,11 @@ const hasCapabilities = (required: string[] | undefined, available: string[] | u
 
 const pickHighestPriority = (providers: AdapterProviderRegistration[]) => {
   if (providers.length === 0) {
-    return undefined;
+    return null;
   }
   const first = providers[0];
   if (!first) {
-    return undefined;
+    return null;
   }
   let selected = first;
   let best = selected.priority ?? 0;
@@ -50,6 +50,7 @@ const selectById = (input: SelectByIdInput) => {
       construct: input.requirement.name,
       providerId: input.providerId,
     });
+    return null;
   }
   return selected;
 };
@@ -74,12 +75,12 @@ const selectByPriority = (input: SelectByPriorityInput) => {
     } else {
       input.report("construct_provider_missing", { construct: input.requirement.name });
     }
-    return undefined;
+    return null;
   }
   const selected = pickHighestPriority(candidates);
   if (!selected) {
     input.report("construct_provider_missing", { construct: input.requirement.name });
-    return undefined;
+    return null;
   }
   if (hasPriorityConflict(candidates, selected)) {
     input.reportConflict(selected);
@@ -89,13 +90,13 @@ const selectByPriority = (input: SelectByPriorityInput) => {
 
 type ValidateCapabilitiesInput = {
   requirement: ConstructRequirement;
-  selected: AdapterProviderRegistration | undefined;
+  selected: AdapterProviderRegistration | null | undefined;
   report: (code: string, data?: Record<string, unknown>) => void;
 };
 
 export const validateCapabilities = (input: ValidateCapabilitiesInput) => {
   if (!input.selected) {
-    return undefined;
+    return null;
   }
   if (hasCapabilities(input.requirement.capabilities, input.selected.capabilities)) {
     return input.selected;
@@ -105,7 +106,7 @@ export const validateCapabilities = (input: ValidateCapabilitiesInput) => {
     providerId: input.selected.id,
     missing: input.requirement.capabilities ?? [],
   });
-  return undefined;
+  return null;
 };
 
 type ResolveProviderSelectionInput = {

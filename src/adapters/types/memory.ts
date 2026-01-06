@@ -21,13 +21,13 @@ export type Memory = {
     input: Record<string, unknown>,
     context?: AdapterCallContext,
   ): MaybePromise<Record<string, unknown>>;
-  read?(threadId: string, context?: AdapterCallContext): MaybePromise<Thread | undefined>;
+  read?(threadId: string, context?: AdapterCallContext): MaybePromise<Thread | null>;
   reset?(context?: AdapterCallContext): MaybePromise<boolean | null>;
   save?(
     input: Record<string, unknown>,
     output: Record<string, unknown>,
     context?: AdapterCallContext,
   ): MaybePromise<boolean | null>;
-  summarize?(threadId: string, context?: AdapterCallContext): MaybePromise<string>;
+  summarize?(threadId: string, context?: AdapterCallContext): MaybePromise<string | null>;
   metadata?: AdapterMetadata;
 };

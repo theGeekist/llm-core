@@ -50,7 +50,7 @@ const applySeedStep = (options: Parameters<StepApply>[0]) => {
   const loop = readLoopState(options.state);
   const parsed = readLoopInput(options.input);
   setLoopValue(loop, "input", parsed.input);
-  setLoopValue(loop, "maxIterations", normalizeIterations(parsed.maxIterations));
+  setLoopValue(loop, "maxIterations", normalizeIterations(parsed.maxIterations ?? undefined));
   return null;
 };
 
@@ -61,7 +61,7 @@ const applyModelResult = (loop: LoopState, result: ModelResult | null) => {
   return null;
 };
 
-const runModel = (model: Model | undefined, prompt: string) =>
+const runModel = (model: Model | null | undefined, prompt: string) =>
   model ? model.generate({ prompt }) : null;
 
 const applyIterate: StepApply = ({ context, state }) => {

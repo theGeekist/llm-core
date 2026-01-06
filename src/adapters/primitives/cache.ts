@@ -15,9 +15,10 @@ const toBoolean = (value: unknown): boolean | null => (value === null ? null : v
 const toExpiresAt = (ttlMs?: number) =>
   typeof ttlMs === "number" ? Date.now() + ttlMs : undefined;
 
-const readExpiresAt = (value: Blob | undefined) => readNumber(value?.metadata?.[CACHE_EXPIRY_KEY]);
+const readExpiresAt = (value: Blob | null | undefined) =>
+  readNumber(value?.metadata?.[CACHE_EXPIRY_KEY]);
 
-const isBlobExpired = (value: Blob | undefined) => {
+const isBlobExpired = (value: Blob | null | undefined) => {
   const expiresAt = readExpiresAt(value);
   return typeof expiresAt === "number" && Date.now() > expiresAt;
 };
@@ -55,7 +56,7 @@ const deleteKvEntry = (store: KVStore<Blob>, key: string, context?: AdapterCallC
 type ReadKvEntryInput = {
   store: KVStore<Blob>;
   key: string;
-  value: Blob | undefined;
+  value: Blob | null | undefined;
   context?: AdapterCallContext;
 };
 
@@ -73,7 +74,7 @@ type ReadKvEntriesInput = {
   store: KVStore<Blob>;
   key: string;
   context: AdapterCallContext | undefined;
-  entries: Array<Blob | undefined>;
+  entries: Array<Blob | null | undefined>;
 };
 
 const readKvEntries = (input: ReadKvEntriesInput) =>
@@ -142,7 +143,7 @@ export const createMemoryCache = (): Cache => {
 
 export const createCacheFromKVStore = (store: KVStore<Blob>): Cache => {
   const get = (key: string, context?: AdapterCallContext) => {
-    const readEntries = (entries: Array<Blob | undefined>) =>
+    const readEntries = (entries: Array<Blob | null | undefined>) =>
       readKvEntries({
         store,
         key,

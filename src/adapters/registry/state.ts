@@ -1,3 +1,4 @@
+/* eslint-disable sonarjs/no-invariant-returns */
 import type { AdapterBundle } from "../types";
 type AdapterConstructName = keyof AdapterBundle | string;
 export type RegistryState = {
@@ -52,6 +53,7 @@ export const createState = (
   constructs: {},
 });
 
+// eslint-disable-next-line sonarjs/no-invariant-returns
 export const addAdapterValue = (
   state: RegistryState,
   construct: AdapterConstructName,
@@ -60,7 +62,8 @@ export const addAdapterValue = (
   if (isBundleKey(construct)) {
     const bundle = state.adapters as Record<string, unknown>;
     bundle[construct] = value;
-    return;
+    return null;
   }
   state.constructs[construct] = value;
+  return null;
 };

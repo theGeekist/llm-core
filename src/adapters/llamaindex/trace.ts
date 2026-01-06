@@ -15,12 +15,12 @@ const toBoolean = (value: unknown): boolean | null => (value === null ? null : v
 const emitTrace = (sink: EventStream, event: AdapterTraceEvent) =>
   maybeMap(toBoolean, sink.emit(event));
 
-const readHandlerName = (context: HandlerContext): string | undefined => {
+const readHandlerName = (context: HandlerContext): string | null => {
   const handler = context.handler;
   if (typeof handler === "function") {
     return readString(handler.name);
   }
-  return undefined;
+  return null;
 };
 
 const readContextArraySize = (value: unknown): number | undefined =>

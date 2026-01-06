@@ -8,9 +8,9 @@ import {
   toStreamStartEvent,
 } from "../stream-utils";
 
-export const toToolCallFromPart = (part: TextStreamPart<ToolSet>): ToolCall | undefined => {
+export const toToolCallFromPart = (part: TextStreamPart<ToolSet>): ToolCall | null => {
   if (part.type !== "tool-call") {
-    return undefined;
+    return null;
   }
   return {
     id: part.toolCallId,
@@ -19,7 +19,7 @@ export const toToolCallFromPart = (part: TextStreamPart<ToolSet>): ToolCall | un
   };
 };
 
-export const toToolResultFromPart = (part: TextStreamPart<ToolSet>): ToolResult | undefined => {
+export const toToolResultFromPart = (part: TextStreamPart<ToolSet>): ToolResult | null => {
   if (part.type === "tool-result") {
     return {
       toolCallId: part.toolCallId,
@@ -35,7 +35,7 @@ export const toToolResultFromPart = (part: TextStreamPart<ToolSet>): ToolResult 
       isError: true,
     };
   }
-  return undefined;
+  return null;
 };
 
 export const toEventFromPart = (part: TextStreamPart<ToolSet>): ModelStreamEvent => {

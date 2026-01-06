@@ -11,45 +11,45 @@ import type { MaybePromise } from "../../maybe";
 type ProviderOptions = Record<string, Record<string, unknown>>;
 type ProviderHeaders = Record<string, string | undefined>;
 type ProviderCallMeta = {
-  providerOptions?: ProviderOptions;
-  headers?: ProviderHeaders;
-  abortSignal?: AbortSignal;
-  metadata?: AdapterMetadata;
+  providerOptions?: ProviderOptions | null;
+  headers?: ProviderHeaders | null;
+  abortSignal?: AbortSignal | null;
+  metadata?: AdapterMetadata | null;
 };
 
 type MediaResultBase = {
-  diagnostics?: AdapterDiagnostic[];
-  telemetry?: ModelTelemetry;
-  trace?: AdapterTraceEvent[];
-  meta?: ModelMeta;
-  raw?: unknown;
+  diagnostics?: AdapterDiagnostic[] | null;
+  telemetry?: ModelTelemetry | null;
+  trace?: AdapterTraceEvent[] | null;
+  meta?: ModelMeta | null;
+  raw?: unknown | null;
 };
 
 export type ImageCall = ProviderCallMeta & {
   prompt: string;
-  count?: number;
-  size?: string;
-  aspectRatio?: string;
-  seed?: number;
+  count?: number | null;
+  size?: string | null;
+  aspectRatio?: string | null;
+  seed?: number | null;
 };
 
 export type ImageResult = MediaResultBase & {
   images: Blob[];
-  usage?: ModelUsage;
+  usage?: ModelUsage | null;
 };
 
 export type ImageModel = {
   generate(call: ImageCall, context?: AdapterCallContext): MaybePromise<ImageResult>;
-  metadata?: AdapterMetadata;
+  metadata?: AdapterMetadata | null;
 };
 
 export type SpeechCall = ProviderCallMeta & {
   text: string;
-  voice?: string;
-  outputFormat?: string;
-  instructions?: string;
-  speed?: number;
-  language?: string;
+  voice?: string | null;
+  outputFormat?: string | null;
+  instructions?: string | null;
+  speed?: number | null;
+  language?: string | null;
 };
 
 export type SpeechResult = MediaResultBase & {
@@ -58,7 +58,7 @@ export type SpeechResult = MediaResultBase & {
 
 export type SpeechModel = {
   generate(call: SpeechCall, context?: AdapterCallContext): MaybePromise<SpeechResult>;
-  metadata?: AdapterMetadata;
+  metadata?: AdapterMetadata | null;
 };
 
 export type TranscriptionCall = ProviderCallMeta & {
@@ -73,9 +73,9 @@ export type TranscriptionSegment = {
 
 export type TranscriptionResult = MediaResultBase & {
   text: string;
-  segments?: TranscriptionSegment[];
-  language?: string;
-  durationSeconds?: number;
+  segments?: TranscriptionSegment[] | null;
+  language?: string | null;
+  durationSeconds?: number | null;
 };
 
 export type TranscriptionModel = {
@@ -83,5 +83,5 @@ export type TranscriptionModel = {
     call: TranscriptionCall,
     context?: AdapterCallContext,
   ): MaybePromise<TranscriptionResult>;
-  metadata?: AdapterMetadata;
+  metadata?: AdapterMetadata | null;
 };

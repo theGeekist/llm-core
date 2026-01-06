@@ -88,7 +88,10 @@ describe("Cache adapters", () => {
       },
     };
 
-    const cache = createCacheFromKVStore(store);
+    const cache = createCacheFromKVStore({
+      ...store,
+      mget: (keys) => store.mget(keys).map((val) => val ?? null),
+    });
     await cache.set("kv-key", blob);
     expect(await cache.get("kv-key")).toEqual(blob);
     await cache.delete("kv-key");
@@ -110,7 +113,10 @@ describe("Cache adapters", () => {
       },
     };
 
-    const cache = createCacheFromKVStore(store);
+    const cache = createCacheFromKVStore({
+      ...store,
+      mget: (keys) => store.mget(keys).map((val) => val ?? null),
+    });
     await cache.set("kv-ttl", blob, 5);
     expect(await cache.get("kv-ttl")).toEqual(blob);
 

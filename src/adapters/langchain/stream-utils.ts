@@ -10,35 +10,35 @@ export type StreamMeta = {
   timestamp?: number;
 };
 
-export const readUsage = (usage: unknown): ModelUsage | undefined => {
+export const readUsage = (usage: unknown): ModelUsage | null => {
   const typed = usage as { input_tokens?: number; output_tokens?: number; total_tokens?: number };
   if (
     typed?.input_tokens === undefined &&
     typed?.output_tokens === undefined &&
     typed?.total_tokens === undefined
   ) {
-    return undefined;
+    return null;
   }
   return {
-    inputTokens: typed.input_tokens,
-    outputTokens: typed.output_tokens,
-    totalTokens: typed.total_tokens,
+    inputTokens: typed.input_tokens ?? null,
+    outputTokens: typed.output_tokens ?? null,
+    totalTokens: typed.total_tokens ?? null,
   };
 };
 
-export const readStreamMeta = (chunk: BaseMessageChunk): StreamMeta | undefined => {
+export const readStreamMeta = (chunk: BaseMessageChunk): StreamMeta | null => {
   const meta = (chunk as { response_metadata?: Record<string, unknown> }).response_metadata;
   if (!meta) {
-    return undefined;
+    return null;
   }
   const id = readString(meta.id ?? meta.request_id);
   const modelId = readString(meta.model ?? meta.model_name);
   const created = readNumber(meta.created);
   const timestamp = typeof created === "number" ? normalizeTimestamp(created) : undefined;
   if (!id && !modelId && timestamp === undefined) {
-    return undefined;
+    return null;
   }
-  return { id, modelId, timestamp };
+  return { id: id ?? undefined, modelId: modelId ?? undefined, timestamp };
 };
 
 export const readTextPart = (entry: unknown) => {
@@ -66,7 +66,7 @@ export const readTextDelta = (chunk: BaseMessageChunk) => {
 
 export const toToolCall = (chunk: { id?: string; name?: string; args?: string }) => {
   if (!chunk.name) {
-    return undefined;
+    return null;
   }
   let args: Record<string, unknown> = {};
   if (chunk.args) {
@@ -122,9 +122,9 @@ export const readChunkType = (chunk: BaseMessageChunk) => {
 export const isToolChunk = (chunk: BaseMessageChunk) =>
   readChunkType(chunk) === "tool" && ToolMessageChunk.isInstance(chunk);
 
-export const readToolResult = (chunk: BaseMessageChunk): ToolResult | undefined => {
+export const readToolResult = (chunk: BaseMessageChunk): ToolResult | null => {
   if (!isToolChunk(chunk)) {
-    return undefined;
+    return null;
   }
   const toolChunk = chunk as ToolMessageChunk;
   const content = readTextDelta(toolChunk);

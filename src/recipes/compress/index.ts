@@ -32,7 +32,7 @@ const readCompressState = (state: Record<string, unknown>): CompressState => {
 const seedInput = (compress: CompressState, input: unknown) => {
   const record = readInputRecord(input);
   if (record?.input) {
-    compress.input = readString(record.input);
+    compress.input = readString(record.input) ?? undefined;
   }
 };
 
@@ -40,12 +40,12 @@ const buildPrompt = (text: string) => `Summarize:\n${text}`;
 
 const applySummary = (compress: CompressState, result: ModelResult | undefined) => {
   if (result?.text !== undefined) {
-    compress.summary = result.text;
+    compress.summary = result.text ?? undefined;
   }
   return null;
 };
 
-const runModel = (model: Model | undefined, prompt: string) => {
+const runModel = (model: Model | null | undefined, prompt: string) => {
   if (!model) {
     return null;
   }

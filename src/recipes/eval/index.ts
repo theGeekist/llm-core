@@ -15,22 +15,22 @@ type EvalState = Record<string, unknown>;
 const EVAL_STATE_PREFIX = "eval.";
 const DATASET_ROWS_KEY = "dataset.rows";
 
-const readInputRecord = (value: unknown): Record<string, unknown> | undefined =>
-  isRecord(value) ? value : undefined;
+const readInputRecord = (value: unknown): Record<string, unknown> | null =>
+  isRecord(value) ? value : null;
 
-const readStringArray = (value: unknown): string[] | undefined => {
+const readStringArray = (value: unknown): string[] | null => {
   if (!Array.isArray(value)) {
-    return undefined;
+    return null;
   }
   return value.filter((item) => typeof item === "string");
 };
 
-const readCandidateCount = (value: unknown): number | undefined => {
+const readCandidateCount = (value: unknown): number | null => {
   const count = readNumber(value);
   if (count === undefined) {
-    return undefined;
+    return null;
   }
-  return Math.max(1, Math.floor(count));
+  return Math.max(1, Math.floor(count ?? 1));
 };
 
 const readDatasetRows = (record: Record<string, unknown> | undefined) => {
@@ -42,7 +42,7 @@ const readDatasetRows = (record: Record<string, unknown> | undefined) => {
   if (isRecord(dataset)) {
     return readStringArray(dataset.rows);
   }
-  return undefined;
+  return null;
 };
 
 const readEvalState = (state: Record<string, unknown>): EvalState => state;
@@ -73,7 +73,7 @@ const seedEvalInput = (evalState: EvalState, input: unknown, config?: EvalConfig
     setEvalValue(evalState, "candidates", candidateList);
   }
   setEvalValue(evalState, "candidateCount", resolvedCount);
-  const rows = readDatasetRows(record) ?? [];
+  const rows = readDatasetRows(record ?? undefined) ?? [];
   evalState[DATASET_ROWS_KEY] = rows;
 };
 
@@ -112,12 +112,12 @@ const applyCandidateResult = (context: CandidateContext, result: ModelResult | n
   setEvalValue(
     context.evalState,
     "candidates",
-    buildCandidateList(context.prompt, context.count, generated),
+    buildCandidateList(context.prompt, context.count, generated ?? undefined),
   );
   return null;
 };
 
-const generateCandidates = (evalState: EvalState, model: Model | undefined) => {
+const generateCandidates = (evalState: EvalState, model: Model | null | undefined) => {
   const prompt = readPrompt(evalState);
   const count = readCandidateCountValue(evalState);
   if (!model || !prompt) {

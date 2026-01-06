@@ -12,7 +12,7 @@ import type { Runtime } from "../types";
 import { readPipelinePauseSnapshot, toPauseKind } from "../pause";
 
 export type SessionStore = {
-  get: (token: unknown) => MaybePromise<ResumeSnapshot | undefined>;
+  get: (token: unknown) => MaybePromise<ResumeSnapshot | null>;
   set: (token: unknown, snapshot: ResumeSnapshot, ttlMs?: number) => MaybePromise<boolean | null>;
   delete: (token: unknown) => MaybePromise<boolean | null>;
   touch?: (token: unknown, ttlMs?: number) => MaybePromise<boolean | null>;
@@ -22,7 +22,7 @@ export type SessionStore = {
 type SnapshotWriteInput = {
   store: SessionStore;
   token: unknown;
-  resumeKey?: string;
+  resumeKey?: string | null;
   snapshot: ResumeSnapshot;
   ttlMs?: number;
 };
@@ -30,30 +30,30 @@ type SnapshotWriteInput = {
 type ResumeSessionSnapshotInput = {
   store: SessionStore;
   token: unknown;
-  resumeKey?: string;
+  resumeKey?: string | null;
 };
 
 // Serialization helpers
-const serialize = (snapshot: ResumeSnapshot): { value: AdapterBlob } => {
+const serialize = (snapshot: ResumeSnapshot): { value: AdapterBlob } | null => {
   const json = JSON.stringify(snapshot);
   const bytes = new TextEncoder().encode(json);
   return { value: { bytes, contentType: "application/json" } };
 };
 
-const deserialize = (blob: AdapterBlob | null): ResumeSnapshot | undefined => {
-  if (!blob) return undefined;
+const deserialize = (blob: AdapterBlob | null): ResumeSnapshot | null => {
+  if (!blob) return null;
   try {
     const json = new TextDecoder().decode(blob.bytes);
     return JSON.parse(json) as ResumeSnapshot;
   } catch {
-    return undefined;
+    return null;
   }
 };
 
 export const createSessionStoreFromCache = (cache: Cache): SessionStore => ({
   get: (token: unknown) => {
     if (typeof token !== "string" && typeof token !== "number") {
-      return undefined;
+      return null;
     }
     return maybeMap(deserialize, cache.get(String(token)));
   },
@@ -63,6 +63,9 @@ export const createSessionStoreFromCache = (cache: Cache): SessionStore => ({
     }
     try {
       const serialized = serialize(snapshot);
+      if (!serialized) {
+        return false;
+      }
       return cache.set(String(token), serialized.value, ttlMs);
     } catch {
       return false;
@@ -95,34 +98,34 @@ const isSessionStore = (value: unknown): value is SessionStore => {
 
 export const readSessionStore = (
   runtime?: Runtime | { resume?: { sessionStore?: unknown } },
-): SessionStore | undefined => {
+): SessionStore | null => {
   const candidate = (runtime?.resume as { sessionStore?: unknown } | undefined)?.sessionStore;
-  return isSessionStore(candidate) ? candidate : undefined;
+  return isSessionStore(candidate) ? candidate : null;
 };
 
 export const readSessionTtlMs = (
   runtime?: Runtime | { resume?: { sessionTtlMs?: unknown } },
-): number | undefined => {
+): number | null => {
   const ttl = (runtime?.resume as { sessionTtlMs?: unknown } | undefined)?.sessionTtlMs;
-  return typeof ttl === "number" ? ttl : undefined;
+  return typeof ttl === "number" ? ttl : null;
 };
 
 const isResumeKey = (value: unknown): value is string =>
   typeof value === "string" && value.length > 0;
 
-const readResumeKeyFromState = (state: unknown): string | undefined => {
+const readResumeKeyFromState = (state: unknown): string | null => {
   if (!state || typeof state !== "object") {
-    return undefined;
+    return null;
   }
   const resumeKey = (state as { __pause?: { resumeKey?: unknown } }).__pause?.resumeKey;
-  return isResumeKey(resumeKey) ? resumeKey : undefined;
+  return isResumeKey(resumeKey) ? resumeKey : null;
 };
 
 const readResumeKeyFromSnapshot = (
   snapshot: ReturnType<typeof readPipelinePauseSnapshot>,
-): string | undefined => readResumeKeyFromState(snapshot?.state);
+): string | null => readResumeKeyFromState(snapshot?.state);
 
-const readResumeKeyFromResult = (result: unknown): string | undefined => {
+const readResumeKeyFromResult = (result: unknown): string | null => {
   const snapshot = readPipelinePauseSnapshot(result);
   if (snapshot) {
     const resumeKey = readResumeKeyFromSnapshot(snapshot);
@@ -141,7 +144,7 @@ const readResumeKeyFromResult = (result: unknown): string | undefined => {
   }
   const stateResumeKey = (result as { state?: { __pause?: { resumeKey?: unknown } } }).state
     ?.__pause?.resumeKey;
-  return isResumeKey(stateResumeKey) ? stateResumeKey : undefined;
+  return isResumeKey(stateResumeKey) ? stateResumeKey : null;
 };
 
 const readPauseSnapshotPayload = (result: unknown) => {
@@ -151,17 +154,17 @@ const readPauseSnapshotPayload = (result: unknown) => {
 
 type CreateResumeSnapshotInput = {
   token: unknown;
-  pauseKind: PauseKind | undefined;
+  pauseKind: PauseKind | null;
   payload: unknown;
   snapshot?: unknown;
-  resumeKey?: string;
+  resumeKey?: string | null;
 };
 
 const createResumeSnapshot = (input: CreateResumeSnapshotInput): ResumeSnapshot => {
   const createdAt = Date.now();
   return {
     token: input.token,
-    resumeKey: input.resumeKey,
+    resumeKey: input.resumeKey ?? null,
     pauseKind: input.pauseKind,
     createdAt,
     lastAccessedAt: createdAt,
@@ -216,22 +219,25 @@ const resolveResumeSessionFromStore = (input: ResumeSessionSnapshotInput) => {
   );
 };
 
-export const createSnapshotRecorder = (store: SessionStore | undefined, runtime?: Runtime) => {
+export const createSnapshotRecorder = (
+  store: SessionStore | null | undefined,
+  runtime?: Runtime,
+) => {
   if (!store) {
     return function recordSnapshot() {
       return null;
     };
   }
-  const ttlMs = readSessionTtlMs(runtime);
+  const ttlMs = readSessionTtlMs(runtime) ?? undefined;
   return function recordSnapshot(result: unknown) {
     const pipelineSnapshot = readPipelinePauseSnapshot(result);
     const token = pipelineSnapshot ? pipelineSnapshot.token : (result as { token?: unknown }).token;
-    if (token === undefined) {
+    if (token === null || token === undefined) {
       return false;
     }
     const pauseKind = pipelineSnapshot
       ? toPauseKind(pipelineSnapshot.pauseKind)
-      : (result as { pauseKind?: PauseKind }).pauseKind;
+      : ((result as { pauseKind?: PauseKind | null }).pauseKind ?? null);
     const payload = pipelineSnapshot ? pipelineSnapshot.payload : readPauseSnapshotPayload(result);
     const snapshot = pipelineSnapshot ?? (result as { snapshot?: unknown }).snapshot;
     const resumeKey = readResumeKeyFromResult(result);
@@ -258,16 +264,16 @@ export const createSnapshotRecorder = (store: SessionStore | undefined, runtime?
 
 type ResolveResumeSessionInput = {
   token: unknown;
-  resumeKey?: string;
+  resumeKey?: string | null;
   session?: PauseSession;
-  store?: SessionStore;
+  store?: SessionStore | null;
 };
 
 export const resolveResumeSession = (
   input: ResolveResumeSessionInput,
 ): MaybePromise<ResumeSession> => {
   if (input.session) {
-    return { kind: "pause", session: input.session, store: input.store };
+    return { kind: "pause", session: input.session, store: input.store ?? undefined };
   }
   if (!input.store) {
     return { kind: "invalid" };
@@ -275,11 +281,14 @@ export const resolveResumeSession = (
   return resolveResumeSessionFromStore({
     store: input.store,
     token: input.token,
-    resumeKey: isResumeKey(input.resumeKey) ? input.resumeKey : undefined,
+    resumeKey: isResumeKey(input.resumeKey) ? input.resumeKey : null,
   });
 };
 
-export const resolveSessionStore = (runtime: Runtime | undefined, adapters: AdapterBundle) => {
+export const resolveSessionStore = (
+  runtime: Runtime | undefined,
+  adapters: AdapterBundle,
+): SessionStore | null => {
   const runtimeStore = readSessionStore(runtime);
   if (runtimeStore) {
     return runtimeStore;
@@ -287,8 +296,8 @@ export const resolveSessionStore = (runtime: Runtime | undefined, adapters: Adap
   if (adapters.checkpoint) {
     return adapters.checkpoint;
   }
-  return adapters.cache ? createSessionStoreFromCache(adapters.cache) : undefined;
+  return adapters.cache ? createSessionStoreFromCache(adapters.cache) : null;
 };
 
-export const runSessionStoreSweep = (store: SessionStore | undefined) =>
+export const runSessionStoreSweep = (store: SessionStore | null | undefined) =>
   store?.sweep ? store.sweep() : null;

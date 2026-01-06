@@ -19,15 +19,15 @@ import {
 } from "./runtime/retry";
 
 export type AdapterContextOptions = {
-  retry?: RetryConfig;
-  retryDefaults?: RetryConfig;
+  retry?: RetryConfig | null;
+  retryDefaults?: RetryConfig | null;
   trace?: TraceEvent[];
 };
 
 export type RetryWrapContext = {
   context: AdapterCallContext;
-  retry?: RetryConfig;
-  retryDefaults?: RetryConfig;
+  retry?: RetryConfig | null;
+  retryDefaults?: RetryConfig | null;
   trace?: TraceEvent[];
 };
 
@@ -61,7 +61,7 @@ export const createRetryWrapContext = (
   trace: options?.trace,
 });
 
-export const readRetryPolicy = (retry: RetryConfig | undefined, kind: RetryAdapterKind) =>
+export const readRetryPolicy = (retry: RetryConfig | null | undefined, kind: RetryAdapterKind) =>
   selectRetryConfig(retry, kind);
 
 type BuildRetryWrapperInputInput<TArgs extends unknown[], TResult> = {
@@ -69,7 +69,7 @@ type BuildRetryWrapperInputInput<TArgs extends unknown[], TResult> = {
   adapterKind: RetryAdapterKind;
   method: string;
   call: (...args: [...TArgs, AdapterCallContext?]) => MaybePromise<TResult>;
-  metadata?: RetryMetadata;
+  metadata?: RetryMetadata | null;
 };
 
 export const buildRetryWrapperInput = <TArgs extends unknown[], TResult>(
@@ -89,7 +89,7 @@ type WrapRequiredOneInput<TInput, TResult> = {
   adapterKind: RetryAdapterKind;
   method: string;
   fn: AdapterFnOne<TInput, TResult>;
-  metadata?: RetryMetadata;
+  metadata?: RetryMetadata | null;
 };
 
 export const wrapRequiredOne = <TInput, TResult>(input: WrapRequiredOneInput<TInput, TResult>) =>
@@ -109,7 +109,7 @@ type WrapOptionalOneInput<TInput, TResult> = {
   adapterKind: RetryAdapterKind;
   method: string;
   fn: AdapterFnOne<TInput, TResult> | undefined;
-  metadata?: RetryMetadata;
+  metadata?: RetryMetadata | null;
 };
 
 export const wrapOptionalOne = <TInput, TResult>(input: WrapOptionalOneInput<TInput, TResult>) =>
@@ -131,7 +131,7 @@ type WrapRequiredZeroInput<TResult> = {
   adapterKind: RetryAdapterKind;
   method: string;
   fn: AdapterFnZero<TResult>;
-  metadata?: RetryMetadata;
+  metadata?: RetryMetadata | null;
 };
 
 export const wrapRequiredZero = <TResult>(input: WrapRequiredZeroInput<TResult>) =>
@@ -151,7 +151,7 @@ type WrapRequiredTwoInput<TFirst, TSecond, TResult> = {
   adapterKind: RetryAdapterKind;
   method: string;
   fn: AdapterFnTwo<TFirst, TSecond, TResult>;
-  metadata?: RetryMetadata;
+  metadata?: RetryMetadata | null;
 };
 
 export const wrapRequiredTwo = <TFirst, TSecond, TResult>(
@@ -173,7 +173,7 @@ type WrapRequiredThreeInput<TFirst, TSecond, TThird, TResult> = {
   adapterKind: RetryAdapterKind;
   method: string;
   fn: AdapterFnThree<TFirst, TSecond, TThird, TResult>;
-  metadata?: RetryMetadata;
+  metadata?: RetryMetadata | null;
 };
 
 export const wrapRequiredThree = <TFirst, TSecond, TThird, TResult>(
@@ -195,7 +195,7 @@ type WrapOptionalTwoInput<TFirst, TSecond, TResult> = {
   adapterKind: RetryAdapterKind;
   method: string;
   fn: AdapterFnTwo<TFirst, TSecond, TResult> | undefined;
-  metadata?: RetryMetadata;
+  metadata?: RetryMetadata | null;
 };
 
 export const wrapOptionalTwo = <TFirst, TSecond, TResult>(
@@ -219,7 +219,7 @@ type WrapOptionalThreeInput<TFirst, TSecond, TThird, TResult> = {
   adapterKind: RetryAdapterKind;
   method: string;
   fn: AdapterFnThree<TFirst, TSecond, TThird, TResult> | undefined;
-  metadata?: RetryMetadata;
+  metadata?: RetryMetadata | null;
 };
 
 export const wrapOptionalThree = <TFirst, TSecond, TThird, TResult>(
@@ -238,7 +238,7 @@ export const wrapOptionalThree = <TFirst, TSecond, TThird, TResult>(
       )
     : undefined;
 
-const canRetryStream = (policy?: RetryPolicy, metadata?: RetryMetadata) =>
+const canRetryStream = (policy?: RetryPolicy | null, metadata?: RetryMetadata | null) =>
   !!policy && metadata?.restartable === true;
 
 type WrapRetryStreamInput<TInput, TResult> = {
@@ -246,8 +246,8 @@ type WrapRetryStreamInput<TInput, TResult> = {
   adapterKind: RetryAdapterKind;
   method: string;
   stream: AdapterFnOne<TInput, TResult> | undefined;
-  metadata: RetryMetadata | undefined;
-  policy: RetryPolicy | undefined;
+  metadata: RetryMetadata | null | undefined;
+  policy: RetryPolicy | null | undefined;
 };
 
 export const wrapRetryStream = <TInput, TResult>(input: WrapRetryStreamInput<TInput, TResult>) =>

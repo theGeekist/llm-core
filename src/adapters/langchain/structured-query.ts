@@ -11,7 +11,7 @@ import type {
   StructuredQueryOperation,
   StructuredQueryValue,
 } from "../types";
-import { isDefined, isRecord } from "../utils";
+import { isRecord } from "../utils";
 
 const toStructuredQueryValue = (value: unknown): StructuredQueryValue => {
   if (typeof value === "string" || typeof value === "number" || typeof value === "boolean") {
@@ -48,7 +48,7 @@ const toStructuredQueryComparisonLike = (
 const toStructuredQueryOperation = (operation: Operation): StructuredQueryOperation => ({
   type: "operation",
   operator: operation.operator,
-  args: mapFilterArgs(operation.args),
+  args: mapFilterArgs(operation.args ?? undefined),
 });
 
 type OperationLike = {
@@ -65,7 +65,9 @@ const toStructuredQueryOperationLike = (operation: OperationLike): StructuredQue
   args: mapFilterArgs(Array.isArray(operation.args) ? operation.args : undefined),
 });
 
-const toStructuredQueryFilter = (directive: FilterDirective): StructuredQueryFilter | undefined => {
+const isNotNull = <T>(value: T | null): value is T => value !== null;
+
+const toStructuredQueryFilter = (directive: FilterDirective): StructuredQueryFilter | null => {
   if (directive instanceof Comparison) {
     return toStructuredQueryComparison(directive);
   }
@@ -78,18 +80,18 @@ const toStructuredQueryFilter = (directive: FilterDirective): StructuredQueryFil
   if (isOperationLike(directive)) {
     return toStructuredQueryOperationLike(directive);
   }
-  return undefined;
+  return null;
 };
 
 const mapFilterArgs = (args: FilterDirective[] | undefined) => {
   if (!args || args.length === 0) {
-    return undefined;
+    return null;
   }
-  const mapped = args.map(toStructuredQueryFilter).filter(isDefined);
-  return mapped.length > 0 ? mapped : undefined;
+  const mapped = args.map(toStructuredQueryFilter).filter(isNotNull);
+  return mapped.length > 0 ? mapped : null;
 };
 
 export const fromLangChainStructuredQuery = (query: LangChainStructuredQuery): StructuredQuery => ({
   query: query.query,
-  filter: query.filter ? toStructuredQueryFilter(query.filter) : undefined,
+  filter: query.filter ? toStructuredQueryFilter(query.filter) : null,
 });

@@ -2,8 +2,8 @@ import type { RetryPolicy } from "./types";
 import { isRecord, readNumber } from "./utils";
 
 type RetryNumbers = {
-  maxRetries?: number;
-  timeoutMs?: number;
+  maxRetries?: number | null;
+  timeoutMs?: number | null;
 };
 
 const MAX_RETRY_KEYS = ["maxRetries", "max_retries", "numRetries", "num_retries", "retries"];
@@ -18,15 +18,15 @@ const RETRY_CONTAINER_KEYS = [
 
 const readNumberFromKeys = (value: unknown, keys: string[]) => {
   if (!isRecord(value)) {
-    return undefined;
+    return null;
   }
   for (const key of keys) {
     const numeric = readNumber(value[key]);
-    if (numeric !== undefined) {
+    if (numeric !== null) {
       return numeric;
     }
   }
-  return undefined;
+  return null;
 };
 
 const readRetryNumbers = (value: unknown): RetryNumbers => ({
@@ -39,11 +39,11 @@ const mergeRetryNumbers = (base: RetryNumbers, next: RetryNumbers): RetryNumbers
   timeoutMs: base.timeoutMs ?? next.timeoutMs,
 });
 
-const toRetryPolicy = (input: RetryNumbers): RetryPolicy | undefined => {
-  if (input.maxRetries === undefined && input.timeoutMs === undefined) {
-    return undefined;
+const toRetryPolicy = (input: RetryNumbers): RetryPolicy | null => {
+  if (input.maxRetries === null && input.timeoutMs === null) {
+    return null;
   }
-  const maxRetries = input.maxRetries !== undefined ? Math.max(0, Math.floor(input.maxRetries)) : 0;
+  const maxRetries = input.maxRetries ? Math.max(0, Math.floor(input.maxRetries)) : 0;
   return {
     maxAttempts: maxRetries + 1,
     backoffMs: 0,
@@ -79,12 +79,12 @@ const expandRetryCandidates = (candidates: unknown[]) => {
   return expanded;
 };
 
-export const readRetryPolicyFromCandidates = (candidates: unknown[]): RetryPolicy | undefined => {
+export const readRetryPolicyFromCandidates = (candidates: unknown[]): RetryPolicy | null => {
   const expandedCandidates = expandRetryCandidates(candidates);
   let merged: RetryNumbers = {};
   for (const candidate of expandedCandidates) {
     merged = mergeRetryNumbers(merged, readRetryNumbers(candidate));
-    if (merged.maxRetries !== undefined && merged.timeoutMs !== undefined) {
+    if (merged.maxRetries !== null && merged.timeoutMs !== null) {
       break;
     }
   }
@@ -92,4 +92,4 @@ export const readRetryPolicyFromCandidates = (candidates: unknown[]): RetryPolic
 };
 
 export const readCandidateProp = (value: unknown, key: string) =>
-  isRecord(value) ? value[key] : undefined;
+  isRecord(value) ? value[key] : null;

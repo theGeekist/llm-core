@@ -11,9 +11,9 @@ type SchemaLike = {
   def?: unknown;
 };
 
-export function toSchema(schema: unknown): Schema | undefined {
+export function toSchema(schema: unknown): Schema | null {
   if (schema === undefined || schema === null) {
-    return undefined;
+    return null;
   }
 
   if (!isRecord(schema)) {
@@ -138,7 +138,14 @@ const buildObjectSchema = (fields: ObjectSchemaField[]) => {
   };
 };
 
-export const adapterParamsToJsonSchema = (params: ToolParam[] = []) => buildObjectSchema(params);
+export const adapterParamsToJsonSchema = (params: ToolParam[] = []) =>
+  buildObjectSchema(
+    params.map((param) => ({
+      ...param,
+      description: param.description ?? undefined,
+      required: param.required ?? undefined,
+    })),
+  );
 
 const isArray = Array.isArray;
 
@@ -163,7 +170,14 @@ const isType = (value: unknown, type: string) => {
   }
 };
 
-const toPromptJsonSchema = (schema: PromptSchema) => buildObjectSchema(schema.inputs);
+const toPromptJsonSchema = (schema: PromptSchema) =>
+  buildObjectSchema(
+    schema.inputs.map((input) => ({
+      ...input,
+      description: input.description ?? undefined,
+      required: input.required ?? undefined,
+    })),
+  );
 
 export const toPromptInputSchema = (schema: PromptSchema): Schema => ({
   name: schema.name,

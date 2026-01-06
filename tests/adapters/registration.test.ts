@@ -61,7 +61,7 @@ describe("Adapter registration helpers", () => {
       delete: () => null,
     });
     const checkpoint = Adapter.checkpoint(`${CUSTOM_PREFIX}.checkpoint`, {
-      get: () => undefined,
+      get: () => null,
       set: () => null,
       delete: () => null,
     });

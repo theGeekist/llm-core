@@ -74,7 +74,10 @@ const toLangChainPart = (part: MessagePart): LangChainContentPart | undefined =>
       return { type: "image_url", image_url: { url: part.url } };
     }
     if (part.data) {
-      return { type: "image_url", image_url: { url: toDataUrl(part.data, part.mediaType) } };
+      return {
+        type: "image_url",
+        image_url: { url: toDataUrl(part.data, part.mediaType ?? undefined) },
+      };
     }
   }
   const fallback = summarizePart(part);
@@ -129,7 +132,7 @@ export function toLangChainMessage(message: Message): LangChainMessage {
     return new ToolMessage({
       content: toPlainText(message.content),
       tool_call_id: message.toolCallId ?? "tool",
-      name: message.name,
+      name: message.name ?? undefined,
     });
   }
   return new HumanMessage(content);

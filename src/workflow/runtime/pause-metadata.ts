@@ -36,7 +36,7 @@ const finalizeWithInterrupt = <TOutcome>(
 
 export const createFinalizeWithInterrupt = <TOutcome>(
   finalize: FinalizeResult<TOutcome>,
-  interrupt?: InterruptStrategy,
+  interrupt?: InterruptStrategy | null,
 ) => {
   if (!interrupt) {
     return finalize;

@@ -2,7 +2,7 @@ import type { MaybePromise } from "../../maybe";
 import type { EventStream, EventStreamEvent, ResumeSnapshot } from "./core";
 
 export type CheckpointStore = {
-  get: (token: unknown) => MaybePromise<ResumeSnapshot | undefined>;
+  get: (token: unknown) => MaybePromise<ResumeSnapshot | null>;
   set: (token: unknown, snapshot: ResumeSnapshot, ttlMs?: number) => MaybePromise<boolean | null>;
   delete: (token: unknown) => MaybePromise<boolean | null>;
   touch?: (token: unknown, ttlMs?: number) => MaybePromise<boolean | null>;

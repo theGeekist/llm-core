@@ -169,14 +169,14 @@ describe("Adapter LangChain streaming", () => {
     expect(meta?.id).toBe("r1");
   });
 
-  it("returns undefined metadata when missing", () => {
+  it("returns null metadata when missing", () => {
     const meta = readStreamMeta(new AIMessageChunk({ content: "" }));
-    expect(meta).toBeUndefined();
+    expect(meta).toBeNull();
   });
 
-  it("returns undefined metadata when no fields are present", () => {
+  it("returns null metadata when no fields are present", () => {
     const meta = readStreamMeta(makeChunkWithMeta({}));
-    expect(meta).toBeUndefined();
+    expect(meta).toBeNull();
   });
 
   it("reads chunk type via _getType when available", () => {

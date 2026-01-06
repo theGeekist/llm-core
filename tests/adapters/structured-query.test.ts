@@ -26,7 +26,7 @@ describe("Adapter structured query", () => {
     expect(adapted.filter).toEqual({
       type: "operation",
       operator: "and",
-      args: undefined,
+      args: null,
     });
   });
 
@@ -53,6 +53,6 @@ describe("Adapter structured query", () => {
   it("drops unknown filter directives", () => {
     const filter = asFilterDirective({ foo: "bar" });
     const adapted = fromLangChainStructuredQuery(buildQuery(filter));
-    expect(adapted.filter).toBeUndefined();
+    expect(adapted.filter).toBeNull();
   });
 });

@@ -7,7 +7,7 @@ import type {
   Runtime,
   WorkflowRuntime,
 } from "../workflow/types";
-import { mergeRetryConfig } from "../workflow/runtime/retry";
+import { mergeRetryConfig, type RetryConfig } from "../workflow/runtime/retry";
 import type { RecipeDefaults } from "./flow";
 
 type RuntimeDefaultsInput<N extends RecipeName> = {
@@ -31,7 +31,10 @@ type RuntimeDefaultsResumeInput<N extends RecipeName> = {
 export const buildRuntimeDefaults = (defaults: RecipeDefaults): Runtime | undefined =>
   defaults.retryDefaults ? { retryDefaults: defaults.retryDefaults } : undefined;
 
-const mergeRuntimeDefaults = (defaults: Runtime | undefined, runtime?: Runtime) => {
+const mergeRuntimeDefaults = (
+  defaults: Runtime | undefined,
+  runtime?: Runtime | { retryDefaults?: RetryConfig | null; [key: string]: unknown },
+) => {
   if (!defaults) {
     return runtime;
   }
@@ -49,7 +52,7 @@ const runWithRuntimeDefaults = <N extends RecipeName>(
   input: RuntimeDefaultsInput<N>,
   runInput: RunInputOf<N>,
   runtime?: Runtime,
-) => input.runtime.run(runInput, mergeRuntimeDefaults(input.defaults, runtime));
+) => input.runtime.run(runInput, mergeRuntimeDefaults(input.defaults, runtime) as Runtime);
 
 type ResumeWithDefaultsPayload<N extends RecipeName> = {
   token: unknown;
@@ -64,7 +67,7 @@ const resumeWithRuntimeDefaults = <N extends RecipeName>(
   input.runtime.resume(
     payload.token,
     payload.resumeInput,
-    mergeRuntimeDefaults(input.defaults, payload.runtime),
+    mergeRuntimeDefaults(input.defaults, payload.runtime) as Runtime,
   );
 
 const resumeWithRuntimeDefaultsArgs = <N extends RecipeName>(

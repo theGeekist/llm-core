@@ -6,8 +6,8 @@ import { bindFirst, maybeMap, maybeAll } from "../../maybe";
 import { isRecord } from "../utils";
 
 type LangChainTraceMetadata = {
-  modelId?: string;
-  timestamp?: number;
+  modelId?: string | null;
+  timestamp?: number | null;
 };
 
 const WORKFLOW_SERIALIZED: Serialized = {
@@ -21,13 +21,13 @@ function toRunId(event: AdapterTraceEvent) {
   return event.id ?? "adapter-trace";
 }
 
-function toTraceMetadata(event: AdapterTraceEvent): LangChainTraceMetadata | undefined {
+function toTraceMetadata(event: AdapterTraceEvent): LangChainTraceMetadata | null {
   if (!event.modelId && !event.timestamp) {
-    return undefined;
+    return null;
   }
   return {
-    modelId: event.modelId,
-    timestamp: event.timestamp,
+    modelId: event.modelId ?? null,
+    timestamp: event.timestamp ?? null,
   };
 }
 
@@ -106,45 +106,51 @@ function toLLMResult(event: AdapterTraceEvent): LLMResult {
 
 function emitTraceEvent(handler: BaseCallbackHandler, event: AdapterTraceEvent) {
   if (!canHandleCustomEvent(handler)) {
-    return undefined;
+    return null;
   }
   const metadata = toTraceMetadata(event);
-  return handler.handleCustomEvent(event.name, event.data, toRunId(event), undefined, metadata);
+  return handler.handleCustomEvent(
+    event.name,
+    event.data,
+    toRunId(event),
+    undefined,
+    metadata ?? undefined,
+  );
 }
 
 function emitChainStart(handler: BaseCallbackHandler, event: AdapterTraceEvent) {
   if (!canHandleChainStart(handler)) {
-    return undefined;
+    return null;
   }
   return handler.handleChainStart(WORKFLOW_SERIALIZED, toRecord(event.data), toRunId(event));
 }
 
 function emitChainEnd(handler: BaseCallbackHandler, event: AdapterTraceEvent) {
   if (!canHandleChainEnd(handler)) {
-    return undefined;
+    return null;
   }
   return handler.handleChainEnd(toRecord(event.data), toRunId(event));
 }
 
 function emitChainError(handler: BaseCallbackHandler, event: AdapterTraceEvent) {
   if (!canHandleChainError(handler)) {
-    return undefined;
+    return null;
   }
   return handler.handleChainError(toErrorFromEvent(event), toRunId(event));
 }
 
 function emitLlmEnd(handler: BaseCallbackHandler, event: AdapterTraceEvent) {
   if (!canHandleLLMEnd(handler)) {
-    return undefined;
+    return null;
   }
   return handler.handleLLMEnd(toLLMResult(event), toRunId(event));
 }
 
-function readRunStatus(event: AdapterTraceEvent): string | undefined {
+function readRunStatus(event: AdapterTraceEvent): string | null {
   if (isRecord(event.data) && typeof event.data.status === "string") {
     return event.data.status;
   }
-  return undefined;
+  return null;
 }
 
 function emitRunEnd(handler: BaseCallbackHandler, event: AdapterTraceEvent) {
@@ -165,7 +171,7 @@ function emitLifecycleEvent(handler: BaseCallbackHandler, event: AdapterTraceEve
   if (event.name === "run.end") {
     return emitRunEnd(handler, event);
   }
-  return undefined;
+  return null;
 }
 
 const isFailure = (value: boolean | null) => value === false;

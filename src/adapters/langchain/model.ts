@@ -55,7 +55,7 @@ const toResult = (
   const Message = fromLangChainMessage(response);
   const text = typeof Message.content === "string" ? Message.content : Message.content.text;
   const output = tryParseOutput(text, state.responseFormat);
-  if (state.responseFormat && output === undefined) {
+  if (state.responseFormat && output === null) {
     state.diagnostics.push(warnDiagnostic("response_schema_parse_failed"));
   }
   const usage = toUsage((response as { usage_metadata?: unknown }).usage_metadata);

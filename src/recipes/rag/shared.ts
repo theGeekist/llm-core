@@ -48,12 +48,13 @@ const setRagInput = (rag: RagState, input: RagInput) => {
 
 const resolveQuery = (rag: RagState) => rag.query ?? rag.input ?? "";
 
-const readModel = (context: PipelineContext): Model | undefined => context.adapters?.model;
+const readModel = (context: PipelineContext): Model | null | undefined => context.adapters?.model;
 
-const readRetriever = (context: PipelineContext): Retriever | undefined =>
+const readRetriever = (context: PipelineContext): Retriever | null | undefined =>
   context.adapters?.retriever;
 
-const readReranker = (context: PipelineContext): Reranker | undefined => context.adapters?.reranker;
+const readReranker = (context: PipelineContext): Reranker | null | undefined =>
+  context.adapters?.reranker;
 
 const readDocumentText = (doc: Document) => doc.text;
 
@@ -77,7 +78,7 @@ const applyRerankedDocuments = (rag: RagState, documents: Document[] | undefined
   return null;
 };
 
-const runRerank = (reranker: Reranker | undefined, query: string, documents: Document[]) => {
+const runRerank = (reranker: Reranker | null | undefined, query: string, documents: Document[]) => {
   if (!reranker) {
     return documents;
   }
@@ -87,13 +88,13 @@ const runRerank = (reranker: Reranker | undefined, query: string, documents: Doc
 type RetrieveContext = {
   rag: RagState;
   query: string;
-  reranker: Reranker | undefined;
+  reranker: Reranker | null | undefined;
 };
 
 const createRetrieveContext = (
   rag: RagState,
   query: string,
-  reranker: Reranker | undefined,
+  reranker: Reranker | null | undefined,
 ): RetrieveContext => ({
   rag,
   query,
@@ -107,10 +108,10 @@ const handleRetrieved = (context: RetrieveContext, result: RetrievalResult) =>
   );
 
 type RunRetrieveInput = {
-  retriever: Retriever | undefined;
+  retriever: Retriever | null | undefined;
   query: string;
   rag: RagState;
-  reranker: Reranker | undefined;
+  reranker: Reranker | null | undefined;
 };
 
 const runRetrieve = (input: RunRetrieveInput) => {
@@ -123,15 +124,15 @@ const runRetrieve = (input: RunRetrieveInput) => {
   );
 };
 
-const runModel = (model: Model | undefined, prompt: string) => {
+const runModel = (model: Model | null | undefined, prompt: string) => {
   if (!model) {
     return null;
   }
   return model.generate({ prompt });
 };
 
-const applyModelResponse = (rag: RagState, result: { text?: string } | undefined) => {
-  if (result?.text !== undefined) {
+const applyModelResponse = (rag: RagState, result: { text?: string | null } | undefined) => {
+  if (result?.text != null) {
     rag.response = result.text;
   }
   return null;

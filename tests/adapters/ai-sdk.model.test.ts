@@ -1,4 +1,5 @@
 import { describe, expect, it, mock } from "bun:test";
+import { collectStep, isPromiseLike, maybeToStep } from "../../src/maybe";
 import { z } from "zod";
 import { Tooling, toSchema } from "#adapters";
 import { asAiSdkStreamPart } from "./helpers";
@@ -207,13 +208,15 @@ describe("Adapter AI SDK model", () => {
     const { fromAiSdkModel } = await import("../../src/adapters/ai-sdk/model.ts");
     const model = fromAiSdkModel({} as never);
     const events = [];
-    const stream = await Promise.resolve(model.stream?.({ prompt: "hi" }));
+    const stream = model.stream?.({ prompt: "hi" });
     if (!stream) {
       throw new Error("Expected AI SDK model to expose stream()");
     }
-    for await (const event of stream) {
-      events.push(event);
-    }
+    const stepResult = maybeToStep(stream);
+    const step = isPromiseLike(stepResult) ? await stepResult : stepResult;
+    const collected = collectStep(step);
+    const items = isPromiseLike(collected) ? await collected : collected;
+    events.push(...items);
 
     expect(events.map((event) => event.type)).toEqual(["delta", "usage", "end"]);
     expect(events[1]).toEqual({
@@ -234,13 +237,15 @@ describe("Adapter AI SDK model", () => {
     const { fromAiSdkModel } = await import("../../src/adapters/ai-sdk/model.ts");
     const model = fromAiSdkModel({} as never);
     const events = [];
-    const stream = await Promise.resolve(model.stream?.({ prompt: "hi" }));
+    const stream = model.stream?.({ prompt: "hi" });
     if (!stream) {
       throw new Error("Expected AI SDK model to expose stream()");
     }
-    for await (const event of stream) {
-      events.push(event);
-    }
+    const stepResult = maybeToStep(stream);
+    const step = isPromiseLike(stepResult) ? await stepResult : stepResult;
+    const collected = collectStep(step);
+    const items = isPromiseLike(collected) ? await collected : collected;
+    events.push(...items);
 
     const endEvent = events.find((event) => event.type === "end");
     expect(endEvent).toMatchObject({
@@ -257,15 +262,15 @@ describe("Adapter AI SDK model", () => {
     const { fromAiSdkModel } = await import("../../src/adapters/ai-sdk/model.ts");
     const model = fromAiSdkModel({} as never);
     const events = [];
-    const stream = await Promise.resolve(
-      model.stream?.({ prompt: "hi", responseSchema: toSchema({ type: "object" }) }),
-    );
+    const stream = model.stream?.({ prompt: "hi", responseSchema: toSchema({ type: "object" }) });
     if (!stream) {
       throw new Error("Expected AI SDK model to expose stream()");
     }
-    for await (const event of stream) {
-      events.push(event);
-    }
+    const stepResult = maybeToStep(stream);
+    const step = isPromiseLike(stepResult) ? await stepResult : stepResult;
+    const collected = collectStep(step);
+    const items = isPromiseLike(collected) ? await collected : collected;
+    events.push(...items);
 
     expect(events[0]?.type).toBe("error");
     expect((events[0] as { error?: Error }).error?.message).toBe(

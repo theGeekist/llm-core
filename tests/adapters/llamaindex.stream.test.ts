@@ -69,7 +69,7 @@ describe("Adapter LlamaIndex streaming", () => {
 
   it("maps usage payloads into model usage", () => {
     const usage = toUsage({ usage: { output_tokens: 2 } });
-    expect(usage).toEqual({ inputTokens: undefined, outputTokens: 2, totalTokens: undefined });
+    expect(usage).toEqual({ inputTokens: null, outputTokens: 2, totalTokens: null });
   });
 
   it("maps tool calls into delta events", () => {

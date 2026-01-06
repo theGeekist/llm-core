@@ -7,9 +7,9 @@ import { validateSpeechInput } from "../input-validation";
 import { toBytes } from "../binary";
 import { toDiagnostics, toMeta, toTelemetry } from "./telemetry";
 
-const toAudioType = (format?: string) => {
+const toAudioType = (format?: string | null) => {
   if (!format) {
-    return undefined;
+    return null;
   }
   if (format.includes("/")) {
     return format;
@@ -22,7 +22,7 @@ const toAudioType = (format?: string) => {
     flac: "audio/flac",
     webm: "audio/webm",
   };
-  return mapping[format] ?? undefined;
+  return mapping[format] ?? null;
 };
 
 const toBlob = (value: Uint8Array | string, contentType?: string): Blob => ({
@@ -74,20 +74,20 @@ export function fromAiSdkSpeechModel(model: SpeechModelV3): SpeechModel {
   function generate(call: SpeechCall, _context?: AdapterCallContext) {
     void _context;
     const diagnostics = validateSpeechInput(call.text);
-    const contentType = toAudioType(call.outputFormat);
+    const contentType = toAudioType(call.outputFormat) ?? undefined;
     const resultContext: SpeechResultContext = { diagnostics, contentType };
     return maybeMap(
       bindFirst(mapSpeechResult, resultContext),
       model.doGenerate({
         text: call.text,
-        voice: call.voice,
-        outputFormat: call.outputFormat,
-        instructions: call.instructions,
-        speed: call.speed,
-        language: call.language,
-        providerOptions: toProviderOptions(call.providerOptions),
-        headers: call.headers,
-        abortSignal: call.abortSignal,
+        voice: call.voice ?? undefined,
+        outputFormat: call.outputFormat ?? undefined,
+        instructions: call.instructions ?? undefined,
+        speed: call.speed ?? undefined,
+        language: call.language ?? undefined,
+        providerOptions: toProviderOptions(call.providerOptions ?? undefined),
+        headers: call.headers ?? undefined,
+        abortSignal: call.abortSignal ?? undefined,
       }) as MaybePromise<Awaited<ReturnType<SpeechModelV3["doGenerate"]>>>,
     );
   }

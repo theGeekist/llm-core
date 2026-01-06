@@ -9,8 +9,8 @@ const hasPausedFlag = (value: Record<string, unknown>) => value.__paused === tru
 const isPauseKind = (value: unknown): value is PauseKind =>
   value === "human" || value === "external" || value === "system";
 
-export const toPauseKind = (value: unknown): PauseKind | undefined =>
-  isPauseKind(value) ? value : undefined;
+export const toPauseKind = (value: unknown): PauseKind | null =>
+  isPauseKind(value) ? value : null;
 
 export const isPipelinePaused = (value: unknown): value is PipelinePaused<unknown> => {
   if (!isObject(value)) {
@@ -24,9 +24,9 @@ export const isPipelinePaused = (value: unknown): value is PipelinePaused<unknow
 
 export const readPipelinePauseSnapshot = (
   value: unknown,
-): PipelinePauseSnapshot<unknown> | undefined => {
+): PipelinePauseSnapshot<unknown> | null => {
   if (!isPipelinePaused(value)) {
-    return undefined;
+    return null;
   }
   return value.snapshot;
 };

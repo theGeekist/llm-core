@@ -5,8 +5,8 @@ export type AdapterRequirement =
   | { kind: "capability"; name: string };
 
 export type AdapterMetadata = {
-  requires?: AdapterRequirement[];
-  retry?: RetryMetadata;
+  requires?: AdapterRequirement[] | null;
+  retry?: RetryMetadata | null;
   [key: string]: unknown;
 };
 
@@ -15,58 +15,58 @@ export type RetryReason = "timeout" | "rate_limit" | "network" | "5xx" | "unknow
 export type RetryPolicy = {
   maxAttempts: number;
   backoffMs: number;
-  maxBackoffMs?: number;
-  jitter?: "none" | "full";
-  mode?: "internal" | "pause";
-  retryOn?: RetryReason[];
-  timeoutMs?: number;
+  maxBackoffMs?: number | null;
+  jitter?: "none" | "full" | null;
+  mode?: "internal" | "pause" | null;
+  retryOn?: RetryReason[] | null;
+  timeoutMs?: number | null;
 };
 
 export type RetryConfig = {
-  model?: RetryPolicy;
-  embedder?: RetryPolicy;
-  retriever?: RetryPolicy;
-  reranker?: RetryPolicy;
-  textSplitter?: RetryPolicy;
-  loader?: RetryPolicy;
-  transformer?: RetryPolicy;
-  vectorStore?: RetryPolicy;
-  cache?: RetryPolicy;
-  kv?: RetryPolicy;
-  memory?: RetryPolicy;
-  storage?: RetryPolicy;
-  outputParser?: RetryPolicy;
-  queryEngine?: RetryPolicy;
-  responseSynthesizer?: RetryPolicy;
-  image?: RetryPolicy;
-  speech?: RetryPolicy;
-  transcription?: RetryPolicy;
-  tools?: RetryPolicy;
+  model?: RetryPolicy | null;
+  embedder?: RetryPolicy | null;
+  retriever?: RetryPolicy | null;
+  reranker?: RetryPolicy | null;
+  textSplitter?: RetryPolicy | null;
+  loader?: RetryPolicy | null;
+  transformer?: RetryPolicy | null;
+  vectorStore?: RetryPolicy | null;
+  cache?: RetryPolicy | null;
+  kv?: RetryPolicy | null;
+  memory?: RetryPolicy | null;
+  storage?: RetryPolicy | null;
+  outputParser?: RetryPolicy | null;
+  queryEngine?: RetryPolicy | null;
+  responseSynthesizer?: RetryPolicy | null;
+  image?: RetryPolicy | null;
+  speech?: RetryPolicy | null;
+  transcription?: RetryPolicy | null;
+  tools?: RetryPolicy | null;
 };
 
 export type RetryMetadata = {
-  allowed?: boolean;
-  retryOn?: RetryReason[];
-  restartable?: boolean;
-  policy?: RetryPolicy;
+  allowed?: boolean | null;
+  retryOn?: RetryReason[] | null;
+  restartable?: boolean | null;
+  policy?: RetryPolicy | null;
 };
 
 export type AdapterDiagnostic = {
   level: "warn" | "error";
   message: string;
-  data?: unknown;
+  data?: unknown | null;
 };
 
 export type PauseKind = "human" | "external" | "system";
 
 export type ResumeSnapshot = {
   token: unknown;
-  resumeKey?: string;
-  pauseKind?: PauseKind;
+  resumeKey?: string | null;
+  pauseKind?: PauseKind | null;
   createdAt: number;
-  lastAccessedAt?: number;
-  payload?: unknown;
-  snapshot?: unknown;
+  lastAccessedAt?: number | null;
+  payload?: unknown | null;
+  snapshot?: unknown | null;
 };
 
 export type AdapterCallContext = {
@@ -74,14 +74,14 @@ export type AdapterCallContext = {
 };
 
 export type TraceIdentity = {
-  id?: string;
-  modelId?: string;
-  timestamp?: number;
+  id?: string | null;
+  modelId?: string | null;
+  timestamp?: number | null;
 };
 
 export type AdapterTraceEvent = TraceIdentity & {
   name: string;
-  data?: Record<string, unknown>;
+  data?: Record<string, unknown> | null;
 };
 
 export interface EventStreamEvent extends AdapterTraceEvent {}

@@ -23,8 +23,8 @@ describe("Adapter LangChain model internals", () => {
     expect(toToolChoice("none")).toBe("none");
   });
 
-  it("returns undefined tool choice for empty values", () => {
-    expect(toToolChoice(undefined)).toBeUndefined();
+  it("returns null tool choice for empty values", () => {
+    expect(toToolChoice(null)).toBeNull();
   });
 
   it("maps usage metadata to model usage", () => {
@@ -73,8 +73,8 @@ describe("Adapter LangChain model internals", () => {
     });
   });
 
-  it("returns undefined metadata field when meta is missing", () => {
-    expect(readMetadataField(undefined, ["id"])).toBeUndefined();
+  it("returns null metadata field when meta is missing", () => {
+    expect(readMetadataField(null, ["id"])).toBeNull();
   });
 
   it("builds telemetry with normalized timestamps", () => {
@@ -82,7 +82,7 @@ describe("Adapter LangChain model internals", () => {
       content: "",
       response_metadata: { created: 1, model: "gpt" },
     });
-    const telemetry = toTelemetry(response, undefined, []);
+    const telemetry = toTelemetry(response, null, []);
     expect(telemetry.response?.timestamp).toBe(1000);
   });
 

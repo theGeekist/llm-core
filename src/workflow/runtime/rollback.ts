@@ -29,16 +29,16 @@ const isRollbackState = (value: unknown): value is RollbackState =>
 const readPausedRollbackState = (result: unknown) => {
   const snapshot = readPipelinePauseSnapshot(result);
   if (!snapshot) {
-    return undefined;
+    return null;
   }
   const pausedState = (snapshot.state as { userState?: RollbackState }).userState;
-  return isRollbackState(pausedState) ? pausedState : undefined;
+  return isRollbackState(pausedState) ? pausedState : null;
 };
 
 const readRollbackState = (result: RollbackResult) =>
   isRollbackState(result.state) ? result.state : readPausedRollbackState(result);
 
-const readRollbackMap = (state: RollbackState | undefined) => state?.helperRollbacks;
+const readRollbackMap = (state: RollbackState | undefined | null) => state?.helperRollbacks;
 
 const collectRollbackEntries = (map: Map<string, RollbackEntry[]>) => {
   const entries: RollbackEntry[] = [];
@@ -122,9 +122,11 @@ const toRollbackStack = (entries: RollbackEntry[], steps: PipelineStep[]) => {
 const readPausedReporter = (result: unknown) => {
   const snapshot = readPipelinePauseSnapshot(result);
   if (!snapshot) {
-    return undefined;
+    return null;
   }
-  return (snapshot.state as { context?: { reporter?: PipelineReporter } }).context?.reporter;
+  return (
+    (snapshot.state as { context?: { reporter?: PipelineReporter } }).context?.reporter ?? null
+  );
 };
 
 const readReporter = (result: RollbackResult) =>
@@ -138,11 +140,11 @@ const warnRollbackFailure = (reporter: PipelineReporter, input: RollbackError) =
   });
 };
 
-const createRollbackErrorHandler = (reporter: PipelineReporter | undefined) =>
+const createRollbackErrorHandler = (reporter: PipelineReporter | undefined | null) =>
   reporter ? bindFirst(warnRollbackFailure, reporter) : undefined;
 
 const createRollbackOptions = (
-  reporter: PipelineReporter | undefined,
+  reporter: PipelineReporter | undefined | null,
 ): RunRollbackStackOptions => ({
   source: "helper",
   onError: createRollbackErrorHandler(reporter),

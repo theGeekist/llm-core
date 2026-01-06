@@ -13,10 +13,10 @@ type AdapterOptions = {
   toolName?: string;
 };
 
-const readAdapterOptions = (message: ChatMessage): AdapterOptions | undefined => {
+const readAdapterOptions = (message: ChatMessage): AdapterOptions | null => {
   const options = message.options as AdapterOptions | undefined;
   if (!options || typeof options !== "object") {
-    return undefined;
+    return null;
   }
   return options;
 };
@@ -75,14 +75,14 @@ export function fromLlamaIndexMessage(message: ChatMessage): Message {
   };
 }
 
-const toLlamaIndexSummary = (part: MessagePart): MessageContentDetail | undefined => {
+const toLlamaIndexSummary = (part: MessagePart): MessageContentDetail | null => {
   const summary = summarizePart(part);
-  return summary ? ({ type: "text", text: summary } as MessageContentDetail) : undefined;
+  return summary ? ({ type: "text", text: summary } as MessageContentDetail) : null;
 };
 
-const imagePartFromAdapter = (part: MessagePart): MessageContentDetail | undefined => {
+const imagePartFromAdapter = (part: MessagePart): MessageContentDetail | null => {
   if (part.type !== "image") {
-    return undefined;
+    return null;
   }
   if (part.url) {
     return { type: "image_url", image_url: { url: part.url } };
@@ -90,12 +90,12 @@ const imagePartFromAdapter = (part: MessagePart): MessageContentDetail | undefin
   if (part.data) {
     return { type: "image", data: part.data, mimeType: part.mediaType ?? "image/png" };
   }
-  return undefined;
+  return null;
 };
 
-const filePartFromAdapter = (part: MessagePart): MessageContentDetail | undefined => {
+const filePartFromAdapter = (part: MessagePart): MessageContentDetail | null => {
   if (part.type !== "file" || !part.data) {
-    return undefined;
+    return null;
   }
   return {
     type: "file",
@@ -104,14 +104,14 @@ const filePartFromAdapter = (part: MessagePart): MessageContentDetail | undefine
   };
 };
 
-const textPartFromAdapter = (part: MessagePart): MessageContentDetail | undefined => {
+const textPartFromAdapter = (part: MessagePart): MessageContentDetail | null => {
   if (part.type === "text" || part.type === "reasoning") {
     return { type: "text", text: part.text } as MessageContentDetail;
   }
-  return undefined;
+  return null;
 };
 
-const toLlamaIndexPart = (part: MessagePart): MessageContentDetail | undefined =>
+const toLlamaIndexPart = (part: MessagePart): MessageContentDetail | null =>
   textPartFromAdapter(part) ??
   imagePartFromAdapter(part) ??
   filePartFromAdapter(part) ??

@@ -49,7 +49,7 @@ const toExecResult = (input: ExecResultInput): ModelResult => {
       : lastMessage.content.text
     : "";
   const output = parseOutput(text, input.shouldParseOutput, input.result.object);
-  if (input.shouldParseOutput && output === undefined) {
+  if (input.shouldParseOutput && output === null) {
     input.diagnostics.push(warnDiagnostic("response_schema_parse_failed"));
   }
   const nextTelemetry = appendTelemetryResponse(input.telemetry, input.result.raw);

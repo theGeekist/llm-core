@@ -5,7 +5,7 @@ import { warnDiagnostic } from "./utils";
 export type ModelValidation = {
   diagnostics: AdapterDiagnostic[];
   allowTools: boolean;
-  normalizedSchema?: ReturnType<typeof normalizeObjectSchema>;
+  normalizedSchema?: ReturnType<typeof normalizeObjectSchema> | null;
 };
 
 export type ModelValidationOptions = {
@@ -18,7 +18,7 @@ const appendDiagnostic = (diagnostics: AdapterDiagnostic[], message: string, dat
 
 const readSchema = (schema: ModelCall["responseSchema"], diagnostics: AdapterDiagnostic[]) => {
   if (!schema) {
-    return undefined;
+    return null;
   }
   try {
     const result = toJsonSchemaWithDiagnostics(schema);
@@ -104,7 +104,7 @@ export const validateModelCall = (
   maybeWarnPromptIgnored(call, diagnostics);
   maybeWarnToolChoiceNotSupported(call, diagnostics, supportsToolChoice);
   maybeWarnToolsIgnored(call, diagnostics);
-  maybeWarnNonObjectSchema(normalizedSchema, diagnostics);
+  maybeWarnNonObjectSchema(normalizedSchema ?? undefined, diagnostics);
   maybeWarnToolChoiceIgnored(call, diagnostics);
   maybeWarnMissingInput(call, diagnostics);
 

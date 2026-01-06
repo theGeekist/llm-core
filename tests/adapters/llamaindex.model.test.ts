@@ -1,6 +1,13 @@
 import { describe, expect, it } from "bun:test";
 import type { ChatMessage, ChatResponseChunk, LLM } from "@llamaindex/core/llms";
-import { Tooling, fromLlamaIndexModel, toSchema } from "#adapters";
+import {
+  Tooling,
+  collectStep,
+  fromLlamaIndexModel,
+  isPromiseLike,
+  maybeToStep,
+  toSchema,
+} from "#adapters";
 
 const makeMessage = (content: ChatMessage["content"]): ChatMessage => ({
   role: "assistant",
@@ -118,9 +125,11 @@ describe("Adapter LlamaIndex model", () => {
       prompt: "hi",
       tools: [Tooling.create({ name: "search" })],
     });
-    for await (const event of stream) {
-      events.push({ type: event.type });
-    }
+    const stepResult = maybeToStep(stream);
+    const step = isPromiseLike(stepResult) ? await stepResult : stepResult;
+    const collected = collectStep(step);
+    const items = isPromiseLike(collected) ? await collected : collected;
+    events.push(...items.map((event) => ({ type: event.type })));
     expect(events[0]?.type).toBe("start");
     expect(events.at(-1)?.type).toBe("end");
   });
@@ -136,9 +145,11 @@ describe("Adapter LlamaIndex model", () => {
       prompt: "hi",
       responseSchema: toSchema({ type: "object", properties: {} }),
     });
-    for await (const event of stream) {
-      events.push({ type: event.type });
-    }
+    const stepResult = maybeToStep(stream);
+    const step = isPromiseLike(stepResult) ? await stepResult : stepResult;
+    const collected = collectStep(step);
+    const items = isPromiseLike(collected) ? await collected : collected;
+    events.push(...items.map((event) => ({ type: event.type })));
     expect(events[0]?.type).toBe("error");
   });
 });

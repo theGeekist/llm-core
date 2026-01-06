@@ -8,12 +8,12 @@ import { readPipelinePauseSnapshot } from "../pause";
 export const readArtifact = <N extends RecipeName>(result: unknown): ArtefactOf<N> =>
   ((result as { artifact?: PipelineState }).artifact ?? {}) as ArtefactOf<N>;
 
-const readPausedUserState = (result: unknown): PipelineState | undefined => {
+const readPausedUserState = (result: unknown): PipelineState | null => {
   const snapshot = readPipelinePauseSnapshot(result);
   if (!snapshot) {
-    return undefined;
+    return null;
   }
-  return (snapshot.state as { userState?: PipelineState }).userState;
+  return (snapshot.state as { userState?: PipelineState }).userState ?? null;
 };
 
 export const readPartialArtifact = <N extends RecipeName>(

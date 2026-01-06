@@ -47,10 +47,10 @@ const isResumeSnapshot = (value: unknown): value is ResumeSnapshot =>
 
 const toSnapshot = (checkpoint: Checkpoint | undefined) => {
   if (!checkpoint) {
-    return undefined;
+    return null;
   }
   const value = readSnapshotValue(checkpoint);
-  return isResumeSnapshot(value) ? value : undefined;
+  return isResumeSnapshot(value) ? value : null;
 };
 
 const storeSnapshot = (

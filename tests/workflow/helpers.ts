@@ -60,7 +60,7 @@ type TestRunOptions = {
 export const createSessionStore = () => {
   const sessions = new Map<unknown, ResumeSnapshot>();
   const sessionStore = {
-    get: (token: unknown) => sessions.get(token),
+    get: (token: unknown) => sessions.get(token) ?? null,
     set: (token: unknown, snapshot: ResumeSnapshot) => {
       sessions.set(token, snapshot);
       return null;

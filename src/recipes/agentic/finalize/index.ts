@@ -24,7 +24,7 @@ const buildResponsePrompt = (agent: AgentState) => {
 
 const applyResponseResult = (agent: AgentState, result: ModelResult | null) => {
   if (result?.text !== undefined) {
-    agent.response = result.text;
+    agent.response = result.text ?? undefined;
   }
   if (result?.messages) {
     agent.messages = result.messages;

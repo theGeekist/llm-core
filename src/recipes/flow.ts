@@ -220,9 +220,9 @@ const createStepPlugin = (pack: RecipePack): Plugin => ({
   register: (pipeline) => registerPackSteps(pipeline, pack),
 });
 
-const createDefaultsPlugin = (name: string, defaults: RecipeDefaults): Plugin | undefined => {
+const createDefaultsPlugin = (name: string, defaults: RecipeDefaults): Plugin | null => {
   if (!defaults.adapters) {
-    return undefined;
+    return null;
   }
   return {
     key: `recipe.defaults.${name}`,
@@ -247,7 +247,7 @@ export const mergeDefaults = (base: RecipeDefaults, incoming: RecipeDefaults): R
     base.plugins && incoming.plugins
       ? [...base.plugins, ...incoming.plugins]
       : (base.plugins ?? incoming.plugins),
-  retryDefaults: mergeRetryConfig(base.retryDefaults, incoming.retryDefaults),
+  retryDefaults: mergeRetryConfig(base.retryDefaults, incoming.retryDefaults) ?? undefined,
 });
 
 const applyDefaultsToPlugins = (plugins: Plugin[], name: string, defaults?: RecipeDefaults) => {

@@ -23,18 +23,18 @@ describe("Adapter LlamaIndex model internals", () => {
     expect(payload).toEqual({ input_tokens: 1 });
   });
 
-  it("returns undefined when usage payload is missing", () => {
-    expect(readUsagePayload({})).toBeUndefined();
-    expect(readUsagePayload(null)).toBeUndefined();
+  it("returns null when usage payload is missing", () => {
+    expect(readUsagePayload({})).toBeNull();
+    expect(readUsagePayload(null)).toBeNull();
   });
 
   it("maps usage payloads into model usage", () => {
     const usage = toUsage({ usage: { output_tokens: 2 } });
-    expect(usage).toEqual({ inputTokens: undefined, outputTokens: 2, totalTokens: undefined });
+    expect(usage).toEqual({ inputTokens: null, outputTokens: 2, totalTokens: null });
   });
 
-  it("returns undefined usage when no token counts are present", () => {
-    expect(toUsage({ usage: {} })).toBeUndefined();
+  it("returns null usage when no token counts are present", () => {
+    expect(toUsage({ usage: {} })).toBeNull();
   });
 
   it("normalizes response telemetry", () => {
@@ -42,8 +42,8 @@ describe("Adapter LlamaIndex model internals", () => {
     expect(telemetry?.timestamp).toBe(1000);
   });
 
-  it("returns undefined telemetry when no fields are present", () => {
-    expect(toResponseTelemetry({})).toBeUndefined();
+  it("returns null telemetry when no fields are present", () => {
+    expect(toResponseTelemetry({})).toBeNull();
   });
 
   it("appends telemetry responses when provided", () => {
@@ -64,10 +64,10 @@ describe("Adapter LlamaIndex model internals", () => {
     expect(state.messages.length).toBe(1);
   });
 
-  it("exposes undefined exec handlers when missing", () => {
+  it("exposes null exec handlers when missing", () => {
     const model = createModel({});
-    expect(getExec(model)).toBeUndefined();
-    expect(getStreamExec(model)).toBeUndefined();
+    expect(getExec(model)).toBeNull();
+    expect(getStreamExec(model)).toBeNull();
   });
 
   it("maps tool calls into adapter tool calls", () => {
@@ -93,6 +93,6 @@ describe("Adapter LlamaIndex model internals", () => {
   it("parses output when asked and returns objects when provided", () => {
     expect(parseOutput('{"ok":true}', true, undefined)).toEqual({ ok: true });
     expect(parseOutput("ignored", true, { ok: true })).toEqual({ ok: true });
-    expect(parseOutput('{"ok":true}', false, undefined)).toBeUndefined();
+    expect(parseOutput('{"ok":true}', false, undefined)).toBeNull();
   });
 });

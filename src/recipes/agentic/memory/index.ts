@@ -9,7 +9,7 @@ export type AgentMemoryConfig = {
   defaults?: RecipeDefaults;
 };
 
-const readMemory = (memory: Memory | undefined) => memory;
+const readMemory = (memory: Memory | null | undefined) => memory;
 
 const buildMemoryInput = (agent: AgentState): Record<string, unknown> => ({
   input: agent.input,

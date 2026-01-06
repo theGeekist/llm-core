@@ -222,12 +222,12 @@ export const createAdapterRegistry = (
           apply: (options) => {
             const state = (options as { userState?: RegistryState }).userState;
             if (!state) {
-              return;
+              return null as unknown as void;
             }
             const req = requirements.get(requirement.name) ?? requirement;
             state.diagnostics.push(...diagnostics);
             if (!selected) {
-              return;
+              return null as unknown as void;
             }
             state.providers[requirement.name] = selected.id;
             return maybeMap(
@@ -238,7 +238,7 @@ export const createAdapterRegistry = (
                 providerId: selected.id,
                 requirement: req,
               }),
-            );
+            ) as unknown as void;
           },
         }),
       );

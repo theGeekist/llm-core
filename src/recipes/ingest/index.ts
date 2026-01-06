@@ -13,8 +13,8 @@ type IngestState = Record<string, unknown>;
 
 const INGEST_STATE_PREFIX = "ingest.";
 
-const readInputRecord = (value: unknown): Record<string, unknown> | undefined =>
-  isRecord(value) ? value : undefined;
+const readInputRecord = (value: unknown): Record<string, unknown> | null =>
+  isRecord(value) ? value : null;
 
 const isDocument = (value: unknown): value is Document =>
   !!value && typeof value === "object" && typeof (value as Document).text === "string";
@@ -198,7 +198,7 @@ const buildUpsertInput = (ingest: IngestState) => {
   if (documents && documents.length > 0) {
     return { documents };
   }
-  return undefined;
+  return null;
 };
 
 // Writes documents or vectors to the vector store adapter.

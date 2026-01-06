@@ -34,9 +34,9 @@ const readInputRecord = (value: unknown): Record<string, unknown> | undefined =>
 const readAgentInput = (value: unknown): AgentInput => {
   const record = readInputRecord(value);
   return {
-    input: readString(record?.input),
-    context: readString(record?.context),
-    threadId: readString(record?.threadId),
+    input: readString(record?.input) ?? undefined,
+    context: readString(record?.context) ?? undefined,
+    threadId: readString(record?.threadId) ?? undefined,
   };
 };
 
@@ -67,7 +67,8 @@ const setAgentInput = (agent: AgentState, input: AgentInput) => {
 
 const readAdapters = (context: PipelineContext): AdapterBundle => context.adapters ?? {};
 
-const readModel = (context: PipelineContext): Model | undefined => readAdapters(context).model;
+const readModel = (context: PipelineContext): Model | null | undefined =>
+  readAdapters(context).model;
 
 const readTools = (context: PipelineContext): Tool[] => readAdapters(context).tools ?? [];
 
@@ -77,12 +78,12 @@ const createCall = (agent: AgentState, call: Partial<ModelCall>): ModelCall => (
   ...call,
 });
 
-const runModel = (model: Model | undefined, call: ModelCall) =>
+const runModel = (model: Model | null | undefined, call: ModelCall) =>
   model ? model.generate(call) : null;
 
 const applyModelResult = (agent: AgentState, result: ModelResult) => {
   if (result.text !== undefined) {
-    agent.plan = result.text;
+    agent.plan = result.text ?? undefined;
   }
   if (result.messages) {
     agent.messages = result.messages;

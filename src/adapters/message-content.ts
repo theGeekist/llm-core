@@ -27,13 +27,13 @@ const getTextParts = (parts: MessagePart[]) =>
 
 const toImagePartFromUrl = (url: string): ImagePart => ({ type: "image", url });
 
-const toImagePartFromData = (data: string, mediaType?: string): ImagePart => ({
+const toImagePartFromData = (data: string, mediaType?: string | null): ImagePart => ({
   type: "image",
   data,
   mediaType,
 });
 
-const toFilePartFromData = (data: string, mediaType?: string): FilePart => ({
+const toFilePartFromData = (data: string, mediaType?: string | null): FilePart => ({
   type: "file",
   data,
   mediaType,
@@ -46,10 +46,10 @@ const readMediaType = (part: Record<string, unknown>) => {
   if (typeof part.mimeType === "string") {
     return part.mimeType;
   }
-  return undefined;
+  return null;
 };
 
-const toImagePart = (value: unknown, mediaType?: string): MessagePart => {
+const toImagePart = (value: unknown, mediaType?: string | null): MessagePart => {
   if (value instanceof URL) {
     return toImagePartFromUrl(String(value));
   }
@@ -71,7 +71,7 @@ const toImagePart = (value: unknown, mediaType?: string): MessagePart => {
   return toDataPart(value);
 };
 
-const toFilePart = (value: unknown, mediaType?: string): MessagePart => {
+const toFilePart = (value: unknown, mediaType?: string | null): MessagePart => {
   if (value instanceof URL) {
     return toFilePartFromData(String(value), mediaType);
   }
@@ -92,21 +92,21 @@ const toFilePart = (value: unknown, mediaType?: string): MessagePart => {
 
 const readType = (part: PartWithType) => (typeof part.type === "string" ? part.type : "");
 
-const toTextPart = (part: Record<string, unknown>): MessagePart | undefined => {
+const toTextPart = (part: Record<string, unknown>): MessagePart | null => {
   if (readType(part) === "text" && typeof part.text === "string") {
     return { type: "text", text: part.text };
   }
-  return undefined;
+  return null;
 };
 
-const toReasoningPart = (part: Record<string, unknown>): MessagePart | undefined => {
+const toReasoningPart = (part: Record<string, unknown>): MessagePart | null => {
   if (readType(part) === "reasoning" && typeof part.text === "string") {
     return { type: "reasoning", text: part.text };
   }
-  return undefined;
+  return null;
 };
 
-const toToolCallPart = (part: Record<string, unknown>): MessagePart | undefined => {
+const toToolCallPart = (part: Record<string, unknown>): MessagePart | null => {
   if (readType(part) === "tool-call" && typeof part.toolName === "string") {
     return {
       type: "tool-call",
@@ -115,10 +115,10 @@ const toToolCallPart = (part: Record<string, unknown>): MessagePart | undefined 
       input: part.input,
     };
   }
-  return undefined;
+  return null;
 };
 
-const toToolResultPart = (part: Record<string, unknown>): MessagePart | undefined => {
+const toToolResultPart = (part: Record<string, unknown>): MessagePart | null => {
   if (readType(part) === "tool-result" && typeof part.toolName === "string") {
     return {
       type: "tool-result",
@@ -127,10 +127,10 @@ const toToolResultPart = (part: Record<string, unknown>): MessagePart | undefine
       output: part.output,
     };
   }
-  return undefined;
+  return null;
 };
 
-const toImagePartFromObject = (part: Record<string, unknown>): MessagePart | undefined => {
+const toImagePartFromObject = (part: Record<string, unknown>): MessagePart | null => {
   if (readType(part) === "image") {
     return toImagePart(part.image, readMediaType(part));
   }
@@ -140,14 +140,14 @@ const toImagePartFromObject = (part: Record<string, unknown>): MessagePart | und
       return toImagePartFromUrl(url);
     }
   }
-  return undefined;
+  return null;
 };
 
-const toFilePartFromObject = (part: Record<string, unknown>): MessagePart | undefined => {
+const toFilePartFromObject = (part: Record<string, unknown>): MessagePart | null => {
   if (readType(part) === "file") {
     return toFilePart(part.data, readMediaType(part));
   }
-  return undefined;
+  return null;
 };
 
 const partParsers = [
@@ -159,9 +159,9 @@ const partParsers = [
   toFilePartFromObject,
 ];
 
-const parseAdapterPart = (value: unknown): MessagePart | undefined => {
+const parseAdapterPart = (value: unknown): MessagePart | null => {
   if (!isRecord(value)) {
-    return undefined;
+    return null;
   }
   for (const parser of partParsers) {
     const parsed = parser(value);
@@ -169,7 +169,7 @@ const parseAdapterPart = (value: unknown): MessagePart | undefined => {
       return parsed;
     }
   }
-  return undefined;
+  return null;
 };
 
 const toAdapterPart = (value: unknown): MessagePart => parseAdapterPart(value) ?? toDataPart(value);

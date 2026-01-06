@@ -12,6 +12,7 @@ import {
   maybeTap,
   maybeToAsyncIterable,
   toAsyncIterable,
+  toStep,
   maybeTry,
   tryWrap,
 } from "../src/maybe";
@@ -31,6 +32,8 @@ const throwError = () => {
 };
 
 const recoverWithFallback = () => "fallback";
+const isPromiseLike = (value: unknown): value is PromiseLike<unknown> =>
+  !!value && typeof (value as PromiseLike<unknown>).then === "function";
 
 describe("Maybe utilities", () => {
   it("maybeMap supports direct and partial application", () => {
@@ -79,6 +82,13 @@ describe("Maybe utilities", () => {
   it("maybeAll supports partial application", () => {
     const result = maybeAll<number>()([1, 2, 3]);
     expect(result).toEqual([1, 2, 3]);
+  });
+
+  it("maybeAll returns a fresh array for sync values", () => {
+    const values = [1, 2, 3];
+    const result = maybeAll(values);
+    expect(result).toEqual([1, 2, 3]);
+    expect(result).not.toBe(values);
   });
 
   it("maybeMapArray supports partial application", () => {
@@ -149,8 +159,15 @@ describe("Maybe utilities", () => {
     expect(collected).toEqual([4, 5]);
   });
 
-  it("maybeToAsyncIterable handles promised iterables", async () => {
-    const output = await maybeToAsyncIterable(Promise.resolve(["a", "b"]));
+  it("toStep preserves sync pull for iterables", () => {
+    const step = toStep(["a", "b"]);
+    const first = step.next();
+    expect(isPromiseLike(first)).toBe(false);
+    expect(first).toEqual({ done: false, value: "a" });
+  });
+
+  it("maybeToAsyncIterable adapts steps to async iterables", async () => {
+    const output = await maybeToAsyncIterable(toStep(["a", "b"]));
     const collected: string[] = [];
     for await (const item of output) {
       collected.push(item);

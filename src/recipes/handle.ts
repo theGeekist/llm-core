@@ -104,11 +104,11 @@ const isRecipePack = (value: unknown): value is RecipePack =>
 
 const readRecipeState = <N extends RecipeName, C>(
   value: unknown,
-): RecipeState<N, C> | undefined => {
+): RecipeState<N, C> | null | undefined => {
   if (value && typeof value === "object" && RECIPE_STATE in value) {
     return (value as RecipeStateCarrier<N, C>)[RECIPE_STATE];
   }
-  return undefined;
+  return null;
 };
 
 const mergeRuntimeOverrides = (

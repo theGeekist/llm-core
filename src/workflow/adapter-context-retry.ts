@@ -18,7 +18,7 @@ import { wrapRetryCallOne } from "./runtime/retry";
 
 const wrapEmbedder = (embedder: AdapterBundle["embedder"], input: RetryWrapContext) => {
   if (!embedder) {
-    return undefined;
+    return null;
   }
   const metadata = embedder.metadata?.retry;
   return {
@@ -42,7 +42,7 @@ const wrapEmbedder = (embedder: AdapterBundle["embedder"], input: RetryWrapConte
 
 const wrapImage = (image: AdapterBundle["image"], input: RetryWrapContext) => {
   if (!image) {
-    return undefined;
+    return null;
   }
   const metadata = image.metadata?.retry;
   return {
@@ -59,7 +59,7 @@ const wrapImage = (image: AdapterBundle["image"], input: RetryWrapContext) => {
 
 const wrapRetriever = (retriever: AdapterBundle["retriever"], input: RetryWrapContext) => {
   if (!retriever) {
-    return undefined;
+    return null;
   }
   const metadata = retriever.metadata?.retry;
   return {
@@ -76,7 +76,7 @@ const wrapRetriever = (retriever: AdapterBundle["retriever"], input: RetryWrapCo
 
 const wrapReranker = (reranker: AdapterBundle["reranker"], input: RetryWrapContext) => {
   if (!reranker) {
-    return undefined;
+    return null;
   }
   const metadata = reranker.metadata?.retry;
   return {
@@ -93,7 +93,7 @@ const wrapReranker = (reranker: AdapterBundle["reranker"], input: RetryWrapConte
 
 const wrapTextSplitter = (splitter: AdapterBundle["textSplitter"], input: RetryWrapContext) => {
   if (!splitter) {
-    return undefined;
+    return null;
   }
   const metadata = splitter.metadata?.retry;
   return {
@@ -124,7 +124,7 @@ const wrapTextSplitter = (splitter: AdapterBundle["textSplitter"], input: RetryW
 
 const wrapOutputParser = (outputParser: AdapterBundle["outputParser"], input: RetryWrapContext) => {
   if (!outputParser) {
-    return undefined;
+    return null;
   }
   const metadata = outputParser.metadata?.retry;
   return {
@@ -142,7 +142,7 @@ const wrapOutputParser = (outputParser: AdapterBundle["outputParser"], input: Re
 
 const wrapModel = (model: AdapterBundle["model"], input: RetryWrapContext) => {
   if (!model) {
-    return undefined;
+    return null;
   }
   const metadata = model.metadata?.retry;
   const policy = readRetryPolicy(input.retry, "model");
@@ -169,7 +169,7 @@ const wrapModel = (model: AdapterBundle["model"], input: RetryWrapContext) => {
 
 const wrapLoader = (loader: AdapterBundle["loader"], input: RetryWrapContext) => {
   if (!loader) {
-    return undefined;
+    return null;
   }
   const metadata = loader.metadata?.retry;
   return {
@@ -186,7 +186,7 @@ const wrapLoader = (loader: AdapterBundle["loader"], input: RetryWrapContext) =>
 
 const wrapTransformer = (transformer: AdapterBundle["transformer"], input: RetryWrapContext) => {
   if (!transformer) {
-    return undefined;
+    return null;
   }
   const metadata = transformer.metadata?.retry;
   return {
@@ -203,7 +203,7 @@ const wrapTransformer = (transformer: AdapterBundle["transformer"], input: Retry
 
 const wrapStorage = (storage: AdapterBundle["storage"], input: RetryWrapContext) => {
   if (!storage) {
-    return undefined;
+    return null;
   }
   return {
     ...storage,
@@ -236,7 +236,7 @@ const wrapStorage = (storage: AdapterBundle["storage"], input: RetryWrapContext)
 
 const wrapCache = (cache: AdapterBundle["cache"], input: RetryWrapContext) => {
   if (!cache) {
-    return undefined;
+    return null;
   }
   return {
     ...cache,
@@ -263,7 +263,7 @@ const wrapCache = (cache: AdapterBundle["cache"], input: RetryWrapContext) => {
 
 const wrapKv = (kv: AdapterBundle["kv"], input: RetryWrapContext) => {
   if (!kv) {
-    return undefined;
+    return null;
   }
   return {
     ...kv,
@@ -296,7 +296,7 @@ const wrapKv = (kv: AdapterBundle["kv"], input: RetryWrapContext) => {
 
 const wrapMemory = (memory: AdapterBundle["memory"], input: RetryWrapContext) => {
   if (!memory) {
-    return undefined;
+    return null;
   }
   const metadata = memory.metadata?.retry;
   return {
@@ -348,7 +348,7 @@ const wrapMemory = (memory: AdapterBundle["memory"], input: RetryWrapContext) =>
 
 const wrapSpeech = (speech: AdapterBundle["speech"], input: RetryWrapContext) => {
   if (!speech) {
-    return undefined;
+    return null;
   }
   const metadata = speech.metadata?.retry;
   return {
@@ -368,7 +368,7 @@ const wrapTranscription = (
   input: RetryWrapContext,
 ) => {
   if (!transcription) {
-    return undefined;
+    return null;
   }
   const metadata = transcription.metadata?.retry;
   return {
@@ -385,7 +385,7 @@ const wrapTranscription = (
 
 const wrapVectorStore = (store: AdapterBundle["vectorStore"], input: RetryWrapContext) => {
   if (!store) {
-    return undefined;
+    return null;
   }
   const metadata = store.metadata?.retry;
   return {
@@ -409,7 +409,7 @@ const wrapVectorStore = (store: AdapterBundle["vectorStore"], input: RetryWrapCo
 
 const wrapQueryEngine = (engine: AdapterBundle["queryEngine"], input: RetryWrapContext) => {
   if (!engine) {
-    return undefined;
+    return null;
   }
   const metadata = engine.metadata?.retry;
   const policy = readRetryPolicy(input.retry, "queryEngine");
@@ -439,7 +439,7 @@ const wrapResponseSynthesizer = (
   input: RetryWrapContext,
 ) => {
   if (!synthesizer) {
-    return undefined;
+    return null;
   }
   const metadata = synthesizer.metadata?.retry;
   const policy = readRetryPolicy(input.retry, "responseSynthesizer");
@@ -479,12 +479,12 @@ const wrapToolExecute = (input: RetryWrapContext, tool: ToolAdapter): ToolAdapte
           metadata: tool.metadata?.retry,
         }),
       )
-    : undefined,
+    : null,
 });
 
 const wrapTools = (tools: AdapterBundle["tools"], input: RetryWrapContext) => {
   if (!tools) {
-    return undefined;
+    return null;
   }
   return tools.map(bindFirst(wrapToolExecute, input));
 };

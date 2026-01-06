@@ -6,76 +6,76 @@ import type { StreamEvent } from "./stream";
 import type { MaybeAsyncIterable, MaybePromise } from "../../maybe";
 
 type ModelCallBase = {
-  model?: string;
-  system?: string;
-  tools?: Tool[];
-  toolChoice?: string;
-  responseSchema?: Schema;
-  temperature?: number;
-  topP?: number;
-  maxTokens?: number;
-  metadata?: AdapterMetadata;
+  model?: string | null;
+  system?: string | null;
+  tools?: Tool[] | null;
+  toolChoice?: string | null;
+  responseSchema?: Schema | null;
+  temperature?: number | null;
+  topP?: number | null;
+  maxTokens?: number | null;
+  metadata?: AdapterMetadata | null;
 };
 
 export type ModelCall = ModelCallBase & {
-  messages?: Message[];
-  prompt?: string;
+  messages?: Message[] | null;
+  prompt?: string | null;
 };
 
 export type ModelUsage = {
-  inputTokens?: number;
-  outputTokens?: number;
-  totalTokens?: number;
+  inputTokens?: number | null;
+  outputTokens?: number | null;
+  totalTokens?: number | null;
   [key: string]: unknown;
 };
 
 export type ModelMeta = {
-  provider?: string;
-  modelId?: string;
-  requestId?: string;
-  latencyMs?: number;
+  provider?: string | null;
+  modelId?: string | null;
+  requestId?: string | null;
+  latencyMs?: number | null;
   [key: string]: unknown;
 };
 
 export type ModelRequest = {
-  body?: unknown;
-  headers?: Record<string, string>;
+  body?: unknown | null;
+  headers?: Record<string, string> | null;
 };
 
 export type ModelResponse = TraceIdentity & {
-  body?: unknown;
-  headers?: Record<string, string>;
+  body?: unknown | null;
+  headers?: Record<string, string> | null;
 };
 
 export type ModelTelemetry = {
-  request?: ModelRequest;
-  response?: ModelResponse;
-  usage?: ModelUsage;
-  totalUsage?: ModelUsage;
-  warnings?: AdapterDiagnostic[];
-  providerMetadata?: Record<string, unknown>;
+  request?: ModelRequest | null;
+  response?: ModelResponse | null;
+  usage?: ModelUsage | null;
+  totalUsage?: ModelUsage | null;
+  warnings?: AdapterDiagnostic[] | null;
+  providerMetadata?: Record<string, unknown> | null;
 };
 
 export type ModelResult = {
-  text?: string;
-  messages?: Message[];
-  toolCalls?: ToolCall[];
-  toolResults?: ToolResult[];
-  reasoning?: unknown;
-  output?: unknown;
-  diagnostics?: AdapterDiagnostic[];
-  trace?: AdapterTraceEvent[];
-  telemetry?: ModelTelemetry;
-  usage?: ModelUsage;
-  meta?: ModelMeta;
-  raw?: unknown;
-  metadata?: AdapterMetadata;
+  text?: string | null;
+  messages?: Message[] | null;
+  toolCalls?: ToolCall[] | null;
+  toolResults?: ToolResult[] | null;
+  reasoning?: unknown | null;
+  output?: unknown | null;
+  diagnostics?: AdapterDiagnostic[] | null;
+  trace?: AdapterTraceEvent[] | null;
+  telemetry?: ModelTelemetry | null;
+  usage?: ModelUsage | null;
+  meta?: ModelMeta | null;
+  raw?: unknown | null;
+  metadata?: AdapterMetadata | null;
 };
 
 export type Model = {
   generate(call: ModelCall): MaybePromise<ModelResult>;
   stream?(call: ModelCall): MaybeAsyncIterable<StreamEvent>;
-  metadata?: AdapterMetadata;
+  metadata?: AdapterMetadata | null;
 };
 
 export type ModelStreamEvent = StreamEvent;

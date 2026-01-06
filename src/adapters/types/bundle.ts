@@ -23,47 +23,47 @@ import type { VectorStore } from "./vector";
 import type { MaybePromise } from "../../maybe";
 
 type AdapterDataBundle = {
-  documents?: Document[];
-  messages?: Message[];
-  prompts?: PromptTemplate[];
-  schemas?: Schema[];
-  constructs?: Record<string, unknown>;
+  documents?: Document[] | null;
+  messages?: Message[] | null;
+  prompts?: PromptTemplate[] | null;
+  schemas?: Schema[] | null;
+  constructs?: Record<string, unknown> | null;
 };
 
 type AdapterModelBundle = {
-  model?: Model;
-  tools?: Tool[];
-  outputParser?: OutputParser;
+  model?: Model | null;
+  tools?: Tool[] | null;
+  outputParser?: OutputParser | null;
 };
 
 type AdapterRetrievalBundle = {
-  loader?: DocumentLoader;
-  textSplitter?: TextSplitter;
-  transformer?: DocumentTransformer;
-  embedder?: Embedder;
-  retriever?: Retriever;
-  reranker?: Reranker;
-  vectorStore?: VectorStore;
-  indexing?: Indexing;
-  queryEngine?: QueryEngine;
-  responseSynthesizer?: ResponseSynthesizer;
+  loader?: DocumentLoader | null;
+  textSplitter?: TextSplitter | null;
+  transformer?: DocumentTransformer | null;
+  embedder?: Embedder | null;
+  retriever?: Retriever | null;
+  reranker?: Reranker | null;
+  vectorStore?: VectorStore | null;
+  indexing?: Indexing | null;
+  queryEngine?: QueryEngine | null;
+  responseSynthesizer?: ResponseSynthesizer | null;
 };
 
 type AdapterMediaBundle = {
-  image?: ImageModel;
-  speech?: SpeechModel;
-  transcription?: TranscriptionModel;
+  image?: ImageModel | null;
+  speech?: SpeechModel | null;
+  transcription?: TranscriptionModel | null;
 };
 
 type AdapterOrchestrationBundle = {
-  cache?: Cache;
-  kv?: KVStore;
-  storage?: Storage;
-  memory?: Memory;
-  trace?: EventStream;
-  checkpoint?: CheckpointStore;
-  eventStream?: EventStream;
-  interrupt?: InterruptStrategy;
+  cache?: Cache | null;
+  kv?: KVStore | null;
+  storage?: Storage | null;
+  memory?: Memory | null;
+  trace?: EventStream | null;
+  checkpoint?: CheckpointStore | null;
+  eventStream?: EventStream | null;
+  interrupt?: InterruptStrategy | null;
 };
 
 export type AdapterBundle = AdapterDataBundle &
@@ -75,7 +75,7 @@ export type AdapterBundle = AdapterDataBundle &
 export type AdapterResumeRequest = {
   adapters?: AdapterBundle;
   declaredAdapters?: AdapterBundle;
-  interrupt?: InterruptStrategy;
+  interrupt?: InterruptStrategy | null;
   pauseKind?: PauseKind;
   resumeKey?: string;
   resumeSnapshot?: ResumeSnapshot;

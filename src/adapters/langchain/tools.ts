@@ -29,7 +29,7 @@ export function fromLangChainTool<TInput, TOutput>(tool: LangChainToolLike<TInpu
     const diagnostics = validateToolInput(adapterShape, input);
     if (diagnostics.length > 0) {
       reportDiagnostics(context, diagnostics);
-      return undefined;
+      return null;
     }
     return maybeMap(identity, tool.invoke(input as TInput));
   }

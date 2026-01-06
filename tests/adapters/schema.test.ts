@@ -27,9 +27,9 @@ describe("Adapter schemas", () => {
     expect(adapted?.kind).toBe("unknown");
   });
 
-  it("returns undefined for nullish inputs", () => {
-    expect(toSchema(null)).toBeUndefined();
-    expect(toSchema(undefined)).toBeUndefined();
+  it("returns null for nullish inputs", () => {
+    expect(toSchema(null)).toBeNull();
+    expect(toSchema(undefined)).toBeNull();
   });
 
   it("maps jsonSchema property directly", () => {

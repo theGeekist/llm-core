@@ -39,7 +39,7 @@ export function readQueryResponseText(response: EngineResponse) {
 
 export function readQueryResponseSources(response: EngineResponse) {
   if (!response.sourceNodes || response.sourceNodes.length === 0) {
-    return undefined;
+    return null;
   }
   return fromLlamaIndexNodes(response.sourceNodes).documents;
 }

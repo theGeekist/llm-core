@@ -7,16 +7,16 @@ import {
   toStreamErrorEvent,
 } from "../stream-utils";
 
-export const toToolCallEvent = (toolCall?: ToolCall): ModelStreamEvent | undefined => {
+export const toToolCallEvent = (toolCall?: ToolCall): ModelStreamEvent | null => {
   if (!toolCall) {
-    return undefined;
+    return null;
   }
   return toStreamDeltaToolCallEvent(toolCall);
 };
 
-export const toToolResultEvent = (toolResult?: ToolResult): ModelStreamEvent | undefined => {
+export const toToolResultEvent = (toolResult?: ToolResult): ModelStreamEvent | null => {
   if (!toolResult) {
-    return undefined;
+    return null;
   }
   return toStreamDeltaToolResultEvent(toolResult);
 };

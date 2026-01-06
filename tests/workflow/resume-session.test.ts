@@ -17,11 +17,11 @@ describe("Workflow resume sessions", () => {
     const runtime = {
       resume: {
         resolve: () => ({ input: "ok" }),
-        sessionStore: { get: () => undefined },
+        sessionStore: { get: () => null },
       },
     } satisfies Runtime;
 
-    expect(readSessionStore(runtime)).toBeUndefined();
+    expect(readSessionStore(runtime)).toBeNull();
   });
 
   it("reads session stores and ttl values", () => {
@@ -42,7 +42,7 @@ describe("Workflow resume sessions", () => {
         sessionTtlMs: "x",
       },
     };
-    expect(readSessionTtlMs(invalidRuntime)).toBeUndefined();
+    expect(readSessionTtlMs(invalidRuntime)).toBeNull();
   });
 
   it("records pause snapshots when tokens are present", () => {
@@ -98,7 +98,7 @@ describe("Workflow resume sessions", () => {
 
   it("prefers checkpoint adapters over cache stores", () => {
     const checkpoint = {
-      get: () => undefined,
+      get: () => null,
       set: () => null,
       delete: () => null,
     };
@@ -119,7 +119,7 @@ describe("Workflow resume sessions", () => {
       return null;
     };
     const sessionStore = {
-      get: () => undefined,
+      get: () => null,
       set: () => null,
       delete: () => null,
       sweep: sweepStore,
@@ -208,7 +208,7 @@ describe("Workflow resume sessions", () => {
         resumeKey: "thread-7",
         store: {
           ...sessionStore,
-          get: (token) => (token === "thread-7" ? snapshot : undefined),
+          get: (token) => (token === "thread-7" ? snapshot : null),
         },
       }),
     );

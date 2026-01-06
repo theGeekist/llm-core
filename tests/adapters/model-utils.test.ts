@@ -35,9 +35,9 @@ describe("Adapter model utilities", () => {
     expect(schema).toMatchObject({ type: "json_schema" });
   });
 
-  it("returns undefined for empty or invalid json", () => {
-    expect(tryParseJson("")).toBeUndefined();
-    expect(tryParseJson("{nope")).toBeUndefined();
+  it("returns null for empty or invalid json", () => {
+    expect(tryParseJson("")).toBeNull();
+    expect(tryParseJson("{nope")).toBeNull();
   });
 
   it("reads structured text content safely", () => {

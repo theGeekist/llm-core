@@ -40,7 +40,7 @@ type ResumeValueInput<N extends RecipeName> = {
   deps: ResumeHandlerDeps<N>;
 };
 
-const readPauseKind = (session: ActiveResumeSession): PauseKind | undefined => {
+const readPauseKind = (session: ActiveResumeSession): PauseKind | null => {
   const pauseKind =
     session.kind === "pause" ? session.session.snapshot.pauseKind : session.snapshot.pauseKind;
   return toPauseKind(pauseKind);
@@ -63,7 +63,7 @@ const handleVerifySnapshot = <N extends RecipeName>(
   snapshot: unknown,
 ) => {
   if (snapshot) {
-    return undefined;
+    return null;
   }
   return invalidResumeTokenOutcome<N>({
     trace: input.trace,
@@ -125,7 +125,7 @@ const startResumeAfterExtensions = <N extends RecipeName>(
 
 const startResumeAfterVerify = <N extends RecipeName>(
   input: ResumeStartInput<N>,
-  earlyError: Outcome<ArtefactOf<N>> | undefined,
+  earlyError: Outcome<ArtefactOf<N>> | undefined | null,
 ) => {
   if (earlyError) {
     return earlyError;
@@ -184,7 +184,7 @@ const resumeFromSession = <N extends RecipeName>(input: ResumeFromSessionInput<N
     required.adapter.resolve({
       token: input.token,
       resumeInput: input.resumeInput,
-      pauseKind: readPauseKind(session as ActiveResumeSession),
+      pauseKind: readPauseKind(session as ActiveResumeSession) ?? undefined,
       interrupt: readInterruptStrategy(input.resolvedAdapters),
       resumeKey: input.resumeKey,
       resumeSnapshot: session.kind === "snapshot" ? session.snapshot : undefined,

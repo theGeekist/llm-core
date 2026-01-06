@@ -6,7 +6,7 @@ const EVENTS_STATE_KEY = "recipe.events";
 
 const isEventArray = (value: unknown): value is AdapterTraceEvent[] => Array.isArray(value);
 
-const readEventStream = (context: PipelineContext): EventStream | undefined =>
+const readEventStream = (context: PipelineContext): EventStream | null | undefined =>
   context.adapters?.eventStream;
 
 const ensureEventList = (state: PipelineState): AdapterTraceEvent[] => {

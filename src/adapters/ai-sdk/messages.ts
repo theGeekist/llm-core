@@ -21,7 +21,7 @@ const toFilePart = (data: string, mediaType?: string) => ({
   mediaType: mediaType ?? DEFAULT_MEDIA_TYPE,
 });
 
-const toUserPart = (part: MessagePart): UserPart | undefined => {
+const toUserPart = (part: MessagePart): UserPart | null | undefined => {
   if (part.type === "text") {
     return { type: "text", text: part.text };
   }
@@ -32,9 +32,9 @@ const toUserPart = (part: MessagePart): UserPart | undefined => {
     };
   }
   if (part.type === "file") {
-    return toFilePart(part.data ?? "", part.mediaType);
+    return toFilePart(part.data ?? "", part.mediaType ?? undefined);
   }
-  return undefined;
+  return null;
 };
 
 type ToolResultOutput = Extract<ToolPart, { type: "tool-result" }>["output"];
@@ -42,13 +42,13 @@ const toToolResultOutput = (value: unknown): ToolResultOutput => value as ToolRe
 
 const readToolMetadata = (content: ModelMessage["content"]) => {
   if (!Array.isArray(content)) {
-    return undefined;
+    return null;
   }
   const result = content.find(
     (part): part is ToolPart => typeof part === "object" && part?.type === TOOL_RESULT_TYPE,
   );
   if (!result) {
-    return undefined;
+    return null;
   }
   return {
     toolCallId: result.toolCallId,
@@ -56,19 +56,21 @@ const readToolMetadata = (content: ModelMessage["content"]) => {
   };
 };
 
-const parseAssistantText = (part: MessagePart): AssistantPart | undefined =>
-  part.type === "text" ? { type: "text", text: part.text } : undefined;
+const parseAssistantText = (part: MessagePart): AssistantPart | null | undefined =>
+  part.type === "text" ? { type: "text", text: part.text } : null;
 
-const parseAssistantImage = (part: MessagePart): AssistantPart | undefined =>
-  part.type === "image" ? toFilePart(part.data ?? part.url ?? "", part.mediaType) : undefined;
+const parseAssistantImage = (part: MessagePart): AssistantPart | null | undefined =>
+  part.type === "image"
+    ? toFilePart(part.data ?? part.url ?? "", part.mediaType ?? undefined)
+    : null;
 
-const parseAssistantFile = (part: MessagePart): AssistantPart | undefined =>
-  part.type === "file" ? toFilePart(part.data ?? "", part.mediaType) : undefined;
+const parseAssistantFile = (part: MessagePart): AssistantPart | null | undefined =>
+  part.type === "file" ? toFilePart(part.data ?? "", part.mediaType ?? undefined) : null;
 
-const parseAssistantReasoning = (part: MessagePart): AssistantPart | undefined =>
-  part.type === "reasoning" ? { type: "reasoning", text: part.text } : undefined;
+const parseAssistantReasoning = (part: MessagePart): AssistantPart | null | undefined =>
+  part.type === "reasoning" ? { type: "reasoning", text: part.text } : null;
 
-const parseAssistantToolCall = (part: MessagePart): AssistantPart | undefined =>
+const parseAssistantToolCall = (part: MessagePart): AssistantPart | null | undefined =>
   part.type === "tool-call"
     ? {
         type: "tool-call",
@@ -76,9 +78,9 @@ const parseAssistantToolCall = (part: MessagePart): AssistantPart | undefined =>
         toolName: part.toolName,
         input: part.input,
       }
-    : undefined;
+    : null;
 
-const parseAssistantToolResult = (part: MessagePart): AssistantPart | undefined =>
+const parseAssistantToolResult = (part: MessagePart): AssistantPart | null | undefined =>
   part.type === "tool-result"
     ? {
         type: TOOL_RESULT_TYPE,
@@ -86,7 +88,7 @@ const parseAssistantToolResult = (part: MessagePart): AssistantPart | undefined 
         toolName: part.toolName,
         output: part.output as ToolResultOutput,
       }
-    : undefined;
+    : null;
 
 const assistantPartParsers = [
   parseAssistantText,
@@ -97,14 +99,14 @@ const assistantPartParsers = [
   parseAssistantToolResult,
 ];
 
-const toAssistantPart = (part: MessagePart): AssistantPart | undefined => {
+const toAssistantPart = (part: MessagePart): AssistantPart | null | undefined => {
   for (const parser of assistantPartParsers) {
     const parsed = parser(part);
     if (parsed) {
       return parsed;
     }
   }
-  return undefined;
+  return null;
 };
 
 const toUserContent = (content: MessageContent): UserContent => {

@@ -39,7 +39,7 @@ const toIdentifiers = (
   input: Record<string, unknown>,
   options?: AiSdkMemoryOptions,
 ): MemoryIdentifiers => ({
-  chatId: readChatId(input),
+  chatId: readChatId(input) ?? undefined,
   userId: readUserId(input, options),
   scope: toScope(options),
 });
@@ -89,11 +89,11 @@ export function fromAiSdkMemory(provider: MemoryProvider, options?: AiSdkMemoryO
     const diagnostics = validateThreadId(threadId, "read");
     if (diagnostics.length > 0) {
       reportDiagnostics(context, diagnostics);
-      return undefined;
+      return null;
     }
     if (!provider.getMessages) {
       reportProviderMissing(context, "getMessages", "read");
-      return undefined;
+      return null;
     }
     return maybeMap(
       (messages) => toThread(threadId, messages),
@@ -176,7 +176,7 @@ export function fromAiSdkMemory(provider: MemoryProvider, options?: AiSdkMemoryO
         chatId: ids.chatId,
         userId: ids.userId,
         scope: ids.scope,
-        content,
+        content: content ?? "",
       }),
     );
   }

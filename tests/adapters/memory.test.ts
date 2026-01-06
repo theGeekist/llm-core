@@ -54,7 +54,7 @@ describe("Adapter memory", () => {
     const { context, diagnostics } = captureDiagnostics();
 
     const thread = await adapter.read?.("", context);
-    expect(thread).toBeUndefined();
+    expect(thread).toBeNull();
     expect(diagnostics[0]?.message).toBe("memory_thread_missing");
   });
 
@@ -152,7 +152,7 @@ describe("Adapter memory", () => {
     const { context, diagnostics } = captureDiagnostics();
 
     const thread = await adapter.read?.("", context);
-    expect(thread).toBeUndefined();
+    expect(thread).toBeNull();
 
     await adapter.append?.("", { role: "user", content: "hi" }, context);
     await adapter.load?.(undefined as never, context);

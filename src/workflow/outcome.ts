@@ -16,7 +16,13 @@ export const match = <TArtefact, TResult>(
       return matcher.paused(outcome);
     case "error":
       return matcher.error(outcome);
+    default:
+      return throwUnexpectedOutcome(outcome);
   }
+};
+
+const throwUnexpectedOutcome = (_outcome: OutcomeType): never => {
+  throw new Error("Unexpected outcome status.");
 };
 
 export const mapOk = <TArtefact, TNext>(

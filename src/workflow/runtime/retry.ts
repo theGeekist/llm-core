@@ -11,6 +11,8 @@ import { bindFirst, maybeTry } from "../../maybe";
 import { addTraceEvent } from "../trace";
 import type { TraceEvent } from "../trace";
 
+export type { RetryConfig } from "../../adapters/types";
+
 export type RetryAdapterKind =
   | "model"
   | "embedder"
@@ -52,8 +54,8 @@ type RetryCallInput<TArgs extends unknown[], TResult> = {
   method: string;
   call: (...args: [...TArgs, AdapterCallContext?]) => MaybePromise<TResult>;
   args: [...TArgs, AdapterCallContext?];
-  policy?: RetryPolicy;
-  metadata?: RetryMetadata;
+  policy?: RetryPolicy | null;
+  metadata?: RetryMetadata | null;
   trace?: TraceEvent[];
   report?: AdapterCallContext["report"];
 };
@@ -62,8 +64,8 @@ export type RetryWrapperInput<TArgs extends unknown[], TResult> = {
   adapterKind: RetryAdapterKind;
   method: string;
   call: (...args: [...TArgs, AdapterCallContext?]) => MaybePromise<TResult>;
-  policy?: RetryPolicy;
-  metadata?: RetryMetadata;
+  policy?: RetryPolicy | null;
+  metadata?: RetryMetadata | null;
   trace?: TraceEvent[];
   context: AdapterCallContext;
 };
@@ -100,9 +102,11 @@ export const isRetryPauseSignal = (error: unknown): error is RetryPauseSignal =>
 
 export const readRetryPausePayload = (error: RetryPauseSignal): RetryPausePayload => error.payload;
 
-const normalizePolicy = (policy: RetryPolicy | undefined): RetryPolicy | undefined => {
+const normalizePolicy = (
+  policy: RetryPolicy | null | undefined,
+): RetryPolicy | null | undefined => {
   if (!policy) {
-    return undefined;
+    return null;
   }
   return {
     ...policy,
@@ -113,8 +117,8 @@ const normalizePolicy = (policy: RetryPolicy | undefined): RetryPolicy | undefin
 };
 
 const mergeRetryPolicy = (
-  defaults: RetryPolicy | undefined,
-  overrides: RetryPolicy | undefined,
+  defaults: RetryPolicy | null | undefined,
+  overrides: RetryPolicy | null | undefined,
 ) => {
   if (!defaults) {
     return overrides;
@@ -126,11 +130,11 @@ const mergeRetryPolicy = (
 };
 
 export const mergeRetryConfig = (
-  defaults: RetryConfig | undefined,
-  overrides: RetryConfig | undefined,
-): RetryConfig | undefined => {
+  defaults: RetryConfig | null | undefined,
+  overrides: RetryConfig | null | undefined,
+): RetryConfig | null | undefined => {
   if (!defaults && !overrides) {
-    return undefined;
+    return null;
   }
   return {
     model: mergeRetryPolicy(defaults?.model, overrides?.model),
@@ -159,15 +163,15 @@ export const mergeRetryConfig = (
 };
 
 type RetrySelection = {
-  policy?: RetryPolicy;
+  policy?: RetryPolicy | null;
   source: "runtime" | "metadata" | "none";
 };
 
-const isRetryAllowed = (metadata: RetryMetadata | undefined) => metadata?.allowed !== false;
+const isRetryAllowed = (metadata: RetryMetadata | null | undefined) => metadata?.allowed !== false;
 
 const selectRetryPolicy = (
-  policy: RetryPolicy | undefined,
-  metadata: RetryMetadata | undefined,
+  policy: RetryPolicy | null | undefined,
+  metadata: RetryMetadata | null | undefined,
 ): RetrySelection => {
   if (policy) {
     return { policy: normalizePolicy(policy), source: "runtime" };
@@ -184,7 +188,7 @@ const selectRetryPolicy = (
 const isAllowedRetryReason = (allowed: RetryReason[] | undefined, reason: RetryReason) =>
   allowed ? allowed.includes(reason) : true;
 
-const filterRetryReasons = (policy: RetryPolicy, metadata: RetryMetadata | undefined) => {
+const filterRetryReasons = (policy: RetryPolicy, metadata: RetryMetadata | null | undefined) => {
   if (!metadata?.retryOn || !policy.retryOn) {
     return policy;
   }
@@ -397,9 +401,12 @@ export const wrapRetryCallThree = <TFirst, TSecond, TThird, TResult>(
   return callWithRetry(input, [args[0], args[1], args[2], ctx ?? input.context], ctx);
 };
 
-export const selectRetryConfig = (config: RetryConfig | undefined, kind: RetryAdapterKind) => {
+export const selectRetryConfig = (
+  config: RetryConfig | null | undefined,
+  kind: RetryAdapterKind,
+) => {
   if (!config) {
-    return undefined;
+    return null;
   }
-  return config[kind];
+  return config[kind] ?? null;
 };

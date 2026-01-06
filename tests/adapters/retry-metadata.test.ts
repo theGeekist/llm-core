@@ -31,6 +31,6 @@ describe("Adapter retry metadata", () => {
   it("understands num_retries containers", () => {
     const policy = readRetryPolicyFromCandidates([{ retry: { num_retries: 3 } }]);
 
-    expect(policy).toEqual({ maxAttempts: 4, backoffMs: 0 });
+    expect(policy).toEqual({ maxAttempts: 4, backoffMs: 0, timeoutMs: null });
   });
 });

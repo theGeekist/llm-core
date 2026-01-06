@@ -3,12 +3,12 @@ import type { AdapterMetadata } from "./core";
 export type MessageRole = "system" | "user" | "assistant" | "tool";
 
 type MediaFields = {
-  mimeType?: string;
-  mediaType?: string;
+  mimeType?: string | null;
+  mediaType?: string | null;
 };
 
 type MediaPartBase = MediaFields & {
-  data?: string;
+  data?: string | null;
 };
 
 type BinaryPartBase = MediaFields & {
@@ -22,8 +22,8 @@ export type TextPart = {
 
 export type ImagePart = MediaPartBase & {
   type: "image";
-  url?: string;
-  detail?: "high" | "low" | "auto";
+  url?: string | null;
+  detail?: "high" | "low" | "auto" | null;
 };
 
 export type FilePart = BinaryPartBase & {
@@ -37,17 +37,17 @@ export type ReasoningPart = {
 
 export type ToolCallPart = {
   type: "tool-call";
-  toolCallId?: string;
+  toolCallId?: string | null;
   toolName: string;
   input: unknown;
 };
 
 export type ToolResultPart = {
   type: "tool-result";
-  toolCallId?: string;
+  toolCallId?: string | null;
   toolName: string;
   output: unknown;
-  isError?: boolean;
+  isError?: boolean | null;
 };
 
 export type DataPart = {
@@ -67,7 +67,7 @@ export type MessagePart =
 export type StructuredContent = {
   text: string;
   parts: MessagePart[];
-  raw?: unknown;
+  raw?: unknown | null;
 };
 
 export type MessageContent = string | StructuredContent;
@@ -75,7 +75,7 @@ export type MessageContent = string | StructuredContent;
 export type Message = {
   role: MessageRole;
   content: MessageContent;
-  name?: string;
-  toolCallId?: string;
-  metadata?: AdapterMetadata;
+  name?: string | null;
+  toolCallId?: string | null;
+  metadata?: AdapterMetadata | null;
 };

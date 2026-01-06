@@ -92,7 +92,7 @@ export const registerExtensions = (input: RegisterExtensionsInput) => {
     input.diagnostics.push(
       createLifecycleDiagnostic("Pipeline extensions unavailable; plugin extensions skipped."),
     );
-    return;
+    return null;
   }
 
   const effectivePlugins = getEffectivePlugins(input.plugins);

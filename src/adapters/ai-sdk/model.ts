@@ -38,14 +38,14 @@ const toModelUsage = (usage?: {
   inputTokens?: number;
   outputTokens?: number;
   totalTokens?: number;
-}): ModelUsage | undefined => {
+}): ModelUsage | null => {
   if (!usage) {
-    return undefined;
+    return null;
   }
   return {
-    inputTokens: usage.inputTokens,
-    outputTokens: usage.outputTokens,
-    totalTokens: usage.totalTokens,
+    inputTokens: usage.inputTokens ?? null,
+    outputTokens: usage.outputTokens ?? null,
+    totalTokens: usage.totalTokens ?? null,
   };
 };
 
@@ -89,7 +89,7 @@ const buildPromptOptions = (prepared: {
   messages?: ModelCall["messages"];
   prompt?: ModelCall["prompt"];
 }) => {
-  if (prepared.messages !== undefined) {
+  if (prepared.messages) {
     return { messages: prepared.messages.map(toAiSdkMessage) };
   }
   return { prompt: prepared.prompt ?? "" };
@@ -97,7 +97,7 @@ const buildPromptOptions = (prepared: {
 
 const toToolChoice = (value: string | undefined) => {
   if (!value) {
-    return undefined;
+    return null;
   }
   if (value === "auto" || value === "required" || value === "none") {
     return value;
@@ -149,8 +149,8 @@ export function fromAiSdkModel(model: LanguageModel): Model {
 
   const createRunState = (call: ModelCall): RunState => {
     const prepared = ModelCallHelper.prepare(call);
-    const tools = prepared.allowTools ? toAiSdkTools(call.tools) : undefined;
-    const toolChoice = prepared.allowTools ? toToolChoice(call.toolChoice) : undefined;
+    const tools = prepared.allowTools ? toAiSdkTools(call.tools ?? undefined) : undefined;
+    const toolChoice = prepared.allowTools ? toToolChoice(call.toolChoice ?? undefined) : undefined;
 
     return {
       promptOptions: buildPromptOptions(prepared),
@@ -177,7 +177,7 @@ export function fromAiSdkModel(model: LanguageModel): Model {
     const telemetry = toTelemetry({
       request: result.request,
       response: result.response,
-      usage,
+      usage: usage ?? undefined,
       warnings: result.warnings,
       providerMetadata: result.providerMetadata as Record<string, unknown> | undefined,
     });
@@ -206,8 +206,8 @@ export function fromAiSdkModel(model: LanguageModel): Model {
     const telemetry = toTelemetry({
       request: result.request,
       response: result.response,
-      usage,
-      totalUsage,
+      usage: usage ?? undefined,
+      totalUsage: totalUsage ?? undefined,
       warnings: result.warnings,
       providerMetadata: result.providerMetadata as Record<string, unknown> | undefined,
     });
@@ -220,15 +220,15 @@ export function fromAiSdkModel(model: LanguageModel): Model {
       diagnostics,
       telemetry,
       trace: toAdapterTrace(telemetry),
-      usage: collapsedUsage,
+      usage: collapsedUsage ?? undefined,
       meta: toMeta(result.response),
       raw: result,
     };
   };
 
-  const toUsageEvent = (usage?: ModelUsage): ModelStreamEvent | undefined => {
+  const toUsageEvent = (usage?: ModelUsage | null): ModelStreamEvent | null => {
     if (!usage) {
-      return undefined;
+      return null;
     }
     return { type: "usage", usage };
   };
@@ -276,12 +276,12 @@ export function fromAiSdkModel(model: LanguageModel): Model {
         (result) => toSchemaResult(result, state),
         generateObject({
           model,
-          system: call.system,
+          system: call.system ?? undefined,
           ...state.promptOptions,
           schema: toAiSdkSchema(call.responseSchema, state.normalizedSchema),
-          temperature: call.temperature,
-          topP: call.topP,
-          maxOutputTokens: call.maxTokens,
+          temperature: call.temperature ?? undefined,
+          topP: call.topP ?? undefined,
+          maxOutputTokens: call.maxTokens ?? undefined,
         }),
       );
     }
@@ -290,13 +290,13 @@ export function fromAiSdkModel(model: LanguageModel): Model {
       (result) => toTextResult(result, state),
       generateText({
         model,
-        system: call.system,
+        system: call.system ?? undefined,
         ...state.promptOptions,
-        tools: state.tools,
-        toolChoice: state.toolChoice,
-        temperature: call.temperature,
-        topP: call.topP,
-        maxOutputTokens: call.maxTokens,
+        tools: state.tools || undefined,
+        toolChoice: state.toolChoice || undefined,
+        temperature: call.temperature ?? undefined,
+        topP: call.topP ?? undefined,
+        maxOutputTokens: call.maxTokens ?? undefined,
       }),
     );
   }
@@ -311,13 +311,13 @@ export function fromAiSdkModel(model: LanguageModel): Model {
       (result) => toStreamEvents(result, state),
       streamText({
         model,
-        system: call.system,
+        system: call.system ?? undefined,
         ...state.promptOptions,
-        tools: state.tools,
-        toolChoice: state.toolChoice,
-        temperature: call.temperature,
-        topP: call.topP,
-        maxOutputTokens: call.maxTokens,
+        tools: state.tools || undefined,
+        toolChoice: state.toolChoice || undefined,
+        temperature: call.temperature ?? undefined,
+        topP: call.topP ?? undefined,
+        maxOutputTokens: call.maxTokens ?? undefined,
       }),
     );
   }
@@ -326,6 +326,6 @@ export function fromAiSdkModel(model: LanguageModel): Model {
   return {
     generate,
     stream,
-    metadata: retryPolicy ? { retry: { policy: retryPolicy } } : undefined,
+    metadata: retryPolicy ? { retry: { policy: retryPolicy } } : null,
   };
 }

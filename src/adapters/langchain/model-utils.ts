@@ -22,19 +22,19 @@ import { toLangChainMessage } from "./messages";
 import { toLangChainTool } from "./tools";
 import { readString } from "../utils";
 
-export const toUsage = (usage: unknown): ModelUsage | undefined => {
+export const toUsage = (usage: unknown): ModelUsage | null => {
   const typed = usage as { input_tokens?: number; output_tokens?: number; total_tokens?: number };
   if (
     typed?.input_tokens === undefined &&
     typed?.output_tokens === undefined &&
     typed?.total_tokens === undefined
   ) {
-    return undefined;
+    return null;
   }
   return {
-    inputTokens: typed.input_tokens,
-    outputTokens: typed.output_tokens,
-    totalTokens: typed.total_tokens,
+    inputTokens: typed.input_tokens ?? null,
+    outputTokens: typed.output_tokens ?? null,
+    totalTokens: typed.total_tokens ?? null,
   };
 };
 
@@ -65,9 +65,9 @@ export const toToolResults = (message: ToolMessage): ToolResult[] =>
 export const toResponseFormat = (schema: Record<string, unknown>): ResponseFormatConfiguration =>
   toResponseFormatSchema(schema) as ResponseFormatConfiguration;
 
-export const toToolChoice = (value: string | undefined) => {
+export const toToolChoice = (value: string | null) => {
   if (!value) {
-    return undefined;
+    return null;
   }
   if (value === "auto" || value === "any" || value === "none") {
     return value;
@@ -79,7 +79,7 @@ export const toToolChoice = (value: string | undefined) => {
 };
 
 export const buildInvokeOptions = (
-  toolChoice: string | undefined,
+  toolChoice: string | null,
   responseFormat: ResponseFormatConfiguration | undefined,
 ) => {
   const options: Record<string, unknown> = {};
@@ -92,9 +92,9 @@ export const buildInvokeOptions = (
   return options;
 };
 
-export const readMetadataField = (meta: Record<string, unknown> | undefined, keys: string[]) => {
+export const readMetadataField = (meta: Record<string, unknown> | null, keys: string[]) => {
   if (!meta) {
-    return undefined;
+    return null;
   }
   for (const key of keys) {
     const result = readString(meta[key]);
@@ -102,18 +102,18 @@ export const readMetadataField = (meta: Record<string, unknown> | undefined, key
       return result;
     }
   }
-  return undefined;
+  return null;
 };
 
 export const toTelemetry = (
   response: Awaited<ReturnType<BaseChatModel["invoke"]>>,
-  usage: ModelUsage | undefined,
+  usage: ModelUsage | null,
   diagnostics: AdapterDiagnostic[],
 ): ModelTelemetry => {
   const responseMetadata = (response as { response_metadata?: Record<string, unknown> })
     .response_metadata;
   const created = responseMetadata?.created;
-  const timestamp = typeof created === "number" ? normalizeTimestamp(created) : undefined;
+  const timestamp = typeof created === "number" ? normalizeTimestamp(created) : null;
   return {
     response: responseMetadata
       ? {
@@ -121,7 +121,7 @@ export const toTelemetry = (
           modelId: readMetadataField(responseMetadata, ["model", "model_name"]),
           timestamp,
         }
-      : undefined,
+      : null,
     usage,
     warnings: diagnostics.filter((entry) => entry.message === "provider_warning"),
     providerMetadata: responseMetadata,
@@ -131,7 +131,7 @@ export const toTelemetry = (
 export type RunState = {
   messages: Array<ReturnType<typeof toLangChainMessage>>;
   tools: ReturnType<typeof toLangChainTool>[] | undefined;
-  toolChoice: string | undefined;
+  toolChoice: string | null;
   responseFormat: ResponseFormatConfiguration | undefined;
   diagnostics: AdapterDiagnostic[];
 };
@@ -139,7 +139,7 @@ export type RunState = {
 export const createRunState = (call: ModelCall): RunState => {
   const prepared = ModelCallHelper.prepare(call);
   const tools = prepared.allowTools ? call.tools?.map(toLangChainTool) : undefined;
-  const toolChoice = prepared.allowTools ? toToolChoice(call.toolChoice) : undefined;
+  const toolChoice = prepared.allowTools ? toToolChoice(call.toolChoice ?? null) : null;
   const responseFormat = prepared.normalizedSchema
     ? toResponseFormat(prepared.normalizedSchema.schema)
     : undefined;
@@ -163,4 +163,4 @@ export const createRunState = (call: ModelCall): RunState => {
 export const tryParseOutput = (
   text: string,
   responseFormat: ResponseFormatConfiguration | undefined,
-) => (responseFormat ? tryParseJson(text) : undefined);
+) => (responseFormat ? tryParseJson(text) : null);

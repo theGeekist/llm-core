@@ -238,10 +238,10 @@ const createResumeDeletion = <N extends RecipeName>(
   session: ActiveResumeSession,
   token: unknown,
   resumeKey: string | undefined,
-): ((outcome: Outcome<ArtefactOf<N>>) => MaybePromise<boolean | null>) | undefined => {
+): ((outcome: Outcome<ArtefactOf<N>>) => MaybePromise<boolean | null>) | null => {
   const store = session.store;
   if (!store) {
-    return undefined;
+    return null;
   }
   return function deleteResumeSession(outcome: Outcome<ArtefactOf<N>>) {
     if (outcome.status !== "ok") {

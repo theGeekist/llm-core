@@ -42,7 +42,7 @@ describe("Adapter tools", () => {
     const { context, diagnostics } = captureDiagnostics();
 
     const result = await Tool.execute?.(undefined, context);
-    expect(result).toBeUndefined();
+    expect(result).toBeNull();
     expect(diagnostics[0]?.message).toBe("tool_input_missing");
   });
 
@@ -142,8 +142,8 @@ describe("Adapter tools", () => {
     expect(built).toBeDefined();
   });
 
-  it("returns undefined when no AI SDK tools are provided", () => {
-    expect(toAiSdkTools([])).toBeUndefined();
+  it("returns null when no AI SDK tools are provided", () => {
+    expect(toAiSdkTools([])).toBeNull();
   });
 
   it("preserves adapter tool execution for AI SDK tools", async () => {

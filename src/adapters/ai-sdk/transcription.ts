@@ -51,15 +51,18 @@ const mapTranscriptionResult = (
 export function fromAiSdkTranscriptionModel(model: TranscriptionModelV3): TranscriptionModel {
   function generate(call: TranscriptionCall, _context?: AdapterCallContext) {
     void _context;
-    const diagnostics = validateTranscriptionInput(call.audio);
+    const diagnostics = validateTranscriptionInput({
+      ...call.audio,
+      contentType: call.audio.contentType ?? undefined,
+    });
     return maybeMap(
       bindFirst(mapTranscriptionResult, diagnostics),
       model.doGenerate({
         audio: call.audio.bytes,
         mediaType: call.audio.contentType ?? "application/octet-stream",
-        providerOptions: toProviderOptions(call.providerOptions),
-        headers: call.headers,
-        abortSignal: call.abortSignal,
+        providerOptions: toProviderOptions(call.providerOptions ?? undefined) ?? undefined,
+        headers: call.headers ?? undefined,
+        abortSignal: call.abortSignal ?? undefined,
       }) as MaybePromise<Awaited<ReturnType<TranscriptionModelV3["doGenerate"]>>>,
     );
   }

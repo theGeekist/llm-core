@@ -2,16 +2,16 @@ import type { AdapterCallContext } from "./core";
 import type { MaybePromise } from "../../maybe";
 
 export type Blob = {
-  id?: string;
-  contentType?: string;
+  id?: string | null;
+  contentType?: string | null;
   bytes: Uint8Array;
-  metadata?: Record<string, unknown>;
+  metadata?: Record<string, unknown> | null;
 };
 
 export type KVStore<V = unknown> = {
   list(prefix?: string, context?: AdapterCallContext): MaybePromise<string[]>;
   mdelete(keys: string[], context?: AdapterCallContext): MaybePromise<boolean | null>;
-  mget(keys: string[], context?: AdapterCallContext): MaybePromise<Array<V | undefined>>;
+  mget(keys: string[], context?: AdapterCallContext): MaybePromise<Array<V | null>>;
   mset(pairs: Array<[string, V]>, context?: AdapterCallContext): MaybePromise<boolean | null>;
 };
 
@@ -28,7 +28,7 @@ export type Cache = {
 
 export type Storage = {
   delete(key: string, context?: AdapterCallContext): MaybePromise<boolean | null>;
-  get(key: string, context?: AdapterCallContext): MaybePromise<Blob | undefined>;
+  get(key: string, context?: AdapterCallContext): MaybePromise<Blob | null>;
   list(prefix?: string, context?: AdapterCallContext): MaybePromise<string[]>;
   put(key: string, blob: Blob, context?: AdapterCallContext): MaybePromise<boolean | null>;
 };

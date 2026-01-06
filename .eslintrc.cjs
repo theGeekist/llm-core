@@ -17,8 +17,9 @@ module.exports = {
     "prettier",
   ],
   rules: {
+    "consistent-return": ["error", { treatUndefinedAsUnspecified: true }],
     "max-lines": ["error", { max: 500, skipBlankLines: true, skipComments: true }],
-    "max-params": ["warn", 3],
+    "max-params": ["error", 3],
     "no-console": "off",
     "sonarjs/no-nested-conditional": "off",
     "sonarjs/void-use": "off",
@@ -32,4 +33,12 @@ module.exports = {
       }
     ],
   },
+  overrides: [
+    {
+      files: ["docs/**/*.ts", "docs/**/*.js", "tests/**/*.ts", "tests/**/*.js"],
+      rules: {
+        "consistent-return": "off",
+      },
+    },
+  ],
 };

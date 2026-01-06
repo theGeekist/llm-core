@@ -15,23 +15,24 @@ const toTurnRole = (role: MessageType): TurnRole => {
 
 const toContent = (content: ChatMessage["content"]) => (typeof content === "string" ? content : "");
 
+const toTurnFromMessage = (message: ChatMessage): Turn => ({
+  role: toTurnRole(message.role),
+  content: toContent(message.content),
+});
+
+const toThreadFromMessages = (messages: ChatMessage[]) => ({
+  id: "default",
+  turns: messages.map(toTurnFromMessage),
+});
+
 export function fromLlamaIndexMemory(memory: LlamaIndexMemory): Memory {
   function read(threadId: string, context?: AdapterCallContext) {
     const diagnostics = validateThreadId(threadId, "read");
     if (diagnostics.length > 0) {
       reportDiagnostics(context, diagnostics);
-      return undefined;
+      return null;
     }
-    return maybeMap(
-      (messages) => ({
-        id: "default",
-        turns: messages.map((message) => ({
-          role: toTurnRole(message.role),
-          content: toContent(message.content),
-        })),
-      }),
-      memory.getLLM(),
-    );
+    return maybeMap(toThreadFromMessages, memory.getLLM());
   }
 
   function append(threadId: string, turn: Turn, context?: AdapterCallContext) {

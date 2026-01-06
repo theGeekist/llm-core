@@ -85,7 +85,7 @@ describe("Resume Edge Cases", () => {
       await store.set(token, { token, createdAt: Date.now() });
       await store.delete(token);
       const retrieved = await store.get(token);
-      expect(retrieved).toBeUndefined();
+      expect(retrieved).toBeNull();
     });
 
     it("should handle deserialize error", async () => {
@@ -98,7 +98,7 @@ describe("Resume Edge Cases", () => {
       });
 
       const result = await store.get("bad-json");
-      expect(result).toBeUndefined();
+      expect(result).toBeNull();
     });
 
     it("should ignore invalid tokens for get and delete", async () => {
@@ -107,7 +107,7 @@ describe("Resume Edge Cases", () => {
       const invalidToken = { custom: "token" };
 
       const result = await store.get(invalidToken);
-      expect(result).toBeUndefined();
+      expect(result).toBeNull();
 
       const deleteResult = await store.delete(invalidToken);
       expect(deleteResult).toBe(false);
@@ -115,11 +115,11 @@ describe("Resume Edge Cases", () => {
   });
 
   describe("Session Store Resolution", () => {
-    it("should return undefined for invalid session store candidates", () => {
-      expect(readSessionStore({})).toBeUndefined();
-      expect(readSessionStore({ resume: { sessionStore: "not-an-object" } })).toBeUndefined();
-      expect(readSessionStore({ resume: { sessionStore: {} } })).toBeUndefined(); // Missing methods
-      expect(readSessionStore({ resume: { sessionStore: { get: () => {} } } })).toBeUndefined(); // Partial methods
+    it("should return null for invalid session store candidates", () => {
+      expect(readSessionStore({})).toBeNull();
+      expect(readSessionStore({ resume: { sessionStore: "not-an-object" } })).toBeNull();
+      expect(readSessionStore({ resume: { sessionStore: {} } })).toBeNull(); // Missing methods
+      expect(readSessionStore({ resume: { sessionStore: { get: () => {} } } })).toBeNull(); // Partial methods
     });
   });
 

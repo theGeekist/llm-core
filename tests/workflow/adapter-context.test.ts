@@ -95,7 +95,7 @@ describe("Workflow adapter context wrappers", () => {
       storage: {
         get: (_key, ctx) => {
           ctx?.report?.({ level: "warn", message: "get" });
-          return undefined;
+          return null;
         },
         put: (_key, _value, ctx) => {
           ctx?.report?.({ level: "warn", message: "put" });
@@ -135,7 +135,7 @@ describe("Workflow adapter context wrappers", () => {
         },
         read: (_threadId, ctx) => {
           ctx?.report?.({ level: "warn", message: "read" });
-          return undefined;
+          return null;
         },
         summarize: (_threadId, ctx) => {
           ctx?.report?.({ level: "warn", message: "summarize" });

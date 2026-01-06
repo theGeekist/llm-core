@@ -33,7 +33,7 @@ describe("Adapter checkpoint stores", () => {
     await store.delete(snapshot.token);
     const loaded = await store.get(snapshot.token);
 
-    expect(loaded).toBeUndefined();
+    expect(loaded).toBeNull();
   });
 
   it("stores and reads LlamaIndex snapshot checkpoints", async () => {

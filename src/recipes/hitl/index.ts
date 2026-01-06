@@ -50,7 +50,7 @@ const applyGate: StepApply = ({ input, state }) => {
   const { decision, notes } = readDecision(input);
   if (decision) {
     hitl.decision = decision;
-    hitl.notes = notes;
+    hitl.notes = notes ?? undefined;
     hitl.status = decision === "approve" ? "approved" : "denied";
     return null;
   }

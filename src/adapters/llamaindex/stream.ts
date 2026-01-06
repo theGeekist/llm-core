@@ -20,11 +20,11 @@ export const readUsageValue = (value: unknown) => readNumber(value);
 
 export const readUsagePayload = (raw: unknown) => {
   if (typeof raw !== "object" || raw === null) {
-    return undefined;
+    return null;
   }
   const usage = (raw as { usage?: unknown }).usage;
   if (!usage || typeof usage !== "object") {
-    return undefined;
+    return null;
   }
   return usage as {
     input_tokens?: number;
@@ -36,18 +36,22 @@ export const readUsagePayload = (raw: unknown) => {
   };
 };
 
-export const toUsage = (raw: unknown): ModelUsage | undefined => {
+export const toUsage = (raw: unknown): ModelUsage | null => {
   const usage = readUsagePayload(raw);
   if (!usage) {
-    return undefined;
+    return null;
   }
   const inputTokens = readUsageValue(usage.inputTokens ?? usage.input_tokens);
   const outputTokens = readUsageValue(usage.outputTokens ?? usage.output_tokens);
   const totalTokens = readUsageValue(usage.totalTokens ?? usage.total_tokens);
-  if (inputTokens === undefined && outputTokens === undefined && totalTokens === undefined) {
-    return undefined;
+  if (inputTokens === null && outputTokens === null && totalTokens === null) {
+    return null;
   }
-  return { inputTokens, outputTokens, totalTokens };
+  return {
+    inputTokens: inputTokens ?? null,
+    outputTokens: outputTokens ?? null,
+    totalTokens: totalTokens ?? null,
+  };
 };
 
 export const toToolCall = (call: LlamaToolCall): ToolCall => ({
