@@ -1,4 +1,4 @@
-import { bindFirst, maybeMap } from "../maybe";
+import { bindFirst, maybeMap } from "../shared/maybe";
 import { isRecord } from "../adapters/utils";
 import { createRecipeDiagnostic } from "../workflow/diagnostics";
 import { addTraceEvent } from "../workflow/trace";

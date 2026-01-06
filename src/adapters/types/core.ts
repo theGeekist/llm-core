@@ -1,4 +1,4 @@
-import type { MaybePromise } from "../../maybe";
+import type { MaybePromise } from "../../shared/maybe";
 
 export type AdapterRequirement =
   | { kind: "construct"; name: string }

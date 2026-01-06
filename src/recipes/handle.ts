@@ -1,4 +1,4 @@
-import { bindFirst, type MaybePromise } from "../maybe";
+import { bindFirst, type MaybePromise } from "../shared/maybe";
 import { getRecipe } from "../workflow/recipe-registry";
 import type { AdapterBundle } from "../adapters/types";
 import type { DiagnosticEntry } from "../workflow/diagnostics";
@@ -37,7 +37,7 @@ export type RecipeHandle<N extends RecipeName, C> = {
   configure(config: C): RecipeHandle<N, C>;
   defaults(defaults: RecipeDefaults): RecipeHandle<N, C>;
   use(recipe: AnyRecipeHandle | RecipePack): RecipeHandle<N, C>;
-  plan(): RecipePlan;
+  explain(): RecipePlan;
   build(): ReturnType<typeof createFlowRuntime<N>>;
   run(input: RunInputOf<N>, overrides?: RecipeRunOverrides): MaybePromise<Outcome<ArtefactOf<N>>>;
 };
@@ -180,7 +180,7 @@ const useRecipeHandleState = <N extends RecipeName, C>(
   return createRecipeHandleFromState(state);
 };
 
-const planRecipeHandle = <N extends RecipeName, C>(state: RecipeState<N, C>): RecipePlan => {
+const explainRecipeHandle = <N extends RecipeName, C>(state: RecipeState<N, C>): RecipePlan => {
   const definition = resolveDefinition(state);
   return createRecipePlan(state.factory.name, definition.packs);
 };
@@ -221,7 +221,7 @@ const createRecipeHandleFromState = <N extends RecipeName, C>(
   configure: bindFirst(configureRecipeHandleState, state),
   defaults: bindFirst(defaultsRecipeHandleState, state),
   use: bindFirst(useRecipeHandleState, state),
-  plan: bindFirst(planRecipeHandle, state),
+  explain: bindFirst(explainRecipeHandle, state),
   build: bindFirst(buildRecipeHandle, state),
   run: bindFirst(runRecipeHandle, state),
 });

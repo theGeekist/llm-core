@@ -1,6 +1,6 @@
 import type { BaseRetriever } from "@llamaindex/core/retriever";
 import type { AdapterCallContext, RetrievalQuery, Retriever } from "../types";
-import { maybeMap } from "../../maybe";
+import { maybeMap } from "../../shared/maybe";
 import { fromLlamaIndexNodes } from "./retrieval";
 import { toQueryText } from "../retrieval-query";
 import { reportDiagnostics, validateRetrieverInput } from "../input-validation";

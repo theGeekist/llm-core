@@ -1,6 +1,6 @@
 import { tool as defineTool } from "@langchain/core/tools";
 import type { AdapterCallContext, Tool } from "../types";
-import { identity, maybeMap, type MaybePromise } from "../../maybe";
+import { identity, maybeMap, type MaybePromise } from "../../shared/maybe";
 import { reportDiagnostics, validateToolInput } from "../input-validation";
 import {
   adapterParamsToJsonSchema,

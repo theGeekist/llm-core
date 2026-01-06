@@ -117,8 +117,8 @@ export {
   isNull,
   isFalse,
   toUndefined,
-} from "../maybe";
-export type { MaybeAsyncIterable, MaybePromise } from "../maybe";
+} from "../shared/maybe";
+export type { MaybeAsyncIterable, MaybePromise } from "../shared/maybe";
 
 export {
   adapterParamTypeToJsonType,

@@ -1,6 +1,6 @@
 import { workflowEvent, type WorkflowContext } from "@llamaindex/workflow-core";
 import type { AdapterTraceEvent, EventStream } from "../types";
-import { bindFirst } from "../../maybe";
+import { bindFirst } from "../../shared/maybe";
 
 const ADAPTER_TRACE_EVENT = workflowEvent<AdapterTraceEvent>({
   debugLabel: "adapter.trace",

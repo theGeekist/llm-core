@@ -1,6 +1,6 @@
 import type { AdapterCallContext, Tool, ToolParam } from "./types";
 import { reportDiagnostics, validateToolInput } from "./input-validation";
-import type { MaybePromise } from "../maybe";
+import type { MaybePromise } from "../shared/maybe";
 
 export type ToolCreateInput = {
   name: string;

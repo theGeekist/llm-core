@@ -1,6 +1,6 @@
 import type { BaseQueryEngine } from "@llamaindex/core/query-engine";
 import type { AdapterCallContext, QueryEngine, QueryResult, RetrievalQuery } from "../types";
-import { bindFirst, maybeMap } from "../../maybe";
+import { bindFirst, maybeMap } from "../../shared/maybe";
 import { reportDiagnostics, validateQueryEngineInput } from "../input-validation";
 import {
   toLlamaIndexQueryType,

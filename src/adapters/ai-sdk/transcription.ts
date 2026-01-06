@@ -5,8 +5,8 @@ import type {
   TranscriptionModel,
   TranscriptionResult,
 } from "../types";
-import { bindFirst, maybeMap } from "../../maybe";
-import type { MaybePromise } from "../../maybe";
+import { bindFirst, maybeMap } from "../../shared/maybe";
+import type { MaybePromise } from "../../shared/maybe";
 import { toAdapterTrace } from "../telemetry";
 import { validateTranscriptionInput } from "../input-validation";
 import { toDiagnostics, toMeta, toTelemetry } from "./telemetry";

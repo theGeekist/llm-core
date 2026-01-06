@@ -1,5 +1,5 @@
 import type { AdapterCallContext, AdapterMetadata } from "./core";
-import type { MaybePromise } from "../../maybe";
+import type { MaybePromise } from "../../shared/maybe";
 
 export type OutputParser = {
   parse: (text: string, context?: AdapterCallContext) => MaybePromise<unknown>;

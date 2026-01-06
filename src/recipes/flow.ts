@@ -1,5 +1,5 @@
 import { createHelper } from "@wpkernel/pipeline/core";
-import { bindFirst, maybeMap, maybeTry } from "../maybe";
+import { bindFirst, maybeMap, maybeTry } from "../shared/maybe";
 import { createRecipeDiagnostic, type DiagnosticEntry } from "../workflow/diagnostics";
 import { getRecipe } from "../workflow/recipe-registry";
 import { createRuntime } from "../workflow/runtime";
@@ -21,9 +21,10 @@ import {
 import { toRetryPauseResult, type RetryPauseSpec } from "./retry-pause";
 import type { StepBuilder, StepFactory, StepNext, StepOptions, StepSpec } from "./step-builder";
 import { buildRuntimeDefaults, wrapRuntimeWithDefaults } from "./runtime-defaults";
+import type { PlanBase, PlanStepBase, StepPackBase } from "../shared/types";
+import { compareStepSpec, normalizeDependencies, normalizeStepKey } from "../shared/steps";
 
-export type RecipePack = {
-  name: string;
+export type RecipePack = StepPackBase & {
   steps: StepSpec[];
   minimumCapabilities?: string[];
   defaults?: RecipeDefaults;
@@ -35,32 +36,19 @@ export type RecipeDefaults = {
   retryDefaults?: RetryConfig;
 };
 
-export type RecipeStepPlan = {
-  id: string;
+export type RecipeStepPlan = PlanStepBase & {
   label?: string;
   recipe: string;
   kind?: string;
-  dependsOn: string[];
-  priority?: number;
   mode?: "extend" | "override";
   summary?: string;
 };
 
-export type RecipePlan = {
-  name: string;
+export type RecipePlan = PlanBase & {
   steps: RecipeStepPlan[];
 };
 
 const STEP_KIND = "recipe.steps";
-
-const normalizeStepKey = (packName: string, stepName: string) =>
-  stepName.includes(".") ? stepName : `${packName}.${stepName}`;
-
-const normalizeDependency = (packName: string, dependency: string) =>
-  dependency.includes(".") ? dependency : `${packName}.${dependency}`;
-
-const normalizeDependencies = (packName: string, dependencies: string[]) =>
-  dependencies.map((dep) => normalizeDependency(packName, dep));
 
 type StepStateSource = HelperApplyOptions<
   PipelineContext,
@@ -174,31 +162,41 @@ const createHelperForStep = (packName: string, spec: StepSpec) => {
   });
 };
 
-// Ordering relies on the pipeline DAG and priority; this sort is only a tie-breaker.
+const createStepPlan = (recipeName: string, packName: string, step: StepSpec): RecipeStepPlan => {
+  return {
+    id: normalizeStepKey(packName, step.name),
+    label: step.label,
+    recipe: recipeName,
+    kind: step.kind,
+    dependsOn: normalizeDependencies(packName, step.dependsOn),
+    priority: step.priority,
+    mode: step.mode,
+    summary: step.summary,
+  };
+};
+
 const sortSteps = (packName: string, steps: StepSpec[]) =>
-  [...steps].sort((left, right) => {
-    const leftKey = normalizeStepKey(packName, left.name);
-    const rightKey = normalizeStepKey(packName, right.name);
-    return leftKey.localeCompare(rightKey);
-  });
+  [...steps].sort(bindFirst(compareStepSpec, packName));
 
-const createStepPlan = (recipeName: string, packName: string, step: StepSpec): RecipeStepPlan => ({
-  id: normalizeStepKey(packName, step.name),
-  label: step.label,
-  recipe: recipeName,
-  kind: step.kind,
-  dependsOn: normalizeDependencies(packName, step.dependsOn),
-  priority: step.priority,
-  mode: step.mode,
-  summary: step.summary,
-});
+const appendPackPlans = (steps: RecipeStepPlan[], recipeName: string, pack: RecipePack) => {
+  const sorted = sortSteps(pack.name, pack.steps);
+  for (const step of sorted) {
+    steps.push(createStepPlan(recipeName, pack.name, step));
+  }
+  return steps;
+};
 
-const appendPackPlans = (recipeName: string, pack: RecipePack) =>
-  sortSteps(pack.name, pack.steps).map((step) => createStepPlan(recipeName, pack.name, step));
+const collectPackPlans = (recipeName: string, packs: RecipePack[]) => {
+  const steps: RecipeStepPlan[] = [];
+  for (const pack of packs) {
+    appendPackPlans(steps, recipeName, pack);
+  }
+  return steps;
+};
 
 export const createRecipePlan = (recipeName: string, packs: RecipePack[]): RecipePlan => ({
   name: recipeName,
-  steps: packs.flatMap((pack) => appendPackPlans(recipeName, pack)),
+  steps: collectPackPlans(recipeName, packs),
 });
 
 type PipelineUse = { use: (helper: unknown) => unknown };

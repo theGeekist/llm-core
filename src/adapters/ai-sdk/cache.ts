@@ -1,5 +1,5 @@
 import type { AdapterCallContext, Blob, Cache } from "../types";
-import { bindFirst, maybeMap, toNull, toTrue } from "../../maybe";
+import { bindFirst, maybeMap, toNull, toTrue } from "../../shared/maybe";
 import { reportDiagnostics, validateStorageKey } from "../input-validation";
 
 export type AiSdkCacheStore<T = unknown> = {

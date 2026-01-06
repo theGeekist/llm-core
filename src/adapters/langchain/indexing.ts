@@ -8,7 +8,7 @@ import type {
   IndexingInput,
   IndexingResult,
 } from "../types";
-import { bindFirst, maybeMap } from "../../maybe";
+import { bindFirst, maybeMap } from "../../shared/maybe";
 import { reportDiagnostics, validateIndexingInput } from "../input-validation";
 import { toLangChainDocument } from "./documents";
 

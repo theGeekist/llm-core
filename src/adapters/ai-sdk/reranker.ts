@@ -1,8 +1,8 @@
 import type { RerankingModelV3 } from "@ai-sdk/provider";
 import type { AdapterCallContext, Document, Reranker, RetrievalQuery } from "../types";
 import { toQueryText } from "../retrieval-query";
-import { maybeMap } from "../../maybe";
-import type { MaybePromise } from "../../maybe";
+import { maybeMap } from "../../shared/maybe";
+import type { MaybePromise } from "../../shared/maybe";
 import { reportDiagnostics, validateRerankerInput } from "../input-validation";
 
 type RerankResult = Awaited<ReturnType<RerankingModelV3["doRerank"]>>;

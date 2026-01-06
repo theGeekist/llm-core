@@ -1,4 +1,4 @@
-import { bindFirst, maybeMap } from "../../maybe";
+import { bindFirst, maybeMap } from "../../shared/maybe";
 import { Recipe } from "../flow";
 import { createRecipeFactory, createRecipeHandle } from "../handle";
 import type { RecipeDefaults, StepApply } from "../flow";

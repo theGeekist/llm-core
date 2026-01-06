@@ -3,7 +3,7 @@ import {
   createHandlerDecorator,
   type TracePlugin,
 } from "@llamaindex/workflow-core/middleware/trace-events";
-import { bindFirst, maybeChain, maybeMap, maybeTap, maybeTry } from "../../maybe";
+import { bindFirst, maybeChain, maybeMap, maybeTap, maybeTry } from "../../shared/maybe";
 import { isRecord, readString } from "../utils";
 
 type TraceDecoratorConfig = Parameters<typeof createHandlerDecorator>[0];

@@ -1,6 +1,6 @@
 import type { BaseMemory } from "@langchain/core/memory";
 import type { AdapterCallContext, Memory } from "../types";
-import { maybeMap, toTrue } from "../../maybe";
+import { maybeMap, toTrue } from "../../shared/maybe";
 import {
   reportDiagnostics,
   validateMemoryLoadInput,

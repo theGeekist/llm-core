@@ -1,6 +1,6 @@
 import type { BaseEmbedding } from "@llamaindex/core/embeddings";
 import type { AdapterCallContext, Embedder } from "../types";
-import { identity, maybeMap } from "../../maybe";
+import { identity, maybeMap } from "../../shared/maybe";
 import {
   reportDiagnostics,
   validateEmbedderBatchInput,

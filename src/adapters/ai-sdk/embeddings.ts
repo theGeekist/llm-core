@@ -1,6 +1,6 @@
 import { embed, embedMany, type EmbeddingModel } from "ai";
 import type { AdapterCallContext, Embedder } from "../types";
-import { maybeMap } from "../../maybe";
+import { maybeMap } from "../../shared/maybe";
 import {
   reportDiagnostics,
   validateEmbedderBatchInput,

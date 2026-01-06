@@ -1,4 +1,4 @@
-import { bindFirst } from "../maybe";
+import { bindFirst } from "../shared/maybe";
 import type {
   ArtefactOf,
   RecipeName,

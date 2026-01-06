@@ -7,7 +7,7 @@ import type {
 import type { Document } from "./documents";
 import type { RetrievalQuery } from "./retrieval";
 import type { StreamEvent } from "./stream";
-import type { MaybeAsyncIterable, MaybePromise } from "../../maybe";
+import type { MaybeAsyncIterable, MaybePromise } from "../../shared/maybe";
 
 export type QueryResult = {
   query?: RetrievalQuery;

@@ -20,7 +20,7 @@ import type { Cache, KVStore, Storage } from "./storage";
 import type { Memory } from "./memory";
 import type { ImageModel, SpeechModel, TranscriptionModel } from "./media";
 import type { VectorStore } from "./vector";
-import type { MaybePromise } from "../../maybe";
+import type { MaybePromise } from "../../shared/maybe";
 
 type AdapterDataBundle = {
   documents?: Document[] | null;

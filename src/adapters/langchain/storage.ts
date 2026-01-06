@@ -1,6 +1,6 @@
 import type { BaseStore } from "@langchain/core/stores";
 import type { AdapterCallContext, KVStore } from "../types";
-import { maybeMap, toTrue } from "../../maybe";
+import { maybeMap, toTrue } from "../../shared/maybe";
 import { reportDiagnostics, validateKvKeys, validateKvPairs } from "../input-validation";
 
 const collectKeys = async (store: BaseStore<string, unknown>, prefix?: string) => {

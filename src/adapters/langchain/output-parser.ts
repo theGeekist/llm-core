@@ -1,6 +1,6 @@
 import type { BaseOutputParser } from "@langchain/core/output_parsers";
 import type { OutputParser } from "../types";
-import { bindFirst } from "../../maybe";
+import { bindFirst } from "../../shared/maybe";
 
 const parseWithParser = (parser: BaseOutputParser<unknown>, text: string) => parser.parse(text);
 

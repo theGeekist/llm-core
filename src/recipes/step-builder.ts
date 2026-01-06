@@ -1,7 +1,8 @@
 import type { HelperApplyResult, PipelineReporter } from "@wpkernel/pipeline/core";
-import { bindFirst, toArray, type MaybePromise } from "../maybe";
+import { bindFirst, toArray, type MaybePromise } from "../shared/maybe";
 import type { PipelineContext, PipelineState } from "../workflow/types";
 import type { StepRollbackInput } from "./rollback";
+import type { StepSpecBase } from "../shared/types";
 
 export type StepOptions = {
   context: PipelineContext;
@@ -17,8 +18,7 @@ export type StepApply = (
   next?: StepNext,
 ) => MaybePromise<HelperApplyResult<PipelineState> | null>;
 
-export type StepSpec = {
-  name: string;
+export type StepSpec = StepSpecBase & {
   apply: StepApply;
   dependsOn: string[];
   priority: number;

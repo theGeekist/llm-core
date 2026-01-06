@@ -1,6 +1,6 @@
 import type { BaseStore } from "@langchain/core/stores";
 import type { AdapterCallContext, Blob, Cache } from "../types";
-import { bindFirst, maybeMap, toNull, toTrue } from "../../maybe";
+import { bindFirst, maybeMap, toNull, toTrue } from "../../shared/maybe";
 import { reportDiagnostics, validateStorageKey } from "../input-validation";
 
 const isBlob = (value: unknown): value is Blob =>

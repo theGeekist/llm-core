@@ -1,6 +1,6 @@
 import type { AdapterCallContext, AdapterMetadata } from "./core";
 import type { Schema, SchemaField } from "./schema";
-import type { MaybePromise } from "../../maybe";
+import type { MaybePromise } from "../../shared/maybe";
 
 export type ToolParam = SchemaField;
 

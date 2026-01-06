@@ -7,7 +7,7 @@ import type {
   VectorStoreDeleteInput,
   VectorStoreUpsertInput,
 } from "../types";
-import { maybeMap, toTrue, maybeAll } from "../../maybe";
+import { maybeMap, toTrue, maybeAll } from "../../shared/maybe";
 import {
   reportDiagnostics,
   validateVectorStoreDeleteInput,

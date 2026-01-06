@@ -1,6 +1,6 @@
 import type { AdapterCallContext, AdapterMetadata } from "./core";
 import type { MessageRole } from "./messages";
-import type { MaybePromise } from "../../maybe";
+import type { MaybePromise } from "../../shared/maybe";
 
 export type Turn = {
   role: MessageRole;

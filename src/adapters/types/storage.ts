@@ -1,5 +1,5 @@
 import type { AdapterCallContext } from "./core";
-import type { MaybePromise } from "../../maybe";
+import type { MaybePromise } from "../../shared/maybe";
 
 export type Blob = {
   id?: string | null;

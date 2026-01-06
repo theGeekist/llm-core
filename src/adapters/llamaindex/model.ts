@@ -14,7 +14,7 @@ import type {
 } from "../types";
 import { fromLlamaIndexMessage } from "./messages";
 import { toAdapterTrace } from "../telemetry";
-import { bindFirst, maybeMap } from "../../maybe";
+import { bindFirst, maybeMap } from "../../shared/maybe";
 import { ModelUsageHelper } from "../modeling";
 import { toLlamaIndexStreamEvents } from "./stream";
 import type { LlamaIndexExecResult } from "./model-utils";
