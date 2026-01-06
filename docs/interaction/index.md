@@ -35,7 +35,15 @@ What you get back:
 
 ---
 
-## 2) What gets reduced into state
+## 2) Engine wrapper (DX-first)
+
+If you want a flatter API without pipeline wiring, use the engine wrapper.
+
+<<< @/snippets/interaction/engine.js#docs
+
+---
+
+## 3) What gets reduced into state
 
 The reducer understands existing adapter stream shapes:
 
@@ -47,7 +55,7 @@ Raw provider payloads stay in `state.private.raw` and **never** leak into messag
 
 ---
 
-## 3) Event ordering (deterministic)
+## 4) Event ordering (deterministic)
 
 Every `InteractionEvent` carries a `meta.sequence`. Older or duplicate sequences are ignored, so
 you can safely replay or merge streams.
