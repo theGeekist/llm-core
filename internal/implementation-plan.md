@@ -207,31 +207,6 @@ Code:
 - Implement factories per ecosystem: AI SDK, LangChain, LlamaIndex.
 - Dogfood tool calls and schemas in integration tests across all ecosystems.
 
-## Stage 14 — Composable Recipes (Step Packs)
-
-Status: completed. See `internal/stage-14.md`.
-
-Exit criteria:
-
-- Recipe packs + flows compile to pipeline helpers with deterministic ordering.
-- Pack defaults and minimum capabilities are honored.
-- Public docs describe the recipe surface without exposing pipeline internals.
-
-## Stage 15 — Interrupt Parity + Rollback Semantics
-
-Status: completed. See `internal/stage-15.md`.
-
-Exit criteria:
-
-- Interrupt/checkpoint/event-stream adapter surfaces are wired across ecosystems.
-- Pause/resume uses rollback when interrupt strategy is restart.
-- Recipe layer helpers are documented and implemented.
-
-Exit criteria:
-
-- Model execution works via adapters for text + embeddings + tool calls + structured outputs.
-- Integration tests cover tool calls and schemas across AI SDK, LangChain, LlamaIndex.
-
 ## Stage 9 — Adapter Registry + Primitives
 
 Status: completed. See `docs/stage-9.md`.
@@ -323,16 +298,25 @@ Progress:
 
 Status: completed. See `internal/stage-14.md`.
 
+Context: Removed pipeline internals from the public API by introducing "Recipe Packs"—composable units of logic with deterministic ordering and clear defaults.
+
+Exit criteria:
+
+- Recipe packs + flows compile to pipeline helpers with deterministic ordering.
+- Pack defaults and minimum capabilities are honored.
+- Public docs describe the recipe surface without exposing pipeline internals.
+
 ## Stage 15 — Interrupt Parity + Rollback Semantics
 
 Status: completed. See `internal/stage-15.md`.
 
-Goals:
+Context: Unified interrupt strategies (pause/resume) and rollback semantics across all adapter ecosystems, enabling robust HITL workflows.
 
-- Add a public "step" API that compiles to pipeline helpers.
-- Support composable recipe packs and multi-pack flows.
-- Keep adapter swapping intact with defaults + overrides.
-- Maintain deterministic ordering and clear conflict diagnostics.
+Exit criteria:
+
+- Interrupt/checkpoint/event-stream adapter surfaces are wired across ecosystems.
+- Pause/resume uses rollback when interrupt strategy is restart.
+- Recipe layer helpers are documented and implemented.
 
 ## Stage 16 — Runtime Policy + Legacy Port (llm-core)
 
@@ -351,3 +335,9 @@ Context: Standardized documentation code snippets with real, type-checked files 
 Status: in progress. See `internal/stage-18.md`.
 
 Context: Refactored resume mechanics to use the updated pipeline version, ensuring robust pause/resume handling for HITL flows and better state management during interruptions.
+
+## Stage 19 — Interaction Core (Pipeline-Backed)
+
+Status: planned. See `internal/stage-19.md`.
+
+Context: Add a runtime-agnostic interaction layer built on the pipeline, with a unified interaction event protocol, projection reducer, and optional EventStream transport for UI adapters.

@@ -458,11 +458,17 @@ const { adapters, diagnostics } = registry.resolve({
 == TypeScript
 
 ```ts
-import type { Model, ModelCall, ModelResult, ModelStreamEvent } from "#adapters";
+import type {
+  MaybeAsyncIterable,
+  Model,
+  ModelCall,
+  ModelResult,
+  ModelStreamEvent,
+} from "#adapters";
 
 type Model = {
   generate(call: ModelCall): MaybePromise<ModelResult>;
-  stream?(call: ModelCall): MaybePromise<AsyncIterable<ModelStreamEvent>>;
+  stream?(call: ModelCall): MaybeAsyncIterable<ModelStreamEvent>;
 };
 ```
 

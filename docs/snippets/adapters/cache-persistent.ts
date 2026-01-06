@@ -6,7 +6,7 @@ import type { Blob, Cache, KVStore } from "#adapters";
 const entries = new Map<string, Blob>();
 const kv: KVStore<Blob> = {
   list: () => Array.from(entries.keys()),
-  mget: (keys) => keys.map((key) => entries.get(key)),
+  mget: (keys) => keys.map((key) => entries.get(key) ?? null),
   mset: (pairs) => {
     pairs.forEach(([key, value]) => entries.set(key, value));
     return true;
