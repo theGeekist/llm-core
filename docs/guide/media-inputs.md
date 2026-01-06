@@ -82,9 +82,4 @@ await workflow.run({
 - [ ] **One Format**: Internally, everything becomes a standard `MessageContent`.
 - [ ] **Lazy**: Conversions (like Base64) only happen if the specific adapter needs them.
 
-## Next Steps
-
-Unified Media is just one part of the "Universal Normalisation" story.
-
-- [Advanced Features & Internals](/guide/advanced-features) -> deep dive into the engine.
 ```

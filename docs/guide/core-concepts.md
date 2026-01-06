@@ -184,9 +184,3 @@ if (result.status === "paused") {
 - [ ] **Adapters** are the Capabilities (Hands). They plug into specific providers.
 - [ ] **Steps** are the atomic units of execution.
 - [ ] **Outcome** is the typed result, which can be `ok`, `error`, or `paused`.
-
-## Next Steps
-
-Now that you understand the **Assets** (Recipes), **Plugs** (Adapters), and **Uniformity** (Steps), it's time to learn how to mix and match them.
-
-- [Composing Recipes](/guide/composing-recipes) -> Learn how to override Packs and extend logic.

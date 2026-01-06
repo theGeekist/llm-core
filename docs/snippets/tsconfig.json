@@ -7,10 +7,12 @@
       "#adapters": ["../../src/adapters/index.ts"],
       "#adapters/*": ["../../src/adapters/*.ts"],
       "#recipes": ["../../src/recipes/index.ts"],
+      "#interaction": ["../../src/interaction/index.ts"],
       "@geekist/llm-core": ["../../index.ts"],
       "@geekist/llm-core/workflow": ["../../src/workflow/index.ts"],
       "@geekist/llm-core/adapters": ["../../src/adapters/index.ts"],
-      "@geekist/llm-core/recipes": ["../../src/recipes/index.ts"]
+      "@geekist/llm-core/recipes": ["../../src/recipes/index.ts"],
+      "@geekist/llm-core/interaction": ["../../src/interaction/index.ts"]
     },
     "allowJs": true,
     "checkJs": true,
@@ -118,6 +120,10 @@
     "recipes/simple-chat/streaming.js",
     "recipes/simple-chat/quick-start.js",
     "recipes/simple-chat/diagnostics.ts",
-    "recipes/simple-chat/compose.ts"
+    "recipes/simple-chat/compose.ts",
+    "interaction/quick-start.js",
+    "interaction/custom-pack.js",
+    "interaction/reducer.ts",
+    "interaction/transport.js"
   ]
 }

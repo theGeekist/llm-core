@@ -83,4 +83,20 @@ describe("Workflow Outcome helpers", () => {
     const untouched = Outcome.mapOk(paused, () => ({ value: 0 }));
     expect(untouched).toBe(paused);
   });
+
+  it("throws for unexpected outcome statuses", () => {
+    const invalid = {
+      status: "unknown",
+      trace: [],
+      diagnostics: [],
+    } as unknown as OutcomeType<unknown>;
+
+    expect(() =>
+      Outcome.match(invalid, {
+        ok: () => "ok",
+        paused: () => "paused",
+        error: () => "error",
+      }),
+    ).toThrow("Unexpected outcome status.");
+  });
 });

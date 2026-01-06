@@ -132,7 +132,3 @@ console.log(plan.steps);
 - [ ] **Configure Behavior**: Use `.configure()` for prompts, roles, and strategy.
 - [ ] **Wire Infra**: Use `.defaults()` for adapters (LLMs, Databases).
 - [ ] **Override Runtime**: pass a second arg to `.run()` to swap adapters per-request.
-
-## Next Steps
-
-- [Debugging & Tracing](/guide/debugging) -> How to fix it when it breaksce execution and enforce strict mode.

@@ -1,6 +1,6 @@
 # Stage 18 — Pipeline Pause/Resume Core
 
-Status: in progress (epipe integration landed; remaining follow-ups tracked below).
+Status: complete.
 
 Goal: Move generator-based pause/resume semantics into `@wpkernel/pipeline` without changing
 standard-pipeline usage or requiring downstream migrations.
@@ -148,7 +148,7 @@ Epipe runtime changes (follow-up stage):
 - [x] Add resume entrypoint (new export or feature flag; implemented as `makeResumablePipeline`).
 - [x] Keep standard-pipeline run path identical for non-paused runs (standard-pipeline unchanged).
 - [x] Add unit tests: pause mid-stage, resume continues, rollback behavior preserved (pipeline).
-- [ ] Update pipeline README with pause/resume optional API.
+- [x] Update pipeline README with pause/resume optional API.
 
 ## Epipe Scope of Work (follow-up)
 

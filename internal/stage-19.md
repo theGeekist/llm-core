@@ -1,6 +1,6 @@
 # Stage 19 — Interaction Core (Pipeline-Backed)
 
-Status: planned.
+Status: complete.
 
 Goal: Introduce a runtime-agnostic interaction layer that can run on `@wpkernel/pipeline` while
 reusing existing adapter, trace, diagnostics, and streaming constructs. This is a projection and
@@ -160,14 +160,21 @@ Keep the surface minimal, e.g. an `InteractionSink` with `onState` and `onEvent`
 
 ## Implementation Steps
 
-- [ ] Add `InteractionEvent` and `InteractionState` types.
-- [ ] Implement reducer utilities with deterministic event ordering.
-- [ ] Map ModelStreamEvent and QueryStreamEvent into message deltas.
-- [ ] Add EventStream transport adapter helpers.
-- [ ] Build `createInteractionPipeline` using `makeResumablePipeline`.
-- [ ] Add pause/resume tests for pipeline-backed interaction flows.
-- [ ] Add unit tests for reducers and stream projection.
-- [ ] Add docs: interaction core overview and minimal example.
+- [x] Add `InteractionEvent` and `InteractionState` types.
+- [x] Implement reducer utilities with deterministic event ordering.
+- [x] Map ModelStreamEvent and QueryStreamEvent into message deltas.
+- [x] Add EventStream transport adapter helpers.
+- [x] Build `createInteractionPipeline` using `makeResumablePipeline`.
+- [x] Add pause/resume tests for pipeline-backed interaction flows.
+- [x] Add unit tests for reducers and stream projection.
+- [x] Add docs: interaction core overview and minimal example.
+
+## Next Stages
+
+- Session orchestration moves to Stage 20 with adapter-driven `SessionStore` + optional
+  `SessionPolicy` (no defaults). `send()` returns the post-policy state in the artifact; state is
+  derived via `getState()`. Concurrency for the same `sessionId` is delegated to the store.
+- UI SDK adapters and host glue live out of core in Stage 21.
 
 ## Non-Goals
 
@@ -185,5 +192,5 @@ Keep the surface minimal, e.g. an `InteractionSink` with `onState` and `onEvent`
 
 - Reducer unit tests for model stream, query stream, tool results, diagnostics.
 - Reducer tests for sequence-based idempotency + ordering.
-- Pipeline tests for pause/resume + rollback with interaction state snapshots.
+- Pipeline tests for pause/resume + rollback with interaction state snapshots (pending).
 - Transport tests for EventStream event delivery ordering and multi-source merge.

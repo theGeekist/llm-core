@@ -11,6 +11,8 @@ import {
   partialK,
   maybeTap,
   maybeToAsyncIterable,
+  maybeToStep,
+  collectStep,
   toAsyncIterable,
   toStep,
   maybeTry,
@@ -164,6 +166,61 @@ describe("Maybe utilities", () => {
     const first = step.next();
     expect(isPromiseLike(first)).toBe(false);
     expect(first).toEqual({ done: false, value: "a" });
+  });
+
+  it("toStep preserves async pull for async iterables", async () => {
+    const stream = {
+      [Symbol.asyncIterator]: async function* () {
+        yield "a";
+      },
+    };
+    const step = toStep(stream);
+    const first = step.next();
+    expect(isPromiseLike(first)).toBe(true);
+    const resolved = await first;
+    expect(resolved).toEqual({ done: false, value: "a" });
+  });
+
+  it("collectStep returns sync arrays for sync steps", () => {
+    const step = toStep(["a", "b"]);
+    const result = collectStep(step);
+    expect(isPromiseLike(result)).toBe(false);
+    expect(result).toEqual(["a", "b"]);
+  });
+
+  it("collectStep supports async steps and empty streams", async () => {
+    const stream = (async function* () {})();
+    const step = toStep(stream);
+    const result = collectStep(step);
+    expect(isPromiseLike(result)).toBe(true);
+    expect(await result).toEqual([]);
+  });
+
+  it("maybeToStep preserves async iterables", () => {
+    const stream = (async function* () {
+      yield "x";
+    })();
+    const step = maybeToStep(stream);
+    expect(isPromiseLike(step)).toBe(false);
+    if (isPromiseLike(step)) {
+      throw new Error("Expected sync step value.");
+    }
+    expect(isPromiseLike(step.next())).toBe(true);
+  });
+
+  it("maybeToAsyncIterable preserves async iterables", async () => {
+    const stream = {
+      [Symbol.asyncIterator]: async function* () {
+        yield "z";
+      },
+    };
+    const output = await maybeToAsyncIterable(stream);
+    expect(output).toBe(stream);
+    const collected: string[] = [];
+    for await (const item of output) {
+      collected.push(item);
+    }
+    expect(collected).toEqual(["z"]);
   });
 
   it("maybeToAsyncIterable adapts steps to async iterables", async () => {

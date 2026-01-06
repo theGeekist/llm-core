@@ -332,12 +332,24 @@ Context: Standardized documentation code snippets with real, type-checked files 
 
 ## Stage 18 — Refactor Resume Mechanics (Updated Pipeline)
 
-Status: in progress. See `internal/stage-18.md`.
+Status: completed. See `internal/stage-18.md`.
 
 Context: Refactored resume mechanics to use the updated pipeline version, ensuring robust pause/resume handling for HITL flows and better state management during interruptions.
 
 ## Stage 19 — Interaction Core (Pipeline-Backed)
 
-Status: planned. See `internal/stage-19.md`.
+Status: completed. See `internal/stage-19.md`.
 
 Context: Add a runtime-agnostic interaction layer built on the pipeline, with a unified interaction event protocol, projection reducer, and optional EventStream transport for UI adapters.
+
+## Stage 20 — Interaction Sessions (Core)
+
+Status: planned. See `internal/stage-20.md`.
+
+Context: Add a headless session orchestration layer around Interaction Core using a SessionStore adapter and optional SessionPolicy. Core only accepts opaque session IDs and stays `MaybePromise`-native.
+
+## Stage 21 — UI SDK Adapters + Host Glue (Out-of-Core)
+
+Status: planned. See `internal/stage-21.md`.
+
+Context: Add UI SDK adapter bridges (flagship: Vercel AI SDK) and host transport glue as separate packages, keeping core headless and UI-agnostic.

@@ -1,7 +1,18 @@
 import { describe, expect, it } from "bun:test";
-import { createInteractionPipelineWithDefaults, runInteractionPipeline } from "#interaction";
+import {
+  createInteractionPipelineWithDefaults,
+  registerInteractionPack,
+  runInteractionPipeline,
+} from "#interaction";
 import { isPromiseLike } from "@wpkernel/pipeline/core";
-import type { Message, Model, ModelResult } from "#adapters";
+import type { Message, MessagePart, Model, ModelResult, ModelStreamEvent } from "#adapters";
+import type {
+  InteractionRunOutcome,
+  InteractionRunResult,
+  InteractionState,
+  InteractionStepApply,
+} from "#interaction";
+import type { PipelinePaused } from "@wpkernel/pipeline/core";
 
 const createModelResult = (text: string): ModelResult => ({
   text,
@@ -16,6 +27,59 @@ const createMessage = (text: string): Message => ({
   content: text,
 });
 
+const PAUSE_TOKEN = "interaction:pause";
+const PAUSE_MARKER_KEY = "test.pause.once";
+
+const isPausedResult = (value: unknown): value is PipelinePaused<Record<string, unknown>> =>
+  !!value &&
+  typeof value === "object" &&
+  "__paused" in value &&
+  (value as { __paused?: unknown }).__paused === true;
+
+function assertRunResult(result: InteractionRunOutcome): InteractionRunResult {
+  if (isPausedResult(result)) {
+    throw new Error("Expected interaction run result.");
+  }
+  return result;
+}
+
+const readPauseMarker = (state: InteractionState) => {
+  const raw = state.private?.raw;
+  if (!raw) {
+    return false;
+  }
+  return raw[PAUSE_MARKER_KEY] === true;
+};
+
+const applyPauseRequest = (state: InteractionState) => {
+  const raw = state.private?.raw ?? {};
+  state.private = {
+    ...state.private,
+    raw: { ...raw, [PAUSE_MARKER_KEY]: true },
+    pause: { token: PAUSE_TOKEN, pauseKind: "human" },
+  };
+  return state;
+};
+
+const applyPauseOnce: InteractionStepApply = function applyPauseOnce(options) {
+  const state = options.output;
+  if (readPauseMarker(state)) {
+    return { output: state };
+  }
+  return { output: applyPauseRequest(state) };
+};
+
+const PauseOncePack = {
+  name: "interaction-pause",
+  steps: [
+    {
+      name: "pause-once",
+      apply: applyPauseOnce,
+      dependsOn: ["interaction-core.run-model"],
+    },
+  ],
+};
+
 describe("interaction pipeline", () => {
   it("captures input and generates a response", async () => {
     const pipeline = createInteractionPipelineWithDefaults();
@@ -27,9 +91,10 @@ describe("interaction pipeline", () => {
       adapters: { model },
     });
 
-    expect(result.artifact.messages).toHaveLength(2);
-    expect(result.artifact.messages[0]?.role).toBe("user");
-    expect(result.artifact.messages[1]?.role).toBe("assistant");
+    const runResult = assertRunResult(result);
+    expect(runResult.artifact.messages).toHaveLength(2);
+    expect(runResult.artifact.messages[0]?.role).toBe("user");
+    expect(runResult.artifact.messages[1]?.role).toBe("assistant");
   });
 
   it("returns sync results when adapters are sync", () => {
@@ -46,8 +111,9 @@ describe("interaction pipeline", () => {
     if (isPromiseLike(result)) {
       throw new Error("Expected sync run result.");
     }
-    expect(result.artifact.messages).toHaveLength(2);
-    expect(result.artifact.messages[1]?.content).toBe("Sync!");
+    const runResult = assertRunResult(result);
+    expect(runResult.artifact.messages).toHaveLength(2);
+    expect(runResult.artifact.messages[1]?.content).toBe("Sync!");
   });
 
   it("returns async results when adapters are async", async () => {
@@ -63,7 +129,7 @@ describe("interaction pipeline", () => {
     });
 
     expect(isPromiseLike(result)).toBe(true);
-    const awaited = await result;
+    const awaited = assertRunResult(await result);
     expect(awaited.artifact.messages[1]?.content).toBe("Async!");
   });
 
@@ -84,16 +150,19 @@ describe("interaction pipeline", () => {
       adapters: { model },
     });
 
-    expect(isPromiseLike(result)).toBe(true);
-    const awaited = await result;
-    expect(awaited.artifact.messages[1]?.content).toBe("Hello");
+    expect(isPromiseLike(result)).toBe(false);
+    if (isPromiseLike(result)) {
+      throw new Error("Expected sync run result.");
+    }
+    const runResult = assertRunResult(result);
+    expect(runResult.artifact.messages[1]?.content).toBe("Hello");
   });
 
   it("records stream errors in private state", async () => {
     const pipeline = createInteractionPipelineWithDefaults();
     const model: Model = {
       generate: () => createModelResult("unused"),
-      stream: async function* () {
+      stream: async function* (): AsyncIterable<ModelStreamEvent> {
         yield { type: "start", id: "err-1" };
         throw new Error("stream-failed");
       },
@@ -105,7 +174,8 @@ describe("interaction pipeline", () => {
       adapters: { model },
     });
 
-    const raw = result.artifact.private?.raw;
+    const runResult = assertRunResult(result);
+    const raw = runResult.artifact.private?.raw;
     expect(raw && raw["model.primary:error"]).toBeInstanceOf(Error);
   });
 
@@ -126,14 +196,15 @@ describe("interaction pipeline", () => {
       adapters: { model },
     });
 
-    const message = result.artifact.messages[1];
+    const runResult = assertRunResult(result);
+    const message = runResult.artifact.messages[1];
     if (!message || typeof message.content === "string") {
       throw new Error("Expected structured assistant content.");
     }
-    const parts = message.content.parts;
-    expect(parts.some((part) => part.type === "tool-call")).toBe(true);
-    expect(parts.some((part) => part.type === "tool-result")).toBe(true);
-    expect(result.artifact.private?.raw?.["event-stream:model.result"]).toEqual({
+    const parts = message.content.parts as MessagePart[];
+    expect(parts.some((part: MessagePart) => part.type === "tool-call")).toBe(true);
+    expect(parts.some((part: MessagePart) => part.type === "tool-result")).toBe(true);
+    expect(runResult.artifact.private?.raw?.["event-stream:model.result"]).toEqual({
       name: "interaction.model.result",
       data: { raw: { provider: "mock" } },
     });
@@ -154,11 +225,46 @@ describe("interaction pipeline", () => {
       adapters: { model },
     });
 
-    const message = result.artifact.messages[1];
+    const runResult = assertRunResult(result);
+    const message = runResult.artifact.messages[1];
     if (!message || typeof message.content === "string") {
       throw new Error("Expected structured assistant content.");
     }
     expect(message.content.text).toBe("From message");
-    expect(message.content.parts.some((part) => part.type === "reasoning")).toBe(true);
+    const parts = message.content.parts as MessagePart[];
+    expect(parts.some((part: MessagePart) => part.type === "reasoning")).toBe(true);
+  });
+
+  it("pauses and resumes when a step requests a pause", async () => {
+    const pipeline = createInteractionPipelineWithDefaults();
+    registerInteractionPack(pipeline, PauseOncePack);
+    const model = createModel("Paused hello");
+    const input = { message: createMessage("Hi") };
+
+    const paused = await runInteractionPipeline(pipeline, {
+      input,
+      adapters: { model },
+    });
+
+    expect(isPausedResult(paused)).toBe(true);
+    if (!isPausedResult(paused)) {
+      throw new Error("Expected paused pipeline result.");
+    }
+    expect(paused.snapshot.token).toBe(PAUSE_TOKEN);
+
+    const runner = pipeline as {
+      resume: (
+        snapshot: unknown,
+        resumeInput?: unknown,
+      ) => InteractionRunOutcome | Promise<InteractionRunOutcome>;
+    };
+    const resumed = await runner.resume(paused.snapshot, { ok: true });
+
+    expect(isPausedResult(resumed)).toBe(false);
+    if (isPausedResult(resumed)) {
+      throw new Error("Expected resumed pipeline result.");
+    }
+    const runResult = assertRunResult(resumed);
+    expect(runResult.artifact.messages[1]?.content).toBe("Paused hello");
   });
 });

@@ -20,6 +20,7 @@ Keep snippet files using local aliases for type safety:
 - `#adapters` -> `@geekist/llm-core/adapters`
 - `#recipes` -> `@geekist/llm-core/recipes`
 - `#workflow` -> `@geekist/llm-core/workflow`
+- `#interaction` -> `@geekist/llm-core/interaction`
 
 At render time, rewrite these in code fences only. The docs should always show npm imports.
 

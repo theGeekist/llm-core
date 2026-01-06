@@ -100,7 +100,3 @@ if (result.status === "paused") {
 - [ ] **Strict Mode**: Use it in CI to catch broken references before they ship.
 - [ ] **Tracing**: Don't use `console.log`. Use the tracegraph to see inputs/outputs of every step.
 - [ ] **Diagnostics**: Warnings aren't just noise; they often predict runtime failures (like missing keys).
-
-## Next Steps
-
-- [Unified Media Inputs](/guide/media-inputs) -> Handling images & files images, audio, and mixed content.

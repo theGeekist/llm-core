@@ -6,7 +6,7 @@ import { createCacheFromKVStore } from "#adapters";
 const entries = new Map();
 
 /** @param {string[]} keys */
-const listValues = (keys) => keys.map((key) => entries.get(key));
+const listValues = (keys) => keys.map((key) => entries.get(key) ?? null);
 
 /** @param {Array<[string, import("@geekist/llm-core/adapters").Blob]>} pairs */
 const setValues = (pairs) => {

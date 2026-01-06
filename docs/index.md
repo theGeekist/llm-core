@@ -3,7 +3,7 @@ layout: home
 
 hero:
   name: llm-core
-  text: Build AI with Recipes, not Glue.
+  text: Build AI Apps with Recipes..
   tagline: Define declarative flows using Recipes. Swap providers via Adapters. Stop writing spaghetti code.
   image:
     src: /logo.png
@@ -83,11 +83,3 @@ if (result.status === "ok") {
 ```
 
 :::
-
-## Next
-
-- [Workflow API](/reference/workflow-api)
-- [Adapters API](/reference/adapters-api)
-- [Runtime model](/reference/runtime)
-- [Debugging & Diagnostics](/guide/debugging)
-- [Unified Media Inputs](/guide/media-inputs)

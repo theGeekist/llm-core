@@ -52,7 +52,7 @@ export default defineConfig({
       md.options.highlight = (str, lang, attrs) => {
         if (/^(ts|typescript|js|javascript)/.test(lang)) {
           str = str.replace(
-            /from\s+["']#(adapters|recipes|workflow)(.*?)["']/g,
+            /from\s+["']#(adapters|recipes|workflow|interaction)(.*?)["']/g,
             (match, p1, p2) => `from "@geekist/llm-core/${p1}${p2}"`,
           );
         }
@@ -68,11 +68,10 @@ export default defineConfig({
     nav: [
       { text: "Recipes", link: "/recipes/simple-chat" },
       { text: "Adapters", link: "/adapters/" },
-      { text: "Guide", link: "/guide/hello-world" },
-      { text: "Ecosystem", link: "/adapters/models" },
+      { text: "Interaction", link: "/interaction/" },
       { text: "Reference", link: "/reference/recipes-api" },
-      { text: "GitHub", link: "https://github.com/theGeekist/llm-core" },
     ],
+    socialLinks: [{ icon: "github", link: "https://github.com/theGeekist/llm-core" }],
     sidebar: {
       "/guide/": [
         {
@@ -82,8 +81,8 @@ export default defineConfig({
         {
           text: "Fundamentals",
           items: [
-            { text: "Why llm-core?", link: "/guide/philosophy" },
             { text: "Core Concepts", link: "/guide/core-concepts" },
+            { text: "Why llm-core?", link: "/guide/philosophy" },
           ],
         },
         {
@@ -106,16 +105,16 @@ export default defineConfig({
         {
           text: "Core API",
           items: [
-            { text: "Adapters API", link: "/reference/adapters-api" },
             { text: "Recipes API", link: "/reference/recipes-api" },
+            { text: "Adapters API", link: "/reference/adapters-api" },
           ],
         },
         {
           text: "Framework Internals",
           collapsed: true,
           items: [
-            { text: "Runtime Model", link: "/reference/runtime" },
             { text: "Workflow API", link: "/reference/workflow-api" },
+            { text: "Runtime Model", link: "/reference/runtime" },
             { text: "Composition Model", link: "/reference/composition-model" },
           ],
         },
@@ -126,8 +125,8 @@ export default defineConfig({
               text: "Capabilities",
               items: [
                 { text: "Models (AI SDK / LC / LI)", link: "/adapters/models" },
-                { text: "Retrieval (RAG)", link: "/adapters/retrieval" },
                 { text: "Tools & Parsers", link: "/adapters/tools" },
+                { text: "Retrieval (RAG)", link: "/adapters/retrieval" },
                 { text: "Storage & Memory", link: "/adapters/storage" },
                 { text: "Observability (Tracing)", link: "/adapters/observability" },
               ],
@@ -151,8 +150,8 @@ export default defineConfig({
             { text: "Building an Agent", link: "/recipes/agent" },
             { text: "Human-in-the-Loop", link: "/recipes/hitl" },
             { text: "The Data Pipeline", link: "/recipes/ingest" },
-            { text: "Evaluation & Scoring", link: "/recipes/eval" },
             { text: "Looping & Iteration", link: "/recipes/loop" },
+            { text: "Evaluation & Scoring", link: "/recipes/eval" },
           ],
         },
       ],
@@ -162,10 +161,21 @@ export default defineConfig({
           items: [
             { text: "Overview", link: "/adapters/" },
             { text: "Models (AI SDK / LC / LI)", link: "/adapters/models" },
-            { text: "Retrieval (RAG)", link: "/adapters/retrieval" },
             { text: "Tools & Parsers", link: "/adapters/tools" },
+            { text: "Retrieval (RAG)", link: "/adapters/retrieval" },
             { text: "Storage & Memory", link: "/adapters/storage" },
             { text: "Observability (Tracing)", link: "/adapters/observability" },
+          ],
+        },
+      ],
+      "/interaction/": [
+        {
+          text: "Interaction",
+          items: [
+            { text: "Overview", link: "/interaction/" },
+            { text: "Pipeline", link: "/interaction/pipeline" },
+            { text: "Reducer", link: "/interaction/reducer" },
+            { text: "Transport", link: "/interaction/transport" },
           ],
         },
       ],
