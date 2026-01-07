@@ -80,18 +80,18 @@ describe("HITL recipe", () => {
 
   it("plans hitl recipes with config defaults", () => {
     const recipe = createHitlRecipe({ defaults: { adapters: {} } });
-    const plan = recipe.plan();
+    const plan = recipe.explain();
 
     expect(plan.steps.length).toBe(1);
   });
 
   it("exposes a hitl recipe helper", () => {
-    const plan = recipes.hitl().plan();
+    const plan = recipes.hitl().explain();
     expect(plan.steps.length).toBe(1);
   });
 
   it("exposes a hitl recipe factory", () => {
-    const plan = hitlRecipe().plan();
+    const plan = hitlRecipe().explain();
     expect(plan.steps.length).toBe(1);
   });
 });

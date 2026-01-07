@@ -23,6 +23,22 @@ const expectOk = (outcome: Outcome) => {
   return outcome;
 };
 
+const readDiagnosticErrors = (entry?: {
+  data?: unknown;
+}): { code?: string; value?: unknown } | undefined => {
+  if (!entry) {
+    return undefined;
+  }
+  const data = entry.data;
+  if (!data || typeof data !== "object") {
+    return undefined;
+  }
+  if (!("errors" in data)) {
+    return undefined;
+  }
+  return (data as { errors?: { code?: string; value?: unknown } }).errors;
+};
+
 describe("Recipe state validation", () => {
   it("adds diagnostics when validation fails", () => {
     const pack = Recipe.pack("state", ({ step }) => ({
@@ -57,7 +73,7 @@ describe("Recipe state validation", () => {
     if (diagnostic && diagnostic.kind !== "recipe") {
       throw new Error("Expected recipe diagnostic.");
     }
-    expect(diagnostic?.data?.errors).toEqual({
+    expect(readDiagnosticErrors(diagnostic)).toEqual({
       code: "state_validator_invalid_result",
       value: { invalid: "value" },
     });

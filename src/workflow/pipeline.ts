@@ -8,7 +8,7 @@ import type {
 import type { PipelineContext, PipelineState, Plugin, RecipeContract, RunOptions } from "./types";
 import { getEffectivePlugins } from "./plugins/effective";
 import { createDefaultReporter } from "./extensions";
-import { bindFirst } from "../maybe";
+import { bindFirst } from "../shared/maybe";
 import type { RollbackEntry, RollbackState } from "./runtime/rollback-types";
 
 type RunResult = PipelineRunState<PipelineState, PipelineDiagnostic> & {

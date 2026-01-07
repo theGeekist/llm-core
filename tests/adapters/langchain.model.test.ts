@@ -1,5 +1,5 @@
 import { describe, expect, it } from "bun:test";
-import { collectStep, isPromiseLike, maybeToStep } from "../../src/maybe";
+import { collectStep, isPromiseLike, maybeToStep } from "../../src/shared/maybe";
 import { AIMessage, AIMessageChunk, ToolMessage } from "@langchain/core/messages";
 import type { BaseChatModel } from "@langchain/core/language_models/chat_models";
 import { Tooling, toSchema, fromLangChainModel } from "#adapters";

@@ -1,5 +1,5 @@
 import { describe, expect, it, mock } from "bun:test";
-import { collectStep, isPromiseLike, maybeToStep } from "../../src/maybe";
+import { collectStep, isPromiseLike, maybeToStep } from "../../src/shared/maybe.ts";
 import { z } from "zod";
 import { Tooling, toSchema } from "#adapters";
 import { asAiSdkStreamPart } from "./helpers";

@@ -1,10 +1,10 @@
 import type { AdapterBundle } from "../../adapters/types";
 import { createEventStreamFromTraceSink } from "../../adapters";
-import type { DiagnosticEntry } from "../diagnostics";
+import type { DiagnosticEntry } from "../../shared/diagnostics";
 import type { RecipeContract } from "../types";
 import { applyAdapterPresence } from "../capabilities";
 import { isCapabilitySatisfied } from "../capability-checks";
-import { createContractDiagnostic } from "../diagnostics";
+import { createContractDiagnostic } from "../../shared/diagnostics";
 
 export const applyAdapterOverrides = (resolved: AdapterBundle, overrides?: AdapterBundle) => {
   if (!overrides) {

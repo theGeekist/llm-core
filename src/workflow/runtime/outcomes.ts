@@ -1,8 +1,8 @@
 import type { ArtefactOf, Outcome } from "../types";
-import type { DiagnosticEntry } from "../diagnostics";
+import type { DiagnosticEntry } from "../../shared/diagnostics";
 import type { PipelineState, RecipeName } from "../types";
 import type { PauseKind } from "../../adapters/types";
-import { addTraceEvent, type TraceEvent } from "../trace";
+import { addTraceEvent, type TraceEvent } from "../../shared/trace";
 import { readPipelinePauseSnapshot } from "../pause";
 
 export const readArtifact = <N extends RecipeName>(result: unknown): ArtefactOf<N> =>

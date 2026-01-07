@@ -52,7 +52,7 @@ describe("RAG synthesis pack", () => {
 
   it("plans synthesis recipes with config defaults", () => {
     const recipe = createRagSynthesisRecipe({ defaults: { adapters: {} } });
-    const plan = recipe.plan();
+    const plan = recipe.explain();
 
     expect(plan.steps.length).toBe(1);
   });

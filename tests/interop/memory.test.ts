@@ -4,7 +4,7 @@ import type { Memory as LlamaMemory } from "@llamaindex/core/memory";
 import * as AiSdk from "ai";
 import * as AiSdkMemory from "@ai-sdk-tools/memory";
 import type { Memory } from "#workflow";
-import { maybeMap, identity } from "../../src/maybe";
+import { maybeMap, identity } from "../../src/shared/maybe";
 const toNull = () => null;
 
 const toMemoryFromLangChain = (memory: LangChainMemory): Memory => ({

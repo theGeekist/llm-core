@@ -95,7 +95,7 @@ describe("Agent finalize pack", () => {
 
   it("plans finalize recipes with config defaults", () => {
     const recipe = createAgentFinalizeRecipe({ defaults: { adapters: {} } });
-    const plan = recipe.plan();
+    const plan = recipe.explain();
 
     expect(plan.steps.length).toBe(1);
   });

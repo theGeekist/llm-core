@@ -1,20 +1,19 @@
 import type {
-  AdapterBundle,
   EventStream,
   EventStreamEvent,
   ModelStreamEvent,
-  PauseKind,
   QueryStreamEvent,
 } from "../adapters/types";
 import type { Message } from "../adapters/types/messages";
+import type { PipelineDiagnostic, PipelinePaused, PipelineRunState } from "@wpkernel/pipeline/core";
+import type { DiagnosticEntry } from "../shared/diagnostics";
+import type { TraceEvent } from "../shared/trace";
 import type {
-  PipelineDiagnostic,
-  PipelinePaused,
-  PipelineReporter,
-  PipelineRunState,
-} from "@wpkernel/pipeline/core";
-import type { DiagnosticEntry } from "../workflow/diagnostics";
-import type { TraceEvent } from "../workflow/trace";
+  ExecutionContextBase,
+  PauseRequest,
+  RunOptionsBase,
+  TraceDiagnostics,
+} from "../shared/types";
 
 export type InteractionEventMeta = {
   sequence: number;
@@ -31,10 +30,8 @@ export type InteractionEvent =
   | { kind: "query"; event: QueryStreamEvent; meta: InteractionEventMeta }
   | { kind: "event-stream"; event: EventStreamEvent; meta: InteractionEventMeta };
 
-export type InteractionState = {
+export type InteractionState = TraceDiagnostics & {
   messages: Message[];
-  diagnostics: DiagnosticEntry[];
-  trace: TraceEvent[];
   events?: InteractionEvent[];
   lastSequence?: number;
   private?: {
@@ -56,19 +53,13 @@ export type InteractionInput = {
   correlationId?: string;
 };
 
-export type InteractionRunOptions = {
+export type InteractionRunOptions = RunOptionsBase & {
   input: InteractionInput;
-  adapters?: AdapterBundle;
   reducer?: InteractionReducer;
   eventStream?: EventStream;
-  reporter?: PipelineReporter;
 };
 
-export type InteractionPauseRequest = {
-  token?: unknown;
-  pauseKind?: PauseKind;
-  payload?: unknown;
-};
+export type InteractionPauseRequest = PauseRequest;
 
 export type InteractionRunResult = PipelineRunState<InteractionState, PipelineDiagnostic> & {
   context: InteractionContext;
@@ -77,9 +68,7 @@ export type InteractionRunResult = PipelineRunState<InteractionState, PipelineDi
 
 export type InteractionRunOutcome = InteractionRunResult | PipelinePaused<Record<string, unknown>>;
 
-export type InteractionContext = {
-  reporter: PipelineReporter;
-  adapters?: AdapterBundle;
+export type InteractionContext = ExecutionContextBase & {
   reducer: InteractionReducer;
   eventStream?: EventStream;
 };

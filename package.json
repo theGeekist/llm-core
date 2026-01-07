@@ -45,8 +45,8 @@
   "private": true,
   "scripts": {
     "build": "bun run build:esm && bun run build:cjs && bun run build:types",
-    "build:esm": "bun build ./index.ts ./src/workflow/index.ts ./src/adapters/index.ts ./src/adapters/*/index.ts ./src/interaction/index.ts --outdir dist/esm --root . --sourcemap=external --splitting --format=esm --target=neutral",
-    "build:cjs": "bun build ./index.ts ./src/workflow/index.ts ./src/adapters/index.ts ./src/adapters/*/index.ts ./src/interaction/index.ts --outdir dist/cjs --root . --sourcemap=external --format=cjs --target=node --entry-naming=[dir]/[name].cjs --chunk-naming=[name]-[hash].cjs",
+    "build:esm": "bun build ./index.ts ./src/workflow/index.ts ./src/adapters/index.ts ./src/adapters/*/index.ts ./src/interaction/index.ts ./src/shared/diagnostics.ts ./src/shared/trace.ts --outdir dist/esm --root . --sourcemap=external --splitting --format=esm --target=neutral",
+    "build:cjs": "bun build ./index.ts ./src/workflow/index.ts ./src/adapters/index.ts ./src/adapters/*/index.ts ./src/interaction/index.ts ./src/shared/diagnostics.ts ./src/shared/trace.ts --outdir dist/cjs --root . --sourcemap=external --format=cjs --target=node --entry-naming=[dir]/[name].cjs --chunk-naming=[name]-[hash].cjs",
     "build:types": "tsc -p tsconfig.build.json --emitDeclarationOnly",
     "prepare": "git config core.hooksPath .githooks",
     "format": "prettier \"**/*.{ts,tsx,js,jsx,json,md}\" --write",
@@ -180,6 +180,20 @@
       "import": "./dist/esm/src/interaction/index.js",
       "require": "./dist/cjs/src/interaction/index.cjs",
       "default": "./dist/esm/src/interaction/index.js"
+    },
+    "./diagnostics": {
+      "types": "./dist/types/src/shared/diagnostics.d.ts",
+      "browser": "./dist/esm/src/shared/diagnostics.js",
+      "import": "./dist/esm/src/shared/diagnostics.js",
+      "require": "./dist/cjs/src/shared/diagnostics.cjs",
+      "default": "./dist/esm/src/shared/diagnostics.js"
+    },
+    "./trace": {
+      "types": "./dist/types/src/shared/trace.d.ts",
+      "browser": "./dist/esm/src/shared/trace.js",
+      "import": "./dist/esm/src/shared/trace.js",
+      "require": "./dist/cjs/src/shared/trace.cjs",
+      "default": "./dist/esm/src/shared/trace.js"
     }
   },
   "peerDependencies": {

@@ -1,5 +1,5 @@
 import type { AdapterBundle, AdapterCallContext } from "../adapters/types";
-import { bindFirst } from "../maybe";
+import { bindFirst } from "../shared/maybe";
 import type { AdapterContextOptions, RetryWrapContext } from "./adapter-context-retry-core";
 import {
   buildRetryWrapperInput,

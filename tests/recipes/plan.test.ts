@@ -15,7 +15,7 @@ const readStepById = (steps: RecipeStepPlan[], id: string) => steps.find((step) 
 describe("Recipe plan", () => {
   it("exposes step metadata and dependencies", () => {
     const pack = createPlanPack();
-    const plan = recipes.rag().use(pack).plan();
+    const plan = recipes.rag().use(pack).explain();
 
     const seed = readStepById(plan.steps, "plan-pack.seed");
     const run = readStepById(plan.steps, "plan-pack.run");

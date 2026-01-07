@@ -22,10 +22,10 @@ import {
   hasErrorDiagnostics,
   normalizeDiagnostics,
   type DiagnosticEntry,
-} from "./diagnostics";
-import type { TraceEvent } from "./trace";
-import { bindFirst, maybeChain, maybeMap } from "../maybe";
-import type { MaybePromise } from "../maybe";
+} from "../shared/diagnostics";
+import type { TraceEvent } from "../shared/trace";
+import { bindFirst, maybeChain, maybeMap } from "../shared/maybe";
+import type { MaybePromise } from "../shared/maybe";
 import type { FinalizeResultInput } from "./runtime/helpers";
 import {
   collectAdapters,

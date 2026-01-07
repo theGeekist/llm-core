@@ -4,9 +4,9 @@ import type {
   RetryMetadata,
   RetryPolicy,
 } from "../adapters/types";
-import type { MaybePromise } from "../maybe";
-import { bindFirst } from "../maybe";
-import type { TraceEvent } from "./trace";
+import type { MaybePromise } from "../shared/maybe";
+import { bindFirst } from "../shared/maybe";
+import type { TraceEvent } from "../shared/trace";
 import {
   type RetryWrapperInput,
   type RetryAdapterKind,

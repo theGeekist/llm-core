@@ -16,8 +16,9 @@ import type {
   LoopInput,
   RagInput,
 } from "../recipes/types";
-import type { DiagnosticEntry } from "./diagnostics";
+import type { DiagnosticEntry } from "../shared/diagnostics";
 import type { ExplainSnapshot } from "./explain";
+import type { ExecutionContextBase, RunOptionsBase, TraceDiagnostics } from "../shared/types";
 
 // Recipe inputs + artefacts
 export type { AgentInput, RagInput, EvalInput, HitlGateInput, LoopInput, IngestInput };
@@ -44,17 +45,12 @@ export type ResumeInputOf<N extends RecipeName> = NonNullable<
 >;
 
 // Pipeline run types
-export type RunOptions = {
-  input: unknown;
-  reporter?: PipelineReporter;
+export type RunOptions = RunOptionsBase & {
   runtime?: Runtime;
-  adapters?: AdapterBundle;
 };
 
-export type PipelineContext = {
-  reporter: PipelineReporter;
+export type PipelineContext = ExecutionContextBase & {
   runtime?: Runtime;
-  adapters?: AdapterBundle;
 };
 
 export type PipelineState = Record<string, unknown>;
@@ -130,15 +126,13 @@ export type ExplainInput = {
 };
 
 export type Outcome<TArtefact = unknown> =
-  | { status: "ok"; artefact: TArtefact; trace: unknown[]; diagnostics: unknown[] }
-  | {
+  | (TraceDiagnostics & { status: "ok"; artefact: TArtefact })
+  | (TraceDiagnostics & {
       status: "paused";
       token: unknown;
       artefact: Partial<TArtefact>;
-      trace: unknown[];
-      diagnostics: unknown[];
-    }
-  | { status: "error"; error: unknown; trace: unknown[]; diagnostics: unknown[] };
+    })
+  | (TraceDiagnostics & { status: "error"; error: unknown });
 
 export type WorkflowRuntime<TRunInput = unknown, TArtefact = unknown, TResumeInput = unknown> = {
   run(input: TRunInput, runtime?: Runtime): MaybePromise<Outcome<TArtefact>>;

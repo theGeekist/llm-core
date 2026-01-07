@@ -1,6 +1,6 @@
 import type { InterruptStrategy } from "../../adapters/types";
-import type { MaybePromise } from "../../maybe";
-import { bindFirst } from "../../maybe";
+import type { MaybePromise } from "../../shared/maybe";
+import { bindFirst } from "../../shared/maybe";
 import type { FinalizeResult, FinalizeResultInput } from "./helpers";
 
 type InterruptPayload = { __interrupt?: InterruptStrategy };

@@ -1,10 +1,14 @@
 import type { AdapterBundle, AdapterDiagnostic } from "../../adapters/types";
-import type { MaybePromise } from "../../maybe";
-import { bindFirst, maybeChain, curryK, maybeTry } from "../../maybe";
+import type { MaybePromise } from "../../shared/maybe";
+import { bindFirst, maybeChain, curryK, maybeTry } from "../../shared/maybe";
 import { attachAdapterContext, createAdapterContext } from "../adapter-context";
-import type { DiagnosticEntry } from "../diagnostics";
-import { applyDiagnosticsMode, createAdapterDiagnostic, hasErrorDiagnostics } from "../diagnostics";
-import type { TraceEvent } from "../trace";
+import type { DiagnosticEntry } from "../../shared/diagnostics";
+import {
+  applyDiagnosticsMode,
+  createAdapterDiagnostic,
+  hasErrorDiagnostics,
+} from "../../shared/diagnostics";
+import type { TraceEvent } from "../../shared/trace";
 import type { PipelineWithExtensions, Runtime } from "../types";
 import { createSnapshotRecorder, resolveSessionStore } from "./resume-session";
 import { createDiagnosticsGetter, createFinalize, type FinalizeResult } from "./helpers";

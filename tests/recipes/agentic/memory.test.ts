@@ -68,7 +68,7 @@ describe("Agent memory pack", () => {
 
   it("plans memory recipes with config defaults", () => {
     const recipe = createAgentMemoryRecipe({ defaults: { adapters: {} } });
-    const plan = recipe.plan();
+    const plan = recipe.explain();
 
     expect(plan.steps.length).toBe(2);
   });

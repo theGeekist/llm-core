@@ -8,13 +8,13 @@ import type {
   PipelineWithExtensions,
 } from "../types";
 import type { AdapterBundle, AdapterDiagnostic } from "../../adapters/types";
-import type { DiagnosticEntry } from "../diagnostics";
-import type { TraceEvent } from "../trace";
-import type { MaybePromise } from "../../maybe";
-import { addTraceEvent, createTrace } from "../trace";
+import type { DiagnosticEntry } from "../../shared/diagnostics";
+import type { TraceEvent } from "../../shared/trace";
+import type { MaybePromise } from "../../shared/maybe";
+import { addTraceEvent, createTrace } from "../../shared/trace";
 import { runWorkflow, type RunWorkflowContext } from "./run-runner";
 import { createRunErrorHandler } from "./outcomes";
-import { applyDiagnosticsMode } from "../diagnostics";
+import { applyDiagnosticsMode } from "../../shared/diagnostics";
 import type { FinalizeResult } from "./helpers";
 
 type AdapterResolution = {

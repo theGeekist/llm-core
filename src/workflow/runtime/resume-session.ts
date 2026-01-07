@@ -5,8 +5,8 @@ import type {
   PauseKind,
   ResumeSnapshot,
 } from "../../adapters/types";
-import type { MaybePromise } from "../../maybe";
-import { bindFirst, maybeChain, maybeMap, maybeMapOr } from "../../maybe";
+import type { MaybePromise } from "../../shared/maybe";
+import { bindFirst, maybeChain, maybeMap, maybeMapOr } from "../../shared/maybe";
 import type { PauseSession } from "../driver";
 import type { Runtime } from "../types";
 import { readPipelinePauseSnapshot, toPauseKind } from "../pause";

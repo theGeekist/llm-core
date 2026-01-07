@@ -6,11 +6,11 @@ import type {
   Runtime,
   WorkflowRuntime,
 } from "../types";
-import { addTraceEvent, createTrace } from "../trace";
-import { bindFirst, maybeTry } from "../../maybe";
+import { addTraceEvent, createTrace } from "../../shared/trace";
+import { bindFirst, maybeTry } from "../../shared/maybe";
 import type { ResumeHandlerDeps } from "./resume-types";
 import { startResumePipeline } from "./resume-start";
-import { applyDiagnosticsMode } from "../diagnostics";
+import { applyDiagnosticsMode } from "../../shared/diagnostics";
 
 type ResumeHandlerErrorInput<N extends RecipeName> = {
   deps: ResumeHandlerDeps<N>;

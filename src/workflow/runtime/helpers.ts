@@ -1,7 +1,7 @@
-import type { MaybePromise } from "../../maybe";
-import { bindFirst } from "../../maybe";
-import type { DiagnosticEntry } from "../diagnostics";
-import type { TraceEvent } from "../trace";
+import type { MaybePromise } from "../../shared/maybe";
+import { bindFirst } from "../../shared/maybe";
+import type { DiagnosticEntry } from "../../shared/diagnostics";
+import type { TraceEvent } from "../../shared/trace";
 
 export type FinalizeResultInput = {
   result: unknown;

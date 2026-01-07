@@ -1,7 +1,7 @@
 import { describe, expect, it } from "bun:test";
 import type { AdapterBundle } from "#adapters";
-import type { DiagnosticEntry } from "#workflow/diagnostics";
-import type { TraceEvent } from "#workflow/trace";
+import type { DiagnosticEntry } from "../../src/shared/diagnostics";
+import type { TraceEvent } from "../../src/shared/trace";
 import type { Outcome, Runtime } from "#workflow/types";
 import { createResumeHandler } from "../../src/workflow/runtime/resume-handler";
 import { toResolvedAdapters } from "../../src/workflow/runtime/adapters";

@@ -6,10 +6,10 @@ import type {
   RetryPolicy,
   RetryReason,
 } from "../../adapters/types";
-import type { MaybePromise } from "../../maybe";
-import { bindFirst, maybeTry } from "../../maybe";
-import { addTraceEvent } from "../trace";
-import type { TraceEvent } from "../trace";
+import type { MaybePromise } from "../../shared/maybe";
+import { bindFirst, maybeTry } from "../../shared/maybe";
+import { addTraceEvent } from "../../shared/trace";
+import type { TraceEvent } from "../../shared/trace";
 
 export type { RetryConfig } from "../../adapters/types";
 

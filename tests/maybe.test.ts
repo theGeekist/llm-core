@@ -17,7 +17,7 @@ import {
   toStep,
   maybeTry,
   tryWrap,
-} from "../src/maybe";
+} from "../src/shared/maybe";
 
 const addOne = (value: number) => value + 1;
 const double = (value: number) => value * 2;

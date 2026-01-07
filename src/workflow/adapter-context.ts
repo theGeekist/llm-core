@@ -1,6 +1,6 @@
 import type { AdapterCallContext } from "../adapters/types";
 import { attachAdapterContext, type AdapterContextOptions } from "./adapter-context-retry";
-import { createAdapterDiagnostic, type DiagnosticEntry } from "./diagnostics";
+import { createAdapterDiagnostic, type DiagnosticEntry } from "../shared/diagnostics";
 
 const createContextState = () => {
   const diagnostics: DiagnosticEntry[] = [];

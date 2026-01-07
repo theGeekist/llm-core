@@ -86,7 +86,7 @@ describe("Recipe handle", () => {
 
   it("includes packs in the plan output", () => {
     const handle = createRecipeHandle(createFactory()).use(buildPack("plan", "plan"));
-    const plan = handle.plan();
+    const plan = handle.explain();
     const stepIds = plan.steps.map((step) => step.id);
 
     expect(stepIds).toEqual(expect.arrayContaining(["base.only", "plan.only"]));

@@ -1,8 +1,8 @@
 import { bindFirst, maybeMap } from "../shared/maybe";
 import { isRecord } from "../adapters/utils";
-import { createRecipeDiagnostic } from "../workflow/diagnostics";
-import { addTraceEvent } from "../workflow/trace";
-import type { TraceEvent } from "../workflow/trace";
+import { createRecipeDiagnostic } from "../shared/diagnostics";
+import { addTraceEvent } from "../shared/trace";
+import type { TraceEvent } from "../shared/trace";
 import type {
   ArtefactOf,
   Outcome,

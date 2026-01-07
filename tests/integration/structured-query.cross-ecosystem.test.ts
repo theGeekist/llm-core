@@ -10,7 +10,7 @@ import {
   fromLlamaIndexModel,
 } from "#adapters";
 import { Recipe } from "../../src/recipes/flow";
-import { bindFirst, maybeMap } from "../../src/maybe";
+import { bindFirst, maybeMap } from "../../src/shared/maybe";
 import { expectTelemetryPresence, itIfEnvAll } from "./helpers";
 
 const itWithOpenAI = itIfEnvAll("OPENAI_API_KEY");

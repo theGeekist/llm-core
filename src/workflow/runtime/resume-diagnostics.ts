@@ -1,4 +1,8 @@
-import { applyDiagnosticsMode, createResumeDiagnostic, type DiagnosticEntry } from "../diagnostics";
+import {
+  applyDiagnosticsMode,
+  createResumeDiagnostic,
+  type DiagnosticEntry,
+} from "../../shared/diagnostics";
 
 type InvalidResumeDiagnosticsInput = {
   buildDiagnostics: DiagnosticEntry[];

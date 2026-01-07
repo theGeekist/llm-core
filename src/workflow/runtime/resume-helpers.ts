@@ -1,8 +1,8 @@
 import type { Runtime, ArtefactOf, Outcome, RecipeName } from "../types";
-import type { DiagnosticEntry } from "../diagnostics";
-import { applyDiagnosticsMode, createResumeDiagnostic } from "../diagnostics";
+import type { DiagnosticEntry } from "../../shared/diagnostics";
+import { applyDiagnosticsMode, createResumeDiagnostic } from "../../shared/diagnostics";
 import { createInvalidResumeDiagnostics } from "./resume-diagnostics";
-import type { TraceEvent } from "../trace";
+import type { TraceEvent } from "../../shared/trace";
 
 type ResumeAdapterRequired<N extends RecipeName> =
   | { ok: true; adapter: NonNullable<Runtime["resume"]> }

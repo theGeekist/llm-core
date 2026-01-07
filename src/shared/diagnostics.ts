@@ -1,5 +1,3 @@
-// References: docs/stage-3.md; docs/runtime.md
-import type { AdapterDiagnostic } from "../adapters/types";
 export type DiagnosticLevel = "warn" | "error";
 
 export type DiagnosticKind =
@@ -14,6 +12,12 @@ export type DiagnosticKind =
 export type DiagnosticEntry = {
   level: DiagnosticLevel;
   kind: DiagnosticKind;
+  message: string;
+  data?: unknown;
+};
+
+type AdapterDiagnosticShape = {
+  level: DiagnosticLevel;
   message: string;
   data?: unknown;
 };
@@ -85,7 +89,7 @@ export const createPipelineDiagnostic = (diagnostic: unknown): DiagnosticEntry =
   };
 };
 
-export const createAdapterDiagnostic = (diagnostic: AdapterDiagnostic): DiagnosticEntry => ({
+export const createAdapterDiagnostic = (diagnostic: AdapterDiagnosticShape): DiagnosticEntry => ({
   level: diagnostic.level,
   kind:
     diagnostic.data && typeof diagnostic.data === "object"

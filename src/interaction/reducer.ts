@@ -7,8 +7,9 @@ import type {
   ToolResultPart,
 } from "../adapters/types/messages";
 import type { ModelStreamEvent, QueryStreamEvent, ToolCall, ToolResult } from "../adapters/types";
-import { createAdapterDiagnostic } from "../workflow/diagnostics";
-import type { DiagnosticEntry } from "../workflow/diagnostics";
+import { createAdapterDiagnostic } from "../shared/diagnostics";
+import type { DiagnosticEntry } from "../shared/diagnostics";
+import type { TraceEvent } from "../shared/trace";
 import type {
   InteractionEvent,
   InteractionEventMeta,
@@ -55,7 +56,7 @@ const appendDiagnostics = (state: InteractionState, entries: DiagnosticEntry[]) 
   return { ...state, diagnostics };
 };
 
-const appendTrace = (state: InteractionState, entry: import("../workflow/trace").TraceEvent) => {
+const appendTrace = (state: InteractionState, entry: TraceEvent) => {
   const trace = [...state.trace, entry];
   return { ...state, trace };
 };

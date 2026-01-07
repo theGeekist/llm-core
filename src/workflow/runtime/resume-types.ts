@@ -1,8 +1,8 @@
 import type { ArtefactOf, Outcome, PipelineWithExtensions, RecipeName, Runtime } from "../types";
 import type { AdapterBundle, AdapterDiagnostic } from "../../adapters/types";
-import type { DiagnosticEntry } from "../diagnostics";
-import type { TraceEvent } from "../trace";
-import type { MaybePromise } from "../../maybe";
+import type { DiagnosticEntry } from "../../shared/diagnostics";
+import type { TraceEvent } from "../../shared/trace";
+import type { MaybePromise } from "../../shared/maybe";
 import type { PauseSession } from "../driver/types";
 import type { FinalizeResult } from "./helpers";
 

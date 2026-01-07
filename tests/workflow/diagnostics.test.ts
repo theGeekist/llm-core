@@ -4,7 +4,7 @@ import {
   createPipelineDiagnostic,
   createRequirementDiagnostic,
   normalizeDiagnostics,
-} from "../../src/workflow/diagnostics";
+} from "../../src/shared/diagnostics";
 import { createRuntime } from "#workflow/runtime";
 import { getRecipe, registerRecipe } from "#workflow/recipe-registry";
 import { diagnosticMessages, makeRuntime } from "./helpers";
