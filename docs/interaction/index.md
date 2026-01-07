@@ -35,11 +35,14 @@ What you get back:
 
 ---
 
-## 2) Engine wrapper (DX-first)
+## 2) Handle wrapper
 
-If you want a flatter API without pipeline wiring, use the engine wrapper.
+If you want a flatter API without pipeline wiring, use the handle wrapper.
 
-<<< @/snippets/interaction/engine.js#docs
+<<< @/snippets/interaction/handle.js#docs
+
+The handle follows the same shape as recipe handles (`configure`, `defaults`, `use`, `explain`,
+`build`, `run`) so you can carry one mental model across layers.
 
 ---
 
@@ -49,7 +52,7 @@ The reducer understands existing adapter stream shapes:
 
 - `ModelStreamEvent` → assistant message parts
 - `QueryStreamEvent` → tool messages with data parts
-- `DiagnosticEntry` + `TraceEvent` → append-only state
+- `DiagnosticEntry` + `TraceEvent` → append-only state (exported from `@geekist/llm-core`)
 
 Raw provider payloads stay in `state.private.raw` and **never** leak into messages.
 

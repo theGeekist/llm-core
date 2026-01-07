@@ -44,6 +44,8 @@ Plugin authors often make mistakes—like hooking into a lifecycle event that do
 **Why you care:** Prevents the "Why didn't my analytics plugin fire?" bug that plagues other frameworks.
 
 ```ts
+import { createLifecycleDiagnostic } from "@geekist/llm-core";
+
 // Extensions.ts internals
 if (!isLifecycleScheduled(lifecycleSet, plugin.lifecycle)) {
    // We know BEFORE running that this plugin will never fire
@@ -115,7 +117,7 @@ Not all models support streaming output for structured data (JSON). `llm-core`'s
 
 The library is built on strong functional foundations:
 
-- **Monadic Async Support**: `MaybePromise<T>` (via `src/maybe.ts`) allows utilities to work seamlessly with both sync and async values, avoiding "function coloring" issues.
+- **Monadic Async Support**: `MaybePromise<T>` (exported from `@geekist/llm-core`) allows utilities to work seamlessly with both sync and async values, avoiding "function coloring" issues.
 - **Centralized Validation**: `src/adapters/input-validation.ts` provides uniform diagnostic warning generation.
 - **Universal Query Normalisation**: `src/adapters/retrieval-query.ts` handles converting multi-modal inputs into searchable strings.
 

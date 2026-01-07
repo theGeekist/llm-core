@@ -120,15 +120,15 @@ Read more: [Runtime -> Diagnostics](/reference/runtime#diagnostics) and
 
 ---
 
-## 5) Composition + plan (power without magic)
+## 5) Composition + explain (power without magic)
 
-Recipes are composable. `.use()` merges packs and defaults; `.plan()` shows the resulting DAG.
-This keeps ordering explicit without forcing you to reason about internal plumbing. The plan is pure data,
+Recipes are composable. `.use()` merges packs and defaults; `.explain()` shows the resulting DAG.
+This keeps ordering explicit without forcing you to reason about internal plumbing. The explain output is pure data,
 so you can render it, diff it, or surface it in a UI for clarity.
 
 ```mermaid
 flowchart LR
-  Plan[agent.planning.plan] --> Call[agent.tools.tool-call]
+  Explain[agent.planning.plan] --> Call[agent.tools.tool-call]
   Call --> Exec[agent.tools.tool-exec]
   Exec --> Finalize[agent.finalize.respond]
   Finalize --> Memory[agent.memory.persist]
@@ -142,7 +142,7 @@ flowchart LR
 
 <<< @/snippets/recipes/agent/composition.js#docs
 
-Related: [Plan API](/reference/recipes-api#plan-see-the-graph) and
+Related: [Explain API](/reference/recipes-api#explain-see-the-graph) and
 [Composition Model](/reference/composition-model).
 
 If you prefer a quick mental model, think of `recipes.rag()` as retrieval and `recipes.hitl()` as a gate.

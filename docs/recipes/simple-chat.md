@@ -83,7 +83,7 @@ Related: [Runtime -> Diagnostics](/reference/runtime#diagnostics) and
 
 ## 6) Plan (explicit, single step)
 
-Even in its simplest form, the plan is visible. This keeps “no hidden steps” as a constant.
+Even in its simplest form, the explain view is visible. This keeps “no hidden steps” as a constant.
 
 ```mermaid
 flowchart LR

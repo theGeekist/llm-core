@@ -111,7 +111,7 @@ type RecipePlan = {
   steps: Array<{ id: string; dependsOn: string[] }>;
 };
 
-const plan: RecipePlan = recipes.agent().plan();
+const plan: RecipePlan = recipes.agent().explain();
 console.log(plan.steps);
 ```
 
@@ -120,7 +120,7 @@ console.log(plan.steps);
 ```js
 import { recipes } from "#recipes";
 
-const plan = recipes.agent().plan();
+const plan = recipes.agent().explain();
 console.log(plan.steps);
 ```
 

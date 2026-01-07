@@ -111,6 +111,14 @@ const out = await wf.run({ input: "..." }, runtime);
 `interrupt` is the resolved `InterruptStrategy` from `adapters.interrupt`. Resume adapters can use it
 to decide whether to restart, continue in place, or adjust how a paused run resumes.
 
+## Types
+
+Trace and diagnostics types are available at the root export:
+
+```ts
+import type { DiagnosticEntry, TraceEvent } from "@geekist/llm-core";
+```
+
 ## Trace
 
 Trace is always present and records workflow-level events:

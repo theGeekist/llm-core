@@ -75,10 +75,10 @@ Read more: [Runtime -> Diagnostics](/reference/runtime#diagnostics) and
 
 ---
 
-## 4) Composition + plan
+## 4) Composition + explain
 
 Eval is a leaf recipe that composes cleanly with others. You can plug it into a larger flow to add scoring
-after generation or retrieval, and inspect the plan to make the step order explicit.
+after generation or retrieval, and inspect the explain output to make the step order explicit.
 
 ```mermaid
 flowchart LR

@@ -2,7 +2,7 @@
 import { recipes } from "#recipes";
 
 const workflow = recipes.loop().use(recipes.hitl());
-const plan = workflow.plan();
+const plan = workflow.explain();
 
 // #endregion docs
 void plan;

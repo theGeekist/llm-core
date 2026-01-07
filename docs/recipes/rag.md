@@ -106,9 +106,9 @@ Related: [Runtime -> Diagnostics](/reference/runtime#diagnostics) and [Runtime -
 
 ---
 
-## 5) Power: sub-recipes + plan
+## 5) Power: sub-recipes + explain
 
-RAG exposes two public sub-recipes. You can run them independently or inspect the plan.
+RAG exposes two public sub-recipes. You can run them independently or inspect the explain output.
 
 ```mermaid
 flowchart LR
@@ -122,7 +122,7 @@ RAG composes cleanly with other recipes. It is most often plugged into [Agent](/
 and retrieval happen in one flow, or gated with [HITL](/recipes/hitl) when you want a human check before final
 answers. If you need to build indexes first, pair it with [Ingest](/recipes/ingest).
 
-The mental model is simple: adapters are swappable, the plan is explicit, and every run tells you how the
+The mental model is simple: adapters are swappable, the explain output is explicit, and every run tells you how the
 answer was formed. There are no hidden steps or invisible defaults.
 
 ---

@@ -89,9 +89,9 @@ Related: [Runtime -> Diagnostics](/reference/runtime#diagnostics) and
 
 ---
 
-## 5) Power: reuse + plan
+## 5) Power: reuse + explain
 
-You can inspect the full ETL DAG with `plan()`.
+You can inspect the full ETL DAG with `explain()`.
 
 ```mermaid
 flowchart LR

@@ -39,7 +39,22 @@ The workflow instance is the engine. These methods are the advanced surface:
 
 ---
 
-## 3) Outcomes are explicit
+## 3) Builder surface (advanced)
+
+`Workflow.recipe(name)` returns a builder with the same ergonomic surface as recipe/interaction handles:
+
+- `configure({ diagnostics?, pipelineFactory? })` — advanced wiring + diagnostics hooks.
+- `defaults(runtime)` — runtime defaults (retry, providers, diagnostics mode).
+- `use(plugin)` — add plugins (adapters, hooks, helpers).
+- `explain()` — composition snapshot (plugins, capabilities, overrides, requirements).
+- `build()` — returns a workflow runtime.
+- `run(input, runtime?)` — one‑shot execution.
+
+Use the builder when you want advanced control without touching recipes directly.
+
+---
+
+## 4) Outcomes are explicit
 
 Every `run()` returns an outcome with trace and diagnostics.
 
@@ -61,7 +76,7 @@ Helpers live in `Outcome.*` and remain exhaustive.
 
 ---
 
-## 4) Runtime channel (operational controls)
+## 5) Runtime channel (operational controls)
 
 Runtime is where **budget**, **persistence**, **trace sinks**, and **resume** are configured. This
 keeps recipes pure and deterministic.
@@ -82,7 +97,7 @@ await workflow.run({ input: "..." }, runtime);
 
 ---
 
-## 5) Sync or async (MaybePromise)
+## 6) Sync or async (MaybePromise)
 
 Workflows are sync‑friendly when all adapters are sync.
 
@@ -95,7 +110,7 @@ if (out.status === "ok") {
 
 ---
 
-## 6) Capabilities and explain()
+## 7) Capabilities and explain()
 
 `explain()` is the source of truth for **why** a workflow is shaped the way it is.
 
@@ -108,14 +123,14 @@ Use `capabilities()` when you want the resolved shape for feature‑gating or di
 
 ---
 
-## 7) Resume (HITL workflows)
+## 8) Resume (HITL workflows)
 
 `resume()` only exists for recipes that explicitly support pause/resume. It accepts a resume token
 and optional human input. The runtime `resume` adapter determines how tokens are resolved.
 
 ---
 
-## 8) Provider overrides (registry)
+## 9) Provider overrides (registry)
 
 Workflows resolve construct providers via the adapter registry. Per‑run overrides are supported via
 `runtime.providers`:
@@ -129,7 +144,7 @@ await workflow.run(
 
 ---
 
-## 9) When to read this page
+## 10) When to read this page
 
 - You’re building your own runtime wrapper.
 - You need full control over resume, diagnostics, or provider selection.

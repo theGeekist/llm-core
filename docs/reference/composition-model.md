@@ -26,7 +26,7 @@ graph TD
 - **Ordering is explicit**: step-level `dependsOn` + `priority` control scheduling.
 - **Config vs wiring is clear**: `configure()` for behavior, `defaults()` for wiring, `run()` for per-run overrides.
 - **Composable by default**: `.use()` is the standard way to plug recipes together.
-- **Inspectable**: `.plan()` exposes the full step graph for visualization and debugging.
+- **Inspectable**: `.explain()` exposes the full step graph for visualization and debugging.
 
 ## The Unified Recipe Handle
 
@@ -35,7 +35,7 @@ Every recipe (leaf or composite) exposes the same surface:
 - `configure(config)` - recipe-specific behavior (prompts, retrieval knobs, batch modes).
 - `defaults({ adapters, plugins })` - wiring and infra defaults.
 - `use(recipe)` - composition of other recipes.
-- `plan()` - the full step plan and dependencies.
+- `explain()` - the full step plan and dependencies.
 - `build()` - advanced, returns a reusable runnable.
 - `run(input, overrides?)` - the primary entry point.
 
@@ -209,9 +209,9 @@ Ordering rules:
 1. The pipeline resolves the DAG (Kahn + priority).
 2. When still tied, steps are registered deterministically by key.
 
-## Plan API (visibility without side effects)
+## Explain API (visibility without side effects)
 
-`plan()` materializes the step graph. It is pure data and has no runtime effect.
+`explain()` materializes the step graph. It is pure data and has no runtime effect.
 
 ```ts
 type RecipeStepPlan = {
@@ -236,7 +236,7 @@ type RecipePlan = {
 ```ts
 type PlanView = { steps: Array<{ id: string }> };
 
-const plan: PlanView = recipes.agent().use(recipes.rag()).use(recipes.hitl()).plan();
+const plan: PlanView = recipes.agent().use(recipes.rag()).use(recipes.hitl()).explain();
 
 console.log(plan.steps);
 ```
@@ -244,7 +244,7 @@ console.log(plan.steps);
 == JavaScript
 
 ```js
-const plan = recipes.agent().use(recipes.rag()).use(recipes.hitl()).plan();
+const plan = recipes.agent().use(recipes.rag()).use(recipes.hitl()).explain();
 
 console.log(plan.steps);
 ```
@@ -265,7 +265,7 @@ Recipe steps can include metadata for clarity without affecting execution.
 step("retrieve", applyRetrieve).dependsOn("seed").label("Retrieve documents").kind("io");
 ```
 
-Metadata is used by `plan()` and downstream tooling but does not change behavior.
+Metadata is used by `explain()` and downstream tooling but does not change behavior.
 
 ## Step Rollbacks (optional)
 

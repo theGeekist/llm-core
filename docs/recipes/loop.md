@@ -69,10 +69,10 @@ Read more: [Runtime -> Diagnostics](/reference/runtime#diagnostics) and
 
 ---
 
-## 4) Composition + plan
+## 4) Composition + explain
 
 Loop is a control‑flow building block. It composes cleanly with other recipes and remains inspectable
-through the plan API so ordering never becomes magic.
+through the explain API so ordering never becomes magic.
 
 ```mermaid
 flowchart LR

@@ -17,7 +17,7 @@ Every recipe exposes the same handle methods:
 - `configure(config)` — recipe-specific behavior (prompts, retrieval knobs, tool options).
 - `defaults(defaults)` — wiring and infra (adapters, plugins, retry defaults).
 - `use(otherRecipe)` — composition (pluggable sub-recipes).
-- `plan()` — returns the step graph (no side effects).
+- `explain()` — returns the step graph (no side effects).
 - `build()` — returns a reusable runnable.
 - `run(input, runtime?)` — one-shot execution.
 
@@ -88,9 +88,9 @@ const rag = recipes["rag"]().configure({
 
 :::
 
-## plan(): see the graph
+## explain(): see the graph
 
-`plan()` gives you a stable, inspectable view of the recipe DAG.
+`explain()` gives you a stable, inspectable view of the recipe DAG.
 
 ::: tabs
 == TypeScript
@@ -98,7 +98,7 @@ const rag = recipes["rag"]().configure({
 ```ts
 type PlanView = { steps: Array<{ id: string }> };
 
-const plan: PlanView = recipes["rag"]().plan();
+const plan: PlanView = recipes["rag"]().explain();
 // Inspect the resolved step graph.
 console.log(plan.steps.map((step) => step.id));
 ```
@@ -106,7 +106,7 @@ console.log(plan.steps.map((step) => step.id));
 == JavaScript
 
 ```js
-const plan = recipes["rag"]().plan();
+const plan = recipes["rag"]().explain();
 // Inspect the resolved step graph.
 console.log(plan.steps.map((step) => step.id));
 ```
