@@ -6,7 +6,7 @@ import type {
 } from "@langchain/langgraph-checkpoint";
 import type { CheckpointStore, ResumeSnapshot } from "../types";
 import { bindFirst, maybeMap, toTrue } from "../../shared/maybe";
-import { isRecord } from "../utils";
+import { isRecord } from "../../shared/guards";
 
 const CHECKPOINT_CHANNEL = "llm_core_snapshot";
 

@@ -1,11 +1,13 @@
 import { describe, expect, it } from "bun:test";
 import {
   createInteractionHandle,
+  type InteractionRunOutcome,
   type InteractionPauseRequest,
   type InteractionStepApply,
   type InteractionStepPack,
   type InteractionState,
 } from "#interaction";
+import { createEmptyState, readPausedState } from "../../src/interaction/handle";
 import { isPromiseLike } from "@wpkernel/pipeline/core";
 import type { Message, Model, ModelResult } from "#adapters";
 
@@ -63,6 +65,18 @@ const createPausePack = (): InteractionStepPack => ({
       dependsOn: ["interaction-core.run-model"],
     },
   ],
+});
+
+const createPausedOutcome = (state: InteractionState): InteractionRunOutcome => ({
+  __paused: true as const,
+  snapshot: {
+    token: "pause-token",
+    pauseKind: "human",
+    payload: { ok: true },
+    createdAt: 1,
+    stageIndex: 0,
+    state: { userState: state },
+  },
 });
 
 describe("interaction handle", () => {
@@ -197,5 +211,11 @@ describe("interaction handle", () => {
 
     expect(result.state.messages).toHaveLength(2);
     expect(result.state.messages[1]?.content).toBe("hello");
+  });
+
+  it("returns empty state when paused snapshots lack user state", () => {
+    const paused = createPausedOutcome(createEmptyState());
+    const state = readPausedState(paused as never);
+    expect(state).toEqual(createEmptyState());
   });
 });

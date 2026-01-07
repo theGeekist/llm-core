@@ -1,27 +1,21 @@
 import type { ArtefactOf, Outcome } from "../types";
 import type { DiagnosticEntry } from "../../shared/diagnostics";
 import type { PipelineState, RecipeName } from "../types";
-import type { PauseKind } from "../../adapters/types";
 import { addTraceEvent, type TraceEvent } from "../../shared/trace";
-import { readPipelinePauseSnapshot } from "../pause";
+import { readPausedUserState, readPauseFlag, readPauseMeta } from "../pause";
 
 export const readArtifact = <N extends RecipeName>(result: unknown): ArtefactOf<N> =>
   ((result as { artifact?: PipelineState }).artifact ?? {}) as ArtefactOf<N>;
 
-const readPausedUserState = (result: unknown): PipelineState | null => {
-  const snapshot = readPipelinePauseSnapshot(result);
-  if (!snapshot) {
-    return null;
-  }
-  return (snapshot.state as { userState?: PipelineState }).userState ?? null;
-};
+const readPausedUserStateFromResult = (result: unknown): PipelineState | null =>
+  readPausedUserState<PipelineState>(result);
 
 export const readPartialArtifact = <N extends RecipeName>(
   result: unknown,
   readArtifactValue: (result: unknown) => ArtefactOf<N>,
 ): Partial<ArtefactOf<N>> =>
   (result as { partialArtifact?: Partial<ArtefactOf<N>> }).partialArtifact ??
-  (readPausedUserState(result) as Partial<ArtefactOf<N>> | undefined) ??
+  (readPausedUserStateFromResult(result) as Partial<ArtefactOf<N>> | undefined) ??
   readArtifactValue(result);
 
 type OkOutcomeInput<N extends RecipeName> = {
@@ -44,41 +38,7 @@ export const toOkOutcome = <N extends RecipeName>(
   };
 };
 
-const readPauseMeta = (result: unknown) => {
-  const snapshot = readPipelinePauseSnapshot(result);
-  if (snapshot) {
-    return { token: snapshot.token, pauseKind: snapshot.pauseKind };
-  }
-  const direct = result as { token?: unknown; pauseKind?: PauseKind };
-  if (direct.token !== undefined || direct.pauseKind !== undefined) {
-    return { token: direct.token, pauseKind: direct.pauseKind };
-  }
-  const artifact = (
-    result as { artifact?: { __pause?: { token?: unknown; pauseKind?: PauseKind } } }
-  ).artifact;
-  if (artifact?.__pause) {
-    return { token: artifact.__pause.token, pauseKind: artifact.__pause.pauseKind };
-  }
-  const state = (result as { state?: { __pause?: { token?: unknown; pauseKind?: PauseKind } } })
-    .state;
-  return { token: state?.__pause?.token, pauseKind: state?.__pause?.pauseKind };
-};
-
-export const readPauseFlag = (result: unknown) => {
-  if (readPipelinePauseSnapshot(result)) {
-    return true;
-  }
-  const direct = (result as { paused?: boolean }).paused;
-  if (direct !== undefined) {
-    return direct;
-  }
-  const artifact = (result as { artifact?: { __pause?: { paused?: boolean } } }).artifact;
-  if (artifact?.__pause?.paused !== undefined) {
-    return artifact.__pause.paused;
-  }
-  const state = (result as { state?: { __pause?: { paused?: boolean } } }).state;
-  return state?.__pause?.paused;
-};
+export { readPauseFlag, readPauseMeta };
 
 type PausedOutcomeInput<N extends RecipeName> = {
   result: unknown;

@@ -8,7 +8,8 @@ import type {
   ToolCall,
   ToolResult,
 } from "../../adapters/types";
-import { isRecord, readString } from "../../adapters/utils";
+import { readString } from "../../adapters/utils";
+import { isRecord } from "../../shared/guards";
 import { bindFirst, maybeAll, maybeMap, type MaybePromise } from "../../shared/maybe";
 import type { PipelineContext, PipelineState } from "../../workflow/types";
 import type { AgentInput } from "../types";

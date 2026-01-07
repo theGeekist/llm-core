@@ -9,7 +9,13 @@ import type { MaybePromise } from "../../shared/maybe";
 import { bindFirst, maybeChain, maybeMap, maybeMapOr } from "../../shared/maybe";
 import type { PauseSession } from "../driver";
 import type { Runtime } from "../types";
-import { readPipelinePauseSnapshot, toPauseKind } from "../pause";
+import {
+  isPauseResumeKey,
+  readPipelinePauseSnapshot,
+  readPauseResumeKeyFromResult,
+  readPauseSnapshotPayload,
+  toPauseKind,
+} from "../pause";
 
 export type SessionStore = {
   get: (token: unknown) => MaybePromise<ResumeSnapshot | null>;
@@ -34,13 +40,15 @@ type ResumeSessionSnapshotInput = {
 };
 
 // Serialization helpers
-const serialize = (snapshot: ResumeSnapshot): { value: AdapterBlob } | null => {
+/** @internal */
+export const serialize = (snapshot: ResumeSnapshot): { value: AdapterBlob } | null => {
   const json = JSON.stringify(snapshot);
   const bytes = new TextEncoder().encode(json);
   return { value: { bytes, contentType: "application/json" } };
 };
 
-const deserialize = (blob: AdapterBlob | null): ResumeSnapshot | null => {
+/** @internal */
+export const deserialize = (blob: AdapterBlob | null): ResumeSnapshot | null => {
   if (!blob) return null;
   try {
     const json = new TextDecoder().decode(blob.bytes);
@@ -110,48 +118,6 @@ export const readSessionTtlMs = (
   return typeof ttl === "number" ? ttl : null;
 };
 
-const isResumeKey = (value: unknown): value is string =>
-  typeof value === "string" && value.length > 0;
-
-const readResumeKeyFromState = (state: unknown): string | null => {
-  if (!state || typeof state !== "object") {
-    return null;
-  }
-  const resumeKey = (state as { __pause?: { resumeKey?: unknown } }).__pause?.resumeKey;
-  return isResumeKey(resumeKey) ? resumeKey : null;
-};
-
-const readResumeKeyFromSnapshot = (
-  snapshot: ReturnType<typeof readPipelinePauseSnapshot>,
-): string | null => readResumeKeyFromState(snapshot?.state);
-
-const readResumeKeyFromResult = (result: unknown): string | null => {
-  const snapshot = readPipelinePauseSnapshot(result);
-  if (snapshot) {
-    const resumeKey = readResumeKeyFromSnapshot(snapshot);
-    if (resumeKey) {
-      return resumeKey;
-    }
-  }
-  const directResumeKey = (result as { resumeKey?: unknown }).resumeKey;
-  if (isResumeKey(directResumeKey)) {
-    return directResumeKey;
-  }
-  const artifactResumeKey = (result as { artifact?: { __pause?: { resumeKey?: unknown } } })
-    .artifact?.__pause?.resumeKey;
-  if (isResumeKey(artifactResumeKey)) {
-    return artifactResumeKey;
-  }
-  const stateResumeKey = (result as { state?: { __pause?: { resumeKey?: unknown } } }).state
-    ?.__pause?.resumeKey;
-  return isResumeKey(stateResumeKey) ? stateResumeKey : null;
-};
-
-const readPauseSnapshotPayload = (result: unknown) => {
-  const typed = result as { pauseSnapshot?: unknown; resumeSnapshot?: unknown };
-  return typed.pauseSnapshot ?? typed.resumeSnapshot;
-};
-
 type CreateResumeSnapshotInput = {
   token: unknown;
   pauseKind: PauseKind | null;
@@ -174,7 +140,7 @@ const createResumeSnapshot = (input: CreateResumeSnapshotInput): ResumeSnapshot 
 };
 
 const canWriteResumeKey = (input: SnapshotWriteInput) =>
-  isResumeKey(input.resumeKey) && input.resumeKey !== input.token;
+  isPauseResumeKey(input.resumeKey) && input.resumeKey !== input.token;
 
 const writeSnapshotPrimary = (input: SnapshotWriteInput) =>
   input.store.set(input.token, input.snapshot, input.ttlMs);
@@ -240,7 +206,7 @@ export const createSnapshotRecorder = (
       : ((result as { pauseKind?: PauseKind | null }).pauseKind ?? null);
     const payload = pipelineSnapshot ? pipelineSnapshot.payload : readPauseSnapshotPayload(result);
     const snapshot = pipelineSnapshot ?? (result as { snapshot?: unknown }).snapshot;
-    const resumeKey = readResumeKeyFromResult(result);
+    const resumeKey = readPauseResumeKeyFromResult(result);
     // Guard against store errors or serialization failures
     try {
       return writeSnapshotWithResumeKey({
@@ -281,7 +247,7 @@ export const resolveResumeSession = (
   return resolveResumeSessionFromStore({
     store: input.store,
     token: input.token,
-    resumeKey: isResumeKey(input.resumeKey) ? input.resumeKey : null,
+    resumeKey: isPauseResumeKey(input.resumeKey) ? input.resumeKey : null,
   });
 };
 

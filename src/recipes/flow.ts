@@ -22,7 +22,12 @@ import { toRetryPauseResult, type RetryPauseSpec } from "./retry-pause";
 import type { StepBuilder, StepFactory, StepNext, StepOptions, StepSpec } from "./step-builder";
 import { buildRuntimeDefaults, wrapRuntimeWithDefaults } from "./runtime-defaults";
 import type { PlanBase, PlanStepBase, StepPackBase } from "../shared/types";
-import { compareStepSpec, normalizeDependencies, normalizeStepKey } from "../shared/steps";
+import {
+  normalizeDependencies,
+  normalizeStepKey,
+  sortStepSpecs,
+  usePipelineHelper,
+} from "../shared/steps";
 
 export type RecipePack = StepPackBase & {
   steps: StepSpec[];
@@ -175,11 +180,8 @@ const createStepPlan = (recipeName: string, packName: string, step: StepSpec): R
   };
 };
 
-const sortSteps = (packName: string, steps: StepSpec[]) =>
-  [...steps].sort(bindFirst(compareStepSpec, packName));
-
 const appendPackPlans = (steps: RecipeStepPlan[], recipeName: string, pack: RecipePack) => {
-  const sorted = sortSteps(pack.name, pack.steps);
+  const sorted = sortStepSpecs(pack.name, pack.steps);
   for (const step of sorted) {
     steps.push(createStepPlan(recipeName, pack.name, step));
   }
@@ -199,16 +201,10 @@ export const createRecipePlan = (recipeName: string, packs: RecipePack[]): Recip
   steps: collectPackPlans(recipeName, packs),
 });
 
-type PipelineUse = { use: (helper: unknown) => unknown };
-
-const useHelper = (pipeline: unknown, helper: unknown) => {
-  (pipeline as PipelineUse).use(helper);
-};
-
 // Register in a deterministic order when DAG/priority do not resolve a tie.
 const registerPackSteps = (pipeline: unknown, pack: RecipePack) => {
-  for (const step of sortSteps(pack.name, pack.steps)) {
-    useHelper(pipeline, createHelperForStep(pack.name, step));
+  for (const step of sortStepSpecs(pack.name, pack.steps)) {
+    usePipelineHelper(pipeline, createHelperForStep(pack.name, step));
   }
 };
 

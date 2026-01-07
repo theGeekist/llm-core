@@ -1,6 +1,6 @@
 import type { DiagnosticEntry } from "../../shared/diagnostics";
 import type { PauseSession } from "./types";
-import { readPipelinePauseSnapshot } from "../pause";
+import { readPauseSnapshotToken, readPipelinePauseSnapshot } from "../pause";
 
 export const createPauseSessions = () => new Map<unknown, PauseSession>();
 
@@ -13,10 +13,11 @@ export const recordPauseSession = (
   if (!snapshot) {
     return null;
   }
-  if (snapshot.token === undefined) {
+  const token = readPauseSnapshotToken(snapshot);
+  if (token === null) {
     return false;
   }
-  sessions.set(snapshot.token, {
+  sessions.set(token, {
     snapshot,
     getDiagnostics,
     createdAt: snapshot.createdAt,

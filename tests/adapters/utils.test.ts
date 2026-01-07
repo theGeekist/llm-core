@@ -1,5 +1,6 @@
 import { describe, expect, it } from "bun:test";
-import { isDefined, isRecord, readNumber, readString } from "../../src/adapters/utils";
+import { isDefined, readNumber, readString } from "../../src/adapters/utils";
+import { isRecord } from "../../src/shared/guards";
 
 describe("adapter utils", () => {
   it("detects record-like values", () => {

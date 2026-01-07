@@ -2,6 +2,7 @@ import type { AdapterBundle } from "../adapters/types";
 import type { Runtime } from "./types";
 import type { DiagnosticEntry } from "../shared/diagnostics";
 import { createResumeDiagnostic } from "../shared/diagnostics";
+import { isRecord } from "../shared/guards";
 
 export type ResumeOptions = {
   input: unknown;
@@ -11,9 +12,6 @@ export type ResumeOptions = {
 };
 
 const resumeEnvelopeKeys = new Set(["input", "runtime", "adapters", "providers"]);
-
-const isObject = (value: unknown): value is Record<string, unknown> =>
-  typeof value === "object" && value !== null;
 
 const hasOnlyResumeKeys = (value: Record<string, unknown>) =>
   Object.keys(value).every((key) => resumeEnvelopeKeys.has(key));
@@ -26,7 +24,7 @@ export const readResumeOptions = (
   runtime: Runtime | undefined,
   diagnostics?: DiagnosticEntry[],
 ): ResumeOptions => {
-  if (isObject(value) && isResumeEnvelope(value)) {
+  if (isRecord(value) && isResumeEnvelope(value)) {
     const typed = value as {
       input?: unknown;
       runtime?: Runtime;
@@ -40,7 +38,7 @@ export const readResumeOptions = (
       providers: typed.providers,
     };
   }
-  if (isObject(value)) {
+  if (isRecord(value)) {
     if ("input" in value) {
       diagnostics?.push(
         createResumeDiagnostic(

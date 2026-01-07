@@ -1,16 +1,20 @@
 import type { ArtefactOf, Outcome, RecipeName, ResumeInputOf, Runtime } from "../types";
-import type { AdapterBundle, PauseKind } from "../../adapters/types";
+import type { AdapterBundle } from "../../adapters/types";
 import type { TraceEvent } from "../../shared/trace";
 import type { PauseSession } from "../driver/types";
 import { bindFirst, maybeChain } from "../../shared/maybe";
-import { toPauseKind } from "../pause";
 import {
   readSessionStore,
   resolveResumeSession,
   resolveSessionStore,
   type ResumeSession,
 } from "./resume-session";
-import { invalidResumeTokenOutcome, requireResumeAdapter } from "./resume-helpers";
+import {
+  invalidResumeTokenOutcome,
+  readPauseKindFromSession,
+  readResumeTokenFromSession,
+  requireResumeAdapter,
+} from "./resume-helpers";
 import type { AdapterResolution, ResumeHandlerDeps } from "./resume-types";
 import { executeResumePipeline, type ActiveResumeSession } from "./resume-exec";
 
@@ -40,23 +44,7 @@ type ResumeValueInput<N extends RecipeName> = {
   deps: ResumeHandlerDeps<N>;
 };
 
-const readPauseKind = (session: ActiveResumeSession): PauseKind | null => {
-  const pauseKind =
-    session.kind === "pause" ? session.session.snapshot.pauseKind : session.snapshot.pauseKind;
-  return toPauseKind(pauseKind);
-};
-
 const readInterruptStrategy = (adapters: AdapterBundle) => adapters.interrupt;
-
-const readResumeTokenFromSession = (session: ResumeSession, token: unknown) => {
-  if (session.kind === "pause") {
-    return session.session.snapshot.token ?? token;
-  }
-  if (session.kind === "snapshot") {
-    return session.snapshot.token ?? token;
-  }
-  return token;
-};
 
 const handleVerifySnapshot = <N extends RecipeName>(
   input: ResumeStartInput<N>,
@@ -184,7 +172,7 @@ const resumeFromSession = <N extends RecipeName>(input: ResumeFromSessionInput<N
     required.adapter.resolve({
       token: input.token,
       resumeInput: input.resumeInput,
-      pauseKind: readPauseKind(session as ActiveResumeSession) ?? undefined,
+      pauseKind: readPauseKindFromSession(session as ActiveResumeSession) ?? undefined,
       interrupt: readInterruptStrategy(input.resolvedAdapters),
       resumeKey: input.resumeKey,
       resumeSnapshot: session.kind === "snapshot" ? session.snapshot : undefined,

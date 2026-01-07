@@ -1,6 +1,7 @@
 import { zodToJsonSchema } from "zod-to-json-schema";
 import type { AdapterDiagnostic, PromptSchema, Schema, ToolParam } from "./types";
-import { isRecord, warnDiagnostic } from "./utils";
+import { warnDiagnostic } from "./utils";
+import { isRecord } from "../shared/guards";
 
 type SchemaLike = {
   jsonSchema?: unknown;

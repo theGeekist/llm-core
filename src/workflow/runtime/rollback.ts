@@ -9,7 +9,7 @@ import type { MaybePromise } from "../../shared/maybe";
 import { bindFirst, maybeMap, toTrue } from "../../shared/maybe";
 import type { RollbackEntry, RollbackState } from "./rollback-types";
 import { readRestartInterrupt } from "./pause-metadata";
-import { readPipelinePauseSnapshot } from "../pause";
+import { readPausedReporter, readPausedSteps, readPausedUserState } from "../pause";
 
 type RollbackResult = {
   steps?: PipelineStep[];
@@ -27,11 +27,7 @@ const isRollbackState = (value: unknown): value is RollbackState =>
   !!value && typeof value === "object";
 
 const readPausedRollbackState = (result: unknown) => {
-  const snapshot = readPipelinePauseSnapshot(result);
-  if (!snapshot) {
-    return null;
-  }
-  const pausedState = (snapshot.state as { userState?: RollbackState }).userState;
+  const pausedState = readPausedUserState<RollbackState>(result);
   return isRollbackState(pausedState) ? pausedState : null;
 };
 
@@ -57,15 +53,6 @@ const readRollbackEntries = (result: RollbackResult) => {
     return [];
   }
   return collectRollbackEntries(map);
-};
-
-const readPausedSteps = (result: unknown) => {
-  const snapshot = readPipelinePauseSnapshot(result);
-  if (!snapshot) {
-    return [];
-  }
-  const pausedSteps = (snapshot.state as { steps?: PipelineStep[] }).steps;
-  return pausedSteps ? [...pausedSteps] : [];
 };
 
 const readSteps = (result: RollbackResult) =>
@@ -117,16 +104,6 @@ const toRollbackStack = (entries: RollbackEntry[], steps: PipelineStep[]) => {
     stack.push(entry.rollback);
   }
   return stack;
-};
-
-const readPausedReporter = (result: unknown) => {
-  const snapshot = readPipelinePauseSnapshot(result);
-  if (!snapshot) {
-    return null;
-  }
-  return (
-    (snapshot.state as { context?: { reporter?: PipelineReporter } }).context?.reporter ?? null
-  );
 };
 
 const readReporter = (result: RollbackResult) =>

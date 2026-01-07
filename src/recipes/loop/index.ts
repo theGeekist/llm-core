@@ -3,7 +3,8 @@ import { Recipe } from "../flow";
 import { createRecipeFactory, createRecipeHandle } from "../handle";
 import type { RecipeDefaults, StepApply } from "../flow";
 import type { Model, ModelResult } from "../../adapters/types";
-import { isRecord, readNumber, readString } from "../../adapters/utils";
+import { readNumber, readString } from "../../adapters/utils";
+import { isRecord } from "../../shared/guards";
 
 export type LoopConfig = {
   defaults?: RecipeDefaults;

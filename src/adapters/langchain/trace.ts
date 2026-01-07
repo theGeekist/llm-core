@@ -3,7 +3,7 @@ import type { Serialized } from "@langchain/core/load/serializable";
 import type { LLMResult } from "@langchain/core/outputs";
 import type { AdapterTraceEvent, EventStream } from "../types";
 import { bindFirst, maybeMap, maybeAll } from "../../shared/maybe";
-import { isRecord } from "../utils";
+import { isRecord } from "../../shared/guards";
 
 type LangChainTraceMetadata = {
   modelId?: string | null;

@@ -1,8 +1,7 @@
 import type { SnapshotData } from "@llamaindex/workflow-core/middleware/state";
 import type { CheckpointStore, PauseKind, ResumeSnapshot } from "../types";
-import type { MaybePromise } from "../../shared/maybe";
-import { bindFirst, maybeMap } from "../../shared/maybe";
-import { isRecord } from "../utils";
+import { bindFirst, maybeMap, type MaybePromise } from "../../shared/maybe";
+import { isRecord } from "../../shared/guards";
 
 export type LlamaIndexCheckpointEntry = {
   snapshot: SnapshotData;

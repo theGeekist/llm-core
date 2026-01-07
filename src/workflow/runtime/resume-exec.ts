@@ -22,6 +22,10 @@ import { normalizeDiagnostics, applyDiagnosticsMode } from "../../shared/diagnos
 import { createFinalize, type FinalizeResult } from "./helpers";
 import { createFinalizeWithInterrupt } from "./pause-metadata";
 import type { AdapterResolution, PipelineRunner, ResumeHandlerDeps } from "./resume-types";
+import {
+  readPauseSnapshotReporterFromSnapshot,
+  readPauseSnapshotStateFromSnapshot,
+} from "../pause";
 export type ActiveResumeSession = Exclude<ResumeSession, { kind: "invalid" }>;
 
 type ResumeExecution<N extends RecipeName> = {
@@ -55,22 +59,8 @@ const readPauseDiagnostics = (input: PauseDiagnosticsInput) =>
 
 type PauseSnapshot = PauseSession["snapshot"];
 
-type ResumeSnapshotState = {
-  runOptions?: RunOptions;
-  context?: PipelineContext;
-  reporter?: PipelineReporter;
-};
-
-const readSnapshotState = (snapshot: PauseSnapshot): ResumeSnapshotState =>
-  snapshot.state as ResumeSnapshotState;
-
-const readSnapshotReporter = (snapshot: PauseSnapshot) => {
-  const state = readSnapshotState(snapshot);
-  return state.reporter ?? state.context?.reporter;
-};
-
 const resolveResumeReporter = (snapshot: PauseSnapshot, runtime: Runtime | undefined) =>
-  runtime?.reporter ?? readSnapshotReporter(snapshot) ?? {};
+  runtime?.reporter ?? readPauseSnapshotReporterFromSnapshot(snapshot) ?? {};
 
 const buildResumeRunOptions = (input: {
   resumeOptions: ResumeOptions;
@@ -104,7 +94,7 @@ type UpdateResumeSnapshotInput = {
 const updateResumeSnapshot = (input: UpdateResumeSnapshotInput): PauseSnapshot => ({
   ...input.snapshot,
   state: {
-    ...(input.snapshot.state as Record<string, unknown>),
+    ...(readPauseSnapshotStateFromSnapshot(input.snapshot) as Record<string, unknown>),
     runOptions: input.runOptions,
     context: input.context,
     reporter: input.reporter,
@@ -114,7 +104,8 @@ const updateResumeSnapshot = (input: UpdateResumeSnapshotInput): PauseSnapshot =
 const readPipelineResume = (pipeline: PipelineWithExtensions | PipelineRunner) =>
   (pipeline as { resume?: PipelineWithExtensions["resume"] }).resume;
 
-const resumePipeline = (
+/** @internal */
+export const resumePipeline = (
   pipeline: PipelineWithExtensions | PipelineRunner,
   snapshot: PauseSnapshot,
   resumeInput: unknown,
@@ -194,7 +185,8 @@ const addTokenIfUnique = (tokens: unknown[], token: unknown) => {
   return tokens;
 };
 
-const collectResumeTokens = (
+/** @internal */
+export const collectResumeTokens = (
   session: ActiveResumeSession,
   token: unknown,
   resumeKey: string | undefined,
@@ -231,7 +223,8 @@ const deleteNextResumeToken = (input: ResumeDeleteInput): MaybePromise<boolean |
   );
 };
 
-const deleteResumeTokens = (store: ResumeDeleteInput["store"], tokens: unknown[]) =>
+/** @internal */
+export const deleteResumeTokens = (store: ResumeDeleteInput["store"], tokens: unknown[]) =>
   deleteNextResumeToken({ store, tokens, index: 0 });
 
 const createResumeDeletion = <N extends RecipeName>(

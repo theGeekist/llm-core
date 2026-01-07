@@ -12,6 +12,7 @@ import type {
 } from "@wpkernel/pipeline/core";
 import { createHelper } from "@wpkernel/pipeline/core";
 import { bindFirst } from "../shared/maybe";
+import { hasKeys } from "../shared/guards";
 import type {
   InteractionContext,
   InteractionInput,
@@ -46,9 +47,11 @@ type InteractionStageDeps = {
   finalizeResult: unknown;
 };
 
-const createDefaultReporter = (): PipelineReporter => ({});
+/** @internal */
+export const createDefaultReporter = (): PipelineReporter => ({});
 
-const createInteractionState = (input?: InteractionInput): InteractionState => ({
+/** @internal */
+export const createInteractionState = (input?: InteractionInput): InteractionState => ({
   messages: [],
   diagnostics: [],
   trace: [],
@@ -58,17 +61,22 @@ const createInteractionState = (input?: InteractionInput): InteractionState => (
   ...input?.state,
 });
 
-const createContext = (options: InteractionRunOptions): InteractionContext => ({
+/** @internal */
+export const createContext = (options: InteractionRunOptions): InteractionContext => ({
   reporter: options.reporter ?? createDefaultReporter(),
   adapters: options.adapters,
   reducer: options.reducer ?? reduceInteractionEvent,
   eventStream: options.eventStream,
 });
 
-const createState = (options: { context: InteractionContext; options: InteractionRunOptions }) =>
-  createInteractionState(options.options.input);
+/** @internal */
+export const createState = (options: {
+  context: InteractionContext;
+  options: InteractionRunOptions;
+}) => createInteractionState(options.options.input);
 
-const buildHelperArgs = (
+/** @internal */
+export const buildHelperArgs = (
   state: InteractionHelperState,
   _helper: unknown,
 ): HelperApplyOptions<InteractionContext, InteractionInput, InteractionState, PipelineReporter> => {
@@ -81,17 +89,17 @@ const buildHelperArgs = (
   };
 };
 
-const createHelperArgs = (state: InteractionHelperState) => bindFirst(buildHelperArgs, state);
+/** @internal */
+export const createHelperArgs = (state: InteractionHelperState) =>
+  bindFirst(buildHelperArgs, state);
 
-function hasKeys(value: Record<string, unknown>) {
-  return Object.keys(value).length > 0;
-}
-
-function readPauseRequest(state: InteractionState): InteractionPauseRequest | null {
+/** @internal */
+export function readPauseRequest(state: InteractionState): InteractionPauseRequest | null {
   return state.private?.pause ?? null;
 }
 
-function clearPauseRequest(state: InteractionState) {
+/** @internal */
+export function clearPauseRequest(state: InteractionState) {
   const privateState = state.private;
   if (!privateState || !privateState.pause) {
     return state;
@@ -104,11 +112,13 @@ function clearPauseRequest(state: InteractionState) {
   };
 }
 
-function replaceUserState(state: InteractionPipelineState, userState: InteractionState) {
+/** @internal */
+export function replaceUserState(state: InteractionPipelineState, userState: InteractionState) {
   return { ...state, userState };
 }
 
-function toPauseOptions(pause: InteractionPauseRequest): PipelinePauseOptions {
+/** @internal */
+export function toPauseOptions(pause: InteractionPauseRequest): PipelinePauseOptions {
   return {
     token: pause.token,
     pauseKind: pause.pauseKind,
@@ -116,7 +126,8 @@ function toPauseOptions(pause: InteractionPauseRequest): PipelinePauseOptions {
   };
 }
 
-function applyPauseStage(deps: InteractionStageDeps, state: InteractionPipelineState) {
+/** @internal */
+export function applyPauseStage(deps: InteractionStageDeps, state: InteractionPipelineState) {
   const pause = readPauseRequest(state.userState);
   if (!pause) {
     return state;
@@ -145,7 +156,8 @@ const createStages = (deps: unknown) => {
   return stages;
 };
 
-const createRunResult = (options: {
+/** @internal */
+export const createRunResult = (options: {
   artifact: InteractionState;
   diagnostics: readonly PipelineDiagnostic[];
   steps: readonly PipelineStep[];

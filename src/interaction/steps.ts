@@ -3,6 +3,7 @@ import type { Message } from "../adapters/types/messages";
 import { bindFirst, maybeChain, maybeMap, maybeTap, maybeToStep, maybeTry } from "../shared/maybe";
 import type { MaybeAsyncIterable, MaybePromise, Step } from "../shared/maybe";
 import type { PipelinePaused } from "@wpkernel/pipeline/core";
+import { isString } from "../shared/guards";
 import { emitInteractionEvent, emitInteractionEvents } from "./transport";
 import {
   createInteractionPipeline,
@@ -22,7 +23,12 @@ import type {
 } from "./types";
 import { reduceInteractionEvent, reduceInteractionEvents } from "./reducer";
 import type { StepPackBase, StepSpecBase } from "../shared/types";
-import { compareStepSpec, normalizeDependencies, normalizeStepKey } from "../shared/steps";
+import {
+  normalizeDependencies,
+  normalizeStepKey,
+  sortStepSpecs,
+  usePipelineHelper,
+} from "../shared/steps";
 
 export type InteractionStepSpec = StepSpecBase & {
   apply: InteractionStepApply;
@@ -33,16 +39,8 @@ export type InteractionStepPack = StepPackBase & {
   steps: InteractionStepSpec[];
 };
 
-type PipelineUse = { use: (helper: unknown) => void };
-
-const useHelper = (pipeline: unknown, helper: unknown) => {
-  (pipeline as PipelineUse).use(helper);
-};
-
-const sortSteps = (packName: string, steps: InteractionStepSpec[]) =>
-  [...steps].sort(bindFirst(compareStepSpec, packName));
-
-const createHelperForStep = (packName: string, spec: InteractionStepSpec) => {
+/** @internal */
+export const createHelperForStep = (packName: string, spec: InteractionStepSpec) => {
   const key = normalizeStepKey(packName, spec.name);
   const dependsOn = normalizeDependencies(packName, spec.dependsOn ?? []);
   return createInteractionStep({
@@ -56,19 +54,22 @@ const createHelperForStep = (packName: string, spec: InteractionStepSpec) => {
 };
 
 export const registerInteractionPack = (pipeline: unknown, pack: InteractionStepPack) => {
-  for (const step of sortSteps(pack.name, pack.steps)) {
-    useHelper(pipeline, createHelperForStep(pack.name, step));
+  for (const step of sortStepSpecs(pack.name, pack.steps)) {
+    usePipelineHelper(pipeline, createHelperForStep(pack.name, step));
   }
 };
 
-const toDefaultMessage = (input?: InteractionInput): Message | undefined => input?.message;
+/** @internal */
+export const toDefaultMessage = (input?: InteractionInput): Message | undefined => input?.message;
 
-const appendMessage = (state: InteractionState, message: Message) => ({
+/** @internal */
+export const appendMessage = (state: InteractionState, message: Message) => ({
   ...state,
   messages: [...state.messages, message],
 });
 
-const assignInteractionState = (target: InteractionState, source: InteractionState) => {
+/** @internal */
+export const assignInteractionState = (target: InteractionState, source: InteractionState) => {
   target.messages = source.messages;
   target.diagnostics = source.diagnostics;
   target.trace = source.trace;
@@ -78,7 +79,8 @@ const assignInteractionState = (target: InteractionState, source: InteractionSta
   return target;
 };
 
-function mergeInteractionPrivate(
+/** @internal */
+export function mergeInteractionPrivate(
   state: InteractionState,
   update: NonNullable<InteractionState["private"]>,
 ) {
@@ -94,14 +96,16 @@ const toModelCall = (state: InteractionState): ModelCall => ({
   messages: state.messages,
 });
 
-const readMessageText = (message: Message): string | undefined => {
+/** @internal */
+export const readMessageText = (message: Message): string | undefined => {
   if (typeof message.content === "string") {
     return message.content;
   }
   return message.content.text;
 };
 
-const readResultText = (result: ModelResult): string | null => {
+/** @internal */
+export const readResultText = (result: ModelResult): string | null => {
   if (result.text !== undefined) {
     return result.text;
   }
@@ -112,7 +116,8 @@ const readResultText = (result: ModelResult): string | null => {
   return (last ? readMessageText(last) : null) ?? null;
 };
 
-const createMeta = (
+/** @internal */
+export const createMeta = (
   state: InteractionState,
   input: InteractionInput,
   sourceId: string,
@@ -124,7 +129,8 @@ const createMeta = (
   interactionId: input.interactionId,
 });
 
-const createMetaWithSequence = (
+/** @internal */
+export const createMetaWithSequence = (
   sequence: number,
   input: InteractionInput,
   sourceId: string,
@@ -148,7 +154,8 @@ const emitInteractionTap = (
   _state: InteractionState,
 ) => emitInteraction(context, event);
 
-const emitInteractionEventsForContext = (
+/** @internal */
+export const emitInteractionEventsForContext = (
   context: InteractionContext,
   events: InteractionEvent[],
 ) => {
@@ -176,7 +183,8 @@ const reduceAndEmitInteraction = (
   event: InteractionEvent,
 ) => maybeTap(bindInteractionTap(context, event), reduceInteraction(state, context, event));
 
-const emitInteraction = (context: InteractionContext, event: InteractionEvent) => {
+/** @internal */
+export const emitInteraction = (context: InteractionContext, event: InteractionEvent) => {
   if (!context.eventStream) {
     return null;
   }
@@ -188,8 +196,6 @@ const reduceAndEmitInteractionEvents = (
   context: InteractionContext,
   events: InteractionEvent[],
 ) => maybeTap(bindInteractionEventsTap(context, events), state);
-
-const isString = (value: unknown): value is string => typeof value === "string";
 
 const pushModelDeltaEvent = (
   events: ModelStreamEvent[],
@@ -219,7 +225,8 @@ const pushToolResultEvents = (events: ModelStreamEvent[], results?: ModelResult[
   return events;
 };
 
-const toModelStreamEvents = (result: ModelResult): ModelStreamEvent[] => {
+/** @internal */
+export const toModelStreamEvents = (result: ModelResult): ModelStreamEvent[] => {
   const events: ModelStreamEvent[] = [];
   events.push({ type: "start" });
   const text = readResultText(result);
@@ -243,7 +250,8 @@ type InteractionEventsInput = {
   raw?: unknown;
 };
 
-const toInteractionEvents = (input: InteractionEventsInput): InteractionEvent[] => {
+/** @internal */
+export const toInteractionEvents = (input: InteractionEventsInput): InteractionEvent[] => {
   const items: InteractionEvent[] = [];
   let sequence = input.state.lastSequence ?? 0;
   for (const event of input.events) {
@@ -322,7 +330,8 @@ const readStepNext = <T>(step: Step<T>) => step.next();
 const applyModelStreamLoop = (input: ApplyModelStreamInput): MaybePromise<InteractionState> =>
   maybeChain(bindFirst(applyModelStreamResult, input), readStepNext(input.stream));
 
-const applyModelStreamResult = (
+/** @internal */
+export const applyModelStreamResult = (
   input: ApplyModelStreamInput,
   result: IteratorResult<ModelStreamEvent>,
 ): MaybePromise<InteractionState> => {
@@ -358,7 +367,8 @@ const applyModelStreamError = (
   return reduceAndEmitInteraction(input.state, input.context, event);
 };
 
-const applyModelStream = (input: ApplyModelStreamInput): MaybePromise<InteractionState> =>
+/** @internal */
+export const applyModelStream = (input: ApplyModelStreamInput): MaybePromise<InteractionState> =>
   maybeTry(bindFirst(applyModelStreamError, input), bindFirst(applyModelStreamLoop, input));
 
 type ApplyModelGenerateInput = {
@@ -385,7 +395,8 @@ const hasStream = (
   stream: (call: ModelCall) => MaybeAsyncIterable<import("../adapters/types").ModelStreamEvent>;
 } => typeof model.stream === "function";
 
-const applyRunModelCore = (
+/** @internal */
+export const applyRunModelCore = (
   state: InteractionState,
   context: InteractionContext,
   input: InteractionInput,

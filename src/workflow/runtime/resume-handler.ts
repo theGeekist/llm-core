@@ -11,6 +11,7 @@ import { bindFirst, maybeTry } from "../../shared/maybe";
 import type { ResumeHandlerDeps } from "./resume-types";
 import { startResumePipeline } from "./resume-start";
 import { applyDiagnosticsMode } from "../../shared/diagnostics";
+import { readResumeTokenInput } from "./resume-helpers";
 
 type ResumeHandlerErrorInput<N extends RecipeName> = {
   deps: ResumeHandlerDeps<N>;
@@ -38,23 +39,6 @@ const handleResumeHandlerError = <N extends RecipeName>(
     input.trace,
     applyDiagnosticsMode(input.deps.readErrorDiagnostics(error), input.diagnosticsMode),
   );
-
-type ResumeTokenEnvelope = {
-  token?: unknown;
-  resumeKey?: unknown;
-};
-
-const isObject = (value: unknown): value is Record<string, unknown> =>
-  typeof value === "object" && value !== null;
-
-const readResumeTokenInput = (value: unknown): { token: unknown; resumeKey?: string } => {
-  if (!isObject(value) || !("resumeKey" in value)) {
-    return { token: value };
-  }
-  const typed = value as ResumeTokenEnvelope;
-  const resumeKey = typeof typed.resumeKey === "string" ? typed.resumeKey : undefined;
-  return { token: "token" in typed ? typed.token : value, resumeKey };
-};
 
 export const createResumeHandler =
   <N extends RecipeName>(

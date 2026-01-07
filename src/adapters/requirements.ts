@@ -4,7 +4,8 @@ import type {
   AdapterMetadata,
   AdapterRequirement,
 } from "./types";
-import { isRecord, warnDiagnostic } from "./utils";
+import { warnDiagnostic } from "./utils";
+import { isRecord } from "../shared/guards";
 
 type RequirementSource = {
   construct: string;

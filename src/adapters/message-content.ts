@@ -7,7 +7,7 @@ import type {
   StructuredContent,
   TextPart,
 } from "./types";
-import { isRecord } from "./utils";
+import { isRecord } from "../shared/guards";
 
 type PartWithType = { type?: string };
 

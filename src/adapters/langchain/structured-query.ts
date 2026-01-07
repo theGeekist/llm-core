@@ -11,7 +11,7 @@ import type {
   StructuredQueryOperation,
   StructuredQueryValue,
 } from "../types";
-import { isRecord } from "../utils";
+import { isRecord } from "../../shared/guards";
 
 const toStructuredQueryValue = (value: unknown): StructuredQueryValue => {
   if (typeof value === "string" || typeof value === "number" || typeof value === "boolean") {

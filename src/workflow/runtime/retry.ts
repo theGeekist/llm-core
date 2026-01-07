@@ -10,6 +10,7 @@ import type { MaybePromise } from "../../shared/maybe";
 import { bindFirst, maybeTry } from "../../shared/maybe";
 import { addTraceEvent } from "../../shared/trace";
 import type { TraceEvent } from "../../shared/trace";
+import { isRecord } from "../../shared/guards";
 
 export type { RetryConfig } from "../../adapters/types";
 
@@ -79,9 +80,6 @@ type RetrySignalInput = {
   reason: RetryReason;
 };
 
-const isObject = (value: unknown): value is Record<string, unknown> =>
-  !!value && typeof value === "object";
-
 const noopReport = (_diagnostic: AdapterDiagnostic) => {
   void _diagnostic;
 };
@@ -94,7 +92,7 @@ const createRetryPauseSignal = (payload: RetryPausePayload): RetryPauseSignal =>
 });
 
 export const isRetryPauseSignal = (error: unknown): error is RetryPauseSignal => {
-  if (!isObject(error)) {
+  if (!isRecord(error)) {
     return false;
   }
   return (error as { kind?: unknown }).kind === "retry.pause";
@@ -102,7 +100,8 @@ export const isRetryPauseSignal = (error: unknown): error is RetryPauseSignal =>
 
 export const readRetryPausePayload = (error: RetryPauseSignal): RetryPausePayload => error.payload;
 
-const normalizePolicy = (
+/** @internal */
+export const normalizePolicy = (
   policy: RetryPolicy | null | undefined,
 ): RetryPolicy | null | undefined => {
   if (!policy) {
@@ -169,7 +168,8 @@ type RetrySelection = {
 
 const isRetryAllowed = (metadata: RetryMetadata | null | undefined) => metadata?.allowed !== false;
 
-const selectRetryPolicy = (
+/** @internal */
+export const selectRetryPolicy = (
   policy: RetryPolicy | null | undefined,
   metadata: RetryMetadata | null | undefined,
 ): RetrySelection => {
@@ -188,7 +188,11 @@ const selectRetryPolicy = (
 const isAllowedRetryReason = (allowed: RetryReason[] | undefined, reason: RetryReason) =>
   allowed ? allowed.includes(reason) : true;
 
-const filterRetryReasons = (policy: RetryPolicy, metadata: RetryMetadata | null | undefined) => {
+/** @internal */
+export const filterRetryReasons = (
+  policy: RetryPolicy,
+  metadata: RetryMetadata | null | undefined,
+) => {
   if (!metadata?.retryOn || !policy.retryOn) {
     return policy;
   }
@@ -196,21 +200,24 @@ const filterRetryReasons = (policy: RetryPolicy, metadata: RetryMetadata | null 
   return { ...policy, retryOn: allowed };
 };
 
-const shouldRetryReason = (policy: RetryPolicy, reason: RetryReason) => {
+/** @internal */
+export const shouldRetryReason = (policy: RetryPolicy, reason: RetryReason) => {
   if (!policy.retryOn || policy.retryOn.length === 0) {
     return true;
   }
   return policy.retryOn.includes(reason);
 };
 
-const jitterDelay = (delayMs: number, jitter: RetryPolicy["jitter"]) => {
+/** @internal */
+export const jitterDelay = (delayMs: number, jitter: RetryPolicy["jitter"]) => {
   if (jitter === "full") {
     return Math.floor(delayMs / 2);
   }
   return delayMs;
 };
 
-const computeDelayMs = (policy: RetryPolicy, attempt: number) => {
+/** @internal */
+export const computeDelayMs = (policy: RetryPolicy, attempt: number) => {
   const base = policy.backoffMs;
   const exp = base * Math.pow(2, attempt);
   const capped = policy.maxBackoffMs ? Math.min(exp, policy.maxBackoffMs) : exp;

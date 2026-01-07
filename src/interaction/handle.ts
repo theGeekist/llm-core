@@ -12,7 +12,7 @@ import type { InteractionStepPack, InteractionStepSpec } from "./steps";
 import { InteractionCorePack, registerInteractionPack, runInteractionPipeline } from "./steps";
 import { createInteractionPipeline } from "./pipeline";
 import type { PlanBase, PlanStepBase } from "../shared/types";
-import { compareStepSpec, normalizeDependencies, normalizeStepKey } from "../shared/steps";
+import { normalizeDependencies, normalizeStepKey, sortStepSpecs } from "../shared/steps";
 
 export type InteractionHandleDefaults = {
   adapters?: AdapterBundle;
@@ -165,7 +165,8 @@ function readHandleState(value: unknown): InteractionHandleState | null {
   return null;
 }
 
-function isInteractionPack(value: unknown): value is InteractionStepPack {
+/** @internal */
+export function isInteractionPack(value: unknown): value is InteractionStepPack {
   return (
     !!value &&
     typeof value === "object" &&
@@ -175,7 +176,8 @@ function isInteractionPack(value: unknown): value is InteractionStepPack {
   );
 }
 
-function createEmptyState(): InteractionState {
+/** @internal */
+export function createEmptyState(): InteractionState {
   return {
     messages: [],
     diagnostics: [],
@@ -183,7 +185,8 @@ function createEmptyState(): InteractionState {
   };
 }
 
-function createStateWithEvents(): InteractionState {
+/** @internal */
+export function createStateWithEvents(): InteractionState {
   return {
     messages: [],
     diagnostics: [],
@@ -192,7 +195,11 @@ function createStateWithEvents(): InteractionState {
   };
 }
 
-function readInputState(input: InteractionHandleInput, overrides?: InteractionHandleOverrides) {
+/** @internal */
+export function readInputState(
+  input: InteractionHandleInput,
+  overrides?: InteractionHandleOverrides,
+) {
   if (input.state) {
     return input.state;
   }
@@ -202,7 +209,11 @@ function readInputState(input: InteractionHandleInput, overrides?: InteractionHa
   return input.state;
 }
 
-function toInteractionInput(input: InteractionHandleInput, overrides?: InteractionHandleOverrides) {
+/** @internal */
+export function toInteractionInput(
+  input: InteractionHandleInput,
+  overrides?: InteractionHandleOverrides,
+) {
   return {
     message: input.message,
     state: readInputState(input, overrides),
@@ -221,7 +232,8 @@ function mergeRunDefaults(
   return mergeDefaults(defaults, overrides);
 }
 
-function toRunOptions(
+/** @internal */
+export function toRunOptions(
   defaults: InteractionHandleDefaults,
   input: InteractionHandleInput,
   overrides?: InteractionHandleOverrides,
@@ -236,7 +248,8 @@ function toRunOptions(
   };
 }
 
-function isPausedOutcome(
+/** @internal */
+export function isPausedOutcome(
   value: InteractionRunOutcome,
 ): value is PipelinePaused<Record<string, unknown>> {
   return (
@@ -247,23 +260,29 @@ function isPausedOutcome(
   );
 }
 
-function readPausedState(outcome: PipelinePaused<Record<string, unknown>>): InteractionState {
+/** @internal */
+export function readPausedState(
+  outcome: PipelinePaused<Record<string, unknown>>,
+): InteractionState {
   const state = outcome.snapshot.state as PausedState;
   return state.userState ?? createEmptyState();
 }
 
-function readOutcomeState(outcome: InteractionRunOutcome): InteractionState {
+/** @internal */
+export function readOutcomeState(outcome: InteractionRunOutcome): InteractionState {
   if (isPausedOutcome(outcome)) {
     return readPausedState(outcome);
   }
   return outcome.artifact;
 }
 
-function toHandleResult(state: InteractionState): InteractionHandleResult {
+/** @internal */
+export function toHandleResult(state: InteractionState): InteractionHandleResult {
   return { state, events: state.events };
 }
 
-function mapOutcomeToHandleResult(outcome: InteractionRunOutcome) {
+/** @internal */
+export function mapOutcomeToHandleResult(outcome: InteractionRunOutcome) {
   return toHandleResult(readOutcomeState(outcome));
 }
 
@@ -286,12 +305,8 @@ function createStepPlan(pack: InteractionStepPack, step: InteractionStepSpec): I
   };
 }
 
-function sortSteps(packName: string, steps: InteractionStepSpec[]) {
-  return [...steps].sort(bindFirst(compareStepSpec, packName));
-}
-
 function appendPackPlans(steps: InteractionStepPlan[], pack: InteractionStepPack) {
-  const sorted = sortSteps(pack.name, pack.steps);
+  const sorted = sortStepSpecs(pack.name, pack.steps);
   for (const step of sorted) {
     steps.push(createStepPlan(pack, step));
   }

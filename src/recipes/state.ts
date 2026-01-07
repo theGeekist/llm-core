@@ -1,5 +1,5 @@
 import { bindFirst, maybeMap } from "../shared/maybe";
-import { isRecord } from "../adapters/utils";
+import { isRecord } from "../shared/guards";
 import { createRecipeDiagnostic } from "../shared/diagnostics";
 import { addTraceEvent } from "../shared/trace";
 import type { TraceEvent } from "../shared/trace";

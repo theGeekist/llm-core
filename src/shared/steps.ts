@@ -15,3 +15,13 @@ export const compareStepSpec = (packName: string, left: StepSpecBase, right: Ste
   const rightKey = normalizeStepKey(packName, right.name);
   return leftKey.localeCompare(rightKey);
 };
+
+export const sortStepSpecs = <T extends StepSpecBase>(packName: string, steps: T[]) =>
+  [...steps].sort(bindFirst(compareStepSpec, packName));
+
+type PipelineUse = { use: (helper: unknown) => unknown };
+
+export const usePipelineHelper = (pipeline: unknown, helper: unknown) => {
+  (pipeline as PipelineUse).use(helper);
+  return true;
+};

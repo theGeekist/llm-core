@@ -1,15 +1,14 @@
 import type { AdapterDiagnostic } from "./types";
+import { isRecord as isSharedRecord, isString } from "../shared/guards";
 
 export function warnDiagnostic(message: string, data?: unknown): AdapterDiagnostic {
   return { level: "warn", message, data };
 }
 
-export function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null;
-}
+export const isRecord = isSharedRecord;
 
 export function readString(value: unknown): string | null {
-  return typeof value === "string" ? value : null;
+  return isString(value) ? value : null;
 }
 
 export function readNumber(value: unknown): number | null {
