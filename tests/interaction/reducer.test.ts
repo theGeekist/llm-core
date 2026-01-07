@@ -11,10 +11,11 @@ const createState = (overrides?: Partial<InteractionState>): InteractionState =>
   ...overrides,
 });
 
-const createMeta = (sequence: number, sourceId = "model.primary") => ({
+const createMeta = (sequence: number, sourceId = "model.primary", correlationId?: string) => ({
   sequence,
   timestamp: Date.now(),
   sourceId,
+  correlationId,
 });
 
 const readTextContent = (message: Message) =>
@@ -22,6 +23,16 @@ const readTextContent = (message: Message) =>
 
 const readParts = (message: Message) =>
   typeof message.content === "string" ? [] : message.content.parts;
+
+const readDataPart = (message: Message) => {
+  const parts = readParts(message);
+  for (const part of parts) {
+    if (part.type === "data") {
+      return part.data;
+    }
+  }
+  return undefined;
+};
 
 describe("interaction reducer", () => {
   it("skips events with older sequence numbers", () => {
@@ -60,6 +71,24 @@ describe("interaction reducer", () => {
     expect(result.events).toHaveLength(3);
   });
 
+  it("uses end text when deltas are empty", () => {
+    const state = createState();
+    const events: InteractionEvent[] = [
+      { kind: "model", event: { type: "start", id: "m1" }, meta: createMeta(1, "model.primary") },
+      {
+        kind: "model",
+        event: { type: "end", text: "Final" },
+        meta: createMeta(2, "model.primary"),
+      },
+    ];
+
+    const result = reduceInteractionEvents(state, events);
+    expect(result.messages).toHaveLength(1);
+    const message = result.messages[0]!;
+    expect(message.role).toBe("assistant");
+    expect(readTextContent(message)).toBe("Final");
+  });
+
   it("captures reasoning and tool parts in structured content", () => {
     const state = createState();
     const events: InteractionEvent[] = [
@@ -93,6 +122,23 @@ describe("interaction reducer", () => {
     expect(parts.some((part) => part.type === "tool-result")).toBe(true);
   });
 
+  it("captures model sources in data parts", () => {
+    const state = createState();
+    const sources: Document[] = [{ text: "Source A", id: "doc-1" }];
+    const events: InteractionEvent[] = [
+      { kind: "model", event: { type: "start", id: "m1" }, meta: createMeta(1, "model.primary") },
+      {
+        kind: "model",
+        event: { type: "end", text: "Answer", sources },
+        meta: createMeta(2, "model.primary"),
+      },
+    ];
+
+    const result = reduceInteractionEvents(state, events);
+    const message = result.messages[0]!;
+    expect(readDataPart(message)).toEqual({ sources });
+  });
+
   it("reduces query stream events into a tool message with data parts", () => {
     const state = createState();
     const sources: Document[] = [{ text: "Source A", id: "doc-1" }];
@@ -121,6 +167,55 @@ describe("interaction reducer", () => {
     expect(parts[1]!.type).toBe("data");
   });
 
+  it("keeps stream assemblies separate when correlationId is shared", () => {
+    const state = createState();
+    const correlationId = "interaction-1";
+    const events: InteractionEvent[] = [
+      {
+        kind: "model",
+        event: { type: "start", id: "m1" },
+        meta: createMeta(1, "model.primary", correlationId),
+      },
+      {
+        kind: "query",
+        event: { type: "start" },
+        meta: createMeta(2, "query.primary", correlationId),
+      },
+      {
+        kind: "model",
+        event: { type: "delta", text: "Hello" },
+        meta: createMeta(3, "model.primary", correlationId),
+      },
+      {
+        kind: "query",
+        event: { type: "delta", text: "Found" },
+        meta: createMeta(4, "query.primary", correlationId),
+      },
+      {
+        kind: "model",
+        event: { type: "end" },
+        meta: createMeta(5, "model.primary", correlationId),
+      },
+      {
+        kind: "query",
+        event: { type: "end", text: "Found", sources: [] },
+        meta: createMeta(6, "query.primary", correlationId),
+      },
+    ];
+
+    const result = reduceInteractionEvents(state, events);
+    expect(result.messages).toHaveLength(2);
+    const [assistantMessage, toolMessage] = result.messages;
+    if (!assistantMessage || !toolMessage) {
+      throw new Error("Expected assistant and tool messages.");
+    }
+    expect(assistantMessage.role).toBe("assistant");
+    expect(readTextContent(assistantMessage)).toBe("Hello");
+    expect(toolMessage.role).toBe("tool");
+    expect(toolMessage.name).toBe("query.primary");
+    expect(readTextContent(toolMessage)).toBe("Found");
+  });
+
   it("captures stream errors and diagnostics", () => {
     const state = createState();
     const event: InteractionEvent = {
@@ -136,6 +231,47 @@ describe("interaction reducer", () => {
     const result = reduceInteractionEvent(state, event);
     expect(result.diagnostics).toHaveLength(1);
     expect(result.private?.raw?.["model.primary:error"]).toBeInstanceOf(Error);
+  });
+
+  it("captures error raw payloads in private state", () => {
+    const state = createState();
+    const event: InteractionEvent = {
+      kind: "model",
+      event: {
+        type: "error",
+        error: new Error("failed"),
+        raw: { provider: "mock" },
+      },
+      meta: createMeta(1, "model.primary"),
+    };
+
+    const result = reduceInteractionEvent(state, event);
+    expect(result.private?.raw?.["model.primary:raw"]).toEqual({ provider: "mock" });
+  });
+
+  it("flushes partial streams on error events", () => {
+    const state = createState();
+    const events: InteractionEvent[] = [
+      { kind: "model", event: { type: "start", id: "m1" }, meta: createMeta(1, "model.primary") },
+      {
+        kind: "model",
+        event: { type: "delta", text: "Partial" },
+        meta: createMeta(2, "model.primary"),
+      },
+      {
+        kind: "model",
+        event: { type: "error", error: new Error("failed") },
+        meta: createMeta(3, "model.primary"),
+      },
+    ];
+
+    const result = reduceInteractionEvents(state, events);
+    expect(result.messages).toHaveLength(1);
+    const message = result.messages[0]!;
+    expect(message.role).toBe("assistant");
+    expect(readTextContent(message)).toBe("Partial");
+    const streams = result.private?.streams ?? {};
+    expect(Object.keys(streams)).toHaveLength(0);
   });
 
   it("records usage and event-stream payloads in private state", () => {

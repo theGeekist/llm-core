@@ -327,7 +327,7 @@ type ApplyModelStreamInput = {
 
 const readStepNext = <T>(step: Step<T>) => step.next();
 
-const applyModelStreamLoop = (input: ApplyModelStreamInput): MaybePromise<InteractionState> =>
+const applyModelStreamLoopUnsafe = (input: ApplyModelStreamInput): MaybePromise<InteractionState> =>
   maybeChain(bindFirst(applyModelStreamResult, input), readStepNext(input.stream));
 
 /** @internal */
@@ -350,7 +350,7 @@ const applyModelStreamContinue = (
   input: ApplyModelStreamInput,
   nextState: InteractionState,
 ): MaybePromise<InteractionState> =>
-  applyModelStreamLoop({
+  applyModelStreamLoopSafe({
     state: nextState,
     context: input.context,
     interactionInput: input.interactionInput,
@@ -367,9 +367,12 @@ const applyModelStreamError = (
   return reduceAndEmitInteraction(input.state, input.context, event);
 };
 
+const applyModelStreamLoopSafe = (input: ApplyModelStreamInput): MaybePromise<InteractionState> =>
+  maybeTry(bindFirst(applyModelStreamError, input), bindFirst(applyModelStreamLoopUnsafe, input));
+
 /** @internal */
 export const applyModelStream = (input: ApplyModelStreamInput): MaybePromise<InteractionState> =>
-  maybeTry(bindFirst(applyModelStreamError, input), bindFirst(applyModelStreamLoop, input));
+  applyModelStreamLoopSafe(input);
 
 type ApplyModelGenerateInput = {
   state: InteractionState;
@@ -379,7 +382,7 @@ type ApplyModelGenerateInput = {
   call: ModelCall;
 };
 
-const applyModelGenerate = (input: ApplyModelGenerateInput) => {
+const applyModelGenerateRun = (input: ApplyModelGenerateInput) => {
   const run = bindFirst(handleModelResult, {
     state: input.state,
     context: input.context,
@@ -388,6 +391,18 @@ const applyModelGenerate = (input: ApplyModelGenerateInput) => {
   });
   return maybeChain(run, input.model.generate(input.call));
 };
+
+const applyModelGenerateError = (
+  input: ApplyModelGenerateInput,
+  error: unknown,
+): MaybePromise<InteractionState> => {
+  const meta = createMeta(input.state, input.interactionInput, "model.primary");
+  const event: InteractionEvent = { kind: "model", event: { type: "error", error }, meta };
+  return reduceAndEmitInteraction(input.state, input.context, event);
+};
+
+const applyModelGenerate = (input: ApplyModelGenerateInput): MaybePromise<InteractionState> =>
+  maybeTry(bindFirst(applyModelGenerateError, input), bindFirst(applyModelGenerateRun, input));
 
 const hasStream = (
   model: Model,

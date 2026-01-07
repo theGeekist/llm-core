@@ -6,9 +6,16 @@ import type {
   ToolCallPart,
   ToolResultPart,
 } from "../adapters/types/messages";
-import type { ModelStreamEvent, QueryStreamEvent, ToolCall, ToolResult } from "../adapters/types";
+import type {
+  Document,
+  ModelStreamEvent,
+  QueryStreamEvent,
+  ToolCall,
+  ToolResult,
+} from "../adapters/types";
 import { createAdapterDiagnostic } from "../shared/diagnostics";
 import type { DiagnosticEntry } from "../shared/diagnostics";
+import { isRecord } from "../shared/guards";
 import type { TraceEvent } from "../shared/trace";
 import type {
   InteractionEvent,
@@ -115,6 +122,35 @@ const appendRawEntry = (state: InteractionState, key: string, value: unknown): I
   raw[key] = value;
   return { ...state, private: { ...current, raw } };
 };
+
+const appendRawEntryIfPresent = (state: InteractionState, key: string, value: unknown) =>
+  value === undefined ? state : appendRawEntry(state, key, value);
+
+const mergeStreamData = (current: unknown, incoming: unknown) => {
+  if (incoming === undefined) {
+    return current;
+  }
+  if (current === undefined) {
+    return incoming;
+  }
+  if (isRecord(current) && isRecord(incoming)) {
+    return { ...current, ...incoming };
+  }
+  return incoming;
+};
+
+const appendStreamData = (assembly: StreamAssembly, data: unknown) => {
+  if (data === undefined) {
+    return assembly;
+  }
+  const merged = mergeStreamData(assembly.data, data);
+  if (merged === assembly.data) {
+    return assembly;
+  }
+  return { ...assembly, data: merged };
+};
+
+const toSourcesData = (sources?: Document[]) => (sources === undefined ? undefined : { sources });
 
 const toToolCallPart = (call: ToolCall): ToolCallPart => ({
   type: "tool-call",
@@ -224,7 +260,17 @@ const toMessage = (assembly: StreamAssembly): Message => ({
   content: toMessageContent(assembly),
 });
 
-const streamKeyFromMeta = (meta: InteractionEventMeta) => meta.correlationId ?? meta.sourceId;
+const hasAssemblyContent = (assembly: StreamAssembly) =>
+  Boolean(
+    assembly.text ||
+      assembly.reasoning ||
+      (assembly.toolCalls && assembly.toolCalls.length > 0) ||
+      (assembly.toolResults && assembly.toolResults.length > 0) ||
+      assembly.data !== undefined,
+  );
+
+const streamKeyFromMeta = (meta: InteractionEventMeta) =>
+  meta.correlationId ? `${meta.correlationId}:${meta.sourceId}` : meta.sourceId;
 
 const ensureStream = (state: InteractionState, meta: InteractionEventMeta, role: MessageRole) => {
   const key = streamKeyFromMeta(meta);
@@ -266,7 +312,9 @@ const reduceModelDelta = (
   if (event.toolResult) {
     assembly = appendToolResult(assembly, event.toolResult);
   }
-  return setStream(ensured.state, ensured.key, assembly);
+  assembly = appendStreamData(assembly, toSourcesData(event.sources));
+  const nextState = setStream(ensured.state, ensured.key, assembly);
+  return appendRawEntryIfPresent(nextState, `${meta.sourceId}:raw`, event.raw);
 };
 
 const reduceModelUsage = (
@@ -284,9 +332,12 @@ const reduceModelEnd = (
   const assembly = readStream(state, key);
   let nextState = state;
   if (assembly) {
-    nextState = appendMessage(nextState, toMessage(assembly));
+    let nextAssembly = appendText(assembly, event.text);
+    nextAssembly = appendStreamData(nextAssembly, toSourcesData(event.sources));
+    nextState = appendMessage(nextState, toMessage(nextAssembly));
     nextState = removeStream(nextState, key);
   }
+  nextState = appendRawEntryIfPresent(nextState, `${meta.sourceId}:raw`, event.raw);
   const diagnostics = toDiagnostics(event.diagnostics);
   return appendDiagnostics(nextState, diagnostics);
 };
@@ -296,10 +347,21 @@ type StreamErrorInput = {
   meta: InteractionEventMeta;
   error: unknown;
   diagnostics?: Array<import("../adapters/types").AdapterDiagnostic>;
+  raw?: unknown;
 };
 
 const reduceStreamError = (input: StreamErrorInput) => {
-  let nextState = appendRawEntry(input.state, `${input.meta.sourceId}:error`, input.error);
+  const key = streamKeyFromMeta(input.meta);
+  const assembly = readStream(input.state, key);
+  let nextState = input.state;
+  if (assembly) {
+    if (hasAssemblyContent(assembly)) {
+      nextState = appendMessage(nextState, toMessage(assembly));
+    }
+    nextState = removeStream(nextState, key);
+  }
+  nextState = appendRawEntry(nextState, `${input.meta.sourceId}:error`, input.error);
+  nextState = appendRawEntryIfPresent(nextState, `${input.meta.sourceId}:raw`, input.raw);
   nextState = appendDiagnostics(nextState, toDiagnostics(input.diagnostics));
   return nextState;
 };
@@ -307,6 +369,7 @@ const reduceStreamError = (input: StreamErrorInput) => {
 type StreamErrorEvent = {
   error: unknown;
   diagnostics?: Array<import("../adapters/types").AdapterDiagnostic>;
+  raw?: unknown;
 };
 
 const reduceStreamErrorEvent = (
@@ -319,6 +382,7 @@ const reduceStreamErrorEvent = (
     meta,
     error: event.error,
     diagnostics: event.diagnostics,
+    raw: event.raw,
   });
 
 const reduceModelError = (
@@ -360,8 +424,10 @@ const reduceQueryDelta = (
   event: Extract<QueryStreamEvent, { type: "delta" }>,
 ) => {
   const ensured = ensureStream(state, meta, "tool");
-  const assembly = appendText(ensured.assembly, event.text);
-  return setStream(ensured.state, ensured.key, assembly);
+  let assembly = appendText(ensured.assembly, event.text);
+  assembly = appendStreamData(assembly, toSourcesData(event.sources));
+  const nextState = setStream(ensured.state, ensured.key, assembly);
+  return appendRawEntryIfPresent(nextState, `${meta.sourceId}:raw`, event.raw);
 };
 
 const reduceQueryEnd = (
@@ -377,18 +443,17 @@ const reduceQueryEnd = (
       text: event.text,
       sources: event.sources,
     };
-    const nextAssembly = {
+    let nextAssembly: StreamAssembly = {
       ...assembly,
-      data,
+      data: mergeStreamData(assembly.data, data),
       text: event.text ?? assembly.text,
       name: assembly.name ?? meta.sourceId,
     };
+    nextAssembly = appendStreamData(nextAssembly, toSourcesData(event.sources));
     nextState = appendMessage(nextState, toMessage(nextAssembly));
     nextState = removeStream(nextState, key);
   }
-  if (event.raw !== undefined) {
-    nextState = appendRawEntry(nextState, `${meta.sourceId}:raw`, event.raw);
-  }
+  nextState = appendRawEntryIfPresent(nextState, `${meta.sourceId}:raw`, event.raw);
   const diagnostics = toDiagnostics(event.diagnostics);
   return appendDiagnostics(nextState, diagnostics);
 };

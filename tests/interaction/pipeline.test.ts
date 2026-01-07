@@ -164,6 +164,7 @@ describe("interaction pipeline", () => {
       generate: () => createModelResult("unused"),
       stream: async function* (): AsyncIterable<ModelStreamEvent> {
         yield { type: "start", id: "err-1" };
+        yield { type: "delta", text: "Partial" };
         throw new Error("stream-failed");
       },
     };
@@ -175,8 +176,32 @@ describe("interaction pipeline", () => {
     });
 
     const runResult = assertRunResult(result);
+    expect(runResult.artifact.messages).toHaveLength(2);
+    expect(runResult.artifact.messages[1]?.content).toBe("Partial");
+    const streams = runResult.artifact.private?.streams ?? {};
+    expect(Object.keys(streams)).toHaveLength(0);
     const raw = runResult.artifact.private?.raw;
     expect(raw && raw["model.primary:error"]).toBeInstanceOf(Error);
+  });
+
+  it("records generate errors in private state", async () => {
+    const pipeline = createInteractionPipelineWithDefaults();
+    const error = new Error("generate-failed");
+    const model: Model = {
+      generate: () => {
+        throw error;
+      },
+    };
+    const input = { message: createMessage("Hi") };
+
+    const result = await runInteractionPipeline(pipeline, {
+      input,
+      adapters: { model },
+    });
+
+    const runResult = assertRunResult(result);
+    const raw = runResult.artifact.private?.raw;
+    expect(raw && raw["model.primary:error"]).toBe(error);
   });
 
   it("includes tool calls in non-stream model results", async () => {
