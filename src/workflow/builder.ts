@@ -1,42 +1,7 @@
 // References: docs/implementation-plan.md#L29-L33,L79-L84; docs/workflow-notes.md
 
-import { createRuntime } from "./runtime";
-import type {
-  ArtefactOf,
-  ResumeInputOf,
-  Plugin,
-  RecipeName,
-  RunInputOf,
-  WorkflowRuntime,
-} from "./types";
-import { getRecipe } from "./recipe-registry";
+import type { RecipeName } from "./types";
+import { createWorkflowHandle, type WorkflowHandle } from "./handle";
 
-export type WorkflowBuilder<N extends RecipeName> = {
-  use(plugin: Plugin): WorkflowBuilder<N>;
-  build(): WorkflowRuntime<RunInputOf<N>, ArtefactOf<N>, ResumeInputOf<N>>;
-};
-
-export const createBuilder = <N extends RecipeName>(recipeName: N): WorkflowBuilder<N> => {
-  const contract = getRecipe(recipeName);
-  if (!contract) {
-    throw new Error(`Unknown recipe: ${recipeName}`);
-  }
-
-  const plugins: Plugin[] = [...(contract.defaultPlugins ?? [])];
-
-  function use(plugin: Plugin) {
-    plugins.push(plugin);
-    return builder;
-  }
-
-  function build() {
-    return createRuntime<N>({ contract, plugins: [...plugins] });
-  }
-
-  const builder: WorkflowBuilder<N> = { use, build };
-  return builder;
-};
-
-export const Workflow = {
-  recipe: createBuilder,
-};
+export const createBuilder = <N extends RecipeName>(recipeName: N): WorkflowHandle<N> =>
+  createWorkflowHandle(recipeName);

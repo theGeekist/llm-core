@@ -11,7 +11,7 @@ import type {
   PipelineStep,
 } from "@wpkernel/pipeline/core";
 import { createHelper } from "@wpkernel/pipeline/core";
-import { bindFirst } from "../maybe";
+import { bindFirst } from "../shared/maybe";
 import type {
   InteractionContext,
   InteractionInput,

@@ -1,7 +1,7 @@
 import type { Model, ModelCall, ModelResult, ModelStreamEvent } from "../adapters/types";
 import type { Message } from "../adapters/types/messages";
-import { bindFirst, maybeChain, maybeMap, maybeTap, maybeToStep, maybeTry } from "../maybe";
-import type { MaybeAsyncIterable, MaybePromise, Step } from "../maybe";
+import { bindFirst, maybeChain, maybeMap, maybeTap, maybeToStep, maybeTry } from "../shared/maybe";
+import type { MaybeAsyncIterable, MaybePromise, Step } from "../shared/maybe";
 import type { PipelinePaused } from "@wpkernel/pipeline/core";
 import { emitInteractionEvent, emitInteractionEvents } from "./transport";
 import {
@@ -21,48 +21,26 @@ import type {
   InteractionState,
 } from "./types";
 import { reduceInteractionEvent, reduceInteractionEvents } from "./reducer";
+import type { StepPackBase, StepSpecBase } from "../shared/types";
+import { compareStepSpec, normalizeDependencies, normalizeStepKey } from "../shared/steps";
 
-export type InteractionStepSpec = {
-  name: string;
+export type InteractionStepSpec = StepSpecBase & {
   apply: InteractionStepApply;
-  dependsOn?: readonly string[];
   mode?: import("@wpkernel/pipeline/core").HelperMode;
-  priority?: number;
-  origin?: string;
 };
 
-export type InteractionStepPack = {
-  name: string;
+export type InteractionStepPack = StepPackBase & {
   steps: InteractionStepSpec[];
 };
 
 type PipelineUse = { use: (helper: unknown) => void };
 
-const normalizeStepKey = (packName: string, stepName: string) =>
-  stepName.includes(".") ? stepName : `${packName}.${stepName}`;
-
-const normalizeDependency = (packName: string, dependency: string) =>
-  dependency.includes(".") ? dependency : `${packName}.${dependency}`;
-
-const normalizeDependencies = (packName: string, dependencies: readonly string[]) =>
-  dependencies.map((dep) => normalizeDependency(packName, dep));
-
-const compareStepSpec = (
-  packName: string,
-  left: InteractionStepSpec,
-  right: InteractionStepSpec,
-) => {
-  const leftKey = normalizeStepKey(packName, left.name);
-  const rightKey = normalizeStepKey(packName, right.name);
-  return leftKey.localeCompare(rightKey);
+const useHelper = (pipeline: unknown, helper: unknown) => {
+  (pipeline as PipelineUse).use(helper);
 };
 
 const sortSteps = (packName: string, steps: InteractionStepSpec[]) =>
   [...steps].sort(bindFirst(compareStepSpec, packName));
-
-const useHelper = (pipeline: unknown, helper: unknown) => {
-  (pipeline as PipelineUse).use(helper);
-};
 
 const createHelperForStep = (packName: string, spec: InteractionStepSpec) => {
   const key = normalizeStepKey(packName, spec.name);
