@@ -30,3 +30,5 @@ export {
   runInteractionPipeline,
 } from "./steps";
 export { createInteractionHandle } from "./handle";
+export { createInteractionSession } from "./session";
+export type { InteractionSessionOptions } from "./session";

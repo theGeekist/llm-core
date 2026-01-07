@@ -4,9 +4,11 @@ import type {
   ModelStreamEvent,
   QueryStreamEvent,
 } from "../adapters/types";
+import type { AdapterCallContext } from "../adapters/types";
 import type { Message } from "../adapters/types/messages";
 import type { PipelineDiagnostic, PipelinePaused, PipelineRunState } from "@wpkernel/pipeline/core";
 import type { DiagnosticEntry } from "../shared/diagnostics";
+import type { MaybePromise } from "../shared/maybe";
 import type { TraceEvent } from "../shared/trace";
 import type {
   ExecutionContextBase,
@@ -71,4 +73,34 @@ export type InteractionRunOutcome = InteractionRunResult | PipelinePaused<Record
 export type InteractionContext = ExecutionContextBase & {
   reducer: InteractionReducer;
   eventStream?: EventStream;
+};
+
+export type SessionId = string | { sessionId: string; userId?: string };
+
+export type SessionStore = {
+  load: (
+    sessionId: SessionId,
+    context?: AdapterCallContext,
+  ) => MaybePromise<InteractionState | null>;
+  save: (
+    sessionId: SessionId,
+    state: InteractionState,
+    context?: AdapterCallContext,
+  ) => MaybePromise<boolean | null>;
+  delete?: (sessionId: SessionId, context?: AdapterCallContext) => MaybePromise<boolean | null>;
+};
+
+export type SessionPolicy = {
+  merge?: (
+    previous: InteractionState | null,
+    next: InteractionState,
+  ) => MaybePromise<InteractionState>;
+  summarize?: (state: InteractionState) => MaybePromise<InteractionState>;
+  truncate?: (state: InteractionState) => MaybePromise<InteractionState>;
+};
+
+export type InteractionSession = {
+  getState: () => InteractionState;
+  send: (message: Message) => MaybePromise<InteractionRunOutcome>;
+  save?: () => MaybePromise<boolean | null>;
 };

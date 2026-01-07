@@ -344,7 +344,7 @@ Context: Add a runtime-agnostic interaction layer built on the pipeline, with a 
 
 ## Stage 20 — Interaction Sessions (Core)
 
-Status: planned. See `internal/stage-20.md`.
+Status: complete. See `internal/stage-20.md`.
 
 Context: Add a headless session orchestration layer around Interaction Core using a SessionStore adapter and optional SessionPolicy. Core only accepts opaque session IDs and stays `MaybePromise`-native.
 

@@ -1,6 +1,6 @@
 # Stage 20 — Interaction Sessions (Core)
 
-Status: planned.
+Status: complete.
 
 Purpose: introduce a **session orchestration layer** on top of Interaction Core without coupling to
 host runtimes (Node/Edge/Browser) or UI frameworks. This is a headless, adapter-driven layer that
@@ -100,7 +100,7 @@ Policy is injected; core never chooses it and never provides defaults.
 ```ts
 export type InteractionSession = {
   getState: () => InteractionState;
-  send: (message: Message) => MaybePromise<InteractionRunResult>;
+  send: (message: Message) => MaybePromise<InteractionRunOutcome>;
   save?: () => MaybePromise<boolean | null>;
 };
 
@@ -121,7 +121,8 @@ Behavior:
 - Apply policy hooks in order: `merge` → `summarize` → `truncate` (all optional).
 - Persist via `store.save`.
 - Keep `MaybePromise` end-to-end.
-- `send()` returns the **post-policy** state in the run result artefact.
+- `send()` returns the run outcome and updates the artefact for non-paused outcomes with the
+  post-policy state.
 
 ### Concurrency
 
@@ -134,36 +135,36 @@ implementation (e.g., optimistic locking, compare-and-swap, per-session queueing
 
    - Add `SessionId`, `SessionStore`, `SessionPolicy`, `InteractionSession` types.
    - Location: `src/interaction/types.ts` (or a new `src/interaction/session.ts`).
-   - Status: [ ] pending
+   - Status: [x] complete
 
 2. **Session orchestration helpers**
 
    - Implement `loadSessionState`, `saveSessionState`, and `applySessionPolicy` helpers.
    - Must be module-scope functions (no nested definitions).
-   - Status: [ ] pending
+   - Status: [x] complete
 
 3. **createInteractionSession API**
 
    - Provide a simple facade that wraps `runInteractionPipeline`.
    - Ensure `send()` respects `MaybePromise` and preserves sync when possible.
-   - Status: [ ] pending
+   - Status: [x] complete
 
 4. **In-memory SessionStore (testing)**
 
    - Add a test-only store implementation (map-backed).
-   - Status: [ ] pending
+   - Status: [x] complete
 
 5. **Unit tests**
 
    - Session load, send, save.
    - Policy merge/summarize/truncate order.
    - Sync preservation tests.
-   - Status: [ ] pending
+   - Status: [x] complete
 
 6. **Docs (interaction section)**
    - New page: `docs/interaction/session.md` with simple → advanced usage.
    - Explain adapter-driven storage and policy injection.
-   - Status: [ ] pending
+   - Status: [x] complete
 
 ## Acceptance Criteria
 

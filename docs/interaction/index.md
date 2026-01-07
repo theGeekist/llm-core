@@ -67,3 +67,12 @@ If you want to collect events for audit or replay, initialize `state.events = []
 will append to it.
 
 ---
+
+## 5) Sessions
+
+If you need persistence and policies (merge/summarize/truncate), use the session layer:
+
+- [Interaction Sessions](/interaction/session)
+
+Sessions are still headless and adapter-driven; they only add orchestration around the core
+pipeline.

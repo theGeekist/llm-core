@@ -175,6 +175,7 @@ export default defineConfig({
             { text: "Overview", link: "/interaction/" },
             { text: "Pipeline", link: "/interaction/pipeline" },
             { text: "Reducer", link: "/interaction/reducer" },
+            { text: "Sessions", link: "/interaction/session" },
             { text: "Transport", link: "/interaction/transport" },
           ],
         },
