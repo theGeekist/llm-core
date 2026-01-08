@@ -3,8 +3,8 @@ layout: home
 
 hero:
   name: llm-core
-  text: Build AI Apps with Recipes + Interactions
-  tagline: Compose workflows, run single-turn interactions, swap providers with adapters. Keep logic deterministic.
+  text: Build real AI products, not prompt spaghetti
+  tagline: Recipes for workflows, interactions for UI turns, adapters for providers — all deterministic and composable.
   image:
     src: /logo.png
     alt: llm-core logo
@@ -34,6 +34,12 @@ features:
 `llm-core` connects your business logic to AI models without fragile scripts.
 Use **Recipes** for long-running workflows, **Interactions** for single-turn UI state, and **Adapters**
 to swap providers safely.
+
+## Why llm-core is different
+
+- **Deterministic by design**: every run is traceable, resumable, and explainable.
+- **Agnostic at the edges**: swap models, retrievers, or UI SDKs without rewrites.
+- **Two runtimes, one mental model**: workflows for depth, interactions for UI speed.
 
 ## Quick start (workflows)
 
@@ -71,3 +77,13 @@ Use the interaction core when you want UI-ready state for a single turn.
 - **Sessions**: storage + policy orchestration without runtime defaults.
 - **UI SDK adapters**: AI SDK, assistant-ui, ChatKit.
 - **Host glue**: Node SSE + Edge/Worker stream patterns.
+
+## Build paths
+
+Pick a path and grow from there — each one uses the same primitives (recipes, interactions, adapters).
+
+- **Production chat UI**: Single turn → sessions → UI adapters in one flow. Start at [Single-Turn Interaction](/guide/interaction-single-turn).
+- **RAG assistant**: retrieval + citations with a standard pack. Start at [RAG Recipe](/recipes/rag).
+- **Human-in-the-loop workflows**: pause/resume gates for safe actions. Start at [HITL Recipe](/recipes/hitl).
+- **Batch ingestion**: structured pipelines for indexing and enrichment. Start at [Ingest Recipe](/recipes/ingest).
+- **Provider-agnostic model lab**: swap models and retrievers without refactors. Start at [Adapters Reference](/reference/adapters).
