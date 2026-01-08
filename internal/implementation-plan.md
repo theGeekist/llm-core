@@ -352,4 +352,4 @@ Context: Add a headless session orchestration layer around Interaction Core usin
 
 Status: in progress. See `internal/stage-21.md`.
 
-Context: Add UI SDK adapter bridges (flagship: Vercel AI SDK) and host transport glue as separate packages, keeping core headless and UI-agnostic. AI SDK UI streaming adapters and docs are in place; host glue and secondary adapters remain.
+Context: Add UI SDK adapter bridges (flagship: Vercel AI SDK) and host transport glue as separate packages, keeping core headless and UI-agnostic. AI SDK UI streaming adapters, assistant-ui commands, and ChatKit events are in place; host glue and example app remain.

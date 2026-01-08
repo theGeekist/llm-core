@@ -164,6 +164,13 @@
       "require": "./dist/cjs/src/adapters/assistant-ui/index.cjs",
       "default": "./dist/esm/src/adapters/assistant-ui/index.js"
     },
+    "./adapters/openai-chatkit": {
+      "types": "./dist/types/src/adapters/openai-chatkit/index.d.ts",
+      "browser": "./dist/esm/src/adapters/openai-chatkit/index.js",
+      "import": "./dist/esm/src/adapters/openai-chatkit/index.js",
+      "require": "./dist/cjs/src/adapters/openai-chatkit/index.cjs",
+      "default": "./dist/esm/src/adapters/openai-chatkit/index.js"
+    },
     "./adapters/langchain": {
       "types": "./dist/types/src/adapters/langchain/index.d.ts",
       "browser": "./dist/esm/src/adapters/langchain/index.js",

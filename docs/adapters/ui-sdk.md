@@ -33,6 +33,18 @@ for command-driven runtimes.
 If you want streaming UI behavior, prefer the AI SDK stream adapter (`ai-sdk-ui`) and plug it into
 `@assistant-ui/react-ai-sdk`, which already bridges AI SDK streams into assistant-ui.
 
+## OpenAI ChatKit events
+
+ChatKit exposes a DOM event interface. The adapter maps interaction events into `chatkit.*` events
+so you can bridge a headless Interaction Core run into the ChatKit Web Component event stream.
+
+::: tabs
+== JavaScript
+
+<<< @/snippets/adapters/openai-chatkit.js#docs
+
+:::
+
 ## Mapping behavior
 
 The AI SDK adapter focuses on streaming semantics rather than message construction:

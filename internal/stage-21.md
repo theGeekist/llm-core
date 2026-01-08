@@ -1,6 +1,6 @@
 # Stage 21 — UI SDK Adapters + Host Glue (Out-of-Core)
 
-Status: planned.
+Status: in progress.
 
 Purpose: add **first-class UI SDK adapters** and **host transport glue** without polluting core.
 These live in separate packages/modules and map Interaction Core events/state into UI SDK primitives
@@ -174,10 +174,10 @@ These live in adapter packages, not core.
    - Ensure `MaybePromise` semantics.
    - Status: [x] complete
 
-4. **Optional ChatKit adapter**
+4. **OpenAI ChatKit adapter**
 
-   - Map InteractionState to ChatKit UI state shape.
-   - Status: [ ] pending
+   - Map Interaction events to ChatKit DOM events.
+   - Status: [x] complete
 
 5. **Host glue examples**
 

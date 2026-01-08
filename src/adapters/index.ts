@@ -226,6 +226,20 @@ export type {
   AssistantUiInteractionMapperOptions,
   AssistantUiInteractionSinkOptions,
 } from "./assistant-ui";
+export {
+  createChatKitInteractionEventStream,
+  createChatKitInteractionMapper,
+  createChatKitInteractionSink,
+  toChatKitEvents,
+  toChatKitThreadId,
+} from "./openai-chatkit";
+export type {
+  ChatKitEventName,
+  ChatKitInteractionEventStreamOptions,
+  ChatKitInteractionMapper,
+  ChatKitInteractionMapperOptions,
+  ChatKitInteractionSinkOptions,
+} from "./openai-chatkit";
 
 export { fromLangChainDocument, toLangChainDocument } from "./langchain";
 export { fromLangChainDocuments } from "./langchain";
