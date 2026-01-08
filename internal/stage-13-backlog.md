@@ -11,7 +11,7 @@ Status: complete. This is the source of truth for what was done in Stage 13.
 - AI SDK memory adapter via `@ai-sdk-tools/memory`.
 - Cache adapters: AI SDK CacheStore, LangChain BaseStore, LlamaIndex BaseKVStore (TTL best-effort).
 - Adapter input validations + tests for new constructs.
-- Streaming normalization across AI SDK, LangChain, LlamaIndex.
+- Streaming normalisation across AI SDK, LangChain, LlamaIndex.
 - LangChain output parsers + structured query adapters.
 - LlamaIndex query engine + response synthesizer adapters.
 - LangChain trace adapter (callbacks/tracers as sinks).

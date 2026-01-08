@@ -32,6 +32,8 @@ What you get back:
 - `result.artefact` is the current `InteractionState`.
 - `result.artefact.messages` is UI-ready (assistant/user/tool messages).
 - `diagnostics` and `trace` are always present on the state.
+- Input state is passed as `input.state` (not top-level).
+- The run returns `MaybePromise`, so sync stays sync and async stays async.
 
 ---
 

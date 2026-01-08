@@ -560,7 +560,7 @@ const call = {
 
 ### Validation helper
 
-`validateModelCall(call)` returns diagnostics and schema normalization without executing the model:
+`validateModelCall(call)` returns diagnostics and schema normalisation without executing the model:
 
 ::: tabs
 == TypeScript

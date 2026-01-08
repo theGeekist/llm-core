@@ -20,6 +20,7 @@ const workflow = recipes
   .build();
 
 const result = await workflow.run({
+  // HITL pack governs pausing; the prompt just provides intent.
   input: "Summarize the docs and request approval before finalizing.",
 });
 

@@ -8,6 +8,7 @@ const message = { role: "user", content: "Hello!" };
 const model = fromAiSdkModel(openai("gpt-4o-mini"));
 
 const pipeline = createInteractionPipelineWithDefaults();
+// runInteractionPipeline returns MaybePromise; await only if you need async.
 const result = await runInteractionPipeline(pipeline, {
   input: { message },
   adapters: { model },

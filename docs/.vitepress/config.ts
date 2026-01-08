@@ -79,6 +79,7 @@ export default defineConfig({
           items: [
             { text: "Single-Turn Interaction", link: "/guide/interaction-single-turn" },
             { text: "Sessions + Transport", link: "/guide/interaction-sessions" },
+            { text: "End-to-End UI", link: "/guide/end-to-end-ui" },
             { text: "Workflow Orchestration", link: "/guide/hello-world" },
           ],
         },

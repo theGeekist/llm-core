@@ -155,7 +155,7 @@ Docs + code:
 Exit criteria:
 
 - Stage 7 discovery doc is complete for all constructs (including text utilities).
-- Normalization contracts documented with ecosystem examples.
+- Normalisation contracts documented with ecosystem examples.
 - Parity/shape tests exist for all constructs with available peers.
 
 ## Stage 8 — Interoperability Adapters

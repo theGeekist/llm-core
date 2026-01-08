@@ -2,12 +2,12 @@
 
 Status: completed.
 
-Purpose: inventory ecosystem interfaces and define the normalization contracts before writing adapters. This stage
+Purpose: inventory ecosystem interfaces and define the normalisation contracts before writing adapters. This stage
 prioritizes interface parity and DX clarity, not implementation.
 
 ## Scope
 
-- In: interface discovery across LangChain, LlamaIndex, AI SDK; normalization contracts; parity test matrix.
+- In: interface discovery across LangChain, LlamaIndex, AI SDK; normalisation contracts; parity test matrix.
 - Out: adapter code (moved to Stage 8).
 
 ## Approach (construct-first)
@@ -32,7 +32,7 @@ Work by construct across ecosystems to avoid bias:
 - `docs/implementation-plan.md` updated to move adapter code to Stage 8.
 - `src/adapters/types.ts` with normalized contract types (no implementations).
 - `src/adapters/index.ts` exporting contracts only.
-- A normalization contract section per construct with example shapes per ecosystem.
+- A normalisation contract section per construct with example shapes per ecosystem.
 - A parity test matrix describing how to validate equivalence.
 
 ## Peer dependency targets (for study)

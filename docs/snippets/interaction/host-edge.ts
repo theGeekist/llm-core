@@ -108,16 +108,16 @@ const mapMaybe = <TIn, TOut>(value: Promise<TIn> | TIn, map: (value: TIn) => TOu
 };
 
 const resolveWrites = (values: Array<Promise<void> | void>) => {
-  const promises: Array<Promise<void>> = [];
+  let pending: Promise<void> | null = null;
   for (const value of values) {
     if (isPromiseLike(value)) {
-      promises.push(value);
+      pending = pending ? pending.then(() => value) : value;
     }
   }
-  if (promises.length === 0) {
+  if (!pending) {
     return true;
   }
-  return Promise.all(promises).then(toTrue, toFalse);
+  return pending.then(toTrue, toFalse);
 };
 
 const toFalse = () => false;

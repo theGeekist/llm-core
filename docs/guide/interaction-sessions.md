@@ -70,6 +70,6 @@ For more host patterns, see:
 
 ## Next step
 
-When you need multi-step orchestration (RAG, tools, HITL), move to full workflows:
+See the full UI boundary in action:
 
-- [Workflow Orchestration](/guide/hello-world)
+- [End-to-End UI](/guide/end-to-end-ui)

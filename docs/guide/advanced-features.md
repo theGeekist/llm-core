@@ -7,13 +7,13 @@ adapters, and interactions at scale. It does not repeat the basic orchestration 
 - [Sessions + Transport](/guide/interaction-sessions)
 - [Workflow Orchestration](/guide/hello-world)
 
-| Feature              | Best For...                                         |
-| :------------------- | :-------------------------------------------------- |
-| **Introspection**    | Debugging why a plugin or pack was used or ignored. |
-| **Lifecycle Safety** | Preventing hooks that never fire.                   |
-| **Telemetry**        | Consistent usage/token reporting across providers.  |
-| **Pause/Resume**     | HITL approvals and long-running workflows.          |
-| **Content Norm.**    | Image/text inputs without conditional glue code.    |
+| Feature                    | Best For...                                                                        |
+| :------------------------- | :--------------------------------------------------------------------------------- |
+| **Introspection**          | Debugging why a plugin or pack was used or ignored.                                |
+| **Lifecycle Safety**       | Preventing hooks that never fire.                                                  |
+| **Telemetry**              | Consistent usage/token reporting across providers.                                 |
+| **Pause/Resume**           | HITL approvals and long-running workflows.                                         |
+| **Content Normalisation.** | Let the Content Normaliser handle image/text inputs without conditional glue code. |
 
 ## 1. Introspection & Control
 
@@ -138,7 +138,7 @@ Adapters function as a **Universal Translator** for the entire AI ecosystem.
 
 Example: a document review workflow that needs approvals.
 
-1.  **Input**: multi-modal text + image handled by content normalization.
+1.  **Input**: multi-modal text + image handled by content normalisation.
 2.  **Execution**: agent flags a clause and pauses for approval.
 3.  **Resume**: workflow continues with trace intact.
 
@@ -147,4 +147,4 @@ Example: a document review workflow that needs approvals.
 - [ ] **Explainability**: use `runtime.explain()` to see overrides and missing capabilities.
 - [ ] **Safety**: lifecycle validation prevents dead hooks.
 - [ ] **Resilience**: pause/resume keeps state and trace intact.
-- [ ] **Normalization**: telemetry + content stay provider-agnostic.
+- [ ] **Normalisation**: telemetry + content stay provider-agnostic.
