@@ -35,6 +35,45 @@ features:
 Use **Recipes** for long-running workflows, **Interactions** for single-turn UI state, and **Adapters**
 to swap providers safely.
 
+## Install
+
+Runtime-agnostic core that works in Node, Bun, Edge, and browsers.
+
+::: tabs
+== bun
+
+```bash
+bun add @geekist/llm-core
+```
+
+== pnpm
+
+```bash
+pnpm add @geekist/llm-core
+```
+
+== npm
+
+```bash
+npm install @geekist/llm-core
+```
+
+== yarn
+
+```bash
+yarn add @geekist/llm-core
+```
+
+== deno
+
+```bash
+deno add npm:@geekist/llm-core
+```
+
+:::
+
+Workers: install via npm/pnpm/yarn and deploy to your worker runtime (Cloudflare Workers, Vercel Edge, etc.).
+
 ## Why llm-core is different
 
 - **Deterministic by design**: every run is traceable, resumable, and explainable.
