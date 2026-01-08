@@ -86,4 +86,4 @@ Pick a path and grow from there — each one uses the same primitives (recipes, 
 - **RAG assistant**: retrieval + citations with a standard pack. Start at [RAG Recipe](/recipes/rag).
 - **Human-in-the-loop workflows**: pause/resume gates for safe actions. Start at [HITL Recipe](/recipes/hitl).
 - **Batch ingestion**: structured pipelines for indexing and enrichment. Start at [Ingest Recipe](/recipes/ingest).
-- **Provider-agnostic model lab**: swap models and retrievers without refactors. Start at [Adapters Reference](/reference/adapters).
+- **Provider-agnostic model lab**: swap models and retrievers without refactors. Start at [Adapters](/adapters/).
