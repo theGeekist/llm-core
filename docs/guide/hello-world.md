@@ -8,6 +8,9 @@ If you are new to interaction sessions or single-turn UI projection, start here 
 - [Single-Turn Interaction](/guide/interaction-single-turn)
 - [Sessions + Transport](/guide/interaction-sessions)
 
+> [!NOTE] > **Demo path (4/4)** - Full workflow orchestration (RAG + HITL) that complements the interaction stack.
+> If you're coming from the interaction guides, you now have the full picture: UI turns -> sessions -> workflows.
+
 ---
 
 ## 1) Working demo

@@ -10,6 +10,9 @@ interaction core -> session orchestration -> UI SDK adapter.
 The goal is to keep logic headless and deterministic while still delivering UI-friendly
 chunks or commands.
 
+> [!NOTE] > **Demo path (3/4)** - Wires interaction + sessions into real UI streams.
+> Previous: Sessions + Transport. Next: Workflow Orchestration.
+
 ---
 
 ## 1) Working demo
@@ -27,6 +30,8 @@ What you get:
 ## 2) Options and interoperability
 
 ### Swap UI adapters without touching interaction logic
+
+By default, this guide uses the `assistant-ui` adapter.
 
 ```diff
 - import { createAssistantUiInteractionEventStream } from "@geekist/llm-core/adapters";
@@ -62,6 +67,34 @@ Policies remain adapter-driven, so hosts decide when and how to apply them.
 - **Headless by default**: UI SDKs stay in adapters, not runtime logic.
 - **Deterministic events**: the interaction reducer shapes state consistently.
 - **Composable storage**: swap Redis/KV/in-memory stores without touching your UI.
+
+---
+
+## Run the demo locally
+
+The `examples/interaction-node-sse` app shows the same end-to-end path (Interaction -> Session
+-> EventStream) in a tiny Node server.
+
+```bash
+# from the repo root
+bun install
+bun examples/interaction-node-sse/server.js
+```
+
+Then open:
+
+```
+http://localhost:3030
+```
+
+To hit the SSE endpoint directly:
+
+```
+http://localhost:3030/chat?sessionId=demo&message=Hello
+```
+
+If you want UI adapter output instead of raw interaction events, swap the event stream in the
+handler for `createAssistantUiInteractionEventStream` (and wire its commands to your UI client).
 
 ---
 

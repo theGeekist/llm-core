@@ -7,6 +7,9 @@ title: Sessions + Transport
 This guide adds **sessions** and **host transport** to the interaction loop. You get persistence,
 policy hooks, and streaming events to a client—all without changing the core interaction logic.
 
+> [!NOTE] > **Demo path (2/4)** - Builds on Single-Turn Interaction by adding sessions and host transport.
+> Previous: Single-Turn Interaction. Next: End-to-End UI.
+
 ---
 
 ## 1) Working demo

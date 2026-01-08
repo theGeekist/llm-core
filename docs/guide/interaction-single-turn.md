@@ -9,6 +9,9 @@ deterministic, UI-ready state without pulling in the workflow runtime.
 
 This is the lightest orchestration layer in the stack.
 
+> [!NOTE] > **Demo path (1/4)** - Start here to learn the interaction stack:
+> Single-Turn -> Sessions + Transport -> End-to-End UI -> Workflow Orchestration.
+
 ---
 
 ## 1) Working demo
