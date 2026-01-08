@@ -202,6 +202,30 @@ export { fromAiSdkSpeechModel } from "./ai-sdk";
 export { fromAiSdkTool } from "./ai-sdk";
 export { fromAiSdkTranscriptionModel } from "./ai-sdk";
 export { toModelStreamEvents } from "./ai-sdk";
+export {
+  createAiSdkInteractionEventStream,
+  createAiSdkInteractionMapper,
+  createAiSdkInteractionSink,
+  toAiSdkUiMessageChunks,
+} from "./ai-sdk-ui";
+export type {
+  AiSdkInteractionEventStreamOptions,
+  AiSdkInteractionMapper,
+  AiSdkInteractionMapperOptions,
+  AiSdkInteractionSinkOptions,
+} from "./ai-sdk-ui";
+export {
+  createAssistantUiInteractionEventStream,
+  createAssistantUiInteractionMapper,
+  createAssistantUiInteractionSink,
+  toAssistantUiCommands,
+} from "./assistant-ui";
+export type {
+  AssistantUiInteractionEventStreamOptions,
+  AssistantUiInteractionMapper,
+  AssistantUiInteractionMapperOptions,
+  AssistantUiInteractionSinkOptions,
+} from "./assistant-ui";
 
 export { fromLangChainDocument, toLangChainDocument } from "./langchain";
 export { fromLangChainDocuments } from "./langchain";

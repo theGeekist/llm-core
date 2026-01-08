@@ -78,6 +78,9 @@
     "@ai-sdk/openai": "^2.0.88",
     "@ai-sdk/provider": "^3.0.0",
     "@ai-sdk/provider-utils": "^4.0.1",
+    "@ai-sdk/react": "^3.0.15",
+    "@assistant-ui/react": "^0.11.53",
+    "@assistant-ui/react-ai-sdk": "^1.1.20",
     "@langchain/community": "^1.1.1",
     "@langchain/core": "^1.1.8",
     "@langchain/langgraph": "^1.0.7",
@@ -88,6 +91,7 @@
     "@llamaindex/openai": "^0.4.22",
     "@llamaindex/workflow": "^1.1.24",
     "@llamaindex/workflow-core": "^1.3.3",
+    "@openai/chatkit": "^1.2.0",
     "@types/bun": "latest",
     "@typescript-eslint/eslint-plugin": "6.21.0",
     "@typescript-eslint/parser": "6.21.0",
@@ -145,6 +149,20 @@
       "import": "./dist/esm/src/adapters/ai-sdk/index.js",
       "require": "./dist/cjs/src/adapters/ai-sdk/index.cjs",
       "default": "./dist/esm/src/adapters/ai-sdk/index.js"
+    },
+    "./adapters/ai-sdk-ui": {
+      "types": "./dist/types/src/adapters/ai-sdk-ui/index.d.ts",
+      "browser": "./dist/esm/src/adapters/ai-sdk-ui/index.js",
+      "import": "./dist/esm/src/adapters/ai-sdk-ui/index.js",
+      "require": "./dist/cjs/src/adapters/ai-sdk-ui/index.cjs",
+      "default": "./dist/esm/src/adapters/ai-sdk-ui/index.js"
+    },
+    "./adapters/assistant-ui": {
+      "types": "./dist/types/src/adapters/assistant-ui/index.d.ts",
+      "browser": "./dist/esm/src/adapters/assistant-ui/index.js",
+      "import": "./dist/esm/src/adapters/assistant-ui/index.js",
+      "require": "./dist/cjs/src/adapters/assistant-ui/index.cjs",
+      "default": "./dist/esm/src/adapters/assistant-ui/index.js"
     },
     "./adapters/langchain": {
       "types": "./dist/types/src/adapters/langchain/index.d.ts",

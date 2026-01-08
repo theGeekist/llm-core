@@ -164,6 +164,7 @@ export default defineConfig({
             { text: "Tools & Parsers", link: "/adapters/tools" },
             { text: "Retrieval (RAG)", link: "/adapters/retrieval" },
             { text: "Storage & Memory", link: "/adapters/storage" },
+            { text: "UI SDK Adapters", link: "/adapters/ui-sdk" },
             { text: "Observability (Tracing)", link: "/adapters/observability" },
           ],
         },

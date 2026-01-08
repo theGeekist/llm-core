@@ -350,6 +350,6 @@ Context: Add a headless session orchestration layer around Interaction Core usin
 
 ## Stage 21 — UI SDK Adapters + Host Glue (Out-of-Core)
 
-Status: planned. See `internal/stage-21.md`.
+Status: in progress. See `internal/stage-21.md`.
 
-Context: Add UI SDK adapter bridges (flagship: Vercel AI SDK) and host transport glue as separate packages, keeping core headless and UI-agnostic.
+Context: Add UI SDK adapter bridges (flagship: Vercel AI SDK) and host transport glue as separate packages, keeping core headless and UI-agnostic. AI SDK UI streaming adapters and docs are in place; host glue and secondary adapters remain.

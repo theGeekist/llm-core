@@ -122,6 +122,15 @@ AI SDK exposes image, speech, and transcription models. Wrap them directly:
 
 :::
 
+## UI SDK adapters
+
+Stream Interaction Core output into UI SDKs (AI SDK first) without mixing UI concerns into core:
+
+- [UI SDK Adapters](/adapters/ui-sdk)
+
+UI SDK bridges follow a `*-ui` suffix (for example, `ai-sdk-ui`). They are still adapters, just for
+UI transports. This keeps the adapter surface flat while signaling intent.
+
 ## Trace sinks (LangChain callbacks)
 
 LangChain callbacks/tracers can act as trace sinks. We forward `run.start` into
