@@ -1,11 +1,15 @@
 # Composing Recipes
 
-**Recipes** are composable units of behavior. Most users share and reuse full recipes.
-Packs exist for advanced authors who want to define new step-level logic.
+This guide focuses on **composition**: how to stack recipes, override packs, and keep behavior
+deterministic without rewriting flows. If you want the full orchestration story first, start here:
 
-## The Mental Model
+- [Workflow Orchestration](/guide/hello-world)
 
-A Recipe is a container for steps (via packs). You compose recipes together.
+---
+
+## 1) Working demo (compose + override)
+
+Compose a standard agent with RAG, then override planning without touching the rest of the flow.
 
 ```ts
 import { recipes } from "#recipes";
@@ -13,7 +17,9 @@ import { recipes } from "#recipes";
 const workflow = recipes
   .agent()
   .use(recipes.rag()) // Retrieval + synthesis
-  .use(recipes.hitl()); // Pause for approval
+  .use(recipes["agent.planning"]()) // override planning pack
+  .use(recipes.hitl()) // Pause for approval
+  .build();
 ```
 
 ```js
@@ -22,100 +28,55 @@ import { recipes } from "#recipes";
 const workflow = recipes
   .agent()
   .use(recipes.rag()) // Retrieval + synthesis
-  .use(recipes.hitl()); // Pause for approval
-```
-
-> [!TIP]
-> For the full mental model of how steps and packs interact, and the full API on `.step()`, `.priority()`, and `.override()`, see [Composition Model](/reference/composition-model).
-
-## Tutorial: Swapping the Brain
-
-Let's say you like the standard **Agent Recipe**, but you want to replace its "Planning" logic with your own version.
-
-### 1. Import Recipes
-
-You compose recipes via the unified handle.
-
-::: tabs
-== TypeScript
-
-```ts
-import { recipes } from "#recipes";
-
-const agent = recipes.agent();
-type AgentRecipeConfig = Parameters<typeof agent.configure>[0];
-```
-
-== JavaScript
-
-```js
-import { recipes } from "#recipes";
-
-const agent = recipes.agent();
-```
-
-:::
-
-### 2. Override the Planning Recipe
-
-The standard agent uses a complex `PlanningPack`. Let's override it with a custom one.
-
-::: tabs
-== TypeScript
-
-```ts
-import { recipes } from "#recipes";
-
-const agent = recipes
-  .agent()
-  .use(recipes["agent.planning"]()) // overrides the default planning pack
-  .build();
-
-type Runtime = Parameters<typeof agent.run>[1];
-```
-
-== JavaScript
-
-```js
-import { recipes } from "#recipes";
-
-const agent = recipes
-  .agent()
-  .use(recipes["agent.planning"]()) // overrides the default planning pack
+  .use(recipes["agent.planning"]()) // override planning pack
+  .use(recipes.hitl()) // Pause for approval
   .build();
 ```
 
-:::
+---
 
-## Extending Behavior (Advanced)
+## 2) Options and interoperability
 
-Custom packs are an internal authoring primitive. Most users compose recipes and override existing packs via `.use(...)`.
-If you need step-level authoring, treat it as an internal API and follow the packs reference.
+### How it works under the hood
 
-## Execution Order
+A recipe is a **set of packs**. Packs are named bundles of steps with deterministic ordering:
+dependencies → priority → name. You compose recipes by `.use(...)`-ing packs, and you override
+behaviour by reusing the **same pack id**.
 
-Steps are executed based on a strict hierarchy:
+### Swap adapters without changing composition
 
-1.  **Dependencies**: If `B` depends on `A`, `A` always runs first.
-2.  **Priority**: Higher `priority` runs earlier (if dependencies allow).
-3.  **Alphabetical**: If both above are equal, steps run alphabetically by name (deterministic).
-
-::: tabs
-== TypeScript
-
-```ts
-import { recipes } from "#recipes";
-
-type RecipePlan = {
-  name: string;
-  steps: Array<{ id: string; dependsOn: string[] }>;
-};
-
-const plan: RecipePlan = recipes.agent().explain();
-console.log(plan.steps);
+```js
+const workflow = recipes
+  .agent()
+  .use(recipes.rag())
+  .defaults({ adapters: { model, retriever } })
+  .build();
 ```
 
-== JavaScript
+This keeps your composition stable while you swap providers or stores.
+
+### Mix and match packs
+
+Packs are just steps with deterministic ordering. You can add, override, or disable them.
+
+Some packs also introduce requirements or outcomes:
+
+- The **RAG pack** expects a `retriever` adapter port.
+- The **HITL pack** is what introduces the paused outcome.
+
+---
+
+## 3) Why this is better than ad-hoc composition
+
+- **Deterministic ordering**: dependencies, priority, then name.
+- **Override visibility**: `explain()` shows what replaced what.
+- **Minimal surface area**: compose with `.use(...)`, configure with `.configure(...)`.
+
+---
+
+## 4) Inspect composition
+
+Use `explain()` to see the final pack/step ordering.
 
 ```js
 import { recipes } from "#recipes";
@@ -124,11 +85,19 @@ const plan = recipes.agent().explain();
 console.log(plan.steps);
 ```
 
-:::
+---
+
+## 5) When to write custom packs
+
+Most teams should compose existing recipes and override packs. Only author custom packs when you
+need new step-level behavior.
+
+For the full API (`step`, `priority`, `override`), see:
+
+- [Composition Model](/reference/composition-model)
 
 ## Key Takeaways
 
-- [ ] **Start Standard**: Use `recipes.agent()` or similar for 90% of cases.
-- [ ] **Configure Behavior**: Use `.configure()` for prompts, roles, and strategy.
-- [ ] **Wire Infra**: Use `.defaults()` for adapters (LLMs, Databases).
-- [ ] **Override Runtime**: pass a second arg to `.run()` to swap adapters per-request.
+- [ ] **Compose** with `.use(...)`, override selectively.
+- [ ] **Inspect** with `explain()` for deterministic ordering.
+- [ ] **Swap adapters** without touching recipe logic.

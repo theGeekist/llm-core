@@ -66,7 +66,7 @@ const applyGate: StepApply = ({ input, state }) => {
     paused: true,
     pauseKind: "human" satisfies PauseKind,
     token: (state.__pause as { token?: unknown }).token,
-    partialArtifact: state,
+    partialArtefact: state,
   };
 };
 

@@ -124,6 +124,10 @@
     "interaction/quick-start.js",
     "interaction/custom-pack.js",
     "interaction/reducer.ts",
-    "interaction/transport.js"
+    "interaction/transport.js",
+    "interaction/host-node.js",
+    "interaction/host-edge.ts",
+    "guide/interaction-single-turn.js",
+    "guide/workflow-orchestration.js"
   ]
 }

@@ -9,7 +9,7 @@ describe("Workflow run runner", () => {
   it("finalizes pipeline results with diagnostics", async () => {
     const deps: RunWorkflowDeps<Outcome> = {
       pipeline: {
-        run: () => ({ artifact: { ok: true } }),
+        run: () => ({ artefact: { ok: true } }),
       },
       extensionRegistration: [],
       resolveAdaptersForRun: () => ({
@@ -65,7 +65,7 @@ describe("Workflow run runner", () => {
       throw new Error("Expected ok outcome.");
     }
     expect(outcome.artefact).toMatchObject({
-      result: { artifact: { ok: true } },
+      result: { artefact: { ok: true } },
     });
   });
 });

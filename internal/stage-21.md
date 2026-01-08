@@ -1,6 +1,6 @@
 # Stage 21 — UI SDK Adapters + Host Glue (Out-of-Core)
 
-Status: in progress.
+Status: complete.
 
 Purpose: add **first-class UI SDK adapters** and **host transport glue** without polluting core.
 These live in separate packages/modules and map Interaction Core events/state into UI SDK primitives
@@ -183,12 +183,12 @@ These live in adapter packages, not core.
 
    - Minimal Node SSE stream.
    - Minimal Edge/Worker stream.
-   - Status: [ ] pending
+   - Status: [x] complete
 
 6. **Docs + examples**
    - Document adapter usage in `docs/interaction/transport.md` or a new page.
    - Provide one reference example app (outside core).
-   - Status: [x] docs updated; [ ] example app pending
+   - Status: [x] complete
 
 ## Acceptance Criteria
 

@@ -211,14 +211,14 @@ const saveSessionStateFromRuntime = (runtime: InteractionSessionRuntime, state: 
 const persistSessionState = (runtime: InteractionSessionRuntime, state: InteractionState) =>
   maybeTap(bindFirst(saveSessionStateFromRuntime, runtime), updateSessionState(runtime, state));
 
-const updateOutcomeArtifact = (
+const updateOutcomeArtefact = (
   outcome: InteractionRunOutcome,
   state: InteractionState,
 ): InteractionRunOutcome => {
   if (isPausedOutcome(outcome)) {
     return outcome;
   }
-  return { ...outcome, artifact: state };
+  return { ...outcome, artefact: state };
 };
 
 const applyPolicyToOutcome = (input: SessionOutcomeInput) => {
@@ -229,7 +229,7 @@ const applyPolicyToOutcome = (input: SessionOutcomeInput) => {
   }
   const policyState = applySessionPolicy(toSessionPolicyInput(input));
   const persisted = maybeChain(bindFirst(persistSessionState, input.runtime), policyState);
-  return maybeMap(bindFirst(updateOutcomeArtifact, input.outcome), persisted);
+  return maybeMap(bindFirst(updateOutcomeArtefact, input.outcome), persisted);
 };
 
 const runSessionSend = (runtime: InteractionSessionRuntime, message: Message) => {

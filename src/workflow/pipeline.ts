@@ -1,19 +1,19 @@
 import { makeResumablePipeline } from "@wpkernel/pipeline";
-import type {
-  PipelineDiagnostic,
-  PipelineReporter,
-  PipelineStep,
-  PipelineRunState,
-} from "@wpkernel/pipeline/core";
+import type { PipelineDiagnostic, PipelineReporter, PipelineStep } from "@wpkernel/pipeline/core";
 import type { PipelineContext, PipelineState, Plugin, RecipeContract, RunOptions } from "./types";
 import { getEffectivePlugins } from "./plugins/effective";
 import { createDefaultReporter } from "./extensions";
 import { bindFirst } from "../shared/maybe";
 import type { RollbackEntry, RollbackState } from "./runtime/rollback-types";
+import type { PipelineArtefactInput } from "../shared/artefact";
+import { readPipelineArtefact } from "../shared/artefact";
 
-type RunResult = PipelineRunState<PipelineState, PipelineDiagnostic> & {
-  context: PipelineContext;
-  state: Record<string, unknown>;
+type RunResult = {
+  readonly artefact: PipelineState;
+  readonly diagnostics: readonly PipelineDiagnostic[];
+  readonly steps: readonly PipelineStep[];
+  readonly context: PipelineContext;
+  readonly state: Record<string, unknown>;
 };
 
 type HelperStageState = {
@@ -102,14 +102,15 @@ const makeCreateStages = (contract: RecipeContract, plugins: Plugin[]) =>
     return [...lifecycles, ...helperStages, stageDeps.finalizeResult];
   };
 
-const createRunResult = (options: {
-  artifact: PipelineState;
-  diagnostics: readonly PipelineDiagnostic[];
-  steps: readonly PipelineStep[];
-  context: PipelineContext;
-  state: Record<string, unknown>;
-}): RunResult => ({
-  artifact: options.artifact,
+const createRunResult = (
+  options: PipelineArtefactInput<PipelineState> & {
+    diagnostics: readonly PipelineDiagnostic[];
+    steps: readonly PipelineStep[];
+    context: PipelineContext;
+    state: Record<string, unknown>;
+  },
+): RunResult => ({
+  artefact: readPipelineArtefact(options),
   diagnostics: options.diagnostics,
   steps: options.steps,
   context: options.context,

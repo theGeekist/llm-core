@@ -273,7 +273,7 @@ export function readOutcomeState(outcome: InteractionRunOutcome): InteractionSta
   if (isPausedOutcome(outcome)) {
     return readPausedState(outcome);
   }
-  return outcome.artifact;
+  return outcome.artefact;
 }
 
 /** @internal */

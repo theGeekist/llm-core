@@ -1,10 +1,11 @@
 # Core Concepts
 
-There are three principles that make `llm-core` predictable:
+There are four principles that make `llm-core` predictable:
 
 1.  **Recipes** are Assets.
 2.  **Adapters** are Plugs.
-3.  **Steps** are Uniform.
+3.  **Interactions** are Projections.
+4.  **Steps** are Uniform.
 
 ## 1. Principle: Recipes are Assets
 
@@ -28,21 +29,6 @@ graph TD
 
 You author with **Recipes**, but you execute with **Workflow**.
 Think of `Workflow` as the compiler and runtime. It takes your high-level recipe and turns it into a directed acyclic graph (DAG) of executable steps.
-
-```ts
-// 1. Authoring (Declarative)
-import { recipes } from "@geekist/llm-core/recipes";
-
-const agent = recipes.agent(); // typed recipe handle
-
-// 2. Compiling (Infrastructure)
-const app = agent.build(); // runnable workflow
-
-// 3. Execution (Runtime)
-await app.run({ input: "Do work" });
-```
-
-== JavaScript
 
 ```js
 // 1. Authoring (Declarative)
@@ -86,7 +72,38 @@ graph TD
 You define the **Adapter Port** ("I need a Model"). You choose the **Plugin** ("Use OpenAI").
 Because the port is standard, you can swap the appliance without rewiring the house.
 
-## 3. Principle: Steps are Uniform (MaybePromise)
+## 3. Principle: Interactions are Projections
+
+Recipes drive full workflows. Interactions are the lighter layer: they take model/query streams and
+reduce them into UI-ready state for a single turn.
+
+- **Interaction Core** gives you `InteractionState` from `InteractionEvent` streams.
+- **Sessions** add storage + policy orchestration without dictating how you persist.
+- **UI SDK adapters** live outside core and map events into UI-specific streams or commands.
+
+This lets you build chat UIs without pulling in the workflow runtime.
+
+```js
+import {
+  createInteractionPipelineWithDefaults,
+  runInteractionPipeline,
+} from "@geekist/llm-core/interaction";
+
+const pipeline = createInteractionPipelineWithDefaults();
+const result = await runInteractionPipeline(pipeline, {
+  input: { message: { role: "user", content: "Hello!" } },
+});
+
+console.log(result.artefact.messages);
+```
+
+Learn more:
+
+- [Interaction Core](/interaction/)
+- [Interaction Sessions](/interaction/session)
+- [UI SDK Adapters](/adapters/ui-sdk)
+
+## 4. Principle: Steps are Uniform (MaybePromise)
 
 In `llm-core`, every execution step has the same shape. Functions can be sync or async transparently.
 
@@ -95,27 +112,6 @@ In `llm-core`, every execution step has the same shape. Functions can be sync or
 - **Input**: You can return `T` OR `Promise<T>`.
 - **Execution**: The runtime handles the `await`.
 - **Benefit**: You write plain functions. This prevents "function coloring" issues where async logic poisons standard utilities.
-
-::: tabs
-== TypeScript
-
-```ts
-type StepApply = (_: unknown, options: { input: string }) => unknown;
-
-// This step is sync
-const ValidationStep: StepApply = (_, { input }) => {
-  if (input.length > 100) return { error: "Too long" };
-};
-
-// This step is async
-const DatabaseStep: StepApply = async (_, { input }) => {
-  await db.save(input);
-};
-
-// The framework runs both without you changing how you compose them.
-```
-
-== JavaScript
 
 ```js
 // This step is sync
@@ -130,8 +126,6 @@ const DatabaseStep = async (_, { input }) => {
 
 // The framework runs both without you changing how you compose them.
 ```
-
-:::
 
 ## The Outcome (No Throws)
 
@@ -152,21 +146,6 @@ AI agents often need to stop and ask for permission.
 If code threw an error, you'd lose the state.
 With `paused`, we serialize the state so you can resume execution hours (or days) later.
 
-::: tabs
-== TypeScript
-
-```ts
-const result = await workflow.run({ input: "..." });
-
-if (result.status === "paused") {
-  const token: unknown = result.token;
-  // Save token to DB, email the user
-  await db.save(result.token);
-}
-```
-
-== JavaScript
-
 ```js
 const result = await workflow.run({ input: "..." });
 
@@ -176,11 +155,10 @@ if (result.status === "paused") {
 }
 ```
 
-:::
-
 ## Key Takeaways
 
 - [ ] **Recipes** are the Logic (Brain). They are portable assets.
 - [ ] **Adapters** are the Capabilities (Hands). They plug into specific providers.
+- [ ] **Interactions** are UI-ready projections for single turns.
 - [ ] **Steps** are the atomic units of execution.
 - [ ] **Outcome** is the typed result, which can be `ok`, `error`, or `paused`.

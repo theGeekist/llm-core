@@ -120,10 +120,10 @@ export const readPauseResumeKeyFromResult = (result: unknown): string | null => 
   if (isPauseResumeKey(directResumeKey)) {
     return directResumeKey;
   }
-  const artifactResumeKey = (result as { artifact?: { __pause?: { resumeKey?: unknown } } })
-    .artifact?.__pause?.resumeKey;
-  if (isPauseResumeKey(artifactResumeKey)) {
-    return artifactResumeKey;
+  const artefactResumeKey = (result as { artefact?: { __pause?: { resumeKey?: unknown } } })
+    .artefact?.__pause?.resumeKey;
+  if (isPauseResumeKey(artefactResumeKey)) {
+    return artefactResumeKey;
   }
   const stateResumeKey = (result as { state?: { __pause?: { resumeKey?: unknown } } }).state
     ?.__pause?.resumeKey;
@@ -146,11 +146,11 @@ export const readPauseMeta = (result: unknown) => {
   if (direct.token !== undefined || direct.pauseKind !== undefined) {
     return { token: direct.token, pauseKind: direct.pauseKind };
   }
-  const artifact = (
-    result as { artifact?: { __pause?: { token?: unknown; pauseKind?: PauseKind } } }
-  ).artifact;
-  if (artifact?.__pause) {
-    return { token: artifact.__pause.token, pauseKind: artifact.__pause.pauseKind };
+  const artefact = (
+    result as { artefact?: { __pause?: { token?: unknown; pauseKind?: PauseKind } } }
+  ).artefact;
+  if (artefact?.__pause) {
+    return { token: artefact.__pause.token, pauseKind: artefact.__pause.pauseKind };
   }
   const state = (result as { state?: { __pause?: { token?: unknown; pauseKind?: PauseKind } } })
     .state;
@@ -166,9 +166,9 @@ export const readPauseFlag = (result: unknown) => {
   if (direct !== undefined) {
     return direct;
   }
-  const artifact = (result as { artifact?: { __pause?: { paused?: boolean } } }).artifact;
-  if (artifact?.__pause?.paused !== undefined) {
-    return artifact.__pause.paused;
+  const artefact = (result as { artefact?: { __pause?: { paused?: boolean } } }).artefact;
+  if (artefact?.__pause?.paused !== undefined) {
+    return artefact.__pause.paused;
   }
   const state = (result as { state?: { __pause?: { paused?: boolean } } }).state;
   return state?.__pause?.paused;

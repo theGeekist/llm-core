@@ -121,8 +121,8 @@ describe("Workflow runtime resume", () => {
           },
         },
       ],
-      run: () => ({ artifact: { ok: true } }),
-      resume: (_snapshot, resumeInput) => ({ artifact: { resumed: resumeInput } }),
+      run: () => ({ artefact: { ok: true } }),
+      resume: (_snapshot, resumeInput) => ({ artefact: { resumed: resumeInput } }),
     });
 
     if (!runtime.resume) {
@@ -165,7 +165,7 @@ describe("Workflow runtime resume", () => {
       includeDefaults: false,
       run: (options) => {
         captured = options;
-        return { artifact: { ok: true } };
+        return { artefact: { ok: true } };
       },
     });
 
@@ -195,7 +195,7 @@ describe("Workflow runtime resume", () => {
         { key: "cap.hitl", capabilities: { hitl: { adapter: "stub" } } },
       ],
       run: () => ({
-        artifact: { ok: true },
+        artefact: { ok: true },
         diagnostics: [{ type: "missing-dependency", message: "missing adapter" }],
       }),
     });
@@ -225,7 +225,7 @@ describe("Workflow runtime resume", () => {
       includeDefaults: false,
       run: (options) => {
         captured = options.input;
-        return { artifact: { ok: true } };
+        return { artefact: { ok: true } };
       },
     });
 
@@ -255,7 +255,7 @@ describe("Workflow runtime resume", () => {
     sessionStore.set("token-3", createResumeSnapshot("token-3"));
     const runtime = makeRuntime("hitl-gate", {
       includeDefaults: false,
-      run: () => ({ artifact: { ok: true } }),
+      run: () => ({ artefact: { ok: true } }),
     });
 
     if (!runtime.resume) {
@@ -293,7 +293,7 @@ describe("Workflow runtime resume", () => {
       ],
       run: (options) => {
         captured = options.adapters;
-        return { artifact: { ok: true } };
+        return { artefact: { ok: true } };
       },
     });
 
@@ -336,7 +336,7 @@ describe("Workflow runtime resume", () => {
       run: () => ({
         paused: true,
         token,
-        artifact: { partial: true },
+        artefact: { partial: true },
         ...fixture,
       }),
     });

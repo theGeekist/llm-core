@@ -6,7 +6,7 @@ import type {
 } from "../adapters/types";
 import type { AdapterCallContext } from "../adapters/types";
 import type { Message } from "../adapters/types/messages";
-import type { PipelineDiagnostic, PipelinePaused, PipelineRunState } from "@wpkernel/pipeline/core";
+import type { PipelineDiagnostic, PipelinePaused, PipelineStep } from "@wpkernel/pipeline/core";
 import type { DiagnosticEntry } from "../shared/diagnostics";
 import type { MaybePromise } from "../shared/maybe";
 import type { TraceEvent } from "../shared/trace";
@@ -63,9 +63,12 @@ export type InteractionRunOptions = RunOptionsBase & {
 
 export type InteractionPauseRequest = PauseRequest;
 
-export type InteractionRunResult = PipelineRunState<InteractionState, PipelineDiagnostic> & {
-  context: InteractionContext;
-  state: Record<string, unknown>;
+export type InteractionRunResult = {
+  readonly artefact: InteractionState;
+  readonly diagnostics: readonly PipelineDiagnostic[];
+  readonly steps: readonly PipelineStep[];
+  readonly context: InteractionContext;
+  readonly state: Record<string, unknown>;
 };
 
 export type InteractionRunOutcome = InteractionRunResult | PipelinePaused<Record<string, unknown>>;

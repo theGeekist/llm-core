@@ -29,15 +29,15 @@ describe("Workflow runtime", () => {
     expect(outcome.status).toBe("error");
   });
 
-  it("handles sync pipeline success paths with artifacts", () => {
+  it("handles sync pipeline success paths with artefacts", () => {
     const runtime = makeRuntime("rag", {
       run: () => ({
-        artifact: { answer: "sync-ok" },
+        artefact: { answer: "sync-ok" },
         diagnostics: ["sync-warn"],
       }),
     });
 
-    const outcome = assertSyncOutcome(runtime.run({ input: "sync-artifact" }));
+    const outcome = assertSyncOutcome(runtime.run({ input: "sync-artefact" }));
     expect(outcome.status).toBe("ok");
     if (outcome.status !== "ok") {
       throw new Error(ERROR_EXPECTED_OK);
@@ -50,7 +50,7 @@ describe("Workflow runtime", () => {
     const runtime = makeRuntime("rag", {
       run: () =>
         Promise.resolve({
-          artifact: { answer: "ok" },
+          artefact: { answer: "ok" },
           diagnostics: ["warn"],
         }),
     });
@@ -79,7 +79,7 @@ describe("Workflow runtime", () => {
         Promise.resolve({
           paused: true,
           token: TOKEN_PAUSED,
-          artifact: { partial: true },
+          artefact: { partial: true },
         }),
     });
 
@@ -130,7 +130,7 @@ describe("Workflow runtime", () => {
       run: () => ({
         paused: true,
         token: TOKEN_PAUSED,
-        artifact: { partial: true },
+        artefact: { partial: true },
         steps,
         state: { helperRollbacks: rollbacks },
       }),
@@ -153,7 +153,7 @@ describe("Workflow runtime", () => {
 
     const runtime = makeRuntime("hitl-gate", {
       run: () => ({ __paused: true, snapshot }),
-      resume: (_resumeSnapshot, resumeInput) => ({ artifact: { resumed: resumeInput } }),
+      resume: (_resumeSnapshot, resumeInput) => ({ artefact: { resumed: resumeInput } }),
     });
 
     const paused = await runtime.run({ input: "gate" });
@@ -203,7 +203,7 @@ describe("Workflow runtime", () => {
 
     const runtime = makeRuntime("hitl-gate", {
       run: () => ({ __paused: true, snapshot }),
-      resume: (_resumeSnapshot, resumeInput) => ({ artifact: { resumed: resumeInput } }),
+      resume: (_resumeSnapshot, resumeInput) => ({ artefact: { resumed: resumeInput } }),
     });
 
     const paused = await runtime.run({ input: "gate" });
@@ -240,7 +240,7 @@ describe("Workflow runtime", () => {
     const runtime = makeRuntime("agent", {
       run: (options) => {
         expect(options.reporter).toBe(reporter);
-        return { artifact: { ok: true } };
+        return { artefact: { ok: true } };
       },
     });
 
@@ -256,7 +256,7 @@ describe("Workflow runtime", () => {
       run: (options) => {
         const adapters = options.adapters as { retriever?: typeof retriever };
         adapters.retriever?.retrieve(" ");
-        return { artifact: { ok: true } };
+        return { artefact: { ok: true } };
       },
     });
 

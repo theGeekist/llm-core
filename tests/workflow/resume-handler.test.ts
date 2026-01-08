@@ -77,8 +77,8 @@ describe("Workflow resume handler", () => {
       contractName: "agent",
       extensionRegistration: [],
       pipeline: {
-        run: () => ({ artifact: { ok: true } }),
-        resume: () => ({ artifact: { ok: true } }),
+        run: () => ({ artefact: { ok: true } }),
+        resume: () => ({ artefact: { ok: true } }),
       },
       resolveAdaptersForRun: () => ({
         adapters: baseAdapters,
@@ -124,8 +124,8 @@ describe("Workflow resume handler", () => {
       contractName: "agent",
       extensionRegistration: [],
       pipeline: {
-        run: () => ({ artifact: { ok: true } }),
-        resume: () => ({ artifact: { ok: true } }),
+        run: () => ({ artefact: { ok: true } }),
+        resume: () => ({ artefact: { ok: true } }),
       },
       resolveAdaptersForRun: () => ({
         adapters: baseAdapters,
@@ -163,8 +163,8 @@ describe("Workflow resume handler", () => {
       contractName: "agent",
       extensionRegistration: [],
       pipeline: {
-        run: () => ({ artifact: { ok: true } }),
-        resume: () => ({ artifact: { ok: true } }),
+        run: () => ({ artefact: { ok: true } }),
+        resume: () => ({ artefact: { ok: true } }),
       },
       resolveAdaptersForRun: () => {
         resolveCalls += 1;
@@ -210,8 +210,8 @@ describe("Workflow resume handler", () => {
       contractName: "agent",
       extensionRegistration: [],
       pipeline: {
-        run: () => ({ artifact: { ok: true } }),
-        resume: () => ({ artifact: { ok: true } }),
+        run: () => ({ artefact: { ok: true } }),
+        resume: () => ({ artefact: { ok: true } }),
       },
       resolveAdaptersForRun: () => ({
         adapters: baseAdapters,
@@ -254,8 +254,8 @@ describe("Workflow resume handler", () => {
       contractName: "agent",
       extensionRegistration: [],
       pipeline: {
-        run: () => ({ artifact: { ok: true } }),
-        resume: () => ({ artifact: { ok: true } }),
+        run: () => ({ artefact: { ok: true } }),
+        resume: () => ({ artefact: { ok: true } }),
       },
       resolveAdaptersForRun: () => ({
         adapters: baseAdapters,
@@ -309,7 +309,7 @@ describe("Workflow resume handler", () => {
       contractName: "agent",
       extensionRegistration: [],
       pipeline: {
-        run: () => ({ artifact: { ok: true } }),
+        run: () => ({ artefact: { ok: true } }),
         resume: () => ({
           __paused: true,
           snapshot: {

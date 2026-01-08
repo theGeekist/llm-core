@@ -101,7 +101,7 @@ describe("interaction session", () => {
     if (isPromiseLike(result)) {
       throw new Error("Expected sync session result.");
     }
-    expect(assertRunResult(result).artifact.messages).toHaveLength(2);
+    expect(assertRunResult(result).artefact.messages).toHaveLength(2);
     expect(harness.sessions.get(sessionId)?.messages).toHaveLength(2);
     expect(harness.calls.load).toBe(1);
     expect(harness.calls.save).toBe(1);
@@ -159,7 +159,7 @@ describe("interaction session", () => {
     });
 
     const result = await session.send(createMessage("Next"));
-    expect(assertRunResult(result).artifact.messages).toHaveLength(3);
+    expect(assertRunResult(result).artefact.messages).toHaveLength(3);
     expect(session.getState().messages).toHaveLength(3);
   });
 

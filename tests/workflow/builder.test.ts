@@ -55,7 +55,7 @@ describe("Workflow builder", () => {
     const pipelineFactory = () =>
       ({
         run: (options: { runtime?: Runtime }) => ({
-          artifact: { runtime: options.runtime },
+          artefact: { runtime: options.runtime },
           diagnostics: [],
           steps: [],
         }),
@@ -105,9 +105,9 @@ describe("Workflow builder", () => {
       const pipelineFactory = withFactory(
         () =>
           ({
-            run: () => ({ artifact: { ok: true } }),
+            run: () => ({ artefact: { ok: true } }),
             resume: (_snapshot: unknown, resumeInput?: unknown) => ({
-              artifact: { resumed: resumeInput },
+              artefact: { resumed: resumeInput },
             }),
             extensions: { use: () => undefined },
           }) satisfies PipelineWithExtensions,

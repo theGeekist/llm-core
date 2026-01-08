@@ -76,7 +76,11 @@ export default defineConfig({
       "/guide/": [
         {
           text: "Quick Start",
-          items: [{ text: "Your First Workflow", link: "/guide/hello-world" }],
+          items: [
+            { text: "Single-Turn Interaction", link: "/guide/interaction-single-turn" },
+            { text: "Sessions + Transport", link: "/guide/interaction-sessions" },
+            { text: "Workflow Orchestration", link: "/guide/hello-world" },
+          ],
         },
         {
           text: "Fundamentals",
@@ -178,6 +182,7 @@ export default defineConfig({
             { text: "Reducer", link: "/interaction/reducer" },
             { text: "Sessions", link: "/interaction/session" },
             { text: "Transport", link: "/interaction/transport" },
+            { text: "Host Glue", link: "/interaction/host-glue" },
           ],
         },
       ],

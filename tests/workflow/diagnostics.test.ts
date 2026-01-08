@@ -49,7 +49,7 @@ describe("Workflow diagnostics", () => {
     try {
       const runtime = makeRuntime("rag", {
         plugins: [{ key: "plugin.default.lifecycle", hook: () => undefined }],
-        run: () => Promise.resolve({ artifact: { answer: "ok" } }),
+        run: () => Promise.resolve({ artefact: { answer: "ok" } }),
       });
 
       const outcome = await runtime.run({ input: "diag-default" });
@@ -68,7 +68,7 @@ describe("Workflow diagnostics", () => {
       plugins: [{ key: "plugin.no.extensions", hook: () => undefined }],
       pipelineFactory: () =>
         ({
-          run: () => ({ artifact: { ok: true } }),
+          run: () => ({ artefact: { ok: true } }),
         }) as never,
     });
 
@@ -89,7 +89,7 @@ describe("Workflow diagnostics", () => {
       ],
       run: () =>
         Promise.resolve({
-          artifact: { answer: "ok" },
+          artefact: { answer: "ok" },
         }),
     });
 
@@ -110,7 +110,7 @@ describe("Workflow diagnostics", () => {
       ],
       run: () =>
         Promise.resolve({
-          artifact: { answer: "ok" },
+          artefact: { answer: "ok" },
         }),
     });
 
@@ -123,7 +123,7 @@ describe("Workflow diagnostics", () => {
   it("escalates error diagnostics in strict mode", async () => {
     const runtime = makeRuntime("rag", {
       plugins: [{ key: KEY_RETRIEVER_RERANK, requires: ["tools"] }],
-      run: () => Promise.resolve({ artifact: { answer: "ok" } }),
+      run: () => Promise.resolve({ artefact: { answer: "ok" } }),
     });
 
     const outcome = await runtime.run({ input: "strict" }, { diagnostics: "strict" });
@@ -136,7 +136,7 @@ describe("Workflow diagnostics", () => {
   it("warns for missing recipe minimum capabilities in default mode", async () => {
     const runtime = makeRuntime("hitl-gate", {
       includeDefaults: false,
-      run: () => Promise.resolve({ artifact: { answer: "ok" } }),
+      run: () => Promise.resolve({ artefact: { answer: "ok" } }),
     });
 
     const outcome = await runtime.run({ input: "defaults" });
@@ -152,7 +152,7 @@ describe("Workflow diagnostics", () => {
   it("fails strict mode when recipe minimum capabilities are missing", async () => {
     const runtime = makeRuntime("hitl-gate", {
       includeDefaults: false,
-      run: () => Promise.resolve({ artifact: { answer: "ok" } }),
+      run: () => Promise.resolve({ artefact: { answer: "ok" } }),
     });
 
     const outcome = await runtime.run({ input: "strict" }, { diagnostics: "strict" });
@@ -172,7 +172,7 @@ describe("Workflow diagnostics", () => {
         { key: "model.only", capabilities: { model: { name: "ok" } } },
         { key: "tools.empty", capabilities: { tools: [] } },
       ],
-      run: () => Promise.resolve({ artifact: { answer: "ok" } }),
+      run: () => Promise.resolve({ artefact: { answer: "ok" } }),
     });
 
     const outcome = await runtime.run({ input: "defaults" });
@@ -193,7 +193,7 @@ describe("Workflow diagnostics", () => {
           capabilities: { model: { name: "override" } },
         },
       ],
-      run: () => Promise.resolve({ artifact: { answer: "ok" } }),
+      run: () => Promise.resolve({ artefact: { answer: "ok" } }),
     });
 
     const outcome = await runtime.run({ input: "strict" }, { diagnostics: "strict" });

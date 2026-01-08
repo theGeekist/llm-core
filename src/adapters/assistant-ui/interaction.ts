@@ -46,7 +46,7 @@ type AddToolResultCommand = {
   readonly toolName: string;
   readonly result: ReadonlyJSONValue;
   readonly isError: boolean;
-  readonly artifact?: ReadonlyJSONValue;
+  readonly artefact?: ReadonlyJSONValue;
 };
 
 const DEFAULT_REASONING_PREFIX = "Reasoning: ";

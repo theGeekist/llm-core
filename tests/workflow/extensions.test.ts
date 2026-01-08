@@ -29,7 +29,7 @@ describe("Workflow extensions", () => {
       pipelineFactory: withFactory(
         () =>
           ({
-            run: () => ({ artifact: { ok: true } }),
+            run: () => ({ artefact: { ok: true } }),
             extensions: {
               use: (extension: { register?: () => unknown }) => {
                 extension.register?.();
@@ -59,7 +59,7 @@ describe("Workflow extensions", () => {
       pipelineFactory: withFactory(
         () =>
           ({
-            run: () => ({ artifact: { ok: true } }),
+            run: () => ({ artefact: { ok: true } }),
             extensions: {
               use: (extension: { register?: () => { lifecycle?: string; hook?: unknown } }) => {
                 const registration = extension.register?.();
@@ -86,7 +86,7 @@ describe("Workflow extensions", () => {
         if (!registered) {
           throw new Error("Extension not registered yet.");
         }
-        return { artifact: { ok: true } };
+        return { artefact: { ok: true } };
       },
       extensions: {
         use: () =>

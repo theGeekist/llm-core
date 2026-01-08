@@ -4,25 +4,25 @@ import type { PipelineState, RecipeName } from "../types";
 import { addTraceEvent, type TraceEvent } from "../../shared/trace";
 import { readPausedUserState, readPauseFlag, readPauseMeta } from "../pause";
 
-export const readArtifact = <N extends RecipeName>(result: unknown): ArtefactOf<N> =>
-  ((result as { artifact?: PipelineState }).artifact ?? {}) as ArtefactOf<N>;
+export const readArtefact = <N extends RecipeName>(result: unknown): ArtefactOf<N> =>
+  ((result as { artefact?: PipelineState }).artefact ?? {}) as ArtefactOf<N>;
 
 const readPausedUserStateFromResult = (result: unknown): PipelineState | null =>
   readPausedUserState<PipelineState>(result);
 
-export const readPartialArtifact = <N extends RecipeName>(
+export const readPartialArtefact = <N extends RecipeName>(
   result: unknown,
-  readArtifactValue: (result: unknown) => ArtefactOf<N>,
+  readArtefactValue: (result: unknown) => ArtefactOf<N>,
 ): Partial<ArtefactOf<N>> =>
-  (result as { partialArtifact?: Partial<ArtefactOf<N>> }).partialArtifact ??
+  (result as { partialArtefact?: Partial<ArtefactOf<N>> }).partialArtefact ??
   (readPausedUserStateFromResult(result) as Partial<ArtefactOf<N>> | undefined) ??
-  readArtifactValue(result);
+  readArtefactValue(result);
 
 type OkOutcomeInput<N extends RecipeName> = {
   result: unknown;
   trace: TraceEvent[];
   diagnostics: DiagnosticEntry[];
-  readArtifactValue: (result: unknown) => ArtefactOf<N>;
+  readArtefactValue: (result: unknown) => ArtefactOf<N>;
 };
 
 export const toOkOutcome = <N extends RecipeName>(
@@ -32,7 +32,7 @@ export const toOkOutcome = <N extends RecipeName>(
   addTraceEvent(input.trace, "run.end", { status: "ok" });
   return {
     status: "ok",
-    artefact: input.readArtifactValue(input.result),
+    artefact: input.readArtefactValue(input.result),
     trace: input.trace,
     diagnostics: input.diagnostics,
   };

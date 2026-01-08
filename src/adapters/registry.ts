@@ -11,6 +11,7 @@ import { createBuiltinTools } from "./primitives/tools";
 import { createBuiltinRetriever } from "./primitives/retriever";
 import { createBuiltinTrace } from "./primitives/trace";
 import { validateAdapterRequirements } from "./requirements";
+import { readPipelineArtefact } from "../shared/artefact";
 import {
   createDefaultReporter,
   pipelineDiagnostic,
@@ -162,8 +163,8 @@ export const createAdapterRegistry = (
         request: options,
       }),
       createState: () => createState(registrationDiagnostics),
-      createRunResult: ({ artifact, diagnostics }) => {
-        const state = artifact as RegistryState;
+      createRunResult: (options) => {
+        const state = readPipelineArtefact(options) as RegistryState;
         const dependencyDiagnostics = validateAdapterRequirements(
           state.adapters,
           state.constructs,
@@ -172,7 +173,7 @@ export const createAdapterRegistry = (
         return {
           adapters: state.adapters,
           diagnostics: state.diagnostics
-            .concat(diagnostics.map(pipelineDiagnostic))
+            .concat(options.diagnostics.map(pipelineDiagnostic))
             .concat(dependencyDiagnostics),
           providers: state.providers,
           constructs: state.constructs,

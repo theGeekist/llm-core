@@ -29,8 +29,8 @@ If you already have a model adapter, the defaults are enough.
 
 What you get back:
 
-- `result.artifact` is the current `InteractionState`.
-- `result.artifact.messages` is UI-ready (assistant/user/tool messages).
+- `result.artefact` is the current `InteractionState`.
+- `result.artefact.messages` is UI-ready (assistant/user/tool messages).
 - `diagnostics` and `trace` are always present on the state.
 
 ---
@@ -73,6 +73,7 @@ will append to it.
 If you need persistence and policies (merge/summarize/truncate), use the session layer:
 
 - [Interaction Sessions](/interaction/session)
+- [Host Glue (Node/Edge)](/interaction/host-glue)
 
 Sessions are still headless and adapter-driven; they only add orchestration around the core
 pipeline.

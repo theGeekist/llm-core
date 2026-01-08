@@ -21,7 +21,7 @@ public surface. `run()` / `resume()` must stay `MaybePromise` so sync workflows 
 - Expose `pauseKind` **internally only** (trace + diagnostics).
   - If we ever need it on outcomes, use `Outcome.meta.pauseKind` (no new top-level field).
 - Resume adapters **do** receive `pauseKind` (optional).
-- The pipeline signal remains `{ paused: true, token, partialArtifact? }` (no new shape).
+- The pipeline signal remains `{ paused: true, token, partialArtefact? }` (no new shape).
 
 ## Deliverables
 

@@ -137,6 +137,9 @@ if (result.status === "ok") {
 }
 ```
 
+Quick sanity check for SSE: when using the host glue, open your browser devtools (Network →
+EventStream) and watch `interaction.*` events as they stream.
+
 ---
 
 ## Key concepts (in plain English)

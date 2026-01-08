@@ -42,6 +42,9 @@ On **ok**, the artefact includes `answer.text` and (when configured) `citations`
 like `retrieval.query`, `retrieval.set`, and `retrieval.reranked` that explain how the answer was formed.
 **paused** and **error** outcomes keep diagnostics and trace attached, so you never lose the “why”.
 
+**Adapter requirement:** the RAG pack expects a `retriever` adapter port. Without it, the flow will
+emit diagnostics and skip retrieval.
+
 Input stays minimal: pass `input` or `query`, and the recipe resolves a single retrieval query.
 If you need richer context, it belongs in adapters (retrievers, rerankers, models), not in the run input.
 

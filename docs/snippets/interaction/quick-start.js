@@ -19,8 +19,8 @@ if ("__paused" in result && result.__paused) {
 
 const runResult = /** @type {import("#interaction").InteractionRunResult} */ (result);
 
-if (runResult.artifact.messages[1]) {
-  console.log(runResult.artifact.messages[1].content);
+if (runResult.artefact.messages[1]) {
+  console.log(runResult.artefact.messages[1].content);
 }
 // #endregion docs
 

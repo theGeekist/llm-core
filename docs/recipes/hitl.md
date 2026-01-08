@@ -32,6 +32,8 @@ resume, the decision input is threaded into the same execution context so the fl
 The artefact will include the draft decision payload and any intermediate outputs that were produced
 before the gate paused, so you can render or review them without running the workflow again.
 
+**Paused outcome:** it is the HITL pack that introduces the paused outcome in the workflow.
+
 Related: [Runtime -> paused flow](/reference/runtime#paused-flow), [Runtime Outcomes](/reference/runtime#outcomes),
 and [Recipes API](/reference/recipes-api).
 
@@ -85,7 +87,7 @@ for tool approvals, [RAG](/recipes/rag) for high‑risk answers, or [Ingest](/re
 manual validation before indexing.
 
 If you want a quick rule of thumb: put HITL immediately before the action you cannot undo, and let
-the gate’s outcome become the human‑visible artifact you approve or reject.
+the gate’s outcome become the human‑visible artefact you approve or reject.
 
 ---
 

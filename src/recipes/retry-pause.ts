@@ -22,7 +22,7 @@ export type PausedStepResult = HelperApplyResult<PipelineState> & {
   pauseKind: PauseKind;
   token: unknown;
   pauseSnapshot: RetryPauseSnapshot;
-  partialArtifact: PipelineState;
+  partialArtefact: PipelineState;
   __interrupt: InterruptStrategy;
 };
 
@@ -82,7 +82,7 @@ export const toRetryPauseResult = (input: RetryPauseResultInput): PausedStepResu
     pauseKind: pauseState.pauseKind,
     token,
     pauseSnapshot: buildRetryPauseSnapshot(input.payload, input.input, input.spec),
-    partialArtifact: input.state,
+    partialArtefact: input.state,
     __interrupt: buildRetryPauseInterrupt(input.payload),
   };
 };

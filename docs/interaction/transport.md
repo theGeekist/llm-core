@@ -25,3 +25,7 @@ Interaction events are wrapped as `EventStreamEvent` payloads:
 - `data.event`: the original `InteractionEvent`
 
 This keeps the transport generic and makes it easy to route in UI adapters.
+
+If you need concrete host glue (SSE on Node or edge streams), see:
+
+- [Host Glue](/interaction/host-glue)

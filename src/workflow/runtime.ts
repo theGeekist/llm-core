@@ -42,8 +42,8 @@ import {
   toResolvedAdapters,
 } from "./runtime/adapters";
 import {
-  readArtifact,
-  readPartialArtifact,
+  readArtefact,
+  readPartialArtefact,
   readPauseFlag,
   toErrorOutcome,
   toOkOutcome,
@@ -68,12 +68,12 @@ const readErrorDiagnosticsFromError = (input: ReadDiagnosticsInput, error: unkno
   return normalizeDiagnostics(input.buildDiagnostics, diagnostics);
 };
 
-const readArtefactFromResult = <N extends RecipeName>(result: unknown) => readArtifact<N>(result);
+const readArtefactFromResult = <N extends RecipeName>(result: unknown) => readArtefact<N>(result);
 
 const readPartialFromResult = <N extends RecipeName>(
-  readArtifactValue: (result: unknown) => ArtefactOf<N>,
+  readArtefactValue: (result: unknown) => ArtefactOf<N>,
   result: unknown,
-) => readPartialArtifact<N>(result, readArtifactValue);
+) => readPartialArtefact<N>(result, readArtefactValue);
 
 type ErrorOutcomeInput = {
   readErrorDiagnostics: (error: unknown) => DiagnosticEntry[];
@@ -177,7 +177,7 @@ const finalizeRuntimeResult = <N extends RecipeName>(
     result: payload.result,
     trace: payload.trace,
     diagnostics,
-    readArtifactValue: input.readArtefact,
+    readArtefactValue: input.readArtefact,
   });
 };
 

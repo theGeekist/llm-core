@@ -172,7 +172,7 @@ Keep the surface minimal, e.g. an `InteractionSink` with `onState` and `onEvent`
 ## Next Stages
 
 - Session orchestration moves to Stage 20 with adapter-driven `SessionStore` + optional
-  `SessionPolicy` (no defaults). `send()` returns the post-policy state in the artifact; state is
+  `SessionPolicy` (no defaults). `send()` returns the post-policy state in the artefact; state is
   derived via `getState()`. Concurrency for the same `sessionId` is delegated to the store.
 - UI SDK adapters and host glue live out of core in Stage 21.
 

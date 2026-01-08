@@ -45,8 +45,8 @@ describe("workflow pause helpers", () => {
     expect(readPauseResumeKeyFromResult({ __paused: true, snapshot })).toBe("resume-snapshot");
     expect(readPauseResumeKeyFromResult({ resumeKey: "resume-direct" })).toBe("resume-direct");
     expect(
-      readPauseResumeKeyFromResult({ artifact: { __pause: { resumeKey: "resume-artifact" } } }),
-    ).toBe("resume-artifact");
+      readPauseResumeKeyFromResult({ artefact: { __pause: { resumeKey: "resume-artefact" } } }),
+    ).toBe("resume-artefact");
     expect(
       readPauseResumeKeyFromResult({ state: { __pause: { resumeKey: "resume-state" } } }),
     ).toBe("resume-state");

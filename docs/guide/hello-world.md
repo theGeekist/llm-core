@@ -1,172 +1,78 @@
-# Your First Workflow
+# Workflow Orchestration (RAG + HITL)
 
-This guide will show you how to build a production-ready LLM workflow in less than 20 lines of code.
+This guide shows a full end-to-end workflow: an **agent** that retrieves data (RAG), streams
+through a deterministic pipeline, and can pause for human approval (HITL).
 
-We'll build a **tool-calling agent** (a loop that can use tools to solve problems) that uses OpenAI, then we'll swap it to Anthropic without changing any business logic.
+If you are new to interaction sessions or single-turn UI projection, start here first:
 
-## 1. The Blank Slate
+- [Single-Turn Interaction](/guide/interaction-single-turn)
+- [Sessions + Transport](/guide/interaction-sessions)
 
-To build anything, we need the standard library. Start by importing the `recipes` handle. This gives you access to pre-built logic blueprints.
+---
 
-::: tabs
-== TypeScript
+## 1) Working demo
 
-```ts
-import { recipes } from "@geekist/llm-core/recipes";
-import type { AgentRecipeConfig } from "@geekist/llm-core/recipes";
+<<< @/snippets/guide/workflow-orchestration.js#docs
 
-// Example: keep a typed config around
-const config: AgentRecipeConfig = {};
-```
+What you get:
 
-== JavaScript
+- Multi-step orchestration (agent loop + retrieval + HITL).
+- Deterministic ordering, trace, diagnostics.
+- Pause/resume hooks for real approvals.
 
-```js
-import { recipes } from "@geekist/llm-core/recipes";
-```
+Under the hood:
 
-:::
+- The **RAG pack** expects a `retriever` adapter port.
+- The **HITL pack** is what introduces the paused outcome.
 
-## 2. Pick a Recipe
+---
 
-**Recipes** are declarative blueprints for your workflow. We use `recipes.*()` to start one.
-You can define your own logic later, but we'll load a standard **Agent Recipe**—a pre-built loop that knows how to think and act.
+## 2) Options and interoperability
 
-::: tabs
-== TypeScript
-
-```ts
-import { recipes } from "@geekist/llm-core/recipes";
-
-// "agent" is a standard recipe for loop-based agents.
-const agent = recipes.agent();
-
-type AgentRecipeConfig = Parameters<typeof agent.configure>[0];
-```
-
-== JavaScript
-
-```js
-import { recipes } from "@geekist/llm-core/recipes";
-
-// "agent" is a standard recipe for loop-based agents.
-const agent = recipes.agent();
-```
-
-:::
-
-## 3. Add the Brain (Adapters)
-
-Recipes define _logic_, but they need **Adapters** to talk to the real world.
-The `"agent"` flow expects a `model` adapter—a unified interface that wraps any LLM provider.
-
-> [!TIP] > **Adapters** are like power plugs. They let your standard recipe connect to the specific AI ecosystem (OpenAI, Anthropic, LangChain, etc.) you want to use.
-
-::: tabs
-== TypeScript
-
-```ts
-import { recipes } from "@geekist/llm-core/recipes";
-import { fromAiSdkModel } from "@geekist/llm-core/adapters";
-import type { Model } from "@geekist/llm-core/adapters";
-import { openai } from "@ai-sdk/openai";
-
-const model: Model = fromAiSdkModel(openai("gpt-4o"));
-
-// Configure the recipe with an OpenAI adapter
-const workflow = recipes.agent().defaults({ adapters: { model } }).build();
-```
-
-== JavaScript
-
-```js
-import { recipes } from "@geekist/llm-core/recipes";
-import { fromAiSdkModel } from "@geekist/llm-core/adapters";
-import { openai } from "@ai-sdk/openai";
-
-const model = fromAiSdkModel(openai("gpt-4o"));
-
-// Configure the recipe with an OpenAI adapter
-const workflow = recipes.agent().defaults({ adapters: { model } }).build();
-```
-
-:::
-
-## 4. Run It
-
-Build the workflow and run it with an input.
-
-::: tabs
-== TypeScript
-
-```ts
-// ... imports
-
-const result = await workflow.run({
-  input: "What is the capital of France?",
-});
-
-if (result.status === "ok") {
-  const answer: string | undefined = result.artefact.answer;
-  console.log(answer); // "Paris"
-}
-```
-
-== JavaScript
-
-```js
-// ... imports
-
-const result = await workflow.run({
-  input: "What is the capital of France?",
-});
-
-if (result.status === "ok") {
-  console.log(result.artefact.answer); // "Paris"
-}
-```
-
-:::
-
-## 5. The "Aha" Moment: Swapping Providers
-
-Your boss wants to switch to Anthropic? No problem.
-Your agent logic remains unchanged. Just swap the **adapter**.
-
-::: tabs
-== TypeScript
+### Swap model providers
 
 ```diff
-- import { openai } from "@ai-sdk/openai";
-+ import { anthropic } from "@ai-sdk/anthropic";
+- import { createBuiltinModel } from "@geekist/llm-core/adapters";
++ import { fromAiSdkModel } from "@geekist/llm-core/adapters";
++ import { openai } from "@ai-sdk/openai";
 
-- const model = fromAiSdkModel(openai("gpt-4o"));
-+ const model = fromAiSdkModel(anthropic("claude-3-5-sonnet-20240620"));
-
-const workflow = recipes.agent().defaults({ adapters: { model } }).build();
+- model: createBuiltinModel(),
++ model: fromAiSdkModel(openai("gpt-4o-mini")),
 ```
 
-== JavaScript
+### Swap retriever implementations
 
-```diff
-- import { openai } from "@ai-sdk/openai";
-+ import { anthropic } from "@ai-sdk/anthropic";
+```js
+import { fromLangChainRetriever } from "@geekist/llm-core/adapters";
+import { MemoryVectorStore } from "langchain/vectorstores/memory";
 
-- const model = fromAiSdkModel(openai("gpt-4o"));
-+ const model = fromAiSdkModel(anthropic("claude-3-5-sonnet-20240620"));
-
-const workflow = recipes.agent().defaults({ adapters: { model } }).build();
+const store = new MemoryVectorStore(/* embeddings */);
+const retriever = fromLangChainRetriever(store.asRetriever());
 ```
 
-:::
+### Override packs without rewriting the flow
 
-That's it. Same inputs, same outputs, different brain.
+```js
+const workflow = recipes
+  .agent()
+  .use(recipes["agent.planning"]()) // override planning
+  .use(recipes.rag())
+  .defaults({ adapters: { model, retriever } })
+  .build();
+```
 
-> [!TIP]
-> Curious about what other adapters exist? See the **[Adapter API Reference](/reference/adapters-api)**.
+---
 
-## Key Takeaways
+## 3) Why this is better than ad-hoc orchestration
 
-- [ ] **Recipes** are the blueprint (logic).
-- [ ] **Adapters** are the plugs (providers).
-- [ ] **Swapping** offers resilience without code rewrites.
+- **Deterministic execution**: DAG ordering replaces implicit async chains.
+- **Pause/resume**: HITL is a first-class runtime concept.
+- **Interoperability**: swap model and retriever ecosystems without touching business logic.
+
+---
+
+## Next steps
+
+- [Composing Recipes](/guide/composing-recipes)
+- [Debugging](/guide/debugging)
+- [Adapters Reference](/reference/adapters-api)

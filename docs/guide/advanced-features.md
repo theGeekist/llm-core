@@ -1,14 +1,19 @@
 # Advanced Features & Internals
 
-You know about Recipes and Adapters. But `llm-core` has some "advanced capabilities"—safeguards and internals that solve hard problems so you don't have to.
+This guide covers the **advanced capabilities** you get once you start composing recipes,
+adapters, and interactions at scale. It does not repeat the basic orchestration flow; see:
 
-| Feature              | Best For...                                                  |
-| :------------------- | :----------------------------------------------------------- |
-| **Introspection**    | Debugging why a specific plugin was used or ignored.         |
-| **Lifecycle Safety** | Preventing bugs where hooks don't fire.                      |
-| **Telemetry**        | Getting consistent token counts across OpenAI/Anthropic.     |
-| **Hot-State**        | Pausing an agent to wait for human approval (HITL).          |
-| **Content Norm.**    | handling Image/Text/Buffer inputs without conditional logic. |
+- [Single-Turn Interaction](/guide/interaction-single-turn)
+- [Sessions + Transport](/guide/interaction-sessions)
+- [Workflow Orchestration](/guide/hello-world)
+
+| Feature              | Best For...                                         |
+| :------------------- | :-------------------------------------------------- |
+| **Introspection**    | Debugging why a plugin or pack was used or ignored. |
+| **Lifecycle Safety** | Preventing hooks that never fire.                   |
+| **Telemetry**        | Consistent usage/token reporting across providers.  |
+| **Pause/Resume**     | HITL approvals and long-running workflows.          |
+| **Content Norm.**    | Image/text inputs without conditional glue code.    |
 
 ## 1. Introspection & Control
 
@@ -18,11 +23,8 @@ When you compose complex recipes with plugins overriding other plugins, it's har
 
 **Why you care:** You can debug exactly which plugin replaced which, without guessing.
 
-> **Real-World Story: The Silent Plugin Failure**
-> You installed a "Security Redaction" plugin to mask PII, but your logs still show emails. Why?
-> Another plugin loaded later and silently overrode the tokenizer configuration associated with your security plugin.
->
-> **The Fix**: You call `runtime.explain()`. The snapshot reveals that `analytics-plugin` (Priority 10) accidentally replaced `security-plugin` (Priority 5). You fix it by bumping the security priority or using `mode: "override"` explicitly.
+> **Why you care**
+> You can trace overrides and missing capabilities without guessing.
 
 ```ts
 const runtime = agent.build();
@@ -67,24 +69,10 @@ The `getEffectivePlugins` algorithm isn't just a list merge. It implements a str
 
 ## 2. State & Long-Running Flows
 
-### Pausing Safely (Hot-State & Serialization)
+### Pausing Safely (HITL + Resume)
 
-Most "pause/resume" systems require you to serialize state to a database and reload it. `llm-core` supports **Hot-State Resumption**.
-
-**Why you care:** You can pause a workflow for human approval without inventing your own state machine.
-
-If a workflow pauses (e.g., waiting for a tool), the runtime keeps the _actual iterator_ in memory efficiently.
-
-```ts
-// 1. Run until paused
-const result = await workflow.run(input);
-const token = result.token;
-
-// 2. Resume instantly (in-memory, no DB roundtrip needed if same process)
-const nextResult = await workflow.resume({ token, input: "tool output" });
-```
-
-The runtime's `snapshotRecorder` also handles **Circular References** and **BigInts** automatically during serialization, so you don't crash when saving complex state.
+If a workflow pauses (e.g., waiting for approval), you get a durable token and can resume later.
+This keeps state and trace intact across pauses.
 
 ## 3. Inputs & Content
 
@@ -146,23 +134,17 @@ Adapters function as a **Universal Translator** for the entire AI ecosystem.
 - **Vector Store Normalisation**: A unified `upsert`/`delete` interface that handles both raw documents and pre-computed vectors.
 - **Async Agnosticism**: Wrap a synchronous local embedding model (e.g., ONNX) without forcing an unnecessary `await` tick.
 
-## 5. Putting it Together: The "Doc Review" Story
+## 5. Putting it Together (Doc Review)
 
-How do these gems combine in real life? Consider a **Legal Doc Review Agent**.
+Example: a document review workflow that needs approvals.
 
-**The User**: Uploads a PDF contract screenshot and asks, "Is the indemnity clause standard?"
-
-1.  **Unified Input**: You pass the image Buffer and user text to `workflow.run()`. The **Content Normaliser** handles the multi-modal structure automatically.
-2.  **Execution**: The agent identifies a suspicious clause but needs a Partner's approval.
-3.  **Pause**: The agent returns `status: "paused"` with a `token`. You save this token to your database. The runtime **Hot-State Serializer** ensures the entire analysis state is preserved safely.
-4.  **Tracing**: While paused, your dev team inspects the `result.trace`. They see exactly _why_ the agent flagged the clause (Chain-of-Thought reasoning), even though the process is halted.
-5.  **Resume**: The Partner clicks "Approve" in your UI. You call `workflow.resume({ token, input: "Approved" })`. The agent wakes up instantly (in-memory if possible) and finishes the job.
-
-**This is the `llm-core` promise**: Complex, long-running, multi-modal workflows made to feel like simple function calls.
+1.  **Input**: multi-modal text + image handled by content normalization.
+2.  **Execution**: agent flags a clause and pauses for approval.
+3.  **Resume**: workflow continues with trace intact.
 
 ## Key Takeaways
 
-- [ ] **Explainability**: Use `runtime.explain()` to debug config overrides.
-- [ ] **Safety**: Lifecycle hooks prevent dead code.
-- [ ] **Hot-State**: Pause and resume without database boilerplate.
-- [ ] **Normalization**: Telemetry and Content are unified across all providers.
+- [ ] **Explainability**: use `runtime.explain()` to see overrides and missing capabilities.
+- [ ] **Safety**: lifecycle validation prevents dead hooks.
+- [ ] **Resilience**: pause/resume keeps state and trace intact.
+- [ ] **Normalization**: telemetry + content stay provider-agnostic.

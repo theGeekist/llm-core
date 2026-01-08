@@ -14,7 +14,7 @@ describe("Workflow registry routing", () => {
       includeDefaults: false,
       run: (options) => {
         captured = options;
-        return { artifact: { ok: true } };
+        return { artefact: { ok: true } };
       },
     });
 
@@ -42,7 +42,7 @@ describe("Workflow registry routing", () => {
       plugins: [{ key: "custom.adapters", adapters: { model, retriever } }],
       run: (options) => {
         captured = options;
-        return { artifact: { ok: true } };
+        return { artefact: { ok: true } };
       },
     });
 
@@ -72,7 +72,7 @@ describe("Workflow registry routing", () => {
       plugins: [{ key: "override.adapters", adapters: { model } }],
       run: (options) => {
         captured = options;
-        return { artifact: { ok: true } };
+        return { artefact: { ok: true } };
       },
     });
 

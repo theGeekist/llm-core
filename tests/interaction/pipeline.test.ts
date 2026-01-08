@@ -92,9 +92,9 @@ describe("interaction pipeline", () => {
     });
 
     const runResult = assertRunResult(result);
-    expect(runResult.artifact.messages).toHaveLength(2);
-    expect(runResult.artifact.messages[0]?.role).toBe("user");
-    expect(runResult.artifact.messages[1]?.role).toBe("assistant");
+    expect(runResult.artefact.messages).toHaveLength(2);
+    expect(runResult.artefact.messages[0]?.role).toBe("user");
+    expect(runResult.artefact.messages[1]?.role).toBe("assistant");
   });
 
   it("returns sync results when adapters are sync", () => {
@@ -112,8 +112,8 @@ describe("interaction pipeline", () => {
       throw new Error("Expected sync run result.");
     }
     const runResult = assertRunResult(result);
-    expect(runResult.artifact.messages).toHaveLength(2);
-    expect(runResult.artifact.messages[1]?.content).toBe("Sync!");
+    expect(runResult.artefact.messages).toHaveLength(2);
+    expect(runResult.artefact.messages[1]?.content).toBe("Sync!");
   });
 
   it("returns async results when adapters are async", async () => {
@@ -130,7 +130,7 @@ describe("interaction pipeline", () => {
 
     expect(isPromiseLike(result)).toBe(true);
     const awaited = assertRunResult(await result);
-    expect(awaited.artifact.messages[1]?.content).toBe("Async!");
+    expect(awaited.artefact.messages[1]?.content).toBe("Async!");
   });
 
   it("streams sync iterables and assembles messages", async () => {
@@ -155,7 +155,7 @@ describe("interaction pipeline", () => {
       throw new Error("Expected sync run result.");
     }
     const runResult = assertRunResult(result);
-    expect(runResult.artifact.messages[1]?.content).toBe("Hello");
+    expect(runResult.artefact.messages[1]?.content).toBe("Hello");
   });
 
   it("records stream errors in private state", async () => {
@@ -176,11 +176,11 @@ describe("interaction pipeline", () => {
     });
 
     const runResult = assertRunResult(result);
-    expect(runResult.artifact.messages).toHaveLength(2);
-    expect(runResult.artifact.messages[1]?.content).toBe("Partial");
-    const streams = runResult.artifact.private?.streams ?? {};
+    expect(runResult.artefact.messages).toHaveLength(2);
+    expect(runResult.artefact.messages[1]?.content).toBe("Partial");
+    const streams = runResult.artefact.private?.streams ?? {};
     expect(Object.keys(streams)).toHaveLength(0);
-    const raw = runResult.artifact.private?.raw;
+    const raw = runResult.artefact.private?.raw;
     expect(raw && raw["model.primary:error"]).toBeInstanceOf(Error);
   });
 
@@ -200,7 +200,7 @@ describe("interaction pipeline", () => {
     });
 
     const runResult = assertRunResult(result);
-    const raw = runResult.artifact.private?.raw;
+    const raw = runResult.artefact.private?.raw;
     expect(raw && raw["model.primary:error"]).toBe(error);
   });
 
@@ -222,14 +222,14 @@ describe("interaction pipeline", () => {
     });
 
     const runResult = assertRunResult(result);
-    const message = runResult.artifact.messages[1];
+    const message = runResult.artefact.messages[1];
     if (!message || typeof message.content === "string") {
       throw new Error("Expected structured assistant content.");
     }
     const parts = message.content.parts as MessagePart[];
     expect(parts.some((part: MessagePart) => part.type === "tool-call")).toBe(true);
     expect(parts.some((part: MessagePart) => part.type === "tool-result")).toBe(true);
-    expect(runResult.artifact.private?.raw?.["event-stream:model.result"]).toEqual({
+    expect(runResult.artefact.private?.raw?.["event-stream:model.result"]).toEqual({
       name: "interaction.model.result",
       data: { raw: { provider: "mock" } },
     });
@@ -251,7 +251,7 @@ describe("interaction pipeline", () => {
     });
 
     const runResult = assertRunResult(result);
-    const message = runResult.artifact.messages[1];
+    const message = runResult.artefact.messages[1];
     if (!message || typeof message.content === "string") {
       throw new Error("Expected structured assistant content.");
     }
@@ -290,6 +290,6 @@ describe("interaction pipeline", () => {
       throw new Error("Expected resumed pipeline result.");
     }
     const runResult = assertRunResult(resumed);
-    expect(runResult.artifact.messages[1]?.content).toBe("Paused hello");
+    expect(runResult.artefact.messages[1]?.content).toBe("Paused hello");
   });
 });
