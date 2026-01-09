@@ -25,7 +25,11 @@ describe("reporting", () => {
       expect(target.trace.length).toBe(1);
       expect(target.trace[0]?.kind).toBe("test-event");
       expect(target.trace[0]?.data).toEqual({ value: 1 });
-      expect(target.trace[0]?.at).toBeString();
+      // Validate ISO 8601 format
+      const timestamp = target.trace[0]?.at;
+      expect(timestamp).toBeString();
+      expect(timestamp?.endsWith("Z")).toBe(true);
+      expect(Date.parse(timestamp as string)).not.toBeNaN();
     });
   });
 

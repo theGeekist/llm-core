@@ -3,6 +3,7 @@ export function identity<T>(value: T) {
 }
 
 export const toNull = () => null;
+export const toUndefined = () => undefined; // strongly discouraged. Only used for interop adapters
 export const toTrue = () => true;
 export const toFalse = () => false;
 export const isNull = (value: unknown): value is null => value === null;
@@ -50,7 +51,7 @@ export function bindFirst<TFirst, TRest extends unknown[], TResult>(
 }
 
 // Generic partial application for binary functions
-type Binary<TFirst, TSecond, TResult> = {
+export type Binary<TFirst, TSecond, TResult> = {
   (first: TFirst, second: TSecond): TResult;
 };
 
@@ -125,5 +126,3 @@ export function curryK<TFirst, TSecond, TResult>(
   }
   return curryKApply(fn, first as TFirst, second as TSecond);
 }
-
-export const toUndefined = () => undefined;

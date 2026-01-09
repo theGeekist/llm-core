@@ -11,7 +11,7 @@ import type { InteractionHandle, InteractionHandleInput } from "../../interactio
 import type { InteractionHandleOverrides, InteractionHandleResult } from "../../interaction/handle";
 import type { InteractionState } from "../../interaction/types";
 import type { Message } from "../types/messages";
-import { bindFirst, toNull } from "../../shared/fp";
+import { bindFirst, toUndefined } from "../../shared/fp";
 import { maybeChain, maybeMap, type MaybePromise } from "../../shared/maybe";
 import { fromAiSdkMessage } from "../ai-sdk/messages";
 import {
@@ -104,7 +104,7 @@ function executeInteractionStream(
   const mappedMessages = readMapMessages(config.transport.options, config.options.messages);
   const interactionInput = maybeMap(bindFirst(buildInteractionInput, buildConfig), mappedMessages);
   const runResult = maybeChain(bindFirst(runInteractionHandle, runConfig), interactionInput);
-  return maybeMap(toNull, runResult);
+  return maybeMap(toUndefined, runResult);
 }
 
 function readMapper(options: AiSdkChatTransportOptions) {
@@ -118,7 +118,14 @@ function readMapper(options: AiSdkChatTransportOptions) {
 function isAiSdkInteractionMapper(
   value: AiSdkInteractionMapper | AiSdkInteractionMapperOptions | undefined,
 ): value is AiSdkInteractionMapper {
-  return !!value && typeof value === "object" && "mapEvent" in value && "reset" in value;
+  return (
+    !!value &&
+    typeof value === "object" &&
+    "mapEvent" in value &&
+    "reset" in value &&
+    typeof (value as AiSdkInteractionMapper).mapEvent === "function" &&
+    typeof (value as AiSdkInteractionMapper).reset === "function"
+  );
 }
 
 function readMapMessages(options: AiSdkChatTransportOptions, messages: UIMessage[]) {
@@ -206,11 +213,9 @@ function runInteractionHandle(
 }
 
 function toUiMessageExecute<UI_MESSAGE extends UIMessage>(
-  execute: (input: { writer: UIMessageStreamWriter<UI_MESSAGE> }) => MaybePromise<null>,
+  execute: (input: { writer: UIMessageStreamWriter<UI_MESSAGE> }) => MaybePromise<void>,
 ) {
-  return execute as unknown as (input: {
-    writer: UIMessageStreamWriter<UI_MESSAGE>;
-  }) => void | Promise<void>;
+  return execute;
 }
 
 function toUiMessageChunkStream(stream: ReadableStream<UIMessageChunk>) {

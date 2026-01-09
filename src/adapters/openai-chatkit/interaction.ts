@@ -132,7 +132,7 @@ function dispatchEvents(dispatchEvent: (event: CustomEvent) => void, events: Cus
     }
     return true;
   } catch {
-    // Silent failure is intentional to resilience, but debug logging could be added here.
+    // Silent failure is intentional for resilience, but debug logging could be added here.
     return false;
   }
 }
