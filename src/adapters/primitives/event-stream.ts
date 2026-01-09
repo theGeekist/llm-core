@@ -26,7 +26,7 @@ const emitTraceEvents = (sink: EventStream, events: AdapterTraceEvent[]) => {
   for (const event of events) {
     results.push(emitTraceEvent(sink, event));
   }
-  return maybeMap(allSuccessful, maybeAll(results) as Array<boolean | null>);
+  return maybeMap(allSuccessful, maybeAll(results));
 };
 
 export const createEventStreamFromTraceSink = (sink: EventStream): EventStream => ({
@@ -45,7 +45,7 @@ const emitFanoutEvent = (streams: EventStream[], event: AdapterTraceEvent) => {
     return null;
   }
   const results = streams.map(bindFirst(emitTraceEventForStream, event));
-  return maybeMap(allSuccessful, maybeAll(results) as Array<boolean | null>);
+  return maybeMap(allSuccessful, maybeAll(results));
 };
 
 const emitFanoutEvents = (streams: EventStream[], events: AdapterTraceEvent[]) => {
@@ -53,7 +53,7 @@ const emitFanoutEvents = (streams: EventStream[], events: AdapterTraceEvent[]) =
     return null;
   }
   const results = streams.map(bindFirst(emitTraceEventsForStream, events));
-  return maybeMap(allSuccessful, maybeAll(results) as Array<boolean | null>);
+  return maybeMap(allSuccessful, maybeAll(results));
 };
 
 export const createEventStreamFanout = (streams: EventStream[]): EventStream => ({
