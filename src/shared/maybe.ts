@@ -84,8 +84,7 @@ const maybeMapOrWith = <TIn, TOut>(
   fallback: () => MaybePromise<TOut>,
   value: MaybePromise<TIn | null | undefined>,
 ) => {
-  const applyLogic = (val: TIn | null | undefined) =>
-    val === undefined || val === null ? fallback() : map(val);
+  const applyLogic = (val: TIn | null | undefined) => (val == null ? fallback() : map(val));
 
   if (isPromiseLike(value)) {
     return maybeThen(value, applyLogic);

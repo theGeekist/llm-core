@@ -61,7 +61,7 @@ describe("Workflow registry routing", () => {
 
   it("re-resolves providers during resume using provider overrides", () => {
     let captured: unknown;
-    const { sessionStore } = createTestResumeStore();
+    const { store: sessionStore } = createTestResumeStore();
     sessionStore.set("token", createResumeSnapshot("token"));
     const model: Model = {
       generate: () => ({ text: "override" }),

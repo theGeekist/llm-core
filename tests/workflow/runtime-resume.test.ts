@@ -98,7 +98,7 @@ describe("Workflow runtime resume", () => {
 
   it("uses the resume adapter to resume runs", () => {
     let capturedRequest: unknown;
-    const { sessionStore } = createTestResumeStore();
+    const { store: sessionStore } = createTestResumeStore();
     const pauseSnapshot: PipelinePauseSnapshot<unknown> = {
       stageIndex: 0,
       state: { userState: { pending: true } },
@@ -159,7 +159,7 @@ describe("Workflow runtime resume", () => {
 
   it("supports async resume adapters during resume", async () => {
     let captured: unknown;
-    const { sessionStore } = createTestResumeStore();
+    const { store: sessionStore } = createTestResumeStore();
     sessionStore.set("token-2", createResumeSnapshot("token-2"));
     const runtime = makeRuntime("hitl-gate", {
       includeDefaults: false,
@@ -185,7 +185,7 @@ describe("Workflow runtime resume", () => {
   });
 
   it("uses the resume runtime diagnostics mode", () => {
-    const { sessionStore } = createTestResumeStore();
+    const { store: sessionStore } = createTestResumeStore();
     sessionStore.set("token-4", createResumeSnapshot("token-4"));
     const runtime = makeRuntime("hitl-gate", {
       includeDefaults: false,
@@ -219,7 +219,7 @@ describe("Workflow runtime resume", () => {
 
   it("treats resume envelopes with extra keys as input", () => {
     let captured: unknown;
-    const { sessionStore } = createTestResumeStore();
+    const { store: sessionStore } = createTestResumeStore();
     sessionStore.set("token-5", createResumeSnapshot("token-5"));
     const runtime = makeRuntime("hitl-gate", {
       includeDefaults: false,
@@ -251,7 +251,7 @@ describe("Workflow runtime resume", () => {
   });
 
   it("warns when resume adapter returns an object without input", () => {
-    const { sessionStore } = createTestResumeStore();
+    const { store: sessionStore } = createTestResumeStore();
     sessionStore.set("token-3", createResumeSnapshot("token-3"));
     const runtime = makeRuntime("hitl-gate", {
       includeDefaults: false,
@@ -279,7 +279,7 @@ describe("Workflow runtime resume", () => {
 
   it("derives event streams from trace sinks during resume", () => {
     let captured: unknown;
-    const { sessionStore } = createTestResumeStore();
+    const { store: sessionStore } = createTestResumeStore();
     sessionStore.set("token-6", createResumeSnapshot("token-6"));
     const runtime = makeRuntime("hitl-gate", {
       includeDefaults: false,
@@ -319,7 +319,7 @@ describe("Workflow runtime resume", () => {
 
   it("runs helper rollbacks when a resumed pipeline pauses", () => {
     const token = "token-rollback";
-    const { sessionStore } = createTestResumeStore();
+    const { store: sessionStore } = createTestResumeStore();
     sessionStore.set(token, createResumeSnapshot(token));
     let rolledBack = false;
     const fixture = createRollbackFixture(() => {

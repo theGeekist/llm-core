@@ -60,9 +60,7 @@ export const applyDiagnosticsMode = (
     return diagnostics;
   }
   return diagnostics.map((diagnostic) =>
-    shouldPromoteToError(diagnostic)
-      ? { ...diagnostic, level: "error" as DiagnosticLevel }
-      : diagnostic,
+    shouldPromoteToError(diagnostic) ? { ...diagnostic, level: "error" } : diagnostic,
   );
 };
 

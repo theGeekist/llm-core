@@ -22,7 +22,7 @@ import {
 } from "./interaction";
 
 export type AiSdkChatTransportOptions = {
-  handle: InteractionHandle;
+  handle: Pick<InteractionHandle, "run">;
   mapper?: AiSdkInteractionMapper | AiSdkInteractionMapperOptions;
   onError?: (error: unknown) => string;
   mapMessages?: (messages: UIMessage[]) => MaybePromise<Message[]>;

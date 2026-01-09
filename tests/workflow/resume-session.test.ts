@@ -25,7 +25,7 @@ describe("Workflow resume sessions", () => {
   });
 
   it("reads session stores and ttl values", () => {
-    const { sessionStore } = createTestResumeStore();
+    const { store: sessionStore } = createTestResumeStore();
     const runtime = {
       resume: {
         resolve: () => ({ input: "ok" }),
@@ -46,7 +46,7 @@ describe("Workflow resume sessions", () => {
   });
 
   it("records pause snapshots when tokens are present", () => {
-    const { sessions, sessionStore } = createTestResumeStore();
+    const { sessions, store: sessionStore } = createTestResumeStore();
     const runtime = {
       resume: {
         resolve: () => ({ input: "ok" }),
@@ -72,7 +72,7 @@ describe("Workflow resume sessions", () => {
   });
 
   it("records pipeline pause snapshots with stored snapshots", () => {
-    const { sessions, sessionStore } = createTestResumeStore();
+    const { sessions, store: sessionStore } = createTestResumeStore();
     const runtime = {
       resume: {
         resolve: () => ({ input: "ok" }),
@@ -130,7 +130,7 @@ describe("Workflow resume sessions", () => {
   });
 
   it("records resume snapshots when pause snapshots are missing", () => {
-    const { sessions, sessionStore } = createTestResumeStore();
+    const { sessions, store: sessionStore } = createTestResumeStore();
     const runtime = {
       resume: {
         resolve: () => ({ input: "ok" }),
@@ -145,7 +145,7 @@ describe("Workflow resume sessions", () => {
   });
 
   it("resolves pause sessions before store snapshots", async () => {
-    const { sessionStore } = createTestResumeStore();
+    const { store: sessionStore } = createTestResumeStore();
     const pauseSession: PauseSession = {
       snapshot: {
         stageIndex: 0,
@@ -172,7 +172,7 @@ describe("Workflow resume sessions", () => {
   });
 
   it("resolves snapshots when stored sessions exist", async () => {
-    const { sessionStore } = createTestResumeStore();
+    const { store: sessionStore } = createTestResumeStore();
     const snapshot = createResumeSnapshot("token-3", { step: 4 });
 
     const resolved = await resolveMaybe(
@@ -200,7 +200,7 @@ describe("Workflow resume sessions", () => {
   });
 
   it("resolves snapshots using resume keys", async () => {
-    const { sessionStore } = createTestResumeStore();
+    const { store: sessionStore } = createTestResumeStore();
     const snapshot = createResumeSnapshot("token-7", { step: 5 }, { resumeKey: "thread-7" });
     const resolved = await resolveMaybe(
       resolveResumeSession({

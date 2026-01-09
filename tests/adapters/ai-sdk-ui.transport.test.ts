@@ -64,25 +64,28 @@ const readStream = async (stream: ReadableStream<UIMessageChunk>): Promise<Strea
   return { chunks };
 };
 
-const createHandle = (capture: RunCapture, events?: InteractionEvent[]): InteractionHandle =>
-  ({
-    run(input: InteractionHandleInput, overrides?: InteractionHandleOverrides) {
-      capture.input = input;
-      capture.overrides = overrides;
-      if (overrides?.eventStream && events) {
-        for (const event of events) {
-          overrides.eventStream.emit(toStreamEvent(event));
-        }
+const createHandle = (
+  capture: RunCapture,
+  events?: InteractionEvent[],
+): Pick<InteractionHandle, "run"> =>
+({
+  run(input: InteractionHandleInput, overrides?: InteractionHandleOverrides) {
+    capture.input = input;
+    capture.overrides = overrides;
+    if (overrides?.eventStream && events) {
+      for (const event of events) {
+        overrides.eventStream.emit(toStreamEvent(event));
       }
-      return {
-        state: {
-          messages: [],
-          diagnostics: [],
-          trace: [],
-        },
-      };
-    },
-  }) as unknown as InteractionHandle;
+    }
+    return {
+      state: {
+        messages: [],
+        diagnostics: [],
+        trace: [],
+      },
+    };
+  },
+});
 
 const mapMessages = (messages: UIMessage[]): Message[] => {
   if (messages.length === 0) {
@@ -179,7 +182,7 @@ describe("Adapter AI SDK chat transport", () => {
         mapperCalls.push(event.kind);
         return [];
       },
-      reset() {},
+      reset() { },
     };
     const events = [modelEvent(1, { type: "delta", text: "hello" })];
     const handle = createHandle(capture, events);

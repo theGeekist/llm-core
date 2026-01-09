@@ -87,7 +87,7 @@ describe("Workflow builder", () => {
       defaultPlugins: [],
     });
     try {
-      const { sessionStore } = createTestResumeStore();
+      const { store: sessionStore } = createTestResumeStore();
       const token = "token-1";
       const pauseSnapshot: PipelinePauseSnapshot<unknown> = {
         stageIndex: 0,

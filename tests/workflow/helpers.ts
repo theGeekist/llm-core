@@ -8,11 +8,11 @@ const ERROR_MISSING_CONTRACT = "Missing recipe contract.";
 
 export const withFactory =
   <T>(factory: () => T) =>
-  (_contract: unknown, _plugins: unknown[]) => {
-    void _contract;
-    void _plugins;
-    return factory();
-  };
+    (_contract: unknown, _plugins: unknown[]) => {
+      void _contract;
+      void _plugins;
+      return factory();
+    };
 
 export const isPromiseLike = (value: unknown): value is Promise<unknown> =>
   !!value && typeof (value as Promise<unknown>).then === "function";
@@ -57,20 +57,26 @@ type TestRunOptions = {
   adapters?: unknown;
 };
 
-export const createTestResumeStore = () => {
-  const sessions = new Map<unknown, ResumeSnapshot>();
-  const sessionStore = {
-    get: (token: unknown) => sessions.get(token) ?? null,
-    set: (token: unknown, snapshot: ResumeSnapshot) => {
-      sessions.set(token, snapshot);
-      return null;
+export const createTestResumeStore = <TToken = string>() => {
+  const sessions = new Map<TToken, ResumeSnapshot>();
+  const store = {
+    get: (key: unknown) => sessions.get(key as TToken) ?? null,
+    set: (key: unknown, value: ResumeSnapshot) => {
+      sessions.set(key as TToken, value);
+      return true;
     },
-    delete: (token: unknown) => {
-      sessions.delete(token);
-      return null;
+    delete: (key: unknown) => {
+      sessions.delete(key as TToken);
+      return true;
     },
+    list: (prefix: unknown) =>
+      Promise.resolve(
+        Array.from(sessions.entries())
+          .filter(([key]) => String(key).startsWith(String(prefix)))
+          .map(([key]) => key),
+      ),
   };
-  return { sessions, sessionStore };
+  return { store, sessions };
 };
 
 export const createResumeSnapshot = (
@@ -106,15 +112,15 @@ export const makeRuntime = (
   const resume = options?.resume;
   const pipelineFactory = run
     ? withFactory(
-        () =>
-          ({
-            run: (runOptions: TestRunOptions) => run(runOptions),
-            resume: resume
-              ? (snapshot: unknown, resumeInput?: unknown) => resume(snapshot, resumeInput)
-              : undefined,
-            extensions: { use: () => undefined },
-          }) as never,
-      )
+      () =>
+        ({
+          run: (runOptions: TestRunOptions) => run(runOptions),
+          resume: resume
+            ? (snapshot: unknown, resumeInput?: unknown) => resume(snapshot, resumeInput)
+            : undefined,
+          extensions: { use: () => undefined },
+        }) as never,
+    )
     : undefined;
   return createRuntime({
     contract,

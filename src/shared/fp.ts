@@ -10,8 +10,13 @@ export const isFalse = (value: unknown): value is false => value === false;
 
 export const toArray = (value: string | string[]) => (Array.isArray(value) ? value : [value]);
 
-export const mapArray = <TIn, TOut>(map: (value: TIn) => TOut, items: TIn[]) => items.map(map);
+export const mapArray = <TIn, TOut>(map: (value: TIn) => TOut, items: readonly TIn[]) =>
+  items.map(map);
 
+/**
+ * Binds a function to undefined context.
+ * Unsafe for methods relying on `this`.
+ */
 export const bindUnsafe = (fn: (...args: unknown[]) => unknown, ...args: unknown[]) =>
   fn.bind(undefined, ...args) as (...rest: unknown[]) => unknown;
 

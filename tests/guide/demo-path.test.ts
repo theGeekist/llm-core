@@ -48,9 +48,10 @@ describe("demo path", () => {
         return true;
       },
     };
+    const { store } = createMockSessionStore();
     const session = createInteractionSession({
       sessionId: "demo-session",
-      store: createMockSessionStore().store,
+      store,
       adapters: { model: createBuiltinModel() },
       eventStream,
     });
@@ -71,9 +72,10 @@ describe("demo path", () => {
         commands.push(command);
       },
     });
+    const { store } = createMockSessionStore();
     const session = createInteractionSession({
-      sessionId: "demo-ui",
-      store: createMockSessionStore().store,
+      sessionId: "demo-session-2",
+      store,
       adapters: { model: createBuiltinModel() },
       eventStream,
     });
