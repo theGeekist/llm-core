@@ -72,22 +72,32 @@ export const createRecipeDiagnostic = (message: string, data?: unknown): Diagnos
 export const createAdapterDiagnostic = (
   diagnostic: AdapterDiagnosticShape,
   source?: string,
-): DiagnosticEntry => ({
-  level: diagnostic.level,
-  kind:
-    diagnostic.data &&
-    typeof diagnostic.data === "object" &&
-    ((diagnostic.data as { code?: string }).code === "construct_dependency_missing" ||
-      (diagnostic.data as { code?: string }).code === "capability_dependency_missing")
-      ? "requirement"
-      : "adapter",
-  message: diagnostic.message,
-  data: diagnostic.data
-    ? { ...(diagnostic.data as object), source }
-    : source
-      ? { source }
-      : undefined,
-});
+): DiagnosticEntry => {
+  let finalData: unknown = diagnostic.data;
+
+  if (source) {
+    if (diagnostic.data && typeof diagnostic.data === "object") {
+      finalData = { ...(diagnostic.data as object), source };
+    } else if (diagnostic.data !== undefined && diagnostic.data !== null) {
+      finalData = { data: diagnostic.data, source };
+    } else {
+      finalData = { source };
+    }
+  }
+
+  return {
+    level: diagnostic.level,
+    kind:
+      diagnostic.data &&
+      typeof diagnostic.data === "object" &&
+      ((diagnostic.data as { code?: string }).code === "construct_dependency_missing" ||
+        (diagnostic.data as { code?: string }).code === "capability_dependency_missing")
+        ? "requirement"
+        : "adapter",
+    message: diagnostic.message,
+    data: finalData,
+  };
+};
 
 export const normalizeDiagnostics = (
   diagnostics: DiagnosticEntry[],
