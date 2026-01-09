@@ -49,13 +49,17 @@ const makeUiMessage = (id: string, role: UIMessage["role"], text: string): UIMes
 const readStream = async (stream: ReadableStream<UIMessageChunk>): Promise<StreamResult> => {
   const reader = stream.getReader();
   const chunks: UIMessageChunk[] = [];
-  let done = false;
-  while (!done) {
-    const result = await reader.read();
-    done = result.done === true;
-    if (result.value) {
-      chunks.push(result.value);
+  try {
+    let done = false;
+    while (!done) {
+      const result = await reader.read();
+      done = result.done === true;
+      if (result.value) {
+        chunks.push(result.value);
+      }
     }
+  } finally {
+    reader.releaseLock();
   }
   return { chunks };
 };

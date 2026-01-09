@@ -109,13 +109,48 @@ function appendEvents<TEvent>(target: TEvent[], source: TEvent[]) {
   }
 }
 
+// Helper to validate the candidate object structure
+function isValidInteractionEvent(candidate: unknown): candidate is InteractionEvent {
+  if (!candidate || typeof candidate !== "object") {
+    return false;
+  }
+  const record = candidate as Record<string, unknown>;
+
+  if (typeof record.kind !== "string") {
+    return false;
+  }
+  if (!record.meta || typeof record.meta !== "object") {
+    return false;
+  }
+
+  const meta = record.meta as Record<string, unknown>;
+  const { sequence, timestamp, sourceId } = meta;
+
+  // Validate sequence
+  if (typeof sequence !== "number" && typeof sequence !== "string") {
+    return false;
+  }
+
+  // Validate timestamp
+  if (typeof timestamp !== "number" && typeof timestamp !== "string") {
+    return false;
+  }
+
+  // Validate sourceId
+  if (typeof sourceId !== "string") {
+    return false;
+  }
+
+  return true;
+}
+
 function toInteractionEvent(event: EventStreamEvent): InteractionEvent | null {
   if (!event.data || !isRecord(event.data)) {
     return null;
   }
   const candidate = event.data.event;
-  if (!candidate || typeof candidate !== "object") {
+  if (!isValidInteractionEvent(candidate)) {
     return null;
   }
-  return candidate as InteractionEvent;
+  return candidate;
 }

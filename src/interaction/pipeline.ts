@@ -13,7 +13,6 @@ import type {
 import { createHelper } from "@wpkernel/pipeline/core";
 import { bindFirst } from "../shared/fp";
 import { hasKeys } from "../shared/guards";
-import type { PipelineArtefactInput } from "../shared/outcome";
 import { readPipelineArtefact } from "../shared/outcome";
 import type {
   InteractionContext,
@@ -160,14 +159,14 @@ const createStages = (deps: unknown) => {
 
 /** @internal */
 export const createRunResult = (
-  options: PipelineArtefactInput<InteractionState> & {
+  options: { artifact: InteractionState } & {
     diagnostics: readonly PipelineDiagnostic[];
     steps: readonly PipelineStep[];
     context: InteractionContext;
     state: Record<string, unknown>;
   },
 ): InteractionRunResult => ({
-  artefact: readPipelineArtefact(options),
+  artefact: readPipelineArtefact({ artefact: options.artifact }),
   diagnostics: options.diagnostics,
   steps: options.steps,
   context: options.context,

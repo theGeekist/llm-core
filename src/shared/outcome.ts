@@ -1,10 +1,10 @@
 import type { TraceDiagnostics } from "./reporting";
 
 export type PipelineArtefactInput<T> = {
-  readonly artifact: T;
+  readonly artefact: T; // Enforcing British English as requested
 };
 
-export const readPipelineArtefact = <T>(input: PipelineArtefactInput<T>) => input.artifact;
+export const readPipelineArtefact = <T>(input: PipelineArtefactInput<T>) => input.artefact;
 
 export type ExecutionOutcomeBase = TraceDiagnostics & {
   status: "ok" | "paused" | "error";

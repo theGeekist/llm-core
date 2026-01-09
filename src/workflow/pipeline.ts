@@ -5,7 +5,6 @@ import { getEffectivePlugins } from "./plugins/effective";
 import { createDefaultReporter } from "./extensions";
 import { bindFirst } from "../shared/fp";
 import type { RollbackEntry, RollbackState } from "./runtime/rollback-types";
-import type { PipelineArtefactInput } from "../shared/outcome";
 import { readPipelineArtefact } from "../shared/outcome";
 
 type RunResult = {
@@ -103,14 +102,14 @@ const makeCreateStages = (contract: RecipeContract, plugins: Plugin[]) =>
   };
 
 const createRunResult = (
-  options: PipelineArtefactInput<PipelineState> & {
+  options: { artifact: PipelineState } & {
     diagnostics: readonly PipelineDiagnostic[];
     steps: readonly PipelineStep[];
     context: PipelineContext;
     state: Record<string, unknown>;
   },
 ): RunResult => ({
-  artefact: readPipelineArtefact(options),
+  artefact: readPipelineArtefact({ artefact: options.artifact }),
   diagnostics: options.diagnostics,
   steps: options.steps,
   context: options.context,

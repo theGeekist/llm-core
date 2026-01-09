@@ -163,8 +163,13 @@ export const createAdapterRegistry = (
         request: options,
       }),
       createState: () => createState(registrationDiagnostics),
-      createRunResult: (options) => {
-        const state = readPipelineArtefact(options) as RegistryState;
+      createRunResult: (options: {
+        artifact: RegistryState;
+        diagnostics: readonly PipelineDiagnostic[];
+      }) => {
+        const state = readPipelineArtefact({
+          artefact: options.artifact,
+        }) as RegistryState;
         const dependencyDiagnostics = validateAdapterRequirements(
           state.adapters,
           state.constructs,
