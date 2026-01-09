@@ -1,9 +1,10 @@
-import { bindFirst, maybeMap } from "../../shared/maybe";
+import { bindFirst } from "../../shared/fp";
+import { maybeMap } from "../../shared/maybe";
 import { Recipe } from "../flow";
 import { createRecipeFactory, createRecipeHandle } from "../handle";
 import type { RecipeDefaults, StepApply } from "../flow";
 import type { Model, ModelResult } from "../../adapters/types";
-import { readNumber, readString } from "../../adapters/utils";
+import { readNumber, readString, readRecord, readStringArray } from "../../adapters/utils";
 import { isRecord } from "../../shared/guards";
 
 export type EvalConfig = {
@@ -15,16 +16,6 @@ type EvalState = Record<string, unknown>;
 
 const EVAL_STATE_PREFIX = "eval.";
 const DATASET_ROWS_KEY = "dataset.rows";
-
-const readInputRecord = (value: unknown): Record<string, unknown> | null =>
-  isRecord(value) ? value : null;
-
-const readStringArray = (value: unknown): string[] | null => {
-  if (!Array.isArray(value)) {
-    return null;
-  }
-  return value.filter((item) => typeof item === "string");
-};
 
 const readCandidateCount = (value: unknown): number | null => {
   const count = readNumber(value);
@@ -57,7 +48,7 @@ const setEvalValue = (state: EvalState, key: string, value: unknown) => {
 const readEvalValue = <T>(state: EvalState, key: string) => state[toEvalKey(key)] as T | undefined;
 
 const seedEvalInput = (evalState: EvalState, input: unknown, config?: EvalConfig) => {
-  const record = readInputRecord(input);
+  const record = readRecord(input);
   const prompt = readString(record?.prompt);
   const datasetId = readString(record?.datasetId);
   const candidatesValue = record?.candidates;

@@ -7,7 +7,8 @@ import type {
   RetryReason,
 } from "../../adapters/types";
 import type { MaybePromise } from "../../shared/maybe";
-import { bindFirst, maybeTry } from "../../shared/maybe";
+import { bindFirst } from "../../shared/fp";
+import { maybeTry } from "../../shared/maybe";
 import { addTraceEvent } from "../../shared/trace";
 import type { TraceEvent } from "../../shared/trace";
 import { isRecord } from "../../shared/guards";

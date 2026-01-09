@@ -13,7 +13,7 @@ import {
   readStructuredText,
   toResponseFormatSchema,
   tryParseJson,
-} from "../model-utils";
+} from "../utils";
 import { ModelCallHelper } from "../modeling";
 import { toLlamaIndexMessage } from "./messages";
 import { toLlamaIndexTool } from "./tools";

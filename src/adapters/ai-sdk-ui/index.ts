@@ -10,3 +10,5 @@ export {
   createAiSdkInteractionSink,
   toAiSdkUiMessageChunks,
 } from "./interaction";
+export type { AiSdkChatTransportOptions } from "./transport";
+export { createAiSdkChatTransport } from "./transport";

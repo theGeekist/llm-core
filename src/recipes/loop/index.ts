@@ -1,10 +1,10 @@
-import { bindFirst, maybeMap } from "../../shared/maybe";
+import { bindFirst } from "../../shared/fp";
+import { maybeMap } from "../../shared/maybe";
 import { Recipe } from "../flow";
 import { createRecipeFactory, createRecipeHandle } from "../handle";
 import type { RecipeDefaults, StepApply } from "../flow";
 import type { Model, ModelResult } from "../../adapters/types";
-import { readNumber, readString } from "../../adapters/utils";
-import { isRecord } from "../../shared/guards";
+import { readNumber, readString, readRecord } from "../../adapters/utils";
 
 export type LoopConfig = {
   defaults?: RecipeDefaults;
@@ -13,9 +13,6 @@ export type LoopConfig = {
 type LoopState = Record<string, unknown>;
 
 const LOOP_STATE_PREFIX = "loop.";
-
-const readInputRecord = (value: unknown): Record<string, unknown> | undefined =>
-  isRecord(value) ? value : undefined;
 
 const readLoopState = (state: Record<string, unknown>): LoopState => state;
 
@@ -28,7 +25,7 @@ const setLoopValue = (state: LoopState, key: string, value: unknown) => {
 const readLoopValue = <T>(state: LoopState, key: string) => state[toLoopKey(key)] as T | undefined;
 
 const readLoopInput = (input: unknown) => {
-  const record = readInputRecord(input);
+  const record = readRecord(input);
   return {
     input: readString(record?.input) ?? "",
     maxIterations: readNumber(record?.maxIterations),

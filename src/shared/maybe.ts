@@ -5,6 +5,7 @@ import {
   maybeTry as pipelineMaybeTry,
 } from "@wpkernel/pipeline/core/async-utils";
 import type { MaybePromise } from "@wpkernel/pipeline/core";
+import { bindFirst, mapArray } from "./fp";
 
 type MaybeThunk<T> = { (): MaybePromise<T> };
 type MaybeHandler<TIn, TOut> = { (value: TIn): MaybePromise<TOut> };
@@ -12,10 +13,7 @@ type ErrorHandler<T> = { (error: unknown): MaybePromise<T> };
 type MaybeBinary<TFirst, TSecond, TResult> = {
   (first: TFirst, second: TSecond): MaybePromise<TResult>;
 };
-type MapMaybeOrInput<TIn, TOut> = {
-  map: MaybeHandler<TIn, TOut>;
-  fallback: () => MaybePromise<TOut>;
-};
+
 type TryWrapConfig<Args extends unknown[], T> = {
   onError: ErrorHandler<T>;
   fn: (...args: Args) => MaybePromise<T>;
@@ -78,8 +76,6 @@ const tryWrapFactory = <Args extends unknown[], T>(
     fn,
   });
 
-const mapArray = <TIn, TOut>(map: (value: TIn) => TOut, items: TIn[]) => items.map(map);
-
 const maybeMapArrayWith = <TIn, TOut>(map: (value: TIn) => TOut, value: MaybePromise<TIn[]>) =>
   maybeMap(bindFirst(mapArray, map), value);
 
@@ -88,69 +84,13 @@ const maybeMapOrWith = <TIn, TOut>(
   fallback: () => MaybePromise<TOut>,
   value: MaybePromise<TIn | null | undefined>,
 ) => {
-  const input: MapMaybeOrInput<TIn, TOut> = { map, fallback };
+  const applyLogic = (val: TIn | null | undefined) => (val == null ? fallback() : map(val));
+
   if (isPromiseLike(value)) {
-    return maybeThen(value, bindFirst(maybeMapOrApply, input));
+    return maybeThen(value, applyLogic);
   }
-  return maybeMapOrApply(input, value);
+  return applyLogic(value);
 };
-
-const maybeMapOrApply = <TIn, TOut>(
-  input: MapMaybeOrInput<TIn, TOut>,
-  value: TIn | null | undefined,
-) => (value === undefined || value === null ? input.fallback() : input.map(value));
-
-const maybeMapOrFromInput = <TIn, TOut>(
-  input: MapMaybeOrInput<TIn, TOut>,
-  value: MaybePromise<TIn | null | undefined>,
-) => maybeMapOrWith(input.map, input.fallback, value);
-
-const bindUnsafe = (fn: (...args: unknown[]) => unknown, ...args: unknown[]) =>
-  fn.bind(undefined, ...args) as (...rest: unknown[]) => unknown;
-
-const bindFirstWith = <TFirst, TRest extends unknown[], TResult>(
-  fn: (first: TFirst, ...rest: TRest) => TResult,
-  first: TFirst,
-) => bindUnsafe(fn as (...args: unknown[]) => unknown, first) as (...rest: TRest) => TResult;
-
-const bindFirstFactory = <TFirst, TRest extends unknown[], TResult>(
-  fn: (first: TFirst, ...rest: TRest) => TResult,
-) =>
-  bindUnsafe(bindFirstWith as (...args: unknown[]) => unknown, fn) as (
-    first: TFirst,
-  ) => (...rest: TRest) => TResult;
-
-const partialKWith = <TFirst, TSecond, TResult>(
-  fn: MaybeBinary<TFirst, TSecond, TResult>,
-  first: TFirst,
-) =>
-  bindUnsafe(fn as (...args: unknown[]) => unknown, first) as (
-    second: TSecond,
-  ) => MaybePromise<TResult>;
-
-const partialKFactory = <TFirst, TSecond, TResult>(fn: MaybeBinary<TFirst, TSecond, TResult>) =>
-  bindUnsafe(partialKWith as (...args: unknown[]) => unknown, fn) as (
-    first: TFirst,
-  ) => (second: TSecond) => MaybePromise<TResult>;
-
-const curryKApply = <TFirst, TSecond, TResult>(
-  fn: MaybeBinary<TFirst, TSecond, TResult>,
-  first: TFirst,
-  second: TSecond,
-) => fn(first, second);
-
-const curryKWith = <TFirst, TSecond, TResult>(
-  fn: MaybeBinary<TFirst, TSecond, TResult>,
-  first: TFirst,
-) =>
-  bindUnsafe(curryKApply as (...args: unknown[]) => unknown, fn, first) as (
-    second: TSecond,
-  ) => MaybePromise<TResult>;
-
-const curryKFactory = <TFirst, TSecond, TResult>(fn: MaybeBinary<TFirst, TSecond, TResult>) =>
-  bindUnsafe(curryKWith as (...args: unknown[]) => unknown, fn) as (
-    first: TFirst,
-  ) => (second: TSecond) => MaybePromise<TResult>;
 
 const isAsyncIterable = (value: unknown): value is AsyncIterable<unknown> =>
   !!value && typeof (value as AsyncIterable<unknown>)[Symbol.asyncIterator] === "function";
@@ -357,94 +297,25 @@ export function maybeMapArray<TIn, TOut>(map: (value: TIn) => TOut, value?: Mayb
 }
 
 export function maybeMapOr<TIn, TOut>(
-  map: (value: TIn) => MaybePromise<TOut>,
+  map: MaybeHandler<TIn, TOut>,
   fallback: () => MaybePromise<TOut>,
   value: MaybePromise<TIn | null | undefined>,
 ): MaybePromise<TOut>;
 export function maybeMapOr<TIn, TOut>(
-  map: (value: TIn) => MaybePromise<TOut>,
+  map: MaybeHandler<TIn, TOut>,
   fallback: () => MaybePromise<TOut>,
 ): (value: MaybePromise<TIn | null | undefined>) => MaybePromise<TOut>;
 export function maybeMapOr<TIn, TOut>(
-  map: (value: TIn) => MaybePromise<TOut>,
+  map: MaybeHandler<TIn, TOut>,
   fallback: () => MaybePromise<TOut>,
   value?: MaybePromise<TIn | null | undefined>,
 ) {
   if (arguments.length === 2) {
-    return bindFirst(maybeMapOrFromInput, { map, fallback });
+    return (nextValue: MaybePromise<TIn | null | undefined>) =>
+      maybeMapOrWith(map, fallback, nextValue);
   }
   return maybeMapOrWith(map, fallback, value as MaybePromise<TIn | null | undefined>);
 }
 
-export function identity<T>(value: T) {
-  return value;
-}
-
-export const toNull = () => null;
-export const toTrue = () => true;
-export const toFalse = () => false;
-export const isNull = (value: unknown): value is null => value === null;
-export const isFalse = (value: unknown): value is false => value === false;
-
-export const toUndefined = () => undefined;
-
-export function bindFirst<TFirst, TRest extends unknown[], TResult>(
-  fn: (first: TFirst, ...rest: TRest) => TResult,
-  first: TFirst,
-): (...rest: TRest) => TResult;
-export function bindFirst<TFirst, TRest extends unknown[], TResult>(
-  fn: (first: TFirst, ...rest: TRest) => TResult,
-): (first: TFirst) => (...rest: TRest) => TResult;
-export function bindFirst<TFirst, TRest extends unknown[], TResult>(
-  fn: (first: TFirst, ...rest: TRest) => TResult,
-  first?: TFirst,
-) {
-  if (arguments.length === 1) {
-    return bindFirstFactory(fn);
-  }
-  return bindFirstWith(fn, first as TFirst);
-}
-
-export function partialK<TFirst, TSecond, TResult>(
-  fn: MaybeBinary<TFirst, TSecond, TResult>,
-  first: TFirst,
-): (second: TSecond) => MaybePromise<TResult>;
-export function partialK<TFirst, TSecond, TResult>(
-  fn: MaybeBinary<TFirst, TSecond, TResult>,
-): (first: TFirst) => (second: TSecond) => MaybePromise<TResult>;
-export function partialK<TFirst, TSecond, TResult>(
-  fn: MaybeBinary<TFirst, TSecond, TResult>,
-  first?: TFirst,
-) {
-  if (arguments.length === 1) {
-    return partialKFactory(fn);
-  }
-  return partialKWith(fn, first as TFirst);
-}
-
-export function curryK<TFirst, TSecond, TResult>(
-  fn: MaybeBinary<TFirst, TSecond, TResult>,
-  first: TFirst,
-  second: TSecond,
-): MaybePromise<TResult>;
-export function curryK<TFirst, TSecond, TResult>(
-  fn: MaybeBinary<TFirst, TSecond, TResult>,
-  first: TFirst,
-): (second: TSecond) => MaybePromise<TResult>;
-export function curryK<TFirst, TSecond, TResult>(
-  fn: MaybeBinary<TFirst, TSecond, TResult>,
-): (first: TFirst) => (second: TSecond) => MaybePromise<TResult>;
-export function curryK<TFirst, TSecond, TResult>(
-  fn: MaybeBinary<TFirst, TSecond, TResult>,
-  first?: TFirst,
-  second?: TSecond,
-) {
-  if (arguments.length === 1) {
-    return curryKFactory(fn);
-  }
-  if (arguments.length === 2) {
-    return curryKWith(fn, first as TFirst);
-  }
-  return curryKApply(fn, first as TFirst, second as TSecond);
-}
-export const toArray = (value: string | string[]) => (Array.isArray(value) ? value : [value]);
+export { partialK, curryK, bindFirst } from "./fp";
+export type { MaybeBinary };

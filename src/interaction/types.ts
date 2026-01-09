@@ -107,3 +107,4 @@ export type InteractionSession = {
   send: (message: Message) => MaybePromise<InteractionRunOutcome>;
   save?: () => MaybePromise<boolean | null>;
 };
+export type InteractionHelperEventStream = EventStream;

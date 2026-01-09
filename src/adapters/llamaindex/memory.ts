@@ -1,7 +1,8 @@
 import type { Memory as LlamaIndexMemory } from "@llamaindex/core/memory";
 import type { ChatMessage, MessageType } from "@llamaindex/core/llms";
 import type { AdapterCallContext, Memory, Turn } from "../types";
-import { maybeMap, toTrue } from "../../shared/maybe";
+import { toTrue } from "../../shared/fp";
+import { maybeMap } from "../../shared/maybe";
 import { reportDiagnostics, validateMemoryTurn, validateThreadId } from "../input-validation";
 
 type TurnRole = Turn["role"];

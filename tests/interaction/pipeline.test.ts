@@ -5,43 +5,13 @@ import {
   runInteractionPipeline,
 } from "#interaction";
 import { isPromiseLike } from "@wpkernel/pipeline/core";
-import type { Message, MessagePart, Model, ModelResult, ModelStreamEvent } from "#adapters";
-import type {
-  InteractionRunOutcome,
-  InteractionRunResult,
-  InteractionState,
-  InteractionStepApply,
-} from "#interaction";
-import type { PipelinePaused } from "@wpkernel/pipeline/core";
-
-const createModelResult = (text: string): ModelResult => ({
-  text,
-});
-
-const createModel = (text: string): Model => ({
-  generate: () => createModelResult(text),
-});
-
-const createMessage = (text: string): Message => ({
-  role: "user",
-  content: text,
-});
+import { createMockModel, createMockMessage, createMockModelResult } from "../fixtures/factories";
+import { assertRunResult, isPausedResult } from "./test-utils";
+import type { MessagePart, Model, ModelStreamEvent } from "#adapters";
+import type { InteractionRunOutcome, InteractionState, InteractionStepApply } from "#interaction";
 
 const PAUSE_TOKEN = "interaction:pause";
 const PAUSE_MARKER_KEY = "test.pause.once";
-
-const isPausedResult = (value: unknown): value is PipelinePaused<Record<string, unknown>> =>
-  !!value &&
-  typeof value === "object" &&
-  "__paused" in value &&
-  (value as { __paused?: unknown }).__paused === true;
-
-function assertRunResult(result: InteractionRunOutcome): InteractionRunResult {
-  if (isPausedResult(result)) {
-    throw new Error("Expected interaction run result.");
-  }
-  return result;
-}
 
 const readPauseMarker = (state: InteractionState) => {
   const raw = state.private?.raw;
@@ -83,8 +53,8 @@ const PauseOncePack = {
 describe("interaction pipeline", () => {
   it("captures input and generates a response", async () => {
     const pipeline = createInteractionPipelineWithDefaults();
-    const model = createModel("Hello!");
-    const input = { message: createMessage("Hi") };
+    const model = createMockModel("Hello!");
+    const input = { message: createMockMessage("Hi") };
 
     const result = await runInteractionPipeline(pipeline, {
       input,
@@ -99,8 +69,8 @@ describe("interaction pipeline", () => {
 
   it("returns sync results when adapters are sync", () => {
     const pipeline = createInteractionPipelineWithDefaults();
-    const model = createModel("Sync!");
-    const input = { message: createMessage("Hi") };
+    const model = createMockModel("Sync!");
+    const input = { message: createMockMessage("Hi") };
 
     const result = runInteractionPipeline(pipeline, {
       input,
@@ -119,9 +89,9 @@ describe("interaction pipeline", () => {
   it("returns async results when adapters are async", async () => {
     const pipeline = createInteractionPipelineWithDefaults();
     const model: Model = {
-      generate: () => Promise.resolve(createModelResult("Async!")),
+      generate: () => Promise.resolve(createMockModelResult("Async!")),
     };
-    const input = { message: createMessage("Hi") };
+    const input = { message: createMockMessage("Hi") };
 
     const result = runInteractionPipeline(pipeline, {
       input,
@@ -136,14 +106,14 @@ describe("interaction pipeline", () => {
   it("streams sync iterables and assembles messages", async () => {
     const pipeline = createInteractionPipelineWithDefaults();
     const model: Model = {
-      generate: () => createModelResult("unused"),
+      generate: () => createMockModelResult("unused"),
       stream: () => [
         { type: "start", id: "sync-1" },
         { type: "delta", text: "Hello" },
         { type: "end" },
       ],
     };
-    const input = { message: createMessage("Hi") };
+    const input = { message: createMockMessage("Hi") };
 
     const result = runInteractionPipeline(pipeline, {
       input,
@@ -161,14 +131,14 @@ describe("interaction pipeline", () => {
   it("records stream errors in private state", async () => {
     const pipeline = createInteractionPipelineWithDefaults();
     const model: Model = {
-      generate: () => createModelResult("unused"),
+      generate: () => createMockModelResult("unused"),
       stream: async function* (): AsyncIterable<ModelStreamEvent> {
         yield { type: "start", id: "err-1" };
         yield { type: "delta", text: "Partial" };
         throw new Error("stream-failed");
       },
     };
-    const input = { message: createMessage("Hi") };
+    const input = { message: createMockMessage("Hi") };
 
     const result = await runInteractionPipeline(pipeline, {
       input,
@@ -192,7 +162,7 @@ describe("interaction pipeline", () => {
         throw error;
       },
     };
-    const input = { message: createMessage("Hi") };
+    const input = { message: createMockMessage("Hi") };
 
     const result = await runInteractionPipeline(pipeline, {
       input,
@@ -214,7 +184,7 @@ describe("interaction pipeline", () => {
         raw: { provider: "mock" },
       }),
     };
-    const input = { message: createMessage("Hi") };
+    const input = { message: createMockMessage("Hi") };
 
     const result = await runInteractionPipeline(pipeline, {
       input,
@@ -243,7 +213,7 @@ describe("interaction pipeline", () => {
         reasoning: "Because it can.",
       }),
     };
-    const input = { message: createMessage("Hi") };
+    const input = { message: createMockMessage("Hi") };
 
     const result = await runInteractionPipeline(pipeline, {
       input,
@@ -263,8 +233,8 @@ describe("interaction pipeline", () => {
   it("pauses and resumes when a step requests a pause", async () => {
     const pipeline = createInteractionPipelineWithDefaults();
     registerInteractionPack(pipeline, PauseOncePack);
-    const model = createModel("Paused hello");
-    const input = { message: createMessage("Hi") };
+    const model = createMockModel("Paused hello");
+    const input = { message: createMockMessage("Hi") };
 
     const paused = await runInteractionPipeline(pipeline, {
       input,

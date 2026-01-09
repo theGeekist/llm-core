@@ -3,7 +3,7 @@ import type { Model, Retriever } from "#adapters";
 import {
   assertSyncOutcome,
   createResumeSnapshot,
-  createSessionStore,
+  createTestResumeStore,
   makeRuntime,
 } from "./helpers";
 
@@ -61,7 +61,7 @@ describe("Workflow registry routing", () => {
 
   it("re-resolves providers during resume using provider overrides", () => {
     let captured: unknown;
-    const { sessionStore } = createSessionStore();
+    const { store: sessionStore } = createTestResumeStore();
     sessionStore.set("token", createResumeSnapshot("token"));
     const model: Model = {
       generate: () => ({ text: "override" }),

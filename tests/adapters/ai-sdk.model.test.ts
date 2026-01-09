@@ -218,12 +218,12 @@ describe("Adapter AI SDK model", () => {
     const items = isPromiseLike(collected) ? await collected : collected;
     events.push(...items);
 
-    expect(events.map((event) => event.type)).toEqual(["delta", "usage", "end"]);
-    expect(events[1]).toEqual({
+    expect(events.map((event) => event.type)).toEqual(["start", "delta", "usage", "end"]);
+    expect(events[2]).toEqual({
       type: "usage",
       usage: { inputTokens: 1, outputTokens: 1, totalTokens: 2 },
     });
-    expect(events[2]).toMatchObject({ type: "end", finishReason: "stop" });
+    expect(events[3]).toMatchObject({ type: "end", finishReason: "stop" });
     mock.restore();
   });
 

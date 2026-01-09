@@ -1,4 +1,5 @@
-import { bindFirst, type MaybePromise } from "../shared/maybe";
+import { bindFirst } from "../shared/fp";
+import { type MaybePromise } from "../shared/maybe";
 import { getRecipe } from "./recipe-registry";
 import { buildCapabilities } from "./capabilities";
 import { buildExplainSnapshot, type ExplainSnapshot } from "./explain";

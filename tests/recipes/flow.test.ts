@@ -4,7 +4,8 @@ import { createMemoryCache } from "../../src/adapters";
 import type { AdapterTraceEvent } from "../../src/adapters/types";
 import { emitRecipeEvent, readRecipeEvents } from "../../src/recipes/events";
 import { type StepApply, Recipe } from "../../src/recipes/flow";
-import { maybeMap, toNull } from "../../src/shared/maybe";
+import { toNull } from "../../src/shared/fp";
+import { maybeMap } from "../../src/shared/maybe";
 import { assertSyncOutcome, diagnosticMessages } from "../workflow/helpers";
 
 const appendOrder = (state: Record<string, unknown>, label: string) => {

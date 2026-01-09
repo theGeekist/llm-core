@@ -102,6 +102,7 @@ describe("Adapter AI SDK UI mapping", () => {
     const chunks = events.flatMap((event) => mapper.mapEvent(event));
 
     expect(chunks).toEqual([
+      { type: "start", messageId: "m2" },
       {
         type: "tool-input-available",
         toolCallId: "call-1",
@@ -165,6 +166,7 @@ describe("Adapter AI SDK UI mapping", () => {
     );
 
     expect(deltaChunks).toEqual([
+      { type: "start", messageId: "interaction-1" },
       { type: "text-start", id: "interaction-1:text" },
       { type: "text-delta", id: "interaction-1:text", delta: "hi" },
     ]);
@@ -181,6 +183,7 @@ describe("Adapter AI SDK UI mapping", () => {
     const errorChunks = mapper.mapEvent(modelEvent(2, { type: "error", error: "boom" }));
 
     expect(deltaChunks).toEqual([
+      { type: "start", messageId: "interaction-1" },
       { type: "text-start", id: "interaction-1:text" },
       { type: "text-delta", id: "interaction-1:text", delta: "hi" },
     ]);
@@ -201,6 +204,7 @@ describe("Adapter AI SDK UI mapping", () => {
 
     expect(result).toBe(true);
     expect(capture.chunks).toEqual([
+      { type: "start", messageId: "interaction-1" },
       { type: "text-start", id: "interaction-1:text" },
       { type: "text-delta", id: "interaction-1:text", delta: "hello" },
     ]);
@@ -214,6 +218,7 @@ describe("Adapter AI SDK UI mapping", () => {
     sink.onEvent(modelEvent(1, { type: "delta", reasoning: "thinking" }));
 
     expect(capture.chunks).toEqual([
+      { type: "start", messageId: "interaction-1" },
       { type: "reasoning-start", id: "interaction-1:reasoning" },
       { type: "reasoning-delta", id: "interaction-1:reasoning", delta: "thinking" },
     ]);

@@ -29,3 +29,6 @@ This keeps the transport generic and makes it easy to route in UI adapters.
 If you need concrete host transport (SSE on Node or edge streams), see:
 
 - [Host Transport](/interaction/host-transport)
+
+If you need to fan-out events to multiple sinks (logging + UI), use
+`createEventStreamFanout` from the adapters primitives.

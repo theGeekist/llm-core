@@ -1,4 +1,5 @@
-import { bindFirst, maybeMap, type MaybePromise } from "../shared/maybe";
+import { bindFirst } from "../shared/fp";
+import { maybeMap, type MaybePromise } from "../shared/maybe";
 import type { AdapterBundle, EventStream, Message } from "../adapters/types";
 import type { HelperMode, PipelinePaused, PipelineReporter } from "@wpkernel/pipeline/core";
 import type {
@@ -30,6 +31,7 @@ export type InteractionHandleInput = {
 
 export type InteractionHandleOverrides = InteractionHandleDefaults & {
   captureEvents?: boolean;
+  abortSignal?: AbortSignal;
 };
 
 export type InteractionHandleResult = {

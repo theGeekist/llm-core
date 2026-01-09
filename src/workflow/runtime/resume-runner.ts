@@ -1,6 +1,7 @@
 import type { AdapterBundle, AdapterDiagnostic } from "../../adapters/types";
 import type { MaybePromise } from "../../shared/maybe";
-import { bindFirst, maybeChain } from "../../shared/maybe";
+import { bindFirst } from "../../shared/fp";
+import { maybeChain } from "../../shared/maybe";
 import { attachAdapterContext, createAdapterContext } from "../adapter-context";
 import {
   applyDiagnosticsMode,
@@ -93,7 +94,7 @@ const handleResumeResolution = <TArtefact>(
     retry: input.resumeRuntime?.retry,
     trace: input.deps.trace,
   });
-  const adapterDiagnostics = resolution.diagnostics.map(createAdapterDiagnostic);
+  const adapterDiagnostics = resolution.diagnostics.map((d) => createAdapterDiagnostic(d));
   const contractDiagnostics = input.deps.readContractDiagnostics(mergedAdapters);
   const runtimeDiagnostics = adapterDiagnostics.concat(contractDiagnostics);
   if (
@@ -115,8 +116,9 @@ const handleResumeResolution = <TArtefact>(
     );
   }
   const resumeExtraDiagnostics = normalizeDiagnostics(input.resumeDiagnostics, []);
+  const adjustedDiagnostics = applyDiagnosticsMode(runtimeDiagnostics, input.resumeDiagnosticsMode);
   const getDiagnostics = createDiagnosticsGetter([
-    runtimeDiagnostics,
+    adjustedDiagnostics,
     adapterContext.diagnostics,
     resumeExtraDiagnostics,
   ]);

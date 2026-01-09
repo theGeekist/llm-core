@@ -3,7 +3,8 @@ import type { EmbeddingsInterface } from "@langchain/core/embeddings";
 import type { BaseEmbedding } from "@llamaindex/core/embeddings";
 import { embed, embedMany, type EmbeddingModel } from "ai";
 import type { Embedder } from "#workflow";
-import { maybeMap, identity } from "../../src/shared/maybe";
+import { identity } from "../../src/shared/fp";
+import { maybeMap } from "../../src/shared/maybe";
 
 const toEmbedderFromLangChain = (embeddings: EmbeddingsInterface<number[]>): Embedder => ({
   embed: (text) => maybeMap(identity, embeddings.embedQuery(text)),

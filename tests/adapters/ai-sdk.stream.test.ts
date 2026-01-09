@@ -38,6 +38,25 @@ describe("Adapter AI SDK streaming", () => {
       asAiSdkStreamPart({ type: "reasoning-delta", id: "t1", text: "think" }),
     ]);
 
+    const events: Array<{ type: string; text?: string; reasoning?: string }> = [];
+    for await (const event of toModelStreamEvents(parts)) {
+      events.push({
+        type: event.type,
+        text: "text" in event ? event.text : undefined,
+        reasoning: "reasoning" in event ? event.reasoning : undefined,
+      });
+    }
+
+    expect(events).toEqual([
+      { type: "start", text: undefined, reasoning: undefined },
+      { type: "delta", text: undefined, reasoning: undefined },
+      { type: "delta", text: undefined, reasoning: "think" },
+    ]);
+  });
+
+  it("injects a start event when the stream begins with a delta", async () => {
+    const parts = asAsyncIterable([asAiSdkStreamPart({ type: "text-delta", text: "hi" })]);
+
     const events: Array<{ type: string; text?: string }> = [];
     for await (const event of toModelStreamEvents(parts)) {
       events.push({ type: event.type, text: "text" in event ? event.text : undefined });
@@ -45,8 +64,7 @@ describe("Adapter AI SDK streaming", () => {
 
     expect(events).toEqual([
       { type: "start", text: undefined },
-      { type: "delta", text: undefined },
-      { type: "delta", text: "think" },
+      { type: "delta", text: "hi" },
     ]);
   });
 
@@ -77,6 +95,11 @@ describe("Adapter AI SDK streaming", () => {
     }
 
     expect(events).toEqual([
+      {
+        type: "start",
+        toolCall: undefined,
+        toolResult: undefined,
+      },
       {
         type: "delta",
         toolCall: { id: "c1", name: "lookup", arguments: { q: "hi" } },

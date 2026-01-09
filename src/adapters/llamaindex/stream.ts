@@ -6,7 +6,7 @@ import {
   toStreamEndEvent,
   toStreamStartEvent,
   toStreamUsageEvent,
-} from "../stream-utils";
+} from "../utils";
 import { ModelUsageHelper } from "../modeling";
 import { readNumber } from "../utils";
 

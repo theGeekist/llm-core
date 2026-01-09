@@ -10,7 +10,8 @@ import type {
 } from "../../adapters/types";
 import { readString } from "../../adapters/utils";
 import { isRecord } from "../../shared/guards";
-import { bindFirst, maybeAll, maybeMap, type MaybePromise } from "../../shared/maybe";
+import { bindFirst } from "../../shared/fp";
+import { maybeAll, maybeMap, type MaybePromise } from "../../shared/maybe";
 import type { PipelineContext, PipelineState } from "../../workflow/types";
 import type { AgentInput } from "../types";
 

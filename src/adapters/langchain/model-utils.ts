@@ -16,7 +16,7 @@ import {
   normalizeTimestamp,
   toResponseFormatSchema,
   tryParseJson,
-} from "../model-utils";
+} from "../utils";
 import { ModelCallHelper } from "../modeling";
 import { toLangChainMessage } from "./messages";
 import { toLangChainTool } from "./tools";

@@ -17,6 +17,16 @@ API stays consistent across recipes and interactions.
 
 :::
 
+## AI SDK ChatTransport helper
+
+If you are already using `useChat`, you can plug in a transport that runs Interaction Core
+directly instead of a bespoke HTTP handler.
+
+::: code-group
+<<< @/snippets/adapters/ai-sdk-chat-transport.js#docs [JavaScript]
+<<< @/snippets/adapters/ai-sdk-chat-transport.ts#docs [TypeScript]
+:::
+
 ## Assistant UI transport
 
 assistant-ui offers an `assistant-transport` command protocol. The adapter maps interaction model
@@ -43,6 +53,19 @@ so you can bridge a headless Interaction Core run into the ChatKit Web Component
 
 <<< @/snippets/adapters/openai-chatkit.js#docs
 
+:::
+
+If you are working with another event-driven UI SDK, you can build a similar bridge by using
+`createInteractionEventEmitterStream` with your own event mapper.
+
+## NLUX ChatAdapter
+
+NLUX expects a `ChatAdapter` that can stream text or return a batch result. The adapter below
+bridges Interaction Core into that contract.
+
+::: code-group
+<<< @/snippets/adapters/nlux-chat-adapter.js#docs [JavaScript]
+<<< @/snippets/adapters/nlux-chat-adapter.ts#docs [TypeScript]
 :::
 
 ## Mapping behavior

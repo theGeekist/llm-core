@@ -1,4 +1,5 @@
-import { bindFirst, maybeMap } from "../shared/maybe";
+import { bindFirst } from "../shared/fp";
+import { maybeMap } from "../shared/maybe";
 import { isRecord } from "../shared/guards";
 import { createRecipeDiagnostic } from "../shared/diagnostics";
 import { addTraceEvent } from "../shared/trace";

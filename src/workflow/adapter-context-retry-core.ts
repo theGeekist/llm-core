@@ -5,7 +5,7 @@ import type {
   RetryPolicy,
 } from "../adapters/types";
 import type { MaybePromise } from "../shared/maybe";
-import { bindFirst } from "../shared/maybe";
+import { bindFirst } from "../shared/fp";
 import type { TraceEvent } from "../shared/trace";
 import {
   type RetryWrapperInput,

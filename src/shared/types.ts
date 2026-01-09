@@ -1,12 +1,8 @@
 import type { PipelineReporter } from "@wpkernel/pipeline/core";
 import type { AdapterBundle, PauseKind } from "../adapters/types";
-import type { DiagnosticEntry } from "./diagnostics";
-import type { TraceEvent } from "./trace";
+export type { DiagnosticEntry, TraceDiagnostics, TraceEvent } from "./reporting";
 
-export type TraceDiagnostics = {
-  trace: TraceEvent[];
-  diagnostics: DiagnosticEntry[];
-};
+// TraceDiagnostics exported from reporting
 
 export type ExecutionContextBase = {
   reporter: PipelineReporter;

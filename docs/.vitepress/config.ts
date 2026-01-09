@@ -183,7 +183,7 @@ export default defineConfig({
             { text: "Reducer", link: "/interaction/reducer" },
             { text: "Sessions", link: "/interaction/session" },
             { text: "Transport", link: "/interaction/transport" },
-            { text: "Host Glue", link: "/interaction/host-glue" },
+            { text: "Host", link: "/interaction/host-glue" },
           ],
         },
       ],

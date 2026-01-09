@@ -7,7 +7,8 @@ import type {
   WorkflowRuntime,
 } from "../types";
 import { addTraceEvent, createTrace } from "../../shared/trace";
-import { bindFirst, maybeTry } from "../../shared/maybe";
+import { bindFirst } from "../../shared/fp";
+import { maybeTry } from "../../shared/maybe";
 import type { ResumeHandlerDeps } from "./resume-types";
 import { startResumePipeline } from "./resume-start";
 import { applyDiagnosticsMode } from "../../shared/diagnostics";
