@@ -13,7 +13,7 @@ describe("guards", () => {
       expect(isRecord(undefined)).toBe(false);
       expect(isRecord(1)).toBe(false);
       expect(isRecord("string")).toBe(false);
-      expect(isRecord([])).toBe(true); // Arrays are objects in JS
+      expect(isRecord([])).toBe(false);
     });
   });
 

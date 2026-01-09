@@ -97,6 +97,7 @@ function executeInteractionStream(
   const overrides: InteractionHandleOverrides = {
     eventStream,
     captureEvents: config.transport.options.captureEvents,
+    abortSignal: config.options.abortSignal,
   };
   const runConfig: RunConfig = { transport: config.transport, overrides };
   const buildConfig: BuildInputConfig = { options: config.options, transport: config.transport };

@@ -1,7 +1,7 @@
 export type RecordValue = Record<string, unknown>;
 
 export const isRecord = (value: unknown): value is RecordValue =>
-  value !== null && typeof value === "object";
+  value !== null && typeof value === "object" && !Array.isArray(value);
 
 export const hasKeys = (value: RecordValue) => Object.keys(value).length > 0;
 

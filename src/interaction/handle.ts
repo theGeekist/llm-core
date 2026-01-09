@@ -31,6 +31,7 @@ export type InteractionHandleInput = {
 
 export type InteractionHandleOverrides = InteractionHandleDefaults & {
   captureEvents?: boolean;
+  abortSignal?: AbortSignal;
 };
 
 export type InteractionHandleResult = {
