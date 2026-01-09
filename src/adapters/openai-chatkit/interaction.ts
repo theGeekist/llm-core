@@ -73,7 +73,7 @@ class ChatKitInteractionMapperImpl implements ChatKitInteractionMapper {
     this.options = options ?? {};
   }
 
-  reset() {}
+  reset() { }
 
   mapEvent(event: InteractionEvent): CustomEvent[] {
     if (event.kind === "model") {
@@ -132,6 +132,7 @@ function dispatchEvents(dispatchEvent: (event: CustomEvent) => void, events: Cus
     }
     return true;
   } catch {
+    // Silent failure is intentional to resilience, but debug logging could be added here.
     return false;
   }
 }

@@ -9,5 +9,10 @@ export const isString = (value: unknown): value is string => typeof value === "s
 
 export const isArray = Array.isArray as (value: unknown) => value is unknown[];
 
-export const isNonEmptyArray = <T>(value: unknown): value is [T, ...T[]] =>
-  Array.isArray(value) && value.length > 0;
+export const isNonEmptyArray = <T>(
+  value: unknown,
+  isT?: (item: unknown) => item is T,
+): value is [T, ...T[]] =>
+  Array.isArray(value) &&
+  value.length > 0 &&
+  (!isT || value.every(isT));

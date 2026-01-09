@@ -70,13 +70,17 @@ export const createMockEmbedder = (values = [0.1, 0.2, 0.3], withEmbedMany = fal
   embedMany: withEmbedMany ? (texts) => texts.map(() => values) : undefined,
 });
 
+
+type UpsertInput = { documents?: unknown; vectors?: unknown };
+
 export const createMockVectorStore = () => {
-  const calls: Array<{ documents?: unknown; vectors?: unknown }> = [];
+  const calls: Array<UpsertInput> = [];
   const store: VectorStore = {
     upsert: (input) => {
+      const typedInput = input as UpsertInput;
       calls.push({
-        documents: (input as { documents?: unknown }).documents,
-        vectors: (input as { vectors?: unknown }).vectors,
+        documents: typedInput.documents,
+        vectors: typedInput.vectors,
       });
       return null;
     },

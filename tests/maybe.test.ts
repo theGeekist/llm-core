@@ -1,6 +1,5 @@
 import { describe, expect, it } from "bun:test";
 import {
-  bindFirst,
   maybeChain,
   curryK,
   maybeMap,
@@ -17,7 +16,7 @@ import {
   maybeTry,
   tryWrap,
 } from "../src/shared/maybe";
-import { toNull } from "../src/shared/fp";
+import { bindFirst, toNull } from "../src/shared/fp";
 
 const addOne = (value: number) => value + 1;
 const double = (value: number) => value * 2;
@@ -189,7 +188,7 @@ describe("Maybe utilities", () => {
   });
 
   it("collectStep supports async steps and empty streams", async () => {
-    const stream = (async function* () {})();
+    const stream = (async function* () { })();
     const step = toStep(stream);
     const result = collectStep(step);
     expect(isPromiseLike(result)).toBe(true);

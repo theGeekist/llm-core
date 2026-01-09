@@ -94,10 +94,12 @@ describe("Adapter openai-chatkit mapping", () => {
     });
 
     stream.emit(toStreamEvent(modelEvent(1, { type: "start", id: "m1" })));
-    stream.emitMany!([
-      { name: "interaction.model", data: null },
-      toStreamEvent(modelEvent(2, { type: "end", finishReason: "stop" })),
-    ]);
+    if (stream.emitMany) {
+      stream.emitMany([
+        { name: "interaction.model", data: null },
+        toStreamEvent(modelEvent(2, { type: "end", finishReason: "stop" })),
+      ]);
+    }
 
     expect(capture.events.map((event) => event.type)).toEqual([
       "chatkit.response.start",
