@@ -42,7 +42,7 @@ class InteractionEventEmitterStreamImpl<TEvent> implements EventStream {
 
 export function createInteractionEventEmitterStream<TEvent>(
   options: InteractionEventEmitterStreamOptions<TEvent>,
-) {
+): EventStream {
   return new InteractionEventEmitterStreamImpl(options);
 }
 

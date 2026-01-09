@@ -94,7 +94,7 @@ describe("Adapter openai-chatkit mapping", () => {
     });
 
     stream.emit(toStreamEvent(modelEvent(1, { type: "start", id: "m1" })));
-    stream.emitMany([
+    stream.emitMany!([
       { name: "interaction.model", data: null },
       toStreamEvent(modelEvent(2, { type: "end", finishReason: "stop" })),
     ]);
