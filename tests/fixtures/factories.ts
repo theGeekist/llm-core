@@ -70,7 +70,6 @@ export const createMockEmbedder = (values = [0.1, 0.2, 0.3], withEmbedMany = fal
   embedMany: withEmbedMany ? (texts) => texts.map(() => values) : undefined,
 });
 
-
 type UpsertInput = { documents?: unknown; vectors?: unknown };
 
 export const createMockVectorStore = () => {

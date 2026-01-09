@@ -188,7 +188,7 @@ describe("Maybe utilities", () => {
   });
 
   it("collectStep supports async steps and empty streams", async () => {
-    const stream = (async function* () { })();
+    const stream = (async function* () {})();
     const step = toStep(stream);
     const result = collectStep(step);
     expect(isPromiseLike(result)).toBe(true);

@@ -73,7 +73,7 @@ class ChatKitInteractionMapperImpl implements ChatKitInteractionMapper {
     this.options = options ?? {};
   }
 
-  reset() { }
+  reset() {}
 
   mapEvent(event: InteractionEvent): CustomEvent[] {
     if (event.kind === "model") {

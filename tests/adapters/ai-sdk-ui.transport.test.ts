@@ -67,8 +67,7 @@ const readStream = async (stream: ReadableStream<UIMessageChunk>): Promise<Strea
 const createHandle = (
   capture: RunCapture,
   events?: InteractionEvent[],
-): Pick<InteractionHandle, "run"> =>
-({
+): Pick<InteractionHandle, "run"> => ({
   run(input: InteractionHandleInput, overrides?: InteractionHandleOverrides) {
     capture.input = input;
     capture.overrides = overrides;
@@ -182,7 +181,7 @@ describe("Adapter AI SDK chat transport", () => {
         mapperCalls.push(event.kind);
         return [];
       },
-      reset() { },
+      reset() {},
     };
     const events = [modelEvent(1, { type: "delta", text: "hello" })];
     const handle = createHandle(capture, events);

@@ -127,12 +127,12 @@ function isValidInteractionEvent(candidate: unknown): candidate is InteractionEv
   const { sequence, timestamp, sourceId } = meta;
 
   // Validate sequence
-  if (typeof sequence !== "number" && typeof sequence !== "string") {
+  if (typeof sequence !== "number") {
     return false;
   }
 
   // Validate timestamp
-  if (typeof timestamp !== "number" && typeof timestamp !== "string") {
+  if (typeof timestamp !== "number") {
     return false;
   }
 

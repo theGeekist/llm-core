@@ -8,11 +8,11 @@ const ERROR_MISSING_CONTRACT = "Missing recipe contract.";
 
 export const withFactory =
   <T>(factory: () => T) =>
-    (_contract: unknown, _plugins: unknown[]) => {
-      void _contract;
-      void _plugins;
-      return factory();
-    };
+  (_contract: unknown, _plugins: unknown[]) => {
+    void _contract;
+    void _plugins;
+    return factory();
+  };
 
 export const isPromiseLike = (value: unknown): value is Promise<unknown> =>
   !!value && typeof (value as Promise<unknown>).then === "function";
@@ -112,15 +112,15 @@ export const makeRuntime = (
   const resume = options?.resume;
   const pipelineFactory = run
     ? withFactory(
-      () =>
-        ({
-          run: (runOptions: TestRunOptions) => run(runOptions),
-          resume: resume
-            ? (snapshot: unknown, resumeInput?: unknown) => resume(snapshot, resumeInput)
-            : undefined,
-          extensions: { use: () => undefined },
-        }) as never,
-    )
+        () =>
+          ({
+            run: (runOptions: TestRunOptions) => run(runOptions),
+            resume: resume
+              ? (snapshot: unknown, resumeInput?: unknown) => resume(snapshot, resumeInput)
+              : undefined,
+            extensions: { use: () => undefined },
+          }) as never,
+      )
     : undefined;
   return createRuntime({
     contract,

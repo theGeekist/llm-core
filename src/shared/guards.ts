@@ -12,7 +12,4 @@ export const isArray = Array.isArray as (value: unknown) => value is unknown[];
 export const isNonEmptyArray = <T>(
   value: unknown,
   isT?: (item: unknown) => item is T,
-): value is [T, ...T[]] =>
-  Array.isArray(value) &&
-  value.length > 0 &&
-  (!isT || value.every(isT));
+): value is [T, ...T[]] => Array.isArray(value) && value.length > 0 && (!isT || value.every(isT));
