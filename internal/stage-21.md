@@ -1,8 +1,8 @@
-# Stage 21 — UI SDK Adapters + Host Glue (Out-of-Core)
+# Stage 21 — UI SDK Adapters + Host (Out-of-Core)
 
 Status: complete.
 
-Purpose: add **first-class UI SDK adapters** and **host transport glue** without polluting core.
+Purpose: add **first-class UI SDK adapters** and **host transport** without polluting core.
 These live in separate packages/modules and map Interaction Core events/state into UI SDK primitives
 (streams, hooks, chunks). The core remains headless; adapters do the bridging.
 
@@ -94,7 +94,7 @@ We installed the following UI-layer packages to map patterns that should inform 
      DX pattern for app developers.
    - Stream utilities like `tee()` and `toArray()` highlight expectations for downstream
      consumer ergonomics (debugging, fan-out).
-   - We should keep this in mind for optional host glue helpers or future façade layers.
+   - We should keep this in mind for optional host helpers or future façade layers.
 
 6. **Rich stream taxonomy + data-\* payloads (mastra)**
 
@@ -155,7 +155,7 @@ We installed the following UI-layer packages to map patterns that should inform 
    - Bridge Interaction events into assistant-ui command protocol.
    - Focus on `assistant-transport` (`add-message`, `add-tool-result`) for command-driven UIs.
 
-4. **Host glue** (optional)
+4. **Hosts (runtimes)** (optional)
    - `@llm-core/interaction-node` (SSE / WS / in-process)
    - `@llm-core/interaction-edge` (KV-backed sessions, Response streams)
 
@@ -217,15 +217,25 @@ These live in adapter packages, not core.
    - Map Interaction events to ChatKit DOM events.
    - Status: [x] complete
 
-5. **Host glue examples**
+5. **Host transport examples**
 
    - Minimal Node SSE stream.
    - Minimal Edge/Worker stream.
    - Status: [x] complete
 
 6. **Docs + examples**
+
    - Document adapter usage in `docs/interaction/transport.md` or a new page.
    - Provide one reference example app (outside core).
+   - Status: [x] complete
+
+7. **Additional Context follow-through**
+
+   - [x] AI SDK `ChatTransport` helper (transport-first integration).
+   - [x] Generic event-emitter adapter for DOM/event-based UI SDKs.
+   - [x] NLUX adapter (`ChatAdapter` with `streamText`/`batchText` + context bridging).
+   - [x] Unified start/delta/end/error lifecycle mapping in adapter core (borrow from unified-llm/mastra).
+   - [x] Optional stream utilities (tee/toArray style) in host glue helpers.
    - Status: [x] complete
 
 ## Acceptance Criteria

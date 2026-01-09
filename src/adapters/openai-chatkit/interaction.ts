@@ -1,6 +1,10 @@
 import type { ChatKitEvents } from "@openai/chatkit";
-import type { EventStream, EventStreamEvent } from "../types";
 import type { InteractionEvent, InteractionEventMeta } from "../../interaction/types";
+import { bindFirst } from "../../shared/maybe";
+import {
+  createInteractionEventEmitterStream,
+  type InteractionEventEmitter,
+} from "../primitives/interaction-event-emitter";
 import { isRecord } from "../../shared/guards";
 
 export type ChatKitEventName = keyof ChatKitEvents;
@@ -118,55 +122,7 @@ class ChatKitInteractionSinkImpl {
   }
 }
 
-class ChatKitInteractionEventStreamImpl implements EventStream {
-  private dispatchEvent: (event: CustomEvent) => void;
-  private mapper: ChatKitInteractionMapper;
-
-  constructor(options: ChatKitInteractionEventStreamOptions) {
-    this.dispatchEvent = options.dispatchEvent;
-    this.mapper = options.mapper ?? createChatKitInteractionMapper();
-  }
-
-  emit(event: EventStreamEvent) {
-    const interactionEvent = toInteractionEvent(event);
-    if (!interactionEvent) {
-      return null;
-    }
-    const events = this.mapper.mapEvent(interactionEvent);
-    return dispatchEvents(this.dispatchEvent, events);
-  }
-
-  emitMany(events: EventStreamEvent[]) {
-    const mapped: CustomEvent[] = [];
-    for (const event of events) {
-      const interactionEvent = toInteractionEvent(event);
-      if (!interactionEvent) {
-        continue;
-      }
-      appendEvents(mapped, this.mapper.mapEvent(interactionEvent));
-    }
-    return dispatchEvents(this.dispatchEvent, mapped);
-  }
-}
-
-const appendEvents = (target: CustomEvent[], source: CustomEvent[]) => {
-  for (const event of source) {
-    target.push(event);
-  }
-};
-
-const toInteractionEvent = (event: EventStreamEvent): InteractionEvent | null => {
-  if (!event.data || !isRecord(event.data)) {
-    return null;
-  }
-  const candidate = event.data.event;
-  if (!candidate || typeof candidate !== "object") {
-    return null;
-  }
-  return candidate as InteractionEvent;
-};
-
-const dispatchEvents = (dispatchEvent: (event: CustomEvent) => void, events: CustomEvent[]) => {
+function dispatchEvents(dispatchEvent: (event: CustomEvent) => void, events: CustomEvent[]) {
   if (events.length === 0) {
     return null;
   }
@@ -178,14 +134,33 @@ const dispatchEvents = (dispatchEvent: (event: CustomEvent) => void, events: Cus
   } catch {
     return false;
   }
-};
+}
+
+function createChatKitEmitter(
+  dispatchEvent: (event: CustomEvent) => void,
+): InteractionEventEmitter<CustomEvent> {
+  return { emit: bindFirst(dispatchChatKitEvent, dispatchEvent) };
+}
+
+function dispatchChatKitEvent(dispatchEvent: (event: CustomEvent) => void, event: CustomEvent) {
+  try {
+    dispatchEvent(event);
+    return true;
+  } catch {
+    return false;
+  }
+}
 
 export const createChatKitInteractionSink = (options: ChatKitInteractionSinkOptions) =>
   new ChatKitInteractionSinkImpl(options);
 
 export const createChatKitInteractionEventStream = (
   options: ChatKitInteractionEventStreamOptions,
-) => new ChatKitInteractionEventStreamImpl(options);
+) =>
+  createInteractionEventEmitterStream({
+    emitter: createChatKitEmitter(options.dispatchEvent),
+    mapper: options.mapper ?? createChatKitInteractionMapper(),
+  });
 
 export const toChatKitEvents = (
   input: ChatKitInteractionMapper | ChatKitInteractionMapperOptions | undefined,

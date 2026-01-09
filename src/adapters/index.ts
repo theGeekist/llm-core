@@ -187,8 +187,14 @@ export { createBuiltinTools } from "./primitives/tools";
 export { createBuiltinTrace } from "./primitives/trace";
 export { createCacheFromKVStore } from "./primitives/cache";
 export { createMemoryCache } from "./primitives/cache";
-export { createEventStreamFromTraceSink } from "./primitives/event-stream";
+export { createEventStreamFanout, createEventStreamFromTraceSink } from "./primitives/event-stream";
 export { createInterruptStrategy } from "./primitives/interrupt";
+export {
+  createInteractionEventEmitterStream,
+  type InteractionEventEmitter,
+  type InteractionEventEmitterStreamOptions,
+  type InteractionEventMapper,
+} from "./primitives/interaction-event-emitter";
 
 export { fromAiSdkCacheStore } from "./ai-sdk";
 export { fromAiSdkEmbeddings } from "./ai-sdk";
@@ -204,11 +210,13 @@ export { fromAiSdkTranscriptionModel } from "./ai-sdk";
 export { toModelStreamEvents } from "./ai-sdk";
 export {
   createAiSdkInteractionEventStream,
+  createAiSdkChatTransport,
   createAiSdkInteractionMapper,
   createAiSdkInteractionSink,
   toAiSdkUiMessageChunks,
 } from "./ai-sdk-ui";
 export type {
+  AiSdkChatTransportOptions,
   AiSdkInteractionEventStreamOptions,
   AiSdkInteractionMapper,
   AiSdkInteractionMapperOptions,
@@ -233,6 +241,7 @@ export {
   toChatKitEvents,
   toChatKitThreadId,
 } from "./openai-chatkit";
+export { createNluxChatAdapter } from "./nlux-ui";
 export type {
   ChatKitEventName,
   ChatKitInteractionEventStreamOptions,
@@ -240,6 +249,7 @@ export type {
   ChatKitInteractionMapperOptions,
   ChatKitInteractionSinkOptions,
 } from "./openai-chatkit";
+export type { NluxChatAdapterOptions } from "./nlux-ui";
 
 export { fromLangChainDocument, toLangChainDocument } from "./langchain";
 export { fromLangChainDocuments } from "./langchain";

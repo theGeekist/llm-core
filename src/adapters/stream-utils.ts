@@ -28,6 +28,15 @@ export const toStreamDeltaTextEvent = (
   raw,
 });
 
+export const toStreamDeltaReasoningEvent = (
+  reasoning: string | undefined,
+  raw?: unknown,
+): ModelStreamEvent => ({
+  type: "delta",
+  reasoning,
+  raw,
+});
+
 export const toStreamDeltaToolCallEvent = (
   toolCall: ToolCall,
   raw?: unknown,

@@ -157,12 +157,14 @@ const appendChunk = (target: UIMessageChunk[], chunk: UIMessageChunk) => {
 class AiSdkInteractionMapperImpl implements AiSdkInteractionMapper {
   private options: AiSdkInteractionMapperOptions;
   private messageId: string | null;
+  private messageStarted: boolean;
   private textStarted: boolean;
   private reasoningStarted: boolean;
 
   constructor(options?: AiSdkInteractionMapperOptions) {
     this.options = options ?? {};
     this.messageId = options?.messageId ?? null;
+    this.messageStarted = false;
     this.textStarted = false;
     this.reasoningStarted = false;
   }
@@ -170,6 +172,7 @@ class AiSdkInteractionMapperImpl implements AiSdkInteractionMapper {
   reset() {
     this.textStarted = false;
     this.reasoningStarted = false;
+    this.messageStarted = false;
     this.messageId = this.options.messageId ?? null;
   }
 
@@ -244,7 +247,7 @@ class AiSdkInteractionMapperImpl implements AiSdkInteractionMapper {
     if (event.event.type === "start") {
       this.reset();
       const messageId = this.resolveMessageId(event);
-      appendChunk(chunks, createStartChunk(messageId, messageMetadata));
+      this.ensureMessageStart(chunks, messageId, messageMetadata);
       return chunks;
     }
 
@@ -263,6 +266,7 @@ class AiSdkInteractionMapperImpl implements AiSdkInteractionMapper {
 
     if (event.event.type === "error") {
       const messageId = this.resolveMessageId(event);
+      this.ensureMessageStart(chunks, messageId, messageMetadata);
       this.appendEndChunks(chunks, messageId);
       appendChunk(chunks, { type: "error", errorText: toErrorText(event.event.error) });
       appendChunk(chunks, createFinishChunk(messageMetadata, "error"));
@@ -271,6 +275,7 @@ class AiSdkInteractionMapperImpl implements AiSdkInteractionMapper {
 
     if (event.event.type === "end") {
       const messageId = this.resolveMessageId(event);
+      this.ensureMessageStart(chunks, messageId, messageMetadata);
       this.appendEndChunks(chunks, messageId);
       appendChunk(
         chunks,
@@ -307,6 +312,7 @@ class AiSdkInteractionMapperImpl implements AiSdkInteractionMapper {
         messageId: this.resolveMessageId(event),
         event: event.event,
         meta: event.meta,
+        messageMetadata,
       });
       return chunks;
     }
@@ -332,9 +338,17 @@ class AiSdkInteractionMapperImpl implements AiSdkInteractionMapper {
     messageId: string;
     event: ModelDeltaEvent;
     meta: InteractionEventMeta;
+    messageMetadata: unknown | null;
   }) {
     const textId = toTextPartId(input.messageId);
     const reasoningId = toReasoningPartId(input.messageId);
+    const shouldStart = Boolean(
+      input.event.text || input.event.reasoning || input.event.toolCall || input.event.toolResult,
+    );
+
+    if (shouldStart) {
+      this.ensureMessageStart(input.chunks, input.messageId, input.messageMetadata);
+    }
 
     if (input.event.text) {
       if (!this.textStarted) {
@@ -421,6 +435,18 @@ class AiSdkInteractionMapperImpl implements AiSdkInteractionMapper {
       appendChunk(chunks, { type: "reasoning-end", id: reasoningId });
       this.reasoningStarted = false;
     }
+  }
+
+  private ensureMessageStart(
+    chunks: UIMessageChunk[],
+    messageId: string,
+    messageMetadata: unknown | null,
+  ) {
+    if (this.messageStarted) {
+      return;
+    }
+    appendChunk(chunks, createStartChunk(messageId, messageMetadata));
+    this.messageStarted = true;
   }
 }
 

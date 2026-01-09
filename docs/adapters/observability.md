@@ -10,7 +10,7 @@ In `llm-core`, we normalize tracing into **Trace Sinks**. A sink is simply a des
 
 **The Minimalist Approach**
 
-You don't need to install heavy observability SDKs just to see what your AI is doing. `llm-core` ships with a lightweight, in-memory trace sink you can emit to from packs or adapters.
+`llm-core` ships with a lightweight, in-memory trace sink you can emit to from packs or adapters.
 
 ### When to use this?
 

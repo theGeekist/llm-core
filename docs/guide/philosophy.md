@@ -63,7 +63,7 @@ Every layer uses `MaybePromise` so sync and async behaviors stay honest.
 
 ## Key Takeaways
 
-- **Orchestrate, Don't Glue**: Use declarative recipes, not scripts.
+- **First-class Orchestration**: Use declarative recipes, not scripts.
 - **Portable Assets**: Verify logic once, run anywhere.
 - **Deterministic State**: Prefer explicit state transitions over opaque streaming.
 - **Adapter-Driven**: Providers are pluggable; raw payloads are preserved.

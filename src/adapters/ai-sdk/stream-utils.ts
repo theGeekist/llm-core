@@ -2,6 +2,7 @@ import type { TextStreamPart, ToolSet } from "ai";
 import type { ModelStreamEvent, ToolCall, ToolResult } from "../types";
 import {
   toStreamDeltaTextEvent,
+  toStreamDeltaReasoningEvent,
   toStreamDeltaToolCallEvent,
   toStreamDeltaToolResultEvent,
   toStreamErrorEvent,
@@ -57,8 +58,9 @@ export const toEventFromPart = (part: TextStreamPart<ToolSet>): ModelStreamEvent
     case "reasoning-start":
       return toStreamStartEvent({ id: "id" in part ? part.id : undefined });
     case "text-delta":
-    case "reasoning-delta":
       return toStreamDeltaTextEvent("text" in part ? part.text : undefined, part);
+    case "reasoning-delta":
+      return toStreamDeltaReasoningEvent("text" in part ? part.text : undefined, part);
     case "text-end":
     case "reasoning-end":
       return { type: "delta", raw: part };
