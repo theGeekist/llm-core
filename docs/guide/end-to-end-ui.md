@@ -4,76 +4,67 @@ title: End-to-End UI
 
 # End-to-End UI (Interaction + Host + Adapter)
 
-This guide shows the **full path** from a single turn to a UI stream:
-interaction core -> session orchestration -> UI SDK adapter.
+This guide wires the full path from a single turn to UI commands:
+Interaction core → sessions → UI adapter.
 
-The goal is to keep logic headless and deterministic while still delivering UI-friendly
-chunks or commands.
-
-> [!NOTE] > **Demo path (3/4)** - Wires interaction + sessions into real UI streams.
-> Previous: Sessions + Transport. Next: Workflow Orchestration.
+> [!NOTE] > **Demo path (3/4)** — Next up:
+> [Workflow Orchestration](/guide/hello-world).
 
 ---
 
-## 1) Working demo
+## How the UI boundary works
 
-<<< @/snippets/guide/end-to-end-ui.js#docs
-
-What you get:
-
-- A single `handleChatTurn` entrypoint for app/API code.
-- UI commands emitted as the model streams.
-- Durable state via session storage.
-
----
-
-## 2) Options and interoperability
-
-### Swap UI adapters without touching interaction logic
-
-By default, this guide uses the `assistant-ui` adapter.
-
-```diff
-- import { createAssistantUiInteractionEventStream } from "@geekist/llm-core/adapters";
-+ import { createAiSdkInteractionEventStream } from "@geekist/llm-core/adapters";
-
-- const eventStream = createAssistantUiInteractionEventStream({ sendCommand });
-+ const eventStream = createAiSdkInteractionEventStream({ sendChunk });
+```mermaid
+flowchart LR
+  U[User message] --> H[Host handler]
+  H --> S[Session]
+  S --> P[Interaction pipeline]
+  P --> E[EventStream]
+  E --> UI[UI adapter]
 ```
 
-Other UI adapters:
+---
 
-- `createAssistantUiInteractionEventStream` (assistant-ui)
-- `createAiSdkInteractionEventStream` (Vercel AI SDK)
-- `createChatKitInteractionEventStream` (OpenAI ChatKit)
+## Step 1: Set up storage and adapters
 
-### Swap host transports (SSE, WebSocket, Worker)
+::: code-group
+<<< @/snippets/guide/end-to-end-ui.js#setup [JavaScript]
+<<< @/snippets/guide/end-to-end-ui.ts#setup [TypeScript]
+:::
 
-Any `EventStream` implementation works. You can emit events over SSE, WebSocket, or a
-worker stream without changing interaction or session code.
-
-See:
-
-- [Host Glue](/interaction/host-glue)
-
-### Add session policies (summarize / truncate)
-
-Policies remain adapter-driven, so hosts decide when and how to apply them.
+This keeps persistence and UI output in the host layer while the interaction core stays headless.
 
 ---
 
-## 3) Why this is better than ad-hoc UI wiring
+## Step 2: Handle a chat turn and emit UI commands
 
-- **Headless by default**: UI SDKs stay in adapters, not runtime logic.
-- **Deterministic events**: the interaction reducer shapes state consistently.
-- **Composable storage**: swap Redis/KV/in-memory stores without touching your UI.
+::: code-group
+<<< @/snippets/guide/end-to-end-ui.js#handler [JavaScript]
+<<< @/snippets/guide/end-to-end-ui.ts#handler [TypeScript]
+:::
+
+Your app calls `handleChatTurn(...)` with a `sessionId`, a message, and a UI command sink. The
+adapter turns interaction events into UI-specific commands.
+
+---
+
+## Swap UI adapters without touching interaction logic
+
+The adapter is the only thing that changes:
+
+```diff
+- createAssistantUiInteractionEventStream
++ createAiSdkInteractionEventStream
+```
+
+The rest of the handler stays the same.
 
 ---
 
 ## Run the demo locally
 
-The `examples/interaction-node-sse` app shows the same end-to-end path (Interaction -> Session
--> EventStream) in a tiny Node server.
+The `examples/interaction-node-sse` app shows the same end-to-end path (Interaction → Session →
+EventStream) in a tiny Node server.
 
 ```bash
 # from the repo root
@@ -92,9 +83,6 @@ To hit the SSE endpoint directly:
 ```
 http://localhost:3030/chat?sessionId=demo&message=Hello
 ```
-
-If you want UI adapter output instead of raw interaction events, swap the event stream in the
-handler for `createAssistantUiInteractionEventStream` (and wire its commands to your UI client).
 
 ---
 

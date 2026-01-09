@@ -5,7 +5,7 @@
 The Agent recipe is the most complete example of the **recipe-first** API. It runs a ReAct-style loop
 (plan -> tool-call -> tool-exec -> respond) while keeping diagnostics and trace attached to every outcome.
 You reach for it when you want a dependable “do the right thing” core for support agents, ops helpers,
-triage bots, and internal copilots, without re‑stitching glue code each time. The loop is explicit, the
+triage bots, and internal copilots, without re-stitching ad-hoc wiring each time. The loop is explicit, the
 inputs are stable, and the runtime guarantees (outcomes, diagnostics, trace) are always there.
 
 If you need a stable orchestration skeleton that can absorb retrieval, HITL gates, or tool execution

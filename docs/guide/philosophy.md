@@ -6,12 +6,15 @@ There are two ways to build AI applications today: **Gluing** and **Orchestratin
 
 **Orchestrating** is different. You define _what_ you want to happen using declarative **Recipes**, and a specialized runtime makes it happen.
 
-`llm-core` is an **Orchestration Framework**.
+`llm-core` is an **Orchestration Framework** that stays runtime-agnostic and adapter-driven.
 
-- **Recipes** (`recipes.*()`) define the logic.
-- **Workflow** (`Workflow.run`) executes the logic.
+- **Recipes** (`recipes.*()`) declare what the system should do.
+- **Workflow runtime** executes those recipes deterministically.
+- **Interactions** project model/query streams into UI-ready state for single turns.
+- **Sessions** orchestrate multi-turn state without coupling to any host environment.
+- **Adapters** normalize providers and ecosystems while keeping raw details intact.
 
-It imposes structure (Recipes, Packs, Steps) to give you superpowers that glue code can never support.
+It imposes structure (Recipes, Packs, Steps) to give you superpowers that ad-hoc wiring can never support.
 
 ## The Unleashed Workflow
 
@@ -47,8 +50,20 @@ If you remember when frontend development moved from manual DOM manipulation (jQ
 
 `llm-core` is that shift for AI. It asks you to accept constraints—explicit inputs, typed outcomes, defined steps—in exchange for a system that is predictable, inspectable, and robust.
 
+## The Layers You Build With
+
+`llm-core` keeps each layer small and composable so you can build only what you need:
+
+- **Adapters** normalize providers and ecosystems without locking you in.
+- **Interactions** are single-turn projections: stream events → deterministic state.
+- **Sessions** are orchestration wrappers: load state, run a turn, apply policy, save.
+- **Workflows** are multi-step orchestration: packs, recipes, and pause/resume.
+
+Every layer uses `MaybePromise` so sync and async behaviors stay honest.
+
 ## Key Takeaways
 
-- [ ] **Orchestrate, Don't Glue**: Use declarative recipes, not scripts.
-- [ ] **Portable Assets**: Verify logic once, run anywhere.
-- [ ] **Infrastructure**: Treat experiments and prompts as versioned assets.
+- **Orchestrate, Don't Glue**: Use declarative recipes, not scripts.
+- **Portable Assets**: Verify logic once, run anywhere.
+- **Deterministic State**: Prefer explicit state transitions over opaque streaming.
+- **Adapter-Driven**: Providers are pluggable; raw payloads are preserved.

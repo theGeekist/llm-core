@@ -1,76 +1,68 @@
 # Workflow Orchestration (RAG + HITL)
 
-This guide shows a full end-to-end workflow: an **agent** that retrieves data (RAG), streams
+This guide shows how to orchestrate a full workflow: an agent that retrieves data (RAG), flows
 through a deterministic pipeline, and can pause for human approval (HITL).
 
-If you are new to interaction sessions or single-turn UI projection, start here first:
+By the time you reach this page you’ve already seen the interaction stack; this is where you plug
+those ideas into long‑running workflows.
+
+If you are new to interactions, start here first:
 
 - [Single-Turn Interaction](/guide/interaction-single-turn)
 - [Sessions + Transport](/guide/interaction-sessions)
 
-> [!NOTE] > **Demo path (4/4)** - Full workflow orchestration (RAG + HITL) that complements the interaction stack.
-> If you're coming from the interaction guides, you now have the full picture: UI turns -> sessions -> workflows.
+> [!NOTE] > **Demo path (4/4)** — Previous guides covered single‑turn interaction, sessions, and end‑to‑end UI.
+> This page closes the loop with full workflow orchestration:
+> interactions → sessions → UI adapters → workflows.
 
 ---
 
-## 1) Working demo
+## How workflows compose packs
 
-<<< @/snippets/guide/workflow-orchestration.js#docs
+An agent workflow is assembled from packs. In this example you attach the RAG pack and the HITL pack
+to the base agent recipe, and the workflow runtime executes them together as a single DAG:
 
-What you get:
-
-- Multi-step orchestration (agent loop + retrieval + HITL).
-- Deterministic ordering, trace, diagnostics.
-- Pause/resume hooks for real approvals.
-
-Under the hood:
-
-- The **RAG pack** expects a `retriever` adapter port.
-- The **HITL pack** is what introduces the paused outcome.
-
----
-
-## 2) Options and interoperability
-
-### Swap model providers
-
-```diff
-- import { createBuiltinModel } from "@geekist/llm-core/adapters";
-+ import { fromAiSdkModel } from "@geekist/llm-core/adapters";
-+ import { openai } from "@ai-sdk/openai";
-
-- model: createBuiltinModel(),
-+ model: fromAiSdkModel(openai("gpt-4o-mini")),
-```
-
-### Swap retriever implementations
-
-```js
-import { fromLangChainRetriever } from "@geekist/llm-core/adapters";
-import { MemoryVectorStore } from "langchain/vectorstores/memory";
-
-const store = new MemoryVectorStore(/* embeddings */);
-const retriever = fromLangChainRetriever(store.asRetriever());
-```
-
-### Override packs without rewriting the flow
-
-```js
-const workflow = recipes
-  .agent()
-  .use(recipes["agent.planning"]()) // override planning
-  .use(recipes.rag())
-  .defaults({ adapters: { model, retriever } })
-  .build();
+```mermaid
+flowchart LR
+  R[Recipe] --> P1[RAG pack]
+  R --> P2[HITL pack]
+  P1 --> W[Workflow runtime]
+  P2 --> W
 ```
 
 ---
 
-## 3) Why this is better than ad-hoc orchestration
+## Step 1: Define the workflow
 
-- **Deterministic execution**: DAG ordering replaces implicit async chains.
-- **Pause/resume**: HITL is a first-class runtime concept.
-- **Interoperability**: swap model and retriever ecosystems without touching business logic.
+::: code-group
+<<< @/snippets/guide/workflow-orchestration.js#setup [JavaScript]
+<<< @/snippets/guide/workflow-orchestration.ts#setup [TypeScript]
+:::
+
+::: code-group
+<<< @/snippets/guide/workflow-orchestration.js#build [JavaScript]
+<<< @/snippets/guide/workflow-orchestration.ts#build [TypeScript]
+:::
+
+In this setup:
+
+- the **RAG pack** expects a `retriever` adapter and handles the query → documents → answer flow
+  for you, and
+- the **HITL pack** adds a gate that can return a `paused` outcome when the workflow needs
+  human approval.
+
+---
+
+## Step 2: Run and handle pause/resume
+
+::: code-group
+<<< @/snippets/guide/workflow-orchestration.js#run [JavaScript]
+<<< @/snippets/guide/workflow-orchestration.ts#run [TypeScript]
+:::
+
+When the workflow returns `status: "paused"`, you get a token that captures the point‑in‑time
+state. Store the token, present the pending decision to a human, and resume the workflow once
+a decision has been made.
 
 ---
 

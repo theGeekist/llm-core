@@ -5,7 +5,7 @@
 Ingest is a classic ETL flow (load -> split -> embed -> index) built as a **recipe**.
 It is designed for repeatable ingestion and incremental re-runs, the “write path” that powers
 every serious RAG system. You use it when you want to bring new knowledge into a vector store
-without embedding glue into your application code.
+without embedding ad-hoc wiring into your application code.
 
 ```mermaid
 flowchart LR

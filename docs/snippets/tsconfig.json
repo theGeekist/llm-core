@@ -127,7 +127,12 @@
     "interaction/transport.js",
     "interaction/host-node.js",
     "interaction/host-edge.ts",
+    "guide/interaction-single-turn.ts",
+    "guide/interaction-sessions.ts",
+    "guide/end-to-end-ui.ts",
+    "guide/workflow-orchestration.ts",
     "guide/interaction-single-turn.js",
+    "guide/interaction-sessions.js",
     "guide/end-to-end-ui.js",
     "guide/workflow-orchestration.js"
   ]

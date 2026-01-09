@@ -1,11 +1,11 @@
 ---
-title: Interaction Host Glue
+title: Interaction Host Transport
 ---
 
-# Interaction Host Glue
+# Interaction Host Transport
 
-Interaction Core is headless by design, so host runtimes (Node, Workers, Edge) provide the glue
-that turns `EventStreamEvent` into real transports like SSE. The goal is to keep the glue small,
+Interaction Core is headless by design, so host runtimes (Node, Workers, Edge) provide the transport
+layer that turns `EventStreamEvent` into real transports like SSE. The goal is to keep the transport small,
 deterministic, and adapter-driven.
 
 ---

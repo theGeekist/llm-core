@@ -1,31 +1,49 @@
-// #region docs
+// #region setup
 import { createInteractionPipelineWithDefaults, runInteractionPipeline } from "#interaction";
 import { fromAiSdkModel } from "#adapters";
 import { openai } from "@ai-sdk/openai";
 
-const pipeline = createInteractionPipelineWithDefaults();
 const model = fromAiSdkModel(openai("gpt-4o-mini"));
+const pipeline = createInteractionPipelineWithDefaults();
+// #endregion setup
 
+// #region run
 const result = await runInteractionPipeline(pipeline, {
-  input: {
-    message: { role: "user", content: "Summarize llm-core in one line." },
-    state: { messages: [], events: [], trace: [], diagnostics: [] },
-  },
+  input: { message: { role: "user", content: "Hello!" } },
   adapters: { model },
 });
+// #endregion run
 
-if (isRunResult(result)) {
-  console.log(result.artefact.messages);
-  console.log(result.artefact.events);
-} else {
-  console.log("Paused:", result.snapshot.token);
+// #region read
+if (!isRunResult(result)) {
+  throw new Error("Interaction paused.");
+}
+
+const assistant = result.artefact.messages.find(isAssistantMessage);
+console.log(assistant?.content);
+// #endregion read
+
+void pipeline;
+
+/** @param {{ role: string }} message */
+function isAssistantMessage(message) {
+  return message.role === "assistant";
 }
 
 /**
- * @param {import("#interaction").InteractionRunOutcome} value
- * @returns {value is import("#interaction").InteractionRunResult}
+ * @param {import("#interaction").InteractionRunOutcome} outcome
+ * @returns {boolean}
  */
-function isRunResult(value) {
-  return !("__paused" in value);
+function isPausedOutcome(outcome) {
+  return (
+    !!outcome && typeof outcome === "object" && "__paused" in outcome && outcome.__paused === true
+  );
 }
-// #endregion docs
+
+/**
+ * @param {import("#interaction").InteractionRunOutcome} outcome
+ * @returns {outcome is import("#interaction").InteractionRunResult}
+ */
+function isRunResult(outcome) {
+  return !isPausedOutcome(outcome);
+}

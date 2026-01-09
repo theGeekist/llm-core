@@ -75,7 +75,7 @@ will append to it.
 If you need persistence and policies (merge/summarize/truncate), use the session layer:
 
 - [Interaction Sessions](/interaction/session)
-- [Host Glue (Node/Edge)](/interaction/host-glue)
+- [Host Transport (Node/Edge)](/interaction/host-transport)
 
 Sessions are still headless and adapter-driven; they only add orchestration around the core
 pipeline.

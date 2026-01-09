@@ -7,13 +7,13 @@ adapters, and interactions at scale. It does not repeat the basic orchestration 
 - [Sessions + Transport](/guide/interaction-sessions)
 - [Workflow Orchestration](/guide/hello-world)
 
-| Feature                    | Best For...                                                                        |
-| :------------------------- | :--------------------------------------------------------------------------------- |
-| **Introspection**          | Debugging why a plugin or pack was used or ignored.                                |
-| **Lifecycle Safety**       | Preventing hooks that never fire.                                                  |
-| **Telemetry**              | Consistent usage/token reporting across providers.                                 |
-| **Pause/Resume**           | HITL approvals and long-running workflows.                                         |
-| **Content Normalisation.** | Let the Content Normaliser handle image/text inputs without conditional glue code. |
+| Feature                    | Best For...                                                                     |
+| :------------------------- | :------------------------------------------------------------------------------ |
+| **Introspection**          | Debugging why a plugin or pack was used or ignored.                             |
+| **Lifecycle Safety**       | Preventing hooks that never fire.                                               |
+| **Telemetry**              | Consistent usage/token reporting across providers.                              |
+| **Pause/Resume**           | HITL approvals and long-running workflows.                                      |
+| **Content Normalisation.** | Let the Content Normaliser handle image/text inputs without conditional wiring. |
 
 ## 1. Introspection & Control
 

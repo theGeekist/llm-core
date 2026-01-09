@@ -1,53 +1,21 @@
 # @geekist/llm-core
 
-Composable workflow + adapter core for the JS/TS LLM ecosystem.
+Build real AI products with recipes, interactions, and adapters.
 
 [![CI](https://github.com/theGeekist/llm-core/actions/workflows/ci.yml/badge.svg)](https://github.com/theGeekist/llm-core/actions/workflows/ci.yml)
 [![codecov](https://codecov.io/gh/theGeekist/llm-core/branch/main/graph/badge.svg)](https://codecov.io/gh/theGeekist/llm-core)
 [![SonarCloud](https://sonarcloud.io/api/project_badges/measure?project=theGeekist_llm-core&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=theGeekist_llm-core)
 [![Docs](https://img.shields.io/badge/docs-llm--core.geekist.co-0b0f14?style=flat&labelColor=0b0f14&color=f5c451)](https://llm-core.geekist.co/)
 
-> Small runtime, opinionated wiring. Recipes, adapters, and rollbacks for LLM workflows that actually behave.
+> Runtime-agnostic core for deterministic workflows and UI-ready interactions.
 
 ---
 
-## What is this?
+## Docs
 
-`llm-core` is a **workflow + adapter layer** that sits under your LLM code:
-
-- You write **recipes** (`agent`, `rag`, `ingest`, `hitl-gate`, `compress`, `chat.simple`, etc.).
-- You plug in **adapters** (LangChain, LlamaIndex, AI SDK, vector stores, text splitters, memory…).
-- You get a **deterministic flow runtime** with rollbacks, pause/resume, diagnostics, and trace events.
-
-You **do not** need to think about “packs, flows, handles, contracts, capabilities, rollback, state validation, events, maybe helpers…” unless you want to.  
-Most users will only ever touch **recipe handles**.
-
----
-
-## Why
-
-LLM tooling is fragmented and very framework-shaped. `llm-core` tries to fix that with **principled orchestration**:
-
-- **Cross-ecosystem adapters**  
-  Plug into LangChain, LlamaIndex, or AI SDK from the same workflow surface.
-
-- **Recipe-first mental model**  
-  “This is an `agent`” / “this is `rag`” / “this is `ingest`”, not “here’s a random script”.
-
-- **DAG-driven flows**  
-  Steps are nodes in a graph. You can reorder, extend, or override them without rewriting everything.
-
-- **Configurable adapters instead of rewrites**  
-  Swap models, retrievers, vector stores, caches, text splitters, loaders, etc. by changing config, not code.
-
-- **MaybePromise everywhere**  
-  Business logic can be sync or async; the runtime normalises it. You get sync-looking code that composes in async pipelines.
-
-- **Deterministic behaviour**  
-  Trace events and structured diagnostics instead of string logs sprinkled all over a codebase.
-
-- **Interop-aware**  
-  The repo tracks adapter parity and behaviour across ecosystems so you don’t have to guess which combination works.
+- Docs: https://llm-core.geekist.co
+- Guide (hero path): https://llm-core.geekist.co/guide/interaction-single-turn
+- API: https://llm-core.geekist.co/reference/recipes-api
 
 ---
 
@@ -55,148 +23,67 @@ LLM tooling is fragmented and very framework-shaped. `llm-core` tries to fix tha
 
 ```bash
 bun add @geekist/llm-core
-# or
-npm install @geekist/llm-core
-# or
 pnpm add @geekist/llm-core
+npm install @geekist/llm-core
+yarn add @geekist/llm-core
+```
+
+```bash
+deno add npm:@geekist/llm-core
 ```
 
 ---
 
-## Quick start
+## Quick start (interaction, single turn)
 
-The easiest way in is through **recipes**.
+```js
+import { fromAiSdkModel } from "@geekist/llm-core/adapters";
+import { openai } from "@ai-sdk/openai";
+import {
+  createInteractionPipelineWithDefaults,
+  runInteractionPipeline,
+} from "@geekist/llm-core/interaction";
 
-### Example: RAG query
+const model = fromAiSdkModel(openai("gpt-4o-mini"));
+const pipeline = createInteractionPipelineWithDefaults();
 
-```ts
-import { recipes } from "@geekist/llm-core";
-
-const rag = recipes.rag()
-  .defaults({
-    adapters: {
-      // Whatever you’re using today
-      model: /* your chat/LLM model */,
-      retriever: /* your retriever or vector store */,
-    },
-  })
-  .build();
-
-const outcome = await rag.run({ query: "What is Geekist?", input: "optional context" });
-
-if (outcome.status === "ok") {
-  console.log(outcome.artefact.Answer);
-}
-```
-
-### Example: Simple chat
-
-```ts
-import { recipes } from "@geekist/llm-core";
-
-const chat = recipes["chat.simple"]()
-  .defaults({
-    adapters: {
-      model: /* your chat/LLM model */,
-    },
-  })
-  .build();
-
-const result = await chat.run({ input: "Tell me a joke about TypeScript." });
-
-if (result.status === "ok") {
-  console.log(result.artefact.Answer);
-}
-```
-
-### Example: Ingest into a vector store
-
-```ts
-import { recipes } from "@geekist/llm-core";
-
-const ingest = recipes.ingest()
-  .defaults({
-    adapters: {
-      textSplitter: /* splitter (LangChain, LlamaIndex, or your own) */,
-      embedder:     /* embeddings model (LangChain / LlamaIndex / AI SDK) */,
-      vectorStore:  /* upsert-capable store */,
-    },
-  })
-  .build();
-
-const result = await ingest.run({
-  sourceId: "docs:geekist",
-  documents: [
-    { id: "doc-1", text: "First document text" },
-    { id: "doc-2", text: "Second document text" },
-  ],
+const result = await runInteractionPipeline(pipeline, {
+  input: { message: { role: "user", content: "Hello!" } },
+  adapters: { model },
 });
 
+if ("__paused" in result && result.__paused) {
+  throw new Error("Interaction paused.");
+}
+
+console.log(result.artefact.messages[1]?.content);
+```
+
+## Quick start (workflow recipe)
+
+```js
+import { recipes } from "@geekist/llm-core/recipes";
+import { fromAiSdkModel } from "@geekist/llm-core/adapters";
+import { openai } from "@ai-sdk/openai";
+
+const model = fromAiSdkModel(openai("gpt-4o-mini"));
+const workflow = recipes.agent().defaults({ adapters: { model } }).build();
+
+const result = await workflow.run({ input: "Draft a short README for a new SDK." });
+
 if (result.status === "ok") {
-  console.log(`Ingested: ${result.artefact.count} documents.`);
+  console.log(result.artefact);
 }
 ```
 
-Quick sanity check for SSE: when using the host glue, open your browser devtools (Network →
-EventStream) and watch `interaction.*` events as they stream.
+## Build paths
 
----
-
-## Key concepts (in plain English)
-
-You can happily ignore this section and just use `recipes.*`.
-If you’re curious how it hangs together:
-
-- **Recipes**
-  High-level “things users care about”: `agent`, `rag`, `ingest`, `hitl-gate`, `compress`, `chat.simple`, `chat.rag`, etc.
-
-- **Packs**
-  Internal building blocks for recipes. A pack is a named group of steps (e.g. `agent-planning`, `agent-tools`, `rag-retrieval`, `rag-synthesis`, `ingest`, `compress`).
-
-- **Steps**
-  Functions that read/write a shared state object and declare dependencies (`dependsOn`) to form a DAG.
-
-- **Contracts & capabilities**
-  Each recipe has a **contract** (shape of input/output) and **minimum capabilities** (e.g. `model`, `tools`, `retriever`, `vectorStore`, `hitl`).
-  Packs can **raise** the minimums they need (e.g. `rag-retrieval` requires a retriever, `ingest` requires a vector store).
-
-- **Adapters**
-  Typed interop shims between `llm-core` and things like LangChain, LlamaIndex, AI SDK, or your own primitives
-  (models, retrievers, vector stores, KV stores, loaders, text splitters, memory, event streams, etc.).
-
-- **Maybe helpers**
-  A small FP layer that unifies “maybe a value, maybe a promise, maybe null/undefined”.
-  It keeps the runtime sane without forcing you to care about monads.
-
-- **Runtime & trace**
-  Underneath recipes is a small runtime that executes flows, manages pause/resume, emits trace events, and collects diagnostics.
-
-Most of this is internal wiring; the **public surface stays as simple as you need it to be**.
-
----
-
-## Features
-
-Some highlights you get “for free”:
-
-- **Recipe handles**
-
-  - `recipes.rag()`, `recipes.agent()`, `recipes.ingest()`, `recipes["chat.simple"]()`, etc.
-  - `.defaults(...)`, `.use(...)`, `.plan()`, `.build()`, `.run(...)`.
-
-- **Pack-level requirements**
-
-  - Packs declare `minimumCapabilities` so you can’t accidentally run a RAG flow with no retriever or an ingest flow with no vector store.
-  - Requirements are checked against contracts and adapter configuration.
-
-- **Rollback & interrupts**
-
-  - Steps can provide rollbacks declaratively:
-
-    - `step(...).rollback(...)` for static rollbacks.
-    - `Recipe.rollback(...)` inside step implementations.
-
-  - Used by interrupt strategies to implement graceful restart / resume semantics.
+- Production chat UI: https://llm-core.geekist.co/guide/interaction-single-turn
+- Sessions + transport: https://llm-core.geekist.co/guide/interaction-sessions
+- End-to-end UI: https://llm-core.geekist.co/guide/end-to-end-ui
+- Workflow orchestration: https://llm-core.geekist.co/guide/hello-world
+- Recipes: https://llm-core.geekist.co/recipes/simple-chat
+- Adapters: https://llm-core.geekist.co/adapters/
 
 - **State validation**
 

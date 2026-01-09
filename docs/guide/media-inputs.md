@@ -2,7 +2,8 @@
 
 One of the hardest parts of working with LLMs is juggling input formats. Some APIs want base64 strings, others want Data URLs, and others want raw buffers.
 
-`llm-core` handles this for you. You pass what you have; the framework makes it work.
+`llm-core` handles this for you. You pass what you have; the framework makes it work.  
+This guide walks through how the media pipeline lets you stay agnostic to file formats while still taking advantage of provider-specific capabilities.
 
 > **Real-World Story: The Avatar Upload Problem**
 > You're building a profile analysis agent. The user can:
@@ -12,11 +13,11 @@ One of the hardest parts of working with LLMs is juggling input formats. Some AP
 > 3. Paste a screenshot from their clipboard (Data URI).
 >
 > **Without llm-core**: You write 3 `if` statements, standardizing to Base64 manually, handling clean-up yourself.
-> **With llm-core**: You just pass `input.avatar` to the workflow. The **Content Normalizer** automatically detects the format, fetches URLs if the adapter needs raw bytes, or keeps them as URLs if the provider supports it. No conditional logic required.
+> **With llm-core**: You just pass `input.avatar` to the workflow. The **Content Normaliser** automatically detects the format, fetches URLs if the adapter needs raw bytes, or keeps them as URLs if the provider supports it. No conditional logic required.
 
 ## The Principle: "Just Pass It"
 
-The library uses a **Universal Content Normalizer** that runs before any adapter sees your data. This means you can be agnostic about how your data is stored.
+The library uses a **Universal Content Normaliser** that runs before any adapter sees your data. This means you can be agnostic about how your data is stored.
 
 ### Images
 
@@ -74,12 +75,8 @@ await workflow.run({
 });
 ```
 
-```
-
 ## Key Takeaways
 
 - [ ] **Just Pass It**: Strings, Buffers, URLs—the framework normalizes them.
 - [ ] **One Format**: Internally, everything becomes a standard `MessageContent`.
 - [ ] **Lazy**: Conversions (like Base64) only happen if the specific adapter needs them.
-
-```

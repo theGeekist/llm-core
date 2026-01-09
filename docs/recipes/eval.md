@@ -9,7 +9,7 @@ runtime diagnostics and trace so you can explain why one output won.
 
 This recipe is useful for rubric‑style grading, answer selection, regression tests, and dataset audits.
 It keeps evaluation mechanics separate from generation, which makes it easy to swap models or scorer
-adapters without rewriting your glue code.
+adapters without rewriting ad-hoc wiring.
 
 ```mermaid
 flowchart LR

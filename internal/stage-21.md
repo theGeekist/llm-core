@@ -54,6 +54,10 @@ We installed the following UI-layer packages to map patterns that should inform 
 - `@openai/chatkit` (ChatKit Web Component + DOM event model; types only).
 - `@assistant-ui/react-ai-sdk` (assistant-ui bridge to AI SDK; transport + message conversion).
 - `@assistant-ui/react` (assistant-ui transport protocol + message/part types).
+- `@unified-llm/core` (unified streaming event model with explicit start/delta/stop/error).
+- `@node-llm/core` (provider-agnostic chat surface + stream wrapper utilities).
+- `@mastra/core` (rich stream event taxonomy + OTEL-aligned tracing surfaces).
+- `@nlux/core` (UI-first adapter contract with stream/batch observers + context integration).
 
 ### Patterns we should borrow (when applicable)
 
@@ -70,11 +74,43 @@ We installed the following UI-layer packages to map patterns that should inform 
    - We should define an **event emitter adapter** in addition to stream adapters.
 
 3. **Bridge adapters (assistant-ui)**
+
    - `@assistant-ui/react-ai-sdk` bridges AI SDK streams to assistant-ui.
    - It models `data-*` and tool parts and includes an `AssistantChatTransport` wrapper.
    - `@assistant-ui/react` defines an **assistant-transport** protocol with commands/state.
    - This points to a secondary adapter that can emit assistant-transport commands or
      reuse the AI SDK adapter via their bridge.
+
+4. **Event contracts with explicit lifecycle (unified-llm)**
+
+   - Streaming uses a deterministic event sequence: `start → text_delta* → stop → error`.
+   - Each event can include both delta and accumulated text, plus `rawResponse` on the final chunk.
+   - This is a strong fit for UI adapters and should inform our mapping rules for
+     Interaction stream events (explicit start/delta/end, deterministic ordering).
+
+5. **Fluent chat surfaces + stream utilities (node-llm)**
+
+   - A fluent `chat().ask()` / `chat().stream()` surface with persistent history is a useful
+     DX pattern for app developers.
+   - Stream utilities like `tee()` and `toArray()` highlight expectations for downstream
+     consumer ergonomics (debugging, fan-out).
+   - We should keep this in mind for optional host glue helpers or future façade layers.
+
+6. **Rich stream taxonomy + data-\* payloads (mastra)**
+
+   - Explicit chunk types for `text-start/delta/end`, `reasoning-*`, `tool-call`, `tool-result`,
+     `tool-call-input-streaming-*`, `data-*`, and `error` confirm the value of a granular
+     event vocabulary.
+   - Their `data-*` pattern aligns with our custom event mapping for UI SDKs.
+   - Tool-call input streaming is a potential extension for Interaction events once tool
+     streaming is supported.
+
+7. **UI adapter contracts + context bridging (nlux)**
+
+   - `ChatAdapter` defines `streamText` (observer `next/complete/error`) and `batchText`.
+   - `ChatAdapterExtras` includes `conversationHistory` and `contextId` (maps cleanly to
+     `InteractionState` + session IDs).
+   - This is a strong candidate for a first-class UI adapter in Stage 21.
 
 ### Implications for Stage 21 design
 
@@ -83,6 +119,8 @@ We installed the following UI-layer packages to map patterns that should inform 
   - **event adapters** (`InteractionEvent` → DOM/custom events)
 - Keep mapping rules explicit: text/reasoning/tool/data parts with deterministic ordering.
 - Treat HITL/approval as first-class events (stream chunk or DOM event).
+- Prioritize adapters where UI contracts are explicit and stable (NLUX, AI SDK),
+  and keep streaming event vocabularies explicit (start/delta/end/error).
 
 ## Goals
 

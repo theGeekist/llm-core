@@ -1,28 +1,25 @@
 // #region setup
 import { createAssistantUiInteractionEventStream, createBuiltinModel } from "#adapters";
 import { createInteractionSession } from "#interaction";
+import type { SessionId, SessionStore, InteractionState } from "#interaction";
+import type { AssistantTransportCommand } from "@assistant-ui/react";
 
-const sessionState = new Map();
+const sessionState = new Map<string, InteractionState>();
 
-/** @type {import("#interaction").SessionStore} */
-const store = {
+const store: SessionStore = {
   load: loadSessionState,
   save: saveSessionState,
 };
 // #endregion setup
 
 // #region handler
-/**
- * @typedef ChatTurnInput
- * @property {import("#interaction").SessionId} sessionId
- * @property {string} message
- * @property {(command: import("@assistant-ui/react").AssistantTransportCommand) => void} sendCommand
- */
+export type ChatTurnInput = {
+  sessionId: SessionId;
+  message: string;
+  sendCommand: (command: AssistantTransportCommand) => void;
+};
 
-/**
- * @param {ChatTurnInput} input
- */
-export function handleChatTurn(input) {
+export function handleChatTurn(input: ChatTurnInput) {
   const eventStream = createAssistantUiInteractionEventStream({
     sendCommand: input.sendCommand,
   });
@@ -38,25 +35,15 @@ export function handleChatTurn(input) {
 }
 // #endregion handler
 
-/**
- * @param {import("#interaction").SessionId} id
- */
-function readSessionKey(id) {
+function readSessionKey(id: SessionId) {
   return typeof id === "string" ? id : id.sessionId;
 }
 
-/**
- * @param {import("#interaction").SessionId} id
- */
-function loadSessionState(id) {
+function loadSessionState(id: SessionId) {
   return sessionState.get(readSessionKey(id)) ?? null;
 }
 
-/**
- * @param {import("#interaction").SessionId} id
- * @param {import("#interaction").InteractionState} state
- */
-function saveSessionState(id, state) {
+function saveSessionState(id: SessionId, state: InteractionState) {
   sessionState.set(readSessionKey(id), state);
   return true;
 }

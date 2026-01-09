@@ -115,7 +115,7 @@ Use the interaction core when you want UI-ready state for a single turn.
 - **Interaction Core**: deterministic event → state projection for chat UIs.
 - **Sessions**: storage + policy orchestration without runtime defaults.
 - **UI SDK adapters**: AI SDK, assistant-ui, ChatKit.
-- **Host glue**: Node SSE + Edge/Worker stream patterns.
+- **Host transport**: Node SSE + Edge/Worker stream patterns.
 
 ## Build paths
 

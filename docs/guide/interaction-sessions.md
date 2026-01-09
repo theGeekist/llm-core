@@ -4,75 +4,65 @@ title: Sessions + Transport
 
 # Sessions + Transport (Multi-Turn)
 
-This guide adds **sessions** and **host transport** to the interaction loop. You get persistence,
-policy hooks, and streaming events to a client—all without changing the core interaction logic.
+This guide shows how to wrap the interaction loop with a session boundary and host transport. You get durable state, policy hooks, and a stream of events to your client — without changing the interaction core.
 
-> [!NOTE] > **Demo path (2/4)** - Builds on Single-Turn Interaction by adding sessions and host transport.
-> Previous: Single-Turn Interaction. Next: End-to-End UI.
-
----
-
-## 1) Working demo
-
-<<< @/snippets/interaction/host-node.js#docs
-
-What you get:
-
-- A durable session boundary (`sessionId`).
-- Pluggable storage (`SessionStore`) and optional policies.
-- Streaming interaction events over SSE (or any `EventStream`).
+> [!NOTE] > **Demo path (2/4)** — You’ve seen single‑turn interaction. This page adds sessions.
+> Next, wire it into a UI and then a full workflow:
+>
+> - [End-to-End UI](/guide/end-to-end-ui)
+> - [Workflow Orchestration](/guide/hello-world)
 
 ---
 
-## 2) Options and interoperability
+## How sessions layer on top of interactions
 
-### Swap storage without changing your app
+Sessions sit alongside the interaction pipeline. Each turn flows through a session, into the interaction pipeline, out to an EventStream, and back into the store as updated state.
 
-```js
-// Redis, KV, DB, or in-memory — you implement the same interface.
-const store = {
-  load(sessionId) {
-    return redis.get(toKey(sessionId));
-  },
-  save(sessionId, state) {
-    return redis.set(toKey(sessionId), state);
-  },
-};
+```mermaid
+flowchart LR
+  U[User message] --> S[Session]
+  S --> P[Interaction pipeline]
+  P --> E[EventStream]
+  S --> Store[(SessionStore)]
 ```
 
-### Add policies for summarization or truncation
+---
 
-```js
-const policy = {
-  summarize(state) {
-    return summarizeState(state);
-  },
-  truncate(state) {
-    return truncateHistory(state, 50);
-  },
-};
-```
+## Step 1: Define a SessionStore and EventStream
 
-### Swap transports (SSE ↔ WebSocket ↔ Worker stream)
+::: code-group
+<<< @/snippets/guide/interaction-sessions.js#store [JavaScript]
+<<< @/snippets/guide/interaction-sessions.ts#store [TypeScript]
+:::
 
-You can emit `EventStreamEvent` over any transport. The interaction layer doesn't care.
-
-For more host patterns, see:
-
-- [Host Glue](/interaction/host-glue)
+You provide two adapters: a `SessionStore` for persistence and an `EventStream` for outbound events. The store can be Redis, KV, Postgres, or in‑memory — anything that can load and save the interaction state behind a simple contract.
 
 ---
 
-## 3) Why this is better than ad-hoc sessions
+## Step 2: Create a session
 
-- **Headless orchestration**: storage and policy are adapters, not globals.
-- **Deterministic streaming**: every event is ordered and shaped consistently.
-- **UI-agnostic**: you can stream to any UI SDK via adapters.
+::: code-group
+<<< @/snippets/guide/interaction-sessions.js#session [JavaScript]
+<<< @/snippets/guide/interaction-sessions.ts#session [TypeScript]
+:::
+
+A session is an orchestration wrapper around the interaction pipeline. Given a `sessionId`, it will load the previous state (if any), run the pipeline for the new turn, apply any policies, and persist the updated state — without leaking globals into your app.
+
+---
+
+## Step 3: Send a turn and read state
+
+::: code-group
+<<< @/snippets/guide/interaction-sessions.js#turn [JavaScript]
+<<< @/snippets/guide/interaction-sessions.ts#turn [TypeScript]
+:::
+
+Sending a turn is just `session.send(message)`; you can then inspect the current state via `session.getState()`. If you stream to a browser, swap the `EventStream` implementation for SSE, WebSocket, or a worker stream — the interaction layer itself stays exactly the same.
 
 ---
 
 ## Next step
 
-See the full UI boundary in action:
+See the UI boundary in action:
 
 - [End-to-End UI](/guide/end-to-end-ui)
