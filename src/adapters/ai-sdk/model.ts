@@ -125,12 +125,12 @@ const toTelemetry = (result: {
   request: result.request ? { body: result.request.body } : undefined,
   response: result.response
     ? {
-      id: result.response.id,
-      modelId: result.response.modelId,
-      timestamp: result.response.timestamp?.getTime(),
-      headers: result.response.headers,
-      body: result.response.body,
-    }
+        id: result.response.id,
+        modelId: result.response.modelId,
+        timestamp: result.response.timestamp?.getTime(),
+        headers: result.response.headers,
+        body: result.response.body,
+      }
     : undefined,
   usage: result.usage,
   totalUsage: result.totalUsage,
