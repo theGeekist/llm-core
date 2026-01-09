@@ -9,20 +9,8 @@ import {
 } from "#interaction";
 import { createEmptyState, readPausedState } from "../../src/interaction/handle";
 import { isPromiseLike } from "@wpkernel/pipeline/core";
-import type { Message, Model, ModelResult } from "#adapters";
-
-const createModelResult = (text: string): ModelResult => ({
-  text,
-});
-
-const createModel = (text: string): Model => ({
-  generate: () => createModelResult(text),
-});
-
-const createMessage = (text: string): Message => ({
-  role: "user",
-  content: text,
-});
+import { createMockModel, createMockMessage } from "../fixtures/factories";
+import type { Message } from "#adapters";
 
 const appendHint: InteractionStepApply = (options) => {
   const hintMessage: Message = {
@@ -81,8 +69,8 @@ const createPausedOutcome = (state: InteractionState): InteractionRunOutcome => 
 
 describe("interaction handle", () => {
   it("runs a chat turn with a flat input", () => {
-    const handle = createInteractionHandle({ adapters: { model: createModel("hello") } });
-    const result = handle.run({ message: createMessage("hi") });
+    const handle = createInteractionHandle({ adapters: { model: createMockModel("hello") } });
+    const result = handle.run({ message: createMockMessage("hi") });
 
     expect(isPromiseLike(result)).toBe(false);
     if (isPromiseLike(result)) {
@@ -94,8 +82,8 @@ describe("interaction handle", () => {
   });
 
   it("surfaces captured events when requested", () => {
-    const handle = createInteractionHandle({ adapters: { model: createModel("hello") } });
-    const result = handle.run({ message: createMessage("hi") }, { captureEvents: true });
+    const handle = createInteractionHandle({ adapters: { model: createMockModel("hello") } });
+    const result = handle.run({ message: createMockMessage("hi") }, { captureEvents: true });
 
     expect(isPromiseLike(result)).toBe(false);
     if (isPromiseLike(result)) {
@@ -107,14 +95,14 @@ describe("interaction handle", () => {
   });
 
   it("prefers explicit state over captureEvents defaults", () => {
-    const handle = createInteractionHandle({ adapters: { model: createModel("hello") } });
+    const handle = createInteractionHandle({ adapters: { model: createMockModel("hello") } });
     const initialState: InteractionState = {
-      messages: [createMessage("seed")],
+      messages: [createMockMessage("seed")],
       diagnostics: [],
       trace: [],
     };
     const result = handle.run(
-      { message: createMessage("hi"), state: initialState },
+      { message: createMockMessage("hi"), state: initialState },
       { captureEvents: true },
     );
 
@@ -128,11 +116,11 @@ describe("interaction handle", () => {
   });
 
   it("supports packs and exposes a plan", () => {
-    const handle = createInteractionHandle({ adapters: { model: createModel("hello") } }).use(
+    const handle = createInteractionHandle({ adapters: { model: createMockModel("hello") } }).use(
       createHintPack(),
     );
     const plan = handle.explain();
-    const result = handle.run({ message: createMessage("hi") });
+    const result = handle.run({ message: createMockMessage("hi") });
 
     expect(plan.steps.some((step) => step.id === "post-process.append-hint")).toBe(true);
     expect(isPromiseLike(result)).toBe(false);
@@ -143,10 +131,12 @@ describe("interaction handle", () => {
   });
 
   it("applies configured defaults when building handles", () => {
-    const handle = createInteractionHandle({ adapters: { model: createModel("base") } }).configure({
-      adapters: { model: createModel("configured") },
+    const handle = createInteractionHandle({
+      adapters: { model: createMockModel("base") },
+    }).configure({
+      adapters: { model: createMockModel("configured") },
     });
-    const result = handle.run({ message: createMessage("hi") });
+    const result = handle.run({ message: createMockMessage("hi") });
 
     expect(isPromiseLike(result)).toBe(false);
     if (isPromiseLike(result)) {
@@ -157,10 +147,12 @@ describe("interaction handle", () => {
   });
 
   it("merges defaults after creation", () => {
-    const handle = createInteractionHandle({ adapters: { model: createModel("base") } }).defaults({
-      adapters: { model: createModel("default") },
+    const handle = createInteractionHandle({
+      adapters: { model: createMockModel("base") },
+    }).defaults({
+      adapters: { model: createMockModel("default") },
     });
-    const result = handle.run({ message: createMessage("hi") });
+    const result = handle.run({ message: createMockMessage("hi") });
 
     expect(isPromiseLike(result)).toBe(false);
     if (isPromiseLike(result)) {
@@ -171,10 +163,10 @@ describe("interaction handle", () => {
   });
 
   it("merges defaults from other handles", () => {
-    const base = createInteractionHandle({ adapters: { model: createModel("base") } });
-    const override = createInteractionHandle({ adapters: { model: createModel("override") } });
+    const base = createInteractionHandle({ adapters: { model: createMockModel("base") } });
+    const override = createInteractionHandle({ adapters: { model: createMockModel("override") } });
     const handle = base.use(override);
-    const result = handle.run({ message: createMessage("hi") });
+    const result = handle.run({ message: createMockMessage("hi") });
 
     expect(isPromiseLike(result)).toBe(false);
     if (isPromiseLike(result)) {
@@ -185,10 +177,10 @@ describe("interaction handle", () => {
   });
 
   it("ignores non-pack inputs for use()", () => {
-    const handle = createInteractionHandle({ adapters: { model: createModel("base") } }).use(
+    const handle = createInteractionHandle({ adapters: { model: createMockModel("base") } }).use(
       {} as InteractionStepPack,
     );
-    const result = handle.run({ message: createMessage("hi") });
+    const result = handle.run({ message: createMockMessage("hi") });
 
     expect(isPromiseLike(result)).toBe(false);
     if (isPromiseLike(result)) {
@@ -199,10 +191,10 @@ describe("interaction handle", () => {
   });
 
   it("returns state snapshots for paused runs", () => {
-    const handle = createInteractionHandle({ adapters: { model: createModel("hello") } }).use(
+    const handle = createInteractionHandle({ adapters: { model: createMockModel("hello") } }).use(
       createPausePack(),
     );
-    const result = handle.run({ message: createMessage("hi") });
+    const result = handle.run({ message: createMockMessage("hi") });
 
     expect(isPromiseLike(result)).toBe(false);
     if (isPromiseLike(result)) {

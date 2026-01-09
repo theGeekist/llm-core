@@ -1,4 +1,5 @@
 import { maybeMap, maybeAll } from "../shared/maybe";
+import { isNull } from "../shared/fp";
 import type { AdapterTraceEvent, EventStream } from "../adapters/types";
 import type { PipelineContext, PipelineState } from "../workflow/types";
 
@@ -36,13 +37,12 @@ const appendEvents = (state: PipelineState, events: AdapterTraceEvent[]) => {
 };
 
 const isFailure = (value: boolean | null) => value === false;
-const isUnknown = (value: boolean | null) => value === null;
 
 const combineResults = (values: Array<boolean | null>) => {
   if (values.some(isFailure)) {
     return false;
   }
-  if (values.some(isUnknown)) {
+  if (values.some(isNull)) {
     return null;
   }
   return true;

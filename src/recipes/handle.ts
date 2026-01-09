@@ -1,4 +1,5 @@
-import { bindFirst, type MaybePromise } from "../shared/maybe";
+import { bindFirst } from "../shared/fp";
+import { type MaybePromise } from "../shared/maybe";
 import { getRecipe } from "../workflow/recipe-registry";
 import type { AdapterBundle } from "../adapters/types";
 import type { DiagnosticEntry } from "../shared/diagnostics";

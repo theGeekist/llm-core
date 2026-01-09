@@ -1,23 +1,14 @@
 import { describe, expect, it } from "bun:test";
 import { assertSyncOutcome } from "../workflow/helpers";
-import type { Model, Retriever } from "../../src/adapters/types";
+import { createMockModel, createMockRetriever } from "../fixtures/factories";
 import { recipes } from "../../src/recipes";
-
-const createRetriever = (): Retriever => ({
-  retrieve: (query) => ({
-    query,
-    documents: [{ text: "doc-one" }, { text: "doc-two" }],
-  }),
-});
-
-const createModel = (): Model => ({
-  generate: (call) => ({ text: `answer:${call.prompt ?? ""}` }),
-});
 
 describe("Rag recipe", () => {
   it("retrieves documents and synthesizes a response", () => {
-    const retriever = createRetriever();
-    const model = createModel();
+    const retriever = createMockRetriever();
+    const model = createMockModel((call) => ({
+      text: `answer:${(call as { prompt?: string }).prompt ?? ""}`,
+    }));
     const runtime = recipes.rag().defaults({ adapters: { retriever, model } }).build();
     const outcome = assertSyncOutcome(runtime.run({ input: "query" }));
 

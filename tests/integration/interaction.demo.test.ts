@@ -9,33 +9,16 @@ import {
   createInteractionPipelineWithDefaults,
   createInteractionSession,
   runInteractionPipeline,
-  type InteractionState,
-  type SessionId,
 } from "#interaction";
 import { isPromiseLike } from "@wpkernel/pipeline/core";
 import { isPausedOutcome, readOutcomeState } from "../../src/interaction/handle";
 import type { UIMessageStreamWriter, UIMessageChunk } from "ai";
+import { createMockSessionStore } from "../fixtures/factories";
 
 type MaybePromise<T> = T | Promise<T>;
 
 const resolveMaybe = async <T>(value: MaybePromise<T>): Promise<T> =>
   isPromiseLike(value) ? value : Promise.resolve(value);
-
-const toSessionKey = (sessionId: SessionId) =>
-  typeof sessionId === "string" ? sessionId : sessionId.sessionId;
-
-const createSessionStore = () => {
-  const cache = new Map<string, InteractionState>();
-  return {
-    load(sessionId: SessionId) {
-      return cache.get(toSessionKey(sessionId)) ?? null;
-    },
-    save(sessionId: SessionId, state: InteractionState) {
-      cache.set(toSessionKey(sessionId), state);
-      return true;
-    },
-  };
-};
 
 describe("Integration interaction demos", () => {
   it("runs the interaction pipeline with built-in model", async () => {
@@ -64,7 +47,7 @@ describe("Integration interaction demos", () => {
     const eventStream = createAiSdkInteractionEventStream({ writer });
     const session = createInteractionSession({
       sessionId: "ai-sdk-ui",
-      store: createSessionStore(),
+      store: createMockSessionStore().store,
       adapters: { model: createBuiltinModel() },
       eventStream,
     });
@@ -87,7 +70,7 @@ describe("Integration interaction demos", () => {
     });
     const session = createInteractionSession({
       sessionId: "assistant-ui",
-      store: createSessionStore(),
+      store: createMockSessionStore().store,
       adapters: { model: createBuiltinModel() },
       eventStream,
     });
@@ -110,7 +93,7 @@ describe("Integration interaction demos", () => {
     });
     const session = createInteractionSession({
       sessionId: "chatkit",
-      store: createSessionStore(),
+      store: createMockSessionStore().store,
       adapters: { model: createBuiltinModel() },
       eventStream,
     });

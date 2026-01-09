@@ -11,10 +11,10 @@ import type {
   PipelineStep,
 } from "@wpkernel/pipeline/core";
 import { createHelper } from "@wpkernel/pipeline/core";
-import { bindFirst } from "../shared/maybe";
+import { bindFirst } from "../shared/fp";
 import { hasKeys } from "../shared/guards";
-import type { PipelineArtefactInput } from "../shared/artefact";
-import { readPipelineArtefact } from "../shared/artefact";
+import type { PipelineArtefactInput } from "../shared/outcome";
+import { readPipelineArtefact } from "../shared/outcome";
 import type {
   InteractionContext,
   InteractionInput,

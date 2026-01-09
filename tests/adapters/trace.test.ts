@@ -1,7 +1,7 @@
 import { describe, expect, it } from "bun:test";
 import { BaseCallbackHandler } from "@langchain/core/callbacks/base";
 import { fromLangChainCallbackHandler, type AdapterTraceEvent } from "#adapters";
-import { bindFirst } from "../../src/shared/maybe";
+import { bindFirst } from "../../src/shared/fp";
 
 type TraceCapture = {
   name: string;

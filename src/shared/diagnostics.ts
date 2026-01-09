@@ -1,20 +1,8 @@
-export type DiagnosticLevel = "warn" | "error";
+import type { DiagnosticEntry, DiagnosticLevel } from "./reporting";
+import { applyDiagnosticsMode } from "./reporting";
 
-export type DiagnosticKind =
-  | "pipeline"
-  | "workflow"
-  | "requirement"
-  | "contract"
-  | "resume"
-  | "adapter"
-  | "recipe";
-
-export type DiagnosticEntry = {
-  level: DiagnosticLevel;
-  kind: DiagnosticKind;
-  message: string;
-  data?: unknown;
-};
+export type { DiagnosticEntry, DiagnosticLevel, DiagnosticKind } from "./reporting";
+export { applyDiagnosticsMode };
 
 type AdapterDiagnosticShape = {
   level: DiagnosticLevel;
@@ -22,27 +10,11 @@ type AdapterDiagnosticShape = {
   data?: unknown;
 };
 
-type PipelineDiagnostic = {
-  type?: string;
-  message?: string;
-};
-
-const pipelineLevel = (diagnostic: PipelineDiagnostic): DiagnosticLevel => {
-  switch (diagnostic.type) {
-    case "missing-dependency":
-    case "conflict":
-      return "error";
-    case "unused-helper":
-      return "warn";
-    default:
-      return "warn";
-  }
-};
-
-export const createLifecycleDiagnostic = (message: string): DiagnosticEntry => ({
+export const createLifecycleDiagnostic = (message: string, data?: unknown): DiagnosticEntry => ({
   level: "warn",
-  kind: "workflow",
+  kind: "pipeline",
   message,
+  data,
 });
 
 export const createResumeDiagnostic = (message: string, data?: unknown): DiagnosticEntry => ({
@@ -52,11 +24,43 @@ export const createResumeDiagnostic = (message: string, data?: unknown): Diagnos
   data,
 });
 
-export const createRequirementDiagnostic = (message: string): DiagnosticEntry => ({
+export const createRequirementDiagnostic = (message: string, data?: unknown): DiagnosticEntry => ({
   level: "warn",
   kind: "requirement",
   message,
+  data,
 });
+
+export const createContractDiagnostic = (message: string, data?: unknown): DiagnosticEntry => ({
+  level: "warn",
+  kind: "contract",
+  message,
+  data,
+});
+
+export const createPipelineDiagnostic = (data: unknown): DiagnosticEntry => {
+  let level: DiagnosticLevel = "warn";
+  let message = "Pipeline diagnostic reported.";
+
+  if (typeof data === "string") {
+    message = data;
+  } else if (data && typeof data === "object") {
+    const typed = data as { type?: string; message?: string };
+    if (typed.message) {
+      message = typed.message;
+    }
+    if (typed.type === "missing-dependency" || typed.type === "conflict") {
+      level = "error";
+    }
+  }
+
+  return {
+    level,
+    kind: "pipeline",
+    message,
+    data,
+  };
+};
 
 export const createRecipeDiagnostic = (message: string, data?: unknown): DiagnosticEntry => ({
   level: "warn",
@@ -65,41 +69,24 @@ export const createRecipeDiagnostic = (message: string, data?: unknown): Diagnos
   data,
 });
 
-export const createContractDiagnostic = (message: string): DiagnosticEntry => ({
-  level: "warn",
-  kind: "contract",
-  message,
-});
-
-export const createPipelineDiagnostic = (diagnostic: unknown): DiagnosticEntry => {
-  if (typeof diagnostic === "string") {
-    return {
-      level: "warn",
-      kind: "pipeline",
-      message: diagnostic,
-      data: diagnostic,
-    };
-  }
-  const typed = diagnostic as PipelineDiagnostic;
-  return {
-    level: pipelineLevel(typed),
-    kind: "pipeline",
-    message: typed.message ?? "Pipeline diagnostic reported.",
-    data: diagnostic,
-  };
-};
-
-export const createAdapterDiagnostic = (diagnostic: AdapterDiagnosticShape): DiagnosticEntry => ({
+export const createAdapterDiagnostic = (
+  diagnostic: AdapterDiagnosticShape,
+  source?: string,
+): DiagnosticEntry => ({
   level: diagnostic.level,
   kind:
-    diagnostic.data && typeof diagnostic.data === "object"
-      ? (diagnostic.data as { code?: string }).code === "construct_dependency_missing" ||
-        (diagnostic.data as { code?: string }).code === "capability_dependency_missing"
-        ? "requirement"
-        : "adapter"
+    diagnostic.data &&
+    typeof diagnostic.data === "object" &&
+    ((diagnostic.data as { code?: string }).code === "construct_dependency_missing" ||
+      (diagnostic.data as { code?: string }).code === "capability_dependency_missing")
+      ? "requirement"
       : "adapter",
   message: diagnostic.message,
-  data: diagnostic.data,
+  data: diagnostic.data
+    ? { ...(diagnostic.data as object), source }
+    : source
+      ? { source }
+      : undefined,
 });
 
 export const normalizeDiagnostics = (
@@ -115,22 +102,3 @@ export const normalizeDiagnostics = (
 
 export const hasErrorDiagnostics = (diagnostics: DiagnosticEntry[]) =>
   diagnostics.some((diagnostic) => diagnostic.level === "error");
-
-const shouldPromoteToError = (diagnostic: DiagnosticEntry) =>
-  diagnostic.kind === "requirement" ||
-  diagnostic.kind === "contract" ||
-  diagnostic.kind === "recipe";
-
-export const applyDiagnosticsMode = (
-  diagnostics: DiagnosticEntry[],
-  mode: "default" | "strict",
-): DiagnosticEntry[] => {
-  if (mode !== "strict") {
-    return diagnostics;
-  }
-  return diagnostics.map((diagnostic) =>
-    shouldPromoteToError(diagnostic)
-      ? { ...diagnostic, level: "error" as DiagnosticLevel }
-      : diagnostic,
-  );
-};

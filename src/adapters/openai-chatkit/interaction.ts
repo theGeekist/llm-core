@@ -1,6 +1,6 @@
 import type { ChatKitEvents } from "@openai/chatkit";
 import type { InteractionEvent, InteractionEventMeta } from "../../interaction/types";
-import { bindFirst } from "../../shared/maybe";
+import { bindFirst } from "../../shared/fp";
 import {
   createInteractionEventEmitterStream,
   type InteractionEventEmitter,

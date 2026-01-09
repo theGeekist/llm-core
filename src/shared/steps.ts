@@ -1,14 +1,13 @@
-import { bindFirst } from "./maybe";
+import { bindFirst } from "./fp";
+import { ensureNamespacedId } from "./namespaces";
 import type { StepSpecBase } from "./types";
 
-export const normalizeStepKey = (packName: string, stepName: string) =>
-  stepName.includes(".") ? stepName : `${packName}.${stepName}`;
+export const normalizeStepKey = ensureNamespacedId;
 
-export const normalizeDependency = (packName: string, dependency: string) =>
-  dependency.includes(".") ? dependency : `${packName}.${dependency}`;
+export const normalizeDependency = ensureNamespacedId;
 
 export const normalizeDependencies = (packName: string, dependencies: readonly string[]) =>
-  dependencies.map(bindFirst(normalizeDependency, packName));
+  dependencies.map(bindFirst(ensureNamespacedId, packName));
 
 export const compareStepSpec = (packName: string, left: StepSpecBase, right: StepSpecBase) => {
   const leftKey = normalizeStepKey(packName, left.name);

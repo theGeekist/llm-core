@@ -10,11 +10,10 @@ import {
   createInteractionPipelineWithDefaults,
   createInteractionSession,
   runInteractionPipeline,
-  type InteractionState,
-  type SessionId,
 } from "#interaction";
 import { recipes } from "#recipes";
 import { isPausedOutcome, readOutcomeState } from "../../src/interaction/handle";
+import { createMockSessionStore } from "../fixtures/factories";
 
 type MaybePromise<T> = T | Promise<T>;
 
@@ -24,22 +23,6 @@ const resolveMaybe = async <T>(value: MaybePromise<T>): Promise<T> => {
   }
   return Promise.resolve(value);
 };
-
-const createSessionStore = () => {
-  const cache = new Map<string, InteractionState>();
-  return {
-    load(sessionId: SessionId) {
-      return cache.get(toSessionKey(sessionId)) ?? null;
-    },
-    save(sessionId: SessionId, state: InteractionState) {
-      cache.set(toSessionKey(sessionId), state);
-      return true;
-    },
-  };
-};
-
-const toSessionKey = (sessionId: SessionId) =>
-  typeof sessionId === "string" ? sessionId : sessionId.sessionId;
 
 describe("demo path", () => {
   it("runs the single-turn interaction demo", async () => {
@@ -67,7 +50,7 @@ describe("demo path", () => {
     };
     const session = createInteractionSession({
       sessionId: "demo-session",
-      store: createSessionStore(),
+      store: createMockSessionStore().store,
       adapters: { model: createBuiltinModel() },
       eventStream,
     });
@@ -90,7 +73,7 @@ describe("demo path", () => {
     });
     const session = createInteractionSession({
       sessionId: "demo-ui",
-      store: createSessionStore(),
+      store: createMockSessionStore().store,
       adapters: { model: createBuiltinModel() },
       eventStream,
     });

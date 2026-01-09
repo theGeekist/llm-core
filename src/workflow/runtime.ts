@@ -24,7 +24,8 @@ import {
   type DiagnosticEntry,
 } from "../shared/diagnostics";
 import type { TraceEvent } from "../shared/trace";
-import { bindFirst, maybeChain, maybeMap } from "../shared/maybe";
+import { bindFirst } from "../shared/fp";
+import { maybeChain, maybeMap } from "../shared/maybe";
 import type { MaybePromise } from "../shared/maybe";
 import type { FinalizeResultInput } from "./runtime/helpers";
 import {

@@ -22,7 +22,7 @@ import type {
 } from "../types";
 import { fromAiSdkMessage, toAiSdkMessage } from "./messages";
 import { toAiSdkTools } from "./tools";
-import { mapToolCalls, mapToolResults } from "../model-utils";
+import { mapToolCalls, mapToolResults } from "../utils";
 import { toAdapterTrace } from "../telemetry";
 import { maybeMap } from "../../shared/maybe";
 import { ModelCallHelper, ModelUsageHelper } from "../modeling";
@@ -125,12 +125,12 @@ const toTelemetry = (result: {
   request: result.request ? { body: result.request.body } : undefined,
   response: result.response
     ? {
-        id: result.response.id,
-        modelId: result.response.modelId,
-        timestamp: result.response.timestamp?.getTime(),
-        headers: result.response.headers,
-        body: result.response.body,
-      }
+      id: result.response.id,
+      modelId: result.response.modelId,
+      timestamp: result.response.timestamp?.getTime(),
+      headers: result.response.headers,
+      body: result.response.body,
+    }
     : undefined,
   usage: result.usage,
   totalUsage: result.totalUsage,

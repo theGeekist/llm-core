@@ -14,7 +14,8 @@ import {
   tryParseOutput,
 } from "./model-utils";
 import { toAdapterTrace } from "../telemetry";
-import { bindFirst, maybeMap } from "../../shared/maybe";
+import { bindFirst } from "../../shared/fp";
+import { maybeMap } from "../../shared/maybe";
 import { ModelUsageHelper } from "../modeling";
 import { toLangChainStreamEvents } from "./stream";
 import { warnDiagnostic } from "../utils";

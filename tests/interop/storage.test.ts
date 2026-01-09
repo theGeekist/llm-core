@@ -3,9 +3,8 @@ import type { BaseStore } from "@langchain/core/stores";
 import type { BaseDocumentStore } from "@llamaindex/core/storage/doc-store";
 import * as AiSdk from "ai";
 import type { KVStore } from "#workflow";
-import { maybeMap } from "./helpers";
-
-const toNull = () => null;
+import { toNull } from "../../src/shared/fp";
+import { maybeMap } from "../../src/shared/maybe";
 
 const toAdapterKVFromLangChain = (store: BaseStore<string, unknown>): KVStore => ({
   mget: (keys) => store.mget(keys),

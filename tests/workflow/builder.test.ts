@@ -6,7 +6,7 @@ import { getRecipe, registerRecipe } from "#workflow/recipe-registry";
 import {
   assertSyncOutcome,
   createResumeSnapshot,
-  createSessionStore,
+  createTestResumeStore,
   makeWorkflow,
   withFactory,
 } from "./helpers";
@@ -87,7 +87,7 @@ describe("Workflow builder", () => {
       defaultPlugins: [],
     });
     try {
-      const { sessionStore } = createSessionStore();
+      const { sessionStore } = createTestResumeStore();
       const token = "token-1";
       const pauseSnapshot: PipelinePauseSnapshot<unknown> = {
         stageIndex: 0,

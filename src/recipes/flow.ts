@@ -1,5 +1,6 @@
 import { createHelper } from "@wpkernel/pipeline/core";
-import { bindFirst, maybeMap, maybeTry } from "../shared/maybe";
+import { bindFirst } from "../shared/fp";
+import { maybeMap, maybeTry } from "../shared/maybe";
 import { createRecipeDiagnostic, type DiagnosticEntry } from "../shared/diagnostics";
 import { getRecipe } from "../workflow/recipe-registry";
 import { createRuntime } from "../workflow/runtime";

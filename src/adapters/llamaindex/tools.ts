@@ -2,7 +2,8 @@ import type { BaseTool } from "@llamaindex/core/llms";
 import { tool as defineTool } from "@llamaindex/core/tools";
 import type { JSONValue } from "@llamaindex/core/global";
 import type { AdapterCallContext, Schema, Tool } from "../types";
-import { identity, maybeMap } from "../../shared/maybe";
+import { identity } from "../../shared/fp";
+import { maybeMap } from "../../shared/maybe";
 import {
   adapterParamsToJsonSchema,
   normalizeObjectSchema,

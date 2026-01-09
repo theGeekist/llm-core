@@ -18,7 +18,8 @@ import type {
 } from "../recipes/types";
 import type { DiagnosticEntry } from "../shared/diagnostics";
 import type { ExplainSnapshot } from "./explain";
-import type { ExecutionContextBase, RunOptionsBase, TraceDiagnostics } from "../shared/types";
+import type { ExecutionOutcome } from "../shared/outcome";
+import type { ExecutionContextBase, RunOptionsBase } from "../shared/types";
 
 // Recipe inputs + artefacts
 export type { AgentInput, RagInput, EvalInput, HitlGateInput, LoopInput, IngestInput };
@@ -125,14 +126,7 @@ export type ExplainInput = {
   resolvedCapabilities: Record<string, unknown>;
 };
 
-export type Outcome<TArtefact = unknown> =
-  | (TraceDiagnostics & { status: "ok"; artefact: TArtefact })
-  | (TraceDiagnostics & {
-      status: "paused";
-      token: unknown;
-      artefact: Partial<TArtefact>;
-    })
-  | (TraceDiagnostics & { status: "error"; error: unknown });
+export type Outcome<TArtefact = unknown> = ExecutionOutcome<TArtefact>;
 
 export type WorkflowRuntime<TRunInput = unknown, TArtefact = unknown, TResumeInput = unknown> = {
   run(input: TRunInput, runtime?: Runtime): MaybePromise<Outcome<TArtefact>>;

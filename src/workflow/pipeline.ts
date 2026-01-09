@@ -3,10 +3,10 @@ import type { PipelineDiagnostic, PipelineReporter, PipelineStep } from "@wpkern
 import type { PipelineContext, PipelineState, Plugin, RecipeContract, RunOptions } from "./types";
 import { getEffectivePlugins } from "./plugins/effective";
 import { createDefaultReporter } from "./extensions";
-import { bindFirst } from "../shared/maybe";
+import { bindFirst } from "../shared/fp";
 import type { RollbackEntry, RollbackState } from "./runtime/rollback-types";
-import type { PipelineArtefactInput } from "../shared/artefact";
-import { readPipelineArtefact } from "../shared/artefact";
+import type { PipelineArtefactInput } from "../shared/outcome";
+import { readPipelineArtefact } from "../shared/outcome";
 
 type RunResult = {
   readonly artefact: PipelineState;

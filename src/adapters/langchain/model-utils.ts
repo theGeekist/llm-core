@@ -16,7 +16,7 @@ import {
   normalizeTimestamp,
   toResponseFormatSchema,
   tryParseJson,
-} from "../model-utils";
+} from "../utils";
 import { ModelCallHelper } from "../modeling";
 import { toLangChainMessage } from "./messages";
 import { toLangChainTool } from "./tools";
@@ -117,10 +117,10 @@ export const toTelemetry = (
   return {
     response: responseMetadata
       ? {
-          id: readMetadataField(responseMetadata, ["id", "request_id"]),
-          modelId: readMetadataField(responseMetadata, ["model", "model_name"]),
-          timestamp,
-        }
+        id: readMetadataField(responseMetadata, ["id", "request_id"]),
+        modelId: readMetadataField(responseMetadata, ["model", "model_name"]),
+        timestamp,
+      }
       : null,
     usage,
     warnings: diagnostics.filter((entry) => entry.message === "provider_warning"),

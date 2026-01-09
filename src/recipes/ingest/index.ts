@@ -1,4 +1,5 @@
-import { bindFirst, maybeMap, maybeAll } from "../../shared/maybe";
+import { bindFirst, toNull } from "../../shared/fp";
+import { maybeAll, maybeMap } from "../../shared/maybe";
 import { Recipe } from "../flow";
 import { createRecipeFactory, createRecipeHandle } from "../handle";
 import type { RecipeDefaults, StepApply } from "../flow";
@@ -203,8 +204,6 @@ const buildUpsertInput = (ingest: IngestState) => {
 };
 
 // Writes documents or vectors to the vector store adapter.
-const toNull = () => null;
-
 const applyIndex: StepApply = ({ context, state }) => {
   const ingest = readIngestState(state);
   const store = context.adapters?.vectorStore;

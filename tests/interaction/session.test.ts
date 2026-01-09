@@ -1,89 +1,19 @@
 import { describe, expect, it } from "bun:test";
+import { createInteractionSession, type InteractionState } from "#interaction";
 import {
-  createInteractionSession,
-  type InteractionRunOutcome,
-  type InteractionRunResult,
-  type InteractionState,
-  type SessionId,
-} from "#interaction";
-import type { Message, Model, ModelResult } from "#adapters";
-import { isPromiseLike, type PipelinePaused } from "@wpkernel/pipeline/core";
-
-type SessionStoreHarness = {
-  store: {
-    load: (sessionId: SessionId, context?: unknown) => InteractionState | null;
-    save: (sessionId: SessionId, state: InteractionState, context?: unknown) => boolean;
-  };
-  sessions: Map<string, InteractionState>;
-  calls: { load: number; save: number; contexts: unknown[] };
-};
-
-const createModelResult = (text: string): ModelResult => ({
-  text,
-});
-
-const createModel = (text: string): Model => ({
-  generate: () => createModelResult(text),
-});
-
-const createMessage = (text: string): Message => ({
-  role: "user",
-  content: text,
-});
-
-const createBaseState = (messages: Message[] = []): InteractionState => ({
-  messages,
-  diagnostics: [],
-  trace: [],
-});
-
-const isPausedResult = (value: unknown): value is PipelinePaused<Record<string, unknown>> =>
-  !!value &&
-  typeof value === "object" &&
-  "__paused" in value &&
-  (value as { __paused?: unknown }).__paused === true;
-
-function assertRunResult(result: InteractionRunOutcome): InteractionRunResult {
-  if (isPausedResult(result)) {
-    throw new Error("Expected interaction run result.");
-  }
-  return result;
-}
-
-const toSessionKey = (sessionId: SessionId) => {
-  if (typeof sessionId === "string") {
-    return sessionId;
-  }
-  return sessionId.userId ? `${sessionId.sessionId}:${sessionId.userId}` : sessionId.sessionId;
-};
-
-const createMemorySessionStore = (): SessionStoreHarness => {
-  const sessions = new Map<string, InteractionState>();
-  const calls = { load: 0, save: 0, contexts: [] as unknown[] };
-  return {
-    sessions,
-    calls,
-    store: {
-      load: (sessionId, context) => {
-        calls.load += 1;
-        calls.contexts.push(context);
-        return sessions.get(toSessionKey(sessionId)) ?? null;
-      },
-      save: (sessionId, state, context) => {
-        calls.save += 1;
-        calls.contexts.push(context);
-        sessions.set(toSessionKey(sessionId), state);
-        return true;
-      },
-    },
-  };
-};
+  createMockModel,
+  createMockMessage,
+  createMockSessionStore,
+  createMockInteractionState,
+} from "../fixtures/factories";
+import { assertRunResult, isPausedResult } from "./test-utils";
+import { isPromiseLike } from "@wpkernel/pipeline/core";
 
 describe("interaction session", () => {
   it("loads and saves session state", () => {
-    const harness = createMemorySessionStore();
+    const harness = createMockSessionStore();
     const sessionId = "session-1";
-    const model = createModel("Hello!");
+    const model = createMockModel("Hello!");
     const context = {
       report: () => {},
     };
@@ -95,7 +25,7 @@ describe("interaction session", () => {
       context,
     });
 
-    const result = session.send(createMessage("Hi"));
+    const result = session.send(createMockMessage("Hi"));
 
     expect(isPromiseLike(result)).toBe(false);
     if (isPromiseLike(result)) {
@@ -109,8 +39,8 @@ describe("interaction session", () => {
   });
 
   it("applies policy hooks in order", async () => {
-    const harness = createMemorySessionStore();
-    const model = createModel("Okay");
+    const harness = createMockSessionStore();
+    const model = createMockModel("Okay");
     const steps: string[] = [];
 
     function mergePolicy(previous: InteractionState | null, next: InteractionState) {
@@ -140,17 +70,17 @@ describe("interaction session", () => {
       },
     });
 
-    await session.send(createMessage("Hi"));
+    await session.send(createMockMessage("Hi"));
 
     expect(steps).toEqual(["merge", "summarize", "truncate"]);
   });
 
   it("uses stored state when available", async () => {
-    const harness = createMemorySessionStore();
+    const harness = createMockSessionStore();
     const sessionId = { sessionId: "session-3", userId: "user-1" };
-    const model = createModel("Hello again");
+    const model = createMockModel("Hello again");
 
-    harness.store.save(sessionId, createBaseState([createMessage("Stored")]));
+    harness.store.save(sessionId, createMockInteractionState([createMockMessage("Stored")]));
 
     const session = createInteractionSession({
       sessionId,
@@ -158,15 +88,15 @@ describe("interaction session", () => {
       adapters: { model },
     });
 
-    const result = await session.send(createMessage("Next"));
+    const result = await session.send(createMockMessage("Next"));
     expect(assertRunResult(result).artefact.messages).toHaveLength(3);
     expect(session.getState().messages).toHaveLength(3);
   });
 
   it("skips policy and save when paused", async () => {
-    const harness = createMemorySessionStore();
+    const harness = createMockSessionStore();
     const sessionId = "session-4";
-    const model = createModel("Ignored");
+    const model = createMockModel("Ignored");
     const steps: string[] = [];
 
     harness.store.save(sessionId, {
@@ -189,7 +119,7 @@ describe("interaction session", () => {
       },
     });
 
-    const outcome = await session.send(createMessage("Pause"));
+    const outcome = await session.send(createMockMessage("Pause"));
 
     expect(isPausedResult(outcome)).toBe(true);
     expect(steps).toHaveLength(0);

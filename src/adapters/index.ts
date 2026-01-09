@@ -97,7 +97,6 @@ export { type AdapterPlugin, type AdapterPluginOptions } from "./registration";
 
 export {
   maybeChain,
-  identity,
   maybeMap,
   maybeMapArray,
   maybeTry,
@@ -108,17 +107,21 @@ export {
   collectStep,
   isPromiseLike,
   tryWrap,
-  bindFirst,
-  partialK,
-  curryK,
+} from "../shared/maybe";
+export type { MaybeAsyncIterable, MaybePromise } from "../shared/maybe";
+export {
+  identity,
   toNull,
   toTrue,
   toFalse,
   isNull,
   isFalse,
+  bindFirst,
+  partialK,
+  curryK,
   toUndefined,
-} from "../shared/maybe";
-export type { MaybeAsyncIterable, MaybePromise } from "../shared/maybe";
+} from "../shared/fp";
+export * from "../shared/maybe";
 
 export {
   adapterParamTypeToJsonType,

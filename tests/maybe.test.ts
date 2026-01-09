@@ -7,7 +7,6 @@ import {
   maybeMapArray,
   maybeMapOr,
   maybeAll,
-  toUndefined,
   partialK,
   maybeTap,
   maybeToAsyncIterable,
@@ -18,6 +17,7 @@ import {
   maybeTry,
   tryWrap,
 } from "../src/shared/maybe";
+import { toNull } from "../src/shared/fp";
 
 const addOne = (value: number) => value + 1;
 const double = (value: number) => value * 2;
@@ -107,13 +107,13 @@ describe("Maybe utilities", () => {
 
   it("maybeMapOr supports promise inputs", async () => {
     const mapValue = (value: number) => value + 1;
-    const result = maybeMapOr(mapValue, toUndefined, Promise.resolve(4));
+    const result = maybeMapOr(mapValue, toNull, Promise.resolve(4));
     expect(await result).toBe(5);
   });
 
   it("maybeMapOr supports partial application", () => {
     const mapValue = (value: number) => value + 1;
-    const mapped = maybeMapOr(mapValue, toUndefined);
+    const mapped = maybeMapOr(mapValue, toNull);
     expect(mapped(1)).toBe(2);
   });
 

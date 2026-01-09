@@ -6,7 +6,7 @@ import {
   toStreamDeltaToolResultEvent,
   toStreamErrorEvent,
   toStreamStartEvent,
-} from "../stream-utils";
+} from "../utils"; // Changed import path from ../stream-utils to ../utils
 
 const isStartPart = (part: TextStreamPart<ToolSet>) =>
   part.type === "text-start" || part.type === "reasoning-start";

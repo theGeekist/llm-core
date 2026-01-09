@@ -1,7 +1,7 @@
 import type { BaseMessageChunk } from "@langchain/core/messages";
 import { AIMessageChunk, ToolMessageChunk } from "@langchain/core/messages";
 import type { ModelUsage, ToolCall, ToolResult } from "../types";
-import { normalizeTimestamp } from "../model-utils";
+import { normalizeTimestamp } from "../utils";
 import { readString, readNumber } from "../utils";
 
 export type StreamMeta = {

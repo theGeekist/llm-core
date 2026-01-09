@@ -57,7 +57,7 @@ type TestRunOptions = {
   adapters?: unknown;
 };
 
-export const createSessionStore = () => {
+export const createTestResumeStore = () => {
   const sessions = new Map<unknown, ResumeSnapshot>();
   const sessionStore = {
     get: (token: unknown) => sessions.get(token) ?? null,

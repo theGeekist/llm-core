@@ -1,6 +1,7 @@
 import type { AdapterBundle, AdapterDiagnostic } from "../../adapters/types";
 import type { MaybePromise } from "../../shared/maybe";
-import { bindFirst, maybeChain, curryK, maybeTry } from "../../shared/maybe";
+import { bindFirst, curryK } from "../../shared/fp";
+import { maybeChain, maybeTry } from "../../shared/maybe";
 import { attachAdapterContext, createAdapterContext } from "../adapter-context";
 import type { DiagnosticEntry } from "../../shared/diagnostics";
 import {
@@ -97,7 +98,7 @@ const runPipeline = <TOutcome>(
     retry: context.ctx.runtime?.retry,
     trace: context.ctx.trace,
   });
-  const adapterDiagnostics = resolution.diagnostics.map(createAdapterDiagnostic);
+  const adapterDiagnostics = resolution.diagnostics.map((d) => createAdapterDiagnostic(d));
   const contractDiagnostics = context.deps.readContractDiagnostics(resolvedAdapters);
   const runtimeDiagnostics = adapterDiagnostics.concat(contractDiagnostics);
   const adjustedDiagnostics = applyDiagnosticsMode(runtimeDiagnostics, context.ctx.diagnosticsMode);

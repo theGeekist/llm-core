@@ -1,6 +1,7 @@
 import type { Model, ModelCall, ModelResult, ModelStreamEvent } from "../adapters/types";
 import type { Message } from "../adapters/types/messages";
-import { bindFirst, maybeChain, maybeMap, maybeTap, maybeToStep, maybeTry } from "../shared/maybe";
+import { bindFirst } from "../shared/fp";
+import { maybeChain, maybeMap, maybeTap, maybeToStep, maybeTry } from "../shared/maybe";
 import type { MaybeAsyncIterable, MaybePromise, Step } from "../shared/maybe";
 import type { PipelinePaused } from "@wpkernel/pipeline/core";
 import { isString } from "../shared/guards";

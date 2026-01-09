@@ -13,7 +13,8 @@ import {
   fromLlamaIndexQueryEngine,
 } from "#adapters";
 import { Recipe } from "../../src/recipes/flow";
-import { bindFirst, maybeMap } from "../../src/shared/maybe";
+import { bindFirst } from "../../src/shared/fp";
+import { maybeMap } from "../../src/shared/maybe";
 import { expectTelemetryPresence, itIfEnvAll } from "./helpers";
 
 const itWithOpenAI = itIfEnvAll("OPENAI_API_KEY");

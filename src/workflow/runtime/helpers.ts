@@ -1,5 +1,5 @@
 import type { MaybePromise } from "../../shared/maybe";
-import { bindFirst } from "../../shared/maybe";
+import { bindFirst } from "../../shared/fp";
 import type { DiagnosticEntry } from "../../shared/diagnostics";
 import type { TraceEvent } from "../../shared/trace";
 

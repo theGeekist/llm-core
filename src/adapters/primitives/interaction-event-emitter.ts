@@ -1,7 +1,8 @@
 import type { EventStream, EventStreamEvent } from "../types";
 import type { InteractionEvent } from "../../interaction/types";
 import { isRecord } from "../../shared/guards";
-import { bindFirst, maybeAll, maybeMap, type MaybePromise } from "../../shared/maybe";
+import { bindFirst } from "../../shared/fp";
+import { maybeAll, maybeMap, type MaybePromise } from "../../shared/maybe";
 
 export type InteractionEventEmitter<TEvent> = {
   emit: (event: TEvent) => MaybePromise<boolean | null>;

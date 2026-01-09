@@ -6,7 +6,7 @@ import {
   readStructuredText,
   tryParseJson,
   toResponseFormatSchema,
-} from "../../src/adapters/model-utils";
+} from "../../src/adapters/utils";
 import type { Message, ToolCall, ToolResult } from "../../src/adapters/types";
 
 const passthroughMessage = (value: Message) => value;

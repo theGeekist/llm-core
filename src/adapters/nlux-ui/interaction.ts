@@ -3,7 +3,8 @@ import type { EventStream, EventStreamEvent } from "../types";
 import type { InteractionHandle, InteractionHandleInput } from "../../interaction/handle";
 import type { InteractionEvent, InteractionState } from "../../interaction/types";
 import type { Message, MessageContent } from "../types/messages";
-import { maybeMap, toNull } from "../../shared/maybe";
+import { toNull } from "../../shared/fp";
+import { maybeMap } from "../../shared/maybe";
 import { isRecord } from "../../shared/guards";
 import { toMessageContent } from "../message-content";
 

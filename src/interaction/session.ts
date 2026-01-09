@@ -12,7 +12,8 @@ import type {
   SessionStore,
 } from "./types";
 import { createInteractionPipelineWithDefaults, runInteractionPipeline } from "./steps";
-import { bindFirst, maybeChain, maybeMap, maybeTap, type MaybePromise } from "../shared/maybe";
+import { bindFirst } from "../shared/fp";
+import { maybeChain, maybeMap, maybeTap, type MaybePromise } from "../shared/maybe";
 import { createEmptyState, isPausedOutcome, readOutcomeState } from "./handle";
 
 export type InteractionSessionOptions = {

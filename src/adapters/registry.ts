@@ -11,7 +11,7 @@ import { createBuiltinTools } from "./primitives/tools";
 import { createBuiltinRetriever } from "./primitives/retriever";
 import { createBuiltinTrace } from "./primitives/trace";
 import { validateAdapterRequirements } from "./requirements";
-import { readPipelineArtefact } from "../shared/artefact";
+import { readPipelineArtefact } from "../shared/outcome";
 import {
   createDefaultReporter,
   pipelineDiagnostic,

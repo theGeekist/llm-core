@@ -7,7 +7,7 @@ import {
   toStreamDeltaToolResultEvent,
   toStreamErrorEvent,
   toStreamStartEvent,
-} from "../stream-utils";
+} from "../utils";
 
 export const toToolCallFromPart = (part: TextStreamPart<ToolSet>): ToolCall | null => {
   if (part.type !== "tool-call") {
