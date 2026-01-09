@@ -122,7 +122,11 @@ class ChatKitInteractionSinkImpl {
   }
 }
 
-function dispatchEvents(dispatchEvent: (event: CustomEvent) => void, events: CustomEvent[]) {
+function dispatchEvents(
+  dispatchEvent: (event: CustomEvent) => void,
+  events: CustomEvent[],
+  onError?: (error: unknown, context: { events: CustomEvent[] }) => void,
+) {
   if (events.length === 0) {
     return null;
   }
@@ -131,7 +135,10 @@ function dispatchEvents(dispatchEvent: (event: CustomEvent) => void, events: Cus
       dispatchEvent(event);
     }
     return true;
-  } catch {
+  } catch (error) {
+    if (onError) {
+      onError(error, { events });
+    }
     // Silent failure is intentional for resilience, but debug logging could be added here.
     return false;
   }
