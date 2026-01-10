@@ -1,3 +1,4 @@
+// #region docs
 import { recipes } from "#recipes";
 import type { Retriever } from "#adapters";
 
@@ -6,5 +7,6 @@ const retriever: Retriever = {
 };
 
 const wf = recipes.rag().defaults({ adapters: { retriever } }).build();
+// #endregion docs
 
 void wf;

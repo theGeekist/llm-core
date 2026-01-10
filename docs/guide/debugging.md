@@ -1,102 +1,97 @@
-# Debugging & Diagnostics
+# Observability & Debugging
 
-`llm-core` provides built-in tools to help you understand what your workflow is doing, catch issues early, and ensure production safety.
+AI workflows are notoriously hard to debug. When an agent gives the wrong answer, was it the prompt? The context? The model temperature? A silent tool failure?
 
-## Tracing
+`llm-core` treats **observability as infrastructure**. It assumes that you cannot ship reliable AI products unless you can see exactly what happened in every step of every run.
 
-Tracing lets you visualize the execution flow of your recipe.
+---
 
-### Console Tracing
+## 1) Stop reading logs. Start reading traces.
 
-The simplest way to see what's happening is to enable the console tracer.
+The structure of a workflow is a graph. The best way to debug it is to look at that graph.
 
-```ts
-import { recipes } from "@geekist/llm-core/recipes";
-import { createBuiltinTrace } from "@geekist/llm-core/adapters";
-
-const trace = createBuiltinTrace();
-const workflow = recipes.agent().defaults({ adapters: { trace } }).build();
-
-await workflow.run({ input: "hello" });
-```
-
-This will output structured logs for every step, including inputs, outputs, and duration.
-
-### Accessing the Trace Object
-
-Every `Outcome` includes a full trace log. You can inspect this programmatically:
+Every `Outcome` includes a `trace` object. This is a structured record of every step that ran, what input it received, what output it produced, and how long it took.
 
 ```ts
 const result = await workflow.run(input);
 
 if (result.status === "ok") {
-  console.log(result.trace); // Array of TraceEvent objects
+  // Don't just log the answer. Log the path.
+  console.log(result.trace);
 }
 ```
 
-## Strict Mode
+Instead of guessing why the model hallucinated, you can inspect the trace and see: "Ah, the retrieval step returned zero documents."
 
-By default, `llm-core` is permissive. It warns you about potential issues (like missing dependencies) but tries to run anyway.
-In production, you often want **Strict Mode**, which treats warnings as errors and halts execution immediately.
-
-### Enabling Strict Mode
-
-You can enable strict mode at the **Workflow** level:
+**Console Tracing (Development)**
+For local development, you can stream this trace to your console.
 
 ```ts
-const workflow = recipes.agent().build();
+import { createBuiltinTrace } from "@geekist/llm-core/adapters";
+
+const workflow = recipes
+  .agent()
+  .defaults({ adapters: { trace: createBuiltinTrace() } })
+  .build();
 ```
 
-Or at the **Run** level (overriding the workflow default):
+---
+
+## 2) Strict Mode: Safety at Build Time
+
+Most frameworks are permissive: if you forget a capability, they might fail silently or throw a vague runtime error.
+
+In production, you want **Strict Mode**. It treats warnings as hard errors.
 
 ```ts
+// If you are missing a retriever, this throws BEFORE the run starts.
 await workflow.run(input, {
   diagnostics: "strict",
 });
 ```
 
-### What Strict Mode Catches
+Strict mode catches:
 
-- **Missing Dependencies**: Steps that require a capability (like `model` or `store`) that hasn't been provided.
+- **Missing Capabilities**: Asking for retrieval without providing a retriever adapter.
+- **Dead Code**: Registering plugins that are never used by any step.
 - **Contract Violations**: Adapters that don't match the expected interface.
-- **Unused Plugins**: Plugins registered but never used (helping you keep your bundle size down).
 
-## Diagnostics
+This moves bugs from "My user saw a crash" to "My build failed".
 
-When a workflow runs, it collects **Diagnostics**. These are messages about the health of your execution.
+---
 
-### Inspecting Diagnostics
+## 3) Diagnostics: Health Checks
 
-Like the trace, diagnostics are part of the `Outcome`.
+Every run also returns `diagnostics`. These are specific warnings about the health of your execution.
 
 ```ts
 const result = await workflow.run(input);
 
-// Warnings and Errors
-console.log(result.diagnostics);
-```
-
-### Common Diagnostic Codes
-
-| Code                            | Level      | Meaning                                                          | Action                                                    |
-| :------------------------------ | :--------- | :--------------------------------------------------------------- | :-------------------------------------------------------- |
-| `capability_dependency_missing` | Warn/Error | A step needs a capability (e.g., `model`) but none was provided. | Register a plugin with `.use()` or check your plugin key. |
-| `construct_dependency_missing`  | Warn/Error | Similar to capability, but for specific constructs.              | Ensure you've provided the right Adapter.                 |
-| `pipeline_cycle_detected`       | Error      | Your recipe has a circular dependency.                           | Check your `.next()` calls for loops.                     |
-
-## Diagnosing "Paused" Workflows
-
-If your workflow returns a `paused` status, it means a step requested human intervention or an external signal.
-
-```ts
-if (result.status === "paused") {
-  console.log("Paused at:", result.trace.at(-1)); // See where it stopped
-  console.log("Resume token:", result.token); // Save this to resume later
+if (result.diagnostics.length > 0) {
+  // E.g. "Tool call validation failed, retrying..."
+  console.warn("Run succeeded with warnings:", result.diagnostics);
 }
 ```
 
-## Key Takeaways
+A workflow might succeed (produce an answer) but still be unhealthy (it retried 3 times or dropped an invalid tool call). Diagnostics tell you about this friction so you can fix it before it becomes a failure.
 
-- [ ] **Strict Mode**: Use it in CI to catch broken references before they ship.
-- [ ] **Tracing**: Don't use `console.log`. Use the tracegraph to see inputs/outputs of every step.
-- [ ] **Diagnostics**: Warnings aren't just noise; they often predict runtime failures (like missing keys).
+---
+
+## 4) Debugging "Paused" flows
+
+If your workflow hits a human gate or a long-running tool, it returns `status: "paused"`.
+
+This is not an error. It's a structured state.
+
+```ts
+if (result.status === "paused") {
+  // See exactly where it stopped
+  const lastStep = result.trace.at(-1);
+  console.log(`Waiting for input at step: ${lastStep.id}`);
+
+  // Save the token to resume later
+  await db.save(result.token);
+}
+```
+
+Because the trace is preserved, when you resume days later, you still have the full history of how you got there.

@@ -1,17 +1,21 @@
-# Retrieval Adapters (Context & Memory)
+# Retrieval adapters (context and memory)
 
-## What is Retrieval?
+## What is retrieval?
 
-Retrieval is the mechanism for giving your LLM "Long-Term Memory" or access to private data. It is the core of **RAG** (Retrieval-Augmented Generation).
+Retrieval gives your LLM long term memory and access to private data. It sits between your raw content and the model and forms the core of Retrieval Augmented Generation, usually shortened to **RAG**.
 
-In `llm-core`, retrieval is not a single capability. It is a pipeline of four distinct stages:
+In `llm-core`, retrieval sits inside a RAG pipeline. The [RAG recipe](/recipes/rag) explains the end to end flow from question to answer. This page focuses on the building blocks that make that flow work and the adapters that connect them.
 
-1.  **Embedders**: Turn text into math (vectors).
-2.  **Vector Stores**: Save (Ingest) those vectors for later.
-3.  **Retrievers**: Read (Query) relevant vectors during a workflow.
-4.  **Rerankers**: Refine the results using a high-precision model.
+You can read this page from top to bottom as a tour of the pipeline, or you can skip to a section when you want details about a particular adapter type.
 
-### The RAG Pipeline
+The retrieval side of this pipeline is made of four distinct stages that work together:
+
+1. **Embedders** turn text into vectors.
+2. **Vector stores** save those vectors for later use.
+3. **Retrievers** read relevant vectors during a workflow.
+4. **Rerankers** refine the results with a high precision model.
+
+### The RAG pipeline
 
 ```mermaid
 graph LR
@@ -22,40 +26,55 @@ graph LR
     Context -->|5. Rerank| TopK[Top Results]
 ```
 
+The rest of this page follows the diagram from left to right. Each of the next sections introduces one stage and the adapters that implement it in `llm-core`.
+
+Each stage has its own adapter interface in `llm-core`. You can plug in LangChain, LlamaIndex, AI SDK or your own code at any of these points and still keep a single, consistent workflow.
+
 ---
 
 ## 1. Retrievers
 
-**The Reading Interface**
+### The reading interface
 
-A `Retriever` takes a string query and returns a list of Documents. It is **Read-Only**.
+A `Retriever` accepts a string query and returns a list of documents. It is a read only interface that focuses on search and ranking, not storage.
 
-### When to use what?
+Retrievers are usually the first contact point between a user query and your stored knowledge. They decide which pieces of context reach the model, so the choice of implementation has a direct effect on answer quality.
 
-- **LlamaIndex (`fromLlamaIndexRetriever`)**: **Best for complex data.**
-  If you are parsing PDFs, building Knowledge Graphs, or using hierarchical indices, LlamaIndex is the gold standard. Use their retrievers to tap into that complexity.
+### When to use which retriever
 
-  - _Upstream Docs_: [`BaseRetriever`](https://ts.llamaindex.ai/api/classes/BaseRetriever)
+**LlamaIndex (`fromLlamaIndexRetriever`)** works well for complex data and richer indexing strategies. When you parse PDFs, build knowledge graphs, or use hierarchical indices, LlamaIndex gives you powerful building blocks. The adapter lets you use those retrievers inside `llm-core` recipes without giving up the rest of your stack.
 
-- **LangChain (`fromLangChainRetriever`)**: **Best for broad database support.**
-  If you need to connect to a specific database (Pinecone, Chroma, qdrant) and do a simple similarity search, LangChain likely has the driver you need.
-  - _Upstream Docs_: [`BaseRetriever`](https://api.js.langchain.com/classes/core_retrievers.BaseRetriever.html)
+- Upstream docs: [`BaseRetriever`](https://ts.llamaindex.ai/api/classes/BaseRetriever)
+
+**LangChain (`fromLangChainRetriever`)** works well when you need wide database support. If you want to connect to a specific vector database such as Pinecone, Chroma or Qdrant and run similarity search, LangChain usually has the driver ready. The adapter keeps that driver and wraps it behind a stable `Retriever` interface.
+
+- Upstream docs: [`BaseRetriever`](https://api.js.langchain.com/classes/core_retrievers.BaseRetriever.html)
+
+You can mix both in the same project. For example, a LangChain based retriever can serve product search while a LlamaIndex based retriever can serve internal documentation, and both can feed the same `llm-core` recipes.
 
 ---
 
-## 2. Vector Stores
+## 2. Vector stores
 
-**The Writing Interface**
+### The writing interface
 
-While a Retriever _reads_, a `VectorStore` adapter _writes_. It allows `llm-core` to **Upsert** (Add/Update) and **Delete** documents in a database-agnostic way.
+A `VectorStore` adapter gives `llm-core` a way to write. While a retriever reads, a vector store adapter upserts and deletes records in a database agnostic way.
 
-### Why use an adapter?
+This covers three main operations:
 
-Every vector DB SDK has a different API for adding records. `llm-core` normalizes this so you can write a generic **Ingestion Recipe** that works with _any_ backed storage.
+- Upsert new or updated documents.
+- Remove entries that no longer exist at the source.
+- Fetch stored documents by identifier when needed.
 
-### Example: Indexing a Document
+### Why use an adapter
 
-Here is how you wire up a LangChain Memory store to ingest data:
+Every vector database SDK exposes a slightly different API. Some expect flat arrays of numbers, some expect named fields, and some expect extra metadata. An adapter hides that complexity.
+
+In practice, this means you can write a generic ingestion recipe once and point it at Pinecone, Chroma, Qdrant or an in memory store without rewriting the orchestration code. You keep your indexing and sync logic in `llm-core` and let the adapter handle the storage details.
+
+### Example: indexing a document
+
+The following example shows how to wire a LangChain vector store for ingestion. The same pattern applies to other ecosystems that expose a compatible `VectorStore` interface.
 
 ::: tabs
 == TypeScript
@@ -70,27 +89,27 @@ Here is how you wire up a LangChain Memory store to ingest data:
 
 ---
 
-## 3. Indexing (The Sync Problem)
+## 3. Indexing, the sync problem
 
-**Why isn't `store.upsert` enough?**
+### Why `store.upsert` does not tell the whole story
 
-Naive RAG pipelines blindly upsert documents every time they run. This is dangerous because:
+A simple RAG pipeline often calls `store.upsert` for every document during every run. It looks fine at first, yet it creates three common problems over time.
 
-1.  **Cost**: You pay to re-embed text that hasn't changed.
-2.  **Duplicates**: If a file moves or changes slightly, you might get ghost records.
-3.  **Deletions**: If you delete a source file, the vector stays in the DB forever (hallucination risk).
+First, cost grows quickly because you keep re embedding content that has not changed. Second, small edits or file moves can leave behind orphaned records that keep appearing in search results. Third, deletions at the source rarely propagate to the vector store, which means stale context can appear in responses.
 
-**The Solution: Indexing Adapters**
+### Indexing adapters
 
-An Indexing Adapter sits between your Source and your Vector Store. It tracks a hash of every document to ensure strict synchronization.
+An indexing adapter sits between your source of truth and your vector store. It assigns and tracks a stable identifier for every document and stores a hash for the latest version that you ingested. During a new run, it compares the current state of the source with the stored hashes and performs the minimal set of operations required to bring the vector store in sync.
 
-`Source Docs` -> **`Indexing Adapter`** -> `Vector Store`
+Source documents flow through the indexing adapter into the vector store.
 
-### Integrations
+`Source docs` → **`Indexing adapter`** → `Vector store`
 
-**LangChain (`RecordManager`)**
+This approach gives you predictable behaviour and a clear audit trail. When you look at your logs, you can see which documents were added, updated or marked as deleted during each ingestion pass.
 
-LangChain's Record Manager is the industry standard for this pattern. Our adapter expects a **LangChain VectorStore** instance (not the llm-core `VectorStore` adapter). You can still mix-and-match models and other adapters in the workflow, but indexing itself is currently LangChain-native.
+### LangChain integration
+
+LangChain supplies a `RecordManager` that implements this pattern. The `llm-core` adapter expects a LangChain `VectorStore` instance instead of an `llm-core` `VectorStore` adapter. Indexing logic runs inside that LangChain component, while the rest of your workflow can still use any model adapter from AI SDK, LangChain or LlamaIndex.
 
 ::: tabs
 == TypeScript
@@ -107,22 +126,25 @@ LangChain's Record Manager is the industry standard for this pattern. Our adapte
 
 ## 4. Embedders
 
-**The Meaning Maker**
+### The meaning maker
 
-Embedders are the hidden workhorses of RAG. They convert "Hello World" into a massive array of numbers (e.g., `[0.1, -0.4, 0.8...]`).
+Embedders convert text such as `"Hello world"` into high dimensional vectors such as `[0.1, -0.4, 0.8, ...]`. These vectors encode semantic information so that similar concepts end up close to each other in vector space.
 
-### Dimensions Matter
+Embedders sit at the front of the RAG pipeline. They decide how your documents are projected into that space, so they have a strong influence on retrieval quality.
 
-When choosing an embedder, you must ensure the **dimensions** (e.g., 1536 for OpenAI `text-embedding-3-small`) match your Vector Store configuration.
+### Dimensions and configuration
 
-### Ecosystem Support
+Each embedder produces vectors with a fixed number of dimensions. For example, OpenAI `text-embedding-3-small` uses 1536 dimensions. Your vector store must use the same number for the same index. When those numbers match, storage and retrieval stay consistent.
 
-- **AI SDK (`EmbeddingModel`)**: **Recommended for speed.**
-  The AI SDK provides a clean, Type-Safe interface for modern providers like OpenAI, Cohere, and Mistral.
+It helps to treat that pair as a contract. When you change embedder model, check the dimension count and adjust your vector store configuration or create a new index set aside for the new model.
 
-  - _Upstream_: [`EmbeddingModel`](https://sdk.vercel.ai/docs/reference/ai-sdk-core/embedding-model-v1)
+### Ecosystem support
 
-- **LangChain / LlamaIndex**: Useful if you are using their document splitting chains, as they often require their own `Embeddings` instances to be passed in.
+**AI SDK (`EmbeddingModel`)** is a good default when you want speed and a modern provider experience. It provides a type safe interface for models from OpenAI, Cohere, Mistral and others. The adapter wraps any `EmbeddingModel` and exposes it as an `llm-core` embedder.
+
+- Upstream: [`EmbeddingModel`](https://sdk.vercel.ai/docs/reference/ai-sdk-core/embedding-model-v1)
+
+**LangChain and LlamaIndex** shine when you already use their document loaders and text splitters. Many of their higher level components expect a specific `Embeddings` implementation. The adapters make those embedders available to `llm-core` recipes while leaving your upstream configuration untouched.
 
 ::: tabs
 == TypeScript
@@ -137,19 +159,23 @@ When choosing an embedder, you must ensure the **dimensions** (e.g., 1536 for Op
 
 ---
 
-## 4. Rerankers
+## 5. Rerankers
 
-**The Precision Refiner**
+### The precision refiner
 
-Vector similarity is "fuzzy"—it finds things that _sound_ alike, but not always things that _answer_ the question. A Reranker takes the top (e.g., 50) results from a Retriever and uses a much smarter (but slower) model to sort them by actual relevance.
+Vector similarity search retrieves candidates based on proximity in vector space. It provides a broad, fuzzy match that brings likely context into view, yet it does not always produce the best ordering for a specific question.
 
-### Why Rerank?
+A reranker takes the top results from a retriever, such as the first 50 documents, and evaluates them with a more capable model. It then sorts them by relevance to the query and often trims the list further. The final answer uses that smaller, more focused set.
 
-It significantly improves answer quality (reduces hallucinations) by ensuring the LLM only sees the absolute best context.
+### Why reranking helps
+
+Reranking raises answer quality by selecting context that addresses the user query directly. It reduces the chance that a loosely related paragraph slips into the prompt, and it often cuts down on hallucinations because the model sees fewer distractors.
+
+Rerankers are particularly useful when you retrieve from very large corpora or when queries are short and ambiguous.
 
 ### Implementation
 
-We align with the **AI SDK Reranker** standard (`RerankingModelV3`).
+`llm-core` aligns with the AI SDK reranker standard, `RerankingModelV3`. The adapter accepts an AI SDK reranking model and exposes a unified reranker interface that fits cleanly into recipes.
 
 ::: tabs
 == TypeScript
@@ -164,12 +190,17 @@ We align with the **AI SDK Reranker** standard (`RerankingModelV3`).
 
 ---
 
-## 5. Structured Queries (LangChain only)
+## 6. Advanced retrieval utilities
 
-**The Filter Compiler**
+Some ecosystems provide helpers that sit beside the core RAG pipeline. These helpers simplify certain patterns once your basic retrieval flow works well.
 
-LangChain exposes a `StructuredQuery` type used by self-query retrievers and structured filters.
-We normalize it so you can keep the same filter shape while mixing in **any** model adapter.
+### Structured queries (LangChain)
+
+#### The filter compiler
+
+LangChain exposes a `StructuredQuery` type that powers self query retrievers and structured filters. The type describes both the user query and a filter expression in a single object.
+
+The `llm-core` adapter normalises this shape so you can keep the same `StructuredQuery` handling while you mix in any model adapter in your recipes.
 
 ::: tabs
 == TypeScript
@@ -182,24 +213,23 @@ We normalize it so you can keep the same filter shape while mixing in **any** mo
 
 :::
 
-You can pass the resulting `StructuredQuery` into your own retriever filters or recipe steps,
-regardless of whether your **Model** adapter comes from AI SDK, LangChain, or LlamaIndex.
+You can pass the resulting `StructuredQuery` into your own retriever filters or recipe steps. The model adapter can come from AI SDK, LangChain or LlamaIndex, and the filter logic stays consistent.
 
----
+### Query engines, the black box path
 
-## 6. Query Engines (The "Black Box")
+#### When to use a query engine
 
-**When to use a Query Engine?**
+Most `llm-core` examples encourage explicit recipes where you control each stage in the RAG flow. You see the `Retrieve → Rerank → Generate` chain and you decide how each step behaves.
 
-In `llm-core`, we usually encourage you to build **Recipes**—explicit workflows where you control the `Retrieve -> Rerank -> Generate` chain.
+Frameworks such as LlamaIndex also provide higher level query engines. These encapsulate complex retrieval logic such as sub question routing, tree summarisation and multi step reasoning. A query engine feels more like an oracle that accepts a question and returns an answer while it hides internal orchestration.
 
-However, frameworks like LlamaIndex offer pre-packaged "Engines" that encapsulate highly complex retrieval logic (e.g., Sub-Question Query Engines, Multi-Step Reasoning).
+A query engine adapter is useful when you want to keep that advanced behaviour and still participate in the broader `llm-core` workflow.
 
-Use a **Query Engine Adapter** when:
+Typical reasons include:
 
-1.  You want to use a specific, advanced LlamaIndex strategy.
-2.  You don't want to reimplement the orchestration logic yourself.
-3.  You treat the retrieval subsystem as an opaque "Oracle".
+1. You rely on a specific LlamaIndex query engine that already works well in production.
+2. You want to integrate that engine with new tools, guards or memory, and you prefer to do that in `llm-core`.
+3. You treat the retrieval subsystem as a specialised service while the rest of the workflow remains explicit.
 
 ::: tabs
 == TypeScript
@@ -212,9 +242,11 @@ Use a **Query Engine Adapter** when:
 
 :::
 
-### Response Synthesizers
+#### Response synthesis
 
-A **Response Synthesizer** takes a query and a set of retrieved nodes, and generates a final response. It is the "Generation" half of RAG.
+A **response synthesiser** accepts a query and a set of retrieved nodes and produces a final answer. It represents the generation half of RAG when retrieval has already taken place elsewhere.
+
+The LlamaIndex response synthesiser adapter lets you plug that component directly into a recipe. You can then decide whether a step uses an explicit `Model` adapter, a query engine or a response synthesiser, while the rest of the workflow stays the same.
 
 ::: tabs
 == TypeScript
@@ -227,64 +259,36 @@ A **Response Synthesizer** takes a query and a set of retrieved nodes, and gener
 
 :::
 
-## Supported Integrations (Flex)
-
-We support the full pipeline: Ingestion, Embedding, Storage, Retrieval, and Reranking.
-
-### Core RAG Components
-
-| Capability       | Ecosystem  | Adapter Factory             | Upstream Interface       | Deep Link                                                                                                     |
-| :--------------- | :--------- | :-------------------------- | :----------------------- | :------------------------------------------------------------------------------------------------------------ |
-| **Retrieval**    | LangChain  | `fromLangChainRetriever`    | `BaseRetriever`          | [Docs](https://api.js.langchain.com/classes/core_retrievers.BaseRetriever.html)                               |
-| **Retrieval**    | LlamaIndex | `fromLlamaIndexRetriever`   | `BaseRetriever`          | [Docs](https://ts.llamaindex.ai/api/classes/BaseRetriever)                                                    |
-| **Vector Store** | LangChain  | `fromLangChainVectorStore`  | `VectorStore`            | [Docs](https://api.js.langchain.com/classes/core_vectorstores.VectorStore.html)                               |
-| **Vector Store** | LlamaIndex | `fromLlamaIndexVectorStore` | `BaseVectorStore`        | [Docs](https://ts.llamaindex.ai/api/interfaces/BaseVectorStore)                                               |
-| **Embeddings**   | AI SDK     | `fromAiSdkEmbeddings`       | `EmbeddingModel`         | [Docs](https://sdk.vercel.ai/docs/reference/ai-sdk-core/embedding-model-v1)                                   |
-| **Embeddings**   | LangChain  | `fromLangChainEmbeddings`   | `Embeddings`             | [Docs](https://api.js.langchain.com/interfaces/core_embeddings.EmbeddingsInterface.html)                      |
-| **Embeddings**   | LlamaIndex | `fromLlamaIndexEmbeddings`  | `BaseEmbedding`          | [Docs](https://ts.llamaindex.ai/api/classes/BaseEmbedding)                                                    |
-| **Reranker**     | AI SDK     | `fromAiSdkReranker`         | `RerankingModelV3`       | [Docs](https://sdk.vercel.ai/docs/reference/ai-sdk-core/rerank)                                               |
-| **Reranker**     | LangChain  | `fromLangChainReranker`     | `BaseDocumentCompressor` | [Docs](https://api.js.langchain.com/classes/core_retrievers_document_compressors.BaseDocumentCompressor.html) |
-| **Reranker**     | LlamaIndex | `fromLlamaIndexReranker`    | `BaseNodePostprocessor`  | [Docs](https://ts.llamaindex.ai/api/classes/BaseNodePostprocessor)                                            |
-
-### Ingestion Utilities (Loaders & Splitters)
-
-We also wrap the upstream ETL tools so you can use them directly in `llm-core` pipelines.
-
-| Capability   | Ecosystem  | Adapter Factory              | Deep Link                                                                                       |
-| :----------- | :--------- | :--------------------------- | :---------------------------------------------------------------------------------------------- |
-| **Loader**   | LangChain  | `fromLangChainLoader`        | [Docs](https://api.js.langchain.com/classes/core_document_loaders_base.BaseDocumentLoader.html) |
-| **Loader**   | LlamaIndex | `fromLlamaIndexLoader`       | [Docs](https://ts.llamaindex.ai/api/classes/BaseReader)                                         |
-| **Splitter** | LangChain  | `fromLangChainTextSplitter`  | [Docs](https://api.js.langchain.com/classes/textsplitters.TextSplitter.html)                    |
-| **Splitter** | LlamaIndex | `fromLlamaIndexTextSplitter` | Docs                                                                                            |
-
 ---
 
-## Supported Integrations (Flex)
+## Supported integrations
 
-We support the full pipeline: Ingestion, Embedding, Storage, Retrieval, and Reranking.
+The sections above explain the concepts and how they relate to RAG. The tables below collect the current adapter factories so you can quickly see which upstream types plug into each stage.
 
-### Core RAG Components
+`llm-core` covers the full RAG pipeline: ingestion, embedding, storage, retrieval and reranking. The tables below show the current adapter factories and their upstream interfaces.
 
-| Capability       | Ecosystem  | Adapter Factory             | Upstream Interface       | Deep Link                                                                                                     |
-| :--------------- | :--------- | :-------------------------- | :----------------------- | :------------------------------------------------------------------------------------------------------------ |
-| **Retrieval**    | LangChain  | `fromLangChainRetriever`    | `BaseRetriever`          | [Docs](https://api.js.langchain.com/classes/core_retrievers.BaseRetriever.html)                               |
-| **Retrieval**    | LlamaIndex | `fromLlamaIndexRetriever`   | `BaseRetriever`          | [Docs](https://ts.llamaindex.ai/api/classes/BaseRetriever)                                                    |
-| **Vector Store** | LangChain  | `fromLangChainVectorStore`  | `VectorStore`            | [Docs](https://api.js.langchain.com/classes/core_vectorstores.VectorStore.html)                               |
-| **Vector Store** | LlamaIndex | `fromLlamaIndexVectorStore` | `BaseVectorStore`        | [Docs](https://ts.llamaindex.ai/api/interfaces/BaseVectorStore)                                               |
-| **Embeddings**   | AI SDK     | `fromAiSdkEmbeddings`       | `EmbeddingModel`         | [Docs](https://sdk.vercel.ai/docs/reference/ai-sdk-core/embedding-model-v1)                                   |
-| **Embeddings**   | LangChain  | `fromLangChainEmbeddings`   | `Embeddings`             | [Docs](https://api.js.langchain.com/interfaces/core_embeddings.EmbeddingsInterface.html)                      |
-| **Embeddings**   | LlamaIndex | `fromLlamaIndexEmbeddings`  | `BaseEmbedding`          | [Docs](https://ts.llamaindex.ai/api/classes/BaseEmbedding)                                                    |
-| **Reranker**     | AI SDK     | `fromAiSdkReranker`         | `RerankingModelV3`       | [Docs](https://sdk.vercel.ai/docs/reference/ai-sdk-core/rerank)                                               |
-| **Reranker**     | LangChain  | `fromLangChainReranker`     | `BaseDocumentCompressor` | [Docs](https://api.js.langchain.com/classes/core_retrievers_document_compressors.BaseDocumentCompressor.html) |
-| **Reranker**     | LlamaIndex | `fromLlamaIndexReranker`    | `BaseNodePostprocessor`  | [Docs](https://ts.llamaindex.ai/api/classes/BaseNodePostprocessor)                                            |
+### Core RAG components
 
-### Ingestion Utilities (Loaders & Splitters)
+| Capability   | Ecosystem  | Adapter factory             | Upstream interface       | Deep link                                                                                                     |
+| :----------- | :--------- | :-------------------------- | :----------------------- | :------------------------------------------------------------------------------------------------------------ |
+| Retrieval    | LangChain  | `fromLangChainRetriever`    | `BaseRetriever`          | [Docs](https://api.js.langchain.com/classes/core_retrievers.BaseRetriever.html)                               |
+| Retrieval    | LlamaIndex | `fromLlamaIndexRetriever`   | `BaseRetriever`          | [Docs](https://ts.llamaindex.ai/api/classes/BaseRetriever)                                                    |
+| Vector store | LangChain  | `fromLangChainVectorStore`  | `VectorStore`            | [Docs](https://api.js.langchain.com/classes/core_vectorstores.VectorStore.html)                               |
+| Vector store | LlamaIndex | `fromLlamaIndexVectorStore` | `BaseVectorStore`        | [Docs](https://ts.llamaindex.ai/api/interfaces/BaseVectorStore)                                               |
+| Embeddings   | AI SDK     | `fromAiSdkEmbeddings`       | `EmbeddingModel`         | [Docs](https://sdk.vercel.ai/docs/reference/ai-sdk-core/embedding-model-v1)                                   |
+| Embeddings   | LangChain  | `fromLangChainEmbeddings`   | `Embeddings`             | [Docs](https://api.js.langchain.com/interfaces/core_embeddings.EmbeddingsInterface.html)                      |
+| Embeddings   | LlamaIndex | `fromLlamaIndexEmbeddings`  | `BaseEmbedding`          | [Docs](https://ts.llamaindex.ai/api/classes/BaseEmbedding)                                                    |
+| Reranker     | AI SDK     | `fromAiSdkReranker`         | `RerankingModelV3`       | [Docs](https://sdk.vercel.ai/docs/reference/ai-sdk-core/rerank)                                               |
+| Reranker     | LangChain  | `fromLangChainReranker`     | `BaseDocumentCompressor` | [Docs](https://api.js.langchain.com/classes/core_retrievers_document_compressors.BaseDocumentCompressor.html) |
+| Reranker     | LlamaIndex | `fromLlamaIndexReranker`    | `BaseNodePostprocessor`  | [Docs](https://ts.llamaindex.ai/api/classes/BaseNodePostprocessor)                                            |
 
-We also wrap the upstream ETL tools so you can use them directly in `llm-core` pipelines.
+### Ingestion utilities
 
-| Capability   | Ecosystem  | Adapter Factory              | Deep Link                                                                                       |
-| :----------- | :--------- | :--------------------------- | :---------------------------------------------------------------------------------------------- |
-| **Loader**   | LangChain  | `fromLangChainLoader`        | [Docs](https://api.js.langchain.com/classes/core_document_loaders_base.BaseDocumentLoader.html) |
-| **Loader**   | LlamaIndex | `fromLlamaIndexLoader`       | [Docs](https://ts.llamaindex.ai/api/classes/BaseReader)                                         |
-| **Splitter** | LangChain  | `fromLangChainTextSplitter`  | [Docs](https://api.js.langchain.com/classes/textsplitters.TextSplitter.html)                    |
-| **Splitter** | LlamaIndex | `fromLlamaIndexTextSplitter` | Docs                                                                                            |
+These adapters wrap upstream ETL tools so you can use them directly inside `llm-core` recipes.
+
+| Capability | Ecosystem  | Adapter factory              | Deep link                                                                                       |
+| :--------- | :--------- | :--------------------------- | :---------------------------------------------------------------------------------------------- |
+| Loader     | LangChain  | `fromLangChainLoader`        | [Docs](https://api.js.langchain.com/classes/core_document_loaders_base.BaseDocumentLoader.html) |
+| Loader     | LlamaIndex | `fromLlamaIndexLoader`       | [Docs](https://ts.llamaindex.ai/api/classes/BaseReader)                                         |
+| Splitter   | LangChain  | `fromLangChainTextSplitter`  | [Docs](https://api.js.langchain.com/classes/textsplitters.TextSplitter.html)                    |
+| Splitter   | LlamaIndex | `fromLlamaIndexTextSplitter` | Docs                                                                                            |

@@ -1,37 +1,37 @@
-# Model Adapters (The Semantic Engine)
+# Model Adapters: The Semantic Engine
 
 ## What is a Model Adapter?
 
-In `llm-core`, a **Model** is a stateless engine that accepts a prompt (messages) and returns a completion (text or structured data).
+In `llm-core`, a **Model** is a stateless engine that accepts a prompt composed of messages and returns a completion as plain text or structured data. The Model layer focuses on turning input into output in a predictable way, while the rest of the system takes care of orchestration, tools, and workflow state.
 
-Think of the Model Adapter as the **driver** for the underlying AI provider. Whether you are calling OpenAI via HTTP, running Llama 3 locally via Ollama, or using Anthropic via an SDK, the Model Adapter normalizes the interaction into a single, predictable shape.
+A **Model Adapter** acts as the driver for the underlying AI provider. You might call OpenAI through HTTP, run Llama 3 locally with Ollama, or talk to Anthropic through an SDK. Each of these providers exposes a different API surface. The Model Adapter hides those differences and presents a single, consistent contract to the rest of your application.
 
-### Why do we need this?
+### Why use a Model Adapter?
 
-Every AI provider speaks a different language:
+Each AI ecosystem speaks its own dialect.
 
-- **OpenAI** expects `messages: [{ role: "user" }]`.
-- **Legacy LangChain** might expect `SystemMessage` objects.
-- **AI SDK** uses `LanguageModel` specifications (v2/v3).
-- **Anthropic** has its own unique API signature.
+- OpenAI models receive a `messages` array such as `[{ role: "user", content: "..." }]`.
+- Legacy LangChain integrations rely on `SystemMessage` objects and other wrapper classes.
+- The Vercel AI SDK uses `LanguageModel` specifications in versions two and three.
+- Anthropic exposes its own distinct message schema and calling conventions.
 
-The `Model` adapter standardizes all of this. It guarantees that no matter which provider you swap in, your Workflow receives the same `ModelResult` and standard `ModelStreamEvent`s.
+The `Model` adapter turns these variations into one unified shape. Your workflows always receive a `ModelResult` and a standard sequence of `ModelStreamEvent` values, even when you change providers or mix ecosystems inside a single project.
 
 ---
 
-## Choosing Your Engine
+## Choosing your engine
 
-We support the three major TypeScript AI ecosystems. You can mix and match them within the same application.
+`llm-core` supports the three major TypeScript AI ecosystems, and you can combine them inside one application. The best choice depends on the environment you deploy to and the providers you care about.
 
-### 1. AI SDK (Vercel)
+### 1. Vercel AI SDK
 
-**Recommended for: Modern Applications, Streaming, & Edge**
+**Recommended for: modern applications, streaming, and edge deployments**
 
-The Vercel AI SDK is our preferred driver for text generation. It creates the lightest, fastest, and most standard-compliant connections.
+The Vercel AI SDK serves as the preferred driver for text generation in `llm-core`. It focuses on streaming performance and a clean, small surface area, which matches the design goals of this library.
 
-- **Pros**: Best-in-class streaming support, strictly typed, lightweight.
-- **Cons**: Newer ecosystem, fewer niche provider integrations than LangChain.
-- **Upstream Docs**: [`LanguageModel`](https://sdk.vercel.ai/docs/reference/ai-sdk-core/language-model-v1)
+It offers strong streaming support, a strict type system, and a lightweight dependency graph. The main trade-off lies in ecosystem age; LangChain still ships a wider set of niche provider integrations. When you build a new application or move an existing project toward edge-friendly infrastructure, this adapter usually provides the smoothest experience.
+
+Reference from the upstream project: [`LanguageModel`](https://sdk.vercel.ai/docs/reference/ai-sdk-core/language-model-v1)
 
 ::: tabs
 == TypeScript
@@ -44,15 +44,15 @@ The Vercel AI SDK is our preferred driver for text generation. It creates the li
 
 :::
 
-### 2. LangChain (JS/TS)
+### 2. LangChain JavaScript and TypeScript
 
-**Recommended for: Broad Provider Support & Legacy Apps**
+**Recommended for: broad provider coverage and legacy systems**
 
-LangChain has the largest catalog of integrations. If you need to connect to AWS Bedrock, Google Vertex AI (legacy), or a bespoke enterprise LLM gateway, LangChain is often the only driver available.
+LangChain ships a very large catalog of integrations. Projects that connect to AWS Bedrock, Google Vertex AI in older configurations, or bespoke enterprise LLM gateways often start their journey here. The LangChain adapter fits those situations and keeps the workflow surface in `llm-core` stable even as you move across providers in the LangChain ecosystem.
 
-- **Pros**: Supports virtually every LLM API in existence.
-- **Cons**: Heavier dependencies, legacy baggage.
-- **Upstream Docs**: [`BaseChatModel`](https://api.js.langchain.com/classes/core_language_models_chat_models.BaseChatModel.html)
+This approach brings impressive reach and plenty of building blocks across tools, retrievers, and storage back ends. The cost comes through heavier dependencies and some historical layers that grew over time inside the framework. When a project begins inside LangChain or depends on a provider that only offers LangChain bindings, this adapter meets the project on its own ground and then forwards a standard `ModelResult` back into your workflow.
+
+Reference from the upstream project: [`BaseChatModel`](https://api.js.langchain.com/classes/core_language_models_chat_models.BaseChatModel.html)
 
 ::: tabs
 == TypeScript
@@ -67,21 +67,21 @@ LangChain has the largest catalog of integrations. If you need to connect to AWS
 
 ### 3. LlamaIndex
 
-**Recommended for: Deep RAG Integration**
+**Recommended for: deep RAG integration**
 
-Use the LlamaIndex model adapter primarily when you are already using LlamaIndex for your retrieval pipeline and want to keep the "Chat Engine" tightly coupled to the index configuration.
+The LlamaIndex model adapter fits projects that use LlamaIndex as the primary retrieval and indexing engine. In those setups the chat engine, retrievers, and tools usually live inside LlamaIndex, while `llm-core` supplies the workflow layer around them.
 
-- **Pros**: Seamless integration with LlamaIndex retrievers.
-- **Cons**: Often overkill for simple text generation tasks.
-- **Upstream Docs**: [`LLM`](https://ts.llamaindex.ai/api/interfaces/LLM)
+This adapter keeps your LlamaIndex chat configuration close to the index definition, while still producing a familiar `ModelResult` and `ModelStreamEvent` lifecycle. For simple text generation tasks a direct AI SDK integration often feels leaner. For pipelines that lean heavily on query engines, response synthesis, and index-aware agents, the LlamaIndex adapter keeps everything aligned with that ecosystem.
+
+Reference from the upstream project: [`LLM`](https://ts.llamaindex.ai/api/interfaces/LLM)
 
 ---
 
-## The Streaming Lifecycle
+## The streaming lifecycle
 
-One of the hardest parts of building LLM apps is normalizing streams. Provider A emits chunks as JSON lines, Provider B emits raw bytes, Provider C emits SSE events.
+Streaming behaviour varies widely across providers. One service emits JSON lines, another emits raw bytes, and a third relies on server-sent events. Each format carries pieces of text, tool calls, and usage data in a slightly different way.
 
-`llm-core` normalizes **ALL** of them into a single lifecycle of `ModelStreamEvent` objects.
+`llm-core` turns these variations into a single lifecycle of `ModelStreamEvent` values.
 
 ```mermaid
 graph LR
@@ -95,7 +95,7 @@ graph LR
     Stream -->|Yields| App[Your App]
 ```
 
-You never have to parse chunks manually. You just consume the iterator:
+Chunk handling lives entirely inside the adapter. Your code consumes a typed async iterator and focuses on what each event represents rather than the protocol details that carried it over the wire.
 
 ::: tabs
 == TypeScript
@@ -110,16 +110,15 @@ You never have to parse chunks manually. You just consume the iterator:
 
 ---
 
-## Media Models (AI SDK)
+## Media models with the Vercel AI SDK
 
-Beyond text, we provide specialized adapters for multimodal generation. These rely heavily on the **AI SDK** standards, as it is the only ecosystem with a rigorous specification for these media types.
+Beyond text, `llm-core` ships adapters for multimodal generation. These adapters follow the Vercel AI SDK standards for image, speech, and transcription models, since that ecosystem provides a clear and stable definition for these capabilities.
 
-### Image Generation
+### Image generation
 
-Generates images from text prompts (DALL-E, Midjourney wrappers).
+Image models turn a text prompt into one or more images. The adapter implements an `ImageModel` interface inside `llm-core` and wraps an AI SDK `ImageModelV3` instance under the hood. You can swap providers or move from local inference to a hosted service while keeping the call site identical.
 
-- **Interface**: `ImageModel`
-- **Upstream**: [`ImageModelV3`](https://sdk.vercel.ai/docs/reference/ai-sdk-core/image-model)
+Upstream reference: [`ImageModelV3`](https://sdk.vercel.ai/docs/reference/ai-sdk-core/image-model)
 
 ::: tabs
 == TypeScript
@@ -132,36 +131,38 @@ Generates images from text prompts (DALL-E, Midjourney wrappers).
 
 :::
 
-### Speech (Text-to-Speech)
+### Speech: text to speech
 
-Converts text into audio blobs.
+Speech models convert text into audio blobs. The adapter exposes a `SpeechModel` interface and forwards to a Vercel AI SDK `SpeechModelV3` implementation. This keeps your workflow code focused on prompt construction, voice selection, and output routing, while the adapter handles differences between providers.
 
-- **Interface**: `SpeechModel`
-- **Upstream**: [`SpeechModelV3`](https://sdk.vercel.ai/docs/reference/ai-sdk-core/speech-model)
+Upstream reference: [`SpeechModelV3`](https://sdk.vercel.ai/docs/reference/ai-sdk-core/speech-model)
 
-### Transcription (Audio-to-Text)
+### Transcription: audio to text
 
-Converts audio blobs into text (Whisper).
+Transcription models convert audio blobs into text, a common pattern for systems that start from voice notes, support lines, and recorded meetings. The adapter implements a `TranscriptionModel` interface and forwards into a `TranscriptionModelV3` instance from the AI SDK.
 
-- **Interface**: `TranscriptionModel`
-- **Upstream**: [`TranscriptionModelV3`](https://sdk.vercel.ai/docs/reference/ai-sdk-core/transcription-model)
+Upstream reference: [`TranscriptionModelV3`](https://sdk.vercel.ai/docs/reference/ai-sdk-core/transcription-model)
 
-## Supported Integrations (Flex)
+---
 
-`llm-core` has native adapters for **every** major ecosystem interface.
+## Supported model integrations
 
-| Ecosystem      | Adapter Factory       | Upstream Interface      | Deep Link                                                                                        |
-| :------------- | :-------------------- | :---------------------- | :----------------------------------------------------------------------------------------------- |
-| **AI SDK**     | `fromAiSdkModel`      | `LanguageModel` (V1/V2) | [Docs](https://sdk.vercel.ai/docs/reference/ai-sdk-core/language-model-v1)                       |
-| **LangChain**  | `fromLangChainModel`  | `BaseChatModel`         | [Docs](https://api.js.langchain.com/classes/core_language_models_chat_models.BaseChatModel.html) |
-| **LlamaIndex** | `fromLlamaIndexModel` | `LLM`                   | [Docs](https://ts.llamaindex.ai/api/interfaces/LLM)                                              |
+`llm-core` exposes factories that wrap the major ecosystem interfaces and yield a consistent `Model` contract.
 
-## Supported Media Integrations (AI SDK)
+| Ecosystem         | Adapter factory       | Upstream interface                  | Deep link                                                                                        |
+| :---------------- | :-------------------- | :---------------------------------- | :----------------------------------------------------------------------------------------------- |
+| **Vercel AI SDK** | `fromAiSdkModel`      | `LanguageModel` version one and two | [Docs](https://sdk.vercel.ai/docs/reference/ai-sdk-core/language-model-v1)                       |
+| **LangChain**     | `fromLangChainModel`  | `BaseChatModel`                     | [Docs](https://api.js.langchain.com/classes/core_language_models_chat_models.BaseChatModel.html) |
+| **LlamaIndex**    | `fromLlamaIndexModel` | `LLM`                               | [Docs](https://ts.llamaindex.ai/api/interfaces/LLM)                                              |
 
-`llm-core` exposes specific adapters for AI SDK's media models.
+Each factory receives a provider-specific model instance and returns a `Model` that behaves like every other model inside `llm-core`. This keeps higher-level recipes, workflows, and UI layers independent from low-level details such as HTTP clients and SDK configuration.
 
-| Capability        | Adapter Factory               | Upstream Interface     | Deep Link                                                                    |
-| :---------------- | :---------------------------- | :--------------------- | :--------------------------------------------------------------------------- |
-| **Image Gen**     | `fromAiSdkImageModel`         | `ImageModelV3`         | [Docs](https://sdk.vercel.ai/docs/reference/ai-sdk-core/image-model)         |
-| **Speech (TTS)**  | `fromAiSdkSpeechModel`        | `SpeechModelV3`        | [Docs](https://sdk.vercel.ai/docs/reference/ai-sdk-core/speech-model)        |
-| **Transcription** | `fromAiSdkTranscriptionModel` | `TranscriptionModelV3` | [Docs](https://sdk.vercel.ai/docs/reference/ai-sdk-core/transcription-model) |
+## Supported media integrations
+
+Media adapters focus on the Vercel AI SDK image, speech, and transcription primitives and surface them as first-class `llm-core` models.
+
+| Capability                       | Adapter factory               | Upstream interface     | Deep link                                                                    |
+| :------------------------------- | :---------------------------- | :--------------------- | :--------------------------------------------------------------------------- |
+| **Image generation**             | `fromAiSdkImageModel`         | `ImageModelV3`         | [Docs](https://sdk.vercel.ai/docs/reference/ai-sdk-core/image-model)         |
+| **Speech: text to speech**       | `fromAiSdkSpeechModel`        | `SpeechModelV3`        | [Docs](https://sdk.vercel.ai/docs/reference/ai-sdk-core/speech-model)        |
+| **Transcription: audio to text** | `fromAiSdkTranscriptionModel` | `TranscriptionModelV3` | [Docs](https://sdk.vercel.ai/docs/reference/ai-sdk-core/transcription-model) |

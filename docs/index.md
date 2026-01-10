@@ -3,8 +3,8 @@ layout: home
 
 hero:
   name: llm-core
-  text: Build real AI products, not prompt spaghetti
-  tagline: Recipes for workflows, interactions for UI turns, adapters for providers — all deterministic and composable.
+  text: Turn prompt spaghetti into real AI products
+  tagline: A deterministic, composable core for AI workflows, UI interactions, and provider adapters.
   image:
     src: /logo.png
     alt: llm-core logo
@@ -18,20 +18,20 @@ hero:
 
 features:
   - title: Recipes are Assets
-    details: Define flows as named, versioned recipes. Share them across teams like npm packages.
+    details: Define flows as named, versioned recipes and share them across teams like npm packages.
   - title: Packs are Logic
-    details: Bundle specific capabilities (like "Planning" or "Memory") into reusable internals.
+    details: Bundle specific capabilities, such as Planning or Memory, into reusable internals.
   - title: Adapters are Plugs
-    details: Swap OpenAI for Anthropic or LangChain for LlamaIndex without rewriting your recipe.
+    details: Swap OpenAI for Anthropic or LangChain for LlamaIndex while keeping your recipe unchanged.
   - title: Interactions are Projections
-    details: Turn model/query streams into UI-ready state without pulling in the full workflow runtime.
+    details: Turn model or query streams into UI-ready state while the full workflow runtime stays behind the scenes.
   - title: Execution is Deterministic
     details: The engine runs your recipe as a DAG. Every step is traced, resumable, and explainable.
 ---
 
 ## Stop debugging prompts. Start orchestrating logic.
 
-`llm-core` connects your business logic to AI models without fragile scripts.
+`llm-core` connects your business logic to AI models and avoids fragile scripts.
 Use **Recipes** for long-running workflows, **Interactions** for single-turn UI state, and **Adapters**
 to swap providers safely.
 
@@ -72,12 +72,12 @@ deno add npm:@geekist/llm-core
 
 :::
 
-Workers: install via npm/pnpm/yarn and deploy to your worker runtime (Cloudflare Workers, Vercel Edge, etc.).
+Workers: install via npm, pnpm, or yarn and deploy to your worker runtime such as Cloudflare Workers or Vercel Edge.
 
 ## Why llm-core is different
 
 - **Deterministic by design**: every run is traceable, resumable, and explainable.
-- **Agnostic at the edges**: swap models, retrievers, or UI SDKs without rewrites.
+- **Agnostic at the edges**: swap models, retrievers, or UI SDKs while your recipes stay intact.
 - **Two runtimes, one mental model**: workflows for depth, interactions for UI speed.
 
 ## Quick start (workflows)
@@ -112,17 +112,17 @@ Use the interaction core when you want UI-ready state for a single turn.
 
 ## Interaction stack (what’s new)
 
-- **Interaction Core**: deterministic event → state projection for chat UIs.
-- **Sessions**: storage + policy orchestration without runtime defaults.
+- **Interaction Core**: deterministic event to state projection for chat UIs.
+- **Sessions**: storage and policy orchestration that keeps runtime defaults out of your UI.
 - **UI SDK adapters**: AI SDK, assistant-ui, ChatKit.
-- **Host transport**: Node SSE + Edge/Worker stream patterns.
+- **Host transport**: Node SSE and Edge or Worker stream patterns.
 
 ## Build paths
 
-Pick a path and grow from there — each one uses the same primitives (recipes, interactions, adapters).
+Pick a path and grow from there. Each one uses the same primitives: recipes, interactions, adapters.
 
-- **Production chat UI**: Single turn → sessions → UI adapters in one flow. Start at [Single-Turn Interaction](/guide/interaction-single-turn).
-- **RAG assistant**: retrieval + citations with a standard pack. Start at [RAG Recipe](/recipes/rag).
-- **Human-in-the-loop workflows**: pause/resume gates for safe actions. Start at [HITL Recipe](/recipes/hitl).
+- **Production chat UI**: single turn to sessions to UI adapters in one flow. Start at [Single-Turn Interaction](/guide/interaction-single-turn).
+- **RAG assistant**: retrieval and citations with a standard pack. Start at [RAG Recipe](/recipes/rag).
+- **Human-in-the-loop workflows**: pause and resume gates for safe actions. Start at [HITL Recipe](/recipes/hitl).
 - **Batch ingestion**: structured pipelines for indexing and enrichment. Start at [Ingest Recipe](/recipes/ingest).
-- **Provider-agnostic model lab**: swap models and retrievers without refactors. Start at [Adapters](/adapters/).
+- **Provider-agnostic model lab**: swap models and retrievers while the pipeline stays stable. Start at [Adapters](/adapters/).

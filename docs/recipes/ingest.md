@@ -1,11 +1,16 @@
 # Recipe: Ingest (ETL for RAG)
 
-> [!NOTE] > Goal: Convert raw sources into vector records, with clear stages and observable failures.
+> [!NOTE]
+> Goal: Convert raw sources into vector records, with clear stages and observable failures.
 
-Ingest is a classic ETL flow (load -> split -> embed -> index) built as a **recipe**.
-It is designed for repeatable ingestion and incremental re-runs, the “write path” that powers
-every serious RAG system. You use it when you want to bring new knowledge into a vector store
-without embedding ad-hoc wiring into your application code.
+Ingest is the write side of RAG. It takes raw documents, runs them through an ETL style flow, and
+produces vector records that your retrieval pipeline can trust. The stages are familiar:
+load, split, embed, then index. The difference is that the whole sequence lives inside a recipe,
+so you get a repeatable pipeline instead of one more custom script.
+
+Use this recipe when you want a dependable way to bring new knowledge into a vector store and keep
+that process easy to explain. Think of nightly policy syncs, product documentation refreshes,
+onboarding new datasets, or batch ingestion for a new tenant.
 
 ```mermaid
 flowchart LR
@@ -15,12 +20,14 @@ flowchart LR
   Embed --> Index[Index]
 ```
 
-Typical use cases include nightly policy syncs, product documentation refreshes, onboarding new
-datasets, or batch ingestion for a new tenant. If RAG is the read path, ingest is the write path.
+If RAG is the read path, Ingest is the write path that keeps it supplied.
 
 ---
 
-## 1) Quick start (loader + splitter + embedder + store)
+## 1) Quick start (loader, splitter, embedder, store)
+
+The quickest way to use Ingest is to wire a loader, a splitter, an embedder, and a vector store,
+then hand the recipe a list of sources.
 
 ::: tabs
 == JavaScript
@@ -33,10 +40,18 @@ datasets, or batch ingestion for a new tenant. If RAG is the read path, ingest i
 
 :::
 
+The outcome shape follows the rest of the workflow runtime: you receive an object with
+`status`, `artefact`, `diagnostics`, and `trace`. A successful run gives you the final
+upserted records inside the artefact, together with a trace that shows exactly how the
+pipeline behaved.
+
+---
+
 ## 2) Configure per-pack defaults (typed)
 
-Ingest exposes a single config for pack-level defaults. Use it when you want stable wiring
-and only override on a per-run basis.
+Ingest exposes a single config object for pack level defaults. This is where you describe
+how ingestion should work in your project and let individual runs supply only the minimal
+inputs.
 
 ::: tabs
 == JavaScript
@@ -52,46 +67,71 @@ and only override on a per-run basis.
 Related: [Recipe handles](/reference/recipes-api#recipe-handles-the-public-surface) and
 [Adapters overview](/adapters/).
 
-This is where you tune the pipeline: chunk size and overlap on the splitter, which embedder to use,
-and how the vector store should upsert. Keep run input small; keep behaviour in config.
-If you need strict enforcement, run with `runtime.diagnostics = "strict"` so missing adapters or
-invalid inputs become errors instead of warnings.
+You tune the pipeline here: chunk size and overlap on the splitter, which embedder to use,
+and how the vector store should upsert. Run input stays small and focused on what to ingest.
+Behaviour and policy live in config.
 
-Common tweaks include: smaller chunk sizes for precise retrieval, larger chunks for narrative continuity,
-and explicit metadata preservation so citations remain stable. If your embedder supports `embedMany`,
-use it — the recipe will take advantage of it automatically.
+When you want strict enforcement, run with `runtime.diagnostics = "strict"`. In this mode,
+missing adapters or invalid inputs become errors instead of warnings. That suits ingestion
+pipelines that must stay correct and predictable across environments.
+
+Common tweaks include:
+
+- Smaller chunk sizes when you want more precise retrieval and tighter context windows.
+- Larger chunk sizes when continuity across paragraphs matters more than fine grained recall.
+- Explicit metadata preservation so citations and source links remain stable across re-ingest.
+
+If your embedder supports `embedMany`, Ingest will use it. Batching embeddings in this way
+often improves throughput and can help control cost.
 
 ---
 
 ## 3) Mix-and-match adapters
 
-Ingest is adapter-agnostic: you can load with LangChain, embed with AI SDK, and index with
-any supported vector store adapter. That lets you swap providers without rewriting ingestion code,
-which is especially useful when you migrate vector stores or embedding models.
+Ingest is adapter agnostic. You can load with LangChain, split with LlamaIndex, embed with
+AI SDK, and index with any supported vector store adapter. The recipe calls a small, stable
+adapter surface and ignores where each piece came from.
 
-For example, a real‑world mix might be: LangChain loader + LlamaIndex splitter + AI SDK embeddings +
-LlamaIndex vector store. The ingest recipe doesn’t care which ecosystem each adapter came from.
+This gives you a practical form of portability. When you migrate vector stores or change
+embedding providers, you update the adapters and defaults, while the ingest recipe and
+its call sites stay the same.
 
-See supported adapter shapes in [Adapters overview](/adapters/).
+A real world mix might look like this:
+
+- LangChain document loader
+- LlamaIndex splitter
+- AI SDK embeddings
+- LlamaIndex vector store
+
+From the recipe’s point of view, this is still one ingest pipeline.
+
+See supported adapter shapes in the
+[Adapters overview](/adapters/) and the
+[Retrieval adapters](/adapters/retrieval/) page.
 
 ---
 
-## 4) Diagnostics + trace
+## 4) Diagnostics and trace
 
-Ingest returns full diagnostics and trace on every run. Strict mode turns warnings into failures, which
-is a safer default for ingestion pipelines that must be correct. This is where loader errors, invalid
-metadata, or failed upserts surface immediately.
+Every ingest run returns full diagnostics and trace. Strict mode promotes key warnings
+into errors, which works especially well in environments where ingestion failures should
+stop the pipeline instead of hiding in logs.
 
 <<< @/snippets/recipes/ingest/diagnostics.js#docs
 
-Related: [Runtime -> Diagnostics](/reference/runtime#diagnostics) and
-[Runtime -> Trace](/reference/runtime#trace).
+Related: [Runtime diagnostics](/reference/runtime#diagnostics) and
+[Runtime trace](/reference/runtime#trace).
+
+You can inspect loader errors, invalid metadata, failed upserts, and adapter level issues
+in one place, and the trace shows the order of steps and decisions taken along the way.
 
 ---
 
-## 5) Power: reuse + explain
+## 5) Power: reuse and explain
 
-You can inspect the full ETL DAG with `explain()`.
+You can inspect the full ETL plan with `explain()`. This renders the recipe’s internal
+DAG, so you can see loading, splitting, embedding, and indexing as distinct steps rather
+than a black box.
 
 ```mermaid
 flowchart LR
@@ -104,11 +144,12 @@ flowchart LR
 
 <<< @/snippets/recipes/ingest/composition.js#docs
 
-Ingest composes cleanly with other recipes. Run it before [RAG](/recipes/rag) to refresh the knowledge
-base, or pair it with [Agent](/recipes/agent) when you want “ingest then answer” as a single flow.
+Ingest composes cleanly with other recipes. Run it before
+[RAG](/recipes/rag) to refresh the knowledge base, or pair it with
+[Agent](/recipes/agent) when you want "ingest then answer" as a single flow.
 
-A common pattern is “ingest nightly, rag on demand.” Another is “ingest on upload, then agent answers
-immediately,” which is how you build instant Q&A over new documents.
+A common pattern is nightly ingest paired with on demand RAG. Another pattern ingests
+on upload so an agent can answer questions over new documents in the same flow.
 
 ```mermaid
 flowchart LR
@@ -123,17 +164,23 @@ flowchart LR
   Embeddings --> Upserted[ingest.upserted]
 ```
 
-The mental model is simple: deterministic steps, swappable adapters, and a plan that is always visible.
-You get the same runtime guarantees here as everywhere else — explicit outcomes, diagnostics, and trace.
+The mental model stays simple. You work with deterministic steps, swappable adapters,
+and an execution plan that you can always inspect.
 
 ---
 
 ## 6) Why Ingest is special
 
-Ingest is the only recipe that is explicitly a write‑path. It transforms raw documents into
-vector records and upserts them into a store, which is why it benefits most from strict diagnostics
-and stable adapters. If you care about idempotent re‑ingest, this is where `sourceId` and stable
-chunk identities matter. It is the foundation for any reliable RAG system.
+Ingest is the recipe that handles the write path. It transforms raw documents into
+vector records and upserts them into a store, so RAG has a reliable foundation and
+clear provenance for its context.
+
+This is where strict diagnostics and stable adapters pay off most. Idempotent re-ingest
+relies on consistent `sourceId` values and stable chunk identities, and the recipe
+helps you express those choices in one place.
+
+When you want RAG that behaves like a proper system instead of a one-off experiment,
+Ingest is usually where you start.
 
 ---
 

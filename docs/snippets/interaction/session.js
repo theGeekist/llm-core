@@ -5,6 +5,7 @@ import { createInteractionSession } from "#interaction";
 
 const sessionCache = new Map();
 
+/** @param {import("#interaction").SessionId} sessionId */
 function toSessionKey(sessionId) {
   if (typeof sessionId === "string") {
     return sessionId;

@@ -1,49 +1,36 @@
-# Unified Media Inputs
+# Unified Inputs
 
-One of the hardest parts of working with LLMs is juggling input formats. Some APIs want base64 strings, others want Data URLs, and others want raw buffers.
+One of the most tedious parts of AI engineering is format fatigue. Some APIs want base64 strings. Others want URLs. Some want raw Buffers. Some need distinct MIME types.
 
-`llm-core` handles this for you. You pass what you have; the framework makes it work.  
-This guide walks through how the media pipeline lets you stay agnostic to file formats while still taking advantage of provider-specific capabilities.
+`llm-core` solves this with a **Universal Content Normaliser**.
 
-> **Real-World Story: The Avatar Upload Problem**
-> You're building a profile analysis agent. The user can:
->
-> 1. Link to their GitHub avatar (URL).
-> 2. Upload a file from their desktop (File/Buffer).
-> 3. Paste a screenshot from their clipboard (Data URI).
->
-> **Without llm-core**: You write 3 `if` statements, standardizing to Base64 manually, handling clean-up yourself.
-> **With llm-core**: You just pass `input.avatar` to the workflow. The **Content Normaliser** automatically detects the format, fetches URLs if the adapter needs raw bytes, or keeps them as URLs if the provider supports it. No conditional logic required.
+**The Promise**: You have a file. The model needs tokens. The framework bridges the gap so you stop writing format converters.
 
-## The Principle: "Just Pass It"
+---
 
-The library uses a **Universal Content Normaliser** that runs before any adapter sees your data. This means you can be agnostic about how your data is stored.
+## 1) "Just Pass It"
 
-### Images
-
-Whether you have a remote URL, a local file path, or a raw Buffer, the syntax is the same.
+Whether you have a remote URL, a local file path, or a raw Buffer, you pass it to the workflow in the same way. The adapters handle the translation for the specific provider.
 
 ```ts
 // 1. Remote URL
-await workflow.run({
-  image: "https://example.com/chart.png",
-});
+await workflow.run({ image: "https://example.com/chart.png" });
 
-// 2. Data URI
-await workflow.run({
-  image: "data:image/png;base64,iVBORw0KGgo...",
-});
+// 2. Data URI (Clipboard paste)
+await workflow.run({ image: "data:image/png;base64,iVBORw0KGgo..." });
 
-// 3. Raw Buffer (Node.js) / Uint8Array
+// 3. Raw Buffer (Node.js)
 const myBuffer = fs.readFileSync("chart.png");
-await workflow.run({
-  image: myBuffer, // Checksum & Base64 handling is automatic
-});
+await workflow.run({ image: myBuffer });
 ```
 
-### Mixed Content (Multi-modal)
+You do not need to check `if (input instanceof Buffer)`. You do not need to check the provider's API docs to see if they support URLs. You just pass the image.
 
-Use the `toMessageContent` helper to unify text and images without manually constructing complex API objects.
+---
+
+## 2) Multi-modal Content
+
+When you need to mix text and images (e.g. "Look at this design and critique it"), use the `toMessageContent` helper. It creates a standard structure that works across OpenAI, Anthropic, and others.
 
 ```ts
 import { toMessageContent } from "@geekist/llm-core/adapters";
@@ -54,29 +41,18 @@ const input = toMessageContent([
   "What do you think?",
 ]);
 
-// Result is standardized for ALL providers (OpenAI, Anthropic, etc.)
+// Works with any multi-modal capable adapter
 await workflow.run(input);
 ```
 
-## Advanced: Buffers & Binary Data
+---
 
-When you pass a `Buffer` or `Uint8Array`, the framework:
+## 3) How it works (Lazy Conversion)
 
-1.  **Auto-Detects Mime Type** (where possible) or accepts an explicit one.
-2.  **Converts to Base64** lazily, only when the specific provider adapter needs it.
-3.  **Prevents Copying**: Large buffers are handled by reference until the last possible moment.
+We treat binary data carefully.
 
-```ts
-// Explicit MIME type if needed
-await workflow.run({
-  type: "image",
-  data: myBuffer,
-  mimeType: "image/png",
-});
-```
+1.  **Reference, don't copy**: Large buffers are passed by reference until the last possible moment.
+2.  **Lazy Base64**: We only convert to Base64 _if_ the specific adapter requires it. If the provider supports raw binary or URLs, we use those instead.
+3.  **Auto-detection**: We sniff the MIME type from the buffer signature if you don't provide one.
 
-## Key Takeaways
-
-- [ ] **Just Pass It**: Strings, Buffers, URLs—the framework normalizes them.
-- [ ] **One Format**: Internally, everything becomes a standard `MessageContent`.
-- [ ] **Lazy**: Conversions (like Base64) only happen if the specific adapter needs them.
+This gives you a cleaner codebase (no format logic) and better performance (no unnecessary copying or encoding).

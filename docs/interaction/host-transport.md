@@ -4,9 +4,9 @@ title: Interaction Host Transport
 
 # Interaction Host Transport
 
-Interaction Core is headless by design, so host runtimes (Node, Workers, Edge) provide the transport
-layer that turns `EventStreamEvent` into real transports like SSE. The goal is to keep the transport small,
-deterministic, and adapter-driven.
+Typically, you use **[Interaction Transport](/interaction/transport)** to define _what_ events to send. **Host Transport** defines _how_ to send them over specific protocols like Server-Sent Events (SSE) or WebSockets.
+
+**The Pattern**: Host transport takes the generic events from Interaction Transport and wires them into specific delivery channels. You keep the same event names and payloads and only swap out the host adapter.
 
 ---
 
@@ -20,8 +20,7 @@ This pattern maps interaction events to SSE chunks without introducing any UI de
 
 ## 2) Edge / Worker streams
 
-On the edge you typically have a writer that accepts string chunks (e.g. from a `TransformStream`
-or platform-specific stream), which can be wrapped as an `EventStream`.
+On the edge you typically have a writer that accepts string chunks (e.g. from a `TransformStream` or platform-specific stream), which can be wrapped as an `EventStream`.
 
 <<< @/snippets/interaction/host-edge.ts#docs
 

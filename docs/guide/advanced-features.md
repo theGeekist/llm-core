@@ -1,150 +1,119 @@
-# Advanced Features & Internals
+# Advanced Control
 
-This guide covers the **advanced capabilities** you get once you start composing recipes,
-adapters, and interactions at scale. It does not repeat the basic orchestration flow; see:
+Standard recipes cover 90% of use cases. But sometimes you need to reach into the engine and take control.
 
-- [Single-Turn Interaction](/guide/interaction-single-turn)
-- [Sessions + Transport](/guide/interaction-sessions)
-- [Workflow Orchestration](/guide/hello-world)
+This guide covers the mechanisms that let you inspect, override, and extend the core behavior of `llm-core`.
 
-| Feature                    | Best For...                                                                     |
-| :------------------------- | :------------------------------------------------------------------------------ |
-| **Introspection**          | Debugging why a plugin or pack was used or ignored.                             |
-| **Lifecycle Safety**       | Preventing hooks that never fire.                                               |
-| **Telemetry**              | Consistent usage/token reporting across providers.                              |
-| **Pause/Resume**           | HITL approvals and long-running workflows.                                      |
-| **Content Normalisation.** | Let the Content Normaliser handle image/text inputs without conditional wiring. |
+---
 
-## 1. Introspection & Control
+## 1) Introspection ("What is my agent actually doing?")
 
-### Runtime Explainability ("Why did it act like this?")
+When you stack multiple recipes and overrides, it can be hard to know what the final configuration looks like.
 
-When you compose complex recipes with plugins overriding other plugins, it's hard to know what the final configuration looks like. `llm-core` builds an **Explain Snapshot** for every runtime.
-
-**Why you care:** You can debug exactly which plugin replaced which, without guessing.
-
-> **Why you care**
-> You can trace overrides and missing capabilities without guessing.
+The **Explain API** solves this. It gives you a snapshot of the _resolved_ execution graph.
 
 ```ts
 const runtime = agent.build();
 
-// Programmatic access to the "resolved" state
+// Returns the full DAG of steps
 console.log(runtime.explain());
 ```
 
-This snapshot tells you:
+**Why you care**: You can verify exactly which plugin replaced which. If your "Security Pack" was supposed to override the "Memory Pack", the explain graph will prove it.
 
-- **Overrides**: Which plugins replaced which (e.g., "MockLLM overrides OpenAI").
-- **Unused**: Plugins you added but nothing used (dead code detection!).
-- **Missing**: Capabilities that are required but not provided.
+---
 
-### Lifecycle Safety Nets
+## 2) Lifecycle Safety
 
-Plugin authors often make mistakes—like hooking into a lifecycle event that doesn't exist. In `default` mode, `llm-core` logs a warning. In `strict` mode, it **crashes the build**.
+In many frameworks, if you register a hook that doesn't exist, it just silently fails. You wonder why your analytics aren't showing up.
 
-**Why you care:** Prevents the "Why didn't my analytics plugin fire?" bug that plagues other frameworks.
+`llm-core` validates the lifecycle. If you try to hook into a step that isn't part of the recipe, it warns you. In **strict mode**, it crashes the build.
 
-```ts
-import { createLifecycleDiagnostic } from "@geekist/llm-core";
+**Why you care**: It creates a safety net for plugin authors. You know _before_ you deploy if your extension is compatible with the recipe version.
 
-// Extensions.ts internals
-if (!isLifecycleScheduled(lifecycleSet, plugin.lifecycle)) {
-   // We know BEFORE running that this plugin will never fire
-   diagnostics.push(createLifecycleDiagnostic(...));
-}
-```
+---
 
-### Universal Telemetry Normalisation
+## 3) Telemetry Normalisation
 
-Every provider (OpenAI, Anthropic, Ollama) returns token usage, timestamps, and model IDs differently. `llm-core` normalises this into a single, reliable `ModelTelemetry` object:
+Every provider reports token usage differently. Some use `usage_metadata`, others use `prompt_eval_count`. Timestamps vary between seconds and milliseconds.
 
-- **Timestamps**: Always converted to milliseconds.
-- **Usage**: Always `inputTokens`/`outputTokens` (normalising `prompt_eval` and `usage_metadata`).
-- **IDs**: Reliable `modelId` extraction from nested metadata.
+`llm-core` normalises all of this into a single `ModelTelemetry` shape attached to every outcome.
 
-### Plugin Override Mechanics
+- **Timestamps**: Always milliseconds.
+- **Usage**: Always `inputTokens` / `outputTokens`.
+- **IDs**: Reliable model IDs extracted from provider-specific fields.
 
-The `getEffectivePlugins` algorithm isn't just a list merge. It implements a strict **Key-Based Override System**. If you register a plugin with `mode: "override"` and `overrideKey: "base"`, it _surgically replaces_ the base plugin in the execution graph.
+**Why you care**: Your analytics dashboards don't need `if (provider === 'anthropic')` logic. You just log the `outcome.trace`.
 
-## 2. State & Long-Running Flows
+---
 
-### Pausing Safely (HITL + Resume)
+## 4) Async Internals ("The Adapter Polyglot")
 
-If a workflow pauses (e.g., waiting for approval), you get a durable token and can resume later.
-This keeps state and trace intact across pauses.
+Adapters act as a universal translator not just for APIs, but for runtime behavior.
 
-## 3. Inputs & Content
+- **Async Registration**: If a plugin needs to connect to a database before the workflow starts, the runtime waits for its `register()` promise to settle. It eliminates race conditions at startup.
+- **Stream Polyfilling**: If a model doesn't support streaming JSON, the AI SDK adapter gracefully falls back to a non-streaming call or emulates the stream. Your code doesn't change.
+- **Bidirectional Interop**: You can use LangChain tools inside an AI SDK agent. The adapters normalize the schema (Zod vs JSON Schema) on the fly.
 
-### Universal Content Normalisation
+**Why you care**: You stop writing "glue code" to make libraries talk to each other. The core handles the translation layer.
 
-LLM inputs are messy: strings, arrays, buffers, Base64, data URLs. The `Adapter` layer includes a universal content normaliser.
+# Advanced Control
 
-**Why you care:** You don't rewrite your code every time your front-end team changes how it sends images.
+Standard recipes handle most workflows. Sometimes you want to open the engine, see every moving part, and adjust it yourself.
 
-```ts
-import { toMessageContent } from "@geekist/llm-core/adapters";
+This guide walks through the features that expose the internals of `llm-core`. You can inspect graphs, enforce lifecycle rules, read normalised telemetry, and coordinate async work across adapters.
 
-// All of these become the SAME standard structure
-toMessageContent("hello");
-toMessageContent({ parts: [{ type: "text", text: "hello" }] });
-toMessageContent(Buffer.from("hello"));
-```
+---
 
-### Reasoning & Chain-of-Thought Support
+## 1) Introspection: see what the agent is doing
 
-The `MessageContent` primitives natively support a `reasoning` part type, future-proofing your apps for "Thinking Models" (like o1/DeepSeek) even if the current adapter doesn't emit them yet.
+When you stack several recipes, packs, and overrides, configuration can feel opaque. You might wonder which plugin finally wins for a given step or which adapter actually runs a model call.
 
-### Stream Polyfilling
-
-Not all models support streaming output for structured data (JSON). `llm-core`'s AI SDK adapter detects when a provider refuses to stream objects and gracefully falls back to `generateObject` (non-streaming) or emulates the stream where possible.
-
-## 4. Foundations (Under the Hood)
-
-### Core Utilities & Primitives
-
-The library is built on strong functional foundations:
-
-- **Monadic Async Support**: `MaybePromise<T>` (exported from `@geekist/llm-core`) allows utilities to work seamlessly with both sync and async values, avoiding "function coloring" issues.
-- **Centralized Validation**: `src/adapters/input-validation.ts` provides uniform diagnostic warning generation.
-- **Universal Query Normalisation**: `src/adapters/retrieval-query.ts` handles converting multi-modal inputs into searchable strings.
-
-### Async Extension Coordination
-
-If a plugin needs to initialize a database connection before the workflow starts, `llm-core` supports **Async Registration**. The runtime automatically waits for all `register` promises to settle before executing the first step.
-
-**Why you care:** Eliminates race conditions during agent startup.
+The Explain API answers that by returning a resolved execution graph.
 
 ```ts
-// Plugin definition
-const dbPlugin = {
-  key: "database",
-  register: async () => {
-    await db.connect(); // Runtime waits for this!
-    return { ... };
-  }
-};
+const runtime = agent.build();
+
+// Returns the full DAG of steps
+console.log(runtime.explain());
 ```
 
-### The Adapter Polyglot
+The explain graph shows every step, its key, and the plugin or recipe that supplied it. You can confirm that a "Security Pack" replaced a "Memory Pack" at a given step and that a particular adapter backs a model call. During reviews you can point at a stable graph rather than chasing through configuration files.
 
-Adapters function as a **Universal Translator** for the entire AI ecosystem.
+---
 
-- **Bidirectional Tool Interop**: You can use a **LangChain Tool** inside an **AI SDK Agent**. The adapters normalise `Zod` vs `JSON Schema` on the fly.
-- **Vector Store Normalisation**: A unified `upsert`/`delete` interface that handles both raw documents and pre-computed vectors.
-- **Async Agnosticism**: Wrap a synchronous local embedding model (e.g., ONNX) without forcing an unnecessary `await` tick.
+## 2) Lifecycle safety
 
-## 5. Putting it Together (Doc Review)
+Many frameworks accept hook registrations even when the recipe lacks a matching hook. The code runs, logs stay empty, and you are left guessing why observability faded.
 
-Example: a document review workflow that needs approvals.
+`llm-core` validates lifecycle wiring. When you attach a hook to a step outside the recipe, the system raises a diagnostic. When you enable strict mode, that diagnostic turns into a hard failure during build time.
 
-1.  **Input**: multi-modal text + image handled by content normalisation.
-2.  **Execution**: agent flags a clause and pauses for approval.
-3.  **Resume**: workflow continues with trace intact.
+Why this matters: plugin authors gain a safety net. Incompatible changes between recipes and packs surface while you develop, long before deployment.
 
-## Key Takeaways
+---
 
-- [ ] **Explainability**: use `runtime.explain()` to see overrides and missing capabilities.
-- [ ] **Safety**: lifecycle validation prevents dead hooks.
-- [ ] **Resilience**: pause/resume keeps state and trace intact.
-- [ ] **Normalisation**: telemetry + content stay provider-agnostic.
+## 3) Telemetry normalisation
+
+Every provider reports token usage in a slightly different shape. Some send `usage_metadata`, others send `prompt_eval_count`. Time fields also arrive in mixed units.
+
+`llm-core` normalises these fields into a single `ModelTelemetry` shape on every outcome.
+
+- Timestamps always use milliseconds since epoch.
+- Usage fields describe `inputTokens` and `outputTokens` with per-call totals.
+- Model identifiers resolve into a consistent `modelId`, regardless of provider naming.
+
+You can log `outcome.trace` once and reuse the same schema across providers. Dashboards read a single shape instead of branching on provider names or field conventions.
+
+---
+
+## 4) Async internals: the adapter polyglot
+
+Adapters act as a universal translator for APIs and for runtime behaviour.
+
+Async registration allows plugins to perform setup work before a workflow starts. A plugin can connect to a database or warm a cache inside `register()`, and the runtime waits for that promise before it runs any steps. Startup race conditions shrink dramatically when every dependency declares its preparation phase.
+
+Stream polyfilling handles models that lack streaming JSON events. The AI SDK adapter falls back to a non-streaming call or synthesises a stream from the final response. Application code continues to rely on a single streaming contract.
+
+Bidirectional interop connects ecosystems. You can wire a LangChain tool into an AI SDK agent, or route AI SDK tools through a LangChain workflow. Adapters reconcile schema differences on either side so recipes follow a single tool shape.
+
+Why this matters: you spend time on domain logic while the core coordinates providers, tools, and async behaviour behind the scenes.

@@ -1,14 +1,10 @@
 # UI SDK Adapters
 
-UI SDK adapters bridge Interaction Core into UI-facing streaming primitives without pulling any UI
-framework into core. They live in adapters and map `InteractionEvent` into UI SDK stream chunks or
-DOM-style events so host code can push updates to UI hooks, transports, or custom components.
+UI SDK adapters connect Interaction Core to UI-facing streaming primitives while keeping UI frameworks out of the core package. They live in the adapters layer and map `InteractionEvent` values into UI SDK stream chunks or DOM-style events. Host code can then push updates into UI hooks, transports, or custom components.
 
-These adapters follow a `*-ui` suffix (for example, `ai-sdk-ui`) to signal that they target UI
-transport protocols rather than provider SDKs. They still sit in the same adapters surface so the
-API stays consistent across recipes and interactions.
+These adapters use a `*-ui` suffix, for example `ai-sdk-ui`, to show that they target UI transport protocols rather than provider SDKs. They share the same adapter surface as the other integrations, so the API feels consistent across recipes and interactions.
 
-## Quick start (AI SDK stream)
+## Quick start with AI SDK streams
 
 ::: tabs
 == JavaScript
@@ -19,8 +15,7 @@ API stays consistent across recipes and interactions.
 
 ## AI SDK ChatTransport helper
 
-If you are already using `useChat`, you can plug in a transport that runs Interaction Core
-directly instead of a bespoke HTTP handler.
+If you already use `useChat`, you can plug in a transport that runs Interaction Core directly. The helper keeps the usual AI SDK ergonomics while the interaction runtime handles the conversation logic.
 
 ::: code-group
 <<< @/snippets/adapters/ai-sdk-chat-transport.js#docs [JavaScript]
@@ -29,9 +24,7 @@ directly instead of a bespoke HTTP handler.
 
 ## Assistant UI transport
 
-assistant-ui offers an `assistant-transport` command protocol. The adapter maps interaction model
-events to `add-message` and `add-tool-result` commands (emitted on model end), which is a good fit
-for command-driven runtimes.
+assistant-ui provides an `assistant-transport` command protocol. The adapter maps interaction model events to `add-message` and `add-tool-result` commands that fire when the model run completes. This fits command-driven runtimes that prefer a clear, structured stream of UI actions.
 
 ::: tabs
 == JavaScript
@@ -40,13 +33,11 @@ for command-driven runtimes.
 
 :::
 
-If you want streaming UI behavior, prefer the AI SDK stream adapter (`ai-sdk-ui`) and plug it into
-`@assistant-ui/react-ai-sdk`, which already bridges AI SDK streams into assistant-ui.
+For streaming behaviour, the AI SDK stream adapter `ai-sdk-ui` often works better. You can plug it into `@assistant-ui/react-ai-sdk`, which already turns AI SDK streams into assistant-ui commands.
 
 ## OpenAI ChatKit events
 
-ChatKit exposes a DOM event interface. The adapter maps interaction events into `chatkit.*` events
-so you can bridge a headless Interaction Core run into the ChatKit Web Component event stream.
+ChatKit exposes a DOM event interface. The adapter converts interaction events into `chatkit.*` events so you can feed a headless Interaction Core run into the ChatKit Web Component event stream.
 
 ::: tabs
 == JavaScript
@@ -55,30 +46,28 @@ so you can bridge a headless Interaction Core run into the ChatKit Web Component
 
 :::
 
-If you are working with another event-driven UI SDK, you can build a similar bridge by using
-`createInteractionEventEmitterStream` with your own event mapper.
+A similar bridge works for any event-driven UI SDK. Use `createInteractionEventEmitterStream` with an event mapper that suits your own component model and event names.
 
 ## NLUX ChatAdapter
 
-NLUX expects a `ChatAdapter` that can stream text or return a batch result. The adapter below
-bridges Interaction Core into that contract.
+NLUX expects a `ChatAdapter` implementation that can either stream text or return a batch result. The adapter here wires Interaction Core into that contract so your NLUX chat components can consume the same interaction flows as the rest of the system.
 
 ::: code-group
 <<< @/snippets/adapters/nlux-chat-adapter.js#docs [JavaScript]
 <<< @/snippets/adapters/nlux-chat-adapter.ts#docs [TypeScript]
 :::
 
-## Mapping behavior
+## Mapping behaviour
 
-The AI SDK adapter focuses on streaming semantics rather than message construction:
+The AI SDK adapter focuses on how streams behave rather than on how messages are constructed.
 
-- `InteractionEvent.kind === "model"` maps to `UIMessageChunk` parts (text, reasoning, tools).
-- `trace`, `diagnostic`, `query`, and `event-stream` map to `data-*` chunks so they remain
-  observable without contaminating message text.
-- Message and part identifiers are deterministic (derived from interaction metadata) so clients can
-  resume or merge streams.
+When an interaction event has kind `"model"`, the adapter turns it into `UIMessageChunk` parts. These parts cover text, reasoning segments, and tool activity so the UI can show intermediate work as it happens.
 
-If you need deterministic grouping across multiple events, reuse a shared mapper:
+Events of type `trace`, `diagnostic`, `query`, and `event-stream` become `data-*` chunks. This keeps them visible for logging, debugging, and telemetry, while message text stays clean and user facing.
+
+Message and part identifiers follow deterministic rules based on interaction metadata. Client code can resume a stream or merge multiple streams and still rely on stable identifiers.
+
+When you need deterministic grouping across several events, use a shared mapper:
 
 ```js
 import { createAiSdkInteractionMapper } from "#adapters";
@@ -87,10 +76,10 @@ const mapper = createAiSdkInteractionMapper({ messageId: "chat-1" });
 // mapper.mapEvent(event) -> UIMessageChunk[]
 ```
 
-## When to use
+## When to use these adapters
 
-Use these adapters when you want to:
+These adapters suit projects that want to stream Interaction Core output into `useChat` or other AI SDK transports and still keep the runtime independent from any specific UI library.
 
-- stream Interaction Core output into `useChat` or AI SDK transports,
-- integrate with assistant-ui or other UI packages that already consume AI SDK streams,
-- keep UI concerns out of your runtime while still offering a first-class UI story.
+They also fit projects that use assistant-ui or similar UI packages. These tools already work with AI SDK streams and rely on a clear event or command protocol. The adapter turns Interaction Core events into that shape, so your UI code keeps using its usual hooks and components while the runtime focuses on reasoning, tools, and memory.
+
+The general goal is to keep UI concerns inside adapter code while Interaction Core stays focused on orchestration, recipes, and interaction logic. That way you can evolve your UI stack, or support several UI stacks in parallel, while reusing the same interaction pipeline.

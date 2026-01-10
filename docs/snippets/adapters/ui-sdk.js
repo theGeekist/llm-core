@@ -10,6 +10,7 @@ const handle = createInteractionHandle().configure({
   adapters: { model },
 });
 
+/** @param {{ writer: import("ai").UIMessageStreamWriter }} param0 */
 async function executeInteraction({ writer }) {
   await handle.run(
     { message: { role: "user", content: "Hello!" } },

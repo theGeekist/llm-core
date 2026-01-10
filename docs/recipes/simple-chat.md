@@ -1,13 +1,11 @@
 # Recipe: Simple Chat (Preset + Base Handle)
 
-> [!NOTE] > Goal: A minimal, low-friction entry point that wires model/system defaults.
+> [!NOTE]
+> Goal: A minimal entry point that wires model and system defaults into a reusable handle.
 
-Simple Chat is intentionally small: it **does not introduce extra steps**. Instead, it provides a
-recipe handle that sets model/system defaults and can be composed into richer flows. You use it when
-you want a clean baseline: quick assistants, prototypes, or a stable fallback before you add RAG or tools.
+Simple Chat is a compact recipe for straight‑line chat. It wires your system prompt and model choice into a preset handle and keeps the flow itself very small. You reach for it when you want a clean baseline: quick assistants, prototypes, or a stable fallback before you bring in RAG or tools.
 
-If you want a full agentic loop, see [Agent](/recipes/agent). If you want RAG + chat, see
-[RAG](/recipes/rag).
+For a full agentic loop, see [Agent](/recipes/agent). For RAG plus chat, see [RAG](/recipes/rag).
 
 ```mermaid
 flowchart LR
@@ -17,7 +15,7 @@ flowchart LR
 
 ---
 
-## 1) Quick start (system + model defaults)
+## 1) Quick start (system and model defaults)
 
 ::: tabs
 == JavaScript
@@ -30,76 +28,79 @@ flowchart LR
 
 :::
 
-Outcomes are explicit: `{ status, artefact, diagnostics, trace }`. A successful run carries
-`answer.text` in the artefact; paused and error outcomes keep the same trace and diagnostics so you
-can always explain what happened.
-If you see `model: "gpt-4o-mini"` in config, think of it as a label/selector for the recipe surface;
-the actual inference happens through the adapter you pass in defaults.
+The recipe returns a structured outcome object: `{ status, artefact, diagnostics, trace }`. When the run succeeds, the artefact carries an `answer.text` field. Paused and error outcomes reuse the same trace and diagnostics so every run remains explainable.
 
-Related: [Recipes API](/reference/recipes-api), [Runtime Outcomes](/reference/runtime#outcomes), and
-[Adapters overview](/adapters/).
+If you see `model: "gpt-4o-mini"` in a config block, treat it as a label for the recipe surface. Actual inference happens through the adapter you pass in defaults.
+
+Related: [Recipes API](/reference/recipes-api), [Runtime outcomes](/reference/runtime#outcomes), and [Adapters overview](/adapters/).
 
 ---
 
 ## 2) Configure and tune (common tweaks)
 
-Simple Chat accepts a recipe‑specific config that stays intentionally small: a system prompt,
-model defaults, and any response formatting you want to standardize. This is where you set
-the “voice” of your app. If you want strict enforcement, run with `runtime.diagnostics = "strict"`
-so missing adapters or schema mismatches fail early.
+Simple Chat accepts a small recipe config: a system prompt, model defaults, and any response formatting you want to standardise. This config gives the application its voice and makes behaviour repeatable across runs.
+
+For stricter guarantees, set `runtime.diagnostics = "strict"` in the runtime options so adapter issues or schema mismatches surface immediately.
 
 ---
 
 ## 3) Streaming (the cleanest place to learn it)
 
-This is the simplest recipe to experiment with streaming. Streaming lives on the **model adapter**,
-and you can use the same adapter you already wired into the recipe. That gives you streaming output
-without changing the recipe’s outcome guarantees.
+Simple Chat is the easiest recipe for learning how streaming behaves. Streaming lives on the **model adapter**, and you can use the same adapter that you already wired into the recipe. That gives you streaming output while the outcome shape stays the same.
 
 <<< ../snippets/recipes/simple-chat/streaming.js#docs
 
-See: [Models -> Streaming](/adapters/models#the-streaming-lifecycle).
+See [Models: streaming](/adapters/models#the-streaming-lifecycle) for the full adapter-side lifecycle.
 
 ---
 
 ## 4) Use it as a base (compose with other recipes)
 
-Because Simple Chat only wires defaults, pair it with another recipe's steps.
+Simple Chat works well as a base recipe. It sets shared defaults and delegates the rest of the work to other recipes.
+
+Common patterns:
+
+- Run Simple Chat for the first response, then hand off to [Agent](/recipes/agent) for multi‑step tool usage.
+- Pair Simple Chat with [RAG](/recipes/rag) so you capture a clean conversational answer while a retrieval step prepares context in the background.
+- Use it as a fallback when other recipes fail strict validation, since the handle stays very small and predictable.
 
 <<< ../snippets/recipes/simple-chat/compose.js#docs
 
+The key idea is that Simple Chat stabilises how the model sees system and user input. Other recipes then add retrieval, tools, memory, or evaluation around that stable core.
+
 ---
 
-## 5) Diagnostics + trace
+## 5) Diagnostics and trace
 
-Even when used as a preset, you still get full diagnostics and trace from the composed recipe.
+Even when you treat Simple Chat as a preset, you still get full diagnostics and trace from the composed recipe. The outcome structure does not change, which means higher level code can inspect results in a consistent way across different recipes.
 
 <<< ../snippets/recipes/simple-chat/diagnostics.js#docs
 
-Related: [Runtime -> Diagnostics](/reference/runtime#diagnostics) and
-[Runtime -> Trace](/reference/runtime#trace).
+Related: [Runtime diagnostics](/reference/runtime#diagnostics) and [Runtime trace](/reference/runtime#trace).
 
 ---
 
-## 6) Plan (explicit, single step)
+## 6) Plan view (explicit single step)
 
-Even in its simplest form, the explain view is visible. This keeps “no hidden steps” as a constant.
+Simple Chat participates fully in the explain view. Even this smallest recipe exposes its step as `simple-chat.respond`, which keeps the step list visible for every run.
 
 ```mermaid
 flowchart LR
   Step["simple-chat.respond"] --> Outcome(["Outcome"])
 ```
 
+This makes it easier to debug adapters and runtime behaviour because you can see exactly which step executed and which outcome it produced.
+
 ---
 
 ## 7) Why Simple Chat is special
 
-Simple Chat is the canonical “hello world” recipe. It is the quickest way to validate adapters,
-diagnostics, and streaming without any other moving parts, and it gives you a stable baseline
-before you move to RAG or agentic flows.
+Simple Chat is the canonical “hello world” recipe. It gives you a fast way to validate adapters, diagnostics, streaming, and runtime wiring with very little configuration. The outcome object matches the structure used by richer recipes, so once Simple Chat feels comfortable you can migrate to RAG or agentic flows with the same mental model.
+
+In practice, many applications begin with Simple Chat in development and keep it around in production for health checks, smoke tests, or a safe fallback path.
 
 ---
 
 ## Implementation
 
-- Source: [`src/recipes/simple-chat.ts`](https://github.com/theGeekist/llm-core/blob/main/src/recipes/simple-chat.ts)
+Source: [`src/recipes/simple-chat.ts`](https://github.com/theGeekist/llm-core/blob/main/src/recipes/simple-chat.ts)

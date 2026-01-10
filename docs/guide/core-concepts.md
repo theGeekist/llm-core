@@ -1,16 +1,18 @@
 # Core Concepts
 
-There are four principles that make `llm-core` predictable:
+Four ideas shape how `llm-core` behaves:
 
-1.  **Recipes** are Assets.
-2.  **Adapters** are Plugs.
-3.  **Interactions** are Projections.
-4.  **Steps** are Uniform.
+1. **Recipes are assets.**
+2. **Adapters are plugs.**
+3. **Interactions are projections.**
+4. **Steps are uniform.**
+
+Each idea keeps the system predictable while staying flexible enough for real applications.
 
 ## 1. Principle: Recipes are Assets
 
-A **Recipe** is not just a script. It is a named, versioned composition of **Packs**.
-Think of a Pack as a "module of logic" that you can test in isolation.
+A **Recipe** is more than a script. It is a named, versioned composition of **Packs**.
+A Pack is a small module of logic that you can test in isolation and reuse across projects.
 
 ```mermaid
 graph TD
@@ -18,50 +20,56 @@ graph TD
         Config[Type-Safe Config] --> Factory[Recipe Factory]
         Deps[Dependency Container] --> Factory
         Factory --> Workflow[Workflow Instance]
-        Workflow --> Plugins["Plugins (Wrappers)"]
+        Workflow --> Plugins[Plugins / Wrappers]
     end
 ```
 
-- **Packs** contain **Steps** (the actual logic).
-- **Recipes** stitch Packs together internally. You use `recipes.*()` to build them.
+Recipes describe _what_ you want to happen. Packs supply the individual steps that implement that intent.
 
-### Sidebar: The Engine (Workflow)
+- Packs contain **Steps**, which are the actual units of work.
+- Recipes stitch Packs together. You call `recipes.*()` to build them.
 
-You author with **Recipes**, but you execute with **Workflow**.
-Think of `Workflow` as the compiler and runtime. It takes your high-level recipe and turns it into a directed acyclic graph (DAG) of executable steps.
+### Sidebar: The Engine, called a Workflow
+
+You write code in terms of **Recipes**, and you run that code through a **Workflow**.
+
+`Workflow` behaves like a compiler and a runtime in one place. It takes the high-level recipe
+and turns it into a directed acyclic graph (DAG) of executable steps, then runs that graph with
+tracing and state management.
 
 ```js
-// 1. Authoring (Declarative)
+// 1. Authoring: declarative recipe
 import { recipes } from "@geekist/llm-core/recipes";
 
 const agent = recipes.agent();
 
-// 2. Compiling (Infrastructure)
+// 2. Compiling: infrastructure
 const app = agent.build();
 
-// 3. Execution (Runtime)
+// 3. Execution: runtime
 await app.run({ input: "Do work" });
 ```
 
-This separation is why your logic is portable. The Recipe describes the intent; the Workflow handles the execution, state management, and tracing.
+This separation keeps your logic portable. The Recipe captures intent in a type-safe way.
+The Workflow handles execution, state, retries, and trace collection.
 
 ## 2. Principle: Adapters are Plugs
 
-This is the most common point of confusion. Here's the mental model:
+Adapters can feel abstract at first, so treat them as a simple electrical model.
 
-- **Adapters** are the **ports** (Standard shape).
-- **Plugins** are the **appliances** (Implementation).
+- **Adapters** act as **ports** with a standard shape, such as a model port or a vector store port.
+- **Plugins** act as the **appliances** that plug into those ports.
 
 ```mermaid
 graph TD
     subgraph Workflow
-    A["Model Adapter Port"]
+    A[Model Adapter Port]
     end
 
     subgraph Ecosystem
-    O["OpenAI Plugin"]
-    N["Anthropic Plugin"]
-    L["LlamaIndex Plugin"]
+    O[OpenAI Plugin]
+    N[Anthropic Plugin]
+    L[LlamaIndex Plugin]
     end
 
     O -- fits --> A
@@ -69,19 +77,29 @@ graph TD
     L -- fits --> A
 ```
 
-You define the **Adapter Port** ("I need a Model"). You choose the **Plugin** ("Use OpenAI").
-Because the port is standard, you can swap the appliance without rewiring the house.
+You define the Adapter port by saying "this recipe needs a Model". Then you choose a Plugin,
+for example "use OpenAI" or "use Anthropic" or "use LlamaIndex".
+
+Because the port has a stable contract, you can change provider, region, or underlying client
+and keep the rest of the recipe intact. This is what makes `llm-core` interoperate cleanly with
+other ecosystems such as AI SDK, LangChain, and LlamaIndex.
 
 ## 3. Principle: Interactions are Projections
 
-Recipes drive full workflows. Interactions are the lighter layer: they take model/query streams and
-reduce them into UI-ready state for a single turn.
+Recipes drive full workflows. Interactions focus on a single turn and reshape model output into
+UI-friendly state.
 
-- **Interaction Core** gives you `InteractionState` from `InteractionEvent` streams.
-- **Sessions** add storage + policy orchestration without dictating how you persist.
-- **UI SDK adapters** live outside core and map events into UI-specific streams or commands.
+An Interaction receives model or retrieval streams and **projects** them into an `InteractionState`.
+That state can power a chat window, a task panel, or another interactive surface.
 
-This lets you build chat UIs without pulling in the workflow runtime.
+Interaction-related pieces fall into three parts:
+
+- **Interaction Core** turns an `InteractionEvent` stream into `InteractionState`.
+- **Sessions** add storage and policy, which lets you persist state across turns or users.
+- **UI SDK adapters** live outside core and convert events into UI-specific streams or commands.
+
+This structure makes it possible to build chat UIs, inspectors, or dashboards in environments
+that do not use the workflow runtime directly.
 
 ```js
 import {
@@ -97,68 +115,80 @@ const result = await runInteractionPipeline(pipeline, {
 console.log(result.artefact.messages);
 ```
 
-Learn more:
+Learn more in:
 
 - [Interaction Core](/interaction/)
 - [Interaction Sessions](/interaction/session)
 - [UI SDK Adapters](/adapters/ui-sdk)
 
-## 4. Principle: Steps are Uniform (MaybePromise)
+## 4. Principle: Steps are Uniform and use MaybePromise
 
-In `llm-core`, every execution step has the same shape. Functions can be sync or async transparently.
+In `llm-core`, every execution step follows the same shape and accepts both synchronous and
+asynchronous work.
 
-**The Rule**: Business logic should look synchronous unless it _needs_ to wait.
+The guiding rule is simple: business logic reads as synchronous code, and the runtime takes care of waiting.
 
-- **Input**: You can return `T` OR `Promise<T>`.
-- **Execution**: The runtime handles the `await`.
-- **Benefit**: You write plain functions. This prevents "function coloring" issues where async logic poisons standard utilities.
+- Input can return a plain value `T` or a `Promise<T>`.
+- The runtime decides when to await and how to compose results.
+- You write small, focused functions, and they slot into pipelines without ceremony.
 
 ```js
-// This step is sync
+// This step is synchronous
 const ValidationStep = (_, { input }) => {
-  if (input.length > 100) return { error: "Too long" };
+  if (input.length > 100) {
+    return { error: "Too long" };
+  }
 };
 
-// This step is async
+// This step is asynchronous
 const DatabaseStep = async (_, { input }) => {
   await db.save(input);
 };
 
-// The framework runs both without you changing how you compose them.
+// The framework runs both through the same composition model.
 ```
 
-## The Outcome (No Throws)
+This approach helps you avoid the usual "function colouring" problems where asynchronous code
+spreads through an entire codebase. You can keep most utilities simple and only add `async`
+behaviour where it earns its place.
 
-We favor explicit failure states over `try/catch` blocks in async workflows. This ensures tracing remains intact.
-Instead, every run returns an **Outcome** object.
+## The Outcome and error handling
 
-It has three states:
+Asynchronous workflows become easier to debug when failure lives in data instead of control flow.
+`llm-core` represents execution results through an **Outcome** object.
 
-| Status   | Meaning           | What you get                 |
-| :------- | :---------------- | :--------------------------- |
-| `ok`     | Success!          | The complete `artefact`      |
-| `paused` | Waiting for Human | A `token` to resume later    |
-| `error`  | Something broke   | The `error` and partial logs |
+An Outcome has three possible states:
 
-### Why "Paused"?
+| Status   | Meaning             | What you receive             |
+| :------- | :------------------ | :--------------------------- |
+| `ok`     | Run completed       | The full `artefact`          |
+| `paused` | Waiting on a signal | A `token` to resume later    |
+| `error`  | Run failed          | The `error` and partial logs |
 
-AI agents often need to stop and ask for permission.
-If code threw an error, you'd lose the state.
-With `paused`, we serialize the state so you can resume execution hours (or days) later.
+### Why "Paused" exists
+
+Agentic systems often need to stop and wait for a person, a tool result, or another service.
+If this interruption happened through an exception, intermediate state would be hard to recover.
+
+The `paused` state keeps the state tree and a token in a structured form. You can store the token
+in a database, send a notification, and resume the workflow later.
 
 ```js
 const result = await workflow.run({ input: "..." });
 
 if (result.status === "paused") {
-  // Save token to DB, email the user
   await db.save(result.token);
 }
 ```
 
-## Key Takeaways
+## Key ideas to carry forward
 
-- [ ] **Recipes** are the Logic (Brain). They are portable assets.
-- [ ] **Adapters** are the Capabilities (Hands). They plug into specific providers.
-- [ ] **Interactions** are UI-ready projections for single turns.
-- [ ] **Steps** are the atomic units of execution.
-- [ ] **Outcome** is the typed result, which can be `ok`, `error`, or `paused`.
+Recipes describe intent and assemble Packs into portable assets.
+Adapters describe capabilities and allow provider choice without rewriting the recipe.
+Interactions reshape model output into state that user interfaces can render and store.
+Steps provide the smallest units of work and always follow the same MaybePromise shape.
+Outcomes tell you whether a run completed, paused, or failed, and they preserve trace data
+for later inspection.
+
+These pieces work together so you can move from a small recipe to a production workflow
+while keeping a clear mental model of what the system is doing at each stage.

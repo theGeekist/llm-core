@@ -1,81 +1,60 @@
 ---
 title: Interaction Core
+mermaid: true
 ---
 
-# Interaction Core (Pipeline-Backed)
+# Interaction Core
 
-Interaction Core is a small, runtime-agnostic layer for turning adapter streams into deterministic,
-UI-ready state. It does **not** depend on the workflow runtime or recipes. Think of it as a thin
-projection layer: you feed it model/query streams, it gives you `InteractionState`.
+Interaction Core is the engine for chat-like interfaces. It sits between your adapters and your UI, turning streaming data into stable, renderable state.
 
-Use it when you want a lightweight interaction loop (chat UI, tool panel, streaming view) without
-the full workflow runtime.
+It works across Node, Edge, and browser runtimes and provides a predictable loop: **Input → Pipeline → Events → Reducer → State**.
+
+---
+
+## Mental Map
+
+| Concept                                           | Role                                                         |
+| :------------------------------------------------ | :----------------------------------------------------------- |
+| **[Pipeline & Reducer](/interaction/pipeline)**   | Runs the steps (model, tools) and reduces events into state. |
+| **[Sessions](/interaction/session)**              | Adds persistence (save/load) and long-term history policies. |
+| **[Transport](/interaction/transport)**           | A generic layer for moving events from server to client.     |
+| **[Host Transport](/interaction/host-transport)** | Concrete wiring for SSE, WebSockets, or Edge streams.        |
+
+### Typical Stack
 
 ```mermaid
 flowchart LR
-  Input["InteractionInput"] --> Pipeline["Interaction Pipeline"]
-  Pipeline --> Events["InteractionEvent"]
-  Events --> Reducer["Reducer"]
-  Reducer --> State["InteractionState"]
+    Adapter[Model Adapter] --> Pipeline
+    Pipeline -->|Events| Transport[Transport (SSE)]
+    Transport -->|Events| Reducer
+    Reducer -->|state.messages| UI[React / UI]
+
+    subgraph Server
+    Pipeline
+    end
+
+    subgraph Client
+    Reducer
+    UI
+    end
 ```
 
 ---
 
-## 1) Quick start (JS-only)
+## What role does it play?
 
-If you already have a model adapter, the defaults are enough.
+Adapters provide raw capabilities such as models and tools. Recipes orchestrate the logic, including agents and retrieval-augmented generation. Interaction Core provides the glue that turns this into something a user can interact with on screen.
 
-<<< @/snippets/interaction/quick-start.js#docs
+It takes care of three everyday concerns when you build a chat app.
 
-What you get back:
+Streaming handles the flow of token deltas and turns them into coherent messages that a UI can render.
 
-- `result.artefact` is the current `InteractionState`.
-- `result.artefact.messages` is UI-ready (assistant/user/tool messages).
-- `diagnostics` and `trace` are always present on the state.
-- Input state is passed as `input.state` (not top-level).
-- The run returns `MaybePromise`, so sync stays sync and async stays async.
+State tracks tool calls, intermediate results, and loading indicators so the interface stays in sync with the work happening inside your adapters.
 
----
+History manages sessions over time, including how conversations are persisted and how they can be resumed later.
 
-## 2) Handle wrapper
+## Example Scenario
 
-If you want a flatter API without pipeline wiring, use the handle wrapper.
+Imagine a **Chat UI** that needs to stream assistant messages, record a trace for debugging, and store per-session state in a database.
 
-<<< @/snippets/interaction/handle.js#docs
-
-The handle follows the same shape as recipe handles (`configure`, `defaults`, `use`, `explain`,
-`build`, `run`) so you can carry one mental model across layers.
-
----
-
-## 3) What gets reduced into state
-
-The reducer understands existing adapter stream shapes:
-
-- `ModelStreamEvent` → assistant message parts
-- `QueryStreamEvent` → tool messages with data parts
-- `DiagnosticEntry` + `TraceEvent` → append-only state (exported from `@geekist/llm-core`)
-
-Raw provider payloads stay in `state.private.raw` and **never** leak into messages.
-
----
-
-## 4) Event ordering (deterministic)
-
-Every `InteractionEvent` carries a `meta.sequence`. Older or duplicate sequences are ignored, so
-you can safely replay or merge streams.
-
-If you want to collect events for audit or replay, initialize `state.events = []` and the reducer
-will append to it.
-
----
-
-## 5) Sessions
-
-If you need persistence and policies (merge/summarize/truncate), use the session layer:
-
-- [Interaction Sessions](/interaction/session)
-- [Host Transport (Node/Edge)](/interaction/host-transport)
-
-Sessions are still headless and adapter-driven; they only add orchestration around the core
-pipeline.
+The pipeline runs the model adapter and emits `model.stream` events. These events travel through transport, for example over Server-Sent Events, into the browser. On the client, the reducer listens to the incoming stream and updates the interaction state so the chat messages on screen reflect the latest tokens and tool results. After the stream finishes, the session layer on the server stores the final state in your database so the next request can load the same conversation and continue from there.

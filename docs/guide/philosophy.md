@@ -1,69 +1,81 @@
 # Why `llm-core`?
 
-There are two ways to build AI applications today: **Gluing** and **Orchestrating**.
+When people build AI features today, they tend to follow one of two paths: **gluing** or **orchestrating**.
 
-**Gluing** is easier to start. You write a script, manually call `openai.chat.completions.create`, parse the JSON, and maybe save it to a database. Then you add a retry loop. Then you switch to Anthropic and rewrite the prompt structure. Then you add RAG and rewrite the loop.
+With **gluing**, you start with a script. You call `openai.chat.completions.create`, you parse a bit of JSON, and you push results into a database. After that you add a retry loop. Later you swap to Anthropic and rework the prompt schema. At some point you add RAG and thread a retrieval call into the middle of that loop. Over time the script turns into a web of conditionals, partials, and helpers that only one person understands.
 
-**Orchestrating** is different. You define _what_ you want to happen using declarative **Recipes**, and a specialized runtime makes it happen.
+With **orchestrating**, you describe what should happen and let a runtime do the lifting. You describe steps, state, and outcomes. The runtime tracks those steps, controls state flow, and exposes a clear trace.
 
-`llm-core` is an **Orchestration Framework** that stays runtime-agnostic and adapter-driven.
+`llm-core` sits firmly in the second camp. It is an **orchestration framework** that stays runtime-agnostic and adapter-driven.
 
-- **Recipes** (`recipes.*()`) declare what the system should do.
-- **Workflow runtime** executes those recipes deterministically.
-- **Interactions** project model/query streams into UI-ready state for single turns.
-- **Sessions** orchestrate multi-turn state without coupling to any host environment.
-- **Adapters** normalize providers and ecosystems while keeping raw details intact.
+- **Recipes** (`recipes.*()`) describe what the system should do.
+- The **workflow runtime** executes those recipes in a predictable way.
+- **Interactions** map model or query streams into UI-ready state for a single turn.
+- **Sessions** hold multi-turn state in a way that does not depend on a specific host.
+- **Adapters** align providers and ecosystems while preserving raw payloads.
 
-It imposes structure (Recipes, Packs, Steps) to give you superpowers that ad-hoc wiring can never support.
+This structure gives you a graph of steps instead of a ball of glue code, which opens the door to testing, tracing, and reuse that ad-hoc wiring never reaches.
 
-## The Unleashed Workflow
+## The unleashed workflow
 
-When you adopt `llm-core`, you unify API differences and start building portable assets.
+Once you adopt `llm-core`, you start to treat prompts, flows, and policies as portable assets instead of one-off experiments.
 
-### 1. Portability: Verify Logic, Not Frameworks
+### 1. Portability: verify logic, not frameworks
 
-**The Old Way**: You rewrite your agent because you switched from LangChain to LlamaIndex to chase a feature.
-**The New Way**: You write your logic in `llm-core`. It runs on _any_ ecosystem via adapters. The recipe survives; only the plumbing changes.
+In many stacks an agent lives inside one framework at a time. You move from LangChain to LlamaIndex for a feature and that move ripples through prompts, routing, and storage.
 
-### 2. Recipes: Assets, Not Scripts
+With `llm-core`, the logic lives inside recipes. Adapters handle LangChain, LlamaIndex, AI SDK, and other ecosystems. The recipe stays the same while the integration layer changes. You review one plan for the workflow rather than a fresh code path every time the ecosystem shifts.
 
-**The Old Way**: Logic is hidden in prompt templates and nested callbacks ("Spaghetti").
-**The New Way**: Workflows are named, versioned **Recipes**. Product teams ship "Research Agent v2" as a tangible asset, just like a React component.
+### 2. Recipes: assets instead of scripts
 
-### 3. Agility: Survive The Churn
+Glue-style code hides logic inside prompt templates, nested callbacks, and framework-specific helpers. Each change lands in another fragment of configuration or code.
 
-**The Old Way**: OpenAI boosts pricing or changes rate limits. You rewrite code to switch providers.
-**The New Way**: You swap the `model` adapter in config. The graph doesn't care who completes the prompt.
+Recipes turn that logic into named, versioned assets. A product team can ship a “Research Agent v2” recipe in the same way that a frontend team ships a React component. Recipes receive structured input, produce structured output, and live in source control as part of the domain model rather than as incidental wiring.
 
-### 4. Observability: Debug State, Not Strings
+### 3. Agility: survive provider churn
 
-**The Old Way**: An agent fails. You stare at a 300-line prompt diff trying to spot the drift.
-**The New Way**: You look at the trace graph. You see exactly which step received what input. You debug the state transition, not the string.
+Provider choices change for many reasons: pricing adjustments, new models, new latency targets, fresh requirements around data residency.
 
-### 5. Experiments as Infrastructure
+With `llm-core`, those changes live at the **adapter** and **config** level. You adjust the `model` adapter in a recipe’s defaults and keep the rest of the graph intact. The workflow describes **what** should happen; adapters define **who** runs each part.
 
-Because every workflow is built from small, testable **Steps**, you can unit test your prompts. You can swap the "Retrieval" step for a mock to test the "Generation" logic. Experiments stop being mystical blobs and become solid infrastructure.
+### 4. Observability: debug state instead of strings
 
-## The Orchestration Shift
+Large prompts make debugging painful. When an agent fails you often end up scanning through a long prompt or a diff that mixes instructions, examples, and formatting.
 
-If you remember when frontend development moved from manual DOM manipulation (jQuery) to declarative state management, you know the feeling of trading "easy" for "predictable".
+`llm-core` records state at each step. The trace shows which step ran, which state it received, and which state it produced. That trace turns incidents into concrete questions: which step mis-interpreted its input, which adapter failed, which configuration changed.
 
-`llm-core` is that shift for AI. It asks you to accept constraints—explicit inputs, typed outcomes, defined steps—in exchange for a system that is predictable, inspectable, and robust.
+### 5. Experiments as infrastructure
 
-## The Layers You Build With
+Every workflow in `llm-core` uses small, testable **steps**. That design allows you to test prompts and flows in isolation.
 
-`llm-core` keeps each layer small and composable so you can build only what you need:
+You can replace a “retrieval” step with a mock and test the “generation” step in a unit test. You can run the same agent recipe with a local model during development and a hosted model in production. Experiments move from one-off notebooks into a repeatable, versioned workflow that integrates with the rest of your stack.
 
-- **Adapters** normalize providers and ecosystems without locking you in.
-- **Interactions** are single-turn projections: stream events → deterministic state.
-- **Sessions** are orchestration wrappers: load state, run a turn, apply policy, save.
-- **Workflows** are multi-step orchestration: packs, recipes, and pause/resume.
+## The orchestration shift
 
-Every layer uses `MaybePromise` so sync and async behaviors stay honest.
+Frontend development once relied on direct DOM manipulation with jQuery. Over time, teams moved toward declarative state management and component trees. That shift introduced more structure and constraints, and in exchange gave reliable behaviour and easier reasoning.
 
-## Key Takeaways
+`llm-core` aims for a similar shift in AI applications. It encourages:
 
-- **First-class Orchestration**: Use declarative recipes, not scripts.
-- **Portable Assets**: Verify logic once, run anywhere.
-- **Deterministic State**: Prefer explicit state transitions over opaque streaming.
-- **Adapter-Driven**: Providers are pluggable; raw payloads are preserved.
+- Explicit inputs and outputs
+- Typed outcomes
+- Clearly defined steps and transitions
+
+The framework asks for that structure so that your system remains predictable, inspectable, and robust as it grows.
+
+## The layers you build with
+
+`llm-core` keeps its main concepts small and composable so that you can adopt them in stages.
+
+- **Adapters** align providers and ecosystems while keeping access to raw responses when you need them.
+- **Interactions** handle single turns: they take streams of model or tool events and turn them into deterministic UI state.
+- **Sessions** handle multi-turn flows: they load state, run a turn, apply your policy, and save state again.
+- **Workflows** link many steps together: packs, recipes, and pause / resume flows.
+
+Every layer uses `MaybePromise`, which means you can write sync code where that feels natural and async code when you call external services. The types remain honest in both cases.
+
+## Key takeaways
+
+- Treat LLM logic as **orchestrated recipes** instead of loose scripts.
+- Keep **portable assets** that move across LangChain, LlamaIndex, AI SDK, and custom stacks through adapters.
+- Prefer **explicit state transitions** and traceable steps over opaque streaming.
+- Build on an **adapter-driven core** where providers and tools plug in and full payloads remain available when you need them.

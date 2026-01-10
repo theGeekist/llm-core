@@ -66,7 +66,7 @@ export default defineConfig({
   // ... rest of config ...
   themeConfig: {
     nav: [
-      { text: "Recipes", link: "/recipes/simple-chat" },
+      { text: "Recipes", link: "/recipes/" },
       { text: "Adapters", link: "/adapters/" },
       { text: "Interaction", link: "/interaction/" },
       { text: "Reference", link: "/reference/recipes-api" },
@@ -79,6 +79,7 @@ export default defineConfig({
           items: [
             { text: "Single-Turn Interaction", link: "/guide/interaction-single-turn" },
             { text: "Sessions + Transport", link: "/guide/interaction-sessions" },
+            { text: "Socket Server", link: "/guide/socket-server" },
             { text: "End-to-End UI", link: "/guide/end-to-end-ui" },
             { text: "Workflow Orchestration", link: "/guide/hello-world" },
           ],
@@ -149,6 +150,7 @@ export default defineConfig({
         {
           text: "Recipes",
           items: [
+            { text: "Overview", link: "/recipes/" },
             { text: "Back to Guide", link: "/guide/hello-world" },
             { text: "Building a Chatbot", link: "/recipes/simple-chat" },
             { text: "Chatting with Data (RAG)", link: "/recipes/rag" },
@@ -179,8 +181,7 @@ export default defineConfig({
           text: "Interaction",
           items: [
             { text: "Overview", link: "/interaction/" },
-            { text: "Pipeline", link: "/interaction/pipeline" },
-            { text: "Reducer", link: "/interaction/reducer" },
+            { text: "Pipeline & Reducer", link: "/interaction/pipeline" },
             { text: "Sessions", link: "/interaction/session" },
             { text: "Transport", link: "/interaction/transport" },
             { text: "Host", link: "/interaction/host-glue" },

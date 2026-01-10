@@ -13,6 +13,7 @@ const handle = createInteractionHandle().configure({
 function useRunInteraction() {
   const sendCommand = useAssistantTransportSendCommand();
 
+  /** @param {import("#adapters/types").Message} message */
   return async function runInteraction(message) {
     await handle.run(
       { message },
