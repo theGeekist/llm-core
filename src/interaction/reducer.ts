@@ -312,7 +312,7 @@ const reduceModelDelta = (
   }
   assembly = appendStreamData(assembly, toSourcesData(event.sources));
   const nextState = setStream(ensured.state, ensured.key, assembly);
-  return appendRawEntryIfPresent(nextState, `${meta.sourceId}: raw`, event.raw);
+  return appendRawEntryIfPresent(nextState, `${meta.sourceId}:raw`, event.raw);
 };
 
 const reduceModelUsage = (
@@ -335,7 +335,7 @@ const reduceModelEnd = (
     nextState = appendMessage(nextState, toMessage(nextAssembly));
     nextState = removeStream(nextState, key);
   }
-  nextState = appendRawEntryIfPresent(nextState, `${meta.sourceId}: raw`, event.raw);
+  nextState = appendRawEntryIfPresent(nextState, `${meta.sourceId}:raw`, event.raw);
   const diagnostics = toDiagnostics(event.diagnostics);
   return appendDiagnostics(nextState, diagnostics);
 };
