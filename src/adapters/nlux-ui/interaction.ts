@@ -3,7 +3,7 @@ import type { EventStream, EventStreamEvent } from "../types";
 import type { InteractionHandle, InteractionHandleInput } from "../../interaction/handle";
 import type { InteractionEvent, InteractionState } from "../../interaction/types";
 import type { Message, MessageContent } from "../types/messages";
-import { toNull } from "../../shared/fp";
+import { toUndefined } from "../../shared/fp";
 import { maybeMap } from "../../shared/maybe";
 import { isRecord } from "../../shared/guards";
 import { toMessageContent } from "../message-content";
@@ -32,7 +32,7 @@ class NluxChatAdapterImpl implements ChatAdapter<string> {
     const eventStream = new NluxInteractionEventStream(this.options, observer);
     const interactionInput = buildInteractionInput(this.options, input);
     const result = this.options.handle.run(interactionInput, { eventStream });
-    return maybeMap(toNull, result);
+    return maybeMap(toUndefined, result);
   }
 
   async batchText(message: string, extras: ChatAdapterExtras<string>): Promise<string> {
