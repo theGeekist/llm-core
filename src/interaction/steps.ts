@@ -323,7 +323,7 @@ type ApplyModelStreamInput = {
   context: InteractionContext;
   interactionInput: InteractionInput;
   sourceId: string;
-  stream: Step<import("#adapters/types").ModelStreamEvent>;
+  stream: Step<ModelStreamEvent>;
 };
 
 const readStepNext = <T>(step: Step<T>) => step.next();
@@ -408,7 +408,7 @@ const applyModelGenerate = (input: ApplyModelGenerateInput): MaybePromise<Intera
 const hasStream = (
   model: Model,
 ): model is Model & {
-  stream: (call: ModelCall) => MaybeAsyncIterable<import("#adapters/types").ModelStreamEvent>;
+  stream: (call: ModelCall) => MaybeAsyncIterable<ModelStreamEvent>;
 } => typeof model.stream === "function";
 
 /** @internal */

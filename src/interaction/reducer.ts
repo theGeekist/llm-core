@@ -10,6 +10,7 @@ import type {
   ToolCallPart,
   ToolResult,
   ToolResultPart,
+  AdapterDiagnostic,
 } from "#adapters/types";
 import { createAdapterDiagnostic } from "#shared/diagnostics";
 import type { DiagnosticEntry } from "#shared/diagnostics";
@@ -281,7 +282,7 @@ const ensureStream = (state: InteractionState, meta: InteractionEventMeta, role:
   return { state: nextState, key, assembly: nextAssembly };
 };
 
-const toDiagnostics = (diagnostics?: Array<import("#adapters/types").AdapterDiagnostic>) => {
+const toDiagnostics = (diagnostics?: Array<AdapterDiagnostic>) => {
   if (!diagnostics || diagnostics.length === 0) {
     return [];
   }
@@ -344,7 +345,7 @@ type StreamErrorInput = {
   state: InteractionState;
   meta: InteractionEventMeta;
   error: unknown;
-  diagnostics?: Array<import("#adapters/types").AdapterDiagnostic>;
+  diagnostics?: Array<AdapterDiagnostic>;
   raw?: unknown;
 };
 
@@ -366,7 +367,7 @@ const reduceStreamError = (input: StreamErrorInput) => {
 
 type StreamErrorEvent = {
   error: unknown;
-  diagnostics?: Array<import("#adapters/types").AdapterDiagnostic>;
+  diagnostics?: Array<AdapterDiagnostic>;
   raw?: unknown;
 };
 

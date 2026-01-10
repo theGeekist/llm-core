@@ -1,7 +1,6 @@
 import type { HelperApplyResult } from "@wpkernel/pipeline/core";
 import type { PipelineState } from "#workflow/types";
-import type { InterruptStrategy } from "#adapters/types";
-import type { PauseKind } from "#adapters/types";
+import type { InterruptStrategy, PauseKind } from "#adapters/types";
 import type { RetryPausePayload } from "#workflow/runtime/retry";
 import { createInterruptStrategy } from "#adapters/primitives/interrupt";
 
