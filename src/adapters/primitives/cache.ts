@@ -1,7 +1,7 @@
 import type { AdapterCallContext, Blob, Cache, KVStore } from "../types";
 import { reportDiagnostics, validateStorageKey } from "../input-validation";
-import { toNull, toTrue } from "../../shared/fp";
-import { maybeMap } from "../../shared/maybe";
+import { toNull, toTrue } from "#shared/fp";
+import { maybeMap } from "#shared/maybe";
 import { readNumber } from "../utils";
 
 type CacheEntry = {

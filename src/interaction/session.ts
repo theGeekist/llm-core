@@ -1,5 +1,4 @@
-import type { AdapterBundle, EventStream, Message } from "../adapters/types";
-import type { AdapterCallContext } from "../adapters/types";
+import type { AdapterBundle, EventStream, Message, AdapterCallContext } from "#adapters/types";
 import type { PipelineReporter } from "@wpkernel/pipeline/core";
 import type {
   InteractionReducer,
@@ -12,8 +11,8 @@ import type {
   SessionStore,
 } from "./types";
 import { createInteractionPipelineWithDefaults, runInteractionPipeline } from "./steps";
-import { bindFirst } from "../shared/fp";
-import { maybeChain, maybeMap, maybeTap, type MaybePromise } from "../shared/maybe";
+import { bindFirst } from "#shared/fp";
+import { maybeChain, maybeMap, maybeTap, type MaybePromise } from "#shared/maybe";
 import { createEmptyState, isPausedOutcome, readOutcomeState } from "./handle";
 
 export type InteractionSessionOptions = {

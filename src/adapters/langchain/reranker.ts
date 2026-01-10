@@ -1,6 +1,6 @@
 import type { BaseDocumentCompressor } from "@langchain/core/retrievers/document_compressors";
 import type { AdapterCallContext, Document, Reranker, RetrievalQuery } from "../types";
-import { maybeMapArray } from "../../shared/maybe";
+import { maybeMapArray } from "#shared/maybe";
 import { toQueryText } from "../retrieval-query";
 import { toLangChainDocument } from "./documents";
 import { reportDiagnostics, validateRerankerInput } from "../input-validation";

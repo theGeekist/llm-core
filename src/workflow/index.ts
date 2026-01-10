@@ -1,5 +1,3 @@
-// References: docs/implementation-plan.md#L22-L64
-
 import { createBuilder } from "./builder.ts";
 import type { RecipeName } from "./types";
 export const Workflow = {
@@ -67,4 +65,4 @@ export type {
   ToolParam,
   ToolResult,
   Turn,
-} from "../adapters";
+} from "#adapters";

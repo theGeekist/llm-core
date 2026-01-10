@@ -1,7 +1,7 @@
 import type { BaseDocumentStore } from "@llamaindex/core/storage/doc-store";
 import type { AdapterCallContext, KVStore } from "../types";
-import { toTrue } from "../../shared/fp";
-import { maybeAll, maybeMap, type MaybePromise } from "../../shared/maybe";
+import { toTrue } from "#shared/fp";
+import { maybeAll, maybeMap, type MaybePromise } from "#shared/maybe";
 import { reportDiagnostics, validateKvKeys, validateKvPairs } from "../input-validation";
 
 type DocumentShape = { id_?: string };

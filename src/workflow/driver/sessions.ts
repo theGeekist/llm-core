@@ -1,4 +1,4 @@
-import type { DiagnosticEntry } from "../../shared/diagnostics";
+import type { DiagnosticEntry } from "#shared/diagnostics";
 import type { PauseSession } from "./types";
 import { readPauseSnapshotToken, readPipelinePauseSnapshot } from "../pause";
 

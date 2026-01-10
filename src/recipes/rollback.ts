@@ -1,7 +1,7 @@
 import type { HelperApplyResult } from "@wpkernel/pipeline";
 import { createPipelineRollback } from "@wpkernel/pipeline/core";
-import type { MaybePromise } from "../shared/maybe";
-import type { PipelineState } from "../workflow/types";
+import type { MaybePromise } from "#shared/maybe";
+import type { PipelineState } from "#workflow/types";
 
 export type StepRollbackHandler = () => MaybePromise<boolean | null>;
 export type StepRollback = ReturnType<typeof createPipelineRollback>;

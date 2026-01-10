@@ -11,8 +11,8 @@ import type { InteractionHandle, InteractionHandleInput } from "../../interactio
 import type { InteractionHandleOverrides, InteractionHandleResult } from "../../interaction/handle";
 import type { InteractionState } from "../../interaction/types";
 import type { Message } from "../types/messages";
-import { bindFirst, toUndefined } from "../../shared/fp";
-import { maybeChain, maybeMap, type MaybePromise } from "../../shared/maybe";
+import { bindFirst, toUndefined } from "#shared/fp";
+import { maybeChain, maybeMap, type MaybePromise } from "#shared/maybe";
 import { fromAiSdkMessage } from "../ai-sdk/messages";
 import {
   createAiSdkInteractionEventStream,

@@ -1,6 +1,6 @@
 // References: docs/workflow-notes.md (capability discovery)
 
-import type { AdapterBundle } from "../adapters/types";
+import type { AdapterBundle } from "#adapters/types";
 import type { CapabilitiesSnapshot, Plugin } from "./types";
 import { getEffectivePlugins } from "./plugins/effective";
 

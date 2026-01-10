@@ -8,8 +8,8 @@ import type {
   IndexingInput,
   IndexingResult,
 } from "../types";
-import { bindFirst } from "../../shared/fp";
-import { maybeMap } from "../../shared/maybe";
+import { bindFirst } from "#shared/fp";
+import { maybeMap } from "#shared/maybe";
 import { reportDiagnostics, validateIndexingInput } from "../input-validation";
 import { toLangChainDocument } from "./documents";
 

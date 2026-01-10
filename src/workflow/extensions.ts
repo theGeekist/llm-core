@@ -1,8 +1,8 @@
 import { isPromiseLike, maybeAll, type PipelineReporter } from "@wpkernel/pipeline/core";
 import type { PipelineWithExtensions, Plugin } from "./types";
-import { createLifecycleDiagnostic, type DiagnosticEntry } from "../shared/diagnostics";
+import { createLifecycleDiagnostic, type DiagnosticEntry } from "#shared/diagnostics";
 import { getEffectivePlugins } from "./plugins/effective";
-import type { MaybePromise } from "../shared/maybe";
+import type { MaybePromise } from "#shared/maybe";
 
 const DEFAULT_LIFECYCLE = "init";
 

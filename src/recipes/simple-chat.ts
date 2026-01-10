@@ -1,7 +1,7 @@
 import { Recipe } from "./flow";
 import { createRecipeFactory, createRecipeHandle } from "./handle";
 import { createSystemPlugin } from "./system";
-import type { Plugin } from "../workflow/types";
+import type { Plugin } from "#workflow/types";
 
 export type SimpleChatConfig = {
   model?: string;

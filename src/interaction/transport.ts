@@ -1,5 +1,5 @@
-import type { EventStream, EventStreamEvent } from "../adapters/types";
-import type { MaybePromise } from "../shared/maybe";
+import type { EventStream, EventStreamEvent } from "#adapters/types";
+import type { MaybePromise } from "#shared/maybe";
 import type { InteractionEvent, InteractionState } from "./types";
 
 export type InteractionSink = {

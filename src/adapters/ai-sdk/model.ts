@@ -24,7 +24,7 @@ import { fromAiSdkMessage, toAiSdkMessage } from "./messages";
 import { toAiSdkTools } from "./tools";
 import { mapToolCalls, mapToolResults } from "../utils";
 import { toAdapterTrace } from "../telemetry";
-import { maybeMap } from "../../shared/maybe";
+import { maybeMap } from "#shared/maybe";
 import { ModelCallHelper, ModelUsageHelper } from "../modeling";
 import { validateModelCall } from "../model-validation";
 import { toModelStreamEvents, toStreamErrorEvents } from "./stream";

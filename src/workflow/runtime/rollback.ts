@@ -5,9 +5,9 @@ import type {
   RunRollbackStackOptions,
 } from "@wpkernel/pipeline/core";
 import { runRollbackStack } from "@wpkernel/pipeline/core";
-import type { MaybePromise } from "../../shared/maybe";
-import { bindFirst, toTrue } from "../../shared/fp";
-import { maybeMap } from "../../shared/maybe";
+import type { MaybePromise } from "#shared/maybe";
+import { bindFirst, toTrue } from "#shared/fp";
+import { maybeMap } from "#shared/maybe";
 import type { RollbackEntry, RollbackState } from "./rollback-types";
 import { readRestartInterrupt } from "./pause-metadata";
 import { readPausedReporter, readPausedSteps, readPausedUserState } from "../pause";

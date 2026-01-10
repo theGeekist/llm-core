@@ -1,4 +1,4 @@
-import type { Plugin } from "../workflow/types";
+import type { Plugin } from "#workflow/types";
 
 const readSystemContext = (options: { context?: unknown }, system: string) => {
   const context = options.context as { system?: string } | null;

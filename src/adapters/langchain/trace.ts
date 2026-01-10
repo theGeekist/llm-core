@@ -2,9 +2,9 @@ import type { BaseCallbackHandler } from "@langchain/core/callbacks/base";
 import type { Serialized } from "@langchain/core/load/serializable";
 import type { LLMResult } from "@langchain/core/outputs";
 import type { AdapterTraceEvent, EventStream } from "../types";
-import { bindFirst } from "../../shared/fp";
-import { maybeAll, maybeMap } from "../../shared/maybe";
-import { isRecord } from "../../shared/guards";
+import { bindFirst } from "#shared/fp";
+import { maybeAll, maybeMap } from "#shared/maybe";
+import { isRecord } from "#shared/guards";
 
 type LangChainTraceMetadata = {
   modelId?: string | null;

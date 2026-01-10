@@ -2,7 +2,7 @@ import type { AssistantTransportCommand } from "@assistant-ui/react";
 import type { ReadonlyJSONValue } from "assistant-stream/utils";
 import type { EventStream, EventStreamEvent, ModelStreamEvent } from "../types";
 import type { InteractionEvent, InteractionEventMeta } from "../../interaction/types";
-import { isRecord } from "../../shared/guards";
+import { isRecord } from "#shared/guards";
 
 export type AssistantUiInteractionMapperOptions = {
   includeReasoning?: boolean;

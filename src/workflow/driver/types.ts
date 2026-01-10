@@ -1,4 +1,4 @@
-import type { DiagnosticEntry } from "../../shared/diagnostics";
+import type { DiagnosticEntry } from "#shared/diagnostics";
 import type { PipelinePauseSnapshot } from "@wpkernel/pipeline/core";
 
 export type PauseSession = {

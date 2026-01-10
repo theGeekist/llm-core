@@ -1,7 +1,7 @@
 import type { FinishReason, UIMessageChunk, UIMessageStreamWriter } from "ai";
 import type { EventStream, EventStreamEvent, ModelStreamEvent } from "../types";
 import type { InteractionEvent, InteractionEventMeta } from "../../interaction/types";
-import { isRecord } from "../../shared/guards";
+import { isRecord } from "#shared/guards";
 
 export type AiSdkInteractionMapperOptions = {
   messageId?: string;

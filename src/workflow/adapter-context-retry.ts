@@ -1,5 +1,5 @@
-import type { AdapterBundle, AdapterCallContext } from "../adapters/types";
-import { bindFirst } from "../shared/fp";
+import type { AdapterBundle, AdapterCallContext } from "#adapters/types";
+import { bindFirst } from "#shared/fp";
 import type { AdapterContextOptions, RetryWrapContext } from "./adapter-context-retry-core";
 import {
   buildRetryWrapperInput,

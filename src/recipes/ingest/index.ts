@@ -1,11 +1,11 @@
-import { bindFirst, toNull } from "../../shared/fp";
-import { maybeAll, maybeMap } from "../../shared/maybe";
+import { bindFirst, toNull } from "#shared/fp";
+import { maybeAll, maybeMap } from "#shared/maybe";
 import { Recipe } from "../flow";
 import { createRecipeFactory, createRecipeHandle } from "../handle";
 import type { RecipeDefaults, StepApply } from "../flow";
-import type { Document, Embedder, TextSplitter, VectorRecord } from "../../adapters/types";
-import { readString } from "../../adapters/utils";
-import { isRecord } from "../../shared/guards";
+import type { Document, Embedder, TextSplitter, VectorRecord } from "#adapters/types";
+import { readString } from "#adapters/utils";
+import { isRecord } from "#shared/guards";
 
 export type IngestConfig = {
   defaults?: RecipeDefaults;

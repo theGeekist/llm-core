@@ -1,4 +1,4 @@
-import { bindFirst } from "../shared/fp";
+import { bindFirst } from "#shared/fp";
 
 import type {
   ArtefactOf,
@@ -7,8 +7,8 @@ import type {
   RunInputOf,
   Runtime,
   WorkflowRuntime,
-} from "../workflow/types";
-import { mergeRetryConfig, type RetryConfig } from "../workflow/runtime/retry";
+} from "#workflow/types";
+import { mergeRetryConfig, type RetryConfig } from "#workflow/runtime/retry";
 import type { RecipeDefaults } from "./flow";
 
 type RuntimeDefaultsInput<N extends RecipeName> = {

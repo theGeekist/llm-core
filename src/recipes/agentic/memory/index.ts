@@ -1,10 +1,10 @@
-import { bindFirst, toNull } from "../../../shared/fp";
-import { maybeMap } from "../../../shared/maybe";
+import { bindFirst, toNull } from "#shared/fp";
+import { maybeMap } from "#shared/maybe";
 import { Recipe } from "../../flow";
 import { createRecipeFactory, createRecipeHandle } from "../../handle";
 import type { RecipeDefaults, StepApply } from "../../flow";
 import { AgentStateHelpers, type AgentState } from "../shared";
-import type { Memory } from "../../../adapters/types";
+import type { Memory } from "#adapters/types";
 
 export type AgentMemoryConfig = {
   defaults?: RecipeDefaults;

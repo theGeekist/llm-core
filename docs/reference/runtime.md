@@ -124,7 +124,7 @@ import type { DiagnosticEntry, TraceEvent } from "@geekist/llm-core";
 Trace is always present and records workflow-level events:
 
 - `run.start`
-- `run.ok`
+- `run.success`
 - `run.paused` (may include `{ pauseKind }` in event data)
 - `run.error`
 - `run.end` (with final status)

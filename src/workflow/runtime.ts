@@ -9,7 +9,7 @@ import type {
   RuntimeDeps,
   WorkflowRuntime,
 } from "./types";
-import type { AdapterBundle } from "../adapters/types";
+import type { AdapterBundle } from "#adapters/types";
 import { createPipeline } from "./pipeline";
 import { createPauseSessions, recordPauseSession } from "./driver";
 import type { PauseSession } from "./driver/types";
@@ -22,11 +22,11 @@ import {
   hasErrorDiagnostics,
   normalizeDiagnostics,
   type DiagnosticEntry,
-} from "../shared/diagnostics";
-import type { TraceEvent } from "../shared/trace";
-import { bindFirst } from "../shared/fp";
-import { maybeChain, maybeMap } from "../shared/maybe";
-import type { MaybePromise } from "../shared/maybe";
+} from "#shared/diagnostics";
+import type { TraceEvent } from "#shared/reporting";
+import { bindFirst } from "#shared/fp";
+import { maybeChain, maybeMap } from "#shared/maybe";
+import type { MaybePromise } from "#shared/maybe";
 import type { FinalizeResultInput } from "./runtime/helpers";
 import {
   collectAdapters,

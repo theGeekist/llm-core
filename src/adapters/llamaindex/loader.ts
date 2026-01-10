@@ -1,6 +1,6 @@
 import type { BaseReader } from "@llamaindex/core/schema";
 import type { DocumentLoader } from "../types";
-import { maybeMapArray } from "../../shared/maybe";
+import { maybeMapArray } from "#shared/maybe";
 
 export function fromLlamaIndexLoader(reader: BaseReader): DocumentLoader {
   function load() {

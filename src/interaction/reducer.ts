@@ -1,22 +1,21 @@
 import type {
+  Document,
   Message,
   MessageContent,
-  MessagePart,
   MessageRole,
-  ToolCallPart,
-  ToolResultPart,
-} from "../adapters/types/messages";
-import type {
-  Document,
+  MessagePart,
   ModelStreamEvent,
   QueryStreamEvent,
   ToolCall,
+  ToolCallPart,
   ToolResult,
-} from "../adapters/types";
-import { createAdapterDiagnostic } from "../shared/diagnostics";
-import type { DiagnosticEntry } from "../shared/diagnostics";
-import { isRecord } from "../shared/guards";
-import type { TraceEvent } from "../shared/trace";
+  ToolResultPart,
+  AdapterDiagnostic,
+} from "#adapters/types";
+import { createAdapterDiagnostic } from "#shared/diagnostics";
+import type { DiagnosticEntry } from "#shared/diagnostics";
+import { isRecord } from "#shared/guards";
+import type { TraceEvent } from "#shared/reporting";
 import type {
   InteractionEvent,
   InteractionEventMeta,
@@ -283,7 +282,7 @@ const ensureStream = (state: InteractionState, meta: InteractionEventMeta, role:
   return { state: nextState, key, assembly: nextAssembly };
 };
 
-const toDiagnostics = (diagnostics?: Array<import("../adapters/types").AdapterDiagnostic>) => {
+const toDiagnostics = (diagnostics?: Array<AdapterDiagnostic>) => {
   if (!diagnostics || diagnostics.length === 0) {
     return [];
   }
@@ -346,7 +345,7 @@ type StreamErrorInput = {
   state: InteractionState;
   meta: InteractionEventMeta;
   error: unknown;
-  diagnostics?: Array<import("../adapters/types").AdapterDiagnostic>;
+  diagnostics?: Array<AdapterDiagnostic>;
   raw?: unknown;
 };
 
@@ -368,7 +367,7 @@ const reduceStreamError = (input: StreamErrorInput) => {
 
 type StreamErrorEvent = {
   error: unknown;
-  diagnostics?: Array<import("../adapters/types").AdapterDiagnostic>;
+  diagnostics?: Array<AdapterDiagnostic>;
   raw?: unknown;
 };
 

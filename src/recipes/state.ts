@@ -1,9 +1,9 @@
-import { bindFirst } from "../shared/fp";
-import { maybeMap } from "../shared/maybe";
-import { isRecord } from "../shared/guards";
-import { createRecipeDiagnostic } from "../shared/diagnostics";
-import { addTraceEvent } from "../shared/trace";
-import type { TraceEvent } from "../shared/trace";
+import { bindFirst } from "#shared/fp";
+import { maybeMap } from "#shared/maybe";
+import { isRecord } from "#shared/guards";
+import { createRecipeDiagnostic } from "#shared/diagnostics";
+import { addTrace } from "#shared/reporting";
+import type { TraceEvent } from "#shared/reporting";
 import type {
   ArtefactOf,
   Outcome,
@@ -12,7 +12,7 @@ import type {
   ResumeInputOf,
   Runtime,
   WorkflowRuntime,
-} from "../workflow/types";
+} from "#workflow/types";
 
 export type StateValidationResult = {
   valid: boolean;
@@ -52,7 +52,7 @@ const applyStateValidationToOutcome = <T>(
     createStateValidationDiagnostic(validation.errors),
   );
   const trace = [...outcome.trace];
-  addTraceEvent(trace as TraceEvent[], "recipe.state.invalid", { errors: validation.errors });
+  addTrace({ trace: trace as TraceEvent[] }, "recipe.state.invalid", { errors: validation.errors });
   return { ...outcome, diagnostics, trace };
 };
 

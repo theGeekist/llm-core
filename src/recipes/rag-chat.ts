@@ -1,4 +1,4 @@
-import type { Plugin } from "../workflow/types";
+import type { Plugin } from "#workflow/types";
 import { Recipe } from "./flow";
 import { createRecipeFactory, createRecipeHandle } from "./handle";
 import { createSystemPlugin } from "./system";

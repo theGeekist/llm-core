@@ -3,9 +3,9 @@ import type { PipelineDiagnostic, PipelineReporter, PipelineStep } from "@wpkern
 import type { PipelineContext, PipelineState, Plugin, RecipeContract, RunOptions } from "./types";
 import { getEffectivePlugins } from "./plugins/effective";
 import { createDefaultReporter } from "./extensions";
-import { bindFirst } from "../shared/fp";
+import { bindFirst } from "#shared/fp";
 import type { RollbackEntry, RollbackState } from "./runtime/rollback-types";
-import { readPipelineArtefact } from "../shared/outcome";
+import { readPipelineArtefact } from "#shared/outcome";
 
 type RunResult = {
   readonly artefact: PipelineState;

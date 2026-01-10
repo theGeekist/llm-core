@@ -1,10 +1,10 @@
-import type { Model, ModelCall, ModelResult, ModelStreamEvent } from "../adapters/types";
-import type { Message } from "../adapters/types/messages";
-import { bindFirst } from "../shared/fp";
-import { maybeChain, maybeMap, maybeTap, maybeToStep, maybeTry } from "../shared/maybe";
-import type { MaybeAsyncIterable, MaybePromise, Step } from "../shared/maybe";
+import type { Model, ModelCall, ModelResult, ModelStreamEvent } from "#adapters/types";
+import type { Message } from "#adapters/types/messages";
+import { bindFirst } from "#shared/fp";
+import { maybeChain, maybeMap, maybeTap, maybeToStep, maybeTry } from "#shared/maybe";
+import type { MaybeAsyncIterable, MaybePromise, Step } from "#shared/maybe";
 import type { PipelinePaused } from "@wpkernel/pipeline/core";
-import { isString } from "../shared/guards";
+import { isString } from "#shared/guards";
 import { emitInteractionEvent, emitInteractionEvents } from "./transport";
 import {
   createInteractionPipeline,
@@ -23,13 +23,13 @@ import type {
   InteractionState,
 } from "./types";
 import { reduceInteractionEvent, reduceInteractionEvents } from "./reducer";
-import type { StepPackBase, StepSpecBase } from "../shared/types";
+import type { StepPackBase, StepSpecBase } from "#shared/types";
 import {
   normalizeDependencies,
   normalizeStepKey,
   sortStepSpecs,
   usePipelineHelper,
-} from "../shared/steps";
+} from "#shared/steps";
 
 export type InteractionStepSpec = StepSpecBase & {
   apply: InteractionStepApply;
@@ -323,7 +323,7 @@ type ApplyModelStreamInput = {
   context: InteractionContext;
   interactionInput: InteractionInput;
   sourceId: string;
-  stream: Step<import("../adapters/types").ModelStreamEvent>;
+  stream: Step<ModelStreamEvent>;
 };
 
 const readStepNext = <T>(step: Step<T>) => step.next();
@@ -408,7 +408,7 @@ const applyModelGenerate = (input: ApplyModelGenerateInput): MaybePromise<Intera
 const hasStream = (
   model: Model,
 ): model is Model & {
-  stream: (call: ModelCall) => MaybeAsyncIterable<import("../adapters/types").ModelStreamEvent>;
+  stream: (call: ModelCall) => MaybeAsyncIterable<ModelStreamEvent>;
 } => typeof model.stream === "function";
 
 /** @internal */

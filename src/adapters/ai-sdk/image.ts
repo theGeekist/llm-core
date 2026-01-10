@@ -7,9 +7,9 @@ import type {
   Blob,
   ModelUsage,
 } from "../types";
-import { bindFirst } from "../../shared/fp";
-import { maybeMap } from "../../shared/maybe";
-import type { MaybePromise } from "../../shared/maybe";
+import { bindFirst } from "#shared/fp";
+import { maybeMap } from "#shared/maybe";
+import type { MaybePromise } from "#shared/maybe";
 import { toAdapterTrace } from "../telemetry";
 import { validateImageInput } from "../input-validation";
 import { toBytes } from "../binary";

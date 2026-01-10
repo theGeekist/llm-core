@@ -1,12 +1,12 @@
 import type { Runtime, ArtefactOf, Outcome, RecipeName } from "../types";
-import type { DiagnosticEntry } from "../../shared/diagnostics";
-import { applyDiagnosticsMode, createResumeDiagnostic } from "../../shared/diagnostics";
+import type { DiagnosticEntry } from "#shared/diagnostics";
+import { applyDiagnosticsMode, createResumeDiagnostic } from "#shared/diagnostics";
 import { createInvalidResumeDiagnostics } from "./resume-diagnostics";
-import type { TraceEvent } from "../../shared/trace";
-import { isRecord } from "../../shared/guards";
+import type { TraceEvent } from "#shared/reporting";
+import { isRecord } from "#shared/guards";
 import type { ResumeSession } from "./resume-session";
 import type { ActiveResumeSession } from "./resume-exec";
-import type { PauseKind } from "../../adapters/types";
+import type { PauseKind } from "#adapters/types";
 import { toPauseKind } from "../pause";
 
 type ResumeTokenEnvelope = {

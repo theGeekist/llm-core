@@ -4,8 +4,8 @@ import type {
   PipelineReporter,
   PipelineStep,
 } from "@wpkernel/pipeline/core";
-import type { PauseKind } from "../adapters/types";
-import { isRecord, isString } from "../shared/guards";
+import type { PauseKind } from "#adapters/types";
+import { isRecord, isString } from "#shared/guards";
 
 const hasPausedFlag = (value: Record<string, unknown>) => value.__paused === true;
 

@@ -17,7 +17,7 @@ import type {
   TranscriptionModel,
   VectorStore,
 } from "./types";
-import { isRecord } from "../shared/guards";
+import { isRecord } from "#shared/guards";
 
 export type AdapterPlugin = {
   key: string;

@@ -1,11 +1,11 @@
-import { bindFirst } from "../../shared/fp";
-import { maybeMap } from "../../shared/maybe";
+import { bindFirst } from "#shared/fp";
+import { maybeMap } from "#shared/maybe";
 import { Recipe } from "../flow";
 import { createRecipeFactory, createRecipeHandle } from "../handle";
 import type { RecipeDefaults, StepApply } from "../flow";
-import type { Model, ModelResult } from "../../adapters/types";
-import { readString } from "../../adapters/utils";
-import { isRecord } from "../../shared/guards";
+import type { Model, ModelResult } from "#adapters/types";
+import { readString } from "#adapters/utils";
+import { isRecord } from "#shared/guards";
 
 export type CompressConfig = {
   defaults?: RecipeDefaults;

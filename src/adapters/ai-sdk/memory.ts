@@ -5,8 +5,8 @@ import type {
   WorkingMemory,
 } from "@ai-sdk-tools/memory";
 import type { AdapterCallContext, Memory, Turn, Thread } from "../types";
-import { toTrue } from "../../shared/fp";
-import { maybeMap } from "../../shared/maybe";
+import { toTrue } from "#shared/fp";
+import { maybeMap } from "#shared/maybe";
 import {
   reportDiagnostics,
   validateMemoryLoadInput,

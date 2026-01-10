@@ -1,8 +1,8 @@
 import type { ArtefactOf, Outcome, PipelineWithExtensions, RecipeName, Runtime } from "../types";
-import type { AdapterBundle, AdapterDiagnostic } from "../../adapters/types";
-import type { DiagnosticEntry } from "../../shared/diagnostics";
-import type { TraceEvent } from "../../shared/trace";
-import type { MaybePromise } from "../../shared/maybe";
+import type { AdapterBundle, AdapterDiagnostic } from "#adapters/types";
+import type { DiagnosticEntry } from "#shared/diagnostics";
+import type { TraceEvent } from "#shared/reporting";
+import type { MaybePromise } from "#shared/maybe";
 import type { PauseSession } from "../driver/types";
 import type { FinalizeResult } from "./helpers";
 
@@ -42,4 +42,21 @@ export type ResumeHandlerDeps<N extends RecipeName> = {
   baseAdapters: AdapterBundle;
   pauseSessions: Map<unknown, PauseSession>;
   pipeline: PipelineWithExtensions | PipelineRunner;
+};
+export type ResumeFinalizeInput<TOutcome> = {
+  finalize: FinalizeResult<TOutcome>;
+  getDiagnostics: () => DiagnosticEntry[];
+  trace: TraceEvent[];
+  diagnosticsMode: "default" | "strict";
+};
+
+export type ResumeErrorInput<TOutcome> = {
+  trace: TraceEvent[];
+  diagnosticsMode: "default" | "strict";
+  readErrorDiagnostics: (error: unknown) => DiagnosticEntry[];
+  errorOutcome: (
+    error: unknown,
+    trace: TraceEvent[],
+    diagnostics?: DiagnosticEntry[],
+  ) => Outcome<TOutcome>;
 };

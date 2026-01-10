@@ -7,7 +7,7 @@ import type {
   PipelineReporter,
   PipelinePauseSnapshot,
 } from "@wpkernel/pipeline/core";
-import type { AdapterBundle, AdapterResume, RetryConfig } from "../adapters/types";
+import type { AdapterBundle, AdapterResume, RetryConfig } from "#adapters/types";
 import type {
   AgentInput,
   EvalInput,
@@ -16,10 +16,10 @@ import type {
   LoopInput,
   RagInput,
 } from "../recipes/types";
-import type { DiagnosticEntry } from "../shared/diagnostics";
+import type { DiagnosticEntry } from "#shared/diagnostics";
 import type { ExplainSnapshot } from "./explain";
-import type { ExecutionOutcome } from "../shared/outcome";
-import type { ExecutionContextBase, RunOptionsBase } from "../shared/types";
+import type { ExecutionOutcome } from "#shared/outcome";
+import type { ExecutionContextBase, RunOptionsBase } from "#shared/types";
 
 // Recipe inputs + artefacts
 export type { AgentInput, RagInput, EvalInput, HitlGateInput, LoopInput, IngestInput };

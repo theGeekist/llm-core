@@ -6,7 +6,7 @@ import type {
 } from "./core";
 import type { ModelMeta, ModelTelemetry, ModelUsage } from "./model";
 import type { Blob } from "./storage";
-import type { MaybePromise } from "../../shared/maybe";
+import type { MaybePromise } from "#shared/maybe";
 
 type ProviderOptions = Record<string, Record<string, unknown>>;
 type ProviderHeaders = Record<string, string | undefined>;

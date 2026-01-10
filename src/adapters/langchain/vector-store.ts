@@ -7,8 +7,8 @@ import type {
   VectorStoreDeleteInput,
   VectorStoreUpsertInput,
 } from "../types";
-import { toTrue } from "../../shared/fp";
-import { maybeMap } from "../../shared/maybe";
+import { toTrue } from "#shared/fp";
+import { maybeMap } from "#shared/maybe";
 import {
   reportDiagnostics,
   validateVectorStoreDeleteInput,

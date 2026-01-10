@@ -1,6 +1,6 @@
 // References: docs/stage-8.md (adapter validation helpers)
 
-import type { AdapterBundle } from "../adapters/types";
+import type { AdapterBundle } from "#adapters/types";
 
 export type AdapterKey = keyof AdapterBundle;
 

@@ -1,7 +1,7 @@
 import type { BaseKVStore } from "@llamaindex/core/storage/kv-store";
 import type { AdapterCallContext, Blob, Cache } from "../types";
-import { bindFirst, toNull, toTrue } from "../../shared/fp";
-import { maybeMap } from "../../shared/maybe";
+import { bindFirst, toNull, toTrue } from "#shared/fp";
+import { maybeMap } from "#shared/maybe";
 import { reportDiagnostics, validateStorageKey } from "../input-validation";
 
 type LlamaIndexCacheOptions = {

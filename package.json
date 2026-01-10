@@ -118,12 +118,34 @@
     "zod-to-json-schema": "^3.25.0"
   },
   "imports": {
+    "#adapters": "./src/adapters/index.ts",
+    "#adapters/types": "./src/adapters/types.ts",
+    "#adapters/utils": "./src/adapters/utils.ts",
+    "#adapters/registry": "./src/adapters/registry.ts",
+    "#adapters/*": "./src/adapters/*.ts",
+    "#adapters/ai-sdk/*": "./src/adapters/ai-sdk/*.ts",
+    "#adapters/ai-sdk-ui/*": "./src/adapters/ai-sdk-ui/*.ts",
+    "#adapters/assistant-ui/*": "./src/adapters/assistant-ui/*.ts",
+    "#adapters/langchain": "./src/adapters/langchain/index.ts",
+    "#adapters/langchain/*": "./src/adapters/langchain/*.ts",
+    "#adapters/llamaindex": "./src/adapters/llamaindex/index.ts",
+    "#adapters/llamaindex/*": "./src/adapters/llamaindex/*.ts",
+    "#adapters/nlux-ui/*": "./src/adapters/nlux-ui/*.ts",
+    "#adapters/openai-chatkit/*": "./src/adapters/openai-chatkit/*.ts",
+    "#adapters/primitives/*": "./src/adapters/primitives/*.ts",
+    "#adapters/registry/*": "./src/adapters/registry/*.ts",
+    "#interaction": "./src/interaction/index.ts",
+    "#interaction/*": "./src/interaction/*.ts",
+    "#recipes": "./src/recipes/index.ts",
+    "#recipes/*": "./src/recipes/*.ts",
+    "#recipes/agentic/*": "./src/recipes/agentic/*.ts",
+    "#recipes/rag/*": "./src/recipes/rag/*.ts",
+    "#shared/*": "./src/shared/*.ts",
     "#workflow": "./src/workflow/index.ts",
     "#workflow/*": "./src/workflow/*.ts",
-    "#adapters": "./src/adapters/index.ts",
-    "#adapters/*": "./src/adapters/*/index.ts",
-    "#recipes": "./src/recipes/index.ts",
-    "#interaction": "./src/interaction/index.ts"
+    "#workflow/driver/*": "./src/workflow/driver/*.ts",
+    "#workflow/plugins/*": "./src/workflow/plugins/*.ts",
+    "#workflow/runtime/*": "./src/workflow/runtime/*.ts"
   },
   "exports": {
     ".": {
@@ -223,13 +245,6 @@
       "import": "./dist/esm/src/shared/diagnostics.js",
       "require": "./dist/cjs/src/shared/diagnostics.cjs",
       "default": "./dist/esm/src/shared/diagnostics.js"
-    },
-    "./trace": {
-      "types": "./dist/types/src/shared/trace.d.ts",
-      "browser": "./dist/esm/src/shared/trace.js",
-      "import": "./dist/esm/src/shared/trace.js",
-      "require": "./dist/cjs/src/shared/trace.cjs",
-      "default": "./dist/esm/src/shared/trace.js"
     }
   },
   "peerDependencies": {

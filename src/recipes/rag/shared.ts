@@ -1,9 +1,9 @@
-import type { Document, Model, RetrievalResult, Retriever, Reranker } from "../../adapters/types";
-import { toQueryText } from "../../adapters/retrieval-query";
-import { bindFirst } from "../../shared/fp";
-import { maybeMap } from "../../shared/maybe";
-import type { PipelineContext, PipelineState } from "../../workflow/types";
-import type { RagInput } from "../types";
+import type { Document, Model, RetrievalResult, Retriever, Reranker } from "#adapters/types";
+import { toQueryText } from "#adapters/retrieval-query";
+import { bindFirst } from "#shared/fp";
+import { maybeMap } from "#shared/maybe";
+import type { PipelineContext, PipelineState } from "#workflow/types";
+import type { RagInput } from "#recipes/types";
 
 const RAG_STATE_KEY = "rag";
 
