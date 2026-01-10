@@ -6,17 +6,17 @@ import type {
   Runtime,
   WorkflowRuntime,
 } from "../types";
-import { addTraceEvent, createTrace } from "../../shared/trace";
-import { bindFirst } from "../../shared/fp";
-import { maybeTry } from "../../shared/maybe";
-import type { ResumeHandlerDeps } from "./resume-types";
-import { startResumePipeline } from "./resume-start";
-import { applyDiagnosticsMode } from "../../shared/diagnostics";
-import { readResumeTokenInput } from "./resume-helpers";
+import { addTrace, createTraceDiagnostics, type TraceEvent } from "#shared/reporting";
+import { bindFirst } from "#shared/fp";
+import { maybeTry } from "#shared/maybe";
+import type { ResumeHandlerDeps } from "#workflow/runtime/resume-types";
+import { startResumePipeline } from "#workflow/runtime/resume-start";
+import { applyDiagnosticsMode } from "#shared/diagnostics";
+import { readResumeTokenInput } from "#workflow/runtime/resume-helpers";
 
 type ResumeHandlerErrorInput<N extends RecipeName> = {
   deps: ResumeHandlerDeps<N>;
-  trace: ReturnType<typeof createTrace>;
+  trace: TraceEvent[];
   diagnosticsMode: "default" | "strict";
 };
 
@@ -26,7 +26,7 @@ type PerformResumeInput<N extends RecipeName> = {
   resumeInput?: ResumeInputOf<N>;
   runtime?: Runtime;
   pauseSession: ReturnType<ResumeHandlerDeps<N>["pauseSessions"]["get"]>;
-  trace: ReturnType<typeof createTrace>;
+  trace: TraceEvent[];
   diagnosticsMode: "default" | "strict";
   deps: ResumeHandlerDeps<N>;
 };
@@ -46,8 +46,8 @@ export const createResumeHandler =
     deps: ResumeHandlerDeps<N>,
   ): NonNullable<WorkflowRuntime<RunInputOf<N>, ArtefactOf<N>, ResumeInputOf<N>>["resume"]> =>
   (token: unknown, resumeInput?: ResumeInputOf<N>, runtime?: Runtime) => {
-    const trace = createTrace();
-    addTraceEvent(trace, "run.start", { recipe: deps.contractName, resume: true });
+    const trace = createTraceDiagnostics().trace;
+    addTrace({ trace }, "run.start", { recipe: deps.contractName, resume: true });
     const diagnosticsMode = runtime?.diagnostics ?? "default";
     const tokenInput = readResumeTokenInput(token);
     const pauseSession = deps.pauseSessions.get(tokenInput.token);

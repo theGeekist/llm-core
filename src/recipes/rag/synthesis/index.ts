@@ -1,10 +1,10 @@
-import { bindFirst } from "../../../shared/fp";
-import { maybeMap } from "../../../shared/maybe";
+import { bindFirst } from "#shared/fp";
+import { maybeMap } from "#shared/maybe";
 import { Recipe } from "../../flow";
 import { createRecipeFactory, createRecipeHandle } from "../../handle";
 import type { RecipeDefaults, StepApply } from "../../flow";
 import { RagStateHelpers, type RagState } from "../shared";
-import type { ModelResult } from "../../../adapters/types";
+import type { ModelResult } from "#adapters/types";
 
 export type RagSynthesisConfig = {
   defaults?: RecipeDefaults;

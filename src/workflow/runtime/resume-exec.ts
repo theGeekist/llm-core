@@ -8,21 +8,27 @@ import type {
   Runtime,
 } from "../types";
 import type { PipelineReporter } from "@wpkernel/pipeline/core";
-import type { AdapterBundle } from "../../adapters/types";
-import type { DiagnosticEntry } from "../../shared/diagnostics";
-import type { TraceEvent } from "../../shared/trace";
-import type { MaybePromise } from "../../shared/maybe";
+import type { AdapterBundle } from "#adapters/types";
+import type { DiagnosticEntry } from "#shared/diagnostics";
+import type { MaybePromise } from "#shared/maybe";
+import type { TraceEvent } from "#shared/reporting";
 import type { PauseSession } from "../driver/types";
-import { bindFirst } from "../../shared/fp";
-import { maybeChain, maybeMap, maybeTap, maybeTry } from "../../shared/maybe";
+import { bindFirst } from "#shared/fp";
+import { maybeChain, maybeMap, maybeTap, maybeTry } from "#shared/maybe";
 import { attachAdapterContext, createAdapterContext } from "../adapter-context";
 import { createSnapshotRecorder, resolveSessionStore, type ResumeSession } from "./resume-session";
 import { readResumeOptions, type ResumeOptions } from "../resume";
 import { runResumedPipeline } from "./resume-runner";
-import { normalizeDiagnostics, applyDiagnosticsMode } from "../../shared/diagnostics";
+import { normalizeDiagnostics, applyDiagnosticsMode } from "#shared/diagnostics";
 import { createFinalize, type FinalizeResult } from "./helpers";
 import { createFinalizeWithInterrupt } from "./pause-metadata";
-import type { AdapterResolution, PipelineRunner, ResumeHandlerDeps } from "./resume-types";
+import type {
+  AdapterResolution,
+  PipelineRunner,
+  ResumeErrorInput,
+  ResumeFinalizeInput,
+  ResumeHandlerDeps,
+} from "./resume-types";
 import {
   readPauseSnapshotReporterFromSnapshot,
   readPauseSnapshotStateFromSnapshot,
@@ -118,13 +124,6 @@ export const resumePipeline = (
   return resume(snapshot, resumeInput);
 };
 
-type ResumeFinalizeInput<TOutcome> = {
-  finalize: FinalizeResult<TOutcome>;
-  getDiagnostics: () => DiagnosticEntry[];
-  trace: TraceEvent[];
-  diagnosticsMode: "default" | "strict";
-};
-
 const finalizeResumeResult = <TOutcome>(input: ResumeFinalizeInput<TOutcome>, result: unknown) =>
   input.finalize({
     result,
@@ -133,34 +132,17 @@ const finalizeResumeResult = <TOutcome>(input: ResumeFinalizeInput<TOutcome>, re
     diagnosticsMode: input.diagnosticsMode,
   });
 
-type ResumeErrorInput<N extends RecipeName> = {
-  trace: TraceEvent[];
-  diagnosticsMode: "default" | "strict";
-  readErrorDiagnostics: (error: unknown) => DiagnosticEntry[];
-  errorOutcome: (
-    error: unknown,
-    trace: TraceEvent[],
-    diagnostics?: DiagnosticEntry[],
-  ) => Outcome<ArtefactOf<N>>;
-};
-
-const resumeErrorFromInput = <N extends RecipeName>(input: ResumeErrorInput<N>, error: unknown) =>
+const resumeErrorFromInput = <N extends RecipeName>(
+  input: ResumeErrorInput<ArtefactOf<N>>,
+  error: unknown,
+) =>
   input.errorOutcome(
     error,
     input.trace,
     applyDiagnosticsMode(input.readErrorDiagnostics(error), input.diagnosticsMode),
   );
 
-type CreateResumeErrorInput<N extends RecipeName> = {
-  trace: TraceEvent[];
-  diagnosticsMode: "default" | "strict";
-  readErrorDiagnostics: (error: unknown) => DiagnosticEntry[];
-  errorOutcome: (
-    error: unknown,
-    trace: TraceEvent[],
-    diagnostics?: DiagnosticEntry[],
-  ) => Outcome<ArtefactOf<N>>;
-};
+type CreateResumeErrorInput<N extends RecipeName> = ResumeErrorInput<ArtefactOf<N>>;
 
 const createResumeError = <N extends RecipeName>(input: CreateResumeErrorInput<N>) =>
   bindFirst(resumeErrorFromInput<N>, {

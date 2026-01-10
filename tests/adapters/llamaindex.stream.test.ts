@@ -1,8 +1,9 @@
 import { describe, expect, it } from "bun:test";
 import type { ChatResponseChunk, ToolCall as LlamaToolCall } from "@llamaindex/core/llms";
 import type { AdapterDiagnostic, ModelStreamEvent } from "#adapters";
-import { toLlamaIndexStreamEvents } from "#adapters/llamaindex";
-import { readToolEvents, readUsagePayload, toUsage } from "../../src/adapters/llamaindex/stream";
+import { toLlamaIndexStreamEvents } from "../../src/adapters/llamaindex";
+import { readToolEvents } from "#adapters/llamaindex/stream";
+import { readUsagePayload, toUsage } from "#adapters/llamaindex/model-utils";
 
 const collectEvents = async (events: AsyncIterable<ModelStreamEvent>) => {
   const collected: ModelStreamEvent[] = [];

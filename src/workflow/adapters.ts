@@ -1,8 +1,8 @@
 // References: docs/stage-7.md (normalized adapter contracts)
 
-import type { AdapterBundle } from "../adapters/types";
-import type { ConstructRequirement, AdapterProviderRegistration } from "../adapters/registry";
-import { createRegistryFromDefaults } from "../adapters/registry";
+import type { AdapterBundle } from "#adapters/types";
+import type { ConstructRequirement, AdapterProviderRegistration } from "#adapters/registry";
+import { createRegistryFromDefaults } from "#adapters/registry";
 import type { Plugin } from "./types";
 import { getEffectivePlugins } from "./plugins/effective";
 

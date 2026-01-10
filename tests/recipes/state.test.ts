@@ -7,8 +7,7 @@ import { getRecipe } from "../../src/workflow/recipe-registry";
 import type { WorkflowRuntime } from "../../src/workflow/types";
 import { HitlPack } from "../../src/recipes/hitl";
 import type { StepApply } from "../../src/recipes/flow";
-import { diagnosticMessages } from "../workflow/helpers";
-import { assertSyncOutcome } from "../workflow/helpers";
+import { diagnosticMessages, assertSyncOutcome } from "../workflow/helpers";
 
 const stepSeed: StepApply = ({ state }) => {
   state.seeded = true;

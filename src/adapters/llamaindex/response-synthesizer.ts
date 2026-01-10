@@ -5,8 +5,8 @@ import type {
   ResponseSynthesizer,
   SynthesisInput,
 } from "../types";
-import { bindFirst } from "../../shared/fp";
-import { maybeMap } from "../../shared/maybe";
+import { bindFirst } from "#shared/fp";
+import { maybeMap } from "#shared/maybe";
 import { reportDiagnostics, validateResponseSynthesizerInput } from "../input-validation";
 import {
   toLlamaIndexNodes,

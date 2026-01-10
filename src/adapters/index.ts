@@ -107,8 +107,8 @@ export {
   collectStep,
   isPromiseLike,
   tryWrap,
-} from "../shared/maybe";
-export type { MaybeAsyncIterable, MaybePromise } from "../shared/maybe";
+} from "#shared/maybe";
+export type { MaybeAsyncIterable, MaybePromise } from "#shared/maybe";
 export {
   identity,
   toNull,
@@ -120,8 +120,8 @@ export {
   partialK,
   curryK,
   toUndefined,
-} from "../shared/fp";
-export * from "../shared/maybe";
+} from "#shared/fp";
+export * from "#shared/maybe";
 
 export {
   adapterParamTypeToJsonType,

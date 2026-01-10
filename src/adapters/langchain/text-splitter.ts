@@ -1,7 +1,7 @@
 import type { Document } from "@langchain/core/documents";
 import type { TextSplitter as LanchainTextSplitter } from "@langchain/textsplitters";
 import type { AdapterCallContext, TextSplitter } from "../types";
-import { maybeMap, maybeAll } from "../../shared/maybe";
+import { maybeMap, maybeAll } from "#shared/maybe";
 import {
   reportDiagnostics,
   validateTextSplitterBatchInput,

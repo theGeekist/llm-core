@@ -1,5 +1,5 @@
 import type { AdapterDiagnostic } from "./types/core";
-import { isRecord as isSharedRecord, isString } from "../shared/guards";
+import { isRecord as isSharedRecord, isString } from "#shared/guards";
 import type { ToolCall, ToolResult } from "./types/tools";
 import type { ModelCall, ModelStreamEvent, ModelUsage } from "./types/model";
 

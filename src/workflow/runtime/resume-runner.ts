@@ -1,31 +1,22 @@
-import type { AdapterBundle, AdapterDiagnostic } from "../../adapters/types";
-import type { MaybePromise } from "../../shared/maybe";
-import { bindFirst } from "../../shared/fp";
-import { maybeChain } from "../../shared/maybe";
+import type { MaybePromise } from "#shared/maybe";
+import { bindFirst } from "#shared/fp";
+import { maybeChain } from "#shared/maybe";
 import { attachAdapterContext, createAdapterContext } from "../adapter-context";
 import {
-  applyDiagnosticsMode,
   createAdapterDiagnostic,
   hasErrorDiagnostics,
-  normalizeDiagnostics,
   type DiagnosticEntry,
-} from "../../shared/diagnostics";
+} from "#shared/diagnostics";
 import type { ResumeOptions } from "../resume";
-import type { TraceEvent } from "../../shared/trace";
+import type { TraceEvent } from "#shared/reporting";
 import type { Outcome, PipelineWithExtensions, Runtime } from "../types";
+import type { AdapterBundle } from "#adapters/types";
+import { applyDiagnosticsMode, normalizeDiagnostics } from "#shared/diagnostics";
 import { createDiagnosticsGetter } from "./helpers";
 import { createFinalizeWithInterrupt } from "./pause-metadata";
 import type { FinalizeResult } from "./helpers";
 
-type AdapterResolution = {
-  adapters: AdapterBundle;
-  diagnostics: AdapterDiagnostic[];
-  constructs: Record<string, unknown>;
-};
-
-type PipelineRunner = {
-  run: PipelineWithExtensions["run"];
-};
+import type { AdapterResolution, PipelineRunner, ResumeFinalizeInput } from "./resume-types";
 
 export type ResumedPipelineDeps<TArtefact> = {
   pipeline: PipelineWithExtensions | PipelineRunner;
@@ -142,14 +133,10 @@ const handleResumeResolution = <TArtefact>(
   );
 };
 
-type ResumeFinalizeInput<TArtefact> = {
-  finalize: FinalizeResult<Outcome<TArtefact>>;
-  getDiagnostics: () => DiagnosticEntry[];
-  trace: TraceEvent[];
-  diagnosticsMode: "default" | "strict";
-};
-
-const handleResumeFinalize = <TArtefact>(input: ResumeFinalizeInput<TArtefact>, result: unknown) =>
+const handleResumeFinalize = <TArtefact>(
+  input: ResumeFinalizeInput<Outcome<TArtefact>>,
+  result: unknown,
+) =>
   input.finalize({
     result,
     getDiagnostics: input.getDiagnostics,

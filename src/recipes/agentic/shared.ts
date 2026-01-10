@@ -7,12 +7,12 @@ import type {
   Tool,
   ToolCall,
   ToolResult,
-} from "../../adapters/types";
-import { readString } from "../../adapters/utils";
-import { isRecord } from "../../shared/guards";
-import { bindFirst } from "../../shared/fp";
-import { maybeAll, maybeMap, type MaybePromise } from "../../shared/maybe";
-import type { PipelineContext, PipelineState } from "../../workflow/types";
+} from "#adapters/types";
+import { readString } from "#adapters/utils";
+import { isRecord } from "#shared/guards";
+import { bindFirst } from "#shared/fp";
+import { maybeAll, maybeMap, type MaybePromise } from "#shared/maybe";
+import type { PipelineContext, PipelineState } from "#workflow/types";
 import type { AgentInput } from "../types";
 
 const AGENT_STATE_KEY = "agent";

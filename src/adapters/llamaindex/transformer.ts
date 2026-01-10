@@ -1,6 +1,6 @@
 import type { NodeParser } from "@llamaindex/core/node-parser";
 import type { AdapterCallContext, Document, DocumentTransformer } from "../types";
-import { maybeMapArray } from "../../shared/maybe";
+import { maybeMapArray } from "#shared/maybe";
 import { toLlamaIndexDocument } from "./documents";
 import { reportDiagnostics, validateTransformerInput } from "../input-validation";
 

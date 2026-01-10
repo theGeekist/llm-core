@@ -5,15 +5,15 @@ import type {
   RetryMetadata,
   RetryPolicy,
   RetryReason,
-} from "../../adapters/types";
-import type { MaybePromise } from "../../shared/maybe";
-import { bindFirst } from "../../shared/fp";
-import { maybeTry } from "../../shared/maybe";
-import { addTraceEvent } from "../../shared/trace";
-import type { TraceEvent } from "../../shared/trace";
-import { isRecord } from "../../shared/guards";
+} from "#adapters/types";
+import type { MaybePromise } from "#shared/maybe";
+import { bindFirst } from "#shared/fp";
+import { maybeTry } from "#shared/maybe";
+import { addTrace } from "#shared/reporting";
+import type { TraceEvent } from "#shared/reporting";
+import { isRecord } from "#shared/guards";
 
-export type { RetryConfig } from "../../adapters/types";
+export type { RetryConfig } from "#adapters/types";
 
 export type RetryAdapterKind =
   | "model"
@@ -229,7 +229,7 @@ const emitRetryTrace = (trace: TraceEvent[] | undefined, data: Record<string, un
   if (!trace) {
     return;
   }
-  addTraceEvent(trace, "adapter.retry", data);
+  addTrace({ trace }, "adapter.retry", data);
 };
 
 const emitRetryExhaustedTrace = (
@@ -239,7 +239,7 @@ const emitRetryExhaustedTrace = (
   if (!trace) {
     return;
   }
-  addTraceEvent(trace, "adapter.retry.exhausted", data);
+  addTrace({ trace }, "adapter.retry.exhausted", data);
 };
 
 const reportRetryExhausted = (

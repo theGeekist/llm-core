@@ -1,5 +1,5 @@
 // References: docs/implementation-plan.md#L25-L27,L66-L70; docs/recipes-and-plugins.md
-import { createMemoryCache } from "../adapters";
+import { createMemoryCache } from "#adapters";
 
 import type { RecipeContract, RecipeName } from "./types";
 

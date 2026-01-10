@@ -1,21 +1,21 @@
 import type {
+  AdapterCallContext,
   EventStream,
   EventStreamEvent,
+  Message,
   ModelStreamEvent,
   QueryStreamEvent,
-} from "../adapters/types";
-import type { AdapterCallContext } from "../adapters/types";
-import type { Message } from "../adapters/types/messages";
+} from "#adapters/types";
 import type { PipelineDiagnostic, PipelinePaused, PipelineStep } from "@wpkernel/pipeline/core";
-import type { DiagnosticEntry } from "../shared/diagnostics";
-import type { MaybePromise } from "../shared/maybe";
-import type { TraceEvent } from "../shared/trace";
+import type { DiagnosticEntry } from "#shared/diagnostics";
+import type { MaybePromise } from "#shared/maybe";
+import type { TraceEvent } from "#shared/reporting";
 import type {
   ExecutionContextBase,
   PauseRequest,
   RunOptionsBase,
   TraceDiagnostics,
-} from "../shared/types";
+} from "#shared/types";
 
 export type InteractionEventMeta = {
   sequence: number;

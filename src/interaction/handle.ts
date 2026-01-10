@@ -1,6 +1,6 @@
-import { bindFirst } from "../shared/fp";
-import { maybeMap, type MaybePromise } from "../shared/maybe";
-import type { AdapterBundle, EventStream, Message } from "../adapters/types";
+import { bindFirst } from "#shared/fp";
+import { maybeMap, type MaybePromise } from "#shared/maybe";
+import type { AdapterBundle, EventStream, Message } from "#adapters/types";
 import type { HelperMode, PipelinePaused, PipelineReporter } from "@wpkernel/pipeline/core";
 import type {
   InteractionEvent,
@@ -12,8 +12,8 @@ import type {
 import type { InteractionStepPack, InteractionStepSpec } from "./steps";
 import { InteractionCorePack, registerInteractionPack, runInteractionPipeline } from "./steps";
 import { createInteractionPipeline } from "./pipeline";
-import type { PlanBase, PlanStepBase } from "../shared/types";
-import { normalizeDependencies, normalizeStepKey, sortStepSpecs } from "../shared/steps";
+import type { PlanBase, PlanStepBase } from "#shared/types";
+import { normalizeDependencies, normalizeStepKey, sortStepSpecs } from "#shared/steps";
 
 export type InteractionHandleDefaults = {
   adapters?: AdapterBundle;

@@ -1,8 +1,8 @@
-import type { AdapterBundle } from "../adapters/types";
+import type { AdapterBundle } from "#adapters/types";
 import type { Runtime } from "./types";
-import type { DiagnosticEntry } from "../shared/diagnostics";
-import { createResumeDiagnostic } from "../shared/diagnostics";
-import { isRecord } from "../shared/guards";
+import type { DiagnosticEntry } from "#shared/diagnostics";
+import { createResumeDiagnostic } from "#shared/diagnostics";
+import { isRecord } from "#shared/guards";
 
 export type ResumeOptions = {
   input: unknown;

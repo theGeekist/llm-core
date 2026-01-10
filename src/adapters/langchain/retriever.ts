@@ -1,6 +1,6 @@
 import type { BaseRetrieverInterface } from "@langchain/core/retrievers";
 import type { AdapterCallContext, RetrievalQuery, Retriever } from "../types";
-import { maybeMap } from "../../shared/maybe";
+import { maybeMap } from "#shared/maybe";
 import { fromLangChainDocuments } from "./retrieval";
 import { toQueryText } from "../retrieval-query";
 import { reportDiagnostics, validateRetrieverInput } from "../input-validation";

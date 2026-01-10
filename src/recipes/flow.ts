@@ -1,34 +1,34 @@
 import { createHelper } from "@wpkernel/pipeline/core";
-import { bindFirst } from "../shared/fp";
-import { maybeMap, maybeTry } from "../shared/maybe";
-import { createRecipeDiagnostic, type DiagnosticEntry } from "../shared/diagnostics";
-import { getRecipe } from "../workflow/recipe-registry";
-import { createRuntime } from "../workflow/runtime";
+import { bindFirst } from "#shared/fp";
+import { maybeMap, maybeTry } from "#shared/maybe";
+import { createRecipeDiagnostic, type DiagnosticEntry } from "#shared/diagnostics";
+import { getRecipe } from "#workflow/recipe-registry";
+import { createRuntime } from "#workflow/runtime";
 import { wrapRuntimeWithStateValidation, type StateValidator } from "./state";
 import { attachRollback, createStepRollback } from "./rollback";
 import { collectSteps, createStep } from "./step-builder";
-import type { AdapterBundle, RetryConfig } from "../adapters/types";
+import type { AdapterBundle, RetryConfig } from "#adapters/types";
 import type {
   PipelineReporter,
   HelperApplyOptions,
   HelperApplyResult,
 } from "@wpkernel/pipeline/core";
-import type { PipelineContext, PipelineState, Plugin, RecipeName } from "../workflow/types";
+import type { PipelineContext, PipelineState, Plugin, RecipeName } from "#workflow/types";
 import {
   isRetryPauseSignal,
   mergeRetryConfig,
   readRetryPausePayload,
-} from "../workflow/runtime/retry";
+} from "#workflow/runtime/retry";
 import { toRetryPauseResult, type RetryPauseSpec } from "./retry-pause";
 import type { StepBuilder, StepFactory, StepNext, StepOptions, StepSpec } from "./step-builder";
 import { buildRuntimeDefaults, wrapRuntimeWithDefaults } from "./runtime-defaults";
-import type { PlanBase, PlanStepBase, StepPackBase } from "../shared/types";
+import type { PlanBase, PlanStepBase, StepPackBase } from "#shared/types";
 import {
   normalizeDependencies,
   normalizeStepKey,
   sortStepSpecs,
   usePipelineHelper,
-} from "../shared/steps";
+} from "#shared/steps";
 
 export type RecipePack = StepPackBase & {
   steps: StepSpec[];

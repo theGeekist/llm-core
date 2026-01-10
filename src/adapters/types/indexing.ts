@@ -1,7 +1,7 @@
 import type { AdapterCallContext, AdapterMetadata } from "./core";
 import type { Document } from "./documents";
 import type { DocumentLoader } from "./retrieval";
-import type { MaybePromise } from "../../shared/maybe";
+import type { MaybePromise } from "#shared/maybe";
 
 export type IndexingOptions = {
   batchSize?: number;

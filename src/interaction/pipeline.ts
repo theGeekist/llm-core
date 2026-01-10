@@ -11,8 +11,8 @@ import type {
   PipelineStep,
 } from "@wpkernel/pipeline/core";
 import { createHelper } from "@wpkernel/pipeline/core";
-import { bindFirst } from "../shared/fp";
-import { hasKeys } from "../shared/guards";
+import { bindFirst } from "#shared/fp";
+import { hasKeys } from "#shared/guards";
 import type {
   InteractionContext,
   InteractionInput,

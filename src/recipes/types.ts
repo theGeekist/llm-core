@@ -1,4 +1,4 @@
-import type { Document } from "../adapters/types";
+import type { Document } from "#adapters/types";
 
 export type AgentInput = {
   input?: string;

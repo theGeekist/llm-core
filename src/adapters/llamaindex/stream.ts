@@ -1,5 +1,5 @@
 import type { ChatResponseChunk, ToolCall as LlamaToolCall } from "@llamaindex/core/llms";
-import type { AdapterDiagnostic, ModelStreamEvent, ModelUsage, ToolCall } from "../types";
+import type { AdapterDiagnostic, ModelStreamEvent, ToolCall } from "../types";
 import {
   toStreamDeltaTextEvent,
   toStreamDeltaToolCallEvent,
@@ -8,50 +8,12 @@ import {
   toStreamUsageEvent,
 } from "../utils";
 import { ModelUsageHelper } from "../modeling";
-import { readNumber } from "../utils";
+import { toUsage } from "./model-utils";
 
 type StreamState = {
   started: boolean;
   lastRaw?: unknown;
   usageSeen: boolean;
-};
-
-export const readUsageValue = (value: unknown) => readNumber(value);
-
-export const readUsagePayload = (raw: unknown) => {
-  if (typeof raw !== "object" || raw === null) {
-    return null;
-  }
-  const usage = (raw as { usage?: unknown }).usage;
-  if (!usage || typeof usage !== "object") {
-    return null;
-  }
-  return usage as {
-    input_tokens?: number;
-    output_tokens?: number;
-    total_tokens?: number;
-    inputTokens?: number;
-    outputTokens?: number;
-    totalTokens?: number;
-  };
-};
-
-export const toUsage = (raw: unknown): ModelUsage | null => {
-  const usage = readUsagePayload(raw);
-  if (!usage) {
-    return null;
-  }
-  const inputTokens = readUsageValue(usage.inputTokens ?? usage.input_tokens);
-  const outputTokens = readUsageValue(usage.outputTokens ?? usage.output_tokens);
-  const totalTokens = readUsageValue(usage.totalTokens ?? usage.total_tokens);
-  if (inputTokens === null && outputTokens === null && totalTokens === null) {
-    return null;
-  }
-  return {
-    inputTokens: inputTokens ?? null,
-    outputTokens: outputTokens ?? null,
-    totalTokens: totalTokens ?? null,
-  };
 };
 
 export const toToolCall = (call: LlamaToolCall): ToolCall => ({

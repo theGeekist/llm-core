@@ -1,9 +1,9 @@
 import type { ArtefactOf, Outcome, RecipeName, ResumeInputOf, Runtime } from "../types";
-import type { AdapterBundle } from "../../adapters/types";
-import type { TraceEvent } from "../../shared/trace";
+import type { AdapterBundle } from "#adapters/types";
+import type { TraceEvent } from "#shared/reporting";
 import type { PauseSession } from "../driver/types";
-import { bindFirst } from "../../shared/fp";
-import { maybeChain } from "../../shared/maybe";
+import { bindFirst } from "#shared/fp";
+import { maybeChain } from "#shared/maybe";
 import {
   readSessionStore,
   resolveResumeSession,

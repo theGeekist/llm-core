@@ -1,5 +1,13 @@
-import type { Model, Message, ModelResult, ModelCall } from "../../src/adapters/types";
-import type { Embedder, TextSplitter, VectorStore, Retriever } from "../../src/adapters/types";
+import type {
+  Model,
+  Message,
+  ModelResult,
+  ModelCall,
+  Embedder,
+  TextSplitter,
+  VectorStore,
+  Retriever,
+} from "#adapters/types";
 import type { InteractionState, SessionId } from "../../src/interaction/types";
 
 export const createMockModelResult = (text: string): ModelResult => ({
@@ -55,8 +63,6 @@ export const createMockSessionStore = () => {
     },
   };
 };
-
-// --- Ingest / RAG Fixtures ---
 
 export const createMockSplitter = (withMetadata = false): TextSplitter => ({
   split: (text) => [text],

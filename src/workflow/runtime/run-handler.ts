@@ -7,14 +7,17 @@ import type {
   WorkflowRuntime,
   PipelineWithExtensions,
 } from "../types";
-import type { AdapterBundle, AdapterDiagnostic } from "../../adapters/types";
-import type { DiagnosticEntry } from "../../shared/diagnostics";
-import type { TraceEvent } from "../../shared/trace";
-import type { MaybePromise } from "../../shared/maybe";
-import { addTraceEvent, createTrace } from "../../shared/trace";
+import type { AdapterBundle, AdapterDiagnostic } from "#adapters/types";
+import type { DiagnosticEntry } from "#shared/diagnostics";
+import {
+  addTrace,
+  createTraceDiagnostics,
+  applyDiagnosticsMode,
+  type TraceEvent,
+} from "#shared/reporting";
+import type { MaybePromise } from "#shared/maybe";
 import { runWorkflow, type RunWorkflowContext } from "./run-runner";
 import { createRunErrorHandler } from "./outcomes";
-import { applyDiagnosticsMode } from "../../shared/diagnostics";
 import type { FinalizeResult } from "./helpers";
 
 type AdapterResolution = {
@@ -56,8 +59,8 @@ export const createRunHandler =
     deps: RunHandlerDeps<N>,
   ): WorkflowRuntime<RunInputOf<N>, ArtefactOf<N>>["run"] =>
   (input: RunInputOf<N>, runtime?: Runtime) => {
-    const trace = createTrace();
-    addTraceEvent(trace, "run.start", { recipe: deps.contractName });
+    const trace = createTraceDiagnostics().trace;
+    addTrace({ trace }, "run.start", { recipe: deps.contractName });
     const diagnosticsMode = runtime?.diagnostics ?? "default";
     const handleError = createRunErrorHandler({
       trace,

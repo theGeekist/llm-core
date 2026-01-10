@@ -1,7 +1,7 @@
 import type { ArtefactOf, Outcome } from "../types";
-import type { DiagnosticEntry } from "../../shared/diagnostics";
+import type { DiagnosticEntry } from "#shared/diagnostics";
 import type { PipelineState, RecipeName } from "../types";
-import { addTraceEvent, type TraceEvent } from "../../shared/trace";
+import { addTrace, type TraceEvent } from "#shared/reporting";
 import { readPausedUserState, readPauseFlag, readPauseMeta } from "../pause";
 
 export const readArtefact = <N extends RecipeName>(result: unknown): ArtefactOf<N> =>
@@ -28,8 +28,8 @@ type OkOutcomeInput<N extends RecipeName> = {
 export const toOkOutcome = <N extends RecipeName>(
   input: OkOutcomeInput<N>,
 ): Outcome<ArtefactOf<N>> => {
-  addTraceEvent(input.trace, "run.ok");
-  addTraceEvent(input.trace, "run.end", { status: "ok" });
+  addTrace({ trace: input.trace }, "run.success");
+  addTrace({ trace: input.trace }, "run.end", { status: "ok" });
   return {
     status: "ok",
     artefact: input.readArtefactValue(input.result),
@@ -52,8 +52,11 @@ export const toPausedOutcome = <N extends RecipeName>(
 ): Outcome<ArtefactOf<N>> => {
   const pauseMeta = readPauseMeta(input.result);
   const pauseKind = pauseMeta.pauseKind;
-  addTraceEvent(input.trace, "run.paused", pauseKind ? { pauseKind } : undefined);
-  addTraceEvent(input.trace, "run.end", { status: "paused" });
+  addTrace({ trace: input.trace }, "run.paused", pauseKind ? { pauseKind } : undefined);
+  addTrace({ trace: input.trace }, "run.output", {
+    type: "artefact",
+  });
+  addTrace({ trace: input.trace }, "run.end", { status: "paused" });
   return {
     status: "paused",
     token: pauseMeta.token,
@@ -73,8 +76,10 @@ type ErrorOutcomeInput = {
 export const toErrorOutcome = <N extends RecipeName>(
   input: ErrorOutcomeInput,
 ): Outcome<ArtefactOf<N>> => {
-  addTraceEvent(input.trace, "run.error", { error: input.error });
-  addTraceEvent(input.trace, "run.end", { status: "error" });
+  addTrace({ trace: input.trace }, "run.error", {
+    error: input.error instanceof Error ? input.error.message : String(input.error),
+  });
+  addTrace({ trace: input.trace }, "run.end", { status: "error" });
   return {
     status: "error",
     error: input.error,

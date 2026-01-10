@@ -4,10 +4,10 @@ import type {
   Blob as AdapterBlob,
   PauseKind,
   ResumeSnapshot,
-} from "../../adapters/types";
-import type { MaybePromise } from "../../shared/maybe";
-import { bindFirst } from "../../shared/fp";
-import { maybeChain, maybeMap, maybeMapOr } from "../../shared/maybe";
+} from "#adapters/types";
+import type { MaybePromise } from "#shared/maybe";
+import { bindFirst } from "#shared/fp";
+import { maybeChain, maybeMap, maybeMapOr } from "#shared/maybe";
 import type { PauseSession } from "../driver";
 import type { Runtime } from "../types";
 import {

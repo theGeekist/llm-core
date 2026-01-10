@@ -1,10 +1,10 @@
-import { bindFirst } from "../../shared/fp";
-import { maybeMap } from "../../shared/maybe";
+import { bindFirst } from "#shared/fp";
+import { maybeMap } from "#shared/maybe";
 import { Recipe } from "../flow";
 import { createRecipeFactory, createRecipeHandle } from "../handle";
 import type { RecipeDefaults, StepApply } from "../flow";
-import type { Model, ModelResult } from "../../adapters/types";
-import { readNumber, readString, readRecord } from "../../adapters/utils";
+import type { Model, ModelResult } from "#adapters/types";
+import { readNumber, readString, readRecord } from "#adapters/utils";
 
 export type LoopConfig = {
   defaults?: RecipeDefaults;

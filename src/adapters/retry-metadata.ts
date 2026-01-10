@@ -1,6 +1,6 @@
 import type { RetryPolicy } from "./types";
 import { readNumber } from "./utils";
-import { isRecord } from "../shared/guards";
+import { isRecord } from "#shared/guards";
 
 type RetryNumbers = {
   maxRetries?: number | null;

@@ -5,7 +5,7 @@ import type {
   AdapterRequirement,
 } from "./types";
 import { warnDiagnostic } from "./utils";
-import { isRecord } from "../shared/guards";
+import { isRecord } from "#shared/guards";
 
 type RequirementSource = {
   construct: string;

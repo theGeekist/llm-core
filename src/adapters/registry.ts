@@ -5,13 +5,13 @@ import {
   type PipelineReporter,
 } from "@wpkernel/pipeline/core";
 import type { AdapterBundle, AdapterDiagnostic } from "./types";
-import { maybeMap, type MaybePromise } from "../shared/maybe";
+import { maybeMap, type MaybePromise } from "#shared/maybe";
 import { createBuiltinModel } from "./primitives/model";
 import { createBuiltinTools } from "./primitives/tools";
 import { createBuiltinRetriever } from "./primitives/retriever";
 import { createBuiltinTrace } from "./primitives/trace";
 import { validateAdapterRequirements } from "./requirements";
-import { readPipelineArtefact } from "../shared/outcome";
+import { readPipelineArtefact } from "#shared/outcome";
 import {
   createDefaultReporter,
   pipelineDiagnostic,

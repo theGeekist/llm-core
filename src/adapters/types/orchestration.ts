@@ -1,4 +1,4 @@
-import type { MaybePromise } from "../../shared/maybe";
+import type { MaybePromise } from "#shared/maybe";
 import type { EventStream, EventStreamEvent, ResumeSnapshot } from "./core";
 
 export type CheckpointStore = {

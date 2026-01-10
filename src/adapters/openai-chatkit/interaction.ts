@@ -1,11 +1,11 @@
 import type { ChatKitEvents } from "@openai/chatkit";
 import type { InteractionEvent, InteractionEventMeta } from "../../interaction/types";
-import { bindFirst } from "../../shared/fp";
+import { bindFirst } from "#shared/fp";
 import {
   createInteractionEventEmitterStream,
   type InteractionEventEmitter,
 } from "../primitives/interaction-event-emitter";
-import { isRecord } from "../../shared/guards";
+import { isRecord } from "#shared/guards";
 
 export type ChatKitEventName = keyof ChatKitEvents;
 

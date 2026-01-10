@@ -1,5 +1,5 @@
 import type { PipelineReporter } from "@wpkernel/pipeline/core";
-import type { AdapterBundle, PauseKind } from "../adapters/types";
+import type { AdapterBundle, PauseKind } from "#adapters/types";
 export type { DiagnosticEntry, TraceDiagnostics, TraceEvent } from "./reporting";
 
 // TraceDiagnostics exported from reporting

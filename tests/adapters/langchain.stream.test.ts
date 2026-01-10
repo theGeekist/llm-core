@@ -1,7 +1,7 @@
 import { describe, expect, it } from "bun:test";
 import { AIMessageChunk, ToolMessageChunk } from "@langchain/core/messages";
 import type { AdapterDiagnostic, ModelStreamEvent } from "#adapters";
-import { toLangChainStreamEvents } from "#adapters/langchain";
+import { toLangChainStreamEvents } from "../../src/adapters/langchain";
 import {
   isToolChunk,
   readChunkType,

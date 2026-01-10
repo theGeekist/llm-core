@@ -3,7 +3,7 @@ import type { Message } from "./messages";
 import type { Schema } from "./schema";
 import type { Tool, ToolCall, ToolResult } from "./tools";
 import type { StreamEvent } from "./stream";
-import type { MaybeAsyncIterable, MaybePromise } from "../../shared/maybe";
+import type { MaybeAsyncIterable, MaybePromise } from "#shared/maybe";
 
 type ModelCallBase = {
   model?: string | null;

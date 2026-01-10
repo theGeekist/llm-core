@@ -1,6 +1,6 @@
 import type { AdapterTraceEvent, EventStream } from "../types";
-import { bindFirst } from "../../shared/fp";
-import { maybeAll, maybeMap } from "../../shared/maybe";
+import { bindFirst } from "#shared/fp";
+import { maybeAll, maybeMap } from "#shared/maybe";
 
 const toBoolean = (value: unknown): boolean | null => (value === null ? null : value !== false);
 const isFailure = (value: boolean | null) => value === false;

@@ -2,7 +2,7 @@ import {
   applyDiagnosticsMode,
   createResumeDiagnostic,
   type DiagnosticEntry,
-} from "../../shared/diagnostics";
+} from "#shared/diagnostics";
 
 type InvalidResumeDiagnosticsInput = {
   buildDiagnostics: DiagnosticEntry[];

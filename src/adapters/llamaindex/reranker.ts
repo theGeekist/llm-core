@@ -1,7 +1,7 @@
 import type { BaseNodePostprocessor } from "@llamaindex/core/postprocessor";
 import { MetadataMode, type BaseNode } from "@llamaindex/core/schema";
 import type { AdapterCallContext, Document, Reranker, RetrievalQuery } from "../types";
-import { maybeMapArray } from "../../shared/maybe";
+import { maybeMapArray } from "#shared/maybe";
 import { toQueryText } from "../retrieval-query";
 import { toLlamaIndexDocument } from "./documents";
 import { reportDiagnostics, validateRerankerInput } from "../input-validation";

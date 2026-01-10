@@ -1,10 +1,10 @@
-import { bindFirst } from "../../../shared/fp";
-import { maybeMap } from "../../../shared/maybe";
+import { bindFirst } from "#shared/fp";
+import { maybeMap } from "#shared/maybe";
 import { Recipe } from "../../flow";
 import { createRecipeFactory, createRecipeHandle } from "../../handle";
 import type { RecipeDefaults, StepApply } from "../../flow";
 import { AgentStateHelpers, type AgentState } from "../shared";
-import type { ModelResult, ToolResult } from "../../../adapters/types";
+import type { ModelResult, ToolResult } from "#adapters/types";
 
 export type AgentToolsConfig = {
   defaults?: RecipeDefaults;
