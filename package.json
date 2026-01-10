@@ -1,6 +1,6 @@
 {
   "name": "@geekist/llm-core",
-  "version": "1.21.0",
+  "version": "1.21.1",
   "license": "Apache-2.0",
   "description": "A compact, vendor-neutral runtime for building and shipping LLM workflows (agents, RAG, ingest, HITL) with deterministic structure, strong typing, and test-first semantics.",
   "keywords": [
