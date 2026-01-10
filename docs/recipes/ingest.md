@@ -107,7 +107,7 @@ From the recipe’s point of view, this is still one ingest pipeline.
 
 See supported adapter shapes in the
 [Adapters overview](/adapters/) and the
-[Retrieval adapters](/adapters/retrieval/) page.
+[Retrieval adapters](/adapters/retrieval) page.
 
 ---
 
