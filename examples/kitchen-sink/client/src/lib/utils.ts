@@ -1,6 +1,6 @@
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
-import { compose } from "../../../../../src/shared/fp";
+import { compose } from "@geekist/llm-core";
 
 const toClassName = compose(twMerge, clsx);
 

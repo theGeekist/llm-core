@@ -1,9 +1,9 @@
 import type { ChangeEvent, Dispatch, SetStateAction } from "react";
-import type { TransportEvent, WebSocketChatData } from "../../../../../src/adapters";
+import type { TransportEvent, WebSocketChatData } from "@geekist/llm-core/adapters/ai-sdk-ui";
 import type { AdapterSource, ProviderId, RecipeId } from "../demo-options";
 import { readAvailableModels, readAvailableProviders, readDefaultModel } from "../demo-options";
 import { readProviderToken, writeProviderToken, clearProviderToken } from "../token-store";
-import { bindFirst } from "../../../../../src/shared/fp";
+import { bindFirst } from "@geekist/llm-core";
 
 export type TransportData = WebSocketChatData & {
   recipeId: RecipeId;

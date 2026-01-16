@@ -1,30 +1,35 @@
 /// <reference types="bun-types" />
 import { serve } from "bun";
 import type { Server, ServerWebSocket } from "bun";
-import { createAiSdkInteractionEventStream } from "../../../src/adapters/ai-sdk-ui";
 import {
   createAssistantUiInteractionStream,
+  createAiSdkInteractionEventStream,
   parseAssistantTransportRequest,
   type AdapterSource,
   type ModelSelection,
   type ProviderId,
   toCoreMessagesFromAssistantCommands,
   selectModel,
-} from "../../../src/adapters";
-import { Outcome } from "../../../src/workflow/outcome";
+} from "@geekist/llm-core/adapters";
+import { Outcome } from "@geekist/llm-core/workflow";
+import type { OutcomeType } from "@geekist/llm-core/workflow";
 import { toCoreMessages } from "./messages";
 import type { ClientChatRequest } from "./protocol";
 import { parseClientMessage } from "./protocol";
 import { createWebSocketUiWriter, sendUiDone, sendUiError } from "./transport";
 import { AssistantStream, DataStreamEncoder } from "assistant-stream";
 import { createSocketData, setSocketToken, type SocketData } from "./socket-data";
-import type { MaybePromise } from "../../../src/shared/maybe";
-import { maybeChain, maybeMap, maybeMapOr, maybeTap, maybeTry } from "../../../src/shared/maybe";
-import { bindFirst, toUndefined } from "../../../src/shared/fp";
 import {
-  runInteractionRequest,
-  resolveInteractionRecipeId,
-} from "../../../src/interaction/request";
+  maybeChain,
+  maybeMap,
+  maybeMapOr,
+  maybeTap,
+  maybeTry,
+  bindFirst,
+  toUndefined,
+  type MaybePromise,
+} from "@geekist/llm-core";
+import { resolveInteractionRecipeId, runInteractionRequest } from "@geekist/llm-core/interaction";
 
 const PORT = 3001;
 
@@ -105,7 +110,7 @@ type RunChatHandlerInput = {
 };
 
 const applyOutcome = (input: RunOutcomeInput, outcome: unknown) => {
-  const summary = Outcome.summary(outcome as import("../../../src/workflow/types").Outcome);
+  const summary = Outcome.summary(outcome as OutcomeType);
   sendUiDone({
     socket: input.socket,
     requestId: input.requestId,

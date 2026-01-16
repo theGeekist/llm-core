@@ -21,11 +21,15 @@
     "noUncheckedIndexedAccess": true,
     "noImplicitOverride": true,
     "noImplicitReturns": true,
-
     // Some stricter flags (disabled by default)
     "noUnusedLocals": false,
     "noUnusedParameters": false,
-    "noPropertyAccessFromIndexSignature": false
+    "noPropertyAccessFromIndexSignature": false,
+    "baseUrl": ".",
+    "paths": {
+      "@geekist/llm-core": ["./dist/types/index.d.ts"],
+      "@geekist/llm-core/*": ["./dist/types/src/*/index.d.ts"]
+    }
   },
   "exclude": ["llm-core/**", "pipeline/**", "assistant-ui/**"]
 }

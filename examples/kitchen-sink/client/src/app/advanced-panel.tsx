@@ -1,11 +1,11 @@
 "use client";
 
 import type { FC } from "react";
-import type { TransportEvent } from "../../../../../src/adapters";
+import type { TransportEvent } from "@geekist/llm-core/adapters/ai-sdk-ui";
 import { Button } from "../components/ui/button";
 import { cn } from "../lib/utils";
 import { formatTransportEvent } from "./helpers";
-import { bindFirst } from "../../../../../src/shared/fp";
+import { bindFirst } from "@geekist/llm-core";
 
 type AdvancedPanelProps = {
   showAdvanced: boolean;

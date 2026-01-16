@@ -4,7 +4,7 @@ import type { ServerWebSocket } from "bun";
 import type { ServerMessage } from "./protocol";
 import { toServerChunkMessage, toServerDoneMessage, toServerErrorMessage } from "./protocol";
 import type { SocketData } from "./socket-data";
-import { bindFirst } from "../../../src/shared/fp";
+import { bindFirst } from "@geekist/llm-core";
 
 export const createWebSocketUiWriter = (
   socket: ServerWebSocket<SocketData>,

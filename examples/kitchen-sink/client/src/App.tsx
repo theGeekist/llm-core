@@ -10,7 +10,7 @@ import {
   type Dispatch,
   type SetStateAction,
 } from "react";
-import { createAiSdkWebSocketChatTransport } from "../../../../src/adapters";
+import { createAiSdkWebSocketChatTransport } from "@geekist/llm-core/adapters";
 import "./styles.css";
 import { Thread } from "./components/assistant-ui/thread";
 import { Button } from "./components/ui/button";
@@ -45,8 +45,8 @@ import {
   type TransportData,
   type OutcomeSummary,
 } from "./app/helpers";
-import { bindFirst } from "../../../../src/shared/fp";
-import type { TransportEvent } from "../../../../src/adapters";
+import { bindFirst } from "@geekist/llm-core";
+import type { TransportEvent } from "@geekist/llm-core/adapters/ai-sdk-ui";
 
 const transportData: TransportData = {
   recipeId: "agent",
@@ -462,7 +462,6 @@ const readProviderHelper = (input: { providerId: ProviderId }) => {
 
 const readCanSend = (input: { hasToken: boolean; requiresToken: boolean }) =>
   !input.requiresToken || input.hasToken;
-
 
 const buildTransportMemo = (input: {
   setEvents: Dispatch<SetStateAction<TransportEvent[]>>;

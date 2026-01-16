@@ -5,9 +5,28 @@ import { fileURLToPath } from "node:url";
 export default defineConfig({
   plugins: [react()],
   resolve: {
-    alias: {
-      "@": fileURLToPath(new URL("./src", import.meta.url)),
-    },
+    alias: [
+      {
+        find: "@geekist/llm-core/adapters/ai-sdk-ui",
+        replacement: fileURLToPath(
+          new URL("../../../dist/esm/src/adapters/ai-sdk-ui/index.js", import.meta.url),
+        ),
+      },
+      {
+        find: "@geekist/llm-core/adapters",
+        replacement: fileURLToPath(
+          new URL("../../../dist/esm/src/adapters/index.js", import.meta.url),
+        ),
+      },
+      {
+        find: /^@geekist\/llm-core$/,
+        replacement: fileURLToPath(new URL("../../../dist/esm/index.js", import.meta.url)),
+      },
+      {
+        find: "@",
+        replacement: fileURLToPath(new URL("./src", import.meta.url)),
+      },
+    ],
   },
   server: {
     port: 5173,
