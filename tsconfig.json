@@ -27,5 +27,5 @@
     "noUnusedParameters": false,
     "noPropertyAccessFromIndexSignature": false
   },
-  "exclude": ["llm-core/**", "pipeline/**"]
+  "exclude": ["llm-core/**", "pipeline/**", "assistant-ui/**"]
 }

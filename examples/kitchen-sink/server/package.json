@@ -1,0 +1,17 @@
+{
+  "name": "llm-core-kitchen-sink-server",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "bun --watch index.ts"
+  },
+  "dependencies": {
+    "@ai-sdk/anthropic": "2.0.56",
+    "@ai-sdk/openai": "2.0.88",
+    "@langchain/ollama": "1.1.0",
+    "@langchain/openai": "1.2.0",
+    "@llamaindex/openai": "0.4.22",
+    "ai": "5.0.116",
+    "ollama-ai-provider-v2": "1.5.5"
+  }
+}
