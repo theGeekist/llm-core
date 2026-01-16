@@ -187,7 +187,14 @@ const handleAssistantTransport = (req: Request): MaybePromise<Response> => {
     return new Response("Method not allowed", { status: 405 });
   }
 
-  return maybeMap(handleAssistantBody, readRequestBody(req));
+  return maybeMap(handleAssistantBodyOrError, readRequestBody(req));
+};
+
+const handleAssistantBodyOrError = (body: unknown) => {
+  if (body === null) {
+    return new Response("Invalid JSON", { status: 400 });
+  }
+  return handleAssistantBody(body);
 };
 
 const handleAssistantBody = (body: unknown): Response => {

@@ -8,7 +8,37 @@ const readStorage = () => {
   if (typeof window === "undefined") {
     return null;
   }
-  return window.sessionStorage;
+  try {
+    return window.sessionStorage;
+  } catch {
+    return null;
+  }
+};
+
+const readStorageItem = (storage: Storage, key: string) => {
+  try {
+    return storage.getItem(key);
+  } catch {
+    return null;
+  }
+};
+
+const writeStorageItem = (storage: Storage, key: string, value: string) => {
+  try {
+    storage.setItem(key, value);
+    return true;
+  } catch {
+    return false;
+  }
+};
+
+const removeStorageItem = (storage: Storage, key: string) => {
+  try {
+    storage.removeItem(key);
+    return true;
+  } catch {
+    return false;
+  }
 };
 
 export const readProviderToken = (providerId: ProviderId) => {
@@ -16,7 +46,7 @@ export const readProviderToken = (providerId: ProviderId) => {
   if (!storage) {
     return null;
   }
-  return storage.getItem(buildStorageKey(providerId));
+  return readStorageItem(storage, buildStorageKey(providerId));
 };
 
 export const writeProviderToken = (providerId: ProviderId, token: string) => {
@@ -24,8 +54,7 @@ export const writeProviderToken = (providerId: ProviderId, token: string) => {
   if (!storage) {
     return false;
   }
-  storage.setItem(buildStorageKey(providerId), token);
-  return true;
+  return writeStorageItem(storage, buildStorageKey(providerId), token);
 };
 
 export const clearProviderToken = (providerId: ProviderId) => {
@@ -33,8 +62,7 @@ export const clearProviderToken = (providerId: ProviderId) => {
   if (!storage) {
     return false;
   }
-  storage.removeItem(buildStorageKey(providerId));
-  return true;
+  return removeStorageItem(storage, buildStorageKey(providerId));
 };
 
 export const readAllProviderTokens = (providers: ProviderId[]) => {

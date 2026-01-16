@@ -1,6 +1,6 @@
 export type AdapterSource = "ai-sdk" | "langchain" | "llamaindex";
 export type ProviderId = "openai" | "anthropic" | "ollama";
-export type RecipeId = "agent" | "rag" | "simple-chat" | "hitl";
+export type RecipeId = "agent" | "rag" | "chat.simple" | "hitl";
 
 export type ModelOption = {
   id: string;
@@ -112,7 +112,7 @@ export const PROVIDERS: ProviderOption[] = [
 
 export const RECIPES: RecipeOption[] = [
   {
-    id: "simple-chat",
+    id: "chat.simple",
     label: "Simple Chat",
     description: "Single turn chat with streaming output.",
     packs: ["chat.simple"],
@@ -142,7 +142,7 @@ export const PRESETS: Preset[] = [
     id: "chat-copilot",
     title: "Chat Copilot",
     description: "Streaming assistant with minimal orchestration.",
-    recipeId: "simple-chat",
+    recipeId: "chat.simple",
     adapterSource: "ai-sdk",
     providerId: "openai",
     modelId: "gpt-4o-mini",
@@ -179,7 +179,7 @@ export const PRESETS: Preset[] = [
 const DEFAULT_RECIPE: RecipeOption =
   RECIPES[0] ??
   ({
-    id: "simple-chat",
+    id: "chat.simple",
     label: "Simple Chat",
     description: "Single turn chat with streaming output.",
     packs: ["chat.simple"],

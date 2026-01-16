@@ -74,14 +74,7 @@ export const parseClientMessage = (payload: string): ClientMessage | null => {
   }
   const messages = readUiMessages(record.messages);
   const dataValue = record.data ?? null;
-  const data = isRecord(dataValue)
-    ? (dataValue as {
-        recipeId?: string;
-        adapterSource?: string;
-        providerId?: string;
-        modelId?: string;
-      })
-    : undefined;
+  const data = readClientData(dataValue) ?? undefined;
   return {
     type: "chat.send",
     requestId: record.requestId,
@@ -125,8 +118,33 @@ const safeParseJson = (payload: string): JsonValue | null => {
   }
 };
 
-const isRecord = (value: JsonValue): value is Record<string, JsonValue> =>
+const isRecord = (value: JsonValue | null | undefined): value is Record<string, JsonValue> =>
   !!value && typeof value === "object" && !Array.isArray(value);
+
+const readClientData = (value: JsonValue | null | undefined) => {
+  if (!isRecord(value)) {
+    return null;
+  }
+  const data: {
+    recipeId?: string;
+    adapterSource?: string;
+    providerId?: string;
+    modelId?: string;
+  } = {};
+  if (typeof value.recipeId === "string") {
+    data.recipeId = value.recipeId;
+  }
+  if (typeof value.adapterSource === "string") {
+    data.adapterSource = value.adapterSource;
+  }
+  if (typeof value.providerId === "string") {
+    data.providerId = value.providerId;
+  }
+  if (typeof value.modelId === "string") {
+    data.modelId = value.modelId;
+  }
+  return data;
+};
 
 const readUiMessages = (value: JsonValue | undefined): UIMessage[] => {
   if (!Array.isArray(value)) {

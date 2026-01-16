@@ -12,7 +12,7 @@
     "@langchain/ollama": "1.1.0",
     "@langchain/openai": "1.2.0",
     "@llamaindex/openai": "0.4.22",
-    "ai": "5.0.116",
+    "ai": "5.0.121",
     "ollama-ai-provider-v2": "1.5.5"
   }
 }

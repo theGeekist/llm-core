@@ -25,14 +25,17 @@ function DialogTrigger({ children, ...props }: DialogTriggerProps) {
   );
 }
 
-type DialogPortalProps = React.ComponentProps<typeof DialogPrimitive.Portal> & {
-  children?: React.ReactNode;
-};
+type DialogPortalProps = React.ComponentProps<typeof DialogPrimitive.Portal> &
+  React.ComponentProps<"div"> & {
+    children?: React.ReactNode;
+  };
 
-function DialogPortal({ children, ...props }: DialogPortalProps) {
+function DialogPortal({ children, container, forceMount, ...props }: DialogPortalProps) {
   return (
-    <DialogPrimitive.Portal data-slot="dialog-portal" {...props}>
-      {children}
+    <DialogPrimitive.Portal container={container} forceMount={forceMount}>
+      <div data-slot="dialog-portal" {...props}>
+        {children}
+      </div>
     </DialogPrimitive.Portal>
   );
 }
