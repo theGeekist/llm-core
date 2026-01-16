@@ -1,8 +1,13 @@
-export * from "./model";
-export * from "./retriever";
-export * from "./tools";
-export * from "./trace";
-export * from "./cache";
-export * from "./event-stream";
-export * from "./interrupt";
-export * from "./interaction-event-emitter";
+export { createBuiltinModel } from "./model";
+export { createBuiltinRetriever } from "./retriever";
+export { createBuiltinTools } from "./tools";
+export { createBuiltinTrace } from "./trace";
+export { createCacheFromKVStore, createMemoryCache } from "./cache";
+export { createEventStreamFanout, createEventStreamFromTraceSink } from "./event-stream";
+export { createInterruptStrategy } from "./interrupt";
+export type {
+  InteractionEventEmitter,
+  InteractionEventEmitterStreamOptions,
+  InteractionEventMapper,
+} from "./interaction-event-emitter";
+export { createInteractionEventEmitterStream } from "./interaction-event-emitter";
