@@ -88,6 +88,18 @@ describe("adapter model selection", () => {
     expect(readGenerate(model)).toBe(true);
   });
 
+  it("treats selection without source as a direct selection", () => {
+    const model = selectModel({ providerId: "openai" });
+
+    expect(readGenerate(model)).toBe(true);
+  });
+
+  it("returns a selector function when only options are provided", () => {
+    const selector = selectModel({ defaultSource: "ai-sdk" });
+
+    expect(typeof selector).toBe("function");
+  });
+
   it("returns langchain and llamaindex adapters", () => {
     const langchainModel = selectModel({ source: "langchain", providerId: "openai" });
     const llamaIndexModel = selectModel({ source: "llamaindex", providerId: "openai" });

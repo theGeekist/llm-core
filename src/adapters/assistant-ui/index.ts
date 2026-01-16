@@ -21,7 +21,4 @@ export type {
   AddToolResultCommand,
   JsonValue,
 } from "./transport";
-export {
-  parseAssistantTransportRequest,
-  toCoreMessagesFromAssistantCommands,
-} from "./transport";
+export { parseAssistantTransportRequest, toCoreMessagesFromAssistantCommands } from "./transport";

@@ -65,6 +65,23 @@ const readDefaultProviderMap = (options?: ModelSelectorOptions) => ({
   ...(options?.defaultProviders ?? {}),
 });
 
+const hasOwn = (value: Record<string, unknown>, key: string) =>
+  Object.prototype.hasOwnProperty.call(value, key);
+
+const isModelSelectorOptions = (value: unknown): value is ModelSelectorOptions => {
+  if (!value || typeof value !== "object") {
+    return false;
+  }
+  const record = value as Record<string, unknown>;
+  return (
+    hasOwn(record, "modelOptions") ||
+    hasOwn(record, "defaultSource") ||
+    hasOwn(record, "defaultProviders") ||
+    hasOwn(record, "readToken") ||
+    hasOwn(record, "readOllamaBaseUrl")
+  );
+};
+
 const readAdapterSource = (
   value: AdapterSource | null | undefined,
   options?: ModelSelectorOptions,
@@ -230,8 +247,8 @@ export function selectModel(
   selection?: ModelSelection | null | ModelSelectorOptions,
   options?: ModelSelectorOptions,
 ) {
-  if (arguments.length === 1 && selection && !("source" in selection)) {
-    return bindFirst(selectModelWithOptions, selection as ModelSelectorOptions | undefined);
+  if (arguments.length === 1 && isModelSelectorOptions(selection)) {
+    return bindFirst(selectModelWithOptions, selection);
   }
   return selectModelWithOptions(options, selection as ModelSelection | null | undefined);
 }

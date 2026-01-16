@@ -12,4 +12,4 @@ llm-core/
 pipeline
 pipeline/
 docs/.vitepress/cache/
-assistant-ui/
+/assistant-ui/
