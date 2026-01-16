@@ -11,7 +11,7 @@ import { bindFirst } from "#shared/fp";
 import { maybeTry } from "#shared/maybe";
 import type { ResumeHandlerDeps } from "#workflow/runtime/resume-types";
 import { startResumePipeline } from "#workflow/runtime/resume-start";
-import { applyDiagnosticsMode } from "#shared/diagnostics";
+import { applyDiagnosticsMode } from "#shared/reporting";
 import { readResumeTokenInput } from "#workflow/runtime/resume-helpers";
 
 type ResumeHandlerErrorInput<N extends RecipeName> = {

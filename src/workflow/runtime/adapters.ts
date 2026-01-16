@@ -1,6 +1,7 @@
 import type { AdapterBundle } from "#adapters/types";
-import { createEventStreamFromTraceSink } from "#adapters";
-import { type DiagnosticEntry, createContractDiagnostic } from "#shared/diagnostics";
+import { createEventStreamFromTraceSink } from "#adapters/primitives/event-stream";
+import { createContractDiagnostic } from "#shared/diagnostics";
+import type { DiagnosticEntry } from "#shared/reporting";
 import type { RecipeContract } from "../types";
 import { applyAdapterPresence } from "../capabilities";
 import { isCapabilitySatisfied } from "../capability-checks";

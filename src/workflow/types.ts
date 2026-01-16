@@ -16,7 +16,7 @@ import type {
   LoopInput,
   RagInput,
 } from "../recipes/types";
-import type { DiagnosticEntry } from "#shared/diagnostics";
+import type { DiagnosticEntry } from "#shared/reporting";
 import type { ExplainSnapshot } from "./explain";
 import type { ExecutionOutcome } from "#shared/outcome";
 import type { ExecutionContextBase, RunOptionsBase } from "#shared/types";

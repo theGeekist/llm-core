@@ -2,6 +2,11 @@
 
 import type { Outcome as OutcomeType, OutcomeMatcher } from "./types";
 
+export type OutcomeSummary = {
+  status: "ok" | "paused" | "error";
+  token?: string | null;
+};
+
 export const ok = (outcome: OutcomeType): outcome is Extract<OutcomeType, { status: "ok" }> =>
   outcome.status === "ok";
 
@@ -38,8 +43,17 @@ export const mapOk = <TArtefact, TNext>(
   return outcome;
 };
 
+export const summary = (outcome: OutcomeType): OutcomeSummary => {
+  if (outcome.status === "paused") {
+    const token = typeof outcome.token === "string" ? outcome.token : null;
+    return { status: "paused", token };
+  }
+  return { status: outcome.status };
+};
+
 export const Outcome = {
   ok,
   match,
   mapOk,
+  summary,
 };

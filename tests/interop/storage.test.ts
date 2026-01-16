@@ -4,7 +4,7 @@ import type { BaseDocumentStore } from "@llamaindex/core/storage/doc-store";
 import * as AiSdk from "ai";
 import type { KVStore } from "#workflow";
 import { toNull } from "../../src/shared/fp";
-import { maybeMap } from "../../src/shared/maybe";
+import { maybeAll, maybeMap } from "../../src/shared/maybe";
 
 const toAdapterKVFromLangChain = (store: BaseStore<string, unknown>): KVStore => ({
   mget: (keys) => store.mget(keys),
@@ -35,7 +35,7 @@ const toAdapterKVFromLlamaDocStore = (store: BaseDocumentStore): KVStore => ({
     return maybeMap(toNull, store.addDocuments(docs as never, true));
   },
   mdelete: (keys) =>
-    maybeMap(toNull, Promise.all(keys.map((key) => store.deleteDocument(key, false)))),
+    maybeMap(toNull, maybeAll(keys.map((key) => store.deleteDocument(key, false)))),
   list: () => maybeMap((docs) => Object.keys(docs), store.docs()),
 });
 

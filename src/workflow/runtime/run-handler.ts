@@ -8,7 +8,7 @@ import type {
   PipelineWithExtensions,
 } from "../types";
 import type { AdapterBundle, AdapterDiagnostic } from "#adapters/types";
-import type { DiagnosticEntry } from "#shared/diagnostics";
+import type { DiagnosticEntry } from "#shared/reporting";
 import {
   addTrace,
   createTraceDiagnostics,

@@ -18,12 +18,10 @@ import { buildCapabilities } from "./capabilities";
 import { buildExplainSnapshot } from "./explain";
 import {
   createRequirementDiagnostic,
-  applyDiagnosticsMode,
   hasErrorDiagnostics,
   normalizeDiagnostics,
-  type DiagnosticEntry,
 } from "#shared/diagnostics";
-import type { TraceEvent } from "#shared/reporting";
+import { applyDiagnosticsMode, type DiagnosticEntry, type TraceEvent } from "#shared/reporting";
 import { bindFirst } from "#shared/fp";
 import { maybeChain, maybeMap } from "#shared/maybe";
 import type { MaybePromise } from "#shared/maybe";

@@ -9,7 +9,7 @@ import type {
 } from "../types";
 import type { PipelineReporter } from "@wpkernel/pipeline/core";
 import type { AdapterBundle } from "#adapters/types";
-import type { DiagnosticEntry } from "#shared/diagnostics";
+import type { DiagnosticEntry } from "#shared/reporting";
 import type { MaybePromise } from "#shared/maybe";
 import type { TraceEvent } from "#shared/reporting";
 import type { PauseSession } from "../driver/types";
@@ -19,7 +19,8 @@ import { attachAdapterContext, createAdapterContext } from "../adapter-context";
 import { createSnapshotRecorder, resolveSessionStore, type ResumeSession } from "./resume-session";
 import { readResumeOptions, type ResumeOptions } from "../resume";
 import { runResumedPipeline } from "./resume-runner";
-import { normalizeDiagnostics, applyDiagnosticsMode } from "#shared/diagnostics";
+import { normalizeDiagnostics } from "#shared/diagnostics";
+import { applyDiagnosticsMode } from "#shared/reporting";
 import { createFinalize, type FinalizeResult } from "./helpers";
 import { createFinalizeWithInterrupt } from "./pause-metadata";
 import type {

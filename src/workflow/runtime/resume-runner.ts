@@ -2,16 +2,14 @@ import type { MaybePromise } from "#shared/maybe";
 import { bindFirst } from "#shared/fp";
 import { maybeChain } from "#shared/maybe";
 import { attachAdapterContext, createAdapterContext } from "../adapter-context";
-import {
-  createAdapterDiagnostic,
-  hasErrorDiagnostics,
-  type DiagnosticEntry,
-} from "#shared/diagnostics";
+import { createAdapterDiagnostic, hasErrorDiagnostics } from "#shared/diagnostics";
+import type { DiagnosticEntry } from "#shared/reporting";
 import type { ResumeOptions } from "../resume";
 import type { TraceEvent } from "#shared/reporting";
 import type { Outcome, PipelineWithExtensions, Runtime } from "../types";
 import type { AdapterBundle } from "#adapters/types";
-import { applyDiagnosticsMode, normalizeDiagnostics } from "#shared/diagnostics";
+import { normalizeDiagnostics } from "#shared/diagnostics";
+import { applyDiagnosticsMode } from "#shared/reporting";
 import { createDiagnosticsGetter } from "./helpers";
 import { createFinalizeWithInterrupt } from "./pause-metadata";
 import type { FinalizeResult } from "./helpers";

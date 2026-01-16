@@ -14,7 +14,7 @@ describe("Adapter event streams", () => {
   it("emits workflow events for LlamaIndex contexts", async () => {
     const workflow = createWorkflow();
     const context = workflow.createContext();
-    const stream = context.stream[Symbol.asyncIterator]();
+    const stream = (context.stream as unknown as AsyncIterable<unknown>)[Symbol.asyncIterator]();
     const adapterStream = fromLlamaIndexWorkflowContext(context);
     const expected = {
       name: "adapter.event",
@@ -32,7 +32,7 @@ describe("Adapter event streams", () => {
   it("emits multiple workflow events in order", async () => {
     const workflow = createWorkflow();
     const context = workflow.createContext();
-    const stream = context.stream[Symbol.asyncIterator]();
+    const stream = (context.stream as unknown as AsyncIterable<unknown>)[Symbol.asyncIterator]();
     const adapterStream = fromLlamaIndexWorkflowContext(context);
     const first = { name: "event.one", data: { ok: 1 } };
     const second = { name: "event.two", data: { ok: 2 } };

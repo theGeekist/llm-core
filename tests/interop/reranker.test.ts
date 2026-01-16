@@ -10,7 +10,7 @@ import {
 } from "@llamaindex/core/schema";
 import { fromAiSdkReranker } from "#adapters";
 import type { Reranker } from "#workflow";
-import { maybeMap } from "./helpers";
+import { maybeMap } from "#shared/maybe";
 
 const toRerankerFromLangChain = (compressor: BaseDocumentCompressor): Reranker => ({
   rerank: (query, documents) => {

@@ -1,5 +1,5 @@
 import type { ArtefactOf, Outcome } from "../types";
-import type { DiagnosticEntry } from "#shared/diagnostics";
+import type { DiagnosticEntry } from "#shared/reporting";
 import type { PipelineState, RecipeName } from "../types";
 import { addTrace, type TraceEvent } from "#shared/reporting";
 import { readPausedUserState, readPauseFlag, readPauseMeta } from "../pause";

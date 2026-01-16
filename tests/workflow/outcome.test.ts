@@ -99,4 +99,19 @@ describe("Workflow Outcome helpers", () => {
       }),
     ).toThrow("Unexpected outcome status.");
   });
+
+  it("summarizes paused outcomes with string tokens only", () => {
+    const paused: OutcomeType<{ value: number }> = {
+      status: "paused",
+      token: 123 as unknown as string,
+      artefact: { value: 1 },
+      trace: [],
+      diagnostics: [],
+    };
+
+    const summary = Outcome.summary(paused);
+
+    expect(summary.status).toBe("paused");
+    expect(summary.token).toBeNull();
+  });
 });

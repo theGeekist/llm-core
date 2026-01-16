@@ -1,10 +1,11 @@
 import {
+  composeK as pipelineComposeK,
   isPromiseLike,
   maybeAll as pipelineMaybeAll,
   maybeThen,
   maybeTry as pipelineMaybeTry,
 } from "@wpkernel/pipeline/core/async-utils";
-import type { MaybePromise } from "@wpkernel/pipeline/core";
+import type { MaybePromise, Program } from "@wpkernel/pipeline/core";
 import { bindFirst, mapArray } from "./fp";
 
 type MaybeThunk<T> = { (): MaybePromise<T> };
@@ -25,8 +26,10 @@ type StepSource<T> = AnyIterable<T> | Step<T>;
 type CollectStepInput<T> = { step: Step<T>; items: T[] };
 
 export type { MaybePromise };
+export type { Program };
 export type MaybeAsyncIterable<T> = StepSource<T> | MaybePromise<StepSource<T>>;
 export { isPromiseLike };
+export const composeK = pipelineComposeK;
 
 type TryWrapInput<Args extends unknown[], T> = {
   fn: (...args: Args) => MaybePromise<T>;

@@ -1,8 +1,5 @@
-import {
-  applyDiagnosticsMode,
-  createResumeDiagnostic,
-  type DiagnosticEntry,
-} from "#shared/diagnostics";
+import { createResumeDiagnostic } from "#shared/diagnostics";
+import { applyDiagnosticsMode, type DiagnosticEntry } from "#shared/reporting";
 
 type InvalidResumeDiagnosticsInput = {
   buildDiagnostics: DiagnosticEntry[];

@@ -13,7 +13,7 @@ import type {
   AdapterDiagnostic,
 } from "#adapters/types";
 import { createAdapterDiagnostic } from "#shared/diagnostics";
-import type { DiagnosticEntry } from "#shared/diagnostics";
+import type { DiagnosticEntry } from "#shared/reporting";
 import { isRecord } from "#shared/guards";
 import type { TraceEvent } from "#shared/reporting";
 import type {

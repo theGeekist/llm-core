@@ -1,6 +1,6 @@
 import type { MaybePromise } from "#shared/maybe";
 import { bindFirst } from "#shared/fp";
-import type { DiagnosticEntry } from "#shared/diagnostics";
+import type { DiagnosticEntry } from "#shared/reporting";
 import type { TraceEvent } from "#shared/reporting";
 
 export type FinalizeResultInput = {

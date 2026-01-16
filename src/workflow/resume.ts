@@ -1,6 +1,6 @@
 import type { AdapterBundle } from "#adapters/types";
 import type { Runtime } from "./types";
-import type { DiagnosticEntry } from "#shared/diagnostics";
+import type { DiagnosticEntry } from "#shared/reporting";
 import { createResumeDiagnostic } from "#shared/diagnostics";
 import { isRecord } from "#shared/guards";
 

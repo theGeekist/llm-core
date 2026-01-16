@@ -1,7 +1,8 @@
 import { createHelper } from "@wpkernel/pipeline/core";
 import { bindFirst } from "#shared/fp";
 import { maybeMap, maybeTry } from "#shared/maybe";
-import { createRecipeDiagnostic, type DiagnosticEntry } from "#shared/diagnostics";
+import { createRecipeDiagnostic } from "#shared/diagnostics";
+import type { DiagnosticEntry } from "#shared/reporting";
 import { getRecipe } from "#workflow/recipe-registry";
 import { createRuntime } from "#workflow/runtime";
 import { wrapRuntimeWithStateValidation, type StateValidator } from "./state";
