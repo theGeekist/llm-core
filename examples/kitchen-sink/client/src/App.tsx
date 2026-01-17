@@ -57,13 +57,19 @@ const transportData: TransportData = {
 
 const readProviderId = (provider: { id: ProviderId }) => provider.id;
 const readAuthTokens = () => readAllProviderTokens(PROVIDERS.map(readProviderId));
-const readTransportData = () => transportData;
+const readTransportData = () => {
+  const { modelId, ...rest } = transportData;
+  if (modelId) {
+    return { ...rest, modelId };
+  }
+  return rest;
+};
 
 export function App() {
   const [recipeId, setRecipeId] = useState<RecipeId>("agent");
   const [adapterSource, setAdapterSource] = useState<AdapterSource>("ai-sdk");
   const [providerId, setProviderId] = useState<ProviderId>("openai");
-  const [modelId, setModelId] = useState<string>("gpt-4o-mini");
+  const [modelId, setModelId] = useState<string | null>("gpt-4o-mini");
   const [events, setEvents] = useState<TransportEvent[]>([]);
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [showEvents, setShowEvents] = useState(false);
@@ -209,7 +215,7 @@ type HeaderBarProps = {
   recipeId: RecipeId;
   adapterSource: AdapterSource;
   providerId: ProviderId;
-  modelId: string;
+  modelId: string | null;
   availableProviders: Array<{ id: ProviderId; label: string }>;
   availableModels: Array<{ id: string; label: string }>;
   providerHelper: string;
@@ -232,9 +238,11 @@ const HeaderBar: FC<HeaderBarProps> = ({
   onProviderChange,
   onModelChange,
 }) => {
-  const showModel = availableModels.length > 1;
+  const showModel = availableModels.length !== 1;
   const providerOptions = availableProviders.map(toSelectOptionFromProvider);
-  const modelOptions = availableModels.map(toSelectOptionFromModel);
+  const modelOptions = availableModels.length
+    ? availableModels.map(toSelectOptionFromModel)
+    : [{ value: "", label: "No models available", disabled: true }];
 
   return (
     <header className="ks-header">
@@ -298,9 +306,9 @@ const HeaderBar: FC<HeaderBarProps> = ({
 type SelectFieldProps = {
   id: string;
   label: string;
-  value: string;
+  value: string | null;
   onChange: (event: ChangeEvent<HTMLSelectElement>) => void;
-  options: Array<{ value: string; label: string }>;
+  options: Array<{ value: string; label: string; disabled?: boolean }>;
   helper?: string;
   className?: string;
 };
@@ -315,12 +323,13 @@ const SelectField: FC<SelectFieldProps> = ({
   className,
 }) => {
   const rootClassName = className ? `ks-field ${className}` : "ks-field";
+  const selectValue = value ?? "";
   return (
     <div className={rootClassName}>
       <label htmlFor={id} className="text-xs text-muted-foreground">
         {label}
       </label>
-      <select id={id} value={value} onChange={onChange} className="ks-select">
+      <select id={id} value={selectValue} onChange={onChange} className="ks-select">
         {options.map(renderSelectOption)}
       </select>
       <span className="ks-select-helper">{helper ?? ""}</span>
@@ -366,8 +375,8 @@ const toSelectOptionFromModel = (entry: { id: string; label: string }) => ({
   label: entry.label,
 });
 
-const renderSelectOption = (option: { value: string; label: string }) => (
-  <option key={option.value} value={option.value}>
+const renderSelectOption = (option: { value: string; label: string; disabled?: boolean }) => (
+  <option key={option.value} value={option.value} disabled={option.disabled}>
     {option.label}
   </option>
 );

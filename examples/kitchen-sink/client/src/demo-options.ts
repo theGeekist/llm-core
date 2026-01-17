@@ -43,6 +43,7 @@ export type Preset = {
 export type SelectOption = {
   value: string;
   label: string;
+  disabled?: boolean;
 };
 
 export const ADAPTER_SOURCES: AdapterSourceOption[] = [
@@ -241,7 +242,7 @@ export const readPresetForSelection = (selection: {
   recipeId: RecipeId;
   adapterSource: AdapterSource;
   providerId: ProviderId;
-  modelId: string;
+  modelId: string | null;
 }) =>
   PRESETS.find(
     (preset) =>
@@ -250,4 +251,4 @@ export const readPresetForSelection = (selection: {
       preset.adapterSource === selection.adapterSource &&
       preset.providerId === selection.providerId &&
       preset.modelId === selection.modelId,
-  ) ?? null;
+  );

@@ -108,7 +108,7 @@ const readHandleFromRecipe = (options: RecipeRunnerRecipeOptions): AnyRecipeHand
   }
   const baseAdapters: AdapterBundle = { model: options.model };
   const merged = mergeRecords(baseAdapters as MergeableRecord, options.adapters as MergeableRecord);
-  const adapters = (merged ?? baseAdapters) as AdapterBundle;
+  const adapters = { ...(merged ?? baseAdapters), model: options.model } as AdapterBundle;
   return factory().defaults({ adapters });
 };
 

@@ -275,6 +275,15 @@ const parseServerMessage = (data: string): ServerMessage | null => {
     if (!isServerMessageType(parsed.type)) {
       return null;
     }
+    if (typeof parsed.requestId !== "string") {
+      return null;
+    }
+    if (parsed.type === "ui.chunk" && !parsed.chunk) {
+      return null;
+    }
+    if (parsed.type === "ui.error" && typeof parsed.error !== "string") {
+      return null;
+    }
     return parsed;
   } catch {
     return null;

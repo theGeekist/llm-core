@@ -5,11 +5,11 @@ import { readAvailableModels, readAvailableProviders, readDefaultModel } from ".
 import { readProviderToken, writeProviderToken, clearProviderToken } from "../token-store";
 import { bindFirst } from "@geekist/llm-core";
 
-export type TransportData = WebSocketChatData & {
+export type TransportData = Omit<WebSocketChatData, "modelId"> & {
   recipeId: RecipeId;
   adapterSource: AdapterSource;
   providerId: ProviderId;
-  modelId: string;
+  modelId: string | null;
 };
 
 export type OutcomeSummary = {
@@ -66,7 +66,7 @@ const readNextProviderId = (source: AdapterSource, providerId: ProviderId): Prov
   return match?.id ?? providerId;
 };
 
-const readNextModelId = (source: AdapterSource, providerId: ProviderId, modelId: string) => {
+const readNextModelId = (source: AdapterSource, providerId: ProviderId, modelId: string | null) => {
   const models = readAvailableModels(source, providerId);
   const match = models.find((entry) => entry.id === modelId);
   if (match) {
@@ -75,12 +75,14 @@ const readNextModelId = (source: AdapterSource, providerId: ProviderId, modelId:
   return readDefaultModel(source, providerId);
 };
 
+const normalizeModelId = (value: string) => (value === "" ? null : value);
+
 const applyRecipeChange = (
   input: {
     transportData: TransportData;
     adapterSource: AdapterSource;
     providerId: ProviderId;
-    modelId: string;
+    modelId: string | null;
     setRecipeId: Dispatch<SetStateAction<RecipeId>>;
   },
   event: ChangeEvent<HTMLSelectElement>,
@@ -100,7 +102,7 @@ export const bindRecipeChange = (input: {
   transportData: TransportData;
   adapterSource: AdapterSource;
   providerId: ProviderId;
-  modelId: string;
+  modelId: string | null;
   setRecipeId: Dispatch<SetStateAction<RecipeId>>;
 }) => bindFirst(applyRecipeChange, input);
 
@@ -109,10 +111,10 @@ const applySourceChange = (
     transportData: TransportData;
     adapterSource: AdapterSource;
     providerId: ProviderId;
-    modelId: string;
+    modelId: string | null;
     setAdapterSource: Dispatch<SetStateAction<AdapterSource>>;
     setProviderId: Dispatch<SetStateAction<ProviderId>>;
-    setModelId: Dispatch<SetStateAction<string>>;
+    setModelId: Dispatch<SetStateAction<string | null>>;
   },
   event: ChangeEvent<HTMLSelectElement>,
 ) => {
@@ -135,20 +137,20 @@ export const bindSourceChange = (input: {
   transportData: TransportData;
   adapterSource: AdapterSource;
   providerId: ProviderId;
-  modelId: string;
+  modelId: string | null;
   setAdapterSource: Dispatch<SetStateAction<AdapterSource>>;
   setProviderId: Dispatch<SetStateAction<ProviderId>>;
-  setModelId: Dispatch<SetStateAction<string>>;
+  setModelId: Dispatch<SetStateAction<string | null>>;
 }) => bindFirst(applySourceChange, input);
 
 const applyProviderChange = (
   input: {
     transportData: TransportData;
     adapterSource: AdapterSource;
-    modelId: string;
+    modelId: string | null;
     connectOpen: boolean;
     setProviderId: Dispatch<SetStateAction<ProviderId>>;
-    setModelId: Dispatch<SetStateAction<string>>;
+    setModelId: Dispatch<SetStateAction<string | null>>;
     setTokenDraft: Dispatch<SetStateAction<string>>;
   },
   event: ChangeEvent<HTMLSelectElement>,
@@ -172,10 +174,10 @@ const applyProviderChange = (
 export const bindProviderChange = (input: {
   transportData: TransportData;
   adapterSource: AdapterSource;
-  modelId: string;
+  modelId: string | null;
   connectOpen: boolean;
   setProviderId: Dispatch<SetStateAction<ProviderId>>;
-  setModelId: Dispatch<SetStateAction<string>>;
+  setModelId: Dispatch<SetStateAction<string | null>>;
   setTokenDraft: Dispatch<SetStateAction<string>>;
 }) => bindFirst(applyProviderChange, input);
 
@@ -184,11 +186,11 @@ const applyModelChange = (
     transportData: TransportData;
     adapterSource: AdapterSource;
     providerId: ProviderId;
-    setModelId: Dispatch<SetStateAction<string>>;
+    setModelId: Dispatch<SetStateAction<string | null>>;
   },
   event: ChangeEvent<HTMLSelectElement>,
 ) => {
-  const nextModel = event.currentTarget.value;
+  const nextModel = normalizeModelId(event.currentTarget.value);
   input.setModelId(nextModel);
   updateTransportData(input, {
     recipeId: input.transportData.recipeId,
@@ -203,7 +205,7 @@ export const bindModelChange = (input: {
   transportData: TransportData;
   adapterSource: AdapterSource;
   providerId: ProviderId;
-  setModelId: Dispatch<SetStateAction<string>>;
+  setModelId: Dispatch<SetStateAction<string | null>>;
 }) => bindFirst(applyModelChange, input);
 
 const applyConnectOpenChange = (

@@ -32,12 +32,18 @@ export const AdvancedPanel: FC<AdvancedPanelProps> = ({
             Toggle event streams and diagnostics without overwhelming the main UI.
           </p>
         </div>
-        <Button variant="outline" size="sm" onClick={onToggle}>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={onToggle}
+          aria-expanded={showAdvanced}
+          aria-controls="advanced-panel-controls"
+        >
           {showAdvanced ? "Hide" : "Show"} controls
         </Button>
       </div>
       {showAdvanced ? (
-        <div className="mt-4 flex flex-col gap-4">
+        <div id="advanced-panel-controls" className="mt-4 flex flex-col gap-4">
           <div className="flex flex-wrap gap-2">
             <ToggleButton active={showEvents} onClick={onToggleEvents} label="Live events" />
           </div>

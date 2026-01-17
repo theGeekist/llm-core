@@ -1,13 +1,13 @@
 import type { EventStream, Message, Model } from "#adapters/types";
-import type { Outcome } from "#workflow/types";
 import type { MaybePromise } from "#shared/maybe";
+import type { Outcome } from "#workflow/types";
 import { createStreamingModelForInteraction } from "#workflow/stream";
 import { createRecipeRunner } from "#recipes/runner";
 import { inputs } from "#recipes/inputs";
 
-export type InteractionRecipeId = "agent" | "rag" | "hitl" | "chat.simple" | "chat.rag";
+const INTERACTION_RECIPE_IDS = ["agent", "rag", "hitl", "chat.simple", "chat.rag"] as const;
 
-const INTERACTION_RECIPE_IDS = ["agent", "rag", "hitl", "chat.simple", "chat.rag"];
+export type InteractionRecipeId = (typeof INTERACTION_RECIPE_IDS)[number];
 
 export type InteractionRunRequest = {
   recipeId?: InteractionRecipeId;
@@ -108,7 +108,7 @@ const toRecipeId = (value?: string | null): InteractionRecipeId => {
 
 export const runInteractionRequest = (
   request: InteractionRunRequest,
-): MaybePromise<Outcome<unknown> | null> => {
+): MaybePromise<Outcome<unknown>> | null => {
   const recipeId = resolveRecipeId(request.recipeId);
   const text = readUserInputText(request.messages);
   if (!text) {

@@ -8,7 +8,7 @@ type RecipeNarrativeProps = {
   recipeId: RecipeId;
   adapterSource: AdapterSource;
   providerId: ProviderId;
-  modelId: string;
+  modelId: string | null;
 };
 
 export const RecipeNarrative: FC<RecipeNarrativeProps> = ({
@@ -20,6 +20,7 @@ export const RecipeNarrative: FC<RecipeNarrativeProps> = ({
   const recipe = readRecipeOption(recipeId);
   const source = ADAPTER_SOURCES.find((entry) => entry.id === adapterSource);
   const provider = readProviderOption(providerId);
+  const modelLabel = modelId ?? "No model selected";
 
   return (
     <section className="ks-panel px-5 py-5">
@@ -33,7 +34,7 @@ export const RecipeNarrative: FC<RecipeNarrativeProps> = ({
           <div className="mt-3 flex flex-wrap gap-2 text-[11px] uppercase tracking-[0.18em] text-muted-foreground">
             <span>{source?.label ?? adapterSource}</span>
             <span>{provider.label}</span>
-            <span>{modelId}</span>
+            <span>{modelLabel}</span>
           </div>
         </div>
         <div>
