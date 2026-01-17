@@ -73,6 +73,9 @@ export const parseClientMessage = (payload: string): ClientMessage | null => {
     return null;
   }
   const messages = readUiMessages(record.messages);
+  if (!messages) {
+    return null;
+  }
   const dataValue = record.data ?? null;
   const data = readClientData(dataValue) ?? undefined;
   return {
@@ -146,22 +149,18 @@ const readClientData = (value: JsonValue | null | undefined) => {
   return data;
 };
 
-const readUiMessages = (value: JsonValue | undefined): UIMessage[] => {
+const readUiMessages = (value: JsonValue | undefined): UIMessage[] | null => {
   if (!Array.isArray(value)) {
-    return [];
+    return null;
   }
   if (!value.every(isUiMessageShape)) {
-    return [];
+    return null;
   }
   return value as unknown as UIMessage[];
 };
 
 const isUiRole = (value: JsonValue | undefined): boolean =>
-  value === "user" ||
-  value === "assistant" ||
-  value === "system" ||
-  value === "tool" ||
-  value === "data";
+  value === "user" || value === "assistant" || value === "system";
 
 const isUiMessagePartShape = (value: JsonValue): boolean =>
   isRecord(value) && typeof value.type === "string";

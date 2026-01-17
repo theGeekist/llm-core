@@ -20,11 +20,11 @@ jobs:
       - name: Install
         run: bun install
 
-      - name: Build
-        run: bun run build
-
       - name: Lint
         run: bun run lint
+
+      - name: Build
+        run: bun run build
 
       - name: Install Kitchen Sink Deps
         run: |

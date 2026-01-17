@@ -59,6 +59,7 @@ const ToggleButton: FC<ToggleButtonProps> = ({ active, onClick, label }) => {
     <button
       type="button"
       onClick={onClick}
+      aria-pressed={active}
       className={cn(
         "rounded-sm border px-3 py-1 text-xs font-semibold uppercase tracking-wider text-muted-foreground transition-colors",
         active && "border-ring/60 bg-muted text-foreground",

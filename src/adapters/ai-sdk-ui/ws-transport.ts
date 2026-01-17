@@ -37,6 +37,7 @@ type StreamState = {
   options: AiSdkWebSocketChatTransportOptions;
   sendOptions: SendOptions<UIMessage>;
   abortListener: ((event: Event) => void) | null;
+  finalized: boolean;
 };
 
 export const createAiSdkWebSocketChatTransport = (
@@ -72,6 +73,7 @@ const createStreamState = (
   options,
   sendOptions,
   abortListener: null,
+  finalized: false,
 });
 
 const createStream = (state: StreamState): ReadableStream<UIMessageChunk> =>
@@ -133,33 +135,28 @@ const handleSocketMessage = (state: StreamState, event: MessageEvent) => {
   }
   if (payload.type === "ui.error") {
     state.controller?.enqueue({ type: "error", errorText: payload.error });
-    state.controller?.close();
-    closeSocket(state);
-    return false;
+    finalizeStreamClose(state);
+    return true;
   }
   if (payload.type === "ui.done") {
-    state.controller?.close();
-    closeSocket(state);
+    finalizeStreamClose(state);
     return true;
   }
   return null;
 };
 
 const handleSocketClose = (state: StreamState) => {
-  state.controller?.close();
-  removeAbortListener(state);
+  finalizeStreamClose(state);
   return true;
 };
 
 const handleSocketError = (state: StreamState) => {
-  state.controller?.error(new Error("socket_error"));
-  closeSocket(state);
+  finalizeStreamError(state, new Error("socket_error"));
   return false;
 };
 
 const handleAbort = (state: StreamState) => {
-  state.controller?.error(new Error("aborted"));
-  closeSocket(state);
+  finalizeStreamError(state, new Error("aborted"));
   return false;
 };
 
@@ -184,6 +181,32 @@ const removeAbortListener = (state: StreamState) => {
   return true;
 };
 
+const finalizeStream = (state: StreamState) => {
+  if (state.finalized) {
+    return false;
+  }
+  state.finalized = true;
+  return true;
+};
+
+const finalizeStreamClose = (state: StreamState) => {
+  if (!finalizeStream(state)) {
+    return false;
+  }
+  safeControllerClose(state.controller);
+  closeSocket(state);
+  return true;
+};
+
+const finalizeStreamError = (state: StreamState, error?: Error) => {
+  if (!finalizeStream(state)) {
+    return false;
+  }
+  safeControllerError(state.controller, error ?? new Error("stream_error"));
+  closeSocket(state);
+  return true;
+};
+
 const closeSocket = (state: StreamState) => {
   removeAbortListener(state);
   if (state.socket && state.socket.readyState !== WebSocket.CLOSED) {
@@ -191,6 +214,35 @@ const closeSocket = (state: StreamState) => {
   }
   state.socket = null;
   return true;
+};
+
+const safeControllerClose = (
+  controller?: ReadableStreamDefaultController<UIMessageChunk> | null,
+) => {
+  if (!controller) {
+    return null;
+  }
+  try {
+    controller.close();
+    return true;
+  } catch {
+    return false;
+  }
+};
+
+const safeControllerError = (
+  controller: ReadableStreamDefaultController<UIMessageChunk> | null | undefined,
+  error: Error,
+) => {
+  if (!controller) {
+    return null;
+  }
+  try {
+    controller.error(error);
+    return true;
+  } catch {
+    return false;
+  }
 };
 
 type ClientChatMessage = {
@@ -220,11 +272,17 @@ const parseServerMessage = (data: string): ServerMessage | null => {
     if (!parsed || typeof parsed !== "object") {
       return null;
     }
+    if (!isServerMessageType(parsed.type)) {
+      return null;
+    }
     return parsed;
   } catch {
     return null;
   }
 };
+
+const isServerMessageType = (value: unknown) =>
+  value === "ui.chunk" || value === "ui.done" || value === "ui.error";
 
 const emitTransportEvent = (options: AiSdkWebSocketChatTransportOptions, event: TransportEvent) => {
   if (!options.onEvent) {
@@ -241,8 +299,28 @@ const readTransportData = (state: StreamState) => {
   if (!state.sendOptions.body) {
     return null;
   }
-  const payload = state.sendOptions.body as WebSocketChatData;
-  return typeof payload === "object" ? payload : null;
+  return readTransportDataFromBody(state.sendOptions.body);
+};
+
+const readTransportDataFromBody = (value: unknown): WebSocketChatData | null => {
+  if (!value || typeof value !== "object") {
+    return null;
+  }
+  const record = value as Record<string, unknown>;
+  const data: WebSocketChatData = {};
+  if (typeof record.recipeId === "string") {
+    data.recipeId = record.recipeId;
+  }
+  if (typeof record.adapterSource === "string") {
+    data.adapterSource = record.adapterSource;
+  }
+  if (typeof record.providerId === "string") {
+    data.providerId = record.providerId;
+  }
+  if (typeof record.modelId === "string") {
+    data.modelId = record.modelId;
+  }
+  return data;
 };
 
 const readAuthTokens = (state: StreamState) => {

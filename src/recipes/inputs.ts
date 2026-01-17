@@ -8,13 +8,13 @@ import type {
 } from "./types";
 
 export type AgentInputOptions = {
-  text?: string;
+  text: string;
   context?: string;
   threadId?: string;
 };
 
 export type ChatSimpleInputOptions = {
-  text?: string;
+  text: string;
   threadId?: string;
 };
 
@@ -24,7 +24,7 @@ export type RagInputOptions = {
 };
 
 export type HitlInputOptions = {
-  text?: string;
+  text: string;
   policy?: string;
   decision?: string;
   notes?: string;

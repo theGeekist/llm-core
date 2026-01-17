@@ -110,15 +110,16 @@ describe("adapter model selection", () => {
     const prevAnthropic = process.env.ANTHROPIC_API_KEY;
     setEnv("OPENAI_API_KEY", "sk-openai");
     setEnv("ANTHROPIC_API_KEY", "sk-anthropic");
+    try {
+      const openAiModel = selectModel({ source: "ai-sdk", providerId: "openai" });
+      const anthropicModel = selectModel({ source: "ai-sdk", providerId: "anthropic" });
 
-    const openAiModel = selectModel({ source: "ai-sdk", providerId: "openai" });
-    const anthropicModel = selectModel({ source: "ai-sdk", providerId: "anthropic" });
-
-    expect(readGenerate(openAiModel)).toBe(true);
-    expect(readGenerate(anthropicModel)).toBe(true);
-
-    setEnv("OPENAI_API_KEY", prevOpenAi);
-    setEnv("ANTHROPIC_API_KEY", prevAnthropic);
+      expect(readGenerate(openAiModel)).toBe(true);
+      expect(readGenerate(anthropicModel)).toBe(true);
+    } finally {
+      setEnv("OPENAI_API_KEY", prevOpenAi);
+      setEnv("ANTHROPIC_API_KEY", prevAnthropic);
+    }
   });
 
   it("handles missing process environment", () => {

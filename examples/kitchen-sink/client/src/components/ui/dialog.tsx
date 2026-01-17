@@ -10,7 +10,7 @@ type DialogProps = React.ComponentProps<typeof DialogPrimitive.Root> & {
 };
 
 function Dialog({ ...props }: DialogProps) {
-  return <DialogPrimitive.Root data-slot="dialog" {...props} />;
+  return <DialogPrimitive.Root {...props} />;
 }
 
 type DialogTriggerProps = React.ComponentProps<typeof DialogPrimitive.Trigger> & {

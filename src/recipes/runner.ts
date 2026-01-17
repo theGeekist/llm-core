@@ -2,6 +2,7 @@ import type { AdapterBundle, Model } from "#adapters/types";
 import type { MaybePromise } from "#shared/maybe";
 import type { Outcome, Runtime } from "#workflow/types";
 import type { AnyRecipeHandle, RecipeRunOverrides } from "./handle";
+import type { RunInputOf, RecipeName } from "#workflow/types";
 import { bindFirst } from "#shared/fp";
 import { recipes } from "./catalog";
 
@@ -67,22 +68,33 @@ const mergeRecipeRunOverrides = (
   return overrides;
 };
 
-const toRecipeRunOverrides = (options: RecipeRunnerOptions): RecipeRunOverrides | null => {
-  if (!options.adapters && !options.providers && !options.runtime) {
+const buildRecipeRunOverrides = (input: {
+  adapters?: AdapterBundle | null;
+  providers?: Record<string, string> | null;
+  runtime?: Runtime | null;
+}): RecipeRunOverrides | null => {
+  if (!input.adapters && !input.providers && !input.runtime) {
     return null;
   }
   const overrides: RecipeRunOverrides = {};
-  if (options.adapters) {
-    overrides.adapters = options.adapters;
+  if (input.adapters) {
+    overrides.adapters = input.adapters;
   }
-  if (options.providers) {
-    overrides.providers = options.providers;
+  if (input.providers) {
+    overrides.providers = input.providers;
   }
-  if (options.runtime) {
-    overrides.runtime = options.runtime;
+  if (input.runtime) {
+    overrides.runtime = input.runtime;
   }
   return overrides;
 };
+
+const toRecipeRunOverrides = (options: RecipeRunnerOptions): RecipeRunOverrides | null =>
+  buildRecipeRunOverrides({
+    adapters: options.adapters ?? null,
+    providers: options.providers ?? null,
+    runtime: options.runtime ?? null,
+  });
 
 const isHandleOptions = (options: RecipeRunnerOptions): options is RecipeRunnerHandleOptions =>
   "handle" in options;
@@ -111,17 +123,10 @@ const readRunnerOverrides = (options: RecipeRunnerOptions): RecipeRunOverrides |
   if (isHandleOptions(options)) {
     return toRecipeRunOverrides(options);
   }
-  if (!options.providers && !options.runtime) {
-    return null;
-  }
-  const overrides: RecipeRunOverrides = {};
-  if (options.providers) {
-    overrides.providers = options.providers;
-  }
-  if (options.runtime) {
-    overrides.runtime = options.runtime;
-  }
-  return overrides;
+  return buildRecipeRunOverrides({
+    providers: options.providers ?? null,
+    runtime: options.runtime ?? null,
+  });
 };
 
 const runRecipeWithOverrides = (
@@ -130,10 +135,11 @@ const runRecipeWithOverrides = (
   overrides?: RecipeRunOverrides,
 ) => {
   const merged = mergeRecipeRunOverrides(input.overrides, overrides);
+  const payload = runInput as RunInputOf<RecipeName>;
   if (!merged) {
-    return input.handle.run(runInput as never);
+    return input.handle.run(payload);
   }
-  return input.handle.run(runInput as never, merged);
+  return input.handle.run(payload, merged);
 };
 
 const createRunnerState = (options: RecipeRunnerOptions) => ({

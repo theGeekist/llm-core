@@ -7,6 +7,8 @@ import { inputs } from "#recipes/inputs";
 
 export type InteractionRecipeId = "agent" | "rag" | "hitl" | "chat.simple" | "chat.rag";
 
+const INTERACTION_RECIPE_IDS = ["agent", "rag", "hitl", "chat.simple", "chat.rag"];
+
 export type InteractionRunRequest = {
   recipeId?: InteractionRecipeId;
   model: Model;
@@ -95,11 +97,7 @@ const buildRunner = (input: { recipeId: InteractionRecipeId; model: Model }) =>
   createRecipeRunner({ recipeId: input.recipeId, model: input.model });
 
 const isKnownRecipeId = (value: string): value is InteractionRecipeId =>
-  value === "agent" ||
-  value === "rag" ||
-  value === "hitl" ||
-  value === "chat.simple" ||
-  value === "chat.rag";
+  (INTERACTION_RECIPE_IDS as readonly string[]).includes(value);
 
 const toRecipeId = (value?: string | null): InteractionRecipeId => {
   if (value && isKnownRecipeId(value)) {

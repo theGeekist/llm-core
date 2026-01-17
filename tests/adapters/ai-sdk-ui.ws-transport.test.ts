@@ -79,7 +79,7 @@ let uuidCounter = 0;
 const installFakeCrypto = () => {
   uuidCounter = 0;
   (globalThis as { crypto?: Crypto }).crypto = {
-    randomUUID: () => `request-${+uuidCounter}`,
+    randomUUID: () => `request-${++uuidCounter}`,
   } as unknown as Crypto;
 };
 
@@ -112,6 +112,21 @@ const readStreamChunks = async (stream: ReadableStream<UIMessageChunk>) => {
     reader.releaseLock();
   }
   return chunks;
+};
+
+const readStreamError = async (stream: ReadableStream<UIMessageChunk>) => {
+  const reader = stream.getReader();
+  try {
+    await reader.read();
+    return null;
+  } catch (error) {
+    if (error instanceof Error) {
+      return error.message;
+    }
+    return "unknown_error";
+  } finally {
+    reader.releaseLock();
+  }
 };
 
 const sendChunk = (socket: FakeWebSocket, requestId: string) => {
@@ -280,5 +295,67 @@ describe("Adapter AI SDK WebSocket transport", () => {
     expect(socket?.closed).toBe(false);
     abortController.abort();
     expect(socket?.closed).toBe(true);
+  });
+
+  it("returns null when reconnecting", async () => {
+    const transport = createAiSdkWebSocketChatTransport({ url: "ws://example" });
+    const stream = await transport.reconnectToStream({
+      chatId: "chat-reconnect",
+    });
+
+    expect(stream).toBeNull();
+  });
+
+  it("closes socket when stream is canceled", async () => {
+    const transport = createAiSdkWebSocketChatTransport({ url: "ws://example" });
+    const stream = await transport.sendMessages({
+      trigger: "submit-message",
+      chatId: "chat-6",
+      messageId: "m6",
+      messages: [createUserMessage("m6", "hi")],
+      abortSignal: undefined,
+    });
+
+    const socket = FakeWebSocket.latest();
+    expect(socket).not.toBeNull();
+    await stream.cancel();
+    expect(socket?.closed).toBe(true);
+  });
+
+  it("closes and errors on socket error", async () => {
+    const transport = createAiSdkWebSocketChatTransport({ url: "ws://example" });
+    const stream = await transport.sendMessages({
+      trigger: "submit-message",
+      chatId: "chat-7",
+      messageId: "m7",
+      messages: [createUserMessage("m7", "hi")],
+      abortSignal: undefined,
+    });
+
+    const socket = FakeWebSocket.latest();
+    expect(socket).not.toBeNull();
+    socket?.trigger("error");
+
+    const errorMessage = await readStreamError(stream);
+    expect(errorMessage).toBe("socket_error");
+    expect(socket?.closed).toBe(true);
+  });
+
+  it("closes stream on socket close", async () => {
+    const transport = createAiSdkWebSocketChatTransport({ url: "ws://example" });
+    const stream = await transport.sendMessages({
+      trigger: "submit-message",
+      chatId: "chat-8",
+      messageId: "m8",
+      messages: [createUserMessage("m8", "hi")],
+      abortSignal: undefined,
+    });
+
+    const socket = FakeWebSocket.latest();
+    expect(socket).not.toBeNull();
+    socket?.trigger("close");
+
+    const chunks = await readStreamChunks(stream);
+    expect(chunks.length).toBe(0);
   });
 });

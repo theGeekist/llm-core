@@ -1,5 +1,6 @@
 import type { ProviderId } from "./demo-options";
 
+// Demo only: sessionStorage is convenient but not secure against XSS.
 const TOKEN_PREFIX = "llm-core-token";
 
 const buildStorageKey = (providerId: ProviderId) => `${TOKEN_PREFIX}:${providerId}`;
