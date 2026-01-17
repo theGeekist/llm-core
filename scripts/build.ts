@@ -1,5 +1,6 @@
 import { existsSync, readdirSync } from "node:fs";
 import { resolve } from "node:path";
+import type { BunPlugin } from "bun";
 
 type BuildFormat = "esm" | "cjs";
 
@@ -13,26 +14,122 @@ type BuildOptions = {
 };
 
 const EXTERNALS = [
-  "ai",
-  "@ai-sdk/*",
-  "@ai-sdk-tools/*",
-  "@assistant-ui/*",
   "assistant-stream",
-  "@langchain/*",
-  "langchain",
-  "@llamaindex/*",
-  "llamaindex",
-  "openai",
-  "ollama",
-  "ollama-ai-provider-v2",
-  "@openai/chatkit",
-  "@nlux/core",
+  "assistant-stream/*",
+  "@ai-sdk-tools/cache",
+  "@ai-sdk-tools/cache/*",
+  "@ai-sdk-tools/memory",
+  "@ai-sdk-tools/memory/*",
+  "@ai-sdk-tools/store",
+  "@ai-sdk-tools/store/*",
+  "@ai-sdk/anthropic",
+  "@ai-sdk/anthropic/*",
+  "@ai-sdk/langchain",
+  "@ai-sdk/langchain/*",
+  "@ai-sdk/openai",
+  "@ai-sdk/openai/*",
+  "@ai-sdk/provider",
+  "@ai-sdk/provider/*",
+  "@ai-sdk/provider-utils",
+  "@ai-sdk/provider-utils/*",
+  "@ai-sdk/react",
+  "@ai-sdk/react/*",
+  "@assistant-ui/react",
+  "@assistant-ui/react/*",
+  "@assistant-ui/react-ai-sdk",
+  "@assistant-ui/react-ai-sdk/*",
+  "@langchain/community",
+  "@langchain/community/*",
+  "@langchain/core",
+  "@langchain/core/*",
+  "@langchain/langgraph",
+  "@langchain/langgraph/*",
+  "@langchain/langgraph-checkpoint",
+  "@langchain/langgraph-checkpoint/*",
+  "@langchain/ollama",
+  "@langchain/ollama/*",
+  "@langchain/openai",
+  "@langchain/openai/*",
+  "@langchain/textsplitters",
+  "@langchain/textsplitters/*",
+  "@llamaindex/openai",
+  "@llamaindex/openai/*",
+  "@llamaindex/workflow",
+  "@llamaindex/workflow/*",
+  "@llamaindex/workflow-core",
+  "@llamaindex/workflow-core/*",
   "@mastra/core",
+  "@mastra/core/*",
+  "@nlux/core",
+  "@nlux/core/*",
   "@node-llm/core",
+  "@node-llm/core/*",
+  "@openai/chatkit",
+  "@openai/chatkit/*",
+  "@radix-ui/react-slot",
+  "@radix-ui/react-slot/*",
+  "@radix-ui/react-tooltip",
+  "@radix-ui/react-tooltip/*",
+  "@tailwindcss/postcss",
+  "@tailwindcss/postcss/*",
+  "@types/bun",
+  "@types/bun/*",
+  "@typescript-eslint/eslint-plugin",
+  "@typescript-eslint/eslint-plugin/*",
+  "@typescript-eslint/parser",
+  "@typescript-eslint/parser/*",
   "@unified-llm/core",
+  "@unified-llm/core/*",
+  "ai",
+  "ai/*",
+  "autoprefixer",
+  "autoprefixer/*",
+  "class-variance-authority",
+  "class-variance-authority/*",
+  "clsx",
+  "clsx/*",
+  "eslint",
+  "eslint/*",
+  "eslint-config-prettier",
+  "eslint-config-prettier/*",
+  "eslint-plugin-sonarjs",
+  "eslint-plugin-sonarjs/*",
+  "langchain",
+  "langchain/*",
+  "llamaindex",
+  "llamaindex/*",
+  "lucide-react",
+  "lucide-react/*",
+  "markdown-it-mermaid",
+  "markdown-it-mermaid/*",
+  "mermaid",
+  "mermaid/*",
+  "ollama",
+  "ollama/*",
+  "ollama-ai-provider-v2",
+  "ollama-ai-provider-v2/*",
+  "openai",
+  "openai/*",
+  "postcss",
+  "postcss/*",
+  "prettier",
+  "prettier/*",
+  "remark-gfm",
+  "remark-gfm/*",
+  "tailwind-merge",
+  "tailwind-merge/*",
+  "tailwindcss",
+  "tailwindcss/*",
+  "vitepress",
+  "vitepress/*",
+  "vitepress-plugin-mermaid",
+  "vitepress-plugin-mermaid/*",
+  "vitepress-plugin-tabs",
+  "vitepress-plugin-tabs/*",
   "zod",
+  "zod/*",
   "zod-to-json-schema",
-  "@wpkernel/pipeline",
+  "zod-to-json-schema/*",
 ];
 
 const readAdapterEntryPoints = (rootDir: string) => {
@@ -67,6 +164,28 @@ const logBuildMessages = (logs: Array<{ level?: string; message?: string }>) => 
   }
 };
 
+const forceExternalPlugin: BunPlugin = {
+  name: "force-external",
+  setup(build) {
+    build.onResolve({ filter: /.*/ }, (args) => {
+      // Allow relative imports
+      if (args.path.startsWith(".")) {
+        return null;
+      }
+      // Allow absolute imports (usually internal to Bun or system)
+      if (args.path.startsWith("/")) {
+        return null;
+      }
+      // Allow @wpkernel/pipeline
+      if (args.path === "@wpkernel/pipeline" || args.path.startsWith("@wpkernel/pipeline/")) {
+        return null;
+      }
+      // Externalize everything else
+      return { path: args.path, external: true };
+    });
+  },
+};
+
 const runBuildEntry = async (entry: string, options: BuildOptions) => {
   const result = await Bun.build({
     entrypoints: [entry],
@@ -78,6 +197,7 @@ const runBuildEntry = async (entry: string, options: BuildOptions) => {
     sourcemap: "external",
     external: EXTERNALS,
     naming: options.naming,
+    plugins: [forceExternalPlugin],
   });
 
   logBuildMessages(result.logs);
