@@ -33,6 +33,26 @@ It offers strong streaming support, a strict type system, and a lightweight depe
 
 Reference from the upstream project: [`LanguageModel`](https://sdk.vercel.ai/docs/reference/ai-sdk-core/language-model-v1)
 
+::: code-group
+
+```bash [npm]
+npm install ai @ai-sdk/openai
+```
+
+```bash [pnpm]
+pnpm add ai @ai-sdk/openai
+```
+
+```bash [yarn]
+yarn add ai @ai-sdk/openai
+```
+
+```bash [bun]
+bun add ai @ai-sdk/openai
+```
+
+:::
+
 ::: tabs
 == TypeScript
 
@@ -54,6 +74,26 @@ This approach brings impressive reach and plenty of building blocks across tools
 
 Reference from the upstream project: [`BaseChatModel`](https://api.js.langchain.com/classes/core_language_models_chat_models.BaseChatModel.html)
 
+::: code-group
+
+```bash [npm]
+npm install @langchain/core @langchain/openai
+```
+
+```bash [pnpm]
+pnpm add @langchain/core @langchain/openai
+```
+
+```bash [yarn]
+yarn add @langchain/core @langchain/openai
+```
+
+```bash [bun]
+bun add @langchain/core @langchain/openai
+```
+
+:::
+
 ::: tabs
 == TypeScript
 
@@ -74,6 +114,26 @@ The LlamaIndex model adapter fits projects that use LlamaIndex as the primary re
 This adapter keeps your LlamaIndex chat configuration close to the index definition, while still producing a familiar `ModelResult` and `ModelStreamEvent` lifecycle. For simple text generation tasks a direct AI SDK integration often feels leaner. For pipelines that lean heavily on query engines, response synthesis, and index-aware agents, the LlamaIndex adapter keeps everything aligned with that ecosystem.
 
 Reference from the upstream project: [`LLM`](https://ts.llamaindex.ai/api/interfaces/LLM)
+
+::: code-group
+
+```bash [npm]
+npm install llamaindex @llamaindex/openai
+```
+
+```bash [pnpm]
+pnpm add llamaindex @llamaindex/openai
+```
+
+```bash [yarn]
+yarn add llamaindex @llamaindex/openai
+```
+
+```bash [bun]
+bun add llamaindex @llamaindex/openai
+```
+
+:::
 
 ---
 

@@ -44,6 +44,26 @@ collect a decision, and resume with that decision payload.
 
 By default, pause tokens are process-local. To resume across restarts, provide a cache or checkpoint adapter.
 
+::: code-group
+
+```bash [npm]
+npm install @langchain/langgraph-checkpoint
+```
+
+```bash [pnpm]
+pnpm add @langchain/langgraph-checkpoint
+```
+
+```bash [yarn]
+yarn add @langchain/langgraph-checkpoint
+```
+
+```bash [bun]
+bun add @langchain/langgraph-checkpoint
+```
+
+:::
+
 <<< @/snippets/recipes/hitl/durable.js#docs
 
 See: [Adapters -> Cache](/reference/adapters-api#cache-adapters-resume-persistence) and

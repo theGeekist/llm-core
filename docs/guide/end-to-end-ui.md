@@ -23,6 +23,30 @@ flowchart LR
   E --> UI[UI adapter]
 ```
 
+## Prerequisites
+
+Install the adapter dependencies:
+
+::: code-group
+
+```bash [npm]
+npm install ai @assistant-ui/react
+```
+
+```bash [pnpm]
+pnpm add ai @assistant-ui/react
+```
+
+```bash [yarn]
+yarn add ai @assistant-ui/react
+```
+
+```bash [bun]
+bun add ai @assistant-ui/react
+```
+
+:::
+
 ---
 
 ## Step 1: Set up storage and adapters

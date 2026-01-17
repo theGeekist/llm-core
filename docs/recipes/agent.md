@@ -27,6 +27,26 @@ flowchart LR
 
 This is the minimum setup: a model adapter, a tool adapter, and a call to `run()`. The recipe is configured once and then reused across many requests, so you keep input clean and separate from wiring. If your goal is only the agent loop, this is enough.
 
+::: code-group
+
+```bash [npm]
+npm install ai zod @ai-sdk/openai
+```
+
+```bash [pnpm]
+pnpm add ai zod @ai-sdk/openai
+```
+
+```bash [yarn]
+yarn add ai zod @ai-sdk/openai
+```
+
+```bash [bun]
+bun add ai zod @ai-sdk/openai
+```
+
+:::
+
 ::: tabs
 == JavaScript
 

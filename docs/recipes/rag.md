@@ -29,7 +29,27 @@ trails, and any scenario where a user wants both an answer and a clear sense of 
 
 ## 1) Quick start (retriever and model)
 
-Start with a LangChain retriever and an AI SDK model in the same run.
+Start with a LlamaIndex retriever and an AI SDK model in the same run.
+
+::: code-group
+
+```bash [npm]
+npm install ai @ai-sdk/openai llamaindex
+```
+
+```bash [pnpm]
+pnpm add ai @ai-sdk/openai llamaindex
+```
+
+```bash [yarn]
+yarn add ai @ai-sdk/openai llamaindex
+```
+
+```bash [bun]
+bun add ai @ai-sdk/openai llamaindex
+```
+
+:::
 
 ::: tabs
 == JavaScript

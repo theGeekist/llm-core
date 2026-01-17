@@ -29,6 +29,26 @@ If RAG is the read path, Ingest is the write path that keeps it supplied.
 The quickest way to use Ingest is to wire a loader, a splitter, an embedder, and a vector store,
 then hand the recipe a list of sources.
 
+::: code-group
+
+```bash [npm]
+npm install ai @ai-sdk/openai @langchain/textsplitters
+```
+
+```bash [pnpm]
+pnpm add ai @ai-sdk/openai @langchain/textsplitters
+```
+
+```bash [yarn]
+yarn add ai @ai-sdk/openai @langchain/textsplitters
+```
+
+```bash [bun]
+bun add ai @ai-sdk/openai @langchain/textsplitters
+```
+
+:::
+
 ::: tabs
 == JavaScript
 

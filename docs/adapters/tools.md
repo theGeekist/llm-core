@@ -41,6 +41,26 @@ The adapter reads the Zod schema from your AI SDK tool and exposes it through th
 
 - **Upstream documentation**: [`tool`](https://sdk.vercel.ai/docs/reference/ai-sdk-core/tool)
 
+::: code-group
+
+```bash [npm]
+npm install ai zod
+```
+
+```bash [pnpm]
+pnpm add ai zod
+```
+
+```bash [yarn]
+yarn add ai zod
+```
+
+```bash [bun]
+bun add ai zod
+```
+
+:::
+
 ::: tabs
 == TypeScript
 
@@ -61,6 +81,26 @@ LangChain ships with a wide catalogue of tools: Google Search, Wikipedia, Zapier
 The adapter wraps any LangChain `Tool` or `StructuredTool` and presents it as a `llm-core` tool. The router drives the call, handles streaming where relevant, and reports usage through a single tracing story across ecosystems.
 
 - **Upstream documentation**: [`Tool`](https://api.js.langchain.com/classes/core_tools.Tool.html)
+
+::: code-group
+
+```bash [npm]
+npm install @langchain/core @langchain/community
+```
+
+```bash [pnpm]
+pnpm add @langchain/core @langchain/community
+```
+
+```bash [yarn]
+yarn add @langchain/core @langchain/community
+```
+
+```bash [bun]
+bun add @langchain/core @langchain/community
+```
+
+:::
 
 ::: tabs
 == TypeScript

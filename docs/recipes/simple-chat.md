@@ -17,6 +17,26 @@ flowchart LR
 
 ## 1) Quick start (system and model defaults)
 
+::: code-group
+
+```bash [npm]
+npm install ai @ai-sdk/openai
+```
+
+```bash [pnpm]
+pnpm add ai @ai-sdk/openai
+```
+
+```bash [yarn]
+yarn add ai @ai-sdk/openai
+```
+
+```bash [bun]
+bun add ai @ai-sdk/openai
+```
+
+:::
+
 ::: tabs
 == JavaScript
 
