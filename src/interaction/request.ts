@@ -36,6 +36,26 @@ const readLastUserMessage = (messages: Message[]) => {
   return null;
 };
 
+const readMessagePartText = (part: unknown) => {
+  if (typeof part === "string") {
+    return part;
+  }
+  if (part && typeof part === "object" && "text" in part && typeof part.text === "string") {
+    return part.text;
+  }
+  return null;
+};
+
+const readMessageArrayText = (parts: unknown[]) => {
+  for (const part of parts) {
+    const text = readMessagePartText(part);
+    if (text) {
+      return text;
+    }
+  }
+  return null;
+};
+
 const readMessageText = (message: Message | null) => {
   if (!message) {
     return null;
@@ -43,7 +63,15 @@ const readMessageText = (message: Message | null) => {
   if (typeof message.content === "string") {
     return message.content;
   }
-  if ("text" in message.content && typeof message.content.text === "string") {
+  if (Array.isArray(message.content)) {
+    return readMessageArrayText(message.content);
+  }
+  if (
+    message.content &&
+    typeof message.content === "object" &&
+    "text" in message.content &&
+    typeof message.content.text === "string"
+  ) {
     return message.content.text;
   }
   return null;

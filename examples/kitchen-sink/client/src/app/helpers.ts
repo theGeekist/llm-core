@@ -326,5 +326,8 @@ export const formatTransportEvent = (event: TransportEvent) => {
   if (label === "chat.send") {
     return `chat.send (${event.message.messages.length} messages)`;
   }
-  return `auth.set (${event.message.providerId})`;
+  if (label === "auth.set") {
+    return `auth.set (${event.message.providerId})`;
+  }
+  return `unknown: ${label}`;
 };

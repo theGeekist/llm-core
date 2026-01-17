@@ -40,6 +40,34 @@ describe("interaction request helper", () => {
     expect(result?.status).toBe("ok");
   });
 
+  it("reads object message content", async () => {
+    const model = createMockModel("hello");
+    const result = await runInteractionRequest({
+      recipeId: "chat.simple",
+      model,
+      messages: [{ role: "user", content: { text: "hello", parts: [] } }],
+      eventStream: createEventStream(),
+      interactionId: "interaction-3",
+    });
+
+    expect(result?.status).toBe("ok");
+  });
+
+  it("reads array message content", async () => {
+    const model = createMockModel("hello");
+    const result = await runInteractionRequest({
+      recipeId: "chat.simple",
+      model,
+      messages: [
+        { role: "user", content: { text: "hello", parts: [{ type: "text", text: "hello" }] } },
+      ],
+      eventStream: createEventStream(),
+      interactionId: "interaction-4",
+    });
+
+    expect(result?.status).toBe("ok");
+  });
+
   it("normalizes unknown recipe ids", () => {
     expect(resolveInteractionRecipeId("unknown")).toBe("chat.simple");
     expect(hasRecipeId("chat.simple")).toBe(true);

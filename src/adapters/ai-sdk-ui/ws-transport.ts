@@ -317,19 +317,24 @@ const readTransportDataFromBody = (value: unknown): WebSocketChatData | null => 
   }
   const record = value as Record<string, unknown>;
   const data: WebSocketChatData = {};
+  let hasData = false;
   if (typeof record.recipeId === "string") {
     data.recipeId = record.recipeId;
+    hasData = true;
   }
   if (typeof record.adapterSource === "string") {
     data.adapterSource = record.adapterSource;
+    hasData = true;
   }
   if (typeof record.providerId === "string") {
     data.providerId = record.providerId;
+    hasData = true;
   }
   if (typeof record.modelId === "string") {
     data.modelId = record.modelId;
+    hasData = true;
   }
-  return data;
+  return hasData ? data : null;
 };
 
 const readAuthTokens = (state: StreamState) => {
