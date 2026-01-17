@@ -55,6 +55,7 @@ export const toAgentInput = (input: AgentInputOptions): AgentInput => ({
   threadId: input.threadId,
 });
 
+// If one of text/query is provided, both fields fall back to that value.
 const readRagInputText = (input: RagInputOptions) => input.text ?? input.query;
 
 const readRagQuery = (input: RagInputOptions) => input.query ?? input.text;

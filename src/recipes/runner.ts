@@ -91,6 +91,9 @@ const resolveRecipeFactory = (recipeId: RecipeId) => recipes[recipeId];
 
 const readHandleFromRecipe = (options: RecipeRunnerRecipeOptions): AnyRecipeHandle => {
   const factory = resolveRecipeFactory(options.recipeId);
+  if (!factory) {
+    throw new Error(`Unknown recipeId: ${options.recipeId}`);
+  }
   const baseAdapters: AdapterBundle = { model: options.model };
   const merged = mergeRecords(baseAdapters as MergeableRecord, options.adapters as MergeableRecord);
   const adapters = (merged ?? baseAdapters) as AdapterBundle;

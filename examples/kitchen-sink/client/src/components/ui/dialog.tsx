@@ -82,7 +82,7 @@ function DialogContent({
   ...props
 }: DialogContentProps) {
   return (
-    <DialogPortal data-slot="dialog-portal">
+    <DialogPortal>
       <DialogOverlay />
       <DialogPrimitive.Content
         data-slot="dialog-content"

@@ -94,8 +94,6 @@ const buildStreamingModel = (input: {
 const buildRunner = (input: { recipeId: InteractionRecipeId; model: Model }) =>
   createRecipeRunner({ recipeId: input.recipeId, model: input.model });
 
-const resolveRecipeIdOrDefault = (value?: InteractionRecipeId) => resolveRecipeId(value);
-
 const isKnownRecipeId = (value: string): value is InteractionRecipeId =>
   value === "agent" ||
   value === "rag" ||
@@ -113,7 +111,7 @@ const toRecipeId = (value?: string | null): InteractionRecipeId => {
 export const runInteractionRequest = (
   request: InteractionRunRequest,
 ): MaybePromise<Outcome<unknown> | null> => {
-  const recipeId = resolveRecipeIdOrDefault(request.recipeId);
+  const recipeId = resolveRecipeId(request.recipeId);
   const text = readUserInputText(request.messages);
   if (!text) {
     return null;

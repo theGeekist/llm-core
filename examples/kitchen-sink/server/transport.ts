@@ -11,8 +11,8 @@ export const createWebSocketUiWriter = (
   requestId: string,
 ): UIMessageStreamWriter => ({
   write: bindFirst(writeUiChunk, { socket, requestId }),
-  merge: mergeUiStream,
-  onError: handleWriterError,
+  merge: bindFirst(mergeUiStream, { socket, requestId }),
+  onError: bindFirst(handleWriterError, { socket, requestId }),
 });
 
 export const sendUiDone = (input: {
@@ -33,9 +33,32 @@ const writeUiChunk = (
   chunk: UIMessageChunk,
 ) => sendMessage(input.socket, toServerChunkMessage(input.requestId, chunk));
 
-const mergeUiStream = (_stream: ReadableStream<UIMessageChunk>) => true;
+const mergeUiStream = async (
+  input: { socket: ServerWebSocket<SocketData>; requestId: string },
+  stream: ReadableStream<UIMessageChunk>,
+) => {
+  const reader = stream.getReader();
+  try {
+    // eslint-disable-next-line no-constant-condition
+    while (true) {
+      const { value, done } = await reader.read();
+      if (done) break;
+      if (value && !sendMessage(input.socket, toServerChunkMessage(input.requestId, value))) {
+        return false;
+      }
+    }
+    return true;
+  } catch {
+    return false;
+  } finally {
+    reader.releaseLock();
+  }
+};
 
-const handleWriterError = (_error: unknown) => false;
+const handleWriterError = (
+  input: { socket: ServerWebSocket<SocketData>; requestId: string },
+  error: unknown,
+) => sendUiError(input.socket, input.requestId, String(error));
 
 const sendMessage = (socket: ServerWebSocket<SocketData>, message: ServerMessage) => {
   try {

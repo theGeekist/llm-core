@@ -1,5 +1,6 @@
 import { describe, expect, it } from "bun:test";
-import { selectModel } from "../../src/adapters/model-selection";
+import { readTokenFromEnv, selectModel } from "../../src/adapters/model-selection";
+import { bindFirst } from "../../src/shared/fp";
 
 const createCapture = () => ({
   tokens: [] as Array<{ providerId: string; tokens?: Record<string, string> | null }>,
@@ -14,10 +15,6 @@ const setEnv = (key: string, value: string | undefined) => {
     return;
   }
   process.env[key] = value;
-};
-
-const setProcess = (value: typeof process | undefined) => {
-  (globalThis as { process?: typeof process }).process = value;
 };
 
 describe("adapter model selection", () => {
@@ -125,11 +122,12 @@ describe("adapter model selection", () => {
   });
 
   it("handles missing process environment", () => {
-    const prevProcess = process;
-
-    setProcess(undefined);
-    const model = selectModel({ source: "ai-sdk", providerId: "openai" });
-    setProcess(prevProcess);
+    const model = selectModel(
+      { source: "ai-sdk", providerId: "openai" },
+      {
+        readToken: bindFirst(readTokenFromEnv, null),
+      },
+    );
 
     expect(readGenerate(model)).toBe(true);
   });

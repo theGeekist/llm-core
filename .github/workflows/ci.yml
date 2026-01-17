@@ -26,6 +26,11 @@ jobs:
       - name: Lint
         run: bun run lint
 
+      - name: Install Kitchen Sink Deps
+        run: |
+          bun install --cwd examples/kitchen-sink/client
+          bun install --cwd examples/kitchen-sink/server
+
       - name: Typecheck
         run: bun run typecheck
 

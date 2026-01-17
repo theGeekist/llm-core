@@ -144,6 +144,7 @@ const createMeta = (options: StreamingModelOptions, sourceId: string): Interacti
 
 const toEmptyStream = (): ModelStreamEvent[] => [];
 
+// If streaming errors before any events, fall back to generate to honor responseSchema.
 const shouldFallbackToGenerate = (call: ModelCall, state: StreamState) =>
   !!call.responseSchema && !state.hasEvents;
 

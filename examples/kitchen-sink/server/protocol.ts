@@ -110,7 +110,7 @@ export const toServerErrorMessage = (requestId: string, error: string): ServerEr
   error,
 });
 
-const safeParseJson = (payload: string): JsonValue | null => {
+export const safeParseJson = (payload: string): JsonValue | null => {
   try {
     return JSON.parse(payload) as JsonValue;
   } catch {
@@ -118,7 +118,7 @@ const safeParseJson = (payload: string): JsonValue | null => {
   }
 };
 
-const isRecord = (value: JsonValue | null | undefined): value is Record<string, JsonValue> =>
+export const isRecord = (value: JsonValue | null | undefined): value is Record<string, JsonValue> =>
   !!value && typeof value === "object" && !Array.isArray(value);
 
 const readClientData = (value: JsonValue | null | undefined) => {
@@ -156,8 +156,19 @@ const readUiMessages = (value: JsonValue | undefined): UIMessage[] => {
   return value as unknown as UIMessage[];
 };
 
+const isUiRole = (value: JsonValue | undefined): boolean =>
+  value === "user" ||
+  value === "assistant" ||
+  value === "system" ||
+  value === "tool" ||
+  value === "data";
+
+const isUiMessagePartShape = (value: JsonValue): boolean =>
+  isRecord(value) && typeof value.type === "string";
+
 const isUiMessageShape = (value: JsonValue): boolean =>
   isRecord(value) &&
   typeof value.id === "string" &&
-  typeof value.role === "string" &&
-  Array.isArray(value.parts);
+  isUiRole(value.role) &&
+  Array.isArray(value.parts) &&
+  value.parts.every(isUiMessagePartShape);

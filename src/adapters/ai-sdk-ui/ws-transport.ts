@@ -36,6 +36,7 @@ type StreamState = {
   requestId: string;
   options: AiSdkWebSocketChatTransportOptions;
   sendOptions: SendOptions<UIMessage>;
+  abortListener: ((event: Event) => void) | null;
 };
 
 export const createAiSdkWebSocketChatTransport = (
@@ -70,6 +71,7 @@ const createStreamState = (
   requestId,
   options,
   sendOptions,
+  abortListener: null,
 });
 
 const createStream = (state: StreamState): ReadableStream<UIMessageChunk> =>
@@ -91,9 +93,7 @@ const startStream = (
   socket.addEventListener("close", bindFirst(handleSocketClose, state));
   socket.addEventListener("error", bindFirst(handleSocketError, state));
 
-  if (state.sendOptions.abortSignal) {
-    state.sendOptions.abortSignal.addEventListener("abort", bindFirst(handleAbort, state));
-  }
+  addAbortListener(state);
   return true;
 };
 
@@ -147,11 +147,13 @@ const handleSocketMessage = (state: StreamState, event: MessageEvent) => {
 
 const handleSocketClose = (state: StreamState) => {
   state.controller?.close();
+  removeAbortListener(state);
   return true;
 };
 
 const handleSocketError = (state: StreamState) => {
   state.controller?.error(new Error("socket_error"));
+  closeSocket(state);
   return false;
 };
 
@@ -161,7 +163,29 @@ const handleAbort = (state: StreamState) => {
   return false;
 };
 
+const addAbortListener = (state: StreamState) => {
+  const signal = state.sendOptions.abortSignal;
+  if (!signal) {
+    return null;
+  }
+  const listener = bindFirst(handleAbort, state);
+  state.abortListener = listener;
+  signal.addEventListener("abort", listener);
+  return true;
+};
+
+const removeAbortListener = (state: StreamState) => {
+  const signal = state.sendOptions.abortSignal;
+  if (!signal || !state.abortListener) {
+    return null;
+  }
+  signal.removeEventListener("abort", state.abortListener);
+  state.abortListener = null;
+  return true;
+};
+
 const closeSocket = (state: StreamState) => {
+  removeAbortListener(state);
   if (state.socket && state.socket.readyState !== WebSocket.CLOSED) {
     state.socket.close();
   }

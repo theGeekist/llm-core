@@ -235,6 +235,8 @@ export const readDefaultModel = (source: AdapterSource, providerId: ProviderId) 
   return fallback ? fallback.id : "gpt-4o-mini";
 };
 
+const isPresetEnabled = (preset: Preset) => preset.disabled !== undefined && !preset.disabled;
+
 export const readPresetForSelection = (selection: {
   recipeId: RecipeId;
   adapterSource: AdapterSource;
@@ -243,6 +245,7 @@ export const readPresetForSelection = (selection: {
 }) =>
   PRESETS.find(
     (preset) =>
+      isPresetEnabled(preset) &&
       preset.recipeId === selection.recipeId &&
       preset.adapterSource === selection.adapterSource &&
       preset.providerId === selection.providerId &&

@@ -5,7 +5,6 @@ import type { TransportEvent } from "@geekist/llm-core/adapters/ai-sdk-ui";
 import { Button } from "../components/ui/button";
 import { cn } from "../lib/utils";
 import { formatTransportEvent } from "./helpers";
-import { bindFirst } from "@geekist/llm-core";
 
 type AdvancedPanelProps = {
   showAdvanced: boolean;
@@ -72,26 +71,23 @@ const ToggleButton: FC<ToggleButtonProps> = ({ active, onClick, label }) => {
 
 const EventLog: FC<{ events: TransportEvent[] }> = ({ events }) => {
   const entries = events.slice(-12).reverse();
-  const renderEntry = bindFirst(renderEventEntry, {});
 
   return (
     <div className="max-h-48 overflow-y-auto rounded-md border bg-muted/30 p-3 text-xs">
       {entries.length === 0 ? (
         <div className="text-muted-foreground">No live events yet.</div>
       ) : (
-        <ul className="flex flex-col gap-2">{entries.map(renderEntry)}</ul>
+        <ul className="flex flex-col gap-2">
+          {entries.map((event, index) => (
+            <li key={`${event.direction}-${index}`} className="rounded-md bg-background px-2 py-1">
+              <div className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
+                {event.direction}
+              </div>
+              <div className="font-mono text-[11px]">{formatTransportEvent(event)}</div>
+            </li>
+          ))}
+        </ul>
       )}
     </div>
-  );
-};
-
-const renderEventEntry = (_: Record<string, never>, event: TransportEvent, index: number) => {
-  return (
-    <li key={`${event.direction}-${index}`} className="rounded-md bg-background px-2 py-1">
-      <div className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
-        {event.direction}
-      </div>
-      <div className="font-mono text-[11px]">{formatTransportEvent(event)}</div>
-    </li>
   );
 };

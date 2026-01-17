@@ -1,4 +1,4 @@
-import { existsSync, lstatSync, mkdirSync, readlinkSync, symlinkSync } from "node:fs";
+import { existsSync, lstatSync, mkdirSync, readlinkSync, rmSync, symlinkSync } from "node:fs";
 import { resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -31,6 +31,9 @@ const isLinkToRoot = (path: string, root: string) => {
 const ensureLink = (path: string, target: string) => {
   if (isLinkToRoot(path, target)) {
     return null;
+  }
+  if (existsSync(path)) {
+    rmSync(path, { recursive: true, force: true });
   }
   symlinkSync(target, path, "dir");
   return true;

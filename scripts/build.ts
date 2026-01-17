@@ -107,7 +107,7 @@ const run = async () => {
       format,
       outdir,
       root: rootDir,
-      target: isEsm ? "browser" : "node",
+      target: "node",
       splitting: isEsm,
       naming: isEsm
         ? undefined

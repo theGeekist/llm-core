@@ -22,6 +22,7 @@ Open <http://localhost:5173>.
 
 ## Notes
 
+- The client resolves `@geekist/llm-core` types from the local build output, so build the package first (e.g. `bun run build` at repo root).
 - The server uses `recipes.*` and wraps model adapters to emit `InteractionEvent` streams.
 - The client uses `useChat` (AI SDK) + `useChatRuntime` (assistant-ui) with a WebSocket `ChatTransport`.
 - Configure provider keys in `examples/kitchen-sink/server/.env` (copy from your root `.env` if needed).

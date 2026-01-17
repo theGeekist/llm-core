@@ -75,9 +75,11 @@ const restoreWebSocket = () => {
   (globalThis as { WebSocket?: unknown }).WebSocket = originalWebSocket;
 };
 
+let uuidCounter = 0;
 const installFakeCrypto = () => {
+  uuidCounter = 0;
   (globalThis as { crypto?: Crypto }).crypto = {
-    randomUUID: () => "request-1",
+    randomUUID: () => `request-${+uuidCounter}`,
   } as unknown as Crypto;
 };
 

@@ -46,6 +46,8 @@ const DEFAULT_MODEL_OPTIONS: ModelOptions = {
   },
 };
 
+const DEFAULT_FALLBACK_MODEL = DEFAULT_MODEL_OPTIONS["ai-sdk"].openai?.[0] ?? "gpt-4o-mini";
+
 const DEFAULT_SOURCE: AdapterSource = "ai-sdk";
 
 const DEFAULT_PROVIDER: Record<AdapterSource, ProviderId> = {
@@ -117,27 +119,32 @@ const readModelId = (input: {
   if (input.value && models.includes(input.value)) {
     return input.value;
   }
-  return models[0] ?? "gpt-4o-mini";
+  return models[0] ?? DEFAULT_FALLBACK_MODEL;
 };
 
-const readEnv = () => {
-  if (typeof process === "undefined") {
+type ProcessEnv = Record<string, string>;
+type ProcessLike = { env?: ProcessEnv } | null | undefined;
+
+const readGlobalProcess = (): ProcessLike =>
+  typeof process === "undefined" ? null : (process as ProcessLike);
+
+export const readProcessEnv = (proc: ProcessLike): ProcessEnv | null => {
+  if (!proc || !proc.env) {
     return null;
   }
-  if (!process.env) {
-    return null;
-  }
-  return process.env;
+  return proc.env;
 };
 
-const defaultReadToken = (input: {
-  providerId: ProviderId;
-  tokens?: Record<string, string> | null;
-}) => {
+export const readTokenFromEnv = (
+  env: ProcessEnv | null,
+  input: {
+    providerId: ProviderId;
+    tokens?: Record<string, string> | null;
+  },
+) => {
   if (input.tokens && input.providerId in input.tokens) {
     return input.tokens[input.providerId] ?? null;
   }
-  const env = readEnv();
   if (!env) {
     return null;
   }
@@ -149,6 +156,11 @@ const defaultReadToken = (input: {
   }
   return null;
 };
+
+const defaultReadToken = (input: {
+  providerId: ProviderId;
+  tokens?: Record<string, string> | null;
+}) => readTokenFromEnv(readProcessEnv(readGlobalProcess()), input);
 
 const readToken = (
   input: { providerId: ProviderId; tokens?: Record<string, string> | null },
@@ -233,6 +245,7 @@ const selectModelWithOptions = (
   if (source === "langchain") {
     return createLangChainAdapter({ providerId, modelId, token, options });
   }
+  // LlamaIndex adapters are OpenAI-only today; providerId is normalized above.
   return createLlamaIndexAdapter(modelId, token);
 };
 

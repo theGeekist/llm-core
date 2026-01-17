@@ -66,10 +66,14 @@ export const clearProviderToken = (providerId: ProviderId) => {
 };
 
 export const readAllProviderTokens = (providers: ProviderId[]) => {
+  const storage = readStorage();
+  if (!storage) {
+    return [];
+  }
   const tokens: Array<{ providerId: ProviderId; token: string }> = [];
   for (const providerId of providers) {
-    const token = readProviderToken(providerId);
-    if (token) {
+    const token = readStorageItem(storage, buildStorageKey(providerId));
+    if (token !== null) {
       tokens.push({ providerId, token });
     }
   }
