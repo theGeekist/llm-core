@@ -1,10 +1,10 @@
 import { describe, expect, it } from "bun:test";
 import {
-  applyDiagnosticsMode,
   createPipelineDiagnostic,
   createRequirementDiagnostic,
   normalizeDiagnostics,
 } from "../../src/shared/diagnostics";
+import { applyDiagnosticsMode } from "../../src/shared/reporting";
 import { createRuntime } from "#workflow/runtime";
 import { getRecipe, registerRecipe } from "#workflow/recipe-registry";
 import { diagnosticMessages, makeRuntime } from "./helpers";

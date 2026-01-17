@@ -1,6 +1,7 @@
 import { isPromiseLike, maybeAll, type PipelineReporter } from "@wpkernel/pipeline/core";
 import type { PipelineWithExtensions, Plugin } from "./types";
-import { createLifecycleDiagnostic, type DiagnosticEntry } from "#shared/diagnostics";
+import { createLifecycleDiagnostic } from "#shared/diagnostics";
+import type { DiagnosticEntry } from "#shared/reporting";
 import { getEffectivePlugins } from "./plugins/effective";
 import type { MaybePromise } from "#shared/maybe";
 

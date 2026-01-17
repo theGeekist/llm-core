@@ -1,6 +1,6 @@
 import { describe, expect, it } from "bun:test";
 import type { AdapterBundle } from "#adapters";
-import type { DiagnosticEntry } from "#shared/diagnostics";
+import type { DiagnosticEntry } from "#shared/reporting";
 import type { TraceEvent } from "#shared/reporting";
 import type { Outcome } from "#workflow/types";
 import { runWorkflow, type RunWorkflowDeps } from "#workflow/runtime/run-runner";

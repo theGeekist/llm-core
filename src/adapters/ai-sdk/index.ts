@@ -3,7 +3,7 @@ export { fromAiSdkCacheStore } from "./cache";
 export { fromAiSdkImageModel } from "./image";
 export { fromAiSdkMemory } from "./memory";
 export { fromAiSdkTool } from "./tools";
-export { fromAiSdkMessage } from "./messages";
+export { fromAiSdkMessage, fromAiSdkMessages } from "./messages";
 export { fromAiSdkPrompt } from "./model-call";
 export { fromAiSdkModel } from "./model";
 export { fromAiSdkReranker } from "./reranker";

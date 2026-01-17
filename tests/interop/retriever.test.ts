@@ -10,7 +10,7 @@ import {
 } from "@llamaindex/core/schema";
 import * as AiSdk from "ai";
 import type { Retriever } from "#workflow";
-import { maybeMap } from "./helpers";
+import { maybeMap } from "#shared/maybe";
 
 const toRetrieverFromLangChain = (retriever: BaseRetrieverInterface): Retriever => ({
   retrieve: (query) =>

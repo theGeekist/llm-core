@@ -3,13 +3,8 @@ import type { MaybePromise } from "#shared/maybe";
 import { bindFirst, curryK } from "#shared/fp";
 import { maybeChain, maybeTry } from "#shared/maybe";
 import { attachAdapterContext, createAdapterContext } from "../adapter-context";
-import {
-  createAdapterDiagnostic,
-  hasErrorDiagnostics,
-  type DiagnosticEntry,
-  applyDiagnosticsMode,
-} from "#shared/diagnostics";
-import { type TraceEvent } from "#shared/reporting";
+import { createAdapterDiagnostic, hasErrorDiagnostics } from "#shared/diagnostics";
+import { applyDiagnosticsMode, type DiagnosticEntry, type TraceEvent } from "#shared/reporting";
 import type { PipelineWithExtensions, Runtime } from "../types";
 import { createSnapshotRecorder, resolveSessionStore } from "./resume-session";
 import { createDiagnosticsGetter, createFinalize, type FinalizeResult } from "./helpers";

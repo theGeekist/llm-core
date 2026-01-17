@@ -5,7 +5,7 @@ import { buildCapabilities } from "./capabilities";
 import { buildExplainSnapshot, type ExplainSnapshot } from "./explain";
 import { createRuntime } from "./runtime";
 import { mergeRetryConfig } from "./runtime/retry";
-import type { DiagnosticEntry } from "#shared/diagnostics";
+import type { DiagnosticEntry } from "#shared/reporting";
 import type {
   ArtefactOf,
   Outcome,

@@ -1,8 +1,4 @@
 import type { DiagnosticEntry, DiagnosticLevel } from "./reporting";
-import { applyDiagnosticsMode } from "./reporting";
-
-export type { DiagnosticEntry, DiagnosticLevel, DiagnosticKind } from "./reporting";
-export { applyDiagnosticsMode };
 
 type AdapterDiagnosticShape = {
   level: DiagnosticLevel;

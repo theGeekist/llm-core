@@ -1,4 +1,5 @@
-import type { ModelMessage } from "ai";
+import type { ModelMessage, UIMessage } from "ai";
+import { convertToModelMessages } from "ai";
 import type { Message, MessageContent, MessagePart } from "../types";
 import { toMessageContent } from "../message-content";
 
@@ -191,6 +192,9 @@ export function fromAiSdkMessage(message: ModelMessage): Message {
   }
   return { role: "tool", content: "" };
 }
+
+export const fromAiSdkMessages = (messages: UIMessage[]): Message[] =>
+  convertToModelMessages(messages).map(fromAiSdkMessage);
 
 export function toAiSdkMessage(message: Message): ModelMessage {
   if (message.role === "system") {

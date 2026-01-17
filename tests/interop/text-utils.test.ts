@@ -3,14 +3,14 @@ import { RecursiveCharacterTextSplitter } from "@langchain/textsplitters";
 import { SentenceSplitter } from "@llamaindex/core/node-parser";
 import * as AiSdk from "ai";
 import type { TextSplitter } from "#workflow";
-import { maybeMap } from "./helpers";
+import { maybeMap, maybeAll } from "#shared/maybe";
 
 const TEXT_SAMPLE = "Hello world.";
 const TEXT_BATCH = ["One.", "Two."];
 
 const toTextSplitterFromLangChain = (splitter: RecursiveCharacterTextSplitter): TextSplitter => ({
   split: (text: string) => splitter.splitText(text),
-  splitBatch: (texts: string[]) => Promise.all(texts.map((text) => splitter.splitText(text))),
+  splitBatch: (texts: string[]) => maybeAll(texts.map((text) => splitter.splitText(text))),
   splitWithMetadata: (text: string) =>
     maybeMap(
       (docs) => docs.map((doc) => ({ text: doc.pageContent, metadata: doc.metadata })),

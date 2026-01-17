@@ -1,7 +1,6 @@
 import { describe, expect, it } from "bun:test";
 import type { AdapterBundle, AdapterDiagnostic, Tool } from "#adapters";
-import type { DiagnosticEntry } from "#shared/diagnostics";
-import type { TraceEvent } from "#shared/reporting";
+import type { DiagnosticEntry, TraceEvent } from "#shared/reporting";
 import type { Outcome } from "#workflow/types";
 import { runResumedPipeline } from "#workflow/runtime/resume-runner";
 import { diagnosticMessages, resolveMaybe } from "./helpers";

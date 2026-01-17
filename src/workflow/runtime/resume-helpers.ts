@@ -1,6 +1,7 @@
 import type { Runtime, ArtefactOf, Outcome, RecipeName } from "../types";
-import type { DiagnosticEntry } from "#shared/diagnostics";
-import { applyDiagnosticsMode, createResumeDiagnostic } from "#shared/diagnostics";
+import type { DiagnosticEntry } from "#shared/reporting";
+import { createResumeDiagnostic } from "#shared/diagnostics";
+import { applyDiagnosticsMode } from "#shared/reporting";
 import { createInvalidResumeDiagnostics } from "./resume-diagnostics";
 import type { TraceEvent } from "#shared/reporting";
 import { isRecord } from "#shared/guards";

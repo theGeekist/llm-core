@@ -32,3 +32,11 @@ export {
 export { createInteractionHandle } from "./handle";
 export { createInteractionSession } from "./session";
 export type { InteractionSessionOptions } from "./session";
+export { createInteractionSessionRuntime } from "./runtime";
+export type {
+  InteractionSessionRuntime,
+  InteractionSessionRuntimeOptions,
+  InteractionSessionStreamInput,
+} from "./runtime";
+export type { InteractionRecipeId, InteractionRunRequest } from "./request";
+export { runInteractionRequest, resolveInteractionRecipeId, hasRecipeId } from "./request";

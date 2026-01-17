@@ -5,7 +5,7 @@ import type { BaseReader } from "@llamaindex/core/schema";
 import { Document as LlamaDocument } from "@llamaindex/core/schema";
 import * as AiSdk from "ai";
 import type { DocumentLoader } from "#workflow";
-import { maybeMapArray } from "./helpers";
+import { maybeMapArray } from "#shared/maybe";
 
 const toAdapterLoaderFromLangChain = (loader: BaseDocumentLoader): DocumentLoader => ({
   load: () =>

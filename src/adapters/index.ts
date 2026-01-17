@@ -117,11 +117,11 @@ export {
   isNull,
   isFalse,
   bindFirst,
+  compose,
   partialK,
   curryK,
   toUndefined,
 } from "#shared/fp";
-export * from "#shared/maybe";
 
 export {
   adapterParamTypeToJsonType,
@@ -165,8 +165,10 @@ export {
   validateVectorStoreUpsertInput,
 } from "./input-validation";
 
-export { Tooling } from "./tooling";
-export { Adapter } from "./registration";
+import { Tooling as ToolingImpl } from "./tooling";
+import { Adapter as AdapterImpl } from "./registration";
+import { createBuiltinAdapters as createBuiltinAdaptersImpl } from "./primitives/adapters";
+import { selectModel as selectModelImpl } from "./model-selection";
 
 export {
   createAdapterRegistry,
@@ -186,6 +188,7 @@ export {
 
 export { createBuiltinModel } from "./primitives/model";
 export { createBuiltinRetriever } from "./primitives/retriever";
+export const createBuiltinAdapters = createBuiltinAdaptersImpl;
 export { createBuiltinTools } from "./primitives/tools";
 export { createBuiltinTrace } from "./primitives/trace";
 export { createCacheFromKVStore } from "./primitives/cache";
@@ -198,12 +201,23 @@ export {
   type InteractionEventEmitterStreamOptions,
   type InteractionEventMapper,
 } from "./primitives/interaction-event-emitter";
+export {
+  type AdapterSource,
+  type ModelSelection,
+  type ModelSelectorOptions,
+  type ModelOptions,
+  type ProviderId,
+} from "./model-selection";
+
+export const Tooling = ToolingImpl;
+export const Adapter = AdapterImpl;
+export const selectModel = selectModelImpl;
 
 export { fromAiSdkCacheStore } from "./ai-sdk";
 export { fromAiSdkEmbeddings } from "./ai-sdk";
 export { fromAiSdkImageModel } from "./ai-sdk";
 export { fromAiSdkMemory } from "./ai-sdk";
-export { fromAiSdkMessage } from "./ai-sdk";
+export { fromAiSdkMessage, fromAiSdkMessages } from "./ai-sdk";
 export { fromAiSdkModel } from "./ai-sdk";
 export { fromAiSdkPrompt } from "./ai-sdk";
 export { fromAiSdkReranker } from "./ai-sdk";
@@ -217,6 +231,7 @@ export {
   createAiSdkInteractionMapper,
   createAiSdkInteractionSink,
   toAiSdkUiMessageChunks,
+  createAiSdkWebSocketChatTransport,
 } from "./ai-sdk-ui";
 export type {
   AiSdkChatTransportOptions,
@@ -224,11 +239,18 @@ export type {
   AiSdkInteractionMapper,
   AiSdkInteractionMapperOptions,
   AiSdkInteractionSinkOptions,
+  AiSdkWebSocketChatTransportOptions,
+  AuthToken,
+  TransportEvent,
+  WebSocketChatData,
 } from "./ai-sdk-ui";
 export {
   createAssistantUiInteractionEventStream,
   createAssistantUiInteractionMapper,
   createAssistantUiInteractionSink,
+  createAssistantUiInteractionStream,
+  parseAssistantTransportRequest,
+  toCoreMessagesFromAssistantCommands,
   toAssistantUiCommands,
 } from "./assistant-ui";
 export type {
@@ -236,6 +258,15 @@ export type {
   AssistantUiInteractionMapper,
   AssistantUiInteractionMapperOptions,
   AssistantUiInteractionSinkOptions,
+  AssistantUiStreamAdapter,
+  AssistantUiStreamOptions,
+  AssistantTransportCommand,
+  AssistantTransportMessage,
+  AssistantTransportMessagePart,
+  AssistantTransportRequest,
+  AddMessageCommand,
+  AddToolResultCommand,
+  JsonValue,
 } from "./assistant-ui";
 export {
   createChatKitInteractionEventStream,

@@ -7,7 +7,7 @@ import type {
   QueryStreamEvent,
 } from "#adapters/types";
 import type { PipelineDiagnostic, PipelinePaused, PipelineStep } from "@wpkernel/pipeline/core";
-import type { DiagnosticEntry } from "#shared/diagnostics";
+import type { DiagnosticEntry } from "#shared/reporting";
 import type { MaybePromise } from "#shared/maybe";
 import type { TraceEvent } from "#shared/reporting";
 import type {

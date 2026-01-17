@@ -14,6 +14,40 @@ export const toArray = (value: string | string[]) => (Array.isArray(value) ? val
 export const mapArray = <TIn, TOut>(map: (value: TIn) => TOut, items: readonly TIn[]) =>
   items.map(map);
 
+export type Unary<TIn, TOut> = (value: TIn) => TOut;
+
+const applyCompose = (fns: readonly Unary<unknown, unknown>[], value: unknown) => {
+  let result = value;
+  for (let index = fns.length - 1; index >= 0; index -= 1) {
+    const fn = fns[index];
+    if (!fn) {
+      continue;
+    }
+    result = fn(result);
+  }
+  return result;
+};
+
+export function compose<TIn, TOut>(fn: Unary<TIn, TOut>): (value: TIn) => TOut;
+export function compose<TIn, TMid, TOut>(
+  fn1: Unary<TMid, TOut>,
+  fn2: Unary<TIn, TMid>,
+): (value: TIn) => TOut;
+export function compose<TIn, TMid, TMid2, TOut>(
+  fn1: Unary<TMid2, TOut>,
+  fn2: Unary<TMid, TMid2>,
+  fn3: Unary<TIn, TMid>,
+): (value: TIn) => TOut;
+export function compose<TIn, TMid, TMid2, TMid3, TOut>(
+  fn1: Unary<TMid3, TOut>,
+  fn2: Unary<TMid2, TMid3>,
+  fn3: Unary<TMid, TMid2>,
+  fn4: Unary<TIn, TMid>,
+): (value: TIn) => TOut;
+export function compose(...fns: Array<Unary<unknown, unknown>>) {
+  return bindFirst(applyCompose, fns);
+}
+
 /**
  * Binds a function to undefined context.
  * Unsafe for methods relying on `this`.

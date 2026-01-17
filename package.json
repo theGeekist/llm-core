@@ -36,6 +36,7 @@
     "access": "public"
   },
   "dependencies": {
+    "assistant-stream": "^0.2.46",
     "@wpkernel/pipeline": "1.1.0"
   },
   "main": "./dist/cjs/index.cjs",
@@ -44,9 +45,9 @@
   "type": "module",
   "private": false,
   "scripts": {
-    "build": "bun run build:esm && bun run build:cjs && bun run build:types",
-    "build:esm": "bun build ./index.ts ./src/workflow/index.ts ./src/adapters/index.ts ./src/adapters/*/index.ts ./src/interaction/index.ts ./src/shared/diagnostics.ts --outdir dist/esm --root . --sourcemap=external --splitting --format=esm --target=browser",
-    "build:cjs": "bun build ./index.ts ./src/workflow/index.ts ./src/adapters/index.ts ./src/adapters/*/index.ts ./src/interaction/index.ts ./src/shared/diagnostics.ts --outdir dist/cjs --root . --sourcemap=external --format=cjs --target=node --entry-naming=[dir]/[name].cjs --chunk-naming=[name]-[hash].cjs",
+    "build": "bun run scripts/build.ts && bun run build:types",
+    "build:esm": "bun run scripts/build.ts --esm",
+    "build:cjs": "bun run scripts/build.ts --cjs",
     "build:types": "tsc -p tsconfig.build.json --emitDeclarationOnly",
     "prepare": "git config core.hooksPath .githooks",
     "format": "prettier \"**/*.{ts,tsx,js,jsx,json,md}\" --write",
@@ -78,9 +79,12 @@
     "@ai-sdk/openai": "^2.0.88",
     "@ai-sdk/provider": "^3.0.0",
     "@ai-sdk/provider-utils": "^4.0.1",
-    "@ai-sdk/react": "^3.0.15",
+    "@ai-sdk/react": "^2.0.121",
     "@assistant-ui/react": "^0.11.53",
     "@assistant-ui/react-ai-sdk": "^1.1.20",
+    "@tailwindcss/postcss": "^4.1.18",
+    "@radix-ui/react-slot": "^1.1.1",
+    "@radix-ui/react-tooltip": "^1.1.5",
     "@langchain/community": "^1.1.1",
     "@langchain/core": "^1.1.8",
     "@langchain/langgraph": "^1.0.7",
@@ -99,18 +103,26 @@
     "@typescript-eslint/eslint-plugin": "6.21.0",
     "@typescript-eslint/parser": "6.21.0",
     "@unified-llm/core": "^0.6.4",
-    "ai": "^5.0.116",
+    "ai": "^5.0.121",
+    "autoprefixer": "^10.4.20",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
     "eslint": "8.57.0",
     "eslint-config-prettier": "9.1.0",
     "eslint-plugin-sonarjs": "^3.0.5",
     "langchain": "^1.2.3",
     "llamaindex": "^0.12.1",
+    "lucide-react": "^0.468.0",
     "markdown-it-mermaid": "^0.2.5",
     "mermaid": "^11.12.2",
     "ollama": "^0.6.3",
     "ollama-ai-provider-v2": "^1.5.5",
     "openai": "^6.15.0",
+    "postcss": "^8.4.49",
     "prettier": "3.3.3",
+    "remark-gfm": "^4.0.0",
+    "tailwind-merge": "^2.5.4",
+    "tailwindcss": "^4.1.18",
     "vitepress": "^1.6.4",
     "vitepress-plugin-mermaid": "^2.0.17",
     "vitepress-plugin-tabs": "^0.7.3",
@@ -246,6 +258,11 @@
       "require": "./dist/cjs/src/shared/diagnostics.cjs",
       "default": "./dist/esm/src/shared/diagnostics.js"
     }
+  },
+  "overrides": {
+    "@ai-sdk/react": "2.0.121",
+    "ai": "5.0.121",
+    "@langchain/core": "1.1.8"
   },
   "peerDependencies": {
     "typescript": "^5.9.3"

@@ -1,0 +1,19 @@
+{
+  "compilerOptions": {
+    "target": "ESNext",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "ignoreDeprecations": "6.0",
+    "jsx": "react-jsx",
+    "strict": true,
+    "lib": ["ESNext", "DOM", "DOM.Iterable"],
+    "types": ["vite/client"],
+    "baseUrl": ".",
+    "paths": {
+      "@geekist/llm-core": ["../../../dist/types/index.d.ts"],
+      "@geekist/llm-core/*": ["../../../dist/types/src/*/index.d.ts"],
+      "@/*": ["src/*"]
+    }
+  },
+  "include": ["src"]
+}
