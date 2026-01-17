@@ -10,6 +10,28 @@ Related:
 - [Adapters API](/reference/adapters-api)
 - [Composition Model](/reference/composition-model)
 
+## The Recipe Catalog
+
+`llm-core` exports a catalog of recipe factories. You access them by name.
+
+```ts
+import { recipes } from "#recipes";
+
+const agent = recipes.agent();
+const rag = recipes.rag();
+```
+
+Available recipes:
+
+- **`agent`**: ReAct agent with tools, planning, and memory.
+- **`rag`**: Retrieval-augmented generation.
+- **`chat.simple`**: Basic chat with system prompt.
+- **`chat.rag`**: RAG specialized for chat history.
+- **`hitl`**: Human-in-the-loop gate.
+- **`ingest`**: Document ingestion pipeline.
+- **`eval`**: Generation evaluation.
+- **`loop`**: Iteration control.
+
 ## Recipe handles (the public surface)
 
 Every recipe exposes the same handle methods:

@@ -2,17 +2,18 @@
 import { fromAiSdkModel } from "#adapters";
 import { openai } from "@ai-sdk/openai";
 import { createInteractionSession } from "#interaction";
+import type { InteractionState, SessionId, SessionStore } from "#interaction";
 
-const sessionCache = new Map();
+const sessionCache = new Map<string, InteractionState>();
 
-function toSessionKey(sessionId) {
+const toSessionKey = (sessionId: SessionId) => {
   if (typeof sessionId === "string") {
     return sessionId;
   }
   return sessionId.userId ? `${sessionId.sessionId}:${sessionId.userId}` : sessionId.sessionId;
-}
+};
 
-const store = {
+const store: SessionStore = {
   load: (sessionId) => sessionCache.get(toSessionKey(sessionId)) ?? null,
   save: (sessionId, state) => {
     sessionCache.set(toSessionKey(sessionId), state);

@@ -53,6 +53,14 @@ State tracks tool calls, intermediate results, and loading indicators so the int
 
 History manages sessions over time, including how conversations are persisted and how they can be resumed later.
 
+## Server-side Helpers
+
+When you build a chat API, you often need to resolve a recipe, select a model, and run the pipeline in one go. `runInteractionRequest` standardises this flow.
+
+<<< @/snippets/interaction/server-helpers.js#docs
+
+It handles the boilerplate of checking for recipe IDs (like `"agent"` or `"chat.rag"`), extracting the user's last message, and wiring up the runner.
+
 ## Example Scenario
 
 Imagine a **Chat UI** that needs to stream assistant messages, record a trace for debugging, and store per-session state in a database.

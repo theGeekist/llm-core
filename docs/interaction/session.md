@@ -28,7 +28,7 @@ For short, one-off interactions such as an inline search bar or a single "answer
 
 ---
 
-## 2) Quick start (JavaScript)
+## 2) Quick start
 
 At a minimum you need two things:
 
@@ -37,7 +37,10 @@ At a minimum you need two things:
 
 Once you have a store, you create a session instance and call `send()` when new input arrives.
 
-<<< @/snippets/interaction/session.js#docs
+::: code-group
+<<< @/snippets/interaction/session.js#docs [JavaScript]
+<<< @/snippets/interaction/session.ts#docs [TypeScript]
+:::
 
 `send()` returns the outcome of the interaction run for that session. The shape is the same as other runtime outcomes: `{ status, artefact, diagnostics, trace }`.
 
@@ -56,26 +59,10 @@ Policy hooks let you shape what gets saved for a session. You can merge old and 
 
 This policy keeps only the last 50 messages so the session does not grow without bound.
 
-```js
-const policy = {
-  // Merge: combine previous history with new state
-  merge: (previous, next) => ({
-    ...next,
-    messages: [...previous.messages, ...next.messages],
-  }),
-
-  // Truncate: limit the stored history
-  truncate: (state) => {
-    if (state.messages.length > 50) {
-      return {
-        ...state,
-        messages: state.messages.slice(-50),
-      };
-    }
-    return state;
-  },
-};
-```
+::: code-group
+<<< @/snippets/interaction/session-policy.js#docs [JavaScript]
+<<< @/snippets/interaction/session-policy.ts#docs [TypeScript]
+:::
 
 Hooks are optional. When present, they run in this order: `merge` → `summarize` → `truncate`. Core leaves policy decisions in your hands so you can match your own storage and cost constraints.
 

@@ -56,6 +56,7 @@ The core library ships with a set of recipes that match common AI engineering pa
 | [Human-in-the-Loop](/recipes/hitl)  | A flow that pauses execution for human approval or input, suitable for sensitive actions.  |
 | [Eval](/recipes/eval)               | Uses an LLM to evaluate outputs from other models or workflows.                            |
 | [Loop](/recipes/loop)               | A generic control flow that supports custom iterative processes.                           |
+| [Compress](/recipes/compress)       | Summarizes or reduces text input into a concise form.                                      |
 
 Each recipe comes with its own configuration shape and sensible defaults. You can keep the basic behaviour, adapt a few options, or treat the recipe as a starting point for your own flows.
 

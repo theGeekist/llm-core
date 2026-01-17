@@ -6,7 +6,6 @@ import { openai } from "@ai-sdk/openai";
 const model = fromAiSdkModel(openai("gpt-4o-mini"));
 const handle = createInteractionHandle().configure({ adapters: { model } });
 // #endregion docs
-// @ts-expect-error - DOM types generally not available in this env
 // #region docs
 const doc = globalThis.document;
 const chatkit = doc?.querySelector("openai-chatkit");

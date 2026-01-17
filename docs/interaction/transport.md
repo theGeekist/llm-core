@@ -12,18 +12,10 @@ The interaction transport is the narrow strip between the interaction pipeline a
 
 Imagine you want to stream events to a browser through server sent events. The transport layer listens to the pipeline and writes each event into the response stream.
 
-```js
-// In your route handler
-const stream = new PassThrough(); // Your output stream
-
-await runInteractionPipeline({
-  // ... input config ...
-  transport: {
-    // Forward events to the stream
-    emit: (event) => stream.write(`data: ${JSON.stringify(event)}\n\n`),
-  },
-});
-```
+::: code-group
+<<< @/snippets/interaction/transport-sse.js#docs [JavaScript]
+<<< @/snippets/interaction/transport-sse.ts#docs [TypeScript]
+:::
 
 This simple pattern powers many real time chat interfaces and dashboards. The pipeline produces events, the transport pushes them into the stream, and the browser keeps a steady connection open to receive updates.
 
@@ -35,7 +27,10 @@ In real projects you usually pass in an `EventStream` adapter instead of writing
 
 The example below shows how to wire a transport adapter into a pipeline run.
 
-<<< @/snippets/interaction/transport.js#docs
+::: code-group
+<<< @/snippets/interaction/transport.js#docs [JavaScript]
+<<< @/snippets/interaction/transport.ts#docs [TypeScript]
+:::
 
 ---
 

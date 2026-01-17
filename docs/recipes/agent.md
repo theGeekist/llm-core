@@ -123,13 +123,10 @@ The examples below use an AI SDK model together with tools from LlamaIndex. You 
 
 You can also override adapters per run without rebuilding the recipe. This is useful for fallbacks or A/B testing, for example:
 
-```ts
-agent.run(input, {
-  adapters: {
-    model: fastModel,
-  },
-});
-```
+::: code-group
+<<< @/snippets/recipes/agent/overrides.js#docs [JavaScript]
+<<< @/snippets/recipes/agent/overrides.ts#docs [TypeScript]
+:::
 
 That pattern keeps the public surface stable while you experiment with different providers.
 

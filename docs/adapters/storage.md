@@ -81,14 +81,7 @@ Plenty of state does not fit into a chat log. You might want to keep:
 
 For this kind of data, `llm-core` offers a `KVStore` interface.
 
-```ts
-type KVStore = {
-  get(key: string): Promise<unknown>;
-  set(key: string, value: unknown): Promise<void>;
-  mget(keys: string[]): Promise<unknown[]>;
-  mset(entries: [key: string, value: unknown][]): Promise<void>;
-};
-```
+<<< @/snippets/adapters/kv-store-interface.ts#docs
 
 Your application logic talks to `KVStore` and does not depend on a specific backend. Redis, a LangChain store, a LlamaIndex document store, or an in-memory object can all sit behind the same contract.
 

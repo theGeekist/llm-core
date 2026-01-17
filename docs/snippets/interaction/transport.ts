@@ -2,8 +2,9 @@
 import { createInteractionPipelineWithDefaults, runInteractionPipeline } from "#interaction";
 import { fromAiSdkModel } from "#adapters";
 import { openai } from "@ai-sdk/openai";
+import type { EventStream } from "#adapters";
 
-const eventStream = {
+const eventStream: EventStream = {
   emit(event) {
     console.log(event.name);
     return true;

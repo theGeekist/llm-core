@@ -219,3 +219,11 @@ real, inspectable answer in diagnostics, trace, and citations.
 - Source: [`src/recipes/rag/index.ts`](https://github.com/theGeekist/llm-core/blob/main/src/recipes/rag/index.ts)
 - Retrieval pack: [`src/recipes/rag/retrieval`](https://github.com/theGeekist/llm-core/blob/main/src/recipes/rag/retrieval)
 - Synthesis pack: [`src/recipes/rag/synthesis`](https://github.com/theGeekist/llm-core/blob/main/src/recipes/rag/synthesis)
+
+## Chat-Optimized RAG
+
+If you are building a chat bot that needs RAG, use the `chat.rag` recipe. It wraps the standard RAG flow but pre-configures it to handle chat history, making it a drop-in replacement for `chat.simple` when you need retrieval.
+
+```ts
+const chatRag = recipes["chat.rag"]();
+```

@@ -22,6 +22,12 @@ If you already use `useChat`, you can plug in a transport that runs Interaction 
 <<< @/snippets/adapters/ai-sdk-chat-transport.ts#docs [TypeScript]
 :::
 
+## AI SDK WebSocket Transport
+
+For WebSocket-based streaming (ideal for custom backends like Bun or Node.js WebSocket servers), use `createAiSdkWebSocketChatTransport`. This creates a transport compatible with `useChat` but routed over a persistent WebSocket connection.
+
+<<< @/snippets/adapters/websocket-transport.js#docs
+
 ## Assistant UI transport
 
 assistant-ui provides an `assistant-transport` command protocol. The adapter maps interaction model events to `add-message` and `add-tool-result` commands that fire when the model run completes. This fits command-driven runtimes that prefer a clear, structured stream of UI actions.
@@ -33,7 +39,17 @@ assistant-ui provides an `assistant-transport` command protocol. The adapter map
 
 :::
 
-For streaming behaviour, the AI SDK stream adapter `ai-sdk-ui` often works better. You can plug it into `@assistant-ui/react-ai-sdk`, which already turns AI SDK streams into assistant-ui commands.
+## Server-side streaming with Assistant Transport
+
+When you serve `assistant-ui` from a Node or Edge route (like a Next.js Route Handler), you often want to return a standard `Response` that speaks the `assistant-stream` protocol.
+
+The `createAssistantUiInteractionStream` adapter handles this. It creates a controller that you can pump interaction events into, and exposes a `toResponse()` helper that formats the stream correctly for the client.
+
+<<< @/snippets/adapters/assistant-stream-transport.js#docs
+
+This sits alongside the command-based adapter above. Use the command adapter when you are sending batch updates or working with a custom transport. Use this streaming adapter when you are building a standard HTTP endpoint that speaks the native `assistant-stream` protocol.
+
+For streaming behaviour _via the AI SDK protocol_, the `ai-sdk-ui` adapter often works better. You can plug it into `@assistant-ui/react-ai-sdk`, which turns AI SDK streams into assistant-ui commands on the client. This new adapter skips that translation layer.
 
 ## OpenAI ChatKit events
 
@@ -69,12 +85,7 @@ Message and part identifiers follow deterministic rules based on interaction met
 
 When you need deterministic grouping across several events, use a shared mapper:
 
-```js
-import { createAiSdkInteractionMapper } from "#adapters";
-
-const mapper = createAiSdkInteractionMapper({ messageId: "chat-1" });
-// mapper.mapEvent(event) -> UIMessageChunk[]
-```
+<<< @/snippets/adapters/ui-sdk-mapper.js#docs
 
 ## When to use these adapters
 
