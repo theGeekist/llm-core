@@ -55,7 +55,7 @@ History manages sessions over time, including how conversations are persisted an
 
 ## Server-side Helpers
 
-When you build a chat API, you often need to resolve a recipe, select a model, and run the pipeline in one go. `runInteractionRequest` standardises this flow.
+When you build a chat API, you often need to resolve a recipe, select a model, and run the pipeline in one go. `runInteractionRequest` standardises this flow and lets you pass adapter overrides (for example, tools or retrievers) while emitting diagnostics into the same interaction event stream.
 
 <<< @/snippets/interaction/server-helpers.js#docs
 
@@ -65,4 +65,4 @@ It handles the boilerplate of checking for recipe IDs (like `"agent"` or `"chat.
 
 Imagine a **Chat UI** that needs to stream assistant messages, record a trace for debugging, and store per-session state in a database.
 
-The pipeline runs the model adapter and emits `model.stream` events. These events travel through transport, for example over Server-Sent Events, into the browser. On the client, the reducer listens to the incoming stream and updates the interaction state so the chat messages on screen reflect the latest tokens and tool results. After the stream finishes, the session layer on the server stores the final state in your database so the next request can load the same conversation and continue from there.
+The pipeline runs the model adapter and emits `interaction.model` events. These events travel through transport, for example over Server-Sent Events, into the browser. On the client, the reducer listens to the incoming stream and updates the interaction state so the chat messages on screen reflect the latest tokens and tool results. After the stream finishes, the session layer on the server stores the final state in your database so the next request can load the same conversation and continue from there.

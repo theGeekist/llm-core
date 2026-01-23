@@ -3,3 +3,4 @@ pipeline
 pipeline/**
 dist/**
 assistant-ui/**
+copilot-sdk/**

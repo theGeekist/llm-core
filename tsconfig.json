@@ -31,5 +31,5 @@
       "@geekist/llm-core/*": ["./dist/types/src/*/index.d.ts"]
     }
   },
-  "exclude": ["llm-core/**", "pipeline/**", "assistant-ui/**"]
+  "exclude": ["llm-core/**", "pipeline/**", "assistant-ui/**", "copilot-sdk/**"]
 }

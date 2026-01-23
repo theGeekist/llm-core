@@ -10,13 +10,15 @@ import { createEmptyState } from "../../src/interaction/handle";
 import {
   applyRunModelCore,
   applyCaptureInput,
-  emitInteraction,
-  emitInteractionEventsForContext,
   mergeInteractionPrivate,
   requestInteractionPause,
   readMessageText,
   readResultText,
 } from "../../src/interaction/steps";
+import {
+  emitInteraction,
+  emitInteractionEventsForContext,
+} from "../../src/interaction/event-utils";
 import type { EventStream, Message, ModelResult } from "#adapters";
 
 const createState = (): InteractionState => ({

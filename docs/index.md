@@ -20,7 +20,7 @@ features:
   - title: Recipes are Assets
     details: Define flows as named, versioned recipes and share them across teams like npm packages.
   - title: Packs are Logic
-    details: Bundle specific capabilities, such as Planning or Memory, into reusable internals.
+    details: Internal step groups that power recipes; most users only touch recipe handles.
   - title: Adapters are Plugs
     details: Swap OpenAI for Anthropic or LangChain for LlamaIndex while keeping your recipe unchanged.
   - title: Interactions are Projections

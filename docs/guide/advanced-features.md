@@ -67,7 +67,7 @@ This guide walks through the features that expose the internals of `llm-core`. Y
 
 ## 1) Introspection: see what the agent is doing
 
-When you stack several recipes, packs, and overrides, configuration can feel opaque. You might wonder which plugin finally wins for a given step or which adapter actually runs a model call.
+When you stack several recipes, internal packs, and overrides, configuration can feel opaque. You might wonder which plugin finally wins for a given step or which adapter actually runs a model call.
 
 The Explain API answers that by returning a resolved execution graph.
 
@@ -88,7 +88,7 @@ Many frameworks accept hook registrations even when the recipe lacks a matching 
 
 `llm-core` validates lifecycle wiring. When you attach a hook to a step outside the recipe, the system raises a diagnostic. When you enable strict mode, that diagnostic turns into a hard failure during build time.
 
-Why this matters: plugin authors gain a safety net. Incompatible changes between recipes and packs surface while you develop, long before deployment.
+Why this matters: plugin authors gain a safety net. Incompatible changes between recipes and internal packs surface while you develop, long before deployment.
 
 ---
 

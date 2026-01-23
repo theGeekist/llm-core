@@ -312,9 +312,70 @@ export const readOutcomeFromEvent = (event: TransportEvent): OutcomeSummary | nu
   };
 };
 
+type UiChunkMessage = Extract<TransportEvent["message"], { type: "ui.chunk" }>;
+type UiChunk = UiChunkMessage["chunk"];
+
+const readUiChunkType = (chunk: UiChunk) => chunk.type;
+
+const isUiChunk = (message: TransportEvent["message"]): message is UiChunkMessage =>
+  message.type === "ui.chunk";
+
+const isDataChunk = (chunk: UiChunk) => readUiChunkType(chunk).startsWith("data-");
+
+const readArrayLength = (value: unknown) => (Array.isArray(value) ? value.length : 0);
+
+const readChunkData = (chunk: UiChunk): unknown | null => {
+  if (!chunk || typeof chunk !== "object") {
+    return null;
+  }
+  if ("data" in chunk) {
+    return (chunk as { data?: unknown }).data ?? null;
+  }
+  return null;
+};
+
+const readDiagnosticSummary = (data: unknown) => {
+  if (Array.isArray(data)) {
+    return `(${data.length})`;
+  }
+  if (data && typeof data === "object" && "message" in data) {
+    const message = (data as { message?: unknown }).message;
+    if (typeof message === "string" && message.length > 0) {
+      return `(${message})`;
+    }
+  }
+  return "";
+};
+
+const readSourcesSummary = (data: unknown) => {
+  const count = readArrayLength(data);
+  return count > 0 ? `(${count})` : "";
+};
+
+const formatDataChunk = (chunk: UiChunk) => {
+  const chunkType = readUiChunkType(chunk);
+  if (chunkType === "data-diagnostic") {
+    return `${chunkType}${readDiagnosticSummary(readChunkData(chunk))}`;
+  }
+  if (chunkType === "data-sources") {
+    return `${chunkType}${readSourcesSummary(readChunkData(chunk))}`;
+  }
+  return chunkType;
+};
+
+const formatUiChunk = (chunk: UiChunk) => {
+  if (isDataChunk(chunk)) {
+    return `ui.chunk: ${formatDataChunk(chunk)}`;
+  }
+  return `ui.chunk: ${readUiChunkType(chunk)}`;
+};
+
 export const formatTransportEvent = (event: TransportEvent) => {
   const label = event.message.type;
   if (label === "ui.chunk") {
+    if (isUiChunk(event.message)) {
+      return formatUiChunk(event.message.chunk);
+    }
     return "ui.chunk";
   }
   if (label === "ui.error") {

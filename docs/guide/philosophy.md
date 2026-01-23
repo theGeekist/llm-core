@@ -69,7 +69,7 @@ The framework asks for that structure so that your system remains predictable, i
 - **Adapters** align providers and ecosystems while keeping access to raw responses when you need them.
 - **Interactions** handle single turns: they take streams of model or tool events and turn them into deterministic UI state.
 - **Sessions** handle multi-turn flows: they load state, run a turn, apply your policy, and save state again.
-- **Workflows** link many steps together: packs, recipes, and pause / resume flows.
+- **Workflows** link many steps together: recipes, internal packs, and pause / resume flows.
 
 Every layer uses `MaybePromise`, which means you can write sync code where that feels natural and async code when you call external services. The types remain honest in both cases.
 

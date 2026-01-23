@@ -59,7 +59,7 @@ The snippet below shows how a raw event list becomes a structured state object.
 When a user sends a message, it flows through the system in a clear sequence.
 
 1. **Input**: your code calls `run({ input: "Hello" })`.
-2. **Pipeline**: the `capture-input` step emits an `input` event. The `run-model` step calls the LLM and emits `model.stream` events.
+2. **Pipeline**: the `capture-input` step normalises the user input into a consistent message shape. The `run-model` step calls the LLM and emits `interaction.model` events.
 3. **Transport**: each event travels over the wire, for example through SSE, to the client.
 4. **Reducer**: the client receives events and feeds them into `interactionReducer`.
 5. **State**: the reducer updates `state.messages` as each event arrives, and the UI renders the new state in real time.

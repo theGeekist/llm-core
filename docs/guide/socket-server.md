@@ -24,10 +24,10 @@ Bun handles the HTTP-to-WebSocket upgrade in the `fetch` handler. You can pass i
 
 ### 2. Event Stream Bridging
 
-The `createInteractionEventEmitterStream()` function creates a standard Node.js-style implementation of the `EventStream` interface.
+The easiest bridge is a plain `EventStream` object that forwards `EventStreamEvent` envelopes (for example `interaction.model`, `interaction.diagnostic`) straight into `ws.send()`.
 
 - **Internal**: The session writes events to this stream.
-- **External**: We listen to `data` events on this stream and forward them to the client via `ws.send()`.
+- **External**: The stream forwards each event to the client via `ws.send()`.
 
 ### 3. Session Persistence
 
@@ -35,7 +35,7 @@ In this example, we use `createMemoryCache()` for ephemeral storage. For product
 
 ## Client Communication
 
-The server expects a simple string message from the client (the user prompt). It responds with a stream of JSON-serialized `InteractionEvent` objects.
+The server expects a simple string message from the client (the user prompt). It responds with a stream of JSON-serialized `EventStreamEvent` envelopes.
 
 **Example Client Message:**
 
@@ -46,8 +46,8 @@ Hello, who are you?
 **Example Server Responses:**
 
 ```json
-{"kind":"start", ...}
-{"kind":"delta", "delta":"I", ...}
-{"kind":"delta", "delta":" am", ...}
-{"kind":"stop", ...}
+{"name":"interaction.model","data":{"kind":"model","event":{"type":"start"},...}}
+{"name":"interaction.model","data":{"kind":"model","event":{"type":"delta","text":"I"},...}}
+{"name":"interaction.model","data":{"kind":"model","event":{"type":"delta","text":" am"},...}}
+{"name":"interaction.model","data":{"kind":"model","event":{"type":"end"},...}}
 ```

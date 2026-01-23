@@ -38,11 +38,13 @@ The example below shows how to wire a transport adapter into a pipeline run.
 
 During a run the interaction pipeline emits events such as messages, diagnostics and trace entries. Each event travels through the transport as an `EventStreamEvent` value, which adds a small envelope around the raw event. Different consumers focus on different parts of that stream.
 
-| Event Name               | Typical Consumer                                                                |
-| :----------------------- | :------------------------------------------------------------------------------ |
-| `interaction.message`    | Chat UI. Renders text deltas and tool updates.                                  |
-| `interaction.diagnostic` | Developer tools. Shows validation errors or warnings.                           |
-| `interaction.trace`      | Observability tools. Sends trace spans to systems such as LangSmith or Datadog. |
+| Event Name                 | Typical Consumer                                                                |
+| :------------------------- | :------------------------------------------------------------------------------ |
+| `interaction.model`        | Chat UI. Renders text deltas and tool updates.                                  |
+| `interaction.query`        | Retrieval UI. Renders sources and query stream updates.                         |
+| `interaction.diagnostic`   | Developer tools. Shows validation errors or warnings.                           |
+| `interaction.trace`        | Observability tools. Sends trace spans to systems such as LangSmith or Datadog. |
+| `interaction.event-stream` | Debug tooling. Raw event-stream payloads for inspection.                        |
 
 This generic event shape makes it easy to send events to several destinations through `createEventStreamFanout`. A single run can feed logging, metrics, observability tools and a UI at the same time.
 
