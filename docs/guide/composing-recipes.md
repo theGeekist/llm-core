@@ -22,7 +22,7 @@ Both patterns use the same surface, the `.use()` method. That method plugs in a 
 Imagine a standard agent that already handles tools and conversation. You want it to work with your company documents as well. The agent stays the same while the RAG recipe supplies retrieval.
 
 ```ts
-import { recipes } from "#recipes";
+import { recipes } from "@geekist/llm-core/recipes";
 
 // Start with the standard agent
 const workflow = recipes
@@ -47,7 +47,7 @@ Sometimes the overall shape of a recipe feels right while a single decision need
 In that situation you focus on the planning recipe handle.
 
 ```ts
-import { recipes } from "#recipes";
+import { recipes } from "@geekist/llm-core/recipes";
 
 const workflow = recipes
   .agent()

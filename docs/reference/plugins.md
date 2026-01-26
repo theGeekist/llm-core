@@ -11,7 +11,7 @@ Plugins are the smallest unit of composition in the Engine. A plugin is a bag of
 == TypeScript
 
 ```ts
-import type { Plugin } from "#workflow";
+import type { Plugin } from "@geekist/llm-core/workflow";
 
 const plugin: Plugin = {
   key: "model.openai", // stable identifier (namespaced)
@@ -51,8 +51,8 @@ Example:
 == TypeScript
 
 ```ts
-import { recipes } from "#recipes";
-import type { Plugin } from "#workflow";
+import { recipes } from "@geekist/llm-core/recipes";
+import type { Plugin } from "@geekist/llm-core/workflow";
 
 const plugins: Plugin[] = [
   { key: "model.openai", capabilities: { model: { name: "gpt-4.1" } } },
@@ -75,7 +75,7 @@ const wf = recipes
 == JavaScript
 
 ```js
-import { recipes } from "#recipes";
+import { recipes } from "@geekist/llm-core/recipes";
 
 const wf = recipes
   .agent()
@@ -113,7 +113,7 @@ Plugins can hook into recipe lifecycles:
 == TypeScript
 
 ```ts
-import type { Plugin } from "#workflow";
+import type { Plugin } from "@geekist/llm-core/workflow";
 
 const tracePlugin: Plugin = {
   key: "trace.console",

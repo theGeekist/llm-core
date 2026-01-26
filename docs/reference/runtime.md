@@ -13,7 +13,7 @@ Related:
 == TypeScript
 
 ```ts
-import type { InterruptStrategy, RetryConfig } from "#adapters";
+import type { InterruptStrategy, RetryConfig } from "@geekist/llm-core/adapters";
 
 type Runtime = {
   reporter?: { warn: (message: string, context?: unknown) => void };
@@ -61,7 +61,7 @@ Use it like this:
 == TypeScript
 
 ```ts
-import type { Runtime } from "#workflow";
+import type { Runtime } from "@geekist/llm-core/workflow";
 
 const runtime = {
   reporter: { warn: (msg, ctx) => console.warn(msg, ctx) },
@@ -119,6 +119,17 @@ Trace and diagnostics types are available at the root export:
 import type { DiagnosticEntry, TraceEvent } from "@geekist/llm-core";
 ```
 
+Agent loop contracts live in the interaction layer:
+
+```ts
+import type {
+  AgentLoopConfig,
+  AgentLoopStateSnapshot,
+  InteractionItemEvent,
+  InteractionSubagentEvent,
+} from "@geekist/llm-core/interaction";
+```
+
 ## Trace
 
 Trace is always present and records workflow-level events:
@@ -153,6 +164,28 @@ Diagnostics are never required to run in default mode, but they are always prese
 Diagnostics are normalized into structured entries with `level`, `kind`, and `message`.
 
 Capability resolution is deterministic and reducer-driven.
+
+## Agent Loop Snapshots
+
+When an agent loop is used, the runtime records a deterministic snapshot per run and emits it as a trace entry (`agent.loop.snapshot`). The snapshot captures selected agent IDs, normalized tool allowlists, and any loaded skills (with hashes) when a `skills` adapter is registered. The skills adapter is runtime-specific so worker environments can supply a loader that uses fetch + `crypto.subtle` instead of `fs`; if skills are configured but no adapter is available, the runtime emits a contract diagnostic and omits skills from the snapshot. On resume, the runtime reloads skills and compares hashes; mismatches emit resume diagnostics.
+
+Determinism rules are part of the contract:
+
+- Agents are ordered by ID for tie-breaking.
+- Skills are deduped and sorted by scope, then name, then path.
+- Tool allowlists are normalized (trimmed, deduped, sorted) before use.
+- Sub-agents and approval cache keys follow the same determinism rules.
+
+When an `EventStream` is attached, the agent runtime emits `interaction.subagent` for the selected agent and `interaction.item` events for plan and response items in a stable order so UIs can consume loop items without reinterpreting model deltas.
+
+The agent runtime also registers sub-agent tools by default:
+
+- `agent.spawn` — create a sub-agent slot (bounded by `subagents.maxActive`, default 4).
+- `agent.send` — run the sub-agent with new input and return its outcome.
+- `agent.wait` — return the last known outcome for a sub-agent.
+- `agent.close` — close a sub-agent slot and emit a completion event.
+
+Disable these tools by passing `subagents: { enabled: false }` to `createAgentRuntime(...)`, or tighten the limit via `subagents.maxActive`.
 
 ## paused Flow
 
