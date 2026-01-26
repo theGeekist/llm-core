@@ -15,3 +15,5 @@ docs/.vitepress/cache/
 /assistant-ui/
 copilot-sdk
 SKILLS.md
+internal/agent-orchestration-wip.md
+codex

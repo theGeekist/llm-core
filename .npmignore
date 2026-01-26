@@ -1,0 +1,13 @@
+examples/
+docs/
+assistant-ui/
+copilot-sdk/
+codex/
+pipeline/
+.github/
+scripts/
+coverage/
+node_modules/
+**/node_modules/
+**/*.log
+**/.DS_Store

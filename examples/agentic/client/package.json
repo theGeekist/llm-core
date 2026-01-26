@@ -1,5 +1,5 @@
 {
-  "name": "llm-core-kitchen-sink-client",
+  "name": "llm-core-agentic-client",
   "private": true,
   "type": "module",
   "scripts": {

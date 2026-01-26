@@ -18,7 +18,7 @@ hand-edit import paths in every doc.
 Keep snippet files using local aliases for type safety:
 
 - `#adapters` -> `@geekist/llm-core/adapters`
-- `#recipes` -> `@geekist/llm-core/recipes`
+- `@geekist/llm-core/recipes` -> `@geekist/llm-core/recipes`
 - `#workflow` -> `@geekist/llm-core/workflow`
 - `#interaction` -> `@geekist/llm-core/interaction`
 
