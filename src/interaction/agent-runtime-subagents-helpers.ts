@@ -93,7 +93,7 @@ export function buildErrorResult(
   code: string,
   data?: Record<string, unknown>,
 ): Record<string, unknown> & { error: string } {
-  return { error: code, ...(data ?? {}) };
+  return { ...(data ?? {}), error: code };
 }
 
 export function buildMissingResult(code: string, agentId?: string) {

@@ -227,6 +227,23 @@ const abortController = (controller: AbortController) => {
   return undefined;
 };
 
+const readErrorName = (error: unknown) => {
+  if (!error || typeof error !== "object") {
+    return null;
+  }
+  const record = error as { name?: unknown };
+  return typeof record.name === "string" ? record.name : null;
+};
+
+const readErrorMessage = (error: unknown) => {
+  if (error instanceof Error) {
+    return error.message;
+  }
+  return String(error);
+};
+
+const isAbortError = (error: unknown) => readErrorName(error) === "AbortError";
+
 const requestModelCatalog = async (input: {
   providerId: ProviderId;
   token: string | null;
@@ -236,22 +253,34 @@ const requestModelCatalog = async (input: {
   signal: AbortSignal;
 }): Promise<boolean> => {
   setCatalogLoading(input.setState);
-  const response = await fetchModelCatalog({
-    endpoint: input.endpoint,
-    providerId: input.providerId,
-    token: input.token,
-    signal: input.signal,
-  });
-  if (response.error) {
+  try {
+    const response = await fetchModelCatalog({
+      endpoint: input.endpoint,
+      providerId: input.providerId,
+      token: input.token,
+      signal: input.signal,
+    });
+    if (response.error) {
+      setCatalogError({
+        setState: input.setState,
+        error: response.error,
+        fallback: input.fallbackModels,
+      });
+      return false;
+    }
+    setCatalogReady({ setState: input.setState, models: response.models });
+    return true;
+  } catch (error) {
+    if (isAbortError(error)) {
+      return false;
+    }
     setCatalogError({
       setState: input.setState,
-      error: response.error,
+      error: readErrorMessage(error),
       fallback: input.fallbackModels,
     });
     return false;
   }
-  setCatalogReady({ setState: input.setState, models: response.models });
-  return true;
 };
 
 const runModelCatalogEffect = (input: ModelCatalogEffectInput) => {

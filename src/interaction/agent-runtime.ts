@@ -151,18 +151,18 @@ function mergeTools(base?: Tool[] | null, next?: Tool[] | null): Tool[] | null {
   if (!base && !next) {
     return null;
   }
-  const merged: Tool[] = [];
+  const merged = new Map<string, Tool>();
   if (base) {
     for (const tool of base) {
-      merged.push(tool);
+      merged.set(tool.name, tool);
     }
   }
   if (next) {
     for (const tool of next) {
-      merged.push(tool);
+      merged.set(tool.name, tool);
     }
   }
-  return merged;
+  return Array.from(merged.values());
 }
 
 function buildAdapterOverrides(input: AdapterOverrideInput): AdapterBundle | undefined {

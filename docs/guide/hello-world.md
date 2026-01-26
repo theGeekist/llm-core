@@ -19,7 +19,7 @@ If you are new to interactions, start here first:
 
 ## Agent runtime quickstart
 
-If you want the canonical agent loop without wiring packs by hand, start with the agent runtime. It exposes a small `run`/`stream` surface while still using the same recipe system under the hood, so you can swap in custom packs later without changing the entrypoint.
+If you want the canonical agent loop without wiring recipes by hand, start with the agent runtime. It exposes a small `run`/`stream` surface while still using the same recipe system under the hood, and any internal packs remain an implementation detail behind that recipe surface.
 
 ::: code-group
 <<< @/snippets/guide/agent-runtime.js#run [JavaScript]

@@ -35,7 +35,8 @@ const ensureLink = (path: string, target: string) => {
   if (existsSync(path)) {
     rmSync(path, { recursive: true, force: true });
   }
-  symlinkSync(target, path, "dir");
+  const type = process.platform === "win32" ? "junction" : "dir";
+  symlinkSync(target, path, type);
   return true;
 };
 

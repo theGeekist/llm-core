@@ -34,44 +34,56 @@ const readClassName = (props: { className?: string }) => props.className;
 
 const InlineCode: MarkdownCodeRenderer = (props) => {
   const isCodeBlock = useIsMarkdownCodeBlock();
-  const className = readClassName(props);
+  const { className, ...rest } = props;
   return (
     <code
+      {...rest}
       className={cn(
         !isCodeBlock && "aui-md-inline-code rounded border bg-muted font-semibold",
         className,
       )}
-      {...props}
     />
   );
 };
 
-const renderMarkdownParagraph: MarkdownParagraphRenderer = (props) => (
-  <p
-    className={cn("aui-md-p mt-5 mb-5 leading-7 first:mt-0 last:mb-0", readClassName(props))}
-    {...props}
-  />
-);
+const renderMarkdownParagraph: MarkdownParagraphRenderer = (props) => {
+  const { className, ...rest } = props;
+  return (
+    <p
+      {...rest}
+      className={cn(
+        "aui-md-p mt-5 mb-5 leading-7 first:mt-0 last:mb-0",
+        readClassName({ className }),
+      )}
+    />
+  );
+};
 
-const renderMarkdownLink: MarkdownLinkRenderer = (props) => (
-  <a
-    className={cn(
-      "aui-md-a font-medium text-primary underline underline-offset-4",
-      readClassName(props),
-    )}
-    {...props}
-  />
-);
+const renderMarkdownLink: MarkdownLinkRenderer = (props) => {
+  const { className, ...rest } = props;
+  return (
+    <a
+      {...rest}
+      className={cn(
+        "aui-md-a font-medium text-primary underline underline-offset-4",
+        readClassName({ className }),
+      )}
+    />
+  );
+};
 
-const renderMarkdownPre: MarkdownPreRenderer = (props) => (
-  <pre
-    className={cn(
-      "aui-md-pre overflow-x-auto rounded-b-lg bg-black p-4 text-white",
-      readClassName(props),
-    )}
-    {...props}
-  />
-);
+const renderMarkdownPre: MarkdownPreRenderer = (props) => {
+  const { className, ...rest } = props;
+  return (
+    <pre
+      {...rest}
+      className={cn(
+        "aui-md-pre overflow-x-auto rounded-b-lg bg-black p-4 text-white",
+        readClassName({ className }),
+      )}
+    />
+  );
+};
 
 const defaultComponents = memoizeMarkdownComponents({
   p: renderMarkdownParagraph,

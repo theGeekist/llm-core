@@ -22,6 +22,8 @@ type ProviderConnectDialogProps = {
   onClear: () => void;
 };
 
+const buildTokenInputId = (providerId: ProviderId) => `${providerId}-token`;
+
 export const ProviderConnectDialog: FC<ProviderConnectDialogProps> = ({
   providerId,
   open,
@@ -34,6 +36,7 @@ export const ProviderConnectDialog: FC<ProviderConnectDialogProps> = ({
   const provider = readProviderOption(providerId);
   const label = provider.label;
   const authUrl = provider.authUrl;
+  const tokenInputId = buildTokenInputId(providerId);
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
@@ -45,7 +48,10 @@ export const ProviderConnectDialog: FC<ProviderConnectDialogProps> = ({
         </DialogHeader>
         <div className="grid gap-2">
           <div className="flex flex-wrap items-center justify-between gap-3">
-            <label className="text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">
+            <label
+              htmlFor={tokenInputId}
+              className="text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground"
+            >
               {label} API token
             </label>
             {authUrl ? (
@@ -60,6 +66,7 @@ export const ProviderConnectDialog: FC<ProviderConnectDialogProps> = ({
             ) : null}
           </div>
           <input
+            id={tokenInputId}
             type="password"
             value={token}
             onChange={onTokenChange}

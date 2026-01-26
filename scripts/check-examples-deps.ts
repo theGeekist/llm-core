@@ -23,12 +23,13 @@ const readCoreVersion = (deps: Record<string, unknown>) => {
   return typeof value === "string" ? value : null;
 };
 
-const readPackageJson = (filePath: string): PackageJson | null => {
+const readPackageJson = (filePath: string): PackageJson => {
   try {
     const raw = readFileSync(filePath, "utf8");
     return JSON.parse(raw) as PackageJson;
-  } catch {
-    return null;
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    throw new Error(`Failed to read ${filePath}: ${message}`);
   }
 };
 
@@ -104,11 +105,13 @@ const runCheck = (): boolean => {
 
   const offenders: Match[] = [];
   for (const filePath of packageFiles) {
-    const pkg = readPackageJson(filePath);
-    if (!pkg) {
-      continue;
+    try {
+      const pkg = readPackageJson(filePath);
+      offenders.push(...collectMatches(pkg, filePath));
+    } catch (error) {
+      console.error(error instanceof Error ? error.message : String(error));
+      return false;
     }
-    offenders.push(...collectMatches(pkg, filePath));
   }
 
   if (offenders.length === 0) {

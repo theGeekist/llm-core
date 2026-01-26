@@ -84,6 +84,15 @@ function ensureSubagentRecord(manager: SubagentManager, agentId: string) {
   return findSubagentRecord(manager, agentId);
 }
 
+function removeSubagentRecord(manager: SubagentManager, record: SubagentRecord) {
+  const index = manager.records.indexOf(record);
+  if (index < 0) {
+    return false;
+  }
+  manager.records.splice(index, 1);
+  return true;
+}
+
 function ensureSubagentAvailable(manager: SubagentManager, agentId: string) {
   const record = ensureSubagentRecord(manager, agentId);
   if (!record || record.status === "closed") {
@@ -122,8 +131,11 @@ function spawnSubagent(manager: SubagentManager, input: SpawnInput) {
   const agentId = input.agentId ?? `${manager.idPrefix}.${manager.nextId()}`;
   const existing = findSubagentRecord(manager, agentId);
   if (existing) {
-    emitSubagentEvent(manager, buildSubagentSelected(existing));
-    return buildSpawnResult(existing.id, "exists");
+    if (existing.status !== "closed") {
+      emitSubagentEvent(manager, buildSubagentSelected(existing));
+      return buildSpawnResult(existing.id, "exists");
+    }
+    removeSubagentRecord(manager, existing);
   }
   if (countActiveSubagents(manager) >= manager.maxActive) {
     return buildErrorResult("subagent_limit_reached", { maxActive: manager.maxActive });

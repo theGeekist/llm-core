@@ -371,7 +371,7 @@ body {
   }
 
   .agentic-section-body {
-    @apply grid gap-4;
+    @apply grid gap-5;
   }
 
   /* NOTE: agentic-field is now also used by inline controls (kept above). */
@@ -435,7 +435,6 @@ body {
     @apply grid items-start gap-4;
     grid-template-columns: 160px minmax(0, 1fr);
   }
-}
   @media (max-width: 640px) {
     .agentic-row {
       grid-template-columns: 1fr;
@@ -470,11 +469,7 @@ body {
   .agentic-row-control > .agentic-option-grid {
     @apply w-full;
   }
-
-  /* Optional: make section rows breathe a bit more like a form */
-  .agentic-section-body {
-    @apply gap-5;
-  }
+}
 
 @media (prefers-color-scheme: dark) {
   .ks-app {

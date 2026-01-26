@@ -194,7 +194,10 @@ const applySaveToken = (input: {
   if (!input.token.trim()) {
     return null;
   }
-  writeProviderToken(input.providerId, input.token.trim());
+  const stored = writeProviderToken(input.providerId, input.token.trim());
+  if (!stored) {
+    return false;
+  }
   input.setTokenDraft("");
   input.setConnectOpen(false);
   return true;
@@ -212,7 +215,10 @@ const applyClearToken = (input: {
   setTokenDraft: Dispatch<SetStateAction<string>>;
   setConnectOpen: Dispatch<SetStateAction<boolean>>;
 }) => {
-  clearProviderToken(input.providerId);
+  const cleared = clearProviderToken(input.providerId);
+  if (!cleared) {
+    return false;
+  }
   input.setTokenDraft("");
   input.setConnectOpen(false);
   return true;

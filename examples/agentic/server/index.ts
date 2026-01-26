@@ -118,8 +118,51 @@ type RunChatHandlerInput = {
   runResult: MaybePromise<unknown> | null;
 };
 
+type OutcomeInfo = {
+  status: OutcomeType["status"];
+  token: string | null;
+};
+
+const isOutcomeStatus = (value: unknown): value is OutcomeType["status"] =>
+  value === "ok" || value === "paused" || value === "error";
+
+const isOutcomeShape = (value: unknown): value is OutcomeType => {
+  if (!value || typeof value !== "object") {
+    return false;
+  }
+  const record = value as { status?: unknown };
+  return isOutcomeStatus(record.status);
+};
+
+const buildOutcomeInfoOk = (_outcome: Extract<OutcomeType, { status: "ok" }>): OutcomeInfo => ({
+  status: "ok",
+  token: null,
+});
+
+const buildOutcomeInfoPaused = (
+  outcome: Extract<OutcomeType, { status: "paused" }>,
+): OutcomeInfo => ({
+  status: "paused",
+  token: typeof outcome.token === "string" ? outcome.token : null,
+});
+
+const buildOutcomeInfoError = (
+  _outcome: Extract<OutcomeType, { status: "error" }>,
+): OutcomeInfo => ({
+  status: "error",
+  token: null,
+});
+
 const applyOutcome = (input: RunOutcomeInput, outcome: unknown) => {
-  const summary = Outcome.summary(outcome as OutcomeType);
+  if (!isOutcomeShape(outcome)) {
+    sendUiError(input.socket, input.requestId, "invalid_outcome");
+    return false;
+  }
+  const summary = Outcome.match(outcome, {
+    ok: buildOutcomeInfoOk,
+    paused: buildOutcomeInfoPaused,
+    error: buildOutcomeInfoError,
+  });
   sendUiDone({
     socket: input.socket,
     requestId: input.requestId,

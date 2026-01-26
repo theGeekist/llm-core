@@ -75,7 +75,10 @@ function readSnapshotSkills(state?: InteractionState): SkillSnapshotEntry[] | nu
   return snapshot.skills;
 }
 
-function trimValue(value: string): string {
+function trimValue(value: unknown): string {
+  if (typeof value !== "string") {
+    return "";
+  }
   return value.trim();
 }
 
