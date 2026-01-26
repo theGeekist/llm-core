@@ -1,21 +1,49 @@
 import type { ToolCallMessagePartComponent, ToolCallMessagePartProps } from "@assistant-ui/react";
+import { bindFirst } from "@geekist/llm-core";
 import { CheckIcon, ChevronDownIcon, ChevronUpIcon, XCircleIcon } from "lucide-react";
-import { useState } from "react";
+import type { Dispatch, SetStateAction } from "react";
+import { useId, useState } from "react";
 import { Button } from "../ui/button";
 import { cn } from "../../lib/utils";
 
 type ToolFallbackProps = ToolCallMessagePartProps;
 
+const applyToggleCollapsed = (value: boolean) => !value;
+
+const toggleCollapsed = (setIsCollapsed: Dispatch<SetStateAction<boolean>>) => {
+  setIsCollapsed(applyToggleCollapsed);
+  return true;
+};
+
+const safeStringify = (value: unknown) => {
+  if (typeof value === "string") {
+    return value;
+  }
+  try {
+    return JSON.stringify(value);
+  } catch {
+    return String(value);
+  }
+};
+
+const safeStringifyPretty = (value: unknown) => {
+  if (typeof value === "string") {
+    return value;
+  }
+  try {
+    return JSON.stringify(value, null, 2);
+  } catch {
+    return safeStringify(value);
+  }
+};
+
 const ToolFallbackImpl = ({ toolName, argsText, result, status }: ToolFallbackProps) => {
   const [isCollapsed, setIsCollapsed] = useState(true);
+  const contentId = useId();
+  const handleToggleCollapsed = bindFirst(toggleCollapsed, setIsCollapsed);
 
   const isCancelled = status?.type === "incomplete" && status.reason === "cancelled";
-  const cancelledReason =
-    isCancelled && status.error
-      ? typeof status.error === "string"
-        ? status.error
-        : JSON.stringify(status.error)
-      : null;
+  const cancelledReason = isCancelled && status.error ? safeStringify(status.error) : null;
 
   return (
     <div
@@ -40,21 +68,18 @@ const ToolFallbackImpl = ({ toolName, argsText, result, status }: ToolFallbackPr
           <b>{toolName}</b>
         </p>
         <Button
-          onClick={() => setIsCollapsed(!isCollapsed)}
+          onClick={handleToggleCollapsed}
           size="icon"
           variant="ghost"
           aria-expanded={!isCollapsed}
-          aria-controls="tool-fallback-content"
+          aria-controls={contentId}
           aria-label={isCollapsed ? "Expand tool details" : "Collapse tool details"}
         >
           {isCollapsed ? <ChevronUpIcon /> : <ChevronDownIcon />}
         </Button>
       </div>
       {!isCollapsed && (
-        <div
-          id="tool-fallback-content"
-          className="aui-tool-fallback-content flex flex-col gap-2 border-t pt-2"
-        >
+        <div id={contentId} className="aui-tool-fallback-content flex flex-col gap-2 border-t pt-2">
           {cancelledReason && (
             <div className="aui-tool-fallback-cancelled-root px-4">
               <p className="aui-tool-fallback-cancelled-header font-semibold text-muted-foreground">
@@ -72,7 +97,7 @@ const ToolFallbackImpl = ({ toolName, argsText, result, status }: ToolFallbackPr
             <div className="aui-tool-fallback-result-root border-t border-dashed px-4 pt-2">
               <p className="aui-tool-fallback-result-header font-semibold">Result:</p>
               <pre className="aui-tool-fallback-result-content whitespace-pre-wrap">
-                {typeof result === "string" ? result : JSON.stringify(result, null, 2)}
+                {safeStringifyPretty(result)}
               </pre>
             </div>
           )}

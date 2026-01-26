@@ -213,16 +213,18 @@ export const buildSubagentCompleted = (record: SubagentRecord) =>
 export const buildSubagentFailed = (record: SubagentRecord, error?: string) =>
   buildSubagentEvent("failed", record, error);
 
-export function applySubagentCompleted(record: SubagentRecord, outcome: Outcome<unknown>) {
+const applySubagentOutcomeRecord = (record: SubagentRecord, outcome: Outcome<unknown>) => {
   record.status = "idle";
   record.lastOutcome = outcome;
   return outcome;
+};
+
+export function applySubagentCompleted(record: SubagentRecord, outcome: Outcome<unknown>) {
+  return applySubagentOutcomeRecord(record, outcome);
 }
 
-export function applySubagentFailed(record: SubagentRecord, error: unknown) {
-  record.status = "idle";
-  record.lastOutcome = toSubagentErrorOutcome(error);
-  return error;
+export function applySubagentFailed(record: SubagentRecord, outcome: Outcome<unknown>) {
+  return applySubagentOutcomeRecord(record, outcome);
 }
 
 export function emitSubagentCompleted(input: { manager: SubagentManager; record: SubagentRecord }) {
@@ -244,7 +246,7 @@ export function applySubagentOutcome(
   if (outcome.status === "error") {
     const applyError = bindFirst(applySubagentFailed, input.record);
     const emitError = bindFirst(emitSubagentFailed, input);
-    applyError(outcome.error);
+    applyError(outcome);
     return maybeTap(emitError, outcome);
   }
   const applyCompleted = bindFirst(applySubagentCompleted, input.record);

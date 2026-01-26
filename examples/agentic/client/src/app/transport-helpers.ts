@@ -276,18 +276,39 @@ export const readOutcomeFromEvent = (event: TransportEvent): OutcomeSummary | nu
 };
 
 type UiChunkMessage = Extract<TransportEvent["message"], { type: "ui.chunk" }>;
-type UiChunk = UiChunkMessage["chunk"];
 
-const readUiChunkType = (chunk: UiChunk) => chunk.type;
+const readChunkType = (chunk: unknown) => {
+  if (!chunk || typeof chunk !== "object") {
+    return null;
+  }
+  if (!("type" in chunk)) {
+    return null;
+  }
+  const value = (chunk as { type?: unknown }).type;
+  return typeof value === "string" ? value : null;
+};
 
-const isUiChunk = (message: TransportEvent["message"]): message is UiChunkMessage =>
-  message.type === "ui.chunk";
+const isUiChunk = (message: TransportEvent["message"]): message is UiChunkMessage => {
+  if (!message || typeof message !== "object") {
+    return false;
+  }
+  if (!("type" in message)) {
+    return false;
+  }
+  if ((message as { type?: unknown }).type !== "ui.chunk") {
+    return false;
+  }
+  return "chunk" in message;
+};
 
-const isDataChunk = (chunk: UiChunk) => readUiChunkType(chunk).startsWith("data-");
+const isDataChunk = (chunk: unknown) => {
+  const chunkType = readChunkType(chunk);
+  return typeof chunkType === "string" && chunkType.startsWith("data-");
+};
 
 const readArrayLength = (value: unknown) => (Array.isArray(value) ? value.length : 0);
 
-const readChunkData = (chunk: UiChunk): unknown | null => {
+const readChunkData = (chunk: unknown): unknown | null => {
   if (!chunk || typeof chunk !== "object") {
     return null;
   }
@@ -315,8 +336,7 @@ const readSourcesSummary = (data: unknown) => {
   return count > 0 ? `(${count})` : "";
 };
 
-const formatDataChunk = (chunk: UiChunk) => {
-  const chunkType = readUiChunkType(chunk);
+const formatDataChunk = (chunk: unknown, chunkType: string) => {
   if (chunkType === "data-diagnostic") {
     return `${chunkType}${readDiagnosticSummary(readChunkData(chunk))}`;
   }
@@ -326,11 +346,15 @@ const formatDataChunk = (chunk: UiChunk) => {
   return chunkType;
 };
 
-const formatUiChunk = (chunk: UiChunk) => {
-  if (isDataChunk(chunk)) {
-    return `ui.chunk: ${formatDataChunk(chunk)}`;
+const formatUiChunk = (chunk: unknown) => {
+  const chunkType = readChunkType(chunk);
+  if (!chunkType) {
+    return "ui.chunk: invalid";
   }
-  return `ui.chunk: ${readUiChunkType(chunk)}`;
+  if (isDataChunk(chunk)) {
+    return `ui.chunk: ${formatDataChunk(chunk, chunkType)}`;
+  }
+  return `ui.chunk: ${chunkType}`;
 };
 
 export const formatTransportEvent = (event: TransportEvent) => {
