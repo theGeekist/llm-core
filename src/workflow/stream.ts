@@ -28,6 +28,8 @@ export type StreamingModelInteractionOptions = {
   interactionId: string;
   correlationId: string;
   sourceIdPrefix?: string;
+  nextSequence?: () => number;
+  nextSourceId?: () => string;
 };
 
 export const createStreamingModel = (options: StreamingModelOptions): Model => ({
@@ -170,6 +172,12 @@ const buildSourceIdWith = (input: { prefix: string; nextIndex: () => number }) =
 const createNextSourceId = (prefix: string) =>
   bindFirst(buildSourceIdWith, { prefix, nextIndex: createSequence() });
 
+const readNextSequence = (options: StreamingModelInteractionOptions) =>
+  options.nextSequence ?? createSequence();
+
+const readNextSourceId = (options: StreamingModelInteractionOptions) =>
+  options.nextSourceId ?? createNextSourceId(readSourcePrefix(options));
+
 const toStreamingModelOptions = (
   options: StreamingModelInteractionOptions,
 ): StreamingModelOptions => ({
@@ -177,6 +185,6 @@ const toStreamingModelOptions = (
   eventStream: options.eventStream,
   interactionId: options.interactionId,
   correlationId: options.correlationId,
-  nextSequence: createSequence(),
-  nextSourceId: createNextSourceId(readSourcePrefix(options)),
+  nextSequence: readNextSequence(options),
+  nextSourceId: readNextSourceId(options),
 });

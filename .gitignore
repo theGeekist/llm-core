@@ -13,3 +13,5 @@ pipeline
 pipeline/
 docs/.vitepress/cache/
 /assistant-ui/
+copilot-sdk
+SKILLS.md

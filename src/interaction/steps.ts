@@ -5,17 +5,16 @@ import { maybeChain, maybeMap, maybeTap, maybeToStep, maybeTry } from "#shared/m
 import type { MaybeAsyncIterable, MaybePromise, Step } from "#shared/maybe";
 import type { PipelinePaused } from "@wpkernel/pipeline/core";
 import { isString } from "#shared/guards";
-import { emitInteractionEvent, emitInteractionEvents } from "./transport";
 import {
   createInteractionPipeline,
   createInteractionReducer,
   createInteractionStep,
   type InteractionStepApply,
 } from "./pipeline";
+import { applyRunTools } from "./run-tools";
 import type {
   InteractionContext,
   InteractionEvent,
-  InteractionEventMeta,
   InteractionInput,
   InteractionPauseRequest,
   InteractionRunOutcome,
@@ -30,6 +29,14 @@ import {
   sortStepSpecs,
   usePipelineHelper,
 } from "#shared/steps";
+import {
+  createMeta,
+  createMetaWithSequence,
+  emitInteraction,
+  emitInteractionEventsForContext,
+} from "./event-utils";
+
+export { applyRunTools } from "./run-tools";
 
 export type InteractionStepSpec = StepSpecBase & {
   apply: InteractionStepApply;
@@ -117,32 +124,6 @@ export const readResultText = (result: ModelResult): string | null => {
   return (last ? readMessageText(last) : null) ?? null;
 };
 
-/** @internal */
-export const createMeta = (
-  state: InteractionState,
-  input: InteractionInput,
-  sourceId: string,
-): InteractionEventMeta => ({
-  sequence: (state.lastSequence ?? 0) + 1,
-  timestamp: Date.now(),
-  sourceId,
-  correlationId: input.correlationId,
-  interactionId: input.interactionId,
-});
-
-/** @internal */
-export const createMetaWithSequence = (
-  sequence: number,
-  input: InteractionInput,
-  sourceId: string,
-): InteractionEventMeta => ({
-  sequence,
-  timestamp: Date.now(),
-  sourceId,
-  correlationId: input.correlationId,
-  interactionId: input.interactionId,
-});
-
 const reduceInteraction = (
   state: InteractionState,
   context: InteractionContext,
@@ -154,17 +135,6 @@ const emitInteractionTap = (
   event: InteractionEvent,
   _state: InteractionState,
 ) => emitInteraction(context, event);
-
-/** @internal */
-export const emitInteractionEventsForContext = (
-  context: InteractionContext,
-  events: InteractionEvent[],
-) => {
-  if (!context.eventStream) {
-    return null;
-  }
-  return emitInteractionEvents(context.eventStream, events);
-};
 
 const emitInteractionEventsTap = (
   context: InteractionContext,
@@ -183,14 +153,6 @@ const reduceAndEmitInteraction = (
   context: InteractionContext,
   event: InteractionEvent,
 ) => maybeTap(bindInteractionTap(context, event), reduceInteraction(state, context, event));
-
-/** @internal */
-export const emitInteraction = (context: InteractionContext, event: InteractionEvent) => {
-  if (!context.eventStream) {
-    return null;
-  }
-  return emitInteractionEvent(context.eventStream, event);
-};
 
 const reduceAndEmitInteractionEvents = (
   state: InteractionState,
@@ -454,11 +416,6 @@ export const applyRunModel: InteractionStepApply = (options) =>
     bindFirst(toInteractionOutput, options),
     applyRunModelCore(options.output, options.context, options.input),
   );
-
-export const applyRunTools: InteractionStepApply = (options) => {
-  void options;
-  return { output: options.output };
-};
 
 export const InteractionCorePack: InteractionStepPack = {
   name: "interaction-core",

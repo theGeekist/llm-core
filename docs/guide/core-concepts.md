@@ -11,8 +11,7 @@ Each idea keeps the system predictable while staying flexible enough for real ap
 
 ## 1. Principle: Recipes are Assets
 
-A **Recipe** is more than a script. It is a named, versioned composition of **Packs**.
-A Pack is a small module of logic that you can test in isolation and reuse across projects.
+A **Recipe** is more than a script. It is a named, versioned composition of steps. Internally, recipe authors group steps into **Packs** for reuse and override control.
 
 ```mermaid
 graph TD
@@ -24,10 +23,11 @@ graph TD
     end
 ```
 
-Recipes describe _what_ you want to happen. Packs supply the individual steps that implement that intent.
+Recipes describe _what_ you want to happen. Packs supply the individual steps that implement that intent. Most users only touch `recipes.*()` and never need to author packs directly.
 
-- Packs contain **Steps**, which are the actual units of work.
+- Packs contain **Steps**, which are the actual units of work (internal authoring tool).
 - Recipes stitch Packs together. You call `recipes.*()` to build them.
+  See [Composition Model](/reference/composition-model) for the internal wiring.
 
 ### Sidebar: The Engine, called a Workflow
 

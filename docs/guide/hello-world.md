@@ -17,17 +17,16 @@ If you are new to interactions, start here first:
 
 ---
 
-## How workflows compose packs
+## How workflows compose recipes
 
-An agent workflow is assembled from packs. In this example you attach the RAG pack and the HITL pack
-to the base agent recipe, and the workflow runtime executes them together as a single DAG:
+An agent workflow is assembled from recipes. In this example you attach the RAG recipe and the HITL recipe to the base agent recipe, and the workflow runtime executes them together as a single DAG:
 
 ```mermaid
 flowchart LR
-  R[Recipe] --> P1[RAG pack]
-  R --> P2[HITL pack]
-  P1 --> W[Workflow runtime]
-  P2 --> W
+  R[Recipe] --> R1[RAG recipe]
+  R --> R2[HITL recipe]
+  R1 --> W[Workflow runtime]
+  R2 --> W
 ```
 
 ---
@@ -46,10 +45,8 @@ flowchart LR
 
 In this setup:
 
-- the **RAG pack** expects a `retriever` adapter and handles the query → documents → answer flow
-  for you, and
-- the **HITL pack** adds a gate that can return a `paused` outcome when the workflow needs
-  human approval.
+- the **RAG recipe** expects a `retriever` adapter and handles the query → documents → answer flow for you, and
+- the **HITL recipe** adds a gate that can return a `paused` outcome when the workflow needs human approval.
 
 ---
 

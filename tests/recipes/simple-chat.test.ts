@@ -2,6 +2,7 @@ import { describe, expect, it } from "bun:test";
 import { createHelper } from "@wpkernel/pipeline";
 import { recipes } from "../../src/recipes";
 import { assertSyncOutcome } from "../workflow/helpers";
+import { createMockModel } from "../fixtures/factories";
 
 const useHelper = (pipeline: unknown, helper: unknown) => {
   (pipeline as { use: (value: unknown) => void }).use(helper);
@@ -36,6 +37,24 @@ describe("Simple Chat Recipe", () => {
     const runtime = workflow.build();
     const explanation = runtime.explain();
     expect(explanation).toBeDefined();
+  });
+
+  it("exposes the simple-chat respond step in the plan", () => {
+    const workflow = recipes["chat.simple"]();
+    const plan = workflow.explain();
+    expect(plan.steps.some((step) => step.id === "simple-chat.respond")).toBe(true);
+  });
+
+  it("responds using the model adapter", () => {
+    const model = createMockModel("hello");
+    const workflow = recipes["chat.simple"]().defaults({ adapters: { model } });
+    const runtime = workflow.build();
+    const outcome = assertSyncOutcome(runtime.run({ input: "question" }));
+    if (outcome.status !== "ok") {
+      throw new Error("Expected ok outcome.");
+    }
+    const agent = (outcome.artefact as { agent?: { response?: string } }).agent;
+    expect(agent?.response).toBe("hello");
   });
 
   it("adds system config plugin when system prompt is set", () => {

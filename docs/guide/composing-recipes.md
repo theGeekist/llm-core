@@ -6,14 +6,14 @@ If you have ever rewritten an entire bot because you wanted to change the prompt
 
 ## 1) The composition contract
 
-A recipe is a collection of Packs. Each Pack owns a clear responsibility such as planning, retrieval, memory, or finalisation.
+A recipe resolves to internal Packs that own clear responsibilities such as planning, retrieval, memory, or finalisation. Most users compose recipes and never touch packs directly.
 
 When you compose recipes, you usually follow one of two patterns.
 
 1. Add capabilities. For example, start with an agent and give it RAG.
 2. Override capabilities. For example, keep the standard agent and supply a different planning policy.
 
-Both patterns use the same surface, the `.use()` method. That method plugs in a new Pack or recipe while the rest of the workflow remains intact.
+Both patterns use the same surface, the `.use()` method. That method plugs in a new recipe while the rest of the workflow remains intact. Packs remain an internal authoring tool.
 
 ---
 
@@ -40,18 +40,18 @@ Recipes register their steps with explicit names. The pipeline builder merges th
 
 ---
 
-## 3) Overriding behaviour (Packs)
+## 3) Overriding behaviour (Planning recipe)
 
 Sometimes the overall shape of a recipe feels right while a single decision needs to change. A common example is an agent where the loop works well and the planning style needs to reflect an internal taxonomy or tone.
 
-In that situation you focus on the Planning Pack.
+In that situation you focus on the planning recipe handle.
 
 ```ts
 import { recipes } from "#recipes";
 
 const workflow = recipes
   .agent()
-  // Replaces the default planning pack with your custom logic
+  // Replaces the default planning recipe with your custom logic
   .use(
     recipes["agent.planning"]({
       model: "reasoning-specialist",
@@ -61,7 +61,7 @@ const workflow = recipes
   .build();
 ```
 
-Here the agent recipe still supplies tools, memory, and finalisation. The Planning Pack now uses a dedicated model and prompt that fit your domain. Planning becomes a slot you fill with your own logic while the rest of the recipe continues to benefit from upstream improvements.
+Here the agent recipe still supplies tools, memory, and finalisation. The planning recipe now uses a dedicated model and prompt that fit your domain. Planning becomes a slot you fill with your own logic while the rest of the recipe continues to benefit from upstream improvements.
 
 ---
 
@@ -69,7 +69,7 @@ Here the agent recipe still supplies tools, memory, and finalisation. The Planni
 
 As composition grows richer you may wonder what the final workflow looks like.
 
-The `.explain()` method answers that question. It returns the resolved list of steps after all recipes and Packs have been applied.
+The `.explain()` method answers that question. It returns the resolved list of steps after all recipes (and internal Packs) have been applied. For pack-level internals, see [Composition Model](/reference/composition-model).
 
 ```js
 const plan = workflow.explain();
@@ -90,6 +90,6 @@ This model helps platform and product teams meet in the middle.
 
 Platform teams can publish a core Security Agent recipe that already handles authentication, auditing, logging, and other guard rails.
 
-Product teams can import that agent recipe and override only the Packs that express product‑specific behaviour, such as the system prompt, planning rules, or retrieval configuration.
+Product teams can import that agent recipe and override only the recipes that express product‑specific behaviour, such as the system prompt, planning rules, or retrieval configuration.
 
 Every product surface inherits the same compliant, observable agent. When the platform team improves the shared recipe, for example with enhanced logging or stricter tool policies, all dependent products gain those improvements on their next build while keeping their local customisation.

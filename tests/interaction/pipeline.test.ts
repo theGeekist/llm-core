@@ -205,6 +205,65 @@ describe("interaction pipeline", () => {
     });
   });
 
+  it("executes tool calls and emits tool results", async () => {
+    const pipeline = createInteractionPipelineWithDefaults();
+    const model: Model = {
+      generate: () => ({
+        text: "Needs tool",
+        toolCalls: [{ id: "call-1", name: "lookup", arguments: { q: "A" } }],
+      }),
+    };
+    const tools = [
+      {
+        name: "lookup",
+        execute: () => ({ ok: true }),
+      },
+    ];
+    const input = { message: createMockMessage("Hi") };
+
+    const result = await runInteractionPipeline(pipeline, {
+      input,
+      adapters: { model, tools },
+    });
+
+    const runResult = assertRunResult(result);
+    expect(runResult.artefact.messages.length).toBe(3);
+    const message = runResult.artefact.messages[2];
+    if (!message || typeof message.content === "string") {
+      throw new Error("Expected structured assistant content.");
+    }
+    const parts = message.content.parts as MessagePart[];
+    expect(parts.some((part: MessagePart) => part.type === "tool-result")).toBe(true);
+  });
+
+  it("emits tool errors when tools are missing", async () => {
+    const pipeline = createInteractionPipelineWithDefaults();
+    const model: Model = {
+      generate: () => ({
+        text: "Needs tool",
+        toolCalls: [{ id: "call-2", name: "missing", arguments: { q: "A" } }],
+      }),
+    };
+    const input = { message: createMockMessage("Hi") };
+
+    const result = await runInteractionPipeline(pipeline, {
+      input,
+      adapters: { model },
+    });
+
+    const runResult = assertRunResult(result);
+    expect(runResult.artefact.messages.length).toBe(3);
+    const message = runResult.artefact.messages[2];
+    if (!message || typeof message.content === "string") {
+      throw new Error("Expected structured assistant content.");
+    }
+    const parts = message.content.parts as MessagePart[];
+    const toolResult = parts.find((part) => part.type === "tool-result") as
+      | Extract<MessagePart, { type: "tool-result" }>
+      | undefined;
+    expect(toolResult?.isError).toBe(true);
+  });
+
   it("uses messages when text is missing and preserves reasoning", async () => {
     const pipeline = createInteractionPipelineWithDefaults();
     const model: Model = {
