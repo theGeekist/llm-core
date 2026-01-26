@@ -398,9 +398,31 @@ const withAuthHeader = (token: string, headers: HeadersInit) => ({
   Authorization: `Bearer ${token}`,
 });
 
-const fetchOpenAiModels = async (token: string): Promise<ModelEntry[]> => {
+const MODEL_CATALOG_TIMEOUT_MS = 8000;
+
+const abortControllerAbort = (controller: AbortController) => {
+  controller.abort();
+  return true;
+};
+
+const startAbortTimer = (controller: AbortController, timeoutMs: number) =>
+  setTimeout(bindFirst(abortControllerAbort, controller), timeoutMs);
+
+const clearAbortTimer = (timerId: ReturnType<typeof setTimeout>) => {
+  clearTimeout(timerId);
+  return true;
+};
+
+const createTimeoutSignal = (timeoutMs: number) => {
+  const controller = new AbortController();
+  const timerId = startAbortTimer(controller, timeoutMs);
+  return { signal: controller.signal, timerId };
+};
+
+const fetchOpenAiModels = async (token: string, signal?: AbortSignal): Promise<ModelEntry[]> => {
   const response = await fetch("https://api.openai.com/v1/models", {
     headers: withAuthHeader(token, {}),
+    signal,
   });
   if (!response.ok) {
     throw new Error(`OpenAI models error (${response.status}).`);
@@ -416,12 +438,13 @@ const fetchOpenAiModels = async (token: string): Promise<ModelEntry[]> => {
   return entries;
 };
 
-const fetchAnthropicModels = async (token: string): Promise<ModelEntry[]> => {
+const fetchAnthropicModels = async (token: string, signal?: AbortSignal): Promise<ModelEntry[]> => {
   const response = await fetch("https://api.anthropic.com/v1/models", {
     headers: {
       "x-api-key": token,
       "anthropic-version": "2023-06-01",
     },
+    signal,
   });
   if (!response.ok) {
     throw new Error(`Anthropic models error (${response.status}).`);
@@ -439,8 +462,8 @@ const fetchAnthropicModels = async (token: string): Promise<ModelEntry[]> => {
   return entries;
 };
 
-const fetchOllamaModels = async (): Promise<ModelEntry[]> => {
-  const response = await fetch("http://127.0.0.1:11434/api/tags");
+const fetchOllamaModels = async (signal?: AbortSignal): Promise<ModelEntry[]> => {
+  const response = await fetch("http://127.0.0.1:11434/api/tags", { signal });
   if (!response.ok) {
     throw new Error(`Ollama models error (${response.status}).`);
   }
@@ -456,19 +479,24 @@ const fetchOllamaModels = async (): Promise<ModelEntry[]> => {
 };
 
 const fetchProviderModels = async (input: ModelCatalogRequest): Promise<ModelOption[]> => {
-  if (input.providerId === "ollama") {
-    return toModelOptions(await fetchOllamaModels());
+  const timeout = createTimeoutSignal(MODEL_CATALOG_TIMEOUT_MS);
+  try {
+    if (input.providerId === "ollama") {
+      return toModelOptions(await fetchOllamaModels(timeout.signal));
+    }
+    if (!input.token) {
+      throw new Error(`Missing API token for ${input.providerId}.`);
+    }
+    if (input.providerId === "openai") {
+      return toModelOptions(await fetchOpenAiModels(input.token, timeout.signal));
+    }
+    if (input.providerId === "anthropic") {
+      return toModelOptions(await fetchAnthropicModels(input.token, timeout.signal));
+    }
+    throw new Error(`Unsupported provider ${input.providerId}.`);
+  } finally {
+    clearAbortTimer(timeout.timerId);
   }
-  if (!input.token) {
-    throw new Error(`Missing API token for ${input.providerId}.`);
-  }
-  if (input.providerId === "openai") {
-    return toModelOptions(await fetchOpenAiModels(input.token));
-  }
-  if (input.providerId === "anthropic") {
-    return toModelOptions(await fetchAnthropicModels(input.token));
-  }
-  throw new Error(`Unsupported provider ${input.providerId}.`);
 };
 
 const buildModelResponse = (input: ModelCatalogResponse) =>

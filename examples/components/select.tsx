@@ -10,7 +10,7 @@ export type SelectProps = {
   id: string;
   value: string;
   options: SelectOption[];
-  suffix: string;
+  suffix?: string;
   onChange: (event: ChangeEvent<HTMLSelectElement>) => void;
 };
 

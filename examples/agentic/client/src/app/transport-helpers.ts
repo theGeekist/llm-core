@@ -148,11 +148,12 @@ const applyModelIdChange = (
   },
   modelId: string | null,
 ) => {
-  input.setModelId(modelId);
+  const normalized = modelId === "" ? null : modelId;
+  input.setModelId(normalized);
   updateTransportData(input, {
     adapterSource: input.adapterSource,
     providerId: input.providerId,
-    modelId,
+    modelId: normalized,
   });
   return true;
 };

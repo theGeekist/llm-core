@@ -221,7 +221,7 @@ export function applySubagentCompleted(record: SubagentRecord, outcome: Outcome<
 
 export function applySubagentFailed(record: SubagentRecord, error: unknown) {
   record.status = "idle";
-  record.lastOutcome = null;
+  record.lastOutcome = toSubagentErrorOutcome(error);
   return error;
 }
 

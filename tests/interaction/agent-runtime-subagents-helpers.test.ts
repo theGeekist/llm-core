@@ -3,6 +3,7 @@ import type { EventStreamEvent } from "../../src/adapters/types";
 import { createAgentEventState } from "../../src/interaction/agent-runtime-events";
 import type { AgentRuntimeInput } from "../../src/interaction/agent-runtime";
 import type { Outcome } from "../../src/workflow/types";
+import type { MaybePromise } from "../../src/shared/maybe";
 import {
   applySubagentOutcome,
   buildMissingResult,
@@ -73,6 +74,9 @@ const createManager = (stream: RecordingStream): SubagentManager => ({
 
 const createRecord = (manager: SubagentManager, agentId = "agent-1"): SubagentRecord =>
   createSubagentRecord(manager, { agentId });
+
+const readLastOutcome = async (outcome: MaybePromise<Outcome<unknown>> | null) =>
+  outcome ? await outcome : null;
 
 const requireRecord = (records: SubagentRecord[]): SubagentRecord => {
   const record = records[0];
@@ -147,7 +151,12 @@ describe("subagent helpers", () => {
     const errorRecord = requireRecord(manager.records);
     setRecordStatus(errorRecord, "running");
     await applySubagentOutcome({ manager, record: errorRecord }, createErrorOutcome());
-    expect(errorRecord.lastOutcome).toBeNull();
+    const lastOutcome = await readLastOutcome(errorRecord.lastOutcome ?? null);
+    const isError = lastOutcome?.status === "error";
+    expect(isError).toBe(true);
+    if (isError && lastOutcome) {
+      expect(lastOutcome.error).toBeInstanceOf(Error);
+    }
   });
 
   it("wraps last outcomes into wait results", async () => {

@@ -39,12 +39,22 @@ const ToolFallbackImpl = ({ toolName, argsText, result, status }: ToolFallbackPr
           {isCancelled ? "Cancelled tool: " : "Used tool: "}
           <b>{toolName}</b>
         </p>
-        <Button onClick={() => setIsCollapsed(!isCollapsed)} size="icon" variant="ghost">
+        <Button
+          onClick={() => setIsCollapsed(!isCollapsed)}
+          size="icon"
+          variant="ghost"
+          aria-expanded={!isCollapsed}
+          aria-controls="tool-fallback-content"
+          aria-label={isCollapsed ? "Expand tool details" : "Collapse tool details"}
+        >
           {isCollapsed ? <ChevronUpIcon /> : <ChevronDownIcon />}
         </Button>
       </div>
       {!isCollapsed && (
-        <div className="aui-tool-fallback-content flex flex-col gap-2 border-t pt-2">
+        <div
+          id="tool-fallback-content"
+          className="aui-tool-fallback-content flex flex-col gap-2 border-t pt-2"
+        >
           {cancelledReason && (
             <div className="aui-tool-fallback-cancelled-root px-4">
               <p className="aui-tool-fallback-cancelled-header font-semibold text-muted-foreground">

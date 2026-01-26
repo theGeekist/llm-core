@@ -315,36 +315,43 @@ const applyMissingInputError = (input: RunOutcomeInput) => {
 };
 
 const runChatRequest = (socket: ServerWebSocket<SocketData>, message: ClientChatRequest) => {
-  const model = selectModel(toModelSelection({ data: message.data, tokens: socket.data.tokens }));
-  const coreMessages = toCoreMessages(message.messages);
-  const text = readUserInputText(coreMessages);
-  const config = message.data?.agentConfig;
-  const context = buildAgentContext({ config, context: message.data?.context ?? null });
-  const threadId = message.data?.threadId ?? message.chatId;
-
-  const writer = createWebSocketUiWriter(socket, message.requestId);
-  const eventStream = createAiSdkInteractionEventStream({ writer });
-
   const outcomeInput: RunOutcomeInput = { socket, requestId: message.requestId };
-  if (!text) {
-    return applyMissingInputError(outcomeInput);
-  }
-  const runtime = createAgentRuntime({
-    model,
-    config,
-    subagents: message.data?.subagents,
-  });
-  const runResult = runtime.stream({
-    text,
-    context: context ?? undefined,
-    threadId,
-    eventStream,
-    interactionId: message.chatId,
-    correlationId: message.requestId,
-  });
-  const handlerInput = createRunChatHandlerInput(outcomeInput, runResult);
+  try {
+    const model = selectModel(toModelSelection({ data: message.data, tokens: socket.data.tokens }));
+    const coreMessages = toCoreMessages(message.messages);
+    const text = readUserInputText(coreMessages);
+    const config = message.data?.agentConfig;
+    const context = buildAgentContext({ config, context: message.data?.context ?? null });
+    const threadId = message.data?.threadId ?? message.chatId;
 
-  return maybeTry(bindFirst(applyRunError, outcomeInput), bindFirst(handleRunResult, handlerInput));
+    const writer = createWebSocketUiWriter(socket, message.requestId);
+    const eventStream = createAiSdkInteractionEventStream({ writer });
+
+    if (!text) {
+      return applyMissingInputError(outcomeInput);
+    }
+    const runtime = createAgentRuntime({
+      model,
+      config,
+      subagents: message.data?.subagents,
+    });
+    const runResult = runtime.stream({
+      text,
+      context: context ?? undefined,
+      threadId,
+      eventStream,
+      interactionId: message.chatId,
+      correlationId: message.requestId,
+    });
+    const handlerInput = createRunChatHandlerInput(outcomeInput, runResult);
+
+    return maybeTry(
+      bindFirst(applyRunError, outcomeInput),
+      bindFirst(handleRunResult, handlerInput),
+    );
+  } catch (error) {
+    return applyRunError(outcomeInput, error);
+  }
 };
 
 const handleAssistantTransport = (req: Request): MaybePromise<Response> => {
@@ -362,30 +369,42 @@ const handleAssistantBodyOrError = (body: unknown) => {
   return handleAssistantBody(body);
 };
 
+const reportAssistantError = (error: unknown) => {
+  console.error(error);
+  return true;
+};
+
 const handleAssistantBody = (body: unknown): Response => {
   const parsed = parseAssistantTransportRequest(body);
   if (!parsed) {
     return new Response("Invalid assistant transport payload", { status: 400 });
   }
+  let streamAdapter: ReturnType<typeof createAssistantUiInteractionStream> | null = null;
 
-  const model = selectModel(toModelSelection({ data: parsed.data }));
-  const coreMessages = toCoreMessagesFromAssistantCommands(parsed.commands);
-  const chatId = parsed.data?.chatId ?? crypto.randomUUID();
+  try {
+    const model = selectModel(toModelSelection({ data: parsed.data }));
+    const coreMessages = toCoreMessagesFromAssistantCommands(parsed.commands);
+    const chatId = parsed.data?.chatId ?? crypto.randomUUID();
 
-  const streamAdapter = createAssistantUiInteractionStream({ includeReasoning: true });
-  const eventStream = streamAdapter.eventStream;
+    streamAdapter = createAssistantUiInteractionStream({ includeReasoning: true });
+    const eventStream = streamAdapter.eventStream;
 
-  const recipeId = resolveInteractionRecipeId(parsed.data?.recipeId);
-  const runResult = runInteractionRequest({
-    recipeId,
-    model,
-    messages: coreMessages,
-    eventStream,
-    interactionId: chatId,
-    correlationId: chatId,
-  });
-  finalizeAssistantRun(runResult, streamAdapter.controller);
-  return AssistantStream.toResponse(streamAdapter.stream, new DataStreamEncoder());
+    const recipeId = resolveInteractionRecipeId(parsed.data?.recipeId);
+    const runResult = runInteractionRequest({
+      recipeId,
+      model,
+      messages: coreMessages,
+      eventStream,
+      interactionId: chatId,
+      correlationId: chatId,
+    });
+    finalizeAssistantRun(runResult, streamAdapter.controller);
+    return AssistantStream.toResponse(streamAdapter.stream, new DataStreamEncoder());
+  } catch (error) {
+    reportAssistantError(error);
+    closeAssistantControllerIfPresent(streamAdapter ? streamAdapter.controller : null);
+    return new Response("Internal server error", { status: 500 });
+  }
 };
 
 const readRequestBody = (req: Request): MaybePromise<unknown> =>
@@ -398,6 +417,13 @@ const handleReadBodyError = (_error: unknown) => null;
 const closeAssistantController = (controller: { close: () => void }) => {
   controller.close();
   return true;
+};
+
+const closeAssistantControllerIfPresent = (controller: { close: () => void } | null) => {
+  if (!controller) {
+    return null;
+  }
+  return closeAssistantController(controller);
 };
 
 const ignoreAssistantRunError = (_error: unknown) => null;
