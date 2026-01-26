@@ -8,6 +8,7 @@ import type { Tool } from "./tools";
 import type { QueryEngine, ResponseSynthesizer } from "./engines";
 import type { Indexing } from "./indexing";
 import type { CheckpointStore, EventStream, InterruptStrategy } from "./orchestration";
+import type { SkillLoader } from "./skills";
 import type {
   DocumentLoader,
   DocumentTransformer,
@@ -60,6 +61,7 @@ type AdapterOrchestrationBundle = {
   kv?: KVStore | null;
   storage?: Storage | null;
   memory?: Memory | null;
+  skills?: SkillLoader | null;
   trace?: EventStream | null;
   checkpoint?: CheckpointStore | null;
   eventStream?: EventStream | null;

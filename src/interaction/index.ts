@@ -40,3 +40,11 @@ export type {
 } from "./runtime";
 export type { InteractionRecipeId, InteractionRunRequest } from "./request";
 export { runInteractionRequest, resolveInteractionRecipeId, hasRecipeId } from "./request";
+export { createAgentRuntime } from "./agent-runtime";
+export type {
+  AgentRuntime,
+  AgentRuntimeInput,
+  AgentRuntimeOptions,
+  AgentRuntimeOverrides,
+} from "./agent-runtime";
+export type { AgentSubagentOptions } from "./agent-runtime-subagents-types";

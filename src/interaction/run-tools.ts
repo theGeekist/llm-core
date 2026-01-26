@@ -11,7 +11,7 @@ import type {
 } from "./types";
 import type { InteractionStepApply } from "./pipeline";
 import { createMetaWithSequence, emitInteractionEventsForContext } from "./event-utils";
-import { reduceInteractionEvents } from "./reducer";
+import type { InteractionReducer } from "./types";
 
 const readMessageParts = (message: Message | null | undefined): MessagePart[] | null => {
   if (!message) {
@@ -193,6 +193,18 @@ const emitToolEvents = (
   _state: InteractionState,
 ) => emitInteractionEventsForContext(input.context, input.events);
 
+const reduceEventsWithReducer = (
+  reducer: InteractionReducer,
+  state: InteractionState,
+  events: InteractionEvent[],
+) => {
+  let next = state;
+  for (const event of events) {
+    next = reducer(next, event);
+  }
+  return next;
+};
+
 const applyToolResultsToState = (input: {
   state: InteractionState;
   context: InteractionContext;
@@ -205,7 +217,7 @@ const applyToolResultsToState = (input: {
     sourceId: "model.primary",
     results: input.results,
   });
-  const nextState = reduceInteractionEvents(input.state, events);
+  const nextState = reduceEventsWithReducer(input.context.reducer, input.state, events);
   return maybeTap(bindFirst(emitToolEvents, { context: input.context, events }), nextState);
 };
 

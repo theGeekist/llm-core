@@ -58,6 +58,14 @@ export type {
 export type { StreamEvent } from "./types/stream";
 
 export type {
+  SkillLoadRequest,
+  SkillLoadResult,
+  SkillLoader,
+  SkillScope,
+  SkillSnapshotEntry,
+} from "./types/skills";
+
+export type {
   ImageCall,
   ImageModel,
   ImageResult,

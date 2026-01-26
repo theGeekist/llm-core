@@ -1,7 +1,7 @@
 import type { ChangeEvent, Dispatch, SetStateAction } from "react";
 import type { TransportEvent, WebSocketChatData } from "@geekist/llm-core/adapters/ai-sdk-ui";
 import type { AdapterSource, ProviderId, RecipeId } from "../demo-options";
-import { readAvailableModels, readAvailableProviders, readDefaultModel } from "../demo-options";
+import { readAvailableProviders } from "../demo-options";
 import { readProviderToken, writeProviderToken, clearProviderToken } from "../token-store";
 import { bindFirst } from "@geekist/llm-core";
 
@@ -66,15 +66,6 @@ const readNextProviderId = (source: AdapterSource, providerId: ProviderId): Prov
   return match?.id ?? providerId;
 };
 
-const readNextModelId = (source: AdapterSource, providerId: ProviderId, modelId: string | null) => {
-  const models = readAvailableModels(source, providerId);
-  const match = models.find((entry) => entry.id === modelId);
-  if (match) {
-    return match.id;
-  }
-  return readDefaultModel(source, providerId);
-};
-
 const normalizeModelId = (value: string) => (value === "" ? null : value);
 
 const applyRecipeChange = (
@@ -120,15 +111,14 @@ const applySourceChange = (
 ) => {
   const nextSource = event.currentTarget.value as AdapterSource;
   const nextProvider = readNextProviderId(nextSource, input.providerId);
-  const nextModel = readNextModelId(nextSource, nextProvider, input.modelId);
   input.setAdapterSource(nextSource);
   input.setProviderId(nextProvider);
-  input.setModelId(nextModel);
+  input.setModelId(null);
   updateTransportData(input, {
     recipeId: input.transportData.recipeId,
     adapterSource: nextSource,
     providerId: nextProvider,
-    modelId: nextModel,
+    modelId: null,
   });
   return true;
 };
@@ -156,9 +146,8 @@ const applyProviderChange = (
   event: ChangeEvent<HTMLSelectElement>,
 ) => {
   const nextProvider = event.currentTarget.value as ProviderId;
-  const nextModel = readNextModelId(input.adapterSource, nextProvider, input.modelId);
   input.setProviderId(nextProvider);
-  input.setModelId(nextModel);
+  input.setModelId(null);
   if (input.connectOpen) {
     input.setTokenDraft(readProviderToken(nextProvider) ?? "");
   }
@@ -166,7 +155,7 @@ const applyProviderChange = (
     recipeId: input.transportData.recipeId,
     adapterSource: input.transportData.adapterSource,
     providerId: nextProvider,
-    modelId: nextModel,
+    modelId: null,
   });
   return true;
 };
@@ -207,6 +196,32 @@ export const bindModelChange = (input: {
   providerId: ProviderId;
   setModelId: Dispatch<SetStateAction<string | null>>;
 }) => bindFirst(applyModelChange, input);
+
+const applyModelIdChange = (
+  input: {
+    transportData: TransportData;
+    adapterSource: AdapterSource;
+    providerId: ProviderId;
+    setModelId: Dispatch<SetStateAction<string | null>>;
+  },
+  modelId: string | null,
+) => {
+  input.setModelId(modelId);
+  updateTransportData(input, {
+    recipeId: input.transportData.recipeId,
+    adapterSource: input.adapterSource,
+    providerId: input.providerId,
+    modelId,
+  });
+  return true;
+};
+
+export const bindModelIdChange = (input: {
+  transportData: TransportData;
+  adapterSource: AdapterSource;
+  providerId: ProviderId;
+  setModelId: Dispatch<SetStateAction<string | null>>;
+}) => bindFirst(applyModelIdChange, input);
 
 const applyConnectOpenChange = (
   input: {

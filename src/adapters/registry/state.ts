@@ -33,6 +33,7 @@ const bundleKeys = new Set<keyof AdapterBundle>([
   "loader",
   "transformer",
   "memory",
+  "skills",
   "speech",
   "storage",
   "transcription",

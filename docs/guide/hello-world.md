@@ -17,6 +17,15 @@ If you are new to interactions, start here first:
 
 ---
 
+## Agent runtime quickstart
+
+If you want the canonical agent loop without wiring packs by hand, start with the agent runtime. It exposes a small `run`/`stream` surface while still using the same recipe system under the hood, so you can swap in custom packs later without changing the entrypoint.
+
+::: code-group
+<<< @/snippets/guide/agent-runtime.js#run [JavaScript]
+<<< @/snippets/guide/agent-runtime.ts#run [TypeScript]
+:::
+
 ## How workflows compose recipes
 
 An agent workflow is assembled from recipes. In this example you attach the RAG recipe and the HITL recipe to the base agent recipe, and the workflow runtime executes them together as a single DAG:

@@ -32,4 +32,8 @@ There is a minimal Node SSE demo app outside core at:
 
 - `examples/interaction-node-sse`
 
+There is also a WebSocket-based agent loop playground that pairs the host transport with a configurable UI and the agent runtime:
+
+- `examples/agentic`
+
 It is intentionally tiny and uses the built-in model so you can run it without external APIs.
