@@ -12,6 +12,19 @@ import type {
 import { createTraceDiagnostics } from "../../src/shared/reporting";
 import type { Outcome } from "../../src/workflow/types";
 
+type Deferred<T> = {
+  promise: Promise<T>;
+  resolve: (value: T) => void;
+};
+
+const createDeferred = <T>(): Deferred<T> => {
+  let resolve: (value: T) => void = () => undefined;
+  const promise = new Promise<T>((resolveFn) => {
+    resolve = resolveFn;
+  });
+  return { promise, resolve };
+};
+
 const createOkOutcome = (): Outcome<unknown> => ({
   status: "ok",
   artefact: {},
@@ -24,6 +37,18 @@ const createRuntime = (): AgentRuntime => ({
 });
 
 const createRuntimeFactory = () => createRuntime();
+
+const createDeferredRuntimeFactory = (deferred: Deferred<Outcome<unknown>>) => () => ({
+  run: (_input: AgentRuntimeInput) => deferred.promise,
+  stream: (_input: AgentRuntimeInput) => createOkOutcome(),
+});
+
+const createThrowingRuntimeFactory = () => ({
+  run: (_input: AgentRuntimeInput) => {
+    throw new Error("boom");
+  },
+  stream: (_input: AgentRuntimeInput) => createOkOutcome(),
+});
 
 const createRuntimeOptions = (): AgentRuntimeOptions => ({
   model: { generate: () => ({ text: "ok" }) },
@@ -89,6 +114,121 @@ describe("subagent tools", () => {
 
     const closed = await closeExecute({ agentId: "agent-1" });
     expect((closed as { closed?: boolean }).closed).toBe(true);
+  });
+
+  it("spawns with a default id and respawns after close", async () => {
+    const tools = createSubagentTools({
+      factory: createRuntimeFactory,
+      runtimeOptions: createRuntimeOptions(),
+      interactionId: "root",
+    });
+    const spawn = readTool(tools, "agent.spawn");
+    const close = readTool(tools, "agent.close");
+    const spawnExecute = requireToolExecute(spawn);
+    const closeExecute = requireToolExecute(close);
+
+    const spawned = await spawnExecute({});
+    expect((spawned as { agentId?: string }).agentId).toBe("subagent.1");
+
+    await closeExecute({ agentId: "subagent.1" });
+    const respawned = await spawnExecute({ agentId: "subagent.1" });
+    expect((respawned as { status?: string }).status).toBe("started");
+  });
+
+  it("returns exists when spawning the same active agent", async () => {
+    const tools = createSubagentTools({
+      factory: createRuntimeFactory,
+      runtimeOptions: createRuntimeOptions(),
+      interactionId: "root",
+    });
+    const spawn = readTool(tools, "agent.spawn");
+    const spawnExecute = requireToolExecute(spawn);
+
+    await spawnExecute({ agentId: "agent-1" });
+    const spawnedAgain = await spawnExecute({ agentId: "agent-1" });
+
+    expect((spawnedAgain as { status?: string }).status).toBe("exists");
+  });
+
+  it("returns not found errors for unknown subagents", async () => {
+    const tools = createSubagentTools({
+      factory: createRuntimeFactory,
+      runtimeOptions: createRuntimeOptions(),
+      interactionId: "root",
+    });
+    const send = readTool(tools, "agent.send");
+    const wait = readTool(tools, "agent.wait");
+    const close = readTool(tools, "agent.close");
+    const sendExecute = requireToolExecute(send);
+    const waitExecute = requireToolExecute(wait);
+    const closeExecute = requireToolExecute(close);
+
+    const missingSend = await sendExecute({ agentId: "missing", text: "hi" });
+    const missingWait = await waitExecute({ agentId: "missing" });
+    const missingClose = await closeExecute({ agentId: "missing" });
+
+    expect(readErrorCode(missingSend)).toBe("subagent_not_found");
+    expect(readErrorCode(missingWait)).toBe("subagent_not_found");
+    expect(readErrorCode(missingClose)).toBe("subagent_not_found");
+  });
+
+  it("rejects send when a subagent is already running", async () => {
+    const deferred = createDeferred<Outcome<unknown>>();
+    const tools = createSubagentTools({
+      factory: createDeferredRuntimeFactory(deferred),
+      runtimeOptions: createRuntimeOptions(),
+      interactionId: "root",
+    });
+    const spawn = readTool(tools, "agent.spawn");
+    const send = readTool(tools, "agent.send");
+    const spawnExecute = requireToolExecute(spawn);
+    const sendExecute = requireToolExecute(send);
+
+    await spawnExecute({ agentId: "agent-1" });
+    const firstRun = sendExecute({ agentId: "agent-1", text: "hi" });
+    const secondRun = await sendExecute({ agentId: "agent-1", text: "again" });
+
+    expect(readErrorCode(secondRun)).toBe("subagent_busy");
+
+    deferred.resolve(createOkOutcome());
+    await firstRun;
+  });
+
+  it("returns the last outcome when waiting after a send", async () => {
+    const tools = createSubagentTools({
+      factory: createRuntimeFactory,
+      runtimeOptions: createRuntimeOptions(),
+      interactionId: "root",
+    });
+    const spawn = readTool(tools, "agent.spawn");
+    const send = readTool(tools, "agent.send");
+    const wait = readTool(tools, "agent.wait");
+    const spawnExecute = requireToolExecute(spawn);
+    const sendExecute = requireToolExecute(send);
+    const waitExecute = requireToolExecute(wait);
+
+    await spawnExecute({ agentId: "agent-1" });
+    await sendExecute({ agentId: "agent-1", text: "hi" });
+    const waiting = await waitExecute({ agentId: "agent-1" });
+
+    expect((waiting as { outcome?: Outcome<unknown> }).outcome?.status).toBe("ok");
+  });
+
+  it("returns error outcomes when subagent runs throw", async () => {
+    const tools = createSubagentTools({
+      factory: createThrowingRuntimeFactory,
+      runtimeOptions: createRuntimeOptions(),
+      interactionId: "root",
+    });
+    const spawn = readTool(tools, "agent.spawn");
+    const send = readTool(tools, "agent.send");
+    const spawnExecute = requireToolExecute(spawn);
+    const sendExecute = requireToolExecute(send);
+
+    await spawnExecute({ agentId: "agent-1" });
+    const result = await sendExecute({ agentId: "agent-1", text: "hi" });
+
+    expect((result as { outcome?: Outcome<unknown> }).outcome?.status).toBe("error");
   });
 
   it("returns invalid input errors for malformed requests", async () => {

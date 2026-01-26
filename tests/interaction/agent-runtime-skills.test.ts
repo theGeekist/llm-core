@@ -18,6 +18,13 @@ const createSkillEntry = (
   hash: input.hash,
 });
 
+const createUnsafeSkillEntry = (entry: {
+  id: unknown;
+  scope: SkillSnapshotEntry["scope"];
+  path: unknown;
+  hash: unknown;
+}) => entry as SkillSnapshotEntry;
+
 const createTraceEntry = (snapshot: { skills?: SkillSnapshotEntry[] }): TraceEvent => ({
   kind: "agent.loop.snapshot",
   at: "2024-01-01T00:00:00.000Z",
@@ -96,6 +103,44 @@ describe("resolveAgentSkills", () => {
     expect(kinds).toContain("contract");
   });
 
+  it("drops entries with non-string fields and sorts by scope/id/path/hash", async () => {
+    const raw: SkillSnapshotEntry[] = [
+      createSkillEntry({ id: "b", scope: "system", path: "/b", hash: "2" }),
+      createSkillEntry({ id: "a", scope: "system", path: "/b", hash: "1" }),
+      createSkillEntry({ id: "a", scope: "repo", path: "/a", hash: "1" }),
+      createSkillEntry({ id: "a", scope: "repo", path: "/z", hash: "1" }),
+      createSkillEntry({ id: "a", scope: "repo", path: "/a", hash: "2" }),
+      createUnsafeSkillEntry({ id: 123, scope: "repo", path: "/bad", hash: "x" }),
+      createUnsafeSkillEntry({
+        id: "bad",
+        scope: "repo",
+        path: 42 as unknown as string,
+        hash: "x",
+      }),
+      createUnsafeSkillEntry({
+        id: "bad",
+        scope: "repo",
+        path: "/bad",
+        hash: null as unknown as string,
+      }),
+    ];
+    const loader = createLoader({ skills: raw });
+    const result = await readSkillState(
+      resolveAgentSkills({
+        config: { skills: { directories: ["./skills"] } },
+        adapters: { skills: loader as SkillLoader },
+      }),
+    );
+
+    expect(result?.skills).toEqual([
+      createSkillEntry({ id: "a", scope: "repo", path: "/a", hash: "1" }),
+      createSkillEntry({ id: "a", scope: "repo", path: "/a", hash: "2" }),
+      createSkillEntry({ id: "a", scope: "repo", path: "/z", hash: "1" }),
+      createSkillEntry({ id: "a", scope: "system", path: "/b", hash: "1" }),
+      createSkillEntry({ id: "b", scope: "system", path: "/b", hash: "2" }),
+    ]);
+  });
+
   it("emits resume diagnostics when snapshots differ", async () => {
     const previous = [
       createSkillEntry({ id: "skill-1", scope: "repo", path: "/repo", hash: "h1" }),
@@ -113,6 +158,88 @@ describe("resolveAgentSkills", () => {
 
     const messages = result?.diagnostics.map((entry) => entry.message) ?? [];
     expect(messages).toContain("Skill snapshot mismatch on resume.");
+  });
+
+  it("emits resume diagnostics when snapshot lengths differ", async () => {
+    const previous = [
+      createSkillEntry({ id: "skill-1", scope: "repo", path: "/repo", hash: "h1" }),
+      createSkillEntry({ id: "skill-2", scope: "repo", path: "/repo", hash: "h2" }),
+    ];
+    const next = [createSkillEntry({ id: "skill-1", scope: "repo", path: "/repo", hash: "h1" })];
+    const loader = createLoader({ skills: next });
+    const state = createInteractionState([createTraceEntry({ skills: previous })]);
+    const result = await readSkillState(
+      resolveAgentSkills({
+        config: { skills: { directories: ["./skills"] } },
+        adapters: { skills: loader as SkillLoader },
+        state,
+      }),
+    );
+
+    const messages = result?.diagnostics.map((entry) => entry.message) ?? [];
+    expect(messages).toContain("Skill snapshot mismatch on resume.");
+  });
+
+  it("returns empty skills when all entries are invalid", async () => {
+    const loader = createLoader({
+      skills: [
+        createUnsafeSkillEntry({ id: 123, scope: "repo", path: "/bad", hash: "x" }),
+        createUnsafeSkillEntry({
+          id: "ok",
+          scope: "repo",
+          path: "/bad",
+          hash: null as unknown as string,
+        }),
+      ],
+    });
+    const result = await readSkillState(
+      resolveAgentSkills({
+        config: { skills: { directories: ["./skills"] } },
+        adapters: { skills: loader as SkillLoader },
+      }),
+    );
+
+    expect(result?.skills).toEqual([]);
+  });
+
+  it("orders by hash when scope/id/path match", async () => {
+    const loader = createLoader({
+      skills: [
+        createSkillEntry({ id: "skill", scope: "repo", path: "/same", hash: "a" }),
+        createSkillEntry({ id: "skill", scope: "repo", path: "/same", hash: "b" }),
+      ],
+    });
+    const result = await readSkillState(
+      resolveAgentSkills({
+        config: { skills: { directories: ["./skills"] } },
+        adapters: { skills: loader as SkillLoader },
+      }),
+    );
+
+    expect(result?.skills).toEqual([
+      createSkillEntry({ id: "skill", scope: "repo", path: "/same", hash: "a" }),
+      createSkillEntry({ id: "skill", scope: "repo", path: "/same", hash: "b" }),
+    ]);
+  });
+
+  it("sorts hashes when inputs are reversed", async () => {
+    const loader = createLoader({
+      skills: [
+        createSkillEntry({ id: "skill", scope: "repo", path: "/same", hash: "b" }),
+        createSkillEntry({ id: "skill", scope: "repo", path: "/same", hash: "a" }),
+      ],
+    });
+    const result = await readSkillState(
+      resolveAgentSkills({
+        config: { skills: { directories: ["./skills"] } },
+        adapters: { skills: loader as SkillLoader },
+      }),
+    );
+
+    expect(result?.skills).toEqual([
+      createSkillEntry({ id: "skill", scope: "repo", path: "/same", hash: "a" }),
+      createSkillEntry({ id: "skill", scope: "repo", path: "/same", hash: "b" }),
+    ]);
   });
 
   it("uses the latest snapshot when multiple entries exist", async () => {
