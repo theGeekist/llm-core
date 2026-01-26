@@ -16,6 +16,7 @@
     "@langchain/openai": "1.2.0",
     "@llamaindex/openai": "0.4.22",
     "ai": "5.0.121",
-    "ollama-ai-provider-v2": "1.5.5"
+    "ollama-ai-provider-v2": "1.5.5",
+    "zod": "^4.1.8"
   }
 }

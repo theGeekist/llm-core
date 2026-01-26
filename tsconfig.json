@@ -47,6 +47,7 @@
   },
   "exclude": [
     "node_modules/**",
+    "examples/**",
     "examples/**/node_modules/**",
     "llm-core/**",
     "pipeline/**",
