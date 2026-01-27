@@ -8,7 +8,7 @@ node_modules/
 !.agent/rules/
 !.agent/rules/**
 coverage/
-llm-core/
+# llm-core/
 pipeline
 pipeline/
 docs/.vitepress/cache/

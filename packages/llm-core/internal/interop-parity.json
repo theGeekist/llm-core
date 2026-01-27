@@ -1,0 +1,450 @@
+{
+  "entries": [
+    { "construct": "Model", "ecosystem": "ai-sdk", "status": "full", "probe": "ai-sdk:Model" },
+    {
+      "construct": "Embedder",
+      "ecosystem": "ai-sdk",
+      "status": "full",
+      "probe": "ai-sdk:Embedder"
+    },
+    {
+      "construct": "Reranker",
+      "ecosystem": "ai-sdk",
+      "status": "full",
+      "probe": "ai-sdk:Reranker"
+    },
+    {
+      "construct": "Retriever",
+      "ecosystem": "ai-sdk",
+      "status": "missing",
+      "note": "AI SDK has no retriever abstraction."
+    },
+    {
+      "construct": "TextSplitter",
+      "ecosystem": "ai-sdk",
+      "status": "missing",
+      "note": "AI SDK has no splitter abstraction."
+    },
+    {
+      "construct": "Transformer",
+      "ecosystem": "ai-sdk",
+      "status": "missing",
+      "note": "AI SDK has no transformer abstraction."
+    },
+    {
+      "construct": "DocumentLoader",
+      "ecosystem": "ai-sdk",
+      "status": "missing",
+      "note": "AI SDK has no document loader abstraction."
+    },
+    {
+      "construct": "VectorStore",
+      "ecosystem": "ai-sdk",
+      "status": "missing",
+      "note": "AI SDK has no vector store abstraction."
+    },
+    {
+      "construct": "Memory",
+      "ecosystem": "ai-sdk",
+      "status": "partial",
+      "probe": "ai-sdk:Memory",
+      "note": "Mapped via @ai-sdk-tools/memory; working memory/history shape differs from core Memory."
+    },
+    {
+      "construct": "KVStore",
+      "ecosystem": "ai-sdk",
+      "status": "missing",
+      "note": "@ai-sdk-tools/store is a UI chat store; no generic KV store adapter."
+    },
+    { "construct": "Tool", "ecosystem": "ai-sdk", "status": "full", "probe": "ai-sdk:Tool" },
+    {
+      "construct": "PromptTemplate",
+      "ecosystem": "ai-sdk",
+      "status": "full",
+      "probe": "ai-sdk:PromptTemplate",
+      "note": "Prompt templates are normalized via provider-utils schema helpers."
+    },
+    {
+      "construct": "OutputParser",
+      "ecosystem": "ai-sdk",
+      "status": "missing",
+      "note": "AI SDK has no output parser abstraction."
+    },
+    {
+      "construct": "StructuredQuery",
+      "ecosystem": "ai-sdk",
+      "status": "missing",
+      "note": "AI SDK has no structured query abstraction."
+    },
+    {
+      "construct": "ImageModel",
+      "ecosystem": "ai-sdk",
+      "status": "full",
+      "probe": "ai-sdk:ImageModel"
+    },
+    {
+      "construct": "SpeechModel",
+      "ecosystem": "ai-sdk",
+      "status": "full",
+      "probe": "ai-sdk:SpeechModel"
+    },
+    {
+      "construct": "TranscriptionModel",
+      "ecosystem": "ai-sdk",
+      "status": "full",
+      "probe": "ai-sdk:TranscriptionModel"
+    },
+    {
+      "construct": "Cache",
+      "ecosystem": "ai-sdk",
+      "status": "partial",
+      "note": "CacheStore adapters via @ai-sdk-tools/cache (TTL best-effort).",
+      "probe": "ai-sdk:Cache"
+    },
+    {
+      "construct": "Checkpoint",
+      "ecosystem": "ai-sdk",
+      "status": "missing",
+      "note": "AI SDK has no checkpoint store abstraction."
+    },
+    {
+      "construct": "EventStream",
+      "ecosystem": "ai-sdk",
+      "status": "missing",
+      "note": "AI SDK has no workflow event stream abstraction."
+    },
+    {
+      "construct": "Interrupt",
+      "ecosystem": "ai-sdk",
+      "status": "missing",
+      "note": "Interrupt strategy is core-only; AI SDK has no surface."
+    },
+    {
+      "construct": "Trace",
+      "ecosystem": "ai-sdk",
+      "status": "missing",
+      "note": "No trace sink adapter in AI SDK."
+    },
+    {
+      "construct": "Indexing",
+      "ecosystem": "ai-sdk",
+      "status": "missing",
+      "note": "AI SDK has no indexing abstraction."
+    },
+    {
+      "construct": "QueryEngine",
+      "ecosystem": "ai-sdk",
+      "status": "missing",
+      "note": "AI SDK has no query engine abstraction."
+    },
+    {
+      "construct": "ResponseSynthesizer",
+      "ecosystem": "ai-sdk",
+      "status": "missing",
+      "note": "AI SDK has no response synthesizer abstraction."
+    },
+
+    {
+      "construct": "Model",
+      "ecosystem": "langchain",
+      "status": "full",
+      "probe": "langchain:Model"
+    },
+    {
+      "construct": "Embedder",
+      "ecosystem": "langchain",
+      "status": "full",
+      "probe": "langchain:Embedder"
+    },
+    {
+      "construct": "Reranker",
+      "ecosystem": "langchain",
+      "status": "full",
+      "probe": "langchain:Reranker"
+    },
+    {
+      "construct": "Retriever",
+      "ecosystem": "langchain",
+      "status": "full",
+      "probe": "langchain:Retriever"
+    },
+    {
+      "construct": "TextSplitter",
+      "ecosystem": "langchain",
+      "status": "full",
+      "probe": "langchain:TextSplitter"
+    },
+    {
+      "construct": "Transformer",
+      "ecosystem": "langchain",
+      "status": "full",
+      "probe": "langchain:Transformer"
+    },
+    {
+      "construct": "DocumentLoader",
+      "ecosystem": "langchain",
+      "status": "full",
+      "probe": "langchain:DocumentLoader"
+    },
+    {
+      "construct": "VectorStore",
+      "ecosystem": "langchain",
+      "status": "full",
+      "probe": "langchain:VectorStore"
+    },
+    {
+      "construct": "Memory",
+      "ecosystem": "langchain",
+      "status": "full",
+      "probe": "langchain:Memory"
+    },
+    {
+      "construct": "KVStore",
+      "ecosystem": "langchain",
+      "status": "full",
+      "probe": "langchain:KVStore"
+    },
+    { "construct": "Tool", "ecosystem": "langchain", "status": "full", "probe": "langchain:Tool" },
+    {
+      "construct": "PromptTemplate",
+      "ecosystem": "langchain",
+      "status": "full",
+      "probe": "langchain:PromptTemplate"
+    },
+    {
+      "construct": "Checkpoint",
+      "ecosystem": "langchain",
+      "status": "full",
+      "probe": "langchain:Checkpoint"
+    },
+    {
+      "construct": "EventStream",
+      "ecosystem": "langchain",
+      "status": "full",
+      "probe": "langchain:EventStream",
+      "note": "Adapter wraps callback handlers via the trace sink."
+    },
+    {
+      "construct": "Interrupt",
+      "ecosystem": "langchain",
+      "status": "full",
+      "probe": "langchain:Interrupt",
+      "note": "Adapter maps LangGraph interrupt semantics to a restart strategy."
+    },
+    {
+      "construct": "OutputParser",
+      "ecosystem": "langchain",
+      "status": "full",
+      "probe": "langchain:OutputParser"
+    },
+    {
+      "construct": "StructuredQuery",
+      "ecosystem": "langchain",
+      "status": "full",
+      "probe": "langchain:StructuredQuery"
+    },
+    {
+      "construct": "ImageModel",
+      "ecosystem": "langchain",
+      "status": "missing",
+      "note": "Exists as provider-specific wrappers/tools, not a generic interface."
+    },
+    {
+      "construct": "SpeechModel",
+      "ecosystem": "langchain",
+      "status": "missing",
+      "note": "Audio output is model-specific (ChatOpenAI), not a standalone interface."
+    },
+    {
+      "construct": "TranscriptionModel",
+      "ecosystem": "langchain",
+      "status": "missing",
+      "note": "Available via document loaders, not a model interface."
+    },
+    {
+      "construct": "Cache",
+      "ecosystem": "langchain",
+      "status": "partial",
+      "note": "BaseStore-backed cache adapter (KV-style).",
+      "probe": "langchain:Cache"
+    },
+    {
+      "construct": "Trace",
+      "ecosystem": "langchain",
+      "status": "full",
+      "probe": "langchain:Trace"
+    },
+    {
+      "construct": "Indexing",
+      "ecosystem": "langchain",
+      "status": "full",
+      "probe": "langchain:Indexing"
+    },
+    {
+      "construct": "QueryEngine",
+      "ecosystem": "langchain",
+      "status": "missing",
+      "note": "LangChain has no query engine abstraction."
+    },
+    {
+      "construct": "ResponseSynthesizer",
+      "ecosystem": "langchain",
+      "status": "missing",
+      "note": "LangChain has no response synthesizer abstraction."
+    },
+
+    {
+      "construct": "Model",
+      "ecosystem": "llamaindex",
+      "status": "full",
+      "probe": "llamaindex:Model"
+    },
+    {
+      "construct": "Embedder",
+      "ecosystem": "llamaindex",
+      "status": "full",
+      "probe": "llamaindex:Embedder"
+    },
+    {
+      "construct": "Reranker",
+      "ecosystem": "llamaindex",
+      "status": "full",
+      "probe": "llamaindex:Reranker"
+    },
+    {
+      "construct": "Retriever",
+      "ecosystem": "llamaindex",
+      "status": "full",
+      "probe": "llamaindex:Retriever"
+    },
+    {
+      "construct": "TextSplitter",
+      "ecosystem": "llamaindex",
+      "status": "full",
+      "probe": "llamaindex:TextSplitter"
+    },
+    {
+      "construct": "Transformer",
+      "ecosystem": "llamaindex",
+      "status": "full",
+      "probe": "llamaindex:Transformer"
+    },
+    {
+      "construct": "DocumentLoader",
+      "ecosystem": "llamaindex",
+      "status": "full",
+      "probe": "llamaindex:DocumentLoader"
+    },
+    {
+      "construct": "VectorStore",
+      "ecosystem": "llamaindex",
+      "status": "partial",
+      "probe": "llamaindex:VectorStore",
+      "note": "Delete filters are not supported in LlamaIndex adapter."
+    },
+    {
+      "construct": "Memory",
+      "ecosystem": "llamaindex",
+      "status": "full",
+      "probe": "llamaindex:Memory"
+    },
+    {
+      "construct": "KVStore",
+      "ecosystem": "llamaindex",
+      "status": "full",
+      "probe": "llamaindex:KVStore"
+    },
+    {
+      "construct": "Tool",
+      "ecosystem": "llamaindex",
+      "status": "full",
+      "probe": "llamaindex:Tool"
+    },
+    {
+      "construct": "PromptTemplate",
+      "ecosystem": "llamaindex",
+      "status": "full",
+      "probe": "llamaindex:PromptTemplate"
+    },
+    {
+      "construct": "Checkpoint",
+      "ecosystem": "llamaindex",
+      "status": "full",
+      "probe": "llamaindex:Checkpoint",
+      "note": "Adapter wraps SnapshotData stores for workflow state snapshots."
+    },
+    {
+      "construct": "EventStream",
+      "ecosystem": "llamaindex",
+      "status": "full",
+      "probe": "llamaindex:EventStream"
+    },
+    {
+      "construct": "Interrupt",
+      "ecosystem": "llamaindex",
+      "status": "missing",
+      "note": "Interrupt strategy is core-only; LlamaIndex has no surface."
+    },
+    {
+      "construct": "OutputParser",
+      "ecosystem": "llamaindex",
+      "status": "missing",
+      "note": "No output parser abstraction in LlamaIndex TS."
+    },
+    {
+      "construct": "StructuredQuery",
+      "ecosystem": "llamaindex",
+      "status": "missing",
+      "note": "No structured query abstraction in LlamaIndex TS."
+    },
+    {
+      "construct": "ImageModel",
+      "ecosystem": "llamaindex",
+      "status": "missing",
+      "note": "Exists via tool specs, not a generic interface."
+    },
+    {
+      "construct": "SpeechModel",
+      "ecosystem": "llamaindex",
+      "status": "missing",
+      "note": "No core speech model interface in LlamaIndex TS."
+    },
+    {
+      "construct": "TranscriptionModel",
+      "ecosystem": "llamaindex",
+      "status": "missing",
+      "note": "No core transcription model interface in LlamaIndex TS."
+    },
+    {
+      "construct": "Cache",
+      "ecosystem": "llamaindex",
+      "status": "partial",
+      "note": "BaseKVStore-backed cache adapter (collection optional).",
+      "probe": "llamaindex:Cache"
+    },
+    {
+      "construct": "Trace",
+      "ecosystem": "llamaindex",
+      "status": "full",
+      "probe": "llamaindex:Trace"
+    },
+    {
+      "construct": "Indexing",
+      "ecosystem": "llamaindex",
+      "status": "missing",
+      "note": "No indexing abstraction in LlamaIndex TS."
+    },
+    {
+      "construct": "QueryEngine",
+      "ecosystem": "llamaindex",
+      "status": "full",
+      "probe": "llamaindex:QueryEngine"
+    },
+    {
+      "construct": "ResponseSynthesizer",
+      "ecosystem": "llamaindex",
+      "status": "full",
+      "probe": "llamaindex:ResponseSynthesizer"
+    }
+  ]
+}
