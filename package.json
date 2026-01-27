@@ -9,8 +9,11 @@
   ],
   "scripts": {
     "build": "bun run --filter '*' build",
-    "test": "bun run --filter '*' test",
+    "test": "bun test ./packages ./examples",
     "lint": "bun run --filter '*' lint",
+    "lint:fix": "bun run --filter '*' lint:fix",
+    "typecheck:packages": "bun run --filter '@geekist/llm-core' typecheck",
+    "typecheck": "bun run typecheck:packages && bun run typecheck:examples && bun run docs:snippets:typecheck",
     "format": "prettier \"**/*.{ts,tsx,js,jsx,json,md}\" --write",
     "docs:dev": "bunx vitepress dev docs",
     "docs:build": "bunx vitepress build docs",

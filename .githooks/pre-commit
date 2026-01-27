@@ -11,7 +11,7 @@ EXAMPLES_PATTERN="^examples/"
 
 # Function to check if files matching pattern changed
 has_changes() {
-  echo "$STAGED_FILES" | grep -q "$1"
+  echo "$STAGED_FILES" | grep -qE "$1"
 }
 
 # Run core checks if core files changed

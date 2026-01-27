@@ -43,7 +43,7 @@ jobs:
         uses: softprops/action-gh-release@v2
 
   release-app:
-    if: contains(github.ref, '/')
+    if: contains(github.ref_name, '/')
     runs-on: ubuntu-latest
     steps:
       - name: Checkout

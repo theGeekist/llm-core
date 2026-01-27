@@ -5,7 +5,8 @@
   "scripts": {
     "dev": "bunx vite",
     "build": "bunx vite build",
-    "preview": "bunx vite preview"
+    "preview": "bunx vite preview",
+    "lint:fix": "eslint \"**/*.{ts,tsx,js,jsx}\" --fix"
   },
   "dependencies": {
     "@ai-sdk/react": "2.0.121",

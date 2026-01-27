@@ -3,7 +3,8 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "bun --watch index.ts"
+    "dev": "bun --watch index.ts",
+    "lint:fix": "eslint \"**/*.{ts,tsx,js,jsx}\" --fix"
   },
   "devDependencies": {},
   "dependencies": {

@@ -28,7 +28,11 @@
     "noUnusedParameters": false,
     "noPropertyAccessFromIndexSignature": false,
 
-    "baseUrl": "."
+    "baseUrl": ".",
+    "paths": {
+      "@geekist/llm-core": ["packages/llm-core/src/index.ts"],
+      "@geekist/llm-core/*": ["packages/llm-core/src/*"]
+    }
   },
   "exclude": ["node_modules", "dist"]
 }
