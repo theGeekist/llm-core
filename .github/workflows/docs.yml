@@ -30,6 +30,9 @@ jobs:
       - name: Install
         run: bun install
 
+      - name: Install core deps
+        run: bun install --cwd packages/llm-core
+
       - name: Build docs
         run: bun run docs:build
 

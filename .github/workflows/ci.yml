@@ -20,6 +20,9 @@ jobs:
       - name: Install
         run: bun install
 
+      - name: Install core deps
+        run: bun install --cwd packages/llm-core
+
       - name: Lint
         run: bun run lint
 
@@ -66,6 +69,9 @@ jobs:
 
       - name: Install
         run: bun install
+
+      - name: Install core deps
+        run: bun install --cwd packages/llm-core
 
       - name: Test
         run: bun test "packages/**/*.test.ts" "pipeline/**/*.test.ts" --coverage "--coverage-reporter=text" "--coverage-reporter=lcov"
