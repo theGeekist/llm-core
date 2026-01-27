@@ -62,11 +62,11 @@ jobs:
       - name: Install
         run: bun install
 
-      - name: Install core deps
-        run: bun install --cwd packages/llm-core
+      - name: Debug
+        run: ls -R packages
 
       - name: Test
-        run: bun test ./packages/**/*.test.ts --coverage --coverage-reporter=text --coverage-reporter=lcov
+        run: bun run test -- --coverage --coverage-reporter=text --coverage-reporter=lcov
 
       - name: SonarQube Scan
         uses: SonarSource/sonarqube-scan-action@v6
