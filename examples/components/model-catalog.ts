@@ -1,4 +1,4 @@
-import { bindFirst } from "@geekist/llm-core";
+import { bindFirst, isString } from "@geekist/llm-core";
 import type { ProviderId } from "@geekist/llm-core/adapters";
 import type { Dispatch, SetStateAction } from "react";
 import { useEffect, useState } from "react";
@@ -17,6 +17,7 @@ export type ModelCatalogState = {
 export type ModelCatalogRequest = {
   providerId: ProviderId;
   token?: string | null;
+  ollamaEndpoint?: string;
 };
 
 type ModelCatalogResponse = {
@@ -107,14 +108,12 @@ const applyModelCatalogErrorInput = (
   state: ModelCatalogState,
 ): ModelCatalogState => applyModelCatalogError(state, input.error, input.fallback);
 
-const hasString = (value: unknown): value is string => typeof value === "string";
-
 const toModelOption = (value: unknown): ModelOption | null => {
   if (!value || typeof value !== "object") {
     return null;
   }
   const record = value as { id?: unknown; label?: unknown };
-  if (!hasString(record.id) || !hasString(record.label)) {
+  if (!isString(record.id) || !isString(record.label)) {
     return null;
   }
   return { id: record.id, label: record.label };
@@ -146,7 +145,7 @@ const parseModelCatalogResponse = (value: unknown): ModelCatalogResponse | null 
     return null;
   }
   const models = readModelOptions(record.models);
-  const error = hasString(record.error) ? record.error : undefined;
+  const error = isString(record.error) ? record.error : undefined;
   return { providerId: record.providerId, models, error };
 };
 
@@ -341,8 +340,12 @@ const runModelSelectionEffect = (input: ModelSelectionInput) => {
   return undefined;
 };
 
+const buildModelsKey = (models: ModelOption[]) =>
+  models.map((model) => `${model.id}:${model.label}`).join("|");
+
 export const useModelSelection = (input: ModelSelectionInput) => {
-  useEffect(bindFirst(runModelSelectionEffect, input), [input.modelId, input.models]);
+  const modelsKey = buildModelsKey(input.models);
+  useEffect(bindFirst(runModelSelectionEffect, input), [input.modelId, modelsKey]);
   return input;
 };
 
@@ -350,8 +353,6 @@ type ModelEntry = {
   id: string;
   label: string;
 };
-
-const isString = (value: unknown): value is string => typeof value === "string";
 
 const normalizeLabel = (value: string) => value.replace(/[-_]/g, " ").trim();
 
@@ -387,6 +388,7 @@ const readRequestBody = async (req: Request): Promise<ModelCatalogRequest | null
     return {
       providerId: body.providerId,
       token: body.token ?? null,
+      ollamaEndpoint: isString(body.ollamaEndpoint) ? body.ollamaEndpoint : undefined,
     };
   } catch {
     return null;
@@ -462,8 +464,23 @@ const fetchAnthropicModels = async (token: string, signal?: AbortSignal): Promis
   return entries;
 };
 
-const fetchOllamaModels = async (signal?: AbortSignal): Promise<ModelEntry[]> => {
-  const response = await fetch("http://127.0.0.1:11434/api/tags", { signal });
+// Allows overriding the Ollama host via the request (for testing) or the OLLAMA_URL env var.
+const readOllamaModelsEndpoint = (override?: string) => {
+  if (override) {
+    return override;
+  }
+  if (typeof process !== "undefined" && process.env && typeof process.env.OLLAMA_URL === "string") {
+    return process.env.OLLAMA_URL;
+  }
+  return "http://127.0.0.1:11434";
+};
+
+const fetchOllamaModels = async (
+  signal?: AbortSignal,
+  endpoint?: string,
+): Promise<ModelEntry[]> => {
+  const baseUrl = readOllamaModelsEndpoint(endpoint);
+  const response = await fetch(`${baseUrl}/api/tags`, { signal });
   if (!response.ok) {
     throw new Error(`Ollama models error (${response.status}).`);
   }
@@ -482,7 +499,7 @@ const fetchProviderModels = async (input: ModelCatalogRequest): Promise<ModelOpt
   const timeout = createTimeoutSignal(MODEL_CATALOG_TIMEOUT_MS);
   try {
     if (input.providerId === "ollama") {
-      return toModelOptions(await fetchOllamaModels(timeout.signal));
+      return toModelOptions(await fetchOllamaModels(timeout.signal, input.ollamaEndpoint));
     }
     if (!input.token) {
       throw new Error(`Missing API token for ${input.providerId}.`);

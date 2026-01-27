@@ -114,14 +114,14 @@ export {
   toNull,
   toTrue,
   toFalse,
-  isNull,
-  isFalse,
   bindFirst,
   compose,
   partialK,
   curryK,
   toUndefined,
 } from "#shared/fp";
+
+export * from "#shared/guards";
 
 export {
   adapterParamTypeToJsonType,

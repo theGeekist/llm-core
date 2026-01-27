@@ -1,10 +1,4 @@
-export type {
-  MaybeAsyncIterable,
-  MaybeBinary,
-  MaybePromise,
-  Program,
-  Step,
-} from "./src/shared/maybe";
+export type { MaybeAsyncIterable, MaybeBinary, MaybePromise, Program, Step } from "#shared/maybe";
 export {
   collectStep,
   composeK,
@@ -21,16 +15,14 @@ export {
   toAsyncIterable,
   toStep,
   tryWrap,
-} from "./src/shared/maybe";
-export type { Binary, Unary } from "./src/shared/fp";
+} from "#shared/maybe";
+export type { Binary, Unary } from "#shared/fp";
 export {
   bindFirst,
   bindUnsafe,
   compose,
   curryK,
   identity,
-  isFalse,
-  isNull,
   mapArray,
   partialK,
   toArray,
@@ -38,21 +30,22 @@ export {
   toNull,
   toTrue,
   toUndefined,
-} from "./src/shared/fp";
+} from "#shared/fp";
+export * from "#shared/guards";
 export type {
   DiagnosticEntry,
   DiagnosticKind,
   DiagnosticLevel,
   TraceDiagnostics,
   TraceEvent,
-} from "./src/shared/reporting";
+} from "#shared/reporting";
 export {
   addDiagnostic,
   addTrace,
   applyDiagnosticsMode,
   applyDiagnosticsModeToTraceDiagnostics,
   createTraceDiagnostics,
-} from "./src/shared/reporting";
+} from "#shared/reporting";
 export type {
   ExecutionOutcome,
   ExecutionOutcomeBase,
@@ -60,8 +53,8 @@ export type {
   ExecutionOutcomeOk,
   ExecutionOutcomePaused,
   PipelineArtefactInput,
-} from "./src/shared/outcome";
-export { readPipelineArtefact } from "./src/shared/outcome";
+} from "#shared/outcome";
+export { readPipelineArtefact } from "#shared/outcome";
 export {
   compareStepSpec,
   normalizeDependencies,
@@ -69,7 +62,7 @@ export {
   normalizeStepKey,
   sortStepSpecs,
   usePipelineHelper,
-} from "./src/shared/steps";
+} from "#shared/steps";
 export {
   createAdapterDiagnostic,
   createContractDiagnostic,
@@ -80,4 +73,4 @@ export {
   createResumeDiagnostic,
   hasErrorDiagnostics,
   normalizeDiagnostics,
-} from "./src/shared/diagnostics";
+} from "#shared/diagnostics";
