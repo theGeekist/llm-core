@@ -20,19 +20,11 @@ jobs:
       - name: Install
         run: bun install
 
-      - name: Install core deps
-        run: bun install --cwd packages/llm-core
-
       - name: Lint
         run: bun run lint
 
       - name: Build
         run: bun run build
-
-      - name: Install Kitchen Sink Deps
-        run: |
-          bun install --cwd examples/kitchen-sink/client
-          bun install --cwd examples/kitchen-sink/server
 
       - name: Typecheck
         run: bun run typecheck
