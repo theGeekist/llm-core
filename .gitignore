@@ -9,11 +9,11 @@ node_modules/
 !.agent/rules/**
 coverage/
 # llm-core/
-pipeline
-pipeline/
+# pipeline
+# pipeline/
 docs/.vitepress/cache/
 /assistant-ui/
 copilot-sdk
 SKILLS.md
 internal/agent-orchestration-wip.md
-codex
+codex/
