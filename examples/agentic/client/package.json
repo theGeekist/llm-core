@@ -1,5 +1,5 @@
 {
-  "name": "llm-core-agentic-client",
+  "name": "@examples/agentic-client",
   "private": true,
   "type": "module",
   "scripts": {
@@ -12,7 +12,7 @@
     "@assistant-ui/react": "0.11.53",
     "@assistant-ui/react-ai-sdk": "1.1.20",
     "@assistant-ui/react-markdown": "0.11.9",
-    "@geekist/llm-core": "link:../../..",
+    "@geekist/llm-core": "workspace:*",
     "@radix-ui/react-avatar": "1.1.2",
     "@radix-ui/react-dialog": "1.1.2",
     "@radix-ui/react-slot": "1.1.1",
@@ -28,13 +28,9 @@
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4.1.18",
-    "@types/node": "^22.13.5",
-    "@types/react": "19.2.7",
-    "@types/react-dom": "19.2.0",
     "@vitejs/plugin-react": "^4.3.0",
     "postcss": "^8.4.49",
     "tailwindcss": "^4.1.18",
-    "typescript": "^5.7.0",
     "vite": "^6.0.0"
   }
 }

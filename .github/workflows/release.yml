@@ -4,12 +4,14 @@ on:
   push:
     tags:
       - "v*"
+      - "*/*"
 
 permissions:
   contents: write
 
 jobs:
-  publish:
+  release-core:
+    if: startsWith(github.ref, 'refs/tags/v')
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -29,11 +31,61 @@ jobs:
       - name: Install
         run: bun install
 
-      - name: Build
-        run: bun run build
+      - name: Build Core
+        run: bun run --filter @geekist/llm-core build
 
-      - name: Publish
-        run: npm publish --access public
+      - name: Publish Core
+        run: cd packages/llm-core && npm publish --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: GitHub Release
+        uses: softprops/action-gh-release@v2
+
+  release-app:
+    if: contains(github.ref, '/')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: "1.2.21"
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          registry-url: "https://registry.npmjs.org"
+
+      - name: Install
+        run: bun install
+
+      - name: Parse Tag
+        id: parse_tag
+        run: |
+          TAG=${GITHUB_REF#refs/tags/}
+          APP_NAME=$(echo $TAG | cut -d'/' -f1)
+          echo "app_name=$APP_NAME" >> $GITHUB_OUTPUT
+
+      - name: Build App
+        run: bun run --filter ${{ steps.parse_tag.outputs.app_name }} build
+
+      - name: Publish App
+        # Assumes app directory name matches the tag prefix or we map it via bun filter
+        # For simplicity, we filter by package name which usually matches or we cd into apps/$APP_NAME
+        # Here we try generic publish if possible, or assume package name matches
+        run: |
+          APP_NAME=${{ steps.parse_tag.outputs.app_name }}
+          # Find directory
+          APP_DIR=$(find apps examples -name "$APP_NAME" -type d -maxdepth 2 | head -n 1)
+          if [ -z "$APP_DIR" ]; then 
+            echo "App directory not found for $APP_NAME"
+            exit 1
+          fi
+          cd $APP_DIR && npm publish --access public
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 

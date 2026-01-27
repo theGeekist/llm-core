@@ -1,4 +1,4 @@
 [test]
-root = "tests" 
+# root = "."  # Removed restricted root to allow workspace-wide testing or filter-based testing
 coverageReporter = ["text", "lcov"]
 coveragePathIgnorePatterns = ["tests/**", "**/*.test.ts", "**/tests/**", "examples/**"]
