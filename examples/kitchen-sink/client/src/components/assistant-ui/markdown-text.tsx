@@ -8,7 +8,7 @@ import {
   useIsMarkdownCodeBlock,
 } from "@assistant-ui/react-markdown";
 import remarkGfm from "remark-gfm";
-import { memo, type ComponentProps } from "react";
+import { memo } from "react";
 
 import { cn } from "../../lib/utils";
 
@@ -24,8 +24,17 @@ const MarkdownTextImpl = () => {
 
 export const MarkdownText = memo(MarkdownTextImpl);
 
-const InlineCode = ({ className, ...props }: ComponentProps<"code">) => {
+type MarkdownComponents = Parameters<typeof memoizeMarkdownComponents>[0];
+type MarkdownParagraphRenderer = NonNullable<MarkdownComponents>["p"];
+type MarkdownLinkRenderer = NonNullable<MarkdownComponents>["a"];
+type MarkdownPreRenderer = NonNullable<MarkdownComponents>["pre"];
+type MarkdownCodeRenderer = NonNullable<MarkdownComponents>["code"];
+
+const readClassName = (props: { className?: string }) => props.className;
+
+const InlineCode: MarkdownCodeRenderer = (props) => {
   const isCodeBlock = useIsMarkdownCodeBlock();
+  const className = readClassName(props);
   return (
     <code
       className={cn(
@@ -37,21 +46,36 @@ const InlineCode = ({ className, ...props }: ComponentProps<"code">) => {
   );
 };
 
+const renderMarkdownParagraph: MarkdownParagraphRenderer = (props) => (
+  <p
+    className={cn("aui-md-p mt-5 mb-5 leading-7 first:mt-0 last:mb-0", readClassName(props))}
+    {...props}
+  />
+);
+
+const renderMarkdownLink: MarkdownLinkRenderer = (props) => (
+  <a
+    className={cn(
+      "aui-md-a font-medium text-primary underline underline-offset-4",
+      readClassName(props),
+    )}
+    {...props}
+  />
+);
+
+const renderMarkdownPre: MarkdownPreRenderer = (props) => (
+  <pre
+    className={cn(
+      "aui-md-pre overflow-x-auto rounded-b-lg bg-black p-4 text-white",
+      readClassName(props),
+    )}
+    {...props}
+  />
+);
+
 const defaultComponents = memoizeMarkdownComponents({
-  p: ({ className, ...props }) => (
-    <p className={cn("aui-md-p mt-5 mb-5 leading-7 first:mt-0 last:mb-0", className)} {...props} />
-  ),
-  a: ({ className, ...props }) => (
-    <a
-      className={cn("aui-md-a font-medium text-primary underline underline-offset-4", className)}
-      {...props}
-    />
-  ),
-  pre: ({ className, ...props }) => (
-    <pre
-      className={cn("aui-md-pre overflow-x-auto rounded-b-lg bg-black p-4 text-white", className)}
-      {...props}
-    />
-  ),
+  p: renderMarkdownParagraph,
+  a: renderMarkdownLink,
+  pre: renderMarkdownPre,
   code: InlineCode,
 });

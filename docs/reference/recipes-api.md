@@ -15,7 +15,7 @@ Related:
 `llm-core` exports a catalog of recipe factories. You access them by name.
 
 ```ts
-import { recipes } from "#recipes";
+import { recipes } from "@geekist/llm-core/recipes";
 
 const agent = recipes.agent();
 const rag = recipes.rag();
@@ -31,6 +31,8 @@ Available recipes:
 - **`ingest`**: Document ingestion pipeline.
 - **`eval`**: Generation evaluation.
 - **`loop`**: Iteration control.
+
+The `agent` recipe aligns with the agent loop contract in `@geekist/llm-core/interaction`, which defines the event semantics (`interaction.item.*`, `interaction.subagent.*`) and deterministic state snapshots used by UI integrations. The contract is adapter-agnostic, and apps do not need to wire packs manually to use it. The `agent` recipe is the reference implementation of this contract; you can still build your own recipes on the same types if you need a custom loop.
 
 ## Recipe handles (the public surface)
 
@@ -50,8 +52,8 @@ live in `runtime.retry`.
 == TypeScript
 
 ```ts
-import { recipes } from "#recipes";
-import type { AgentRecipeConfig } from "#recipes";
+import { recipes } from "@geekist/llm-core/recipes";
+import type { AgentRecipeConfig } from "@geekist/llm-core/recipes";
 
 // Configure once, reuse across requests.
 const agent = recipes["agent"]()
@@ -67,7 +69,7 @@ const result = await agent.run({ input: "Help me debug this RAG flow." });
 == JavaScript
 
 ```js
-import { recipes } from "#recipes";
+import { recipes } from "@geekist/llm-core/recipes";
 
 // Configure once, reuse across requests.
 const agent = recipes["agent"]()
@@ -91,7 +93,7 @@ There is no global `RecipeConfig` bag.
 == TypeScript
 
 ```ts
-import type { RagRecipeConfig } from "#recipes";
+import type { RagRecipeConfig } from "@geekist/llm-core/recipes";
 
 const rag = recipes["rag"]().configure({
   retrieval: { topK: 8 },

@@ -1,5 +1,5 @@
 {
   "extends": "./tsconfig.json",
   "include": ["**/*.ts"],
-  "exclude": ["node_modules", "dist", "coverage", "llm-core", "pipeline", "copilot-sdk"]
+  "exclude": ["node_modules", "dist", "coverage", "llm-core", "pipeline", "copilot-sdk", "codex"]
 }

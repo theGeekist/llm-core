@@ -35,6 +35,7 @@ import {
   bindConnectOpenChange,
   bindHandleTransportEvent,
   bindModelChange,
+  bindModelIdChange,
   bindProviderChange,
   bindRecipeChange,
   bindSourceChange,
@@ -47,6 +48,8 @@ import {
 } from "./app/helpers";
 import { bindFirst } from "@geekist/llm-core";
 import type { TransportEvent } from "@geekist/llm-core/adapters/ai-sdk-ui";
+import { ModelControls, SelectField } from "@examples/components/model-controls";
+import { useModelCatalog, useModelSelection } from "@examples/components/model-catalog";
 
 const transportData: TransportData = {
   recipeId: "agent",
@@ -90,14 +93,32 @@ export function App() {
 
   const provider = readProviderOption(providerId);
   const availableProviders = readAvailableProviders(adapterSource);
-  const availableModels = readAvailableModels(adapterSource, providerId);
+  const token = readProviderToken(providerId);
+  const fallbackModels = readAvailableModels(adapterSource, providerId);
+  const modelCatalog = useModelCatalog({
+    providerId,
+    token,
+    fallbackModels,
+    fallbackKey: readModelFallbackKey(adapterSource, providerId),
+  });
+  const availableModels = modelCatalog.models;
+  useModelSelection({
+    modelId,
+    models: availableModels,
+    setModelId,
+    onModelIdChange: bindModelIdChange({
+      transportData,
+      adapterSource,
+      providerId,
+      setModelId,
+    }),
+  });
   const activePreset = readPresetForSelection({
     recipeId,
     adapterSource,
     providerId,
     modelId,
   });
-  const token = readProviderToken(providerId);
   const hasToken = !!token;
   const canSend = readCanSend({ hasToken, requiresToken: provider.requiresToken });
 
@@ -117,6 +138,7 @@ export function App() {
           adapterSource={adapterSource}
           providerId={providerId}
           modelId={modelId}
+          sourceOptions={SOURCE_SELECT_OPTIONS}
           availableProviders={availableProviders}
           availableModels={availableModels}
           providerHelper={readProviderHelper({ providerId })}
@@ -216,6 +238,7 @@ type HeaderBarProps = {
   adapterSource: AdapterSource;
   providerId: ProviderId;
   modelId: string | null;
+  sourceOptions: Array<{ value: string; label: string }>;
   availableProviders: Array<{ id: ProviderId; label: string }>;
   availableModels: Array<{ id: string; label: string }>;
   providerHelper: string;
@@ -230,6 +253,7 @@ const HeaderBar: FC<HeaderBarProps> = ({
   adapterSource,
   providerId,
   modelId,
+  sourceOptions,
   availableProviders,
   availableModels,
   providerHelper,
@@ -238,12 +262,6 @@ const HeaderBar: FC<HeaderBarProps> = ({
   onProviderChange,
   onModelChange,
 }) => {
-  const showModel = availableModels.length !== 1;
-  const providerOptions = availableProviders.map(toSelectOptionFromProvider);
-  const modelOptions = availableModels.length
-    ? availableModels.map(toSelectOptionFromModel)
-    : [{ value: "", label: "No models available", disabled: true }];
-
   return (
     <header className="ks-header">
       <div className="ks-header-inner">
@@ -270,70 +288,22 @@ const HeaderBar: FC<HeaderBarProps> = ({
               helper="Pick the orchestration pattern to run."
               options={RECIPE_SELECT_OPTIONS}
             />
-            <SelectField
-              id="source"
-              label="Adapter source"
-              value={adapterSource}
-              onChange={onSourceChange}
-              helper="Choose the ecosystem bridge."
-              options={SOURCE_SELECT_OPTIONS}
+            <ModelControls
+              adapterSource={adapterSource}
+              providerId={providerId}
+              modelId={modelId}
+              sourceOptions={sourceOptions}
+              availableProviders={availableProviders}
+              availableModels={availableModels}
+              providerHelper={providerHelper}
+              onSourceChange={onSourceChange}
+              onProviderChange={onProviderChange}
+              onModelChange={onModelChange}
             />
-            <SelectField
-              id="provider"
-              label="Provider"
-              value={providerId}
-              onChange={onProviderChange}
-              helper={providerHelper}
-              options={providerOptions}
-            />
-            {showModel ? (
-              <SelectField
-                id="model"
-                label="Model"
-                value={modelId}
-                onChange={onModelChange}
-                helper="Select a model within the provider."
-                options={modelOptions}
-              />
-            ) : null}
           </div>
         </div>
       </div>
     </header>
-  );
-};
-
-type SelectFieldProps = {
-  id: string;
-  label: string;
-  value: string | null;
-  onChange: (event: ChangeEvent<HTMLSelectElement>) => void;
-  options: Array<{ value: string; label: string; disabled?: boolean }>;
-  helper?: string;
-  className?: string;
-};
-
-const SelectField: FC<SelectFieldProps> = ({
-  id,
-  label,
-  value,
-  onChange,
-  options,
-  helper,
-  className,
-}) => {
-  const rootClassName = className ? `ks-field ${className}` : "ks-field";
-  const selectValue = value ?? "";
-  return (
-    <div className={rootClassName}>
-      <label htmlFor={id} className="text-xs text-muted-foreground">
-        {label}
-      </label>
-      <select id={id} value={selectValue} onChange={onChange} className="ks-select">
-        {options.map(renderSelectOption)}
-      </select>
-      <span className="ks-select-helper">{helper ?? ""}</span>
-    </div>
   );
 };
 
@@ -364,22 +334,6 @@ const ConnectButton: FC<ConnectButtonProps> = ({
     </Button>
   );
 };
-
-const toSelectOptionFromProvider = (entry: { id: ProviderId; label: string }) => ({
-  value: entry.id,
-  label: entry.label,
-});
-
-const toSelectOptionFromModel = (entry: { id: string; label: string }) => ({
-  value: entry.id,
-  label: entry.label,
-});
-
-const renderSelectOption = (option: { value: string; label: string; disabled?: boolean }) => (
-  <option key={option.value} value={option.value} disabled={option.disabled}>
-    {option.label}
-  </option>
-);
 
 const Footer: FC = () => {
   return (
@@ -471,6 +425,9 @@ const readProviderHelper = (input: { providerId: ProviderId }) => {
 
 const readCanSend = (input: { hasToken: boolean; requiresToken: boolean }) =>
   !input.requiresToken || input.hasToken;
+
+const readModelFallbackKey = (adapterSource: AdapterSource, providerId: ProviderId) =>
+  `${adapterSource}:${providerId}`;
 
 const buildTransportMemo = (input: {
   setEvents: Dispatch<SetStateAction<TransportEvent[]>>;

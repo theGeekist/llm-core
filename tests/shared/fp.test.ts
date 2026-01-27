@@ -4,15 +4,14 @@ import {
   bindUnsafe,
   curryK,
   identity,
-  isFalse,
-  isNull,
   mapArray,
   partialK,
   toArray,
   toFalse,
   toNull,
   toTrue,
-} from "../../src/shared/fp";
+} from "#shared/fp";
+import { isNull } from "#shared/guards";
 
 describe("fp", () => {
   describe("identity", () => {
@@ -31,12 +30,6 @@ describe("fp", () => {
       expect(isNull(null)).toBe(true);
       expect(isNull(undefined)).toBe(false);
       expect(isNull(false)).toBe(false);
-    });
-
-    it("isFalse checks for false", () => {
-      expect(isFalse(false)).toBe(true);
-      expect(isFalse(true)).toBe(false);
-      expect(isFalse(null)).toBe(false);
     });
   });
 

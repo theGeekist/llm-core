@@ -86,11 +86,9 @@ other ecosystems such as AI SDK, LangChain, and LlamaIndex.
 
 ## 3. Principle: Interactions are Projections
 
-Recipes drive full workflows. Interactions focus on a single turn and reshape model output into
-UI-friendly state.
+Recipes drive full workflows. Interactions focus on a single turn and reshape model output into UI-friendly state.
 
-An Interaction receives model or retrieval streams and **projects** them into an `InteractionState`.
-That state can power a chat window, a task panel, or another interactive surface.
+An Interaction receives model or retrieval streams and **projects** them into an `InteractionState`. That state can power a chat window, a task panel, or another interactive surface.
 
 Interaction-related pieces fall into three parts:
 
@@ -98,8 +96,9 @@ Interaction-related pieces fall into three parts:
 - **Sessions** add storage and policy, which lets you persist state across turns or users.
 - **UI SDK adapters** live outside core and convert events into UI-specific streams or commands.
 
-This structure makes it possible to build chat UIs, inspectors, or dashboards in environments
-that do not use the workflow runtime directly.
+Agentic flows use the same interaction stream but extend it with item and sub-agent lifecycle events. These are defined by the agent loop contract in `@geekist/llm-core/interaction`, which standardises `interaction.item.*` and `interaction.subagent.*` event semantics and deterministic snapshots for resume and replay, independent of the adapter ecosystem.
+
+This structure makes it possible to build chat UIs, inspectors, or dashboards in environments that do not use the workflow runtime directly.
 
 ```js
 import {

@@ -1,6 +1,7 @@
 import { describe, expect, it } from "bun:test";
 import { createHelper } from "@wpkernel/pipeline";
 import { recipes } from "../../src/recipes";
+import { __test__ as simpleChatInternals } from "../../src/recipes/simple-chat";
 import { assertSyncOutcome } from "../workflow/helpers";
 import { createMockModel } from "../fixtures/factories";
 
@@ -87,5 +88,11 @@ describe("Simple Chat Recipe", () => {
       throw new Error("Expected ok outcome.");
     }
     expect(seen).toBe("Keep it short.");
+  });
+
+  it("ignores non-object system context values", () => {
+    expect(simpleChatInternals.readSystemPrompt(null)).toBeNull();
+    expect(simpleChatInternals.readSystemPrompt("system")).toBeNull();
+    expect(simpleChatInternals.readSystemPrompt({ system: 123 })).toBeNull();
   });
 });

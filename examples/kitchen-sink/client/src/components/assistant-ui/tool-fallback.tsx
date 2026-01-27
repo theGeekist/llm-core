@@ -1,15 +1,12 @@
-import type { ToolCallMessagePartComponent } from "@assistant-ui/react";
+import type { ToolCallMessagePartComponent, ToolCallMessagePartProps } from "@assistant-ui/react";
 import { CheckIcon, ChevronDownIcon, ChevronUpIcon, XCircleIcon } from "lucide-react";
 import { useState } from "react";
 import { Button } from "../ui/button";
 import { cn } from "../../lib/utils";
 
-export const ToolFallback: ToolCallMessagePartComponent = ({
-  toolName,
-  argsText,
-  result,
-  status,
-}) => {
+type ToolFallbackProps = ToolCallMessagePartProps;
+
+const ToolFallbackImpl = ({ toolName, argsText, result, status }: ToolFallbackProps) => {
   const [isCollapsed, setIsCollapsed] = useState(true);
 
   const isCancelled = status?.type === "incomplete" && status.reason === "cancelled";
@@ -74,3 +71,5 @@ export const ToolFallback: ToolCallMessagePartComponent = ({
     </div>
   );
 };
+
+export const ToolFallback: ToolCallMessagePartComponent = ToolFallbackImpl;

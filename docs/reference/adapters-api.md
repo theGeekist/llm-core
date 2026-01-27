@@ -43,6 +43,7 @@ type AdapterBundle = {
   loader?: DocumentLoader;
   transformer?: DocumentTransformer;
   memory?: Memory;
+  skills?: SkillLoader;
   messages?: Message[];
   model?: Model;
   outputParser?: OutputParser;
@@ -79,6 +80,7 @@ const adapterBundle = {
   loader: undefined,
   transformer: undefined,
   memory: undefined,
+  skills: undefined,
   messages: [],
   model: undefined,
   outputParser: undefined,
@@ -129,9 +131,9 @@ formatting logic downstream.
 == TypeScript
 
 ```ts
-import { fromLangChainOutputParser } from "#adapters";
+import { fromLangChainOutputParser } from "@geekist/llm-core/adapters";
 import { StringOutputParser } from "@langchain/core/output_parsers";
-import type { OutputParser } from "#adapters";
+import type { OutputParser } from "@geekist/llm-core/adapters";
 
 const parser: OutputParser = fromLangChainOutputParser(new StringOutputParser());
 const value = await parser.parse("hello");
@@ -140,7 +142,7 @@ const value = await parser.parse("hello");
 == JavaScript
 
 ```js
-import { fromLangChainOutputParser } from "#adapters";
+import { fromLangChainOutputParser } from "@geekist/llm-core/adapters";
 import { StringOutputParser } from "@langchain/core/output_parsers";
 
 const parser = fromLangChainOutputParser(new StringOutputParser());
@@ -165,8 +167,8 @@ import {
   createCacheFromKVStore,
   fromLangChainStoreCache,
   fromLlamaIndexKVStoreCache,
-} from "#adapters";
-import type { Cache } from "#adapters";
+} from "@geekist/llm-core/adapters";
+import type { Cache } from "@geekist/llm-core/adapters";
 
 // 1. Simple in-memory (with TTL support)
 const mem: Cache = createMemoryCache();
@@ -187,7 +189,7 @@ import {
   createCacheFromKVStore,
   fromLangChainStoreCache,
   fromLlamaIndexKVStoreCache,
-} from "#adapters";
+} from "@geekist/llm-core/adapters";
 
 // 1. Simple in-memory (with TTL support)
 const mem = createMemoryCache();
@@ -211,7 +213,7 @@ They declare hard dependencies via metadata:
 == TypeScript
 
 ```ts
-import type { AdapterRequirement } from "#adapters";
+import type { AdapterRequirement } from "@geekist/llm-core/adapters";
 
 const requires: AdapterRequirement[] = [
   { kind: "construct", name: "retriever" },
@@ -248,7 +250,7 @@ Use this adapter when building ingestion pipelines or managing indexes.
 == TypeScript
 
 ```ts
-import type { VectorStore } from "#adapters";
+import type { VectorStore } from "@geekist/llm-core/adapters";
 
 const store: VectorStore = {
   upsert: ({ documents }) => ({ ids: documents.map((doc) => doc.id ?? "new") }),
@@ -276,8 +278,8 @@ so other ecosystems will show “unsupported” in interop docs.
 == TypeScript
 
 ```ts
-import { fromAiSdkImageModel } from "#adapters";
-import type { ImageModel } from "#adapters";
+import { fromAiSdkImageModel } from "@geekist/llm-core/adapters";
+import type { ImageModel } from "@geekist/llm-core/adapters";
 import { openai } from "@ai-sdk/openai";
 
 const image: ImageModel = fromAiSdkImageModel(openai.image("gpt-image-1"));
@@ -286,7 +288,7 @@ const image: ImageModel = fromAiSdkImageModel(openai.image("gpt-image-1"));
 == JavaScript
 
 ```js
-import { fromAiSdkImageModel } from "#adapters";
+import { fromAiSdkImageModel } from "@geekist/llm-core/adapters";
 import { openai } from "@ai-sdk/openai";
 
 const image = fromAiSdkImageModel(openai.image("gpt-image-1"));
@@ -303,7 +305,7 @@ Adapters can emit diagnostics when invoked with missing inputs using an optional
 == TypeScript
 
 ```ts
-import type { AdapterCallContext } from "#adapters";
+import type { AdapterCallContext } from "@geekist/llm-core/adapters";
 
 type AdapterCallContext = {
   report?: (diagnostic: AdapterDiagnostic) => void;
@@ -328,7 +330,7 @@ Example (retriever):
 == TypeScript
 
 ```ts
-import type { AdapterDiagnostic, Retriever } from "#adapters";
+import type { AdapterDiagnostic, Retriever } from "@geekist/llm-core/adapters";
 
 const diagnostics: AdapterDiagnostic[] = [];
 const context = { report: (entry: AdapterDiagnostic) => diagnostics.push(entry) };
@@ -359,8 +361,8 @@ The simplest way to register adapters is via value-first helpers. These return a
 == TypeScript
 
 ```ts
-import { Adapter } from "#adapters";
-import type { Tool } from "#adapters";
+import { Adapter } from "@geekist/llm-core/adapters";
+import type { Tool } from "@geekist/llm-core/adapters";
 
 const retrieverPlugin = Adapter.retriever("custom.retriever", {
   retrieve: () => ({ documents: [] }),
@@ -373,7 +375,7 @@ const toolPlugin = Adapter.tools("custom.tools", tools);
 == JavaScript
 
 ```js
-import { Adapter } from "#adapters";
+import { Adapter } from "@geekist/llm-core/adapters";
 
 const retrieverPlugin = Adapter.retriever("custom.retriever", {
   retrieve: () => ({ documents: [] }),
@@ -390,7 +392,7 @@ For custom constructs (e.g. `mcp`), use `Adapter.register`:
 == TypeScript
 
 ```ts
-import type { AdapterPlugin } from "#adapters";
+import type { AdapterPlugin } from "@geekist/llm-core/adapters";
 
 const plugin = Adapter.register("custom.mcp", "mcp", { client });
 plugin satisfies AdapterPlugin;
@@ -414,8 +416,8 @@ llm-core avoids silent adapter conflicts and hidden overrides.
 == TypeScript
 
 ```ts
-import { createRegistryFromDefaults } from "#adapters";
-import type { Model } from "#adapters";
+import { createRegistryFromDefaults } from "@geekist/llm-core/adapters";
+import type { Model } from "@geekist/llm-core/adapters";
 
 const registry = createRegistryFromDefaults();
 registry.registerProvider({
@@ -434,7 +436,7 @@ const { adapters, diagnostics } = registry.resolve({
 == JavaScript
 
 ```js
-import { createRegistryFromDefaults } from "#adapters";
+import { createRegistryFromDefaults } from "@geekist/llm-core/adapters";
 
 const registry = createRegistryFromDefaults();
 registry.registerProvider({
@@ -464,7 +466,7 @@ import type {
   ModelCall,
   ModelResult,
   ModelStreamEvent,
-} from "#adapters";
+} from "@geekist/llm-core/adapters";
 
 type Model = {
   generate(call: ModelCall): MaybePromise<ModelResult>;
@@ -498,9 +500,9 @@ and `error` events in between. Provider-specific stream payloads are preserved i
 == TypeScript
 
 ```ts
-import { fromAiSdkModel } from "#adapters";
-import { recipes } from "#recipes";
-import type { Model } from "#adapters";
+import { fromAiSdkModel } from "@geekist/llm-core/adapters";
+import { recipes } from "@geekist/llm-core/recipes";
+import type { Model } from "@geekist/llm-core/adapters";
 import { openai } from "@ai-sdk/openai";
 
 const model: Model = fromAiSdkModel(openai("gpt-4o-mini"));
@@ -510,8 +512,8 @@ const wf = recipes.agent().defaults({ adapters: { model } }).build();
 == JavaScript
 
 ```js
-import { fromAiSdkModel } from "#adapters";
-import { recipes } from "#recipes";
+import { fromAiSdkModel } from "@geekist/llm-core/adapters";
+import { recipes } from "@geekist/llm-core/recipes";
 import { openai } from "@ai-sdk/openai";
 
 const model = fromAiSdkModel(openai("gpt-4o-mini"));
@@ -526,7 +528,7 @@ const wf = recipes.agent().defaults({ adapters: { model } }).build();
 == TypeScript
 
 ```ts
-import type { Message, Schema, Tool } from "#adapters";
+import type { Message, Schema, Tool } from "@geekist/llm-core/adapters";
 
 type ModelCall = {
   messages?: Message[];
@@ -566,8 +568,8 @@ const call = {
 == TypeScript
 
 ```ts
-import { validateModelCall } from "#adapters";
-import type { ModelCall } from "#adapters";
+import { validateModelCall } from "@geekist/llm-core/adapters";
+import type { ModelCall } from "@geekist/llm-core/adapters";
 
 const call = { prompt: "hello" } satisfies ModelCall;
 const { diagnostics, allowTools, normalizedSchema } = validateModelCall(call);
@@ -576,7 +578,7 @@ const { diagnostics, allowTools, normalizedSchema } = validateModelCall(call);
 == JavaScript
 
 ```js
-import { validateModelCall } from "#adapters";
+import { validateModelCall } from "@geekist/llm-core/adapters";
 
 const { diagnostics, allowTools, normalizedSchema } = validateModelCall(call);
 ```
@@ -589,8 +591,8 @@ const { diagnostics, allowTools, normalizedSchema } = validateModelCall(call);
 == TypeScript
 
 ```ts
-import { ModelCallHelper, ModelHelper } from "#adapters";
-import type { ModelCall } from "#adapters";
+import { ModelCallHelper, ModelHelper } from "@geekist/llm-core/adapters";
+import type { ModelCall } from "@geekist/llm-core/adapters";
 
 const call = { prompt: "hello" } satisfies ModelCall;
 const prepared = ModelCallHelper.prepare(call);
@@ -603,7 +605,7 @@ const adapter = ModelHelper.create(async (input) => {
 == JavaScript
 
 ```js
-import { ModelCallHelper, ModelHelper } from "#adapters";
+import { ModelCallHelper, ModelHelper } from "@geekist/llm-core/adapters";
 
 const prepared = ModelCallHelper.prepare(call);
 const adapter = ModelHelper.create(async (input) => {
@@ -625,7 +627,7 @@ However, if you are migrating existing LangChain parsers, we support them as a d
 == TypeScript
 
 ```ts
-import type { AdapterCallContext, OutputParser } from "#adapters";
+import type { AdapterCallContext, OutputParser } from "@geekist/llm-core/adapters";
 
 type OutputParser = {
   parse: (text: string, context?: AdapterCallContext) => MaybePromise<unknown>;
@@ -653,7 +655,11 @@ It normalizes filter expressions (comparisons, AND/OR logic) into a portable IR 
 == TypeScript
 
 ```ts
-import type { StructuredQuery, StructuredQueryFilter, StructuredQueryComparison } from "#adapters";
+import type {
+  StructuredQuery,
+  StructuredQueryFilter,
+  StructuredQueryComparison,
+} from "@geekist/llm-core/adapters";
 
 type StructuredQuery = {
   query: string;
@@ -698,7 +704,7 @@ const query = {
 == TypeScript
 
 ```ts
-import type { Schema, Tool } from "#adapters";
+import type { Schema, Tool } from "@geekist/llm-core/adapters";
 
 type Tool = {
   name: string;
@@ -729,7 +735,7 @@ const tool = {
 == TypeScript
 
 ```ts
-import type { Message, StructuredContent } from "#adapters";
+import type { Message, StructuredContent } from "@geekist/llm-core/adapters";
 
 type Message = {
   role: "system" | "user" | "assistant" | "tool";

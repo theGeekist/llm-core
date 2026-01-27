@@ -45,8 +45,8 @@ Each recipe exports `XRecipeConfig`, and `configure()` only accepts that type. T
 == TypeScript
 
 ```ts
-import { recipes } from "#recipes";
-import type { RagRecipeConfig } from "#recipes";
+import { recipes } from "@geekist/llm-core/recipes";
+import type { RagRecipeConfig } from "@geekist/llm-core/recipes";
 
 const rag = recipes
   .rag()
@@ -65,7 +65,7 @@ const out = await rag.run({ input: "Explain DSP", documents }, { adapters: { mod
 == JavaScript
 
 ```js
-import { recipes } from "#recipes";
+import { recipes } from "@geekist/llm-core/recipes";
 
 const rag = recipes
   .rag()
@@ -89,7 +89,7 @@ Dot-separated recipe names are accessed via bracket notation when needed:
 == TypeScript
 
 ```ts
-import type { Retriever } from "#adapters";
+import type { Retriever } from "@geekist/llm-core/adapters";
 
 const retriever: Retriever = { retrieve: () => ({ documents: [] }) };
 const retrieval = recipes["rag.retrieval"]().defaults({ adapters: { retriever } });
@@ -121,7 +121,7 @@ const retrieval = recipes["rag.retrieval"]().defaults({ adapters: { retriever } 
 == TypeScript
 
 ```ts
-import type { AgentRecipeConfig } from "#recipes";
+import type { AgentRecipeConfig } from "@geekist/llm-core/recipes";
 
 const agent = recipes
   .agent()
@@ -161,7 +161,7 @@ Packs and flows are primarily for recipe authors and internal composition. Most 
 == TypeScript
 
 ```ts
-import type { AgentRecipeConfig } from "#recipes";
+import type { AgentRecipeConfig } from "@geekist/llm-core/recipes";
 
 const supportAgent = recipes
   .agent()
@@ -324,7 +324,7 @@ Packs compile down to Plugins. You rarely write these directly unless you are ex
 == TypeScript
 
 ```ts
-import type { Plugin } from "#workflow";
+import type { Plugin } from "@geekist/llm-core/workflow";
 
 const plugin: Plugin = {
   key: "model.openai", // Stable plugin id.

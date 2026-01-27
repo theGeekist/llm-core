@@ -1,0 +1,22 @@
+{
+  "name": "llm-core-agentic-server",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "bun run ./scripts/ensure-core-link.ts && bun --watch index.ts"
+  },
+  "devDependencies": {
+    "@types/node": "^22.13.5"
+  },
+  "dependencies": {
+    "@ai-sdk/anthropic": "2.0.56",
+    "@ai-sdk/openai": "2.0.88",
+    "@geekist/llm-core": "link:../../..",
+    "@langchain/ollama": "1.1.0",
+    "@langchain/openai": "1.2.0",
+    "@llamaindex/openai": "0.4.22",
+    "ai": "5.0.121",
+    "ollama-ai-provider-v2": "1.5.5",
+    "zod": "^4.1.8"
+  }
+}

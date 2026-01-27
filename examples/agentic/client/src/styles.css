@@ -1,0 +1,515 @@
+@import "tailwindcss";
+
+:root {
+  color-scheme: light;
+  font-family: "IBM Plex Sans", system-ui, sans-serif;
+  --background: 39 44% 96%;
+  --foreground: 20 16% 10%;
+  --card: 0 0% 100%;
+  --card-foreground: 20 16% 10%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 20 16% 10%;
+  --primary: 24 84% 54%;
+  --primary-foreground: 60 30% 98%;
+  --secondary: 36 24% 90%;
+  --secondary-foreground: 20 16% 12%;
+  --muted: 36 22% 92%;
+  --muted-foreground: 25 10% 40%;
+  --accent: 20 30% 86%;
+  --accent-foreground: 20 16% 12%;
+  --destructive: 0 72% 58%;
+  --destructive-foreground: 0 0% 98%;
+  --border: 35 16% 80%;
+  --input: 35 16% 80%;
+  --ring: 24 84% 54%;
+  --radius: 0.2rem;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    color-scheme: dark;
+    --background: 210 18% 10%;
+    --foreground: 24 8% 68%;
+    --card: 210 18% 13%;
+    --card-foreground: 24 8% 68%;
+    --popover: 210 18% 13%;
+    --popover-foreground: 24 8% 74%;
+    --primary: 24 90% 56%;
+    --primary-foreground: 20 20% 10%;
+    --secondary: 210 16% 20%;
+    --secondary-foreground: 24 12% 92%;
+    --muted: 210 14% 18%;
+    --muted-foreground: 25 8% 58%;
+    --accent: 210 16% 24%;
+    --accent-foreground: 24 12% 92%;
+    --destructive: 0 60% 48%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 210 12% 28%;
+    --input: 210 12% 28%;
+    --ring: 24 84% 54%;
+  }
+}
+
+@theme {
+  --color-background: hsl(var(--background));
+  --color-foreground: hsl(var(--foreground));
+  --color-primary: hsl(var(--primary));
+  --color-primary-foreground: hsl(var(--primary-foreground));
+  --color-secondary: hsl(var(--secondary));
+  --color-secondary-foreground: hsl(var(--secondary-foreground));
+  --color-muted: hsl(var(--muted));
+  --color-muted-foreground: hsl(var(--muted-foreground));
+  --color-accent: hsl(var(--accent));
+  --color-accent-foreground: hsl(var(--accent-foreground));
+  --color-destructive: hsl(var(--destructive));
+  --color-destructive-foreground: hsl(var(--destructive-foreground));
+  --color-border: hsl(var(--border));
+  --color-input: hsl(var(--input));
+  --color-ring: hsl(var(--ring));
+  --color-popover: hsl(var(--popover));
+  --color-popover-foreground: hsl(var(--popover-foreground));
+  --color-card: hsl(var(--card));
+  --color-card-foreground: hsl(var(--card-foreground));
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background: hsl(var(--background));
+  color: hsl(var(--foreground));
+}
+
+#root {
+  min-height: 100vh;
+}
+
+.aui-md {
+  font-size: 0.95rem;
+}
+
+.aui-md pre code {
+  font-family: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+    "Liberation Mono", "Courier New", monospace;
+}
+
+@layer components {
+  .ks-app {
+    @apply min-h-screen text-foreground;
+    background: radial-gradient(circle at top, hsl(var(--card)), hsl(var(--background)) 50%);
+  }
+
+  .ks-panel {
+    @apply rounded-sm border border-border/70 bg-card shadow-sm;
+  }
+
+  .ks-panel-tight {
+    @apply rounded-sm border border-border/70 bg-card;
+  }
+
+  .ks-panel-header {
+    @apply flex items-center justify-between gap-3 border-b border-border/50 px-5 py-4;
+  }
+
+  .ks-header {
+    @apply border-b border-border/70 bg-background/90 backdrop-blur;
+  }
+
+  .ks-header-inner {
+    @apply mx-auto flex w-full max-w-6xl flex-col gap-3 px-6 py-3;
+  }
+
+  .ks-topbar {
+    @apply border-b border-border/70 bg-background/80 py-3 text-xs text-muted-foreground;
+  }
+
+  .ks-topbar-inner {
+    @apply mx-auto flex w-full max-w-6xl flex-col gap-3 px-6 sm:flex-row sm:items-center sm:justify-between;
+  }
+
+  .ks-header-brand {
+    @apply flex items-center gap-4;
+  }
+
+  .ks-header-controls {
+    @apply flex w-full flex-col gap-4 text-sm;
+  }
+
+  .ks-header-row {
+    @apply grid items-start gap-5;
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .ks-field {
+    @apply flex flex-col gap-1;
+  }
+
+  .ks-panel-body {
+    @apply px-5 py-4;
+  }
+
+  .ks-main {
+    @apply mx-auto flex w-full max-w-[1480px] flex-1 flex-col gap-8 px-6 py-10;
+  }
+
+  .ks-main-agentic {
+    @apply grid gap-8;
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .ks-stack {
+    @apply flex flex-col gap-6;
+  }
+
+  .ks-chat {
+    @apply flex flex-col overflow-hidden rounded-[2px] border border-border/70 bg-card shadow-md;
+  }
+
+  .ks-chat-scroll {
+    @apply flex-1 min-h-[560px] overflow-y-auto bg-muted/20;
+  }
+
+  .ks-chat-input {
+    @apply border-t border-border/60 bg-card px-12 py-6;
+  }
+
+  .ks-select {
+    @apply min-w-[160px] rounded-sm border border-input bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/30;
+  }
+
+  .ks-select-helper {
+    @apply text-[11px] text-muted-foreground;
+    min-height: 1rem;
+  }
+
+  .ks-connect-btn {
+    @apply min-w-[160px];
+  }
+
+  .aui-thread-viewport {
+    @apply gap-8;
+  }
+
+  .aui-user-message-root {
+    @apply justify-items-end;
+  }
+
+  .aui-user-message-content {
+    @apply ml-auto max-w-[82%] rounded-sm bg-primary/15 px-4 py-3 text-foreground;
+  }
+
+  .aui-assistant-message-content {
+    @apply max-w-[82%] rounded-sm border border-border/50 bg-background px-4 py-4 text-foreground shadow-xs;
+  }
+
+  .aui-thread-welcome-root {
+    @apply rounded-sm bg-background/70 p-7 shadow-xs;
+  }
+
+  .aui-thread-welcome-message {
+    @apply px-2;
+  }
+
+  .aui-thread-welcome-suggestion button {
+    @apply border-border/60 bg-muted/20;
+  }
+
+  .aui-composer-root {
+    @apply w-full rounded-sm border-0 bg-background/95;
+  }
+
+  .aui-composer-attachment-dropzone {
+    @apply w-full border border-border/60 bg-background/85 px-4 pt-3 pb-2;
+    margin-bottom: 0.25rem;
+  }
+
+  .aui-composer-input {
+    @apply min-h-14 border-0 bg-transparent px-0 py-1;
+    margin-bottom: 0.5rem;
+    overflow: hidden;
+    resize: none;
+  }
+
+  .ks-lock-hint {
+    @apply px-4 pb-2 text-xs text-muted-foreground;
+  }
+
+  .aui-composer-action-wrapper {
+    @apply mt-1;
+  }
+
+  .aui-thread-welcome-message-inner {
+    @apply text-foreground;
+  }
+
+  .aui-thread-viewport-footer {
+    @apply rounded-t-sm border-t border-border/60 bg-background/90 backdrop-blur;
+    padding-bottom: 0.5rem;
+  }
+
+  .ks-footer {
+    @apply border-t border-border/70 bg-background/80 py-4 text-xs text-muted-foreground;
+  }
+
+  .ks-footer-inner {
+    @apply mx-auto flex w-full max-w-6xl flex-col gap-3 px-6 sm:flex-row sm:items-center sm:justify-between;
+  }
+
+  .ks-link-bar {
+    @apply flex flex-wrap items-center gap-4;
+  }
+
+  .ks-link {
+    @apply text-xs font-medium text-muted-foreground hover:text-foreground;
+  }
+
+  .ks-link-primary {
+    @apply text-foreground hover:text-primary;
+  }
+
+  .ks-topbar-actions {
+    @apply flex flex-wrap items-center gap-4;
+  }
+
+  .ks-pack-list {
+    @apply mt-3 flex flex-wrap gap-2 text-xs text-muted-foreground;
+  }
+
+  .ks-pack-pill {
+    @apply rounded-sm border border-border/60 bg-muted/20 px-3 py-2 text-[11px] uppercase tracking-[0.16em];
+  }
+
+   /* =========================
+     Config pills (was summary)
+     ========================= */
+
+  .agentic-config {
+    @apply mt-3 grid gap-3 text-xs text-muted-foreground;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  }
+
+  .agentic-config-pill {
+    @apply flex flex-col gap-2 rounded-sm border border-border/60 bg-muted/20 px-3 py-3 text-[11px] uppercase tracking-[0.16em];
+  }
+
+  .agentic-config-label {
+    @apply text-[10px] font-semibold uppercase tracking-[0.2em] text-muted-foreground;
+  }
+
+  /* =========================
+     Controls
+     ========================= */
+
+  .agentic-control {
+    @apply flex flex-col gap-1;
+  }
+
+  /* Field wrapper used by Select/Toggle to keep suffix + chevron aligned */
+  .agentic-field {
+    @apply relative flex items-center;
+  }
+
+  /* Select base: keep your current look */
+  .agentic-select {
+    @apply w-full rounded-sm border border-input bg-background px-2 py-1 text-xs text-foreground shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/30;
+    appearance: none;
+  }
+
+  /* Reserve space on the right for suffix + chevron */
+  .agentic-select--with-suffix {
+    @apply pr-28;
+  }
+
+  /* Inline suffix inside the select row */
+  .agentic-suffix {
+    @apply absolute right-9 text-[10px] text-muted-foreground;
+    max-width: 45%;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    pointer-events: none;
+  }
+
+  /* Decorative chevron, positioned inside the select */
+  .agentic-chevron {
+    @apply absolute right-3 h-4 w-4 text-muted-foreground;
+    opacity: 0.85;
+    pointer-events: none;
+  }
+
+  /* Toggle row: suffix aligned right without absolute positioning */
+  .agentic-field--toggle {
+    @apply justify-between;
+  }
+
+  .agentic-field--toggle .agentic-suffix {
+    @apply static;
+    max-width: none;
+    overflow: visible;
+    text-overflow: clip;
+    white-space: nowrap;
+  }
+
+  /* Toggle label (was agentic-summary-toggle) */
+  .agentic-toggle-label {
+    @apply flex items-center gap-2 text-xs font-semibold text-foreground;
+  }
+
+  .agentic-toggle-label input {
+    @apply h-4 w-4 rounded-sm border border-input bg-background text-primary shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/30;
+  }
+
+  /* =========================
+     Existing styles (unchanged)
+     ========================= */
+
+  .agentic-section {
+    @apply flex flex-col gap-3 rounded-sm border border-border/60 bg-muted/20 p-4;
+  }
+
+  .agentic-section-header {
+    @apply flex items-center justify-between;
+  }
+
+  .agentic-section-body {
+    @apply grid gap-5;
+  }
+
+  /* NOTE: agentic-field is now also used by inline controls (kept above). */
+  /* If you still need a vertical field somewhere else, use agentic-field-stack below. */
+  .agentic-field-stack {
+    @apply flex flex-col gap-2;
+  }
+
+  .agentic-label {
+    @apply text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground;
+  }
+
+  .agentic-input {
+    @apply rounded-sm border border-input bg-background px-3 py-2 text-sm text-foreground shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/30;
+  }
+
+  .agentic-textarea {
+    @apply min-h-[88px] resize-y;
+  }
+
+  .agentic-helper {
+    @apply text-[11px] text-muted-foreground;
+  }
+
+  .agentic-toggle {
+    @apply h-5 w-5 rounded-sm border border-input bg-background text-primary shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/30;
+  }
+
+  .agentic-option-grid {
+    @apply grid gap-3;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  }
+
+  .agentic-option-card {
+    @apply flex items-start gap-3 rounded-sm border border-border/60 bg-background px-3 py-2 text-xs text-foreground shadow-sm;
+  }
+
+  .agentic-option-card input {
+    @apply mt-1 h-4 w-4 rounded-sm border border-input bg-background text-primary shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/30;
+  }
+
+  .agentic-option-title {
+    @apply text-xs font-semibold uppercase tracking-[0.16em];
+  }
+
+  .agentic-option-description {
+    @apply text-[11px] text-muted-foreground;
+  }
+
+  .ks-panel-grid {
+    @apply mt-3 grid gap-6;
+    grid-template-columns: minmax(0, 1.2fr);
+  }
+
+  /* =========================
+     Row layout for config panel
+     No collisions with existing classes
+     ========================= */
+
+  .agentic-row {
+    @apply grid items-start gap-4;
+    grid-template-columns: 160px minmax(0, 1fr);
+  }
+  @media (max-width: 640px) {
+    .agentic-row {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  .agentic-row-label {
+    @apply pt-2;
+  }
+
+  @media (max-width: 640px) {
+    .agentic-row-label {
+      @apply pt-0;
+    }
+  }
+
+  .agentic-row-body {
+    @apply flex min-w-0 flex-col gap-1;
+  }
+
+  .agentic-row-control {
+    @apply max-w-[420px] min-w-0;
+  }
+
+  .agentic-row--wide .agentic-row-control {
+    @apply max-w-none;
+  }
+
+  .agentic-row-control > .agentic-input,
+  .agentic-row-control > .agentic-select-field,
+  .agentic-row-control > .agentic-toggle-field,
+  .agentic-row-control > .agentic-option-grid {
+    @apply w-full;
+  }
+}
+
+@media (prefers-color-scheme: dark) {
+  .ks-app {
+    background: radial-gradient(circle at top, hsl(var(--accent)), hsl(var(--background)) 55%);
+  }
+}
+
+@media (min-width: 768px) {
+  .ks-header-inner {
+    align-items: stretch;
+    gap: 1.5rem;
+  }
+
+  .ks-header-controls {
+    align-items: stretch;
+    min-width: min(900px, 100%);
+  }
+
+  .ks-header-row-primary {
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  }
+
+  .ks-panel-grid {
+    grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 767px) {
+  .ks-header-row-primary {
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  }
+
+  .ks-connect-field {
+    justify-content: flex-start;
+  }
+}
+
+@media (min-width: 1024px) {
+  .ks-main-agentic {
+    grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.9fr);
+    align-items: start;
+  }
+}

@@ -156,7 +156,7 @@ body {
   }
 
   .ks-chat-scroll {
-    @apply flex-1 min-h-[560px] overflow-y-auto bg-muted/20 px-8 py-10;
+    @apply flex-1 min-h-[560px] overflow-y-auto bg-muted/20;
   }
 
   .ks-chat-input {
@@ -308,11 +308,5 @@ body {
 
   .ks-connect-field {
     justify-content: flex-start;
-  }
-}
-
-@media (min-width: 1024px) {
-  .ks-chat-scroll {
-    @apply px-10 py-10;
   }
 }

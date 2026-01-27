@@ -118,6 +118,13 @@ const readAttachmentTypeLabel = (type: string) => {
   }
 };
 
+type AttachmentTypeLabelState = {
+  attachment: { type: string };
+};
+
+const readAttachmentTypeLabelFromState = (state: AttachmentTypeLabelState) =>
+  readAttachmentTypeLabel(state.attachment.type);
+
 const AttachmentPreviewDialog: FC<PropsWithChildren> = ({ children }) => {
   const src = useAttachmentSrc();
 
@@ -175,7 +182,7 @@ const AttachmentRemove: FC = () => {
 const AttachmentTile: FC = () => {
   const api = useAssistantApi();
   const isComposer = api.attachment.source === "composer";
-  const typeLabel = useAssistantState((state) => readAttachmentTypeLabel(state.attachment.type));
+  const typeLabel = useAssistantState(readAttachmentTypeLabelFromState);
 
   return (
     <Tooltip>

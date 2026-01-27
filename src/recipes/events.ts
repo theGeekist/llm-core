@@ -1,5 +1,5 @@
 import { maybeMap, maybeAll } from "#shared/maybe";
-import { isNull } from "#shared/fp";
+import { isNull } from "#shared/guards";
 import type { AdapterTraceEvent, EventStream } from "#adapters/types";
 import type { PipelineContext, PipelineState } from "#workflow/types";
 

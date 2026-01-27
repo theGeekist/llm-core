@@ -28,6 +28,10 @@ const readSystemPrompt = (context: unknown) => {
   return typeof record.system === "string" ? record.system : null;
 };
 
+export const __test__ = {
+  readSystemPrompt,
+};
+
 const applySeed: StepApply = ({ input, context, state }) => {
   const agent = AgentStateHelpers.readAgentState(state);
   const parsed = AgentStateHelpers.readAgentInput(input);

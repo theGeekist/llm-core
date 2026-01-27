@@ -25,11 +25,34 @@
     "noUnusedLocals": false,
     "noUnusedParameters": false,
     "noPropertyAccessFromIndexSignature": false,
+    "typeRoots": ["./node_modules/@types"],
     "baseUrl": ".",
     "paths": {
       "@geekist/llm-core": ["./dist/types/index.d.ts"],
-      "@geekist/llm-core/*": ["./dist/types/src/*/index.d.ts"]
+      "@geekist/llm-core/*": ["./dist/types/src/*/index.d.ts"],
+      "@examples/*": ["./examples/*"],
+      "@assistant-ui/react": ["./node_modules/@assistant-ui/react/dist/index.d.ts"],
+      "@assistant-ui/react/*": ["./node_modules/@assistant-ui/react/dist/*"],
+      "@assistant-ui/react-ai-sdk": ["./node_modules/@assistant-ui/react-ai-sdk/dist/index.d.ts"],
+      "@assistant-ui/react-ai-sdk/*": ["./node_modules/@assistant-ui/react-ai-sdk/dist/*"],
+      "@assistant-ui/react-markdown": [
+        "./node_modules/@assistant-ui/react-markdown/dist/index.d.ts"
+      ],
+      "@assistant-ui/react-markdown/*": ["./node_modules/@assistant-ui/react-markdown/dist/*"],
+      "react": ["./node_modules/@types/react/index.d.ts"],
+      "react/jsx-runtime": ["./node_modules/@types/react/jsx-runtime.d.ts"],
+      "react-dom": ["./node_modules/@types/react-dom/index.d.ts"],
+      "react-dom/client": ["./node_modules/@types/react-dom/client.d.ts"]
     }
   },
-  "exclude": ["llm-core/**", "pipeline/**", "assistant-ui/**", "copilot-sdk/**"]
+  "exclude": [
+    "node_modules/**",
+    "examples/**",
+    "examples/**/node_modules/**",
+    "llm-core/**",
+    "pipeline/**",
+    "assistant-ui/**",
+    "copilot-sdk/**",
+    "codex/**"
+  ]
 }

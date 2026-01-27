@@ -76,7 +76,26 @@ Helpers live in `Outcome.*` and remain exhaustive.
 
 ---
 
-## 5) Runtime channel (operational controls)
+## 5) Agent loop contract (interaction semantics)
+
+The agent loop contract is defined in the interaction layer, not the workflow engine. It describes
+the **event semantics** and **state snapshot** shape that an agentic loop must emit, regardless of
+adapter ecosystem. This keeps the engine stable while letting the interaction stream evolve.
+See [Runtime / Agent Loop Snapshots](/reference/runtime#agent-loop-snapshots) for snapshot rules.
+
+Core types are exported from `@geekist/llm-core/interaction`:
+
+- `AgentLoopConfig` — user-facing agent loop configuration.
+- `AgentLoopStateSnapshot` — deterministic snapshot for resume semantics.
+- `InteractionItemEvent` — `interaction.item.*` lifecycle events.
+- `InteractionSubagentEvent` — `interaction.subagent.*` lifecycle events.
+
+The workflow engine is responsible for trace + diagnostics, but the agent loop contract is where
+UI integrations and deterministic replay are defined.
+
+---
+
+## 6) Runtime channel (operational controls)
 
 Runtime is where **budget**, **persistence**, **trace sinks**, and **resume** are configured. This
 keeps recipes pure and deterministic.
@@ -97,7 +116,7 @@ await workflow.run({ input: "..." }, runtime);
 
 ---
 
-## 6) Sync or async (MaybePromise)
+## 7) Sync or async (MaybePromise)
 
 Workflows are sync‑friendly when all adapters are sync.
 
@@ -110,7 +129,7 @@ if (out.status === "ok") {
 
 ---
 
-## 7) Capabilities and explain()
+## 8) Capabilities and explain()
 
 `explain()` is the source of truth for **why** a workflow is shaped the way it is.
 
@@ -123,14 +142,14 @@ Use `capabilities()` when you want the resolved shape for feature‑gating or di
 
 ---
 
-## 8) Resume (HITL workflows)
+## 9) Resume (HITL workflows)
 
 `resume()` only exists for recipes that explicitly support pause/resume. It accepts a resume token
 and optional human input. The runtime `resume` adapter determines how tokens are resolved.
 
 ---
 
-## 9) Provider overrides (registry)
+## 10) Provider overrides (registry)
 
 Workflows resolve construct providers via the adapter registry. Per‑run overrides are supported via
 `runtime.providers`:
@@ -144,7 +163,7 @@ await workflow.run(
 
 ---
 
-## 10) When to read this page
+## 11) When to read this page
 
 - You’re building your own runtime wrapper.
 - You need full control over resume, diagnostics, or provider selection.

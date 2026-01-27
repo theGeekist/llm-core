@@ -4,3 +4,4 @@ pipeline/**
 dist/**
 assistant-ui/**
 copilot-sdk/**
+codex/**

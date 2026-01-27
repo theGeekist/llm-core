@@ -11,14 +11,14 @@ import {
   toCoreMessagesFromAssistantCommands,
   selectModel,
 } from "@geekist/llm-core/adapters";
-import { Outcome } from "@geekist/llm-core/workflow";
-import type { OutcomeType } from "@geekist/llm-core/workflow";
+import { Outcome, type OutcomeType } from "@geekist/llm-core/workflow";
 import { toCoreMessages } from "./messages";
 import type { ClientChatRequest } from "./protocol";
 import { parseClientMessage } from "./protocol";
 import { createWebSocketUiWriter, sendUiDone, sendUiError } from "./transport";
 import { AssistantStream, DataStreamEncoder } from "assistant-stream";
 import { createSocketData, setSocketToken, type SocketData } from "./socket-data";
+import { handleModelCatalogRequest } from "../../components/model-catalog";
 import {
   maybeChain,
   maybeMap,
@@ -55,6 +55,9 @@ function handleFetch(req: Request, serverInstance: Server<SocketData>) {
   }
   if (url.pathname === "/assistant") {
     return handleAssistantTransport(req);
+  }
+  if (url.pathname === "/models") {
+    return handleModelCatalogRequest(req);
   }
   return new Response("Not found", { status: 404 });
 }

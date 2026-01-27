@@ -6,8 +6,6 @@ export const toNull = () => null;
 export const toUndefined = () => undefined; // strongly discouraged. Only used for interop adapters
 export const toTrue = () => true;
 export const toFalse = () => false;
-export const isNull = (value: unknown): value is null => value === null;
-export const isFalse = (value: unknown): value is false => value === false;
 
 export const toArray = (value: string | string[]) => (Array.isArray(value) ? value : [value]);
 
@@ -20,9 +18,8 @@ const applyCompose = (fns: readonly Unary<unknown, unknown>[], value: unknown) =
   let result = value;
   for (let index = fns.length - 1; index >= 0; index -= 1) {
     const fn = fns[index];
-    if (!fn) {
-      continue;
-    }
+    if (!fn) continue;
+
     result = fn(result);
   }
   return result;
