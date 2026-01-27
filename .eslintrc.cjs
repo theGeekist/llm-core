@@ -35,7 +35,7 @@ module.exports = {
   },
   overrides: [
     {
-      files: ["docs/**/*.ts", "docs/**/*.js", "tests/**/*.ts", "tests/**/*.js"],
+      files: ["docs/**/*.ts", "docs/**/*.js", "tests/**/*.ts", "tests/**/*.js", "**/tests/**/*.ts", "**/tests/**/*.js"],
       rules: {
         "consistent-return": "off",
       },

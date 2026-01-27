@@ -1,7 +1,10 @@
 llm-core/**
 pipeline
 pipeline/**
-dist/**
+**/dist
+packages/*/dist/**
+examples/*/client/dist/**
+examples/*/server/dist/**
 assistant-ui/**
 copilot-sdk/**
 codex/**
