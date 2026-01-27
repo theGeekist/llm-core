@@ -9,7 +9,7 @@
   ],
   "scripts": {
     "build": "bun run --filter '*' build",
-    "test": "bun test ./packages ./examples",
+    "test": "bun test",
     "lint": "eslint \"**/*.{ts,tsx,js,jsx}\"",
     "lint:fix": "eslint \"**/*.{ts,tsx,js,jsx}\" --fix",
     "typecheck:packages": "bun run --filter '@geekist/llm-core' typecheck",
@@ -31,6 +31,10 @@
     "@types/node": "^22.13.5",
     "@types/react": "19.2.7",
     "@types/react-dom": "19.2.0",
-    "typescript": "^5.7.3"
+    "typescript": "^5.7.3",
+    "eslint-plugin-sonarjs": "3.0.5",
+    "vitepress": "^1.6.4",
+    "vitepress-plugin-mermaid": "^2.0.17",
+    "vitepress-plugin-tabs": "^0.7.3"
   }
 }
