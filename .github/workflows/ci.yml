@@ -40,6 +40,9 @@ jobs:
       - name: Test
         run: bun test --coverage --coverage-reporter=text --coverage-reporter=lcov
 
+      - name: Typecheck Examples
+        run: bun run typecheck:examples
+
       - name: Upload coverage
         uses: codecov/codecov-action@v5
         with:
