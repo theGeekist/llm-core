@@ -19,7 +19,8 @@
     "docs:build": "bunx vitepress build docs",
     "docs:preview": "bunx vitepress preview docs",
     "docs:snippets:typecheck": "bun tsc -p docs/snippets/tsconfig.json --noEmit",
-    "typecheck:examples": "bun tsc -p examples/agentic/client/tsconfig.json --noEmit && bun tsc -p examples/agentic/server/tsconfig.json --noEmit && bun tsc -p examples/kitchen-sink/client/tsconfig.json --noEmit && bun tsc -p examples/kitchen-sink/server/tsconfig.json --noEmit"
+    "typecheck:examples": "bun tsc -p examples/agentic/client/tsconfig.json --noEmit && bun tsc -p examples/agentic/server/tsconfig.json --noEmit && bun tsc -p examples/kitchen-sink/client/tsconfig.json --noEmit && bun tsc -p examples/kitchen-sink/server/tsconfig.json --noEmit",
+    "typecheck:tests": "bun run --cwd packages/llm-core typecheck:tests"
   },
   "devDependencies": {
     "prettier": "3.3.3",
