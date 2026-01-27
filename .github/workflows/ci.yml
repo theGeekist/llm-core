@@ -68,7 +68,7 @@ jobs:
         run: bun install
 
       - name: Test
-        run: bun run test -- --coverage --coverage-reporter=text --coverage-reporter=lcov
+        run: bun test "packages/**/*.test.ts" "pipeline/**/*.test.ts" --coverage "--coverage-reporter=text" "--coverage-reporter=lcov"
 
       - name: SonarQube Scan
         uses: SonarSource/sonarqube-scan-action@v6
