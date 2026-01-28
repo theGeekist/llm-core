@@ -1,8 +1,8 @@
 import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 
+const EXAMPLES_DIR = "../../../examples";
 const CORE_PKG = "@geekist/llm-core";
-const EXAMPLES_DIR = "examples";
 const DEP_FIELDS = [
   "dependencies",
   "devDependencies",
@@ -53,7 +53,7 @@ const isAllowedCoreVersion = (version: string | null) => {
   if (!version) {
     return false;
   }
-  return version.startsWith("link:");
+  return version.startsWith("workspace:");
 };
 
 const collectMatches = (pkg: PackageJson, filePath: string) => {
@@ -118,7 +118,7 @@ const runCheck = (): boolean => {
     return true;
   }
 
-  console.error(`Use link: for ${CORE_PKG} in examples to avoid recursive installs:`);
+  console.error(`Use workspace:* for ${CORE_PKG} in examples to avoid recursive installs:`);
   for (const offender of offenders) {
     console.error(`- ${formatMatch(offender)}`);
   }

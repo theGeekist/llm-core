@@ -1,9 +1,22 @@
 {
   "extends": "../../tsconfig.json",
   "compilerOptions": {
+    "baseUrl": ".",
     "allowJs": true,
     "checkJs": true,
-    "module": "esnext"
+    "module": "esnext",
+    "paths": {
+      "@geekist/llm-core": ["../../packages/llm-core/src/index.ts"],
+      "@geekist/llm-core/*": ["../../packages/llm-core/src/*"],
+      "#adapters": ["../../packages/llm-core/src/adapters/index.ts"],
+      "#adapters/*": ["../../packages/llm-core/src/adapters/*"],
+      "#recipes": ["../../packages/llm-core/src/recipes/index.ts"],
+      "#recipes/*": ["../../packages/llm-core/src/recipes/*"],
+      "#interaction": ["../../packages/llm-core/src/interaction/index.ts"],
+      "#interaction/*": ["../../packages/llm-core/src/interaction/*"],
+      "#workflow": ["../../packages/llm-core/src/workflow/index.ts"],
+      "#workflow/*": ["../../packages/llm-core/src/workflow/*"]
+    }
   },
   "exclude": ["../../llm-core/**", "../../pipeline/**"],
   "include": ["./**/**/*.ts", "./**/**/*.js"]

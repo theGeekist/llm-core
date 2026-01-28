@@ -119,7 +119,7 @@ const probes: Record<string, () => boolean> = {
 };
 
 const loadParitySpec = (): ParitySpec => {
-  const filePath = resolve(process.cwd(), "internal/interop-parity.json");
+  const filePath = resolve(import.meta.dir, "../../internal/interop-parity.json");
   const raw = readFileSync(filePath, "utf8");
   return JSON.parse(raw) as ParitySpec;
 };

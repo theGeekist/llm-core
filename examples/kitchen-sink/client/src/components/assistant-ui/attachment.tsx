@@ -11,7 +11,7 @@ import { Dialog, DialogContent, DialogTitle, DialogTrigger } from "../ui/dialog"
 import { Tooltip, TooltipContent, TooltipTrigger } from "../ui/tooltip";
 import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
 import { cn } from "../../lib/utils";
-import { bindFirst } from "../../../../../../src/shared/fp";
+import { bindFirst } from "../../../../../../packages/llm-core/src/shared/fp";
 import { TooltipIconButton } from "./tooltip-icon-button";
 
 type AttachmentPreviewProps = {

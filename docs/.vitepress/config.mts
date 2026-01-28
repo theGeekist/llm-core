@@ -1,7 +1,23 @@
 import { defineConfig } from "vitepress";
 import { tabsMarkdownPlugin } from "vitepress-plugin-tabs";
+import { resolve } from "node:path";
 
 export default defineConfig({
+  // ...
+  vite: {
+    resolve: {
+      alias: [
+        {
+          find: "@geekist/llm-core",
+          replacement: resolve(__dirname, "../../packages/llm-core/src/index.ts"),
+        },
+        {
+          find: /^@geekist\/llm-core\/(.*)$/,
+          replacement: resolve(__dirname, "../../packages/llm-core/src/$1"),
+        },
+      ],
+    },
+  },
   title: "llm-core",
   description: "Composable workflow + adapter core for the JS/TS LLM ecosystem.",
   base: "/",
@@ -63,6 +79,7 @@ export default defineConfig({
       };
     },
   },
+
   // ... rest of config ...
   themeConfig: {
     nav: [

@@ -1,4 +1,5 @@
 {
+  "extends": "../../../tsconfig.json",
   "compilerOptions": {
     "target": "ESNext",
     "module": "ESNext",
@@ -9,10 +10,6 @@
     "types": ["bun-types", "node"],
     "typeRoots": ["../../../node_modules/@types"],
     "skipLibCheck": true,
-    "baseUrl": ".",
-    "paths": {
-      "@geekist/llm-core": ["../../../dist/types/index.d.ts"],
-      "@geekist/llm-core/*": ["../../../dist/types/src/*/index.d.ts"]
-    }
+    "baseUrl": "."
   }
 }

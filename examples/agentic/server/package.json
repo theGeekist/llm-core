@@ -1,17 +1,15 @@
 {
-  "name": "llm-core-agentic-server",
+  "name": "@examples/agentic-server",
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "bun run ./scripts/ensure-core-link.ts && bun --watch index.ts"
-  },
-  "devDependencies": {
-    "@types/node": "^22.13.5"
+    "dev": "bun --watch index.ts",
+    "lint:fix": "eslint \"**/*.{ts,tsx,js,jsx}\" --fix"
   },
   "dependencies": {
     "@ai-sdk/anthropic": "2.0.56",
     "@ai-sdk/openai": "2.0.88",
-    "@geekist/llm-core": "link:../../..",
+    "@geekist/llm-core": "workspace:*",
     "@langchain/ollama": "1.1.0",
     "@langchain/openai": "1.2.0",
     "@llamaindex/openai": "0.4.22",

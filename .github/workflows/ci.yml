@@ -26,11 +26,6 @@ jobs:
       - name: Build
         run: bun run build
 
-      - name: Install Kitchen Sink Deps
-        run: |
-          bun install --cwd examples/kitchen-sink/client
-          bun install --cwd examples/kitchen-sink/server
-
       - name: Typecheck
         run: bun run typecheck
 
@@ -38,7 +33,10 @@ jobs:
         run: bun run typecheck:tests
 
       - name: Test
-        run: bun test --coverage --coverage-reporter=text --coverage-reporter=lcov
+        run: bun run test -- --coverage --coverage-reporter=text --coverage-reporter=lcov
+
+      - name: Typecheck Examples
+        run: bun run typecheck:examples
 
       - name: Upload coverage
         uses: codecov/codecov-action@v5
@@ -64,8 +62,11 @@ jobs:
       - name: Install
         run: bun install
 
+      - name: Debug
+        run: ls -R packages
+
       - name: Test
-        run: bun test --coverage --coverage-reporter=text --coverage-reporter=lcov
+        run: bun run test -- --coverage --coverage-reporter=text --coverage-reporter=lcov
 
       - name: SonarQube Scan
         uses: SonarSource/sonarqube-scan-action@v6

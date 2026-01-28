@@ -1,23 +1,54 @@
 #!/bin/sh
 set -e
 
-STAGED_FILES=$(git diff --cached --name-only -z)
+# Get changed files
+STAGED_FILES=$(git diff --cached --name-only)
 
-echo "pre-commit: format"
-bun run format
-echo "pre-commit: lint:fix"
-bun run lint:fix
-echo "pre-commit: typecheck"
-bun run typecheck
-echo "pre-commit: test"
-bun run test
+# Define patterns
+CORE_PATTERN="^packages/|^package.json|^tsconfig.json|^.eslintrc.cjs"
+DOCS_PATTERN="^docs/"
+EXAMPLES_PATTERN="^examples/"
 
+# Function to check if files matching pattern changed
+has_changes() {
+  echo "$STAGED_FILES" | grep -qE "$1"
+}
+
+# Run core checks if core files changed
+if has_changes "$CORE_PATTERN"; then
+  echo "📦 Core changes detected. Running core checks..."
+  echo "  - Format"
+  bun run format
+  echo "  - Lint"
+  bun run lint:fix
+  echo "  - Typecheck"
+  bun run typecheck
+  echo "  - Test"
+  bun run test
+fi
+
+# Run doc checks if docs changed
+if has_changes "$DOCS_PATTERN"; then
+  echo "📚 Docs changes detected. Running doc checks..."
+  echo "  - Build"
+  bun run docs:build
+  echo "  - Snippets Typecheck"
+  bun run docs:snippets:typecheck
+fi
+
+# Run example checks if examples changed
+if has_changes "$EXAMPLES_PATTERN"; then
+  echo "🧪 Example changes detected. Running example checks..."
+  echo "  - Typecheck Examples"
+  bun run typecheck:examples
+fi
+
+# Check for unstaged changes after auto-formatting
 if [ -n "$STAGED_FILES" ]; then
-  CHANGED=$(printf "%s" "$STAGED_FILES" | xargs -0 git diff --name-only --)
+  CHANGED=$(git diff --name-only -- $STAGED_FILES)
   if [ -n "$CHANGED" ]; then
-    echo "pre-commit: staged files changed after formatting/lint. Please review and re-stage."
+    echo "⚠️  Staged files changed after formatting/lint. Please review and re-stage:"
     echo "$CHANGED"
-    echo "hint: git add $CHANGED"
     exit 1
   fi
 fi

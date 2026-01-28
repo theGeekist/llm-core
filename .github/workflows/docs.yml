@@ -3,6 +3,7 @@ name: Docs
 on:
   push:
     branches: [main]
+  pull_request:
   workflow_dispatch:
 
 permissions:
@@ -29,10 +30,18 @@ jobs:
       - name: Install
         run: bun install
 
+      - name: Install core deps
+        run: bun install --cwd packages/llm-core
+
       - name: Build docs
         run: bun run docs:build
 
+      - name: Typecheck Snippets
+        run: bun run docs:snippets:typecheck
+
       - name: Upload Pages artifact
+        # Only upload artifact if pushing to main (deployment candidate)
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         uses: actions/upload-pages-artifact@v3
         with:
           path: docs/.vitepress/dist
@@ -40,6 +49,8 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     needs: build
+    # Only deploy on main push
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
