@@ -1,5 +1,6 @@
 {
   "lockfileVersion": 1,
+  "configVersion": 0,
   "workspaces": {
     "": {
       "devDependencies": {
@@ -45,6 +46,7 @@
         "@langchain/ollama": "^1.1.0",
         "@langchain/openai": "^1.2.0",
         "@langchain/textsplitters": "^1.0.1",
+        "@llamaindex/core": "^0.6.22",
         "@llamaindex/openai": "^0.4.22",
         "@llamaindex/workflow": "^1.1.24",
         "@llamaindex/workflow-core": "^1.3.3",
@@ -86,7 +88,19 @@
         "zod-to-json-schema": "^3.25.0",
       },
       "peerDependencies": {
+        "@ai-sdk/anthropic": "^2.0.56",
+        "@ai-sdk/openai": "^2.0.88",
+        "@langchain/core": "1.1.8",
+        "@langchain/ollama": "^1.1.0",
+        "@langchain/openai": "^1.2.0",
+        "@llamaindex/core": "^0.6.22",
+        "@llamaindex/openai": "^0.4.22",
+        "@llamaindex/workflow-core": "^1.3.3",
+        "ai": "5.0.121",
+        "assistant-stream": "^0.2.46",
+        "ollama-ai-provider-v2": "^1.5.5",
         "typescript": "^5.9.3",
+        "zod-to-json-schema": "^3.25.0",
       },
     },
   },

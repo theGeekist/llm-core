@@ -176,6 +176,12 @@ const forceExternalPlugin: BunPlugin = {
       if (args.path.startsWith("/")) {
         return null;
       }
+      // Package-internal aliases must be resolved and bundled. Leaving them
+      // external makes the published JavaScript fall back to the source-only
+      // package.json imports map at runtime.
+      if (args.path.startsWith("#")) {
+        return null;
+      }
       // Allow @wpkernel/pipeline
       if (args.path === "@wpkernel/pipeline" || args.path.startsWith("@wpkernel/pipeline/")) {
         return null;
@@ -239,6 +245,7 @@ const run = async () => {
     };
 
     ok = (await runBuildEntry(resolve(rootDir, "index.ts"), baseOptions)) && ok;
+    ok = (await runBuildEntry(resolve(rootDir, "src/recipes/index.ts"), baseOptions)) && ok;
     ok = (await runBuildEntry(resolve(rootDir, "src/interaction/index.ts"), baseOptions)) && ok;
     ok = (await runBuildEntry(resolve(rootDir, "src/shared/diagnostics.ts"), baseOptions)) && ok;
     ok = (await runBuildEntry(resolve(rootDir, "src/adapters/index.ts"), baseOptions)) && ok;

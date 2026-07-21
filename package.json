@@ -10,6 +10,7 @@
   "scripts": {
     "build": "bun run --filter '@geekist/llm-core' build",
     "test": "bun test",
+    "test:package": "bun run --cwd packages/llm-core test:package",
     "lint": "eslint \"**/*.{ts,tsx,js,jsx}\"",
     "lint:fix": "eslint \"**/*.{ts,tsx,js,jsx}\" --fix",
     "typecheck:packages": "bun run --filter '@geekist/llm-core' typecheck",
