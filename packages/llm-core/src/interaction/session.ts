@@ -12,7 +12,7 @@ import type {
 } from "./types";
 import { createInteractionPipelineWithDefaults, runInteractionPipeline } from "./steps";
 import { bindFirst } from "#shared/fp";
-import { maybeChain, maybeMap, maybeTap, type MaybePromise } from "#shared/maybe";
+import { composeK, maybeChain, maybeMap, maybeTap, type MaybePromise } from "#shared/maybe";
 import { createEmptyState, isPausedOutcome, readOutcomeState } from "./handle";
 
 export type InteractionSessionOptions = {
@@ -188,10 +188,12 @@ const applyTruncatePolicy = (policy: SessionPolicy | undefined, state: Interacti
   return truncate(state);
 };
 
+const createSessionPolicyProgram = (policy: SessionPolicy | undefined) =>
+  composeK(bindFirst(applyTruncatePolicy, policy), bindFirst(applySummarizePolicy, policy));
+
 const applySessionPolicy = (input: SessionPolicyInput): MaybePromise<InteractionState> => {
-  const merged = applyMergePolicy(input);
-  const summarized = maybeChain(bindFirst(applySummarizePolicy, input.policy), merged);
-  return maybeChain(bindFirst(applyTruncatePolicy, input.policy), summarized);
+  const applyPolicy = createSessionPolicyProgram(input.policy);
+  return maybeChain(applyPolicy, applyMergePolicy(input));
 };
 
 const toSessionPolicyInput = (input: SessionOutcomeInput): SessionPolicyInput => ({

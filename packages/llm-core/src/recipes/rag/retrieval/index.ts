@@ -1,5 +1,5 @@
 import { Recipe } from "../../flow";
-import { createRecipeFactory, createRecipeHandle } from "../../handle";
+import { defineRecipe } from "../../handle";
 import type { RecipeDefaults, StepApply } from "../../flow";
 import { RagStateHelpers } from "../shared";
 
@@ -43,10 +43,7 @@ const resolveRetrievalRecipeDefinition = (config?: RagRetrievalConfig) => ({
   packs: [resolveRetrievalPack(config)],
 });
 
-const retrievalRecipeFactory = createRecipeFactory("rag", resolveRetrievalRecipeDefinition);
-
-export const createRagRetrievalRecipe = (config?: RagRetrievalConfig) =>
-  createRecipeHandle(retrievalRecipeFactory, config);
+export const createRagRetrievalRecipe = defineRecipe("rag", resolveRetrievalRecipeDefinition);
 
 // Use when you want a retriever-first pack that is easily composed into larger flows.
 export const RagRetrievalPack = createRagRetrievalPack();

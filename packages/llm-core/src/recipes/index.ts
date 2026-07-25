@@ -8,6 +8,7 @@ export {
   createConfiguredRecipeHandle,
   createRecipeFactory,
   createRecipeHandle,
+  defineRecipe,
   defaultsRecipeHandle,
   useRecipeHandle,
 } from "./handle";

@@ -1,7 +1,7 @@
 import { bindFirst } from "#shared/fp";
 import { maybeMap } from "#shared/maybe";
 import { Recipe } from "../../flow";
-import { createRecipeFactory, createRecipeHandle } from "../../handle";
+import { defineRecipe } from "../../handle";
 import type { RecipeDefaults, StepApply } from "../../flow";
 import { AgentStateHelpers, type AgentState } from "../shared";
 import type { ModelResult } from "#adapters/types";
@@ -59,10 +59,7 @@ const resolveFinalizeRecipeDefinition = (config?: AgentFinalizeConfig) => ({
   packs: [resolveFinalizePack(config)],
 });
 
-const finalizeRecipeFactory = createRecipeFactory("agent", resolveFinalizeRecipeDefinition);
-
-export const createAgentFinalizeRecipe = (config?: AgentFinalizeConfig) =>
-  createRecipeHandle(finalizeRecipeFactory, config);
+export const createAgentFinalizeRecipe = defineRecipe("agent", resolveFinalizeRecipeDefinition);
 
 export const AgentFinalizePack = createAgentFinalizePack();
 export const agentFinalizeRecipe = createAgentFinalizeRecipe();

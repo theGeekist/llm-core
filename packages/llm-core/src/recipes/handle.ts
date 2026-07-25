@@ -245,6 +245,12 @@ export const createRecipeHandle = <N extends RecipeName, C>(
     extras: normalizeDefinition({ packs: [] }),
   });
 
+export const defineRecipe = <N extends RecipeName, C>(
+  name: N,
+  resolve: (config?: C) => RecipeDefinitionInput,
+): ((config?: C) => RecipeHandle<N, C>) =>
+  bindFirst(createRecipeHandle<N, C>, createRecipeFactory(name, resolve));
+
 export const createConfiguredRecipeHandle = <N extends RecipeName, C>(
   factory: RecipeFactory<N, C>,
   config: C | undefined,

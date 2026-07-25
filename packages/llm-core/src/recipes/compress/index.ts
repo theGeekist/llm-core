@@ -1,7 +1,7 @@
 import { bindFirst } from "#shared/fp";
 import { maybeMap } from "#shared/maybe";
 import { Recipe } from "../flow";
-import { createRecipeFactory, createRecipeHandle } from "../handle";
+import { defineRecipe } from "../handle";
 import type { RecipeDefaults, StepApply } from "../flow";
 import type { Model, ModelResult } from "#adapters/types";
 import { readString } from "#adapters/utils";
@@ -92,10 +92,7 @@ const resolveCompressRecipeDefinition = (config?: CompressConfig) => ({
   packs: [resolveCompressPack(config)],
 });
 
-const compressRecipeFactory = createRecipeFactory("agent", resolveCompressRecipeDefinition);
+export const createCompressRecipe = defineRecipe("agent", resolveCompressRecipeDefinition);
 
-export const createCompressRecipe = (config?: CompressConfig) =>
-  createRecipeHandle(compressRecipeFactory, config);
-
-export const compressRecipe = (config?: CompressConfig) => createCompressRecipe(config);
+export const compressRecipe = createCompressRecipe;
 export const CompressPack = createCompressPack();

@@ -3,6 +3,7 @@ import {
   createAiSdkInteractionEventStream,
   createAiSdkInteractionMapper,
   createAiSdkInteractionSink,
+  createAiSdkUiMessageChunkMapper,
   toAiSdkUiMessageChunks,
 } from "#adapters";
 import type { ModelStreamEvent } from "#adapters";
@@ -172,6 +173,23 @@ describe("Adapter AI SDK UI mapping", () => {
     ]);
     expect(endChunks).toEqual([
       { type: "text-end", id: "interaction-1:text" },
+      { type: "finish", finishReason: "stop" },
+    ]);
+  });
+
+  it("creates a configured mapper once for cross-event state", () => {
+    const mapEvent = createAiSdkUiMessageChunkMapper({ messageId: "configured" });
+
+    const deltaChunks = mapEvent(modelEvent(1, { type: "delta", text: "hi" }));
+    const endChunks = mapEvent(modelEvent(2, { type: "end", finishReason: "stop" }));
+
+    expect(deltaChunks).toEqual([
+      { type: "start", messageId: "configured" },
+      { type: "text-start", id: "configured:text" },
+      { type: "text-delta", id: "configured:text", delta: "hi" },
+    ]);
+    expect(endChunks).toEqual([
+      { type: "text-end", id: "configured:text" },
       { type: "finish", finishReason: "stop" },
     ]);
   });

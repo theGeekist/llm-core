@@ -1,4 +1,4 @@
-import { createRecipeFactory, createRecipeHandle } from "../../handle";
+import { defineRecipe } from "../../handle";
 import { AgentPlanningPack, createAgentPlanningPack, type AgentPlanningConfig } from "../planning";
 import { AgentToolsPack, createAgentToolsPack, type AgentToolsConfig } from "../tools";
 import { AgentMemoryPack, createAgentMemoryPack, type AgentMemoryConfig } from "../memory";
@@ -32,9 +32,6 @@ const resolveAgentRecipeDefinition = (config?: AgentRecipeConfig) => ({
   ],
 });
 
-const agentRecipeFactory = createRecipeFactory("agent", resolveAgentRecipeDefinition);
-
-export const createAgentRecipe = (config?: AgentRecipeConfig) =>
-  createRecipeHandle(agentRecipeFactory, config);
+export const createAgentRecipe = defineRecipe("agent", resolveAgentRecipeDefinition);
 
 export const agentRecipe = createAgentRecipe();

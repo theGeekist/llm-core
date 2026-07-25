@@ -8,6 +8,7 @@ export {
   createAiSdkInteractionEventStream,
   createAiSdkInteractionMapper,
   createAiSdkInteractionSink,
+  createAiSdkUiMessageChunkMapper,
   toAiSdkUiMessageChunks,
 } from "./interaction";
 export type { AiSdkChatTransportOptions } from "./transport";

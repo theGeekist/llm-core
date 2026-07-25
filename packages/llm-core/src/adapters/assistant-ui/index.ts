@@ -5,6 +5,7 @@ export type {
   AssistantUiInteractionSinkOptions,
 } from "./interaction";
 export {
+  createAssistantUiCommandMapper,
   createAssistantUiInteractionEventStream,
   createAssistantUiInteractionMapper,
   createAssistantUiInteractionSink,

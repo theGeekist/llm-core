@@ -2,6 +2,7 @@ import type { AssistantTransportCommand } from "@assistant-ui/react";
 import type { ReadonlyJSONValue } from "assistant-stream/utils";
 import type { EventStream, EventStreamEvent, ModelStreamEvent } from "../types";
 import type { InteractionEvent, InteractionEventMeta } from "../../interaction/types";
+import { bindFirst } from "#shared/fp";
 import { isRecord } from "#shared/guards";
 
 export type AssistantUiInteractionMapperOptions = {
@@ -332,6 +333,14 @@ export const createAssistantUiInteractionEventStream = (
   options: AssistantUiInteractionEventStreamOptions,
 ) => new AssistantUiInteractionEventStreamImpl(options);
 
+const mapAssistantUiCommands = (
+  mapper: AssistantUiInteractionMapper,
+  event: InteractionEvent,
+): AssistantTransportCommand[] => mapper.mapEvent(event);
+
+export const createAssistantUiCommandMapper = (options?: AssistantUiInteractionMapperOptions) =>
+  bindFirst(mapAssistantUiCommands, createAssistantUiInteractionMapper(options));
+
 export const toAssistantUiCommands = (
   input: AssistantUiInteractionMapper | AssistantUiInteractionMapperOptions | undefined,
   event: InteractionEvent,
@@ -339,7 +348,7 @@ export const toAssistantUiCommands = (
   const mapper = isAssistantUiInteractionMapper(input)
     ? input
     : createAssistantUiInteractionMapper(input);
-  return mapper.mapEvent(event);
+  return mapAssistantUiCommands(mapper, event);
 };
 
 const isAssistantUiInteractionMapper = (

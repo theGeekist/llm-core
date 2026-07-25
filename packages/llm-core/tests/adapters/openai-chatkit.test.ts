@@ -1,5 +1,6 @@
 import { describe, expect, it } from "bun:test";
 import {
+  createChatKitEventMapper,
   createChatKitInteractionEventStream,
   createChatKitInteractionMapper,
   createChatKitInteractionSink,
@@ -134,7 +135,18 @@ describe("Adapter openai-chatkit mapping", () => {
     ]);
   });
 
-  it("supports helper usage with mapper options", () => {
+  it("creates a configured event mapper", () => {
+    const mapEvent = createChatKitEventMapper({
+      logEventName: "chatkit.effect",
+      logModelEvents: true,
+    });
+
+    const events = mapEvent(modelEvent(1, { type: "delta", text: "hello" }));
+
+    expect(events.map((event) => event.type)).toEqual(["chatkit.effect"]);
+  });
+
+  it("keeps direct helper usage with mapper options", () => {
     const events = toChatKitEvents(
       { logEventName: "chatkit.effect" },
       modelEvent(1, { type: "delta", text: "hello" }),

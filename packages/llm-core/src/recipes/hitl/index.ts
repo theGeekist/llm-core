@@ -1,5 +1,5 @@
 import { Recipe } from "../flow";
-import { createRecipeFactory, createRecipeHandle } from "../handle";
+import { defineRecipe } from "../handle";
 import type { RecipeDefaults, StepApply } from "../flow";
 import type { PauseKind } from "#adapters/types";
 import { readString } from "#adapters/utils";
@@ -88,11 +88,8 @@ const resolveHitlRecipeDefinition = (config?: HitlConfig) => ({
   packs: [resolveHitlPack(config)],
 });
 
-const hitlRecipeFactory = createRecipeFactory("hitl-gate", resolveHitlRecipeDefinition);
-
 // Full HITL recipe that pauses by default and resumes when a decision is provided.
-export const createHitlRecipe = (config?: HitlConfig) =>
-  createRecipeHandle(hitlRecipeFactory, config);
+export const createHitlRecipe = defineRecipe("hitl-gate", resolveHitlRecipeDefinition);
 
 export const HitlPack = createHitlPack();
-export const hitlRecipe = (config?: HitlConfig) => createHitlRecipe(config);
+export const hitlRecipe = createHitlRecipe;

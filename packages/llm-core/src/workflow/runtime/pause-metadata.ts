@@ -2,7 +2,7 @@ import type { InterruptStrategy } from "#adapters/types";
 import type { MaybePromise } from "#shared/maybe";
 import { bindFirst } from "#shared/fp";
 import { isRecord } from "#shared/guards";
-import type { FinalizeResult, FinalizeResultInput } from "./helpers";
+import { createFinalize, type FinalizeResult, type FinalizeResultInput } from "./helpers";
 
 type InterruptPayload = { __interrupt?: InterruptStrategy };
 
@@ -44,6 +44,16 @@ export const createFinalizeWithInterrupt = <TOutcome>(
     attach: bindFirst(attachInterrupt, interrupt),
   });
 };
+
+export const createRuntimeFinalize = <TOutcome>(input: {
+  finalizeResult: FinalizeResult<TOutcome>;
+  recordSnapshot: (result: unknown) => MaybePromise<boolean | null>;
+  interrupt?: InterruptStrategy | null;
+}) =>
+  createFinalizeWithInterrupt(
+    createFinalize(input.finalizeResult, input.recordSnapshot),
+    input.interrupt,
+  );
 
 export const readInterruptStrategy = (result: unknown): InterruptStrategy | undefined =>
   (result as InterruptPayload)?.__interrupt;

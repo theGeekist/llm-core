@@ -1,6 +1,6 @@
 import { createHelper } from "@wpkernel/pipeline/core";
 import { bindFirst } from "#shared/fp";
-import { maybeMap, maybeTry } from "#shared/maybe";
+import { composeK, maybeChain, maybeTry } from "#shared/maybe";
 import { createRecipeDiagnostic } from "#shared/diagnostics";
 import type { DiagnosticEntry } from "#shared/reporting";
 import { getRecipe } from "#workflow/recipe-registry";
@@ -144,17 +144,11 @@ const applyStep = (
     bindFirst(handleStepError, { spec, stepOptions, state }),
     bindFirst(runStepApply, { spec, stepOptions, next }),
   );
-  const withRollback = spec.rollback
-    ? maybeMap(bindFirst(attachRollback, spec.rollback), applied)
-    : applied;
-  return maybeMap(bindFirst(resolveStepResult, state), withRollback);
+  const finalizeStep = spec.rollback
+    ? composeK(bindFirst(resolveStepResult, state), bindFirst(attachRollback, spec.rollback))
+    : bindFirst(resolveStepResult, state);
+  return maybeChain(finalizeStep, applied);
 };
-
-const invokeStep = (
-  spec: StepSpec,
-  options: HelperApplyOptions<PipelineContext, unknown, PipelineState, PipelineReporter>,
-  next?: StepNext,
-) => applyStep(spec, options, next);
 
 const createHelperForStep = (packName: string, spec: StepSpec) => {
   const key = normalizeStepKey(packName, spec.name);
@@ -165,7 +159,7 @@ const createHelperForStep = (packName: string, spec: StepSpec) => {
     mode: spec.mode,
     priority: spec.priority,
     dependsOn,
-    apply: bindFirst(invokeStep, spec),
+    apply: bindFirst(applyStep, spec),
   });
 };
 

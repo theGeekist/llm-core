@@ -10,11 +10,11 @@ import type { Outcome, PipelineWithExtensions, Runtime } from "../types";
 import type { AdapterBundle } from "#adapters/types";
 import { normalizeDiagnostics } from "#shared/diagnostics";
 import { applyDiagnosticsMode } from "#shared/reporting";
-import { createDiagnosticsGetter } from "./helpers";
+import { createDiagnosticsGetter, createResultFinalizer } from "./helpers";
 import { createFinalizeWithInterrupt } from "./pause-metadata";
 import type { FinalizeResult } from "./helpers";
 
-import type { AdapterResolution, PipelineRunner, ResumeFinalizeInput } from "./resume-types";
+import type { AdapterResolution, PipelineRunner } from "./resume-types";
 
 export type ResumedPipelineDeps<TArtefact> = {
   pipeline: PipelineWithExtensions | PipelineRunner;
@@ -116,7 +116,7 @@ const handleResumeResolution = <TArtefact>(
     mergedAdapters.interrupt,
   );
   return maybeChain(
-    bindFirst(handleResumeFinalize<TArtefact>, {
+    createResultFinalizer({
       finalize: finalizeWithInterrupt,
       getDiagnostics,
       trace: input.deps.trace,
@@ -130,14 +130,3 @@ const handleResumeResolution = <TArtefact>(
     }),
   );
 };
-
-const handleResumeFinalize = <TArtefact>(
-  input: ResumeFinalizeInput<Outcome<TArtefact>>,
-  result: unknown,
-) =>
-  input.finalize({
-    result,
-    getDiagnostics: input.getDiagnostics,
-    trace: input.trace,
-    diagnosticsMode: input.diagnosticsMode,
-  });

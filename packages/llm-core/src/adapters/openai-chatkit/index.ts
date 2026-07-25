@@ -1,4 +1,5 @@
 export {
+  createChatKitEventMapper,
   createChatKitInteractionEventStream,
   createChatKitInteractionMapper,
   createChatKitInteractionSink,

@@ -43,13 +43,6 @@ export type ResumeHandlerDeps<N extends RecipeName> = {
   pauseSessions: Map<unknown, PauseSession>;
   pipeline: PipelineWithExtensions | PipelineRunner;
 };
-export type ResumeFinalizeInput<TOutcome> = {
-  finalize: FinalizeResult<TOutcome>;
-  getDiagnostics: () => DiagnosticEntry[];
-  trace: TraceEvent[];
-  diagnosticsMode: "default" | "strict";
-};
-
 export type ResumeErrorInput<TOutcome> = {
   trace: TraceEvent[];
   diagnosticsMode: "default" | "strict";

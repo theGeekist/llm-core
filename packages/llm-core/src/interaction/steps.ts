@@ -243,15 +243,14 @@ const toInteractionOutput = (
   output: assignInteractionState(options.output, nextState),
 });
 
-const handleModelResult = (
-  input: {
-    state: InteractionState;
-    context: InteractionContext;
-    interactionInput: InteractionInput;
-    sourceId: string;
-  },
-  result: ModelResult,
-) => {
+type ModelRunContext = {
+  state: InteractionState;
+  context: InteractionContext;
+  interactionInput: InteractionInput;
+  sourceId: string;
+};
+
+const handleModelResult = (input: ModelRunContext, result: ModelResult) => {
   const events = toInteractionEvents({
     state: input.state,
     input: input.interactionInput,
@@ -263,28 +262,13 @@ const handleModelResult = (
   return reduceAndEmitInteractionEvents(nextState, input.context, events);
 };
 
-const handleModelStream = (
-  input: {
-    state: InteractionState;
-    context: InteractionContext;
-    interactionInput: InteractionInput;
-    sourceId: string;
-  },
-  stream: Step<ModelStreamEvent>,
-) =>
+const handleModelStream = (input: ModelRunContext, stream: Step<ModelStreamEvent>) =>
   applyModelStream({
-    state: input.state,
-    context: input.context,
-    interactionInput: input.interactionInput,
-    sourceId: input.sourceId,
+    ...input,
     stream,
   });
 
-type ApplyModelStreamInput = {
-  state: InteractionState;
-  context: InteractionContext;
-  interactionInput: InteractionInput;
-  sourceId: string;
+type ApplyModelStreamInput = ModelRunContext & {
   stream: Step<ModelStreamEvent>;
 };
 
@@ -321,8 +305,8 @@ const applyModelStreamContinue = (
     stream: input.stream,
   });
 
-const applyModelStreamError = (
-  input: ApplyModelStreamInput,
+const applyModelError = (
+  input: ModelRunContext,
   error: unknown,
 ): MaybePromise<InteractionState> => {
   const meta = createMeta(input.state, input.interactionInput, input.sourceId);
@@ -331,16 +315,13 @@ const applyModelStreamError = (
 };
 
 const applyModelStreamLoopSafe = (input: ApplyModelStreamInput): MaybePromise<InteractionState> =>
-  maybeTry(bindFirst(applyModelStreamError, input), bindFirst(applyModelStreamLoopUnsafe, input));
+  maybeTry(bindFirst(applyModelError, input), bindFirst(applyModelStreamLoopUnsafe, input));
 
 /** @internal */
 export const applyModelStream = (input: ApplyModelStreamInput): MaybePromise<InteractionState> =>
   applyModelStreamLoopSafe(input);
 
-type ApplyModelGenerateInput = {
-  state: InteractionState;
-  context: InteractionContext;
-  interactionInput: InteractionInput;
+type ApplyModelGenerateInput = ModelRunContext & {
   model: Model;
   call: ModelCall;
 };
@@ -355,17 +336,8 @@ const applyModelGenerateRun = (input: ApplyModelGenerateInput) => {
   return maybeChain(run, input.model.generate(input.call));
 };
 
-const applyModelGenerateError = (
-  input: ApplyModelGenerateInput,
-  error: unknown,
-): MaybePromise<InteractionState> => {
-  const meta = createMeta(input.state, input.interactionInput, "model.primary");
-  const event: InteractionEvent = { kind: "model", event: { type: "error", error }, meta };
-  return reduceAndEmitInteraction(input.state, input.context, event);
-};
-
 const applyModelGenerate = (input: ApplyModelGenerateInput): MaybePromise<InteractionState> =>
-  maybeTry(bindFirst(applyModelGenerateError, input), bindFirst(applyModelGenerateRun, input));
+  maybeTry(bindFirst(applyModelError, input), bindFirst(applyModelGenerateRun, input));
 
 const hasStream = (
   model: Model,
@@ -397,6 +369,7 @@ export const applyRunModelCore = (
     state,
     context,
     interactionInput: input,
+    sourceId: "model.primary",
     model,
     call,
   });

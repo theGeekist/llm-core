@@ -21,13 +21,12 @@ import { readResumeOptions, type ResumeOptions } from "../resume";
 import { runResumedPipeline } from "./resume-runner";
 import { normalizeDiagnostics } from "#shared/diagnostics";
 import { applyDiagnosticsMode } from "#shared/reporting";
-import { createFinalize, type FinalizeResult } from "./helpers";
-import { createFinalizeWithInterrupt } from "./pause-metadata";
+import { createResultFinalizer, type FinalizeResult } from "./helpers";
+import { createRuntimeFinalize } from "./pause-metadata";
 import type {
   AdapterResolution,
   PipelineRunner,
   ResumeErrorInput,
-  ResumeFinalizeInput,
   ResumeHandlerDeps,
 } from "./resume-types";
 import {
@@ -49,7 +48,6 @@ type ResumeExecution<N extends RecipeName> = {
   token: unknown;
   resumeKey?: string;
   pauseSessions: Map<unknown, PauseSession>;
-  resumeError: (error: unknown) => MaybePromise<Outcome<ArtefactOf<N>>>;
 };
 
 type PauseDiagnosticsInput = {
@@ -124,14 +122,6 @@ export const resumePipeline = (
   }
   return resume(snapshot, resumeInput);
 };
-
-const finalizeResumeResult = <TOutcome>(input: ResumeFinalizeInput<TOutcome>, result: unknown) =>
-  input.finalize({
-    result,
-    getDiagnostics: input.getDiagnostics,
-    trace: input.trace,
-    diagnosticsMode: input.diagnosticsMode,
-  });
 
 const resumeErrorFromInput = <N extends RecipeName>(
   input: ResumeErrorInput<ArtefactOf<N>>,
@@ -310,7 +300,7 @@ const continueSnapshotPipeline = <N extends RecipeName>(
     reporter,
   });
   return maybeChain(
-    bindFirst(finalizeResumeResult<Outcome<ArtefactOf<N>>>, {
+    createResultFinalizer({
       finalize: input.finalize,
       getDiagnostics: input.getDiagnostics,
       trace: input.trace,
@@ -381,10 +371,11 @@ const runResumeWithAdapters = <N extends RecipeName>(
   });
   const store = resolveSessionStore(input.resumeRuntime ?? input.runtime, effectiveAdapters);
   const recordSnapshot = createSnapshotRecorder(store, input.resumeRuntime ?? input.runtime);
-  const finalize = createFinalizeWithInterrupt(
-    createFinalize<Outcome<ArtefactOf<N>>>(input.deps.finalizeResult, recordSnapshot),
-    effectiveAdapters.interrupt,
-  );
+  const finalize = createRuntimeFinalize({
+    finalizeResult: input.deps.finalizeResult,
+    recordSnapshot,
+    interrupt: effectiveAdapters.interrupt,
+  });
 
   const resumeDeps = {
     pipeline: input.deps.pipeline,
@@ -474,9 +465,6 @@ const runResumeWithResolvedAdapters = <N extends RecipeName>(input: ResumeExecut
   );
 };
 
-const runResumeExecutor = <N extends RecipeName>(input: ResumeExecution<N>) =>
-  runResumeWithResolvedAdapters(input);
-
 type ExecuteResumePipelineInput<N extends RecipeName> = {
   resumeValue: unknown;
   session: ActiveResumeSession;
@@ -505,7 +493,7 @@ export const executeResumePipeline = <N extends RecipeName>(
 
   return maybeTry(
     resumeError,
-    bindFirst(runResumeExecutor<N>, {
+    bindFirst(runResumeWithResolvedAdapters<N>, {
       deps: input.deps,
       resolvedAdapters: input.resolvedAdapters,
       resumeOptions,
@@ -518,7 +506,6 @@ export const executeResumePipeline = <N extends RecipeName>(
       token: input.token,
       resumeKey: input.resumeKey,
       pauseSessions: input.deps.pauseSessions,
-      resumeError,
     }),
   );
 };

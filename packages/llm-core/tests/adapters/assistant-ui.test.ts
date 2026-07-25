@@ -1,5 +1,6 @@
 import { describe, expect, it } from "bun:test";
 import {
+  createAssistantUiCommandMapper,
   createAssistantUiInteractionEventStream,
   createAssistantUiInteractionMapper,
   createAssistantUiInteractionSink,
@@ -344,7 +345,25 @@ describe("Adapter assistant-ui mapping", () => {
     ]);
   });
 
-  it("supports helper usage with mapper options", () => {
+  it("creates a configured mapper once for cross-event state", () => {
+    const mapEvent = createAssistantUiCommandMapper({ includeReasoning: true });
+
+    const deltaCommands = mapEvent(modelEvent(1, { type: "delta", reasoning: "thinking" }));
+    const endCommands = mapEvent(modelEvent(2, { type: "end", finishReason: "stop" }));
+
+    expect(deltaCommands).toEqual([]);
+    expect(endCommands).toEqual([
+      {
+        type: "add-message",
+        message: {
+          role: "assistant",
+          parts: [{ type: "text", text: "Reasoning: thinking" }],
+        },
+      },
+    ]);
+  });
+
+  it("keeps direct helper usage with mapper options", () => {
     const deltaCommands = toAssistantUiCommands(
       { includeReasoning: true },
       modelEvent(1, { type: "delta", reasoning: "thinking" }),

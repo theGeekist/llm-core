@@ -230,6 +230,7 @@ export {
   createAiSdkChatTransport,
   createAiSdkInteractionMapper,
   createAiSdkInteractionSink,
+  createAiSdkUiMessageChunkMapper,
   toAiSdkUiMessageChunks,
   createAiSdkWebSocketChatTransport,
 } from "./ai-sdk-ui";
@@ -245,6 +246,7 @@ export type {
   WebSocketChatData,
 } from "./ai-sdk-ui";
 export {
+  createAssistantUiCommandMapper,
   createAssistantUiInteractionEventStream,
   createAssistantUiInteractionMapper,
   createAssistantUiInteractionSink,
@@ -269,6 +271,7 @@ export type {
   JsonValue,
 } from "./assistant-ui";
 export {
+  createChatKitEventMapper,
   createChatKitInteractionEventStream,
   createChatKitInteractionMapper,
   createChatKitInteractionSink,

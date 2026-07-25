@@ -163,12 +163,18 @@ export const createChatKitInteractionEventStream = (
     mapper: options.mapper ?? createChatKitInteractionMapper(),
   });
 
+const mapChatKitEvents = (mapper: ChatKitInteractionMapper, event: InteractionEvent) =>
+  mapper.mapEvent(event);
+
+export const createChatKitEventMapper = (options?: ChatKitInteractionMapperOptions) =>
+  bindFirst(mapChatKitEvents, createChatKitInteractionMapper(options));
+
 export const toChatKitEvents = (
   input: ChatKitInteractionMapper | ChatKitInteractionMapperOptions | undefined,
   event: InteractionEvent,
 ): CustomEvent[] => {
   const mapper = isChatKitInteractionMapper(input) ? input : createChatKitInteractionMapper(input);
-  return mapper.mapEvent(event);
+  return mapChatKitEvents(mapper, event);
 };
 
 const isChatKitInteractionMapper = (

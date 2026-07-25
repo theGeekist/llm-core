@@ -1,5 +1,6 @@
 import { describe, expect, it } from "bun:test";
 import {
+  composeK,
   maybeChain,
   curryK,
   maybeMap,
@@ -23,6 +24,9 @@ const double = (value: number) => value * 2;
 const add = (left: number, right: number) => left + right;
 const multiply = (left: number, right: number) => left * right;
 const join = (prefix: string, ...parts: string[]) => `${prefix}:${parts.join(",")}`;
+const stringify = (value: number) => `${value}`;
+const readLengthAsync = async (value: string) => value.length;
+const isEven = (value: number) => value % 2 === 0;
 
 const tapSeen = (seen: { value: number }, value: number) => {
   seen.value = value;
@@ -37,6 +41,27 @@ const isPromiseLike = (value: unknown): value is PromiseLike<unknown> =>
   !!value && typeof (value as PromiseLike<unknown>).then === "function";
 
 describe("Maybe utilities", () => {
+  it("composeK preserves synchronous right-to-left composition", () => {
+    const transform = composeK(double, addOne);
+    const result = transform(3);
+
+    expect(isPromiseLike(result)).toBe(false);
+    expect(result).toBe(8);
+  });
+
+  it("composeK composes heterogeneous MaybePromise handlers", async () => {
+    const transform = composeK(isEven, readLengthAsync, stringify);
+    const result = transform(1234);
+
+    expect(isPromiseLike(result)).toBe(true);
+    expect(await result).toBe(true);
+  });
+
+  it("composeK without handlers is an identity program", () => {
+    const transform = composeK<number>();
+    expect(transform(4)).toBe(4);
+  });
+
   it("maybeMap supports direct and partial application", () => {
     expect(maybeMap(addOne, 2)).toBe(3);
     expect(maybeMap(addOne)(2)).toBe(3);

@@ -1,6 +1,7 @@
 import type { FinishReason, UIMessageChunk, UIMessageStreamWriter } from "ai";
 import type { EventStream, EventStreamEvent, ModelStreamEvent } from "../types";
 import type { InteractionEvent, InteractionEventMeta } from "../../interaction/types";
+import { bindFirst } from "#shared/fp";
 import { isRecord } from "#shared/guards";
 
 export type AiSdkInteractionMapperOptions = {
@@ -534,12 +535,20 @@ export const createAiSdkInteractionSink = (options: AiSdkInteractionSinkOptions)
 export const createAiSdkInteractionEventStream = (options: AiSdkInteractionEventStreamOptions) =>
   new AiSdkInteractionEventStreamImpl(options);
 
+const mapAiSdkUiMessageChunks = (
+  mapper: AiSdkInteractionMapper,
+  event: InteractionEvent,
+): UIMessageChunk[] => mapper.mapEvent(event);
+
+export const createAiSdkUiMessageChunkMapper = (options?: AiSdkInteractionMapperOptions) =>
+  bindFirst(mapAiSdkUiMessageChunks, createAiSdkInteractionMapper(options));
+
 export const toAiSdkUiMessageChunks = (
   input: AiSdkInteractionMapper | AiSdkInteractionMapperOptions | undefined,
   event: InteractionEvent,
 ): UIMessageChunk[] => {
   const mapper = isAiSdkInteractionMapper(input) ? input : createAiSdkInteractionMapper(input);
-  return mapper.mapEvent(event);
+  return mapAiSdkUiMessageChunks(mapper, event);
 };
 
 const isAiSdkInteractionMapper = (

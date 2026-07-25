@@ -6,6 +6,7 @@ import {
   createRecipeFactory,
   createRecipeHandle,
   createConfiguredRecipeHandle,
+  defineRecipe,
   type RecipeRunOverrides,
   configureRecipeHandle,
   defaultsRecipeHandle,
@@ -115,5 +116,18 @@ describe("Recipe handle", () => {
     const ok = expectOk(outcome);
 
     expect((ok.artefact as { label?: string }).label).toBe("updated");
+  });
+
+  it("defines configured recipe handle creators", () => {
+    const createRecipe = defineRecipe("rag", (config?: HandleConfig) => ({
+      packs: [buildPack("defined", config?.label ?? "base")],
+    }));
+
+    const outcome = assertSyncOutcome(
+      createRecipe({ label: "configured" }).run({ input: "x", query: "x" }),
+    );
+    const ok = expectOk(outcome);
+
+    expect((ok.artefact as { label?: string }).label).toBe("configured");
   });
 });

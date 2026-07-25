@@ -1,8 +1,8 @@
 import type { Tool, ToolCall, ToolResult } from "#adapters/types";
 import type { Message, MessagePart } from "#adapters/types/messages";
-import { bindFirst, compose } from "#shared/fp";
+import { bindFirst } from "#shared/fp";
 import { isRecord } from "#shared/guards";
-import { maybeAll, maybeMap, maybeTap, maybeTry, type MaybePromise } from "#shared/maybe";
+import { maybeAll, maybeMap, maybeTap, maybeTry } from "#shared/maybe";
 import type {
   InteractionContext,
   InteractionEvent,
@@ -235,49 +235,6 @@ const applyToolExecutionResults = (
   return applyToolResultsToState({ ...input, results });
 };
 
-type ToolExecutionMapper = (value: MaybePromise<ToolResult[]>) => MaybePromise<InteractionState>;
-
-type InteractionOutputMapper = (
-  value: MaybePromise<InteractionState>,
-) => MaybePromise<{ output: InteractionState }>;
-
-type ToolExecutionInput = {
-  output: InteractionState;
-  context: InteractionContext;
-  interactionInput: InteractionInput;
-};
-
-type ToolExecutionPipelineState = {
-  mapResults: ToolExecutionMapper;
-  output: InteractionState;
-};
-
-type ToolExecutionPipeline = (
-  value: MaybePromise<ToolResult[]>,
-) => MaybePromise<{ output: InteractionState }>;
-
-const mapToolExecutionResults = (input: ToolExecutionInput): ToolExecutionMapper =>
-  maybeMap(
-    bindFirst(applyToolExecutionResults, {
-      state: input.output,
-      context: input.context,
-      interactionInput: input.interactionInput,
-    }),
-  );
-
-const mapInteractionOutput = (output: InteractionState): InteractionOutputMapper =>
-  maybeMap(bindFirst(toInteractionOutput, { output }));
-
-const buildToolExecutionMapper = (input: ToolExecutionInput): ToolExecutionPipelineState => ({
-  mapResults: mapToolExecutionResults(input),
-  output: input.output,
-});
-
-const buildToolExecutionPipeline = (state: ToolExecutionPipelineState): ToolExecutionPipeline =>
-  compose(mapInteractionOutput(state.output), state.mapResults);
-
-const createToolExecutionPipeline = compose(buildToolExecutionPipeline, buildToolExecutionMapper);
-
 export const applyRunTools: InteractionStepApply = (options) => {
   const calls = readToolCallsFromState(options.output);
   if (calls.length === 0) {
@@ -285,10 +242,15 @@ export const applyRunTools: InteractionStepApply = (options) => {
   }
   const tools = options.context.adapters?.tools ?? [];
   const executed = executeToolCalls(tools, calls);
-  const pipeline = createToolExecutionPipeline({
-    output: options.output,
-    context: options.context,
-    interactionInput: options.input,
-  });
-  return pipeline(executed);
+  return maybeMap(
+    bindFirst(toInteractionOutput, { output: options.output }),
+    maybeMap(
+      bindFirst(applyToolExecutionResults, {
+        state: options.output,
+        context: options.context,
+        interactionInput: options.input,
+      }),
+      executed,
+    ),
+  );
 };

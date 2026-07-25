@@ -36,6 +36,24 @@ export const createFinalize = <TOutcome>(
     recordSnapshot,
   });
 
+type ResultFinalizerInput<TOutcome> = {
+  finalize: FinalizeResult<TOutcome>;
+  getDiagnostics: () => DiagnosticEntry[];
+  trace: TraceEvent[];
+  diagnosticsMode: "default" | "strict";
+};
+
+const finalizeResult = <TOutcome>(input: ResultFinalizerInput<TOutcome>, result: unknown) =>
+  input.finalize({
+    result,
+    getDiagnostics: input.getDiagnostics,
+    trace: input.trace,
+    diagnosticsMode: input.diagnosticsMode,
+  });
+
+export const createResultFinalizer = <TOutcome>(input: ResultFinalizerInput<TOutcome>) =>
+  bindFirst(finalizeResult<TOutcome>, input);
+
 const readDiagnostics = (sets: DiagnosticEntry[][]) =>
   sets.reduce<DiagnosticEntry[]>((acc, next) => acc.concat(next), []);
 

@@ -7,8 +7,8 @@ import { createAdapterDiagnostic, hasErrorDiagnostics } from "#shared/diagnostic
 import { applyDiagnosticsMode, type DiagnosticEntry, type TraceEvent } from "#shared/reporting";
 import type { PipelineWithExtensions, Runtime } from "../types";
 import { createSnapshotRecorder, resolveSessionStore } from "./resume-session";
-import { createDiagnosticsGetter, createFinalize, type FinalizeResult } from "./helpers";
-import { createFinalizeWithInterrupt } from "./pause-metadata";
+import { createDiagnosticsGetter, type FinalizeResult } from "./helpers";
+import { createRuntimeFinalize } from "./pause-metadata";
 
 type AdapterResolution = {
   adapters: AdapterBundle;
@@ -110,10 +110,11 @@ const runPipeline = <TOutcome>(
   }
   const store = resolveSessionStore(context.ctx.runtime, resolvedAdapters);
   const recordSnapshot = createSnapshotRecorder(store, context.ctx.runtime);
-  const finalize = createFinalizeWithInterrupt(
-    createFinalize(context.deps.finalizeResult, recordSnapshot),
-    resolvedAdapters.interrupt,
-  );
+  const finalize = createRuntimeFinalize({
+    finalizeResult: context.deps.finalizeResult,
+    recordSnapshot,
+    interrupt: resolvedAdapters.interrupt,
+  });
   const handleResult = bindFirst(handlePipelineResult<TOutcome>, {
     context,
     runtimeDiagnostics,

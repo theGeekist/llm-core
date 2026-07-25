@@ -1,6 +1,6 @@
 import type { Plugin } from "#workflow/types";
 import { Recipe } from "./flow";
-import { createRecipeFactory, createRecipeHandle } from "./handle";
+import { defineRecipe } from "./handle";
 import { createSystemPlugin } from "./system";
 
 export type RagChatConfig = {
@@ -50,8 +50,6 @@ const resolveRagChatRecipeDefinition = (config?: RagChatConfig) => ({
   packs: [resolveRagChatPack(config)],
 });
 
-const ragChatRecipeFactory = createRecipeFactory("rag", resolveRagChatRecipeDefinition);
-
-export const ragChat = (config?: RagChatConfig) => createRecipeHandle(ragChatRecipeFactory, config);
+export const ragChat = defineRecipe("rag", resolveRagChatRecipeDefinition);
 
 export const RagChatPack = createRagChatPack();

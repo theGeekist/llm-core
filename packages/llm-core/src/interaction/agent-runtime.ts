@@ -393,48 +393,24 @@ function applyAgentOutcomeWithSkills(
   );
 }
 
-function runAgentRuntime(
-  state: AgentRuntimeState,
-  input: AgentRuntimeInput,
-  overrides?: AgentRuntimeOverrides,
-): MaybePromise<Outcome<unknown>> {
-  const runContext = createAgentRunContext({ state, input, overrides });
-  const runInput = inputs.agent(toAgentInputOptions(input));
-  const resolved = buildAgentOverrides({
-    state,
-    input,
-    overrides,
-    useStreamingModel: false,
-    eventStream: runContext.eventStream,
-    eventState: runContext.eventState,
-    tools: runContext.tools,
-  });
-  const outcome = resolved ? state.runner.run(runInput, resolved) : state.runner.run(runInput);
-  return maybeChain(
-    bindFirst(applyAgentOutcomeWithSkills, {
-      context: {
-        config: state.options.config,
-        eventStream: runContext.eventStream,
-        eventState: runContext.eventState,
-      },
-      skillState: runContext.skillState,
-    }),
-    outcome,
-  );
-}
+type AgentRuntimeExecutionConfig = {
+  state: AgentRuntimeState;
+  useStreamingModel: boolean;
+};
 
-function streamAgentRuntime(
-  state: AgentRuntimeState,
+function executeAgentRuntime(
+  config: AgentRuntimeExecutionConfig,
   input: AgentRuntimeInput,
   overrides?: AgentRuntimeOverrides,
 ): MaybePromise<Outcome<unknown>> {
+  const { state, useStreamingModel } = config;
   const runContext = createAgentRunContext({ state, input, overrides });
   const runInput = inputs.agent(toAgentInputOptions(input));
   const resolved = buildAgentOverrides({
     state,
     input,
     overrides,
-    useStreamingModel: true,
+    useStreamingModel,
     eventStream: runContext.eventStream,
     eventState: runContext.eventState,
     tools: runContext.tools,
@@ -456,7 +432,7 @@ function streamAgentRuntime(
 export function createAgentRuntime(options: AgentRuntimeOptions): AgentRuntime {
   const state = createAgentRuntimeState(options);
   return {
-    run: bindFirst(runAgentRuntime, state),
-    stream: bindFirst(streamAgentRuntime, state),
+    run: bindFirst(executeAgentRuntime, { state, useStreamingModel: false }),
+    stream: bindFirst(executeAgentRuntime, { state, useStreamingModel: true }),
   };
 }

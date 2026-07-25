@@ -24,17 +24,6 @@ type ResumeHandlerErrorInput<N extends RecipeName> = {
   diagnosticsMode: "default" | "strict";
 };
 
-type PerformResumeInput<N extends RecipeName> = {
-  token: unknown;
-  resumeKey?: string;
-  resumeInput?: ResumeInputOf<N>;
-  runtime?: Runtime;
-  pauseSession: ReturnType<ResumeHandlerDeps<N>["pauseSessions"]["get"]>;
-  trace: TraceEvent[];
-  diagnosticsMode: "default" | "strict";
-  deps: ResumeHandlerDeps<N>;
-};
-
 const handleResumeHandlerError = <N extends RecipeName>(
   input: ResumeHandlerErrorInput<N>,
   error: unknown,
@@ -61,7 +50,7 @@ export const createResumeHandler =
       diagnosticsMode,
     });
 
-    const performResume = bindFirst(performResumePipeline<N>, {
+    const performResume = bindFirst(startResumePipeline<N>, {
       token: tokenInput.token,
       resumeKey: tokenInput.resumeKey,
       resumeInput,
@@ -74,15 +63,3 @@ export const createResumeHandler =
 
     return maybeTry(handleError, performResume);
   };
-
-const performResumePipeline = <N extends RecipeName>(input: PerformResumeInput<N>) =>
-  startResumePipeline({
-    token: input.token,
-    resumeKey: input.resumeKey,
-    resumeInput: input.resumeInput,
-    runtime: input.runtime,
-    pauseSession: input.pauseSession,
-    trace: input.trace,
-    diagnosticsMode: input.diagnosticsMode,
-    deps: input.deps,
-  });

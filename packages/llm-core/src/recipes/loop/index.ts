@@ -1,7 +1,7 @@
 import { bindFirst } from "#shared/fp";
 import { maybeMap } from "#shared/maybe";
 import { Recipe } from "../flow";
-import { createRecipeFactory, createRecipeHandle } from "../handle";
+import { defineRecipe } from "../handle";
 import type { RecipeDefaults, StepApply } from "../flow";
 import type { Model, ModelResult } from "#adapters/types";
 import { readNumber, readString, readRecord } from "#adapters/utils";
@@ -104,11 +104,8 @@ const resolveLoopRecipeDefinition = (config?: LoopConfig) => ({
   packs: [resolveLoopPack(config)],
 });
 
-const loopRecipeFactory = createRecipeFactory("loop", resolveLoopRecipeDefinition);
-
 // Loop recipe: seed -> iterate -> finalize.
-export const createLoopRecipe = (config?: LoopConfig) =>
-  createRecipeHandle(loopRecipeFactory, config);
+export const createLoopRecipe = defineRecipe("loop", resolveLoopRecipeDefinition);
 
 export const LoopPack = createLoopPack();
-export const loopRecipe = (config?: LoopConfig) => createLoopRecipe(config);
+export const loopRecipe = createLoopRecipe;

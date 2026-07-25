@@ -15,6 +15,7 @@ import {
   applyDiagnosticsMode,
   type TraceEvent,
 } from "#shared/reporting";
+import { bindFirst } from "#shared/fp";
 import type { MaybePromise } from "#shared/maybe";
 import { runWorkflow, type RunWorkflowContext } from "./run-runner";
 import { createRunErrorHandler } from "./outcomes";
@@ -54,11 +55,22 @@ export type RunHandlerDeps<N extends RecipeName> = {
   readErrorDiagnostics: (error: unknown) => DiagnosticEntry[];
 };
 
-export const createRunHandler =
-  <N extends RecipeName>(
-    deps: RunHandlerDeps<N>,
-  ): WorkflowRuntime<RunInputOf<N>, ArtefactOf<N>>["run"] =>
-  (input: RunInputOf<N>, runtime?: Runtime) => {
+export const createRunHandler = <N extends RecipeName>(
+  deps: RunHandlerDeps<N>,
+): WorkflowRuntime<RunInputOf<N>, ArtefactOf<N>>["run"] => {
+  const workflowDeps = {
+    pipeline: deps.pipeline,
+    extensionRegistration: deps.extensionRegistration,
+    resolveAdaptersForRun: deps.resolveAdaptersForRun,
+    toResolvedAdapters: deps.toResolvedAdapters,
+    readContractDiagnostics: deps.readContractDiagnostics,
+    buildDiagnostics: deps.buildDiagnostics,
+    strictErrorMessage: deps.strictErrorMessage,
+    toErrorOutcome: deps.errorOutcome,
+    finalizeResult: deps.finalizeResult,
+  };
+  const run = bindFirst(runWorkflow<Outcome<ArtefactOf<N>>>, workflowDeps);
+  return (input: RunInputOf<N>, runtime?: Runtime) => {
     const trace = createTraceDiagnostics().trace;
     addTrace({ trace }, "run.start", { recipe: deps.contractName });
     const diagnosticsMode = runtime?.diagnostics ?? "default";
@@ -69,17 +81,6 @@ export const createRunHandler =
       applyMode: applyDiagnosticsMode,
       errorOutcome: deps.errorOutcome,
     });
-    const workflowDeps = {
-      pipeline: deps.pipeline,
-      extensionRegistration: deps.extensionRegistration,
-      resolveAdaptersForRun: deps.resolveAdaptersForRun,
-      toResolvedAdapters: deps.toResolvedAdapters,
-      readContractDiagnostics: deps.readContractDiagnostics,
-      buildDiagnostics: deps.buildDiagnostics,
-      strictErrorMessage: deps.strictErrorMessage,
-      toErrorOutcome: deps.errorOutcome,
-      finalizeResult: deps.finalizeResult,
-    };
     const ctx: RunWorkflowContext<Outcome<ArtefactOf<N>>> = {
       input,
       runtime,
@@ -87,5 +88,6 @@ export const createRunHandler =
       diagnosticsMode,
       handleError,
     };
-    return runWorkflow<Outcome<ArtefactOf<N>>>(workflowDeps, ctx);
+    return run(ctx);
   };
+};

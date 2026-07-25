@@ -1,5 +1,5 @@
 import { Recipe } from "./flow";
-import { createRecipeFactory, createRecipeHandle } from "./handle";
+import { defineRecipe } from "./handle";
 import { createSystemPlugin } from "./system";
 import type { Plugin } from "#workflow/types";
 import { AgentStateHelpers, type AgentState } from "./agentic/shared";
@@ -91,9 +91,6 @@ const resolveSimpleChatRecipeDefinition = (config?: SimpleChatConfig) => ({
   packs: [resolveSimpleChatPack(config)],
 });
 
-const simpleChatRecipeFactory = createRecipeFactory("agent", resolveSimpleChatRecipeDefinition);
-
-export const simpleChat = (config?: SimpleChatConfig) =>
-  createRecipeHandle(simpleChatRecipeFactory, config);
+export const simpleChat = defineRecipe("agent", resolveSimpleChatRecipeDefinition);
 
 export const SimpleChatPack = createSimpleChatPack();

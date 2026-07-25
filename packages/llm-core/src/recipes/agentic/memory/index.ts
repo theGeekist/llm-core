@@ -1,7 +1,7 @@
 import { bindFirst, toNull } from "#shared/fp";
 import { maybeMap } from "#shared/maybe";
 import { Recipe } from "../../flow";
-import { createRecipeFactory, createRecipeHandle } from "../../handle";
+import { defineRecipe } from "../../handle";
 import type { RecipeDefaults, StepApply } from "../../flow";
 import { AgentStateHelpers, type AgentState } from "../shared";
 import type { Memory } from "#adapters/types";
@@ -65,10 +65,7 @@ const resolveMemoryRecipeDefinition = (config?: AgentMemoryConfig) => ({
   packs: [resolveMemoryPack(config)],
 });
 
-const memoryRecipeFactory = createRecipeFactory("agent", resolveMemoryRecipeDefinition);
-
-export const createAgentMemoryRecipe = (config?: AgentMemoryConfig) =>
-  createRecipeHandle(memoryRecipeFactory, config);
+export const createAgentMemoryRecipe = defineRecipe("agent", resolveMemoryRecipeDefinition);
 
 export const AgentMemoryPack = createAgentMemoryPack();
 export const agentMemoryRecipe = createAgentMemoryRecipe();

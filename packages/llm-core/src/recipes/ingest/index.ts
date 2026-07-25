@@ -1,7 +1,7 @@
 import { bindFirst, toNull } from "#shared/fp";
 import { maybeAll, maybeMap } from "#shared/maybe";
 import { Recipe } from "../flow";
-import { createRecipeFactory, createRecipeHandle } from "../handle";
+import { defineRecipe } from "../handle";
 import type { RecipeDefaults, StepApply } from "../flow";
 import type { Document, Embedder, TextSplitter, VectorRecord } from "#adapters/types";
 import { readString } from "#adapters/utils";
@@ -237,11 +237,8 @@ const resolveIngestRecipeDefinition = (config?: IngestConfig) => ({
   packs: [resolveIngestPack(config)],
 });
 
-const ingestRecipeFactory = createRecipeFactory("ingest", resolveIngestRecipeDefinition);
-
 // Full ingestion recipe: load -> split -> embed -> index.
-export const createIngestRecipe = (config?: IngestConfig) =>
-  createRecipeHandle(ingestRecipeFactory, config);
+export const createIngestRecipe = defineRecipe("ingest", resolveIngestRecipeDefinition);
 
-export const ingestRecipe = (config?: IngestConfig) => createIngestRecipe(config);
+export const ingestRecipe = createIngestRecipe;
 export const IngestPack = createIngestPack();

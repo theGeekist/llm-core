@@ -1,4 +1,4 @@
-import { createRecipeFactory, createRecipeHandle } from "../handle";
+import { defineRecipe } from "../handle";
 import { createRagRetrievalPack, RagRetrievalPack, type RagRetrievalConfig } from "./retrieval";
 import { createRagSynthesisPack, RagSynthesisPack, type RagSynthesisConfig } from "./synthesis";
 
@@ -17,11 +17,8 @@ const resolveRagRecipeDefinition = (config?: RagRecipeConfig) => ({
   packs: [resolveRetrievalPack(config?.retrieval), resolveSynthesisPack(config?.synthesis)],
 });
 
-const ragRecipeFactory = createRecipeFactory("rag", resolveRagRecipeDefinition);
-
 // A full RAG flow: retrieval + synthesis, with per-pack overrides.
-export const createRagRecipe = (config?: RagRecipeConfig) =>
-  createRecipeHandle(ragRecipeFactory, config);
+export const createRagRecipe = defineRecipe("rag", resolveRagRecipeDefinition);
 
 // Default RAG recipe with standard packs.
 export const ragRecipe = createRagRecipe();
