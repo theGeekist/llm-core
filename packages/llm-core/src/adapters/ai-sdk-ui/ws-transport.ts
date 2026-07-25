@@ -16,7 +16,7 @@ export type AuthToken = {
 
 export type TransportEvent = {
   direction: "incoming" | "outgoing";
-  message: ClientMessage | ServerMessage;
+  message: ObservableClientMessage | ServerMessage;
 };
 
 export type AiSdkWebSocketChatTransportOptions = {
@@ -87,6 +87,10 @@ const startStream = (
   controller: ReadableStreamDefaultController<UIMessageChunk>,
 ) => {
   state.controller = controller;
+  if (state.sendOptions.abortSignal?.aborted) {
+    finalizeStreamError(state, new Error("aborted"));
+    return false;
+  }
   const socket = new WebSocket(state.options.url);
   state.socket = socket;
 
@@ -99,7 +103,10 @@ const startStream = (
   return true;
 };
 
-const cancelStream = (state: StreamState) => closeSocket(state);
+const cancelStream = (state: StreamState) => {
+  finalizeStream(state);
+  return closeSocket(state);
+};
 
 const startStreamInterop = (
   state: StreamState,
@@ -146,8 +153,11 @@ const handleSocketMessage = (state: StreamState, event: MessageEvent) => {
 };
 
 const handleSocketClose = (state: StreamState) => {
-  finalizeStreamClose(state);
-  return true;
+  if (state.finalized) {
+    return true;
+  }
+  finalizeStreamError(state, new Error("socket_closed"));
+  return false;
 };
 
 const handleSocketError = (state: StreamState) => {
@@ -259,7 +269,9 @@ type ClientAuthMessage = {
   token: string;
 };
 
-type ClientMessage = ClientChatMessage | ClientAuthMessage;
+type ObservableClientMessage =
+  | ClientChatMessage
+  | (Omit<ClientAuthMessage, "token"> & { token: "[redacted]" });
 
 type ServerMessage =
   | { type: "ui.chunk"; requestId: string; chunk: UIMessageChunk }
@@ -361,7 +373,10 @@ const sendAuthMessage = (state: StreamState, token: AuthToken) => {
     providerId: token.providerId,
     token: token.token,
   };
-  emitTransportEvent(state.options, { direction: "outgoing", message: payload });
+  emitTransportEvent(state.options, {
+    direction: "outgoing",
+    message: { ...payload, token: "[redacted]" },
+  });
   state.socket.send(JSON.stringify(payload));
   return true;
 };

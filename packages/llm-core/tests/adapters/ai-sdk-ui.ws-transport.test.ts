@@ -192,9 +192,15 @@ describe("Adapter AI SDK WebSocket transport", () => {
     const outgoing = socket ? readOutgoingMessages(socket) : [];
     expect(outgoing.length).toBe(2);
     expect(outgoing[0]?.type).toBe("auth.set");
+    expect(outgoing[0]?.token).toBe("sk-test");
     expect(outgoing[1]?.type).toBe("chat.send");
     expect(outgoing[1]?.data?.recipeId).toBe("rag");
     expect(capture.events.length).toBeGreaterThan(0);
+    expect(capture.events[0]?.message).toEqual({
+      type: "auth.set",
+      providerId: "openai",
+      token: "[redacted]",
+    });
   });
 
   it("streams chunks and closes on done", async () => {
@@ -297,6 +303,23 @@ describe("Adapter AI SDK WebSocket transport", () => {
     expect(socket?.closed).toBe(true);
   });
 
+  it("does not open a socket when already aborted", async () => {
+    const abortController = new AbortController();
+    abortController.abort();
+    const transport = createAiSdkWebSocketChatTransport({ url: "ws://example" });
+
+    const stream = await transport.sendMessages({
+      trigger: "submit-message",
+      chatId: "chat-aborted",
+      messageId: "m-aborted",
+      messages: [createUserMessage("m-aborted", "hi")],
+      abortSignal: abortController.signal,
+    });
+
+    expect(FakeWebSocket.latest()).toBeNull();
+    expect(await readStreamError(stream)).toBe("aborted");
+  });
+
   it("returns null when reconnecting", async () => {
     const transport = createAiSdkWebSocketChatTransport({ url: "ws://example" });
     const stream = await transport.reconnectToStream({
@@ -341,7 +364,7 @@ describe("Adapter AI SDK WebSocket transport", () => {
     expect(socket?.closed).toBe(true);
   });
 
-  it("closes stream on socket close", async () => {
+  it("errors the stream when the socket closes before done", async () => {
     const transport = createAiSdkWebSocketChatTransport({ url: "ws://example" });
     const stream = await transport.sendMessages({
       trigger: "submit-message",
@@ -355,7 +378,6 @@ describe("Adapter AI SDK WebSocket transport", () => {
     expect(socket).not.toBeNull();
     socket?.trigger("close");
 
-    const chunks = await readStreamChunks(stream);
-    expect(chunks.length).toBe(0);
+    expect(await readStreamError(stream)).toBe("socket_closed");
   });
 });
