@@ -37,7 +37,7 @@ for (const file of walkFiles(join(root, "dist"))) {
     continue;
   }
   const source = readFileSync(file, "utf8");
-  if (/\b(?:from\s*|require\()["']#[^"']+/.test(source)) {
+  if (/\b(?:from\s*|import\s*\(?\s*|require\s*\(\s*)["']#[^"']+/.test(source)) {
     throw new Error(`Built artifact retains an internal package alias: ${relative(root, file)}`);
   }
 }
