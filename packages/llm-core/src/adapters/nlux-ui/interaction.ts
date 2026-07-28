@@ -1,12 +1,12 @@
 import type { ChatAdapter, ChatAdapterExtras, StreamingAdapterObserver } from "@nlux/core";
-import type { EventStream, EventStreamEvent } from "../types";
 import type { InteractionHandle, InteractionHandleInput } from "../../interaction/handle";
 import type { InteractionEvent, InteractionState } from "../../interaction/types";
 import type { Message, MessageContent } from "../types/messages";
-import { toUndefined } from "#shared/fp";
+import { bindFirst, toUndefined } from "#shared/fp";
 import { maybeMap } from "#shared/maybe";
-import { isRecord } from "#shared/guards";
+import { combineTriStates } from "#shared/tri-state";
 import { toMessageContent } from "../message-content";
+import { createInteractionEventDeliveryStream } from "../primitives/interaction-event-emitter";
 
 export type NluxChatAdapterOptions = {
   handle: InteractionHandle;
@@ -29,7 +29,7 @@ class NluxChatAdapterImpl implements ChatAdapter<string> {
     extras: ChatAdapterExtras<string>,
   ) {
     const input: StreamInput = { message, observer, extras };
-    const eventStream = new NluxInteractionEventStream(this.options, observer);
+    const eventStream = createNluxInteractionEventStream(this.options, observer);
     const interactionInput = buildInteractionInput(this.options, input);
     const result = this.options.handle.run(interactionInput, { eventStream });
     return maybeMap(toUndefined, result);
@@ -60,47 +60,32 @@ type BatchInput = {
 
 type NluxChatItem = NonNullable<ChatAdapterExtras<string>["conversationHistory"]>[number];
 
-class NluxInteractionEventStream implements EventStream {
-  private options: NluxChatAdapterOptions;
-  private observer: StreamingAdapterObserver<string>;
+type NluxDeliveryContext = {
+  options: NluxChatAdapterOptions;
+  observer: StreamingAdapterObserver<string>;
+};
 
-  constructor(options: NluxChatAdapterOptions, observer: StreamingAdapterObserver<string>) {
-    this.options = options;
-    this.observer = observer;
-  }
+const retainInteractionEvent = (event: InteractionEvent) => [event];
 
-  emit(event: EventStreamEvent) {
-    const interactionEvent = toInteractionEvent(event);
-    if (!interactionEvent) {
-      return null;
-    }
-    return handleInteractionEvent(this.options, this.observer, interactionEvent);
-  }
+const createNluxInteractionEventStream = (
+  options: NluxChatAdapterOptions,
+  observer: StreamingAdapterObserver<string>,
+) =>
+  createInteractionEventDeliveryStream({
+    mapper: { mapEvent: retainInteractionEvent },
+    deliver: bindFirst(deliverInteractionEvents, { options, observer }),
+  });
 
-  emitMany(events: EventStreamEvent[]) {
-    let hasEvent = false;
-    let hasFailure = false;
-    for (const event of events) {
-      const interactionEvent = toInteractionEvent(event);
-      if (!interactionEvent) {
-        continue;
-      }
-      const result = handleInteractionEvent(this.options, this.observer, interactionEvent);
-      if (result === false) {
-        hasFailure = true;
-      } else if (result === true) {
-        hasEvent = true;
-      }
-    }
-    if (hasFailure) {
-      return false;
-    }
-    if (hasEvent) {
-      return true;
-    }
+const deliverInteractionEvents = (input: NluxDeliveryContext, events: InteractionEvent[]) => {
+  if (events.length === 0) {
     return null;
   }
-}
+  const results: Array<boolean | null> = [];
+  for (const event of events) {
+    results.push(handleInteractionEvent(input.options, input.observer, event));
+  }
+  return combineTriStates(results);
+};
 
 function handleInteractionEvent(
   options: NluxChatAdapterOptions,
@@ -247,15 +232,4 @@ function readMessageText(content: MessageContent) {
     return content;
   }
   return content.text;
-}
-
-function toInteractionEvent(event: EventStreamEvent): InteractionEvent | null {
-  if (!event.data || !isRecord(event.data)) {
-    return null;
-  }
-  const candidate = event.data.event;
-  if (!candidate || typeof candidate !== "object") {
-    return null;
-  }
-  return candidate as InteractionEvent;
 }

@@ -26,13 +26,8 @@ const buildPauseSnapshot = (input: {
   state: {
     steps: input.steps,
     context: input.reporter ? { reporter: input.reporter } : undefined,
-    userState:
-      input.userState ??
-      (input.entries
-        ? {
-            helperRollbacks: new Map([["recipe.steps", input.entries]]),
-          }
-        : undefined),
+    userState: input.userState,
+    helperRollbacks: input.entries ? new Map([["recipe.steps", input.entries]]) : undefined,
   },
   token: "token-snapshot",
   pauseKind: "human",

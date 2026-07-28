@@ -150,7 +150,8 @@ In most cases you don’t construct plugins by hand. Instead, higher-level helpe
 - recipes.agent().defaults({ plugins: [{ key: "model.openai", ... }] })
 - Recipe.pack("rag", ({ step }) => ({ ...steps })) compiles steps into helpers and wraps them in a plugin.
 
-At runtime, Workflow.build() always sees just a list of plugins. The engine doesn’t care whether they came from Adapter.\*, Recipe.pack, or custom code.
+At runtime, a recipe handle's `.build()` method compiles its packs to a list of plugins. The engine
+doesn’t care whether they came from `Adapter.*`, `Recipe.pack`, or custom code.
 
 ### Default Lifecycle
 

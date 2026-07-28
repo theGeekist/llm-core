@@ -34,12 +34,6 @@ export type AgentProfile = {
   prompt: string;
 };
 
-export type ApprovalPolicyOption = {
-  id: "never" | "on-request" | "unless-trusted" | "on-failure";
-  label: string;
-  description: string;
-};
-
 export type OptionItem = {
   id: string;
   label: string;
@@ -48,7 +42,6 @@ export type OptionItem = {
 
 export type ToolPresetId = "search-only" | "web-search" | "custom";
 export type SkillPresetId = "repo-skills" | "none" | "custom";
-export type McpPresetId = "none" | "docs" | "custom";
 
 export type ToolPreset = {
   id: ToolPresetId;
@@ -63,13 +56,6 @@ export type SkillPreset = {
   description: string;
   directories: string[];
   disabled?: string[];
-};
-
-export type McpPreset = {
-  id: McpPresetId;
-  label: string;
-  description: string;
-  servers: Record<string, unknown> | null;
 };
 
 export const ADAPTER_SOURCES: AdapterSourceOption[] = [
@@ -161,29 +147,6 @@ export const AGENT_PROFILES: AgentProfile[] = [
   },
 ];
 
-export const APPROVAL_POLICIES: ApprovalPolicyOption[] = [
-  {
-    id: "never",
-    label: "Never",
-    description: "Tools run without approval.",
-  },
-  {
-    id: "on-request",
-    label: "On request",
-    description: "Tools pause when the model asks for approval.",
-  },
-  {
-    id: "unless-trusted",
-    label: "Unless trusted",
-    description: "Require approval unless the tool is trusted.",
-  },
-  {
-    id: "on-failure",
-    label: "On failure",
-    description: "Approval only after tool failures.",
-  },
-];
-
 export const TOOL_OPTIONS: OptionItem[] = [
   {
     id: "tools.search",
@@ -247,33 +210,6 @@ export const SKILL_PRESETS: SkillPreset[] = [
   },
 ];
 
-export const MCP_PRESETS: McpPreset[] = [
-  {
-    id: "none",
-    label: "None",
-    description: "Do not connect to MCP servers.",
-    servers: null,
-  },
-  {
-    id: "docs",
-    label: "Docs MCP",
-    description: "Example MCP server for docs tooling.",
-    servers: {
-      docs: {
-        type: "http",
-        url: "https://example.com/mcp",
-        tools: ["*"],
-      },
-    },
-  },
-  {
-    id: "custom",
-    label: "Custom",
-    description: "Provide MCP servers JSON manually.",
-    servers: null,
-  },
-];
-
 const DEFAULT_PROVIDER: ProviderOption =
   PROVIDERS[0] ??
   ({
@@ -307,11 +243,6 @@ const toSelectOptionFromProfile = (profile: AgentProfile): SelectOption => ({
   label: profile.label,
 });
 
-const toSelectOptionFromPolicy = (policy: ApprovalPolicyOption): SelectOption => ({
-  value: policy.id,
-  label: policy.label,
-});
-
 const toSelectOptionFromToolPreset = (preset: ToolPreset): SelectOption => ({
   value: preset.id,
   label: preset.label,
@@ -322,20 +253,12 @@ const toSelectOptionFromSkillPreset = (preset: SkillPreset): SelectOption => ({
   label: preset.label,
 });
 
-const toSelectOptionFromMcpPreset = (preset: McpPreset): SelectOption => ({
-  value: preset.id,
-  label: preset.label,
-});
-
 export const SOURCE_SELECT_OPTIONS: SelectOption[] = ADAPTER_SOURCES.map(toSelectOptionFromSource);
 export const PROFILE_SELECT_OPTIONS: SelectOption[] = AGENT_PROFILES.map(toSelectOptionFromProfile);
-export const APPROVAL_SELECT_OPTIONS: SelectOption[] =
-  APPROVAL_POLICIES.map(toSelectOptionFromPolicy);
 export const TOOL_PRESET_OPTIONS: SelectOption[] = TOOL_PRESETS.map(toSelectOptionFromToolPreset);
 export const SKILL_PRESET_OPTIONS: SelectOption[] = SKILL_PRESETS.map(
   toSelectOptionFromSkillPreset,
 );
-export const MCP_PRESET_OPTIONS: SelectOption[] = MCP_PRESETS.map(toSelectOptionFromMcpPreset);
 
 export const readProviderOption = (id: ProviderId): ProviderOption =>
   PROVIDERS.find((provider) => provider.id === id) ?? DEFAULT_PROVIDER;
@@ -348,9 +271,6 @@ export const readToolPreset = (id: ToolPresetId): ToolPreset =>
 
 export const readSkillPreset = (id: SkillPresetId): SkillPreset =>
   SKILL_PRESETS.find((preset) => preset.id === id) ?? SKILL_PRESETS[0]!;
-
-export const readMcpPreset = (id: McpPresetId): McpPreset =>
-  MCP_PRESETS.find((preset) => preset.id === id) ?? MCP_PRESETS[0]!;
 
 export const readAvailableProviders = (source: AdapterSource) =>
   PROVIDERS.filter((provider) => (provider.models[source] ?? []).length > 0);

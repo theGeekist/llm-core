@@ -180,7 +180,7 @@ Tests:
 Implement a prebuilt profile (internal composition), but expose:
 
 - `createAgentRuntime({ config, adapter, recipe: agentLoop })`.
-- `AgentRuntime.run` and `AgentRuntime.stream`.
+- `AgentRuntime.run`, which streams model events when the input includes an event stream.
 
 Internals may compose existing packs, but external DX is a single entrypoint.
 

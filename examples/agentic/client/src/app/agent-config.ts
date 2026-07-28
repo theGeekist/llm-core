@@ -1,19 +1,12 @@
-import type {
-  AgentApprovalsConfig,
-  AgentLoopConfig,
-  AgentMcpServerConfig,
-  AgentSubagentOptions,
-} from "@geekist/llm-core/interaction";
+import type { AgentLoopConfig, AgentSubagentOptions } from "@geekist/llm-core/interaction";
 import {
-  readMcpPreset,
   readSkillPreset,
   readToolPreset,
   type AgentProfile,
-  type McpPreset,
   type SkillPreset,
   type ToolPreset,
 } from "../demo-options";
-import type { AgentConfigDraft, JsonParseResult, TransportData } from "./types";
+import type { AgentConfigDraft, TransportData } from "./types";
 
 const splitListInput = (value: string) => value.split(/[\n,]/g);
 const trimListItem = (value: string) => value.trim();
@@ -54,35 +47,6 @@ const readOptionalNumber = (value: string) => {
   return Number.isFinite(parsed) ? parsed : null;
 };
 
-const readOptionalJson = (value: string): JsonParseResult => {
-  const trimmed = value.trim();
-  if (!trimmed) {
-    return { value: null, error: null };
-  }
-  try {
-    const parsed = JSON.parse(trimmed) as Record<string, unknown>;
-    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
-      return { value: null, error: "JSON must be an object." };
-    }
-    return { value: parsed, error: null };
-  } catch {
-    return { value: null, error: "Invalid JSON." };
-  }
-};
-
-export const readMcpJsonStatus = (value: string): JsonParseResult => readOptionalJson(value);
-
-const readMcpServers = (value: string): Record<string, AgentMcpServerConfig> | null => {
-  const parsed = readOptionalJson(value);
-  if (!parsed.value) {
-    return null;
-  }
-  return parsed.value as Record<string, AgentMcpServerConfig>;
-};
-
-const formatMcpPresetValue = (preset: McpPreset) =>
-  preset.servers ? JSON.stringify(preset.servers, null, 2) : "";
-
 const applyToolPresetToDraft = (draft: AgentConfigDraft, preset: ToolPreset): AgentConfigDraft => ({
   ...draft,
   toolPresetId: preset.id,
@@ -98,12 +62,6 @@ const applySkillPresetToDraft = (
   skillPresetId: preset.id,
   skillDirectories: formatListInput(preset.directories),
   skillDisabled: formatListInput(preset.disabled ?? []),
-});
-
-const applyMcpPresetToDraft = (draft: AgentConfigDraft, preset: McpPreset): AgentConfigDraft => ({
-  ...draft,
-  mcpPresetId: preset.id,
-  mcpServersJson: formatMcpPresetValue(preset),
 });
 
 const readToolsConfig = (draft: AgentConfigDraft) => {
@@ -135,14 +93,6 @@ const readAgentTools = (draft: AgentConfigDraft) => {
   return tools ?? null;
 };
 
-const readApprovalsConfig = (draft: AgentConfigDraft): AgentApprovalsConfig => {
-  const cache = readOptionalText(draft.approvalsCache);
-  return {
-    policy: draft.approvalsPolicy,
-    cache: cache === "session" ? "session" : undefined,
-  };
-};
-
 const buildOutputContract = (value: string) => {
   const trimmed = readOptionalText(value);
   if (!trimmed) {
@@ -165,17 +115,13 @@ export const buildAgentLoopConfig = (draft: AgentConfigDraft): AgentLoopConfig =
       description: readOptionalText(draft.agentDescription) ?? undefined,
       prompt: draft.agentPrompt,
       tools: readAgentTools(draft),
-      infer: true,
     },
   ],
   agentSelection: {
     agentId: draft.agentId,
-    allowInfer: true,
   },
   tools: readToolsConfig(draft) ?? undefined,
   skills: readSkillsConfig(draft) ?? undefined,
-  mcpServers: readMcpServers(draft.mcpServersJson) ?? undefined,
-  approvals: readApprovalsConfig(draft),
 });
 
 export const buildSubagentOptions = (draft: AgentConfigDraft): AgentSubagentOptions | undefined => {
@@ -193,39 +139,31 @@ export const buildSubagentOptions = (draft: AgentConfigDraft): AgentSubagentOpti
 export const buildAgentDraft = (profile: AgentProfile): AgentConfigDraft => {
   const toolPreset = readToolPreset("search-only");
   const skillPreset = readSkillPreset("repo-skills");
-  const mcpPreset = readMcpPreset("none");
-  return applyMcpPresetToDraft(
-    applySkillPresetToDraft(
-      applyToolPresetToDraft(
-        {
-          profileId: profile.id,
-          toolPresetId: toolPreset.id,
-          skillPresetId: skillPreset.id,
-          mcpPresetId: mcpPreset.id,
-          agentId: "primary",
-          agentName: profile.label,
-          agentDescription: profile.description,
-          agentPrompt: profile.prompt,
-          agentTools: "",
-          toolAllowlist: "",
-          toolDenylist: "",
-          skillDirectories: "",
-          skillDisabled: "",
-          mcpServersJson: "",
-          approvalsPolicy: "on-request",
-          approvalsCache: "session",
-          subagentsEnabled: true,
-          subagentsMaxActive: "4",
-          subagentsIdPrefix: "subagent",
-          context: "",
-          outputFormat: "",
-          threadId: "",
-        },
-        toolPreset,
-      ),
-      skillPreset,
+  return applySkillPresetToDraft(
+    applyToolPresetToDraft(
+      {
+        profileId: profile.id,
+        toolPresetId: toolPreset.id,
+        skillPresetId: skillPreset.id,
+        agentId: "primary",
+        agentName: profile.label,
+        agentDescription: profile.description,
+        agentPrompt: profile.prompt,
+        agentTools: "",
+        toolAllowlist: "",
+        toolDenylist: "",
+        skillDirectories: "",
+        skillDisabled: "",
+        subagentsEnabled: true,
+        subagentsMaxActive: "4",
+        subagentsIdPrefix: "subagent",
+        context: "",
+        outputFormat: "",
+        threadId: "",
+      },
+      toolPreset,
     ),
-    mcpPreset,
+    skillPreset,
   );
 };
 
@@ -245,6 +183,3 @@ export const applyToolPreset = (draft: AgentConfigDraft, presetId: ToolPreset["i
 
 export const applySkillPreset = (draft: AgentConfigDraft, presetId: SkillPreset["id"]) =>
   applySkillPresetToDraft(draft, readSkillPreset(presetId));
-
-export const applyMcpPreset = (draft: AgentConfigDraft, presetId: McpPreset["id"]) =>
-  applyMcpPresetToDraft(draft, readMcpPreset(presetId));

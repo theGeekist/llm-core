@@ -2,9 +2,7 @@ import { describe, expect, it } from "bun:test";
 import {
   createChatKitEventMapper,
   createChatKitInteractionEventStream,
-  createChatKitInteractionMapper,
   createChatKitInteractionSink,
-  toChatKitEvents,
   toChatKitThreadId,
 } from "#adapters";
 import type { ModelStreamEvent } from "#adapters";
@@ -39,12 +37,12 @@ const dispatchEvent = (capture: EventCapture, event: CustomEvent) => {
 
 describe("Adapter openai-chatkit mapping", () => {
   it("maps model start/end to response events", () => {
-    const mapper = createChatKitInteractionMapper();
+    const mapper = createChatKitEventMapper();
 
     const commands = [
       modelEvent(1, { type: "start", id: "m1" }),
       modelEvent(2, { type: "end", finishReason: "stop" }),
-    ].flatMap((event) => mapper.mapEvent(event));
+    ].flatMap((event) => mapper(event));
 
     expect(commands.map((event) => event.type)).toEqual([
       "chatkit.response.start",
@@ -53,10 +51,10 @@ describe("Adapter openai-chatkit mapping", () => {
   });
 
   it("maps model errors to chatkit.error and response end", () => {
-    const mapper = createChatKitInteractionMapper();
+    const mapper = createChatKitEventMapper();
     const error = "bad";
 
-    const events = mapper.mapEvent(modelEvent(1, { type: "error", error }));
+    const events = mapper(modelEvent(1, { type: "error", error }));
 
     expect(events.map((event) => event.type)).toEqual(["chatkit.error", "chatkit.response.end"]);
     const detail = events[0]?.detail as { error?: Error } | undefined;
@@ -64,14 +62,14 @@ describe("Adapter openai-chatkit mapping", () => {
   });
 
   it("logs non-model events by default", () => {
-    const mapper = createChatKitInteractionMapper();
+    const mapper = createChatKitEventMapper();
     const event: InteractionEvent = {
       kind: "diagnostic",
       entry: { level: "warn", kind: "adapter", message: "warn" },
       meta: baseMeta(1),
     };
 
-    const events = mapper.mapEvent(event);
+    const events = mapper(event);
 
     expect(events).toHaveLength(1);
     expect(events[0]?.type).toBe("chatkit.log");
@@ -80,9 +78,9 @@ describe("Adapter openai-chatkit mapping", () => {
   });
 
   it("logs model events when enabled", () => {
-    const mapper = createChatKitInteractionMapper({ logModelEvents: true });
+    const mapper = createChatKitEventMapper({ logModelEvents: true });
 
-    const events = mapper.mapEvent(modelEvent(1, { type: "delta", text: "hello" }));
+    const events = mapper(modelEvent(1, { type: "delta", text: "hello" }));
 
     expect(events).toHaveLength(1);
     expect(events[0]?.type).toBe("chatkit.log");
@@ -144,15 +142,6 @@ describe("Adapter openai-chatkit mapping", () => {
     const events = mapEvent(modelEvent(1, { type: "delta", text: "hello" }));
 
     expect(events.map((event) => event.type)).toEqual(["chatkit.effect"]);
-  });
-
-  it("keeps direct helper usage with mapper options", () => {
-    const events = toChatKitEvents(
-      { logEventName: "chatkit.effect" },
-      modelEvent(1, { type: "delta", text: "hello" }),
-    );
-
-    expect(events).toEqual([]);
   });
 
   it("derives thread ids from interaction metadata", () => {

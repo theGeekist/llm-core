@@ -5,12 +5,8 @@ import { Recipe } from "../../src/recipes/flow";
 import {
   createRecipeFactory,
   createRecipeHandle,
-  createConfiguredRecipeHandle,
   defineRecipe,
   type RecipeRunOverrides,
-  configureRecipeHandle,
-  defaultsRecipeHandle,
-  useRecipeHandle,
 } from "../../src/recipes/handle";
 import { assertSyncOutcome } from "../workflow/helpers";
 
@@ -54,9 +50,7 @@ const expectOk = (outcome: Outcome) => {
 
 describe("Recipe handle", () => {
   it("configures packs via the recipe factory", () => {
-    const handle = createRecipeHandle(createFactory(), { label: "base" }).configure({
-      label: "configured",
-    });
+    const handle = createRecipeHandle(createFactory(), { label: "configured" });
     const runtime = handle.build();
     const outcome = assertSyncOutcome(runtime.run({ input: "x", query: "x" }));
     const ok = expectOk(outcome);
@@ -104,18 +98,6 @@ describe("Recipe handle", () => {
     const ok = expectOk(outcome);
 
     expect((ok.artefact as { providers?: unknown }).providers).toEqual({ model: "test-model" });
-  });
-
-  it("exposes helper factories for composing handles", () => {
-    const factory = createFactory();
-    const base = createConfiguredRecipeHandle(factory, { label: "configured" });
-    const withDefaults = defaultsRecipeHandle(base, { adapters: { cache: createMemoryCache() } });
-    const withPack = useRecipeHandle(withDefaults, buildPack("addon", "addon"));
-    const configured = configureRecipeHandle(withPack, { label: "updated" });
-    const outcome = assertSyncOutcome(configured.run({ input: "x", query: "x" }));
-    const ok = expectOk(outcome);
-
-    expect((ok.artefact as { label?: string }).label).toBe("updated");
   });
 
   it("defines configured recipe handle creators", () => {

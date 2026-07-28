@@ -1,26 +1,16 @@
 // #region docs
-import type { InteractionEvent, InteractionState } from "#interaction";
-import { reduceInteractionEvents } from "#interaction";
+import { createBuiltinModel } from "#adapters";
+import { createInteractionHandle } from "#interaction";
 
-const state: InteractionState = {
-  messages: [],
-  diagnostics: [],
-  trace: [],
-  events: [],
-};
+const interaction = createInteractionHandle({
+  adapters: { model: createBuiltinModel() },
+});
 
-const meta = { sequence: 1, timestamp: Date.now(), sourceId: "model.primary" };
-const events: InteractionEvent[] = [
-  { kind: "model", event: { type: "start" }, meta },
-  {
-    kind: "model",
-    event: { type: "delta", text: "Hello" },
-    meta: { ...meta, sequence: 2 },
-  },
-  { kind: "model", event: { type: "end" }, meta: { ...meta, sequence: 3 } },
-];
+const result = await interaction.run(
+  { message: { role: "user", content: "Hello" } },
+  { captureEvents: true },
+);
 
-const next = reduceInteractionEvents(state, events);
+console.log(result.state.messages);
+console.log(result.events);
 // #endregion docs
-
-void next;

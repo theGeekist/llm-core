@@ -2,7 +2,7 @@ import { describe, expect, it } from "bun:test";
 import { RecursiveCharacterTextSplitter } from "@langchain/textsplitters";
 import { SentenceSplitter } from "@llamaindex/core/node-parser";
 import * as AiSdk from "ai";
-import type { TextSplitter } from "#workflow";
+import type { TextSplitter } from "#adapters/types";
 import { maybeMap, maybeAll } from "#shared/maybe";
 
 const TEXT_SAMPLE = "Hello world.";

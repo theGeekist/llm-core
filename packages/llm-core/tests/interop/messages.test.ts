@@ -2,7 +2,7 @@ import { describe, expect, it } from "bun:test";
 import { AIMessage, HumanMessage, SystemMessage } from "@langchain/core/messages";
 import type { ChatMessage } from "@llamaindex/core/llms";
 import type { ModelMessage } from "ai";
-import type { Message } from "#workflow";
+import type { Message } from "#adapters/types";
 
 const toMessageFromLangChain = (message: HumanMessage | AIMessage | SystemMessage): Message => ({
   role: langChainRoleToAdapter(message.type),

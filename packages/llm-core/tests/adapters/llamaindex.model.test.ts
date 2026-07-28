@@ -1,13 +1,7 @@
 import { describe, expect, it } from "bun:test";
 import type { ChatMessage, ChatResponseChunk, LLM } from "@llamaindex/core/llms";
-import {
-  Tooling,
-  collectStep,
-  fromLlamaIndexModel,
-  isPromiseLike,
-  maybeToStep,
-  toSchema,
-} from "#adapters";
+import { Tooling, fromLlamaIndexModel, toSchema } from "#adapters";
+import { collectStep, isPromiseLike, maybeToStep } from "#functional";
 
 const makeMessage = (content: ChatMessage["content"]): ChatMessage => ({
   role: "assistant",

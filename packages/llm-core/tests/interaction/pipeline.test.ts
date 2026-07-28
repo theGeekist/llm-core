@@ -3,12 +3,14 @@ import {
   createInteractionPipelineWithDefaults,
   registerInteractionPack,
   runInteractionPipeline,
-} from "#interaction";
+} from "../../src/interaction/steps";
 import { isPromiseLike } from "@wpkernel/pipeline/core";
 import { createMockModel, createMockMessage, createMockModelResult } from "../fixtures/factories";
 import { assertRunResult, isPausedResult } from "./test-utils";
 import type { MessagePart, Model, ModelStreamEvent } from "#adapters";
-import type { InteractionRunOutcome, InteractionState, InteractionStepApply } from "#interaction";
+import type { InteractionState } from "#interaction";
+import type { InteractionRunOutcome } from "../../src/interaction/types";
+import type { InteractionStepApply } from "../../src/interaction/pipeline";
 
 const PAUSE_TOKEN = "interaction:pause";
 const PAUSE_MARKER_KEY = "test.pause.once";
@@ -101,6 +103,30 @@ describe("interaction pipeline", () => {
     expect(isPromiseLike(result)).toBe(true);
     const awaited = assertRunResult(await result);
     expect(awaited.artefact.messages[1]?.content).toBe("Async!");
+  });
+
+  it("adopts immutable outputs returned by custom interaction steps", async () => {
+    const pipeline = createInteractionPipelineWithDefaults();
+    registerInteractionPack(pipeline, {
+      name: "immutable-output",
+      steps: [
+        {
+          name: "replace-state",
+          dependsOn: ["interaction-core.run-tools"],
+          apply: ({ output }) => ({
+            output: {
+              ...output,
+              private: { ...output.private, raw: { immutableStep: true } },
+            },
+          }),
+        },
+      ],
+    });
+
+    const result = await runInteractionPipeline(pipeline, { input: {} });
+    const runResult = assertRunResult(result);
+
+    expect(runResult.artefact.private?.raw?.immutableStep).toBe(true);
   });
 
   it("streams sync iterables and assembles messages", async () => {

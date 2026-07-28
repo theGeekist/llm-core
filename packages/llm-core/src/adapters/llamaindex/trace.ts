@@ -7,15 +7,14 @@ import { bindFirst } from "#shared/fp";
 import { maybeChain, maybeMap, maybeTap, maybeTry } from "#shared/maybe";
 import { readString } from "../utils";
 import { isRecord } from "#shared/guards";
+import { normalizeTriState } from "#shared/tri-state";
 
 type TraceDecoratorConfig = Parameters<typeof createHandlerDecorator>[0];
 type WorkflowHandler = Parameters<TraceDecoratorConfig["onBeforeHandler"]>[0];
 type HandlerContext = Parameters<TraceDecoratorConfig["onBeforeHandler"]>[1];
 
-const toBoolean = (value: unknown): boolean | null => (value === null ? null : value !== false);
-
 const emitTrace = (sink: EventStream, event: AdapterTraceEvent) =>
-  maybeMap(toBoolean, sink.emit(event));
+  maybeMap(normalizeTriState, sink.emit(event));
 
 const readHandlerName = (context: HandlerContext): string | null => {
   const handler = context.handler;
@@ -119,7 +118,7 @@ const emitErrorForInvocation = (invocation: HandlerInvocation, error: unknown) =
   );
 
 const runAfterStart = (invocation: HandlerInvocation) =>
-  maybeMap(
+  maybeChain(
     bindFirst(emitEndForInvocation, invocation),
     maybeTry(bindFirst(emitErrorForInvocation, invocation), bindFirst(invokeHandler, invocation)),
   );

@@ -9,7 +9,7 @@ import type {
   IndexingResult,
 } from "../types";
 import { bindFirst } from "#shared/fp";
-import { maybeMap } from "#shared/maybe";
+import { maybeChain, maybeMap } from "#shared/maybe";
 import { reportDiagnostics, validateIndexingInput } from "../input-validation";
 import { toLangChainDocument } from "./documents";
 
@@ -72,7 +72,7 @@ function runIndexAfterSchema(deps: IndexingDeps, documents: Document[], _value: 
 function runSchemaThenIndex(deps: IndexingDeps, documents: Document[]) {
   const withDeps = bindFirst(runIndexAfterSchema, deps);
   const withDocuments = bindFirst(withDeps, documents);
-  return maybeMap(withDocuments, deps.recordManager.createSchema());
+  return maybeChain(withDocuments, deps.recordManager.createSchema());
 }
 
 export function fromLangChainIndexing(
@@ -93,5 +93,5 @@ function indexWithDeps(deps: IndexingDeps, input: IndexingInput, context?: Adapt
     ...deps,
     options: input.options,
   };
-  return maybeMap(bindFirst(runSchemaThenIndex, withOptions), readDocuments(input));
+  return maybeChain(bindFirst(runSchemaThenIndex, withOptions), readDocuments(input));
 }

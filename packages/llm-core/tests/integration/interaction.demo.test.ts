@@ -5,13 +5,8 @@ import {
   createBuiltinModel,
   createChatKitInteractionEventStream,
 } from "#adapters";
-import {
-  createInteractionPipelineWithDefaults,
-  createInteractionSession,
-  runInteractionPipeline,
-} from "#interaction";
+import { createInteractionHandle, createInteractionSession } from "#interaction";
 import { isPromiseLike } from "@wpkernel/pipeline/core";
-import { isPausedOutcome, readOutcomeState } from "../../src/interaction/handle";
 import type { UIMessageStreamWriter, UIMessageChunk } from "ai";
 import { createMockSessionStore } from "../fixtures/factories";
 
@@ -22,17 +17,14 @@ const resolveMaybe = async <T>(value: MaybePromise<T>): Promise<T> =>
 
 describe("Integration interaction demos", () => {
   it("runs the interaction pipeline with built-in model", async () => {
-    const pipeline = createInteractionPipelineWithDefaults();
-    const outcome = await resolveMaybe(
-      runInteractionPipeline(pipeline, {
-        input: { message: { role: "user", content: "Hello!" } },
-        adapters: { model: createBuiltinModel() },
-      }),
+    const interaction = createInteractionHandle({
+      adapters: { model: createBuiltinModel() },
+    });
+    const result = await resolveMaybe(
+      interaction.run({ message: { role: "user", content: "Hello!" } }),
     );
 
-    expect(isPausedOutcome(outcome)).toBe(false);
-    const state = readOutcomeState(outcome);
-    expect(state.messages.length).toBeGreaterThanOrEqual(2);
+    expect(result.state.messages.length).toBeGreaterThanOrEqual(2);
   });
 
   it("streams interaction events through the AI SDK UI adapter", async () => {
@@ -52,11 +44,9 @@ describe("Integration interaction demos", () => {
       eventStream,
     });
 
-    const outcome = await resolveMaybe(
-      session.send({ role: "user", content: "Hello from ai-sdk-ui" }),
-    );
+    await resolveMaybe(session.send({ role: "user", content: "Hello from ai-sdk-ui" }));
 
-    const state = readOutcomeState(outcome);
+    const state = session.getState();
     expect(state.messages.length).toBeGreaterThanOrEqual(2);
     expect(chunks.length).toBeGreaterThan(0);
   });
@@ -75,11 +65,9 @@ describe("Integration interaction demos", () => {
       eventStream,
     });
 
-    const outcome = await resolveMaybe(
-      session.send({ role: "user", content: "Hello from assistant-ui" }),
-    );
+    await resolveMaybe(session.send({ role: "user", content: "Hello from assistant-ui" }));
 
-    const state = readOutcomeState(outcome);
+    const state = session.getState();
     expect(state.messages.length).toBeGreaterThanOrEqual(2);
     expect(commands.length).toBeGreaterThan(0);
   });
@@ -98,11 +86,9 @@ describe("Integration interaction demos", () => {
       eventStream,
     });
 
-    const outcome = await resolveMaybe(
-      session.send({ role: "user", content: "Hello from chatkit" }),
-    );
+    await resolveMaybe(session.send({ role: "user", content: "Hello from chatkit" }));
 
-    const state = readOutcomeState(outcome);
+    const state = session.getState();
     expect(state.messages.length).toBeGreaterThanOrEqual(2);
     expect(events.length).toBeGreaterThan(0);
   });

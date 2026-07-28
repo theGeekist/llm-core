@@ -1,6 +1,6 @@
 import { describe, expect, it } from "bun:test";
 import { hasAdapter, validateAdapters } from "#workflow/adapter-validation";
-import type { AdapterBundle } from "#workflow";
+import type { AdapterBundle } from "#adapters/types";
 
 describe("Workflow adapter validation", () => {
   it("detects presence for list adapters", () => {

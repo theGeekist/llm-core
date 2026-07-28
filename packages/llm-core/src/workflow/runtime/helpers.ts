@@ -8,33 +8,9 @@ export type FinalizeResultInput = {
   getDiagnostics: () => DiagnosticEntry[];
   trace: TraceEvent[];
   diagnosticsMode: "default" | "strict";
-  recordSnapshot?: (result: unknown) => MaybePromise<boolean | null>;
 };
 
 export type FinalizeResult<TOutcome> = (input: FinalizeResultInput) => MaybePromise<TOutcome>;
-
-type FinalizeInput<TOutcome> = {
-  finalizeResult: FinalizeResult<TOutcome>;
-  recordSnapshot: (result: unknown) => MaybePromise<boolean | null>;
-};
-
-const finalizeWithSnapshot = <TOutcome>(
-  input: FinalizeInput<TOutcome>,
-  payload: FinalizeResultInput,
-) =>
-  input.finalizeResult({
-    ...payload,
-    recordSnapshot: input.recordSnapshot,
-  });
-
-export const createFinalize = <TOutcome>(
-  finalizeResult: FinalizeResult<TOutcome>,
-  recordSnapshot: (result: unknown) => MaybePromise<boolean | null>,
-) =>
-  bindFirst(finalizeWithSnapshot, {
-    finalizeResult,
-    recordSnapshot,
-  });
 
 type ResultFinalizerInput<TOutcome> = {
   finalize: FinalizeResult<TOutcome>;

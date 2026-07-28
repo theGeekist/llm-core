@@ -1,4 +1,26 @@
-export type * from "./types";
+export type {
+  AgentDefinition,
+  AgentLoopConfig,
+  AgentLoopStateSnapshot,
+  InteractionEvent,
+  InteractionEventMeta,
+  InteractionItem,
+  InteractionItemDetails,
+  InteractionItemEvent,
+  InteractionItemStatus,
+  InteractionReducer,
+  InteractionSession,
+  InteractionSessionIdentity,
+  InteractionSessionOutcome,
+  InteractionSessionPauseSnapshot,
+  InteractionSessionPaused,
+  InteractionSessionResume,
+  InteractionState,
+  InteractionSubagentEvent,
+  SessionId,
+  SessionPolicy,
+  SessionStore,
+} from "./types";
 export type {
   InteractionHandle,
   InteractionHandleDefaults,
@@ -10,34 +32,9 @@ export type {
 } from "./handle";
 export type { InteractionStepApply } from "./pipeline";
 export type { InteractionStepPack, InteractionStepSpec } from "./steps";
-export { reduceInteractionEvent, reduceInteractionEvents } from "./reducer";
-export {
-  createInteractionPipeline,
-  createInteractionReducer,
-  createInteractionStep,
-} from "./pipeline";
-export { emitInteractionEvent, emitInteractionEvents, toEventStreamEvent } from "./transport";
-export { INTERACTION_STEP_KIND } from "./constants";
-export {
-  InteractionCorePack,
-  applyCaptureInput,
-  applyRunModel,
-  applyRunTools,
-  createInteractionPipelineWithDefaults,
-  createInteractionReducerWithDefaults,
-  registerInteractionPack,
-  requestInteractionPause,
-  runInteractionPipeline,
-} from "./steps";
 export { createInteractionHandle } from "./handle";
 export { createInteractionSession } from "./session";
 export type { InteractionSessionOptions } from "./session";
-export { createInteractionSessionRuntime } from "./runtime";
-export type {
-  InteractionSessionRuntime,
-  InteractionSessionRuntimeOptions,
-  InteractionSessionStreamInput,
-} from "./runtime";
 export type { InteractionRecipeId, InteractionRunRequest } from "./request";
 export { runInteractionRequest, resolveInteractionRecipeId, hasRecipeId } from "./request";
 export { createAgentRuntime } from "./agent-runtime";
@@ -47,4 +44,6 @@ export type {
   AgentRuntimeOptions,
   AgentRuntimeOverrides,
 } from "./agent-runtime";
+export { resolveAgentExecutionProfile } from "./agent-profile";
+export type { AgentExecutionProfile } from "./agent-profile";
 export type { AgentSubagentOptions } from "./agent-runtime-subagents-types";

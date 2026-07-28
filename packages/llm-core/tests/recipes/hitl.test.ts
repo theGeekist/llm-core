@@ -72,10 +72,12 @@ describe("HITL recipe", () => {
       reporter,
     });
 
-    if (!result || typeof result !== "object" || !("paused" in result)) {
-      throw new Error("Expected paused result.");
-    }
-    expect(result.paused).toBe(true);
+    expect(result).toEqual({ output: state });
+    expect(state.__pause).toMatchObject({
+      token: expect.any(String),
+      pauseKind: "human",
+      payload: { kind: "hitl", input: "needs decision" },
+    });
   });
 
   it("plans hitl recipes with config defaults", () => {

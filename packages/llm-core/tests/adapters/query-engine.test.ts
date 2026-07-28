@@ -1,7 +1,8 @@
 import { describe, expect, it } from "bun:test";
 import type { BaseQueryEngine, QueryType } from "@llamaindex/core/query-engine";
 import { Document, EngineResponse } from "@llamaindex/core/schema";
-import { collectStep, fromLlamaIndexQueryEngine, isPromiseLike, maybeToStep } from "#adapters";
+import { fromLlamaIndexQueryEngine } from "#adapters";
+import { collectStep, isPromiseLike, maybeToStep } from "#functional";
 import { captureDiagnostics } from "./helpers";
 
 const asAsyncIterable = <T>(values: T[]): AsyncIterable<T> => ({

@@ -2,14 +2,12 @@ import type { ChangeEvent, Dispatch, MouseEvent, SetStateAction } from "react";
 import {
   readAgentProfile,
   type AgentProfile,
-  type McpPresetId,
   type SkillPresetId,
   type ToolPresetId,
 } from "../demo-options";
-import { bindFirst } from "@geekist/llm-core";
+import { bindFirst } from "@geekist/llm-core/functional";
 import type { AgentConfigDraft, TransportData } from "./types";
 import {
-  applyMcpPreset,
   applySkillPreset,
   applyToolPreset,
   applyTransportDraftUpdate,
@@ -20,7 +18,6 @@ import {
 type DraftTextField =
   | "toolPresetId"
   | "skillPresetId"
-  | "mcpPresetId"
   | "agentId"
   | "agentName"
   | "agentDescription"
@@ -30,9 +27,6 @@ type DraftTextField =
   | "toolDenylist"
   | "skillDirectories"
   | "skillDisabled"
-  | "mcpServersJson"
-  | "approvalsPolicy"
-  | "approvalsCache"
   | "subagentsMaxActive"
   | "subagentsIdPrefix"
   | "context"
@@ -94,7 +88,7 @@ export const bindDraftBooleanChange = (input: {
   transportData: TransportData;
 }) => bindFirst(applyDraftBooleanChange, input);
 
-type DraftPresetField = "toolPresetId" | "skillPresetId" | "mcpPresetId";
+type DraftPresetField = "toolPresetId" | "skillPresetId";
 
 const readPresetKind = (field: DraftTextField): DraftPresetField | null => {
   if (field === "toolAllowlist" || field === "toolDenylist" || field === "agentTools") {
@@ -102,9 +96,6 @@ const readPresetKind = (field: DraftTextField): DraftPresetField | null => {
   }
   if (field === "skillDirectories" || field === "skillDisabled") {
     return "skillPresetId";
-  }
-  if (field === "mcpServersJson") {
-    return "mcpPresetId";
   }
   return null;
 };
@@ -135,15 +126,6 @@ const applySkillPresetChange = (input: DraftInput, event: ChangeEvent<HTMLSelect
 
 export const bindSkillPresetChange = (input: DraftInput) =>
   bindFirst(applySkillPresetChange, input);
-
-const applyMcpPresetChange = (input: DraftInput, event: ChangeEvent<HTMLSelectElement>) => {
-  const next = applyMcpPreset(input.draft, event.currentTarget.value as McpPresetId);
-  input.setDraft(next);
-  applyTransportDraftUpdate(input.transportData, next);
-  return true;
-};
-
-export const bindMcpPresetChange = (input: DraftInput) => bindFirst(applyMcpPresetChange, input);
 
 const applyDraftListToggle = (
   input: DraftInput & { field: "agentTools" | "toolAllowlist" | "skillDirectories" },
@@ -230,7 +212,6 @@ export type ConfigBindings = {
   onToggleEvents: (event: MouseEvent<HTMLButtonElement>) => boolean;
   onToolPresetChange: (event: ChangeEvent<HTMLSelectElement>) => void;
   onSkillPresetChange: (event: ChangeEvent<HTMLSelectElement>) => void;
-  onMcpPresetChange: (event: ChangeEvent<HTMLSelectElement>) => void;
   onAgentToolsToggle: (entry: string) => (event: ChangeEvent<HTMLInputElement>) => boolean;
   onToolAllowlistToggle: (entry: string) => (event: ChangeEvent<HTMLInputElement>) => boolean;
   onSkillDirectoryToggle: (entry: string) => (event: ChangeEvent<HTMLInputElement>) => boolean;
@@ -244,9 +225,6 @@ export type ConfigBindings = {
   onToolDenylistChange: (event: ChangeEvent<HTMLTextAreaElement>) => void;
   onSkillDirectoriesChange: (event: ChangeEvent<HTMLTextAreaElement>) => void;
   onSkillDisabledChange: (event: ChangeEvent<HTMLTextAreaElement>) => void;
-  onMcpServersChange: (event: ChangeEvent<HTMLTextAreaElement>) => void;
-  onApprovalsPolicyChange: (event: ChangeEvent<HTMLSelectElement>) => void;
-  onApprovalsCacheChange: (event: ChangeEvent<HTMLSelectElement>) => void;
   onSubagentsEnabledChange: (event: ChangeEvent<HTMLInputElement>) => void;
   onSubagentsMaxActiveChange: (event: ChangeEvent<HTMLInputElement>) => void;
   onSubagentsIdPrefixChange: (event: ChangeEvent<HTMLInputElement>) => void;
@@ -265,11 +243,6 @@ export const readConfigBindings = (input: ConfigBindingInput): ConfigBindings =>
     transportData: input.transportData,
   }),
   onSkillPresetChange: bindSkillPresetChange({
-    draft: input.draft,
-    setDraft: input.setDraft,
-    transportData: input.transportData,
-  }),
-  onMcpPresetChange: bindMcpPresetChange({
     draft: input.draft,
     setDraft: input.setDraft,
     transportData: input.transportData,
@@ -353,24 +326,6 @@ export const readConfigBindings = (input: ConfigBindingInput): ConfigBindings =>
   }),
   onSkillDisabledChange: bindDraftTextChange({
     field: "skillDisabled",
-    draft: input.draft,
-    setDraft: input.setDraft,
-    transportData: input.transportData,
-  }),
-  onMcpServersChange: bindDraftTextChange({
-    field: "mcpServersJson",
-    draft: input.draft,
-    setDraft: input.setDraft,
-    transportData: input.transportData,
-  }),
-  onApprovalsPolicyChange: bindDraftTextChange({
-    field: "approvalsPolicy",
-    draft: input.draft,
-    setDraft: input.setDraft,
-    transportData: input.transportData,
-  }),
-  onApprovalsCacheChange: bindDraftTextChange({
-    field: "approvalsCache",
     draft: input.draft,
     setDraft: input.setDraft,
     transportData: input.transportData,

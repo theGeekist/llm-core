@@ -1,5 +1,5 @@
 import type { ToolCallMessagePartComponent, ToolCallMessagePartProps } from "@assistant-ui/react";
-import { bindFirst } from "@geekist/llm-core";
+import { bindFirst } from "@geekist/llm-core/functional";
 import { CheckIcon, ChevronDownIcon, ChevronUpIcon, XCircleIcon } from "lucide-react";
 import type { Dispatch, SetStateAction } from "react";
 import { useId, useState } from "react";

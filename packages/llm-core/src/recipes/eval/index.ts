@@ -1,7 +1,7 @@
 import { bindFirst } from "#shared/fp";
 import { maybeMap } from "#shared/maybe";
 import { Recipe } from "../flow";
-import { defineRecipe } from "../handle";
+import { defineSinglePackRecipe } from "../handle";
 import type { RecipeDefaults, StepApply } from "../flow";
 import type { Model, ModelResult } from "#adapters/types";
 import { readNumber, readString, readRecord, readStringArray } from "#adapters/utils";
@@ -197,14 +197,8 @@ export const createEvalPack = (config?: EvalConfig) =>
     minimumCapabilities: ["model", "evaluator"],
   });
 
-const resolveEvalPack = (config?: EvalConfig) => (config ? createEvalPack(config) : EvalPack);
-
-const resolveEvalRecipeDefinition = (config?: EvalConfig) => ({
-  packs: [resolveEvalPack(config)],
-});
-
 // Full evaluation recipe: seed -> generate -> score.
-export const createEvalRecipe = defineRecipe("eval", resolveEvalRecipeDefinition);
-
-export const EvalPack = createEvalPack();
+const evaluation = defineSinglePackRecipe("eval", createEvalPack);
+export const createEvalRecipe = evaluation.createRecipe;
+export const EvalPack = evaluation.pack;
 export const evalRecipe = createEvalRecipe;

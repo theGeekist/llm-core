@@ -1,4 +1,4 @@
-import type { PauseKind, ResumeSnapshot } from "./core";
+import type { PauseKind } from "./core";
 import type { Document } from "./documents";
 import type { Message } from "./messages";
 import type { Model } from "./model";
@@ -7,7 +7,7 @@ import type { OutputParser } from "./output-parser";
 import type { Tool } from "./tools";
 import type { QueryEngine, ResponseSynthesizer } from "./engines";
 import type { Indexing } from "./indexing";
-import type { CheckpointStore, EventStream, InterruptStrategy } from "./orchestration";
+import type { EventStream, InterruptStrategy } from "./orchestration";
 import type { SkillLoader } from "./skills";
 import type {
   DocumentLoader,
@@ -63,7 +63,6 @@ type AdapterOrchestrationBundle = {
   memory?: Memory | null;
   skills?: SkillLoader | null;
   trace?: EventStream | null;
-  checkpoint?: CheckpointStore | null;
   eventStream?: EventStream | null;
   interrupt?: InterruptStrategy | null;
 };
@@ -79,8 +78,6 @@ export type AdapterResumeRequest = {
   declaredAdapters?: AdapterBundle;
   interrupt?: InterruptStrategy | null;
   pauseKind?: PauseKind;
-  resumeKey?: string;
-  resumeSnapshot?: ResumeSnapshot;
   resumeInput?: unknown;
   providers?: Record<string, string>;
   runtime?: unknown;
@@ -94,16 +91,6 @@ export type AdapterResumeResult = {
   runtime?: unknown;
 };
 
-export type AdapterResumeReturn = AdapterResumeResult | unknown;
-
 export type AdapterResume = {
-  resolve: (request: AdapterResumeRequest) => MaybePromise<AdapterResumeReturn>;
-  /**
-   * @deprecated Use `adapters.cache` instead.
-   */
-  sessionStore?: unknown;
-  /**
-   * @deprecated Use `adapters.cache` TTL instead.
-   */
-  sessionTtlMs?: number;
+  resolve: (request: AdapterResumeRequest) => MaybePromise<AdapterResumeResult>;
 };

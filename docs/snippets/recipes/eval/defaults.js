@@ -4,8 +4,7 @@ import { fromAiSdkModel } from "#adapters";
 import { openai } from "@ai-sdk/openai";
 
 const evaluate = recipes
-  .eval()
-  .configure({ candidateCount: 3 })
+  .eval({ candidateCount: 3 })
   .defaults({
     adapters: { model: fromAiSdkModel(openai("gpt-4o-mini")) },
   });

@@ -1,9 +1,14 @@
 import type { AssistantTransportCommand } from "@assistant-ui/react";
 import type { ReadonlyJSONValue } from "assistant-stream/utils";
-import type { EventStream, EventStreamEvent, ModelStreamEvent } from "../types";
+import type { ModelStreamEvent } from "../types";
 import type { InteractionEvent, InteractionEventMeta } from "../../interaction/types";
 import { bindFirst } from "#shared/fp";
 import { isRecord } from "#shared/guards";
+import {
+  createInteractionEventDeliverySink,
+  createInteractionEventDeliveryStream,
+} from "../primitives/interaction-event-emitter";
+import { toAssistantUiJsonValue } from "./json";
 
 export type AssistantUiInteractionMapperOptions = {
   includeReasoning?: boolean;
@@ -11,19 +16,21 @@ export type AssistantUiInteractionMapperOptions = {
   errorPrefix?: string;
 };
 
-export type AssistantUiInteractionMapper = {
+type AssistantUiInteractionMapper = {
   mapEvent: (event: InteractionEvent) => AssistantTransportCommand[];
   reset: () => void;
 };
 
+export type AssistantUiCommandMapper = (event: InteractionEvent) => AssistantTransportCommand[];
+
 export type AssistantUiInteractionSinkOptions = {
   sendCommand: (command: AssistantTransportCommand) => void;
-  mapper?: AssistantUiInteractionMapper;
+  mapper?: AssistantUiCommandMapper;
 };
 
 export type AssistantUiInteractionEventStreamOptions = {
   sendCommand: (command: AssistantTransportCommand) => void;
-  mapper?: AssistantUiInteractionMapper;
+  mapper?: AssistantUiCommandMapper;
 };
 
 type ModelDeltaEvent = Extract<ModelStreamEvent, { type: "delta" }>;
@@ -102,18 +109,9 @@ const toToolResultCommand = (input: ToolResultCommandInput): AddToolResultComman
   type: "add-tool-result",
   toolCallId: toToolCallId(input.meta, input.toolName, input.toolCallId),
   toolName: input.toolName,
-  result: input.result as ReadonlyJSONValue,
+  result: toAssistantUiJsonValue(input.result),
   isError: input.isError === true,
 });
-
-const appendCommands = (
-  target: AssistantTransportCommand[],
-  source: AssistantTransportCommand[],
-) => {
-  for (const command of source) {
-    target.push(command);
-  }
-};
 
 const appendCommand = (
   target: AssistantTransportCommand[],
@@ -248,66 +246,9 @@ class AssistantUiInteractionMapperImpl implements AssistantUiInteractionMapper {
   }
 }
 
-export const createAssistantUiInteractionMapper = (
+const createAssistantUiInteractionMapper = (
   options?: AssistantUiInteractionMapperOptions,
 ): AssistantUiInteractionMapper => new AssistantUiInteractionMapperImpl(options);
-
-class AssistantUiInteractionSinkImpl {
-  private sendCommand: (command: AssistantTransportCommand) => void;
-  private mapper: AssistantUiInteractionMapper;
-
-  constructor(options: AssistantUiInteractionSinkOptions) {
-    this.sendCommand = options.sendCommand;
-    this.mapper = options.mapper ?? createAssistantUiInteractionMapper();
-  }
-
-  onEvent(event: InteractionEvent) {
-    const commands = this.mapper.mapEvent(event);
-    return sendCommands(this.sendCommand, commands);
-  }
-}
-
-class AssistantUiInteractionEventStreamImpl implements EventStream {
-  private sendCommand: (command: AssistantTransportCommand) => void;
-  private mapper: AssistantUiInteractionMapper;
-
-  constructor(options: AssistantUiInteractionEventStreamOptions) {
-    this.sendCommand = options.sendCommand;
-    this.mapper = options.mapper ?? createAssistantUiInteractionMapper();
-  }
-
-  emit(event: EventStreamEvent) {
-    const interactionEvent = toInteractionEvent(event);
-    if (!interactionEvent) {
-      return null;
-    }
-    const commands = this.mapper.mapEvent(interactionEvent);
-    return sendCommands(this.sendCommand, commands);
-  }
-
-  emitMany(events: EventStreamEvent[]) {
-    const commands: AssistantTransportCommand[] = [];
-    for (const event of events) {
-      const interactionEvent = toInteractionEvent(event);
-      if (!interactionEvent) {
-        continue;
-      }
-      appendCommands(commands, this.mapper.mapEvent(interactionEvent));
-    }
-    return sendCommands(this.sendCommand, commands);
-  }
-}
-
-const toInteractionEvent = (event: EventStreamEvent): InteractionEvent | null => {
-  if (!event.data || !isRecord(event.data)) {
-    return null;
-  }
-  const candidate = event.data.event;
-  if (!candidate || typeof candidate !== "object") {
-    return null;
-  }
-  return candidate as InteractionEvent;
-};
 
 const sendCommands = (
   sendCommand: (command: AssistantTransportCommand) => void,
@@ -327,35 +268,25 @@ const sendCommands = (
 };
 
 export const createAssistantUiInteractionSink = (options: AssistantUiInteractionSinkOptions) =>
-  new AssistantUiInteractionSinkImpl(options);
+  createInteractionEventDeliverySink({
+    mapper: { mapEvent: options.mapper ?? createAssistantUiCommandMapper() },
+    deliver: bindFirst(sendCommands, options.sendCommand),
+  });
 
 export const createAssistantUiInteractionEventStream = (
   options: AssistantUiInteractionEventStreamOptions,
-) => new AssistantUiInteractionEventStreamImpl(options);
+) =>
+  createInteractionEventDeliveryStream({
+    mapper: { mapEvent: options.mapper ?? createAssistantUiCommandMapper() },
+    deliver: bindFirst(sendCommands, options.sendCommand),
+  });
 
 const mapAssistantUiCommands = (
   mapper: AssistantUiInteractionMapper,
   event: InteractionEvent,
 ): AssistantTransportCommand[] => mapper.mapEvent(event);
 
-export const createAssistantUiCommandMapper = (options?: AssistantUiInteractionMapperOptions) =>
+export const createAssistantUiCommandMapper = (
+  options?: AssistantUiInteractionMapperOptions,
+): AssistantUiCommandMapper =>
   bindFirst(mapAssistantUiCommands, createAssistantUiInteractionMapper(options));
-
-export const toAssistantUiCommands = (
-  input: AssistantUiInteractionMapper | AssistantUiInteractionMapperOptions | undefined,
-  event: InteractionEvent,
-): AssistantTransportCommand[] => {
-  const mapper = isAssistantUiInteractionMapper(input)
-    ? input
-    : createAssistantUiInteractionMapper(input);
-  return mapAssistantUiCommands(mapper, event);
-};
-
-const isAssistantUiInteractionMapper = (
-  value: AssistantUiInteractionMapper | AssistantUiInteractionMapperOptions | undefined,
-): value is AssistantUiInteractionMapper =>
-  isRecord(value) &&
-  "mapEvent" in value &&
-  "reset" in value &&
-  typeof (value as { mapEvent?: unknown }).mapEvent === "function" &&
-  typeof (value as { reset?: unknown }).reset === "function";

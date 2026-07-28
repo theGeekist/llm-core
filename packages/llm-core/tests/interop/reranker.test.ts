@@ -9,7 +9,7 @@ import {
   type NodeWithScore,
 } from "@llamaindex/core/schema";
 import { fromAiSdkReranker } from "#adapters";
-import type { Reranker } from "#workflow";
+import type { Reranker } from "#adapters/types";
 import { maybeMap } from "#shared/maybe";
 
 const toRerankerFromLangChain = (compressor: BaseDocumentCompressor): Reranker => ({

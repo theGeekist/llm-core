@@ -14,7 +14,8 @@
     "paths": {
       "@/*": ["src/*"],
       "@examples/*": ["../../../*"],
-      "@examples/components/*": ["../../components/*"]
+      "@examples/components/*": ["../../components/*"],
+      "@geekist/llm-core/functional": ["../../../packages/llm-core/src/functional/index.ts"]
     }
   },
   "include": ["src", "../../components/**/*.ts", "../../components/**/*.tsx"]

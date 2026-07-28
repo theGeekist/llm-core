@@ -21,5 +21,4 @@ export { fromLangChainModel } from "./model";
 export { toLangChainStreamEvents } from "./stream";
 export { fromLangChainCallbackHandler } from "./trace";
 export { fromLangChainEventStream } from "./event-stream";
-export { fromLangGraphCheckpointer } from "./checkpoint";
 export { fromLangGraphInterrupt } from "./interrupt";

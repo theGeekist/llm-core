@@ -1,11 +1,19 @@
 import { describe, expect, it } from "bun:test";
 import type { AdapterCallContext, RetryMetadata, RetryPolicy } from "../../src/adapters/types";
 import {
+  jitterDelay,
   isRetryPauseSignal,
   mergeRetryConfig,
   readRetryPausePayload,
-  wrapRetryCallOne,
+  wrapRetryCall,
 } from "../../src/workflow/runtime/retry";
+import type { RetryWrapperInput } from "../../src/workflow/runtime/retry";
+
+const wrapRetryCallOne = <TInput, TResult>(
+  input: RetryWrapperInput<[TInput], TResult>,
+  value: TInput,
+  context?: AdapterCallContext,
+) => wrapRetryCall(input, 1, value, context);
 
 describe("Workflow runtime retry helpers", () => {
   it("merges retry configs by adapter kind", () => {
@@ -18,13 +26,40 @@ describe("Workflow runtime retry helpers", () => {
     expect(merged?.model?.backoffMs).toBe(0);
   });
 
-  it("ignores retry metadata allowed=false when runtime policy is provided", () => {
+  it("merges disjoint retry kinds without a parallel key catalogue", () => {
+    const model = { maxAttempts: 2, backoffMs: 10 };
+    const tools = { maxAttempts: 3, backoffMs: 5 };
+
+    const merged = mergeRetryConfig({ model }, { tools });
+
+    expect(merged).toEqual({ model, tools });
+  });
+
+  it("preserves defaults for null and partial policy overrides", () => {
+    const merged = mergeRetryConfig(
+      { model: { maxAttempts: 2, backoffMs: 10, timeoutMs: 50 } },
+      { model: { maxAttempts: 4, backoffMs: 0 }, tools: null },
+    );
+
+    expect(merged?.model).toEqual({
+      maxAttempts: 4,
+      backoffMs: 0,
+      timeoutMs: 50,
+    });
+    expect(merged?.tools).toBeNull();
+  });
+
+  it("intersects runtime retry reasons with adapter-supported reasons", () => {
     let attempts = 0;
-    const policy: RetryPolicy = { maxAttempts: 3, backoffMs: 0 };
-    const metadata: RetryMetadata = { allowed: false };
+    const policy: RetryPolicy = {
+      maxAttempts: 3,
+      backoffMs: 0,
+      retryOn: ["network", "rate_limit"],
+    };
+    const metadata: RetryMetadata = { retryOn: ["rate_limit"] };
     const call = () => {
       attempts += 1;
-      throw new Error("nope");
+      throw Object.assign(new Error("network unavailable"), { code: "ENETUNREACH" });
     };
 
     expect(() =>
@@ -41,7 +76,7 @@ describe("Workflow runtime retry helpers", () => {
         "hello",
       ),
     ).toThrow();
-    expect(attempts).toBe(3);
+    expect(attempts).toBe(1);
   });
 
   it("pauses when policy uses backoff and pause mode", () => {
@@ -97,5 +132,187 @@ describe("Workflow runtime retry helpers", () => {
       ),
     ).toThrow();
     expect(attempts).toBe(1);
+  });
+
+  it("classifies retry reasons from provider errors", () => {
+    let attempts = 0;
+    const call = () => {
+      attempts += 1;
+      if (attempts === 1) {
+        throw Object.assign(new Error("Too many requests"), { status: 429 });
+      }
+      return "ok";
+    };
+
+    const result = wrapRetryCallOne(
+      {
+        adapterKind: "model",
+        method: "generate",
+        call,
+        policy: {
+          maxAttempts: 2,
+          backoffMs: 0,
+          retryOn: ["rate_limit"],
+        },
+        trace: [],
+        context: {},
+      },
+      { prompt: "hi" },
+    );
+
+    expect(result).toBe("ok");
+    expect(attempts).toBe(2);
+  });
+
+  it("does not retry when runtime and adapter reason policies do not overlap", () => {
+    let attempts = 0;
+    const call = () => {
+      attempts += 1;
+      throw Object.assign(new Error("Too many requests"), { status: 429 });
+    };
+
+    expect(() =>
+      wrapRetryCallOne(
+        {
+          adapterKind: "model",
+          method: "generate",
+          call,
+          metadata: {
+            retryOn: ["network"],
+            policy: {
+              maxAttempts: 3,
+              backoffMs: 0,
+              retryOn: ["rate_limit"],
+            },
+          },
+          trace: [],
+          context: {},
+        },
+        { prompt: "hi" },
+      ),
+    ).toThrow();
+
+    expect(attempts).toBe(1);
+  });
+
+  it("uses adapter retry reasons when its fallback policy omits them", () => {
+    let attempts = 0;
+    const call = () => {
+      attempts += 1;
+      throw Object.assign(new Error("Too many requests"), { status: 429 });
+    };
+
+    expect(() =>
+      wrapRetryCallOne(
+        {
+          adapterKind: "model",
+          method: "generate",
+          call,
+          metadata: {
+            retryOn: ["network"],
+            policy: {
+              maxAttempts: 3,
+              backoffMs: 0,
+            },
+          },
+          trace: [],
+          context: {},
+        },
+        { prompt: "hi" },
+      ),
+    ).toThrow();
+
+    expect(attempts).toBe(1);
+  });
+
+  it("enforces async attempt timeouts and reports timeout as the reason", async () => {
+    const trace: Array<{ kind: string; at: string; data?: unknown }> = [];
+    const call = () => new Promise<string>(() => undefined);
+
+    try {
+      await wrapRetryCallOne(
+        {
+          adapterKind: "model",
+          method: "generate",
+          call,
+          policy: {
+            maxAttempts: 1,
+            backoffMs: 0,
+            timeoutMs: 5,
+            retryOn: ["timeout"],
+          },
+          trace,
+          context: {},
+        },
+        { prompt: "hi" },
+      );
+      throw new Error("Expected adapter call to time out.");
+    } catch (error) {
+      expect(error).toBeInstanceOf(Error);
+      expect((error as Error).message).toContain("timed out");
+    }
+
+    expect(trace.at(-1)?.kind).toBe("adapter.retry.exhausted");
+    expect((trace.at(-1)?.data as { reason?: unknown }).reason).toBe("timeout");
+  });
+
+  it("waits before retrying in internal mode", async () => {
+    let attempts = 0;
+    const startedAt = Date.now();
+    const call = () => {
+      attempts += 1;
+      if (attempts === 1) {
+        throw new Error("flaky");
+      }
+      return "ok";
+    };
+
+    const result = await wrapRetryCallOne(
+      {
+        adapterKind: "model",
+        method: "generate",
+        call,
+        policy: { maxAttempts: 2, backoffMs: 10, mode: "internal" },
+        trace: [],
+        context: {},
+      },
+      { prompt: "hi" },
+    );
+
+    expect(result).toBe("ok");
+    expect(attempts).toBe(2);
+    expect(Date.now() - startedAt).toBeGreaterThanOrEqual(8);
+  });
+
+  it("rejects when a delayed internal retry fails synchronously", async () => {
+    let attempts = 0;
+    const call = () => {
+      attempts += 1;
+      throw new Error("still flaky");
+    };
+
+    try {
+      await wrapRetryCallOne(
+        {
+          adapterKind: "model",
+          method: "generate",
+          call,
+          policy: { maxAttempts: 2, backoffMs: 1, mode: "internal" },
+          trace: [],
+          context: {},
+        },
+        { prompt: "hi" },
+      );
+      throw new Error("Expected retries to be exhausted.");
+    } catch (error) {
+      expect((error as Error).message).toBe("still flaky");
+    }
+
+    expect(attempts).toBe(2);
+  });
+
+  it("uses the full random backoff range for full jitter", () => {
+    expect(jitterDelay(100, "full", () => 0)).toBe(0);
+    expect(jitterDelay(100, "full", () => 0.99)).toBe(99);
   });
 });

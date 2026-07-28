@@ -2,10 +2,9 @@ import type { ChatKitEvents } from "@openai/chatkit";
 import type { InteractionEvent, InteractionEventMeta } from "../../interaction/types";
 import { bindFirst } from "#shared/fp";
 import {
-  createInteractionEventEmitterStream,
-  type InteractionEventEmitter,
+  createInteractionEventDeliverySink,
+  createInteractionEventDeliveryStream,
 } from "../primitives/interaction-event-emitter";
-import { isRecord } from "#shared/guards";
 
 export type ChatKitEventName = keyof ChatKitEvents;
 
@@ -14,19 +13,16 @@ export type ChatKitInteractionMapperOptions = {
   logModelEvents?: boolean;
 };
 
-export type ChatKitInteractionMapper = {
-  mapEvent: (event: InteractionEvent) => CustomEvent[];
-  reset: () => void;
-};
+export type ChatKitEventMapper = (event: InteractionEvent) => CustomEvent[];
 
 export type ChatKitInteractionSinkOptions = {
   dispatchEvent: (event: CustomEvent) => void;
-  mapper?: ChatKitInteractionMapper;
+  mapper?: ChatKitEventMapper;
 };
 
 export type ChatKitInteractionEventStreamOptions = {
   dispatchEvent: (event: CustomEvent) => void;
-  mapper?: ChatKitInteractionMapper;
+  mapper?: ChatKitEventMapper;
 };
 
 const DEFAULT_LOG_EVENT: ChatKitInteractionMapperOptions["logEventName"] = "chatkit.log";
@@ -66,61 +62,36 @@ const toErrorEvent = (error: unknown) =>
 const shouldLogModelEvent = (options: ChatKitInteractionMapperOptions, event: InteractionEvent) =>
   Boolean(options.logModelEvents) && event.kind === "model";
 
-class ChatKitInteractionMapperImpl implements ChatKitInteractionMapper {
-  private options: ChatKitInteractionMapperOptions;
-
-  constructor(options?: ChatKitInteractionMapperOptions) {
-    this.options = options ?? {};
+const mapModelEvent = (
+  options: ChatKitInteractionMapperOptions,
+  event: InteractionEvent & { kind: "model" },
+) => {
+  if (event.event.type === "start") {
+    return [toResponseStart()];
   }
 
-  reset() {}
-
-  mapEvent(event: InteractionEvent): CustomEvent[] {
-    if (event.kind === "model") {
-      return this.mapModelEvent(event);
-    }
-    return [toLogEvent(this.options.logEventName, event)];
+  if (event.event.type === "end") {
+    return [toResponseEnd()];
   }
 
-  private mapModelEvent(event: InteractionEvent & { kind: "model" }) {
-    if (event.event.type === "start") {
-      return [toResponseStart()];
-    }
-
-    if (event.event.type === "end") {
-      return [toResponseEnd()];
-    }
-
-    if (event.event.type === "error") {
-      return [toErrorEvent(event.event.error), toResponseEnd()];
-    }
-
-    if (shouldLogModelEvent(this.options, event)) {
-      return [toLogEvent(this.options.logEventName, event)];
-    }
-
-    return [];
-  }
-}
-
-export const createChatKitInteractionMapper = (
-  options?: ChatKitInteractionMapperOptions,
-): ChatKitInteractionMapper => new ChatKitInteractionMapperImpl(options);
-
-class ChatKitInteractionSinkImpl {
-  private dispatchEvent: (event: CustomEvent) => void;
-  private mapper: ChatKitInteractionMapper;
-
-  constructor(options: ChatKitInteractionSinkOptions) {
-    this.dispatchEvent = options.dispatchEvent;
-    this.mapper = options.mapper ?? createChatKitInteractionMapper();
+  if (event.event.type === "error") {
+    return [toErrorEvent(event.event.error), toResponseEnd()];
   }
 
-  onEvent(event: InteractionEvent) {
-    const events = this.mapper.mapEvent(event);
-    return dispatchEvents(this.dispatchEvent, events);
+  if (shouldLogModelEvent(options, event)) {
+    return [toLogEvent(options.logEventName, event)];
   }
-}
+
+  return [];
+};
+
+const mapChatKitEvent = (
+  options: ChatKitInteractionMapperOptions,
+  event: InteractionEvent,
+): CustomEvent[] =>
+  event.kind === "model"
+    ? mapModelEvent(options, event)
+    : [toLogEvent(options.logEventName, event)];
 
 function dispatchEvents(dispatchEvent: (event: CustomEvent) => void, events: CustomEvent[]) {
   if (events.length === 0) {
@@ -137,54 +108,23 @@ function dispatchEvents(dispatchEvent: (event: CustomEvent) => void, events: Cus
   }
 }
 
-function createChatKitEmitter(
-  dispatchEvent: (event: CustomEvent) => void,
-): InteractionEventEmitter<CustomEvent> {
-  return { emit: bindFirst(dispatchChatKitEvent, dispatchEvent) };
-}
-
-function dispatchChatKitEvent(dispatchEvent: (event: CustomEvent) => void, event: CustomEvent) {
-  try {
-    dispatchEvent(event);
-    return true;
-  } catch {
-    return false;
-  }
-}
-
 export const createChatKitInteractionSink = (options: ChatKitInteractionSinkOptions) =>
-  new ChatKitInteractionSinkImpl(options);
+  createInteractionEventDeliverySink({
+    mapper: { mapEvent: options.mapper ?? createChatKitEventMapper() },
+    deliver: bindFirst(dispatchEvents, options.dispatchEvent),
+  });
 
 export const createChatKitInteractionEventStream = (
   options: ChatKitInteractionEventStreamOptions,
 ) =>
-  createInteractionEventEmitterStream({
-    emitter: createChatKitEmitter(options.dispatchEvent),
-    mapper: options.mapper ?? createChatKitInteractionMapper(),
+  createInteractionEventDeliveryStream({
+    mapper: { mapEvent: options.mapper ?? createChatKitEventMapper() },
+    deliver: bindFirst(dispatchEvents, options.dispatchEvent),
   });
 
-const mapChatKitEvents = (mapper: ChatKitInteractionMapper, event: InteractionEvent) =>
-  mapper.mapEvent(event);
-
-export const createChatKitEventMapper = (options?: ChatKitInteractionMapperOptions) =>
-  bindFirst(mapChatKitEvents, createChatKitInteractionMapper(options));
-
-export const toChatKitEvents = (
-  input: ChatKitInteractionMapper | ChatKitInteractionMapperOptions | undefined,
-  event: InteractionEvent,
-): CustomEvent[] => {
-  const mapper = isChatKitInteractionMapper(input) ? input : createChatKitInteractionMapper(input);
-  return mapChatKitEvents(mapper, event);
-};
-
-const isChatKitInteractionMapper = (
-  value: ChatKitInteractionMapper | ChatKitInteractionMapperOptions | undefined,
-): value is ChatKitInteractionMapper =>
-  isRecord(value) &&
-  "mapEvent" in value &&
-  "reset" in value &&
-  typeof (value as { mapEvent?: unknown }).mapEvent === "function" &&
-  typeof (value as { reset?: unknown }).reset === "function";
+export const createChatKitEventMapper = (
+  options?: ChatKitInteractionMapperOptions,
+): ChatKitEventMapper => bindFirst(mapChatKitEvent, options ?? {});
 
 export const toChatKitThreadId = (
   meta: InteractionEventMeta,

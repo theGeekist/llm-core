@@ -5,36 +5,30 @@ import {
   maybeTry as pipelineMaybeTry,
 } from "@wpkernel/pipeline/core/async-utils";
 import type { MaybePromise, Program } from "@wpkernel/pipeline/core";
-import { bindFirst, mapArray } from "./fp";
+import { bindFirst } from "./fp";
 
 type MaybeThunk<T> = { (): MaybePromise<T> };
+type Mapper<TIn, TOut> = { (value: TIn): TOut };
 type MaybeHandler<TIn, TOut> = { (value: TIn): MaybePromise<TOut> };
 type ErrorHandler<T> = { (error: unknown): MaybePromise<T> };
-type MaybeBinary<TFirst, TSecond, TResult> = {
-  (first: TFirst, second: TSecond): MaybePromise<TResult>;
-};
-
-type TryWrapConfig<Args extends unknown[], T> = {
-  onError: ErrorHandler<T>;
-  fn: (...args: Args) => MaybePromise<T>;
+type MaybeReducer<TState, TValue> = {
+  (state: TState, value: TValue): MaybePromise<TState>;
 };
 
 type AnyIterable<T> = Iterable<T> | AsyncIterable<T>;
 export type Step<T> = { readonly next: () => MaybePromise<IteratorResult<T>> };
 type StepSource<T> = AnyIterable<T> | Step<T>;
-type CollectStepInput<T> = { step: Step<T>; items: T[] };
+type FoldStepInput<T, TState> = {
+  step: Step<T>;
+  reduce: (state: TState, value: T) => MaybePromise<TState>;
+};
 
 export type { MaybePromise };
 export type { Program };
 export type MaybeAsyncIterable<T> = StepSource<T> | MaybePromise<StepSource<T>>;
 export { isPromiseLike };
 
-type TryWrapInput<Args extends unknown[], T> = {
-  fn: (...args: Args) => MaybePromise<T>;
-  args: Args;
-};
-
-const maybeMapWith = <TIn, TOut>(map: MaybeHandler<TIn, TOut>, value: MaybePromise<TIn>) =>
+const maybeMapWith = <TIn, TOut>(map: Mapper<TIn, TOut>, value: MaybePromise<TIn>) =>
   maybeThen(value, map);
 
 const maybeChainWith = <TIn, TOut>(next: MaybeHandler<TIn, TOut>, value: MaybePromise<TIn>) =>
@@ -90,14 +84,6 @@ export function composeK(...fns: Array<MaybeHandler<unknown, unknown>>) {
   return bindFirst(applyComposeK, fns);
 }
 
-const maybeAllWith = <T>(values: Array<MaybePromise<T>>) => {
-  const result = pipelineMaybeAll(values);
-  if (isPromiseLike(result)) {
-    return result;
-  }
-  return result.slice();
-};
-
 const returnConstant = <T>(value: T) => value;
 
 const maybeTapApply = <T>(tap: (value: T) => MaybePromise<unknown>, value: T) =>
@@ -109,26 +95,8 @@ const maybeTapWith = <T>(tap: (value: T) => MaybePromise<unknown>, value: MaybeP
 const maybeTryWith = <T>(onError: ErrorHandler<T>, run: MaybeThunk<T>) =>
   pipelineMaybeTry(run, onError);
 
-const runTryWrap = <Args extends unknown[], T>(input: TryWrapInput<Args, T>) =>
-  input.fn(...input.args);
-
-const tryWrapRun = <Args extends unknown[], T>(config: TryWrapConfig<Args, T>, args: Args) =>
-  pipelineMaybeTry(bindFirst(runTryWrap, { fn: config.fn, args }), config.onError);
-
-const tryWrapInvoke = <Args extends unknown[], T>(config: TryWrapConfig<Args, T>, ...args: Args) =>
-  tryWrapRun(config, args);
-
-const tryWrapFactory = <Args extends unknown[], T>(
-  onError: ErrorHandler<T>,
-  fn: (...args: Args) => MaybePromise<T>,
-) =>
-  bindFirst(tryWrapInvoke as (config: TryWrapConfig<Args, T>, ...args: Args) => MaybePromise<T>, {
-    onError,
-    fn,
-  });
-
 const maybeMapArrayWith = <TIn, TOut>(map: (value: TIn) => TOut, value: MaybePromise<TIn[]>) =>
-  maybeMap(bindFirst(mapArray, map), value);
+  maybeMap((items) => items.map(map), value);
 
 const maybeMapOrWith = <TIn, TOut>(
   map: MaybeHandler<TIn, TOut>,
@@ -136,11 +104,7 @@ const maybeMapOrWith = <TIn, TOut>(
   value: MaybePromise<TIn | null | undefined>,
 ) => {
   const applyLogic = (val: TIn | null | undefined) => (val == null ? fallback() : map(val));
-
-  if (isPromiseLike(value)) {
-    return maybeThen(value, applyLogic);
-  }
-  return applyLogic(value);
+  return maybeThen(value, applyLogic);
 };
 
 const isAsyncIterable = (value: unknown): value is AsyncIterable<unknown> =>
@@ -182,38 +146,57 @@ export const toStep = <T>(value: StepSource<T>): Step<T> => {
 
 export const maybeToStep = <T>(value: MaybeAsyncIterable<T>) => maybeMap(toStep, value);
 
-const collectStepAsync = async <T>(input: CollectStepInput<T>): Promise<T[]> => {
-  let result = await input.step.next();
+const foldStepAsyncFromNext = async <T, TState>(
+  input: FoldStepInput<T, TState>,
+  initial: TState,
+  pending: MaybePromise<IteratorResult<T>>,
+): Promise<TState> => {
+  let state = initial;
+  let result = await pending;
   while (!result.done) {
-    input.items.push(result.value);
+    state = await input.reduce(state, result.value);
     result = await input.step.next();
   }
-  return input.items;
+  return state;
 };
 
-const collectStepAsyncFromResult = async <T>(
-  input: CollectStepInput<T>,
-  first: IteratorResult<T>,
-): Promise<T[]> => {
-  if (first.done) {
-    return input.items;
-  }
-  input.items.push(first.value);
-  return collectStepAsync(input);
+const foldStepAsyncFromReduce = async <T, TState>(
+  input: FoldStepInput<T, TState>,
+  pending: PromiseLike<TState>,
+): Promise<TState> => {
+  const state = await pending;
+  return foldStepAsyncFromNext(input, state, input.step.next());
 };
 
-export const collectStep = <T>(step: Step<T>): MaybePromise<T[]> => {
-  const input: CollectStepInput<T> = { step, items: [] };
+export const foldStep = <T, TState>(
+  reduce: (state: TState, value: T) => MaybePromise<TState>,
+  initial: TState,
+  step: Step<T>,
+): MaybePromise<TState> => {
+  const input = { step, reduce };
+  let state = initial;
   let result = step.next();
   while (!isPromiseLike(result)) {
     if (result.done) {
-      return input.items;
+      return state;
     }
-    input.items.push(result.value);
+    const reduced = reduce(state, result.value);
+    if (isPromiseLike(reduced)) {
+      return foldStepAsyncFromReduce(input, reduced);
+    }
+    state = reduced;
     result = step.next();
   }
-  return maybeThen(result, bindFirst(collectStepAsyncFromResult, input));
+  return foldStepAsyncFromNext(input, state, result);
 };
+
+const appendStepItem = <T>(items: T[], item: T) => {
+  items.push(item);
+  return items;
+};
+
+export const collectStep = <T>(step: Step<T>): MaybePromise<T[]> =>
+  foldStep(appendStepItem<T>, [], step);
 
 const toAsyncIterableFromIterable = async function* <T>(iterable: Iterable<T>): AsyncIterable<T> {
   for (const item of iterable) {
@@ -247,126 +230,43 @@ const toAsyncIterableMaybeStep = <T>(value: StepSource<T>): AsyncIterable<T> => 
 export const maybeToAsyncIterable = <T>(value: MaybeAsyncIterable<T>) =>
   maybeMap(toAsyncIterableMaybeStep, value);
 
-export function maybeMap<TIn, TOut>(
-  map: MaybeHandler<TIn, TOut>,
+export const maybeMap = <TIn, TOut>(
+  map: Mapper<TIn, TOut>,
   value: MaybePromise<TIn>,
-): MaybePromise<TOut>;
-export function maybeMap<TIn, TOut>(
-  map: MaybeHandler<TIn, TOut>,
-): (value: MaybePromise<TIn>) => MaybePromise<TOut>;
-export function maybeMap<TIn, TOut>(map: MaybeHandler<TIn, TOut>, value?: MaybePromise<TIn>) {
-  if (arguments.length === 1) {
-    return bindFirst(maybeMapWith, map);
-  }
-  return maybeMapWith(map, value as MaybePromise<TIn>);
-}
+): MaybePromise<TOut> => maybeMapWith(map, value);
 
-export function maybeChain<TIn, TOut>(
+export const maybeChain = <TIn, TOut>(
   next: MaybeHandler<TIn, TOut>,
   value: MaybePromise<TIn>,
-): MaybePromise<TOut>;
-export function maybeChain<TIn, TOut>(
-  next: MaybeHandler<TIn, TOut>,
-): (value: MaybePromise<TIn>) => MaybePromise<TOut>;
-export function maybeChain<TIn, TOut>(next: MaybeHandler<TIn, TOut>, value?: MaybePromise<TIn>) {
-  if (arguments.length === 1) {
-    return bindFirst(maybeChainWith, next);
-  }
-  return maybeChainWith(next, value as MaybePromise<TIn>);
-}
+): MaybePromise<TOut> => maybeChainWith(next, value);
 
-export function maybeAll<T>(values: Array<MaybePromise<T>>): MaybePromise<T[]>;
-export function maybeAll<T>(): (values: Array<MaybePromise<T>>) => MaybePromise<T[]>;
-export function maybeAll<T>(values?: Array<MaybePromise<T>>) {
-  if (arguments.length === 0) {
-    return maybeAllWith;
-  }
-  return maybeAllWith(values as Array<MaybePromise<T>>);
-}
+export const maybeAll = pipelineMaybeAll;
 
-export function maybeTap<TIn>(
+export const maybeReduce = <TState, TValue>(
+  reduce: MaybeReducer<TState, TValue>,
+  initial: TState,
+  values: readonly TValue[],
+): MaybePromise<TState> => {
+  return foldStep(reduce, initial, toStep(values));
+};
+
+export const maybeTap = <TIn>(
   tap: (value: TIn) => MaybePromise<unknown>,
   value: MaybePromise<TIn>,
-): MaybePromise<TIn>;
-export function maybeTap<TIn>(
-  tap: (value: TIn) => MaybePromise<unknown>,
-): (value: MaybePromise<TIn>) => MaybePromise<TIn>;
-export function maybeTap<TIn>(
-  tap: (value: TIn) => MaybePromise<unknown>,
-  value?: MaybePromise<TIn>,
-) {
-  if (arguments.length === 1) {
-    return bindFirst(maybeTapWith, tap);
-  }
-  return maybeTapWith(tap, value as MaybePromise<TIn>);
-}
+): MaybePromise<TIn> => maybeTapWith(tap, value);
 
-export function maybeTry<T>(onError: ErrorHandler<T>, run: MaybeThunk<T>): MaybePromise<T>;
-export function maybeTry<T>(onError: ErrorHandler<T>): (run: MaybeThunk<T>) => MaybePromise<T>;
-export function maybeTry<T>(onError: ErrorHandler<T>, run?: MaybeThunk<T>) {
-  if (arguments.length === 1) {
-    return bindFirst(maybeTryWith, onError);
-  }
-  return maybeTryWith(onError, run as MaybeThunk<T>);
-}
+export const maybeTry = <T>(onError: ErrorHandler<T>, run: MaybeThunk<T>): MaybePromise<T> =>
+  maybeTryWith(onError, run);
 
-export function tryWrap<Args extends unknown[], T>(
-  onError: ErrorHandler<T>,
-  fn: (...args: Args) => MaybePromise<T>,
-): (...args: Args) => MaybePromise<T>;
-export function tryWrap<Args extends unknown[], T>(
-  onError: ErrorHandler<T>,
-): (fn: (...args: Args) => MaybePromise<T>) => (...args: Args) => MaybePromise<T>;
-export function tryWrap<Args extends unknown[], T>(
-  onError: ErrorHandler<T>,
-  fn?: (...args: Args) => MaybePromise<T>,
-) {
-  if (arguments.length === 1) {
-    return bindFirst(
-      tryWrapFactory as (
-        onError: ErrorHandler<T>,
-        fn: (...args: Args) => MaybePromise<T>,
-      ) => (...args: Args) => MaybePromise<T>,
-      onError,
-    );
-  }
-  return tryWrapFactory(onError, fn as (...args: Args) => MaybePromise<T>);
-}
-
-export function maybeMapArray<TIn, TOut>(
+export const maybeMapArray = <TIn, TOut>(
   map: (value: TIn) => TOut,
   value: MaybePromise<TIn[]>,
-): MaybePromise<TOut[]>;
-export function maybeMapArray<TIn, TOut>(
-  map: (value: TIn) => TOut,
-): (value: MaybePromise<TIn[]>) => MaybePromise<TOut[]>;
-export function maybeMapArray<TIn, TOut>(map: (value: TIn) => TOut, value?: MaybePromise<TIn[]>) {
-  if (arguments.length === 1) {
-    return bindFirst(maybeMapArrayWith, map);
-  }
-  return maybeMapArrayWith(map, value as MaybePromise<TIn[]>);
-}
+): MaybePromise<TOut[]> => maybeMapArrayWith(map, value);
 
-export function maybeMapOr<TIn, TOut>(
+export const maybeMapOr = <TIn, TOut>(
   map: MaybeHandler<TIn, TOut>,
   fallback: () => MaybePromise<TOut>,
   value: MaybePromise<TIn | null | undefined>,
-): MaybePromise<TOut>;
-export function maybeMapOr<TIn, TOut>(
-  map: MaybeHandler<TIn, TOut>,
-  fallback: () => MaybePromise<TOut>,
-): (value: MaybePromise<TIn | null | undefined>) => MaybePromise<TOut>;
-export function maybeMapOr<TIn, TOut>(
-  map: MaybeHandler<TIn, TOut>,
-  fallback: () => MaybePromise<TOut>,
-  value?: MaybePromise<TIn | null | undefined>,
-) {
-  if (arguments.length === 2) {
-    return (nextValue: MaybePromise<TIn | null | undefined>) =>
-      maybeMapOrWith(map, fallback, nextValue);
-  }
-  return maybeMapOrWith(map, fallback, value as MaybePromise<TIn | null | undefined>);
-}
+): MaybePromise<TOut> => maybeMapOrWith(map, fallback, value);
 
-export { partialK, curryK, bindFirst } from "./fp";
-export type { MaybeBinary };
+export { bindFirst } from "./fp";

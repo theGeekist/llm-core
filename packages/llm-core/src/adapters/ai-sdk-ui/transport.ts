@@ -16,14 +16,13 @@ import { maybeChain, maybeMap, type MaybePromise } from "#shared/maybe";
 import { fromAiSdkMessage } from "../ai-sdk/messages";
 import {
   createAiSdkInteractionEventStream,
-  createAiSdkInteractionMapper,
-  type AiSdkInteractionMapper,
-  type AiSdkInteractionMapperOptions,
+  createAiSdkUiMessageChunkMapper,
+  type AiSdkUiMessageChunkMapper,
 } from "./interaction";
 
 export type AiSdkChatTransportOptions = {
   handle: Pick<InteractionHandle, "run">;
-  mapper?: AiSdkInteractionMapper | AiSdkInteractionMapperOptions;
+  createMapper?: () => AiSdkUiMessageChunkMapper;
   onError?: (error: unknown) => string;
   mapMessages?: (messages: UIMessage[]) => MaybePromise<Message[]>;
   interactionId?: (chatId: string) => string;
@@ -108,24 +107,7 @@ function executeInteractionStream(
 }
 
 function readMapper(options: AiSdkChatTransportOptions) {
-  const mapper = options.mapper;
-  if (mapper && isAiSdkInteractionMapper(mapper)) {
-    return mapper;
-  }
-  return createAiSdkInteractionMapper(mapper);
-}
-
-function isAiSdkInteractionMapper(
-  value: AiSdkInteractionMapper | AiSdkInteractionMapperOptions | undefined,
-): value is AiSdkInteractionMapper {
-  return (
-    !!value &&
-    typeof value === "object" &&
-    "mapEvent" in value &&
-    "reset" in value &&
-    typeof (value as AiSdkInteractionMapper).mapEvent === "function" &&
-    typeof (value as AiSdkInteractionMapper).reset === "function"
-  );
+  return options.createMapper?.() ?? createAiSdkUiMessageChunkMapper();
 }
 
 function readMapMessages(options: AiSdkChatTransportOptions, messages: UIMessage[]) {

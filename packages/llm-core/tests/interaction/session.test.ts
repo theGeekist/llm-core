@@ -1,5 +1,9 @@
 import { describe, expect, it } from "bun:test";
-import { createInteractionSession, type InteractionState } from "#interaction";
+import {
+  createInteractionSession,
+  type InteractionSessionPauseSnapshot,
+  type InteractionState,
+} from "#interaction";
 import {
   createMockModel,
   createMockMessage,
@@ -42,9 +46,10 @@ describe("interaction session", () => {
     const harness = createMockSessionStore();
     const model = createMockModel("Okay");
     const steps: string[] = [];
+    let mergedPrevious: InteractionState | null | undefined;
 
     function mergePolicy(previous: InteractionState | null, next: InteractionState) {
-      void previous;
+      mergedPrevious = previous;
       steps.push("merge");
       return next;
     }
@@ -73,6 +78,7 @@ describe("interaction session", () => {
     await session.send(createMockMessage("Hi"));
 
     expect(steps).toEqual(["merge", "summarize", "truncate"]);
+    expect(mergedPrevious).toBeNull();
   });
 
   it("uses stored state when available", async () => {
@@ -91,6 +97,57 @@ describe("interaction session", () => {
     const result = await session.send(createMockMessage("Next"));
     expect(assertRunResult(result).artefact.messages).toHaveLength(3);
     expect(session.getState().messages).toHaveLength(3);
+  });
+
+  it("keeps in-memory state at the last persisted value when save rejects", async () => {
+    const previous = createMockInteractionState([createMockMessage("Stored")]);
+    const session = createInteractionSession({
+      sessionId: "session-save-error",
+      store: {
+        load: () => previous,
+        save: () => Promise.reject(new Error("save failed")),
+      },
+      adapters: { model: createMockModel("Unsaved") },
+    });
+
+    await expect(session.send(createMockMessage("Next"))).rejects.toThrow("save failed");
+
+    expect(session.getState()).toBe(previous);
+    expect(session.getState().messages).toHaveLength(1);
+  });
+
+  it("keeps in-memory state unchanged when a synchronous save is not committed", () => {
+    const previous = createMockInteractionState([createMockMessage("Stored")]);
+    const session = createInteractionSession({
+      sessionId: "session-save-false",
+      store: {
+        load: () => previous,
+        save: () => false,
+      },
+      adapters: { model: createMockModel("Unsaved") },
+    });
+
+    expect(() => session.send(createMockMessage("Next"))).toThrow(
+      "SessionStore.save did not commit session state.",
+    );
+    expect(session.getState()).toBe(previous);
+  });
+
+  it("keeps in-memory state unchanged when an asynchronous save is not committed", async () => {
+    const previous = createMockInteractionState([createMockMessage("Stored")]);
+    const session = createInteractionSession({
+      sessionId: "session-save-null",
+      store: {
+        load: () => previous,
+        save: () => Promise.resolve(null),
+      },
+      adapters: { model: createMockModel("Unsaved") },
+    });
+
+    await expect(session.send(createMockMessage("Next"))).rejects.toThrow(
+      "SessionStore.save did not commit session state.",
+    );
+    expect(session.getState()).toBe(previous);
   });
 
   it("skips policy and save when paused", async () => {
@@ -124,6 +181,112 @@ describe("interaction session", () => {
     expect(isPausedResult(outcome)).toBe(true);
     expect(steps).toHaveLength(0);
     expect(harness.calls.save).toBe(1);
+    expect(session.getState().private?.pause).toBeUndefined();
+  });
+
+  it("resumes a live snapshot through policy and persistence", async () => {
+    const harness = createMockSessionStore();
+    const sessionId = "session-resume";
+    const steps: string[] = [];
+    harness.store.save(sessionId, {
+      messages: [],
+      diagnostics: [],
+      trace: [],
+      private: { pause: { token: "pause-resume", pauseKind: "human" } },
+    });
+    const session = createInteractionSession({
+      sessionId,
+      store: harness.store,
+      adapters: { model: createMockModel("Resumed") },
+      policy: {
+        merge: (_previous, next) => {
+          steps.push("merge");
+          return next;
+        },
+        summarize: (state) => {
+          steps.push("summarize");
+          return state;
+        },
+        truncate: (state) => {
+          steps.push("truncate");
+          return state;
+        },
+      },
+    });
+    const paused = await session.send(createMockMessage("Pause"));
+    if (!isPausedResult(paused)) {
+      throw new Error("Expected paused session.");
+    }
+
+    const resumed = await session.resume(paused.snapshot, { decision: "approve" });
+
+    expect(isPausedResult(resumed)).toBe(false);
+    expect(steps).toEqual(["merge", "summarize", "truncate"]);
+    expect(harness.calls.save).toBe(2);
+    expect(harness.calls.load).toBe(2);
+    expect(session.getState().messages).toHaveLength(2);
+  });
+
+  it("requires snapshots to identify the owning session", () => {
+    const harness = createMockSessionStore();
+    const session = createInteractionSession({
+      sessionId: "session-owner",
+      store: harness.store,
+    });
+    const snapshot = {
+      stageIndex: 0,
+      state: {},
+      createdAt: 1,
+    } as InteractionSessionPauseSnapshot;
+
+    expect(() => session.resume(snapshot)).toThrow("does not identify its owning session");
+  });
+
+  it("rejects snapshots issued for another session", () => {
+    const harness = createMockSessionStore();
+    const session = createInteractionSession({
+      sessionId: "session-owner",
+      store: harness.store,
+    });
+    const snapshot: InteractionSessionPauseSnapshot = {
+      stageIndex: 0,
+      state: {},
+      createdAt: 1,
+      interactionSession: { sessionId: "session-other" },
+    };
+
+    expect(() => session.resume(snapshot)).toThrow("belongs to a different session");
+  });
+
+  it("preserves the live paused state when resume processing fails", () => {
+    const harness = createMockSessionStore();
+    const sessionId = "session-resume-failure";
+    harness.store.save(sessionId, {
+      messages: [createMockMessage("Stored")],
+      diagnostics: [],
+      trace: [],
+      private: { pause: { token: "pause-failure", pauseKind: "human" } },
+    });
+    const session = createInteractionSession({
+      sessionId,
+      store: harness.store,
+      adapters: { model: createMockModel("Paused") },
+      policy: {
+        merge: () => {
+          throw new Error("merge failed");
+        },
+      },
+    });
+    const paused = session.send(createMockMessage("Pause"));
+    if (isPromiseLike(paused) || !isPausedResult(paused)) {
+      throw new Error("Expected synchronous paused session.");
+    }
+    const pausedState = session.getState();
+
+    expect(() => session.resume(paused.snapshot)).toThrow("merge failed");
+
+    expect(session.getState()).toBe(pausedState);
+    expect(session.getState().messages).toHaveLength(3);
     expect(session.getState().private?.pause).toBeUndefined();
   });
 });

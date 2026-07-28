@@ -1,7 +1,9 @@
-import { bindFirst, isString } from "@geekist/llm-core";
+import { bindFirst } from "@geekist/llm-core/functional";
 import type { ProviderId } from "@geekist/llm-core/adapters";
 import type { Dispatch, SetStateAction } from "react";
 import { useEffect, useState } from "react";
+
+const isString = (value: unknown): value is string => typeof value === "string";
 
 export type ModelOption = {
   id: string;

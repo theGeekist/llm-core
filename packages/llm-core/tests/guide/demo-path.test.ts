@@ -6,13 +6,8 @@ import {
   createBuiltinRetriever,
   type EventStreamEvent,
 } from "#adapters";
-import {
-  createInteractionPipelineWithDefaults,
-  createInteractionSession,
-  runInteractionPipeline,
-} from "#interaction";
+import { createInteractionHandle, createInteractionSession } from "#interaction";
 import { recipes } from "#recipes";
-import { isPausedOutcome, readOutcomeState } from "../../src/interaction/handle";
 import { createMockSessionStore } from "../fixtures/factories";
 
 type MaybePromise<T> = T | Promise<T>;
@@ -27,17 +22,12 @@ const resolveMaybe = async <T>(value: MaybePromise<T>): Promise<T> => {
 describe("demo path", () => {
   it("runs the single-turn interaction demo", async () => {
     const model = createBuiltinModel();
-    const pipeline = createInteractionPipelineWithDefaults();
-    const outcome = await resolveMaybe(
-      runInteractionPipeline(pipeline, {
-        input: { message: { role: "user", content: "Hello!" } },
-        adapters: { model },
-      }),
+    const interaction = createInteractionHandle({ adapters: { model } });
+    const result = await resolveMaybe(
+      interaction.run({ message: { role: "user", content: "Hello!" } }),
     );
 
-    expect(isPausedOutcome(outcome)).toBe(false);
-    const state = readOutcomeState(outcome);
-    expect(state.messages.length).toBeGreaterThanOrEqual(2);
+    expect(result.state.messages.length).toBeGreaterThanOrEqual(2);
   });
 
   it("runs the sessions + transport demo", async () => {
@@ -56,11 +46,9 @@ describe("demo path", () => {
       eventStream,
     });
 
-    const outcome = await resolveMaybe(
-      session.send({ role: "user", content: "Hello from sessions" }),
-    );
+    await resolveMaybe(session.send({ role: "user", content: "Hello from sessions" }));
 
-    const state = readOutcomeState(outcome);
+    const state = session.getState();
     expect(state.messages.length).toBeGreaterThanOrEqual(2);
     expect(events.length).toBeGreaterThan(0);
   });
@@ -80,9 +68,9 @@ describe("demo path", () => {
       eventStream,
     });
 
-    const outcome = await resolveMaybe(session.send({ role: "user", content: "Show UI output" }));
+    await resolveMaybe(session.send({ role: "user", content: "Show UI output" }));
 
-    const state = readOutcomeState(outcome);
+    const state = session.getState();
     expect(state.messages.length).toBeGreaterThanOrEqual(2);
     expect(commands.length).toBeGreaterThan(0);
   });

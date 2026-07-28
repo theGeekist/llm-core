@@ -192,6 +192,28 @@ describe("Adapter trace", () => {
     expect(events.map((event) => event.name)).toEqual(["run.start", "run.end"]);
   });
 
+  it("waits for a deferred trace event before starting the next", async () => {
+    let resolveFirst: () => void = () => undefined;
+    const seen: string[] = [];
+    const first = new Promise<void>((resolve) => {
+      resolveFirst = resolve;
+    });
+    const handler = BaseCallbackHandler.fromMethods({
+      handleCustomEvent(_name, _data, runId) {
+        seen.push(runId);
+        return runId === "run-1" ? first : undefined;
+      },
+    });
+    const sink = fromLangChainCallbackHandler(handler);
+
+    const result = sink.emitMany?.([makeEvent({ id: "run-1" }), makeEvent({ id: "run-2" })]);
+
+    expect(seen).toEqual(["run-1"]);
+    resolveFirst();
+    await result;
+    expect(seen).toEqual(["run-1", "run-2"]);
+  });
+
   it("maps workflow lifecycle events into LangChain callbacks", async () => {
     const traceEvents: TraceCapture[] = [];
     const chainStarts: ChainStartCapture[] = [];

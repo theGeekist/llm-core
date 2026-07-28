@@ -1,6 +1,6 @@
 // #region docs
 import { recipes } from "#recipes";
-import type { AgentInput } from "#workflow";
+import type { AgentInput } from "#recipes";
 import { fromAiSdkModel, fromAiSdkTool } from "#adapters";
 import { openai } from "@ai-sdk/openai";
 import { tool } from "ai";

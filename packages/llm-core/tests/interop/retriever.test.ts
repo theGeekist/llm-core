@@ -9,7 +9,7 @@ import {
   type NodeWithScore,
 } from "@llamaindex/core/schema";
 import * as AiSdk from "ai";
-import type { Retriever } from "#workflow";
+import type { Retriever } from "#adapters/types";
 import { maybeMap } from "#shared/maybe";
 
 const toRetrieverFromLangChain = (retriever: BaseRetrieverInterface): Retriever => ({

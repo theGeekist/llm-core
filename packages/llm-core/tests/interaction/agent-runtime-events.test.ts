@@ -6,6 +6,7 @@ import {
   emitAgentLoopEvents,
   validateAgentSelection,
 } from "../../src/interaction/agent-runtime-events";
+import { resolveAgentExecutionProfile } from "../../src/interaction/agent-profile";
 import type {
   AgentLoopConfig,
   AgentLoopStateSnapshot,
@@ -68,7 +69,7 @@ describe("agent runtime events", () => {
     expect(invalid.nextSequence()).toBe(1);
   });
 
-  it("appends snapshots with normalized allowlists and cache keys", () => {
+  it("appends snapshots with normalized allowlists", () => {
     const outcome = createOutcomeOk({});
     const config: AgentLoopConfig = {
       agents: [{ id: "agent-1", name: "Agent", description: "a", prompt: "p" }],
@@ -79,7 +80,6 @@ describe("agent runtime events", () => {
     appendAgentLoopSnapshot({
       config,
       skills: [{ id: "skill-1", scope: "repo", path: "/repo/skill-1", hash: "h1" }],
-      approvalCacheKeys: ["approval-1"],
       outcome,
     });
 
@@ -113,6 +113,77 @@ describe("agent runtime events", () => {
 
     validateAgentSelection({ config, outcome });
     expect(outcome.diagnostics.length).toBe(1);
+  });
+
+  it("does not snapshot or emit an invalid explicit agent selection", () => {
+    const stream = createStream();
+    const outcome = createOutcomeOk({ agent: { response: "done" } satisfies AgentState });
+    const config: AgentLoopConfig = {
+      agents: [{ id: "available", name: "Available", prompt: "available" }],
+      agentSelection: { agentId: "missing" },
+    };
+    const profile = resolveAgentExecutionProfile(config);
+
+    appendAgentLoopSnapshot({ config, profile, outcome });
+    emitAgentLoopEvents({
+      outcome,
+      config,
+      profile,
+      eventStream: { emit: stream.emit },
+      eventState: createAgentEventState({
+        interactionId: "interaction",
+        correlationId: "corr",
+      }),
+    });
+
+    expect(outcome.trace).toEqual([]);
+    expect(readEvents(stream).map((event) => event.kind)).toEqual(["item"]);
+  });
+
+  it("uses the same sole-agent profile for snapshots and selection events", () => {
+    const stream = createStream();
+    const outcome = createOutcomeError();
+    const config: AgentLoopConfig = {
+      agents: [{ id: "agent-1", name: "Agent", prompt: "p" }],
+    };
+    const profile = resolveAgentExecutionProfile(config);
+
+    appendAgentLoopSnapshot({ config, profile, outcome });
+    emitAgentLoopEvents({
+      outcome,
+      config,
+      profile,
+      eventStream: { emit: stream.emit },
+      eventState: createAgentEventState({
+        interactionId: "interaction",
+        correlationId: "corr",
+      }),
+    });
+
+    const snapshot = (outcome.trace[0]?.data as { snapshot?: AgentLoopStateSnapshot })?.snapshot;
+    const selected = readEvents(stream)[0];
+    const selectedAgentId = selected?.kind === "subagent" ? selected.event.agent.id : null;
+    expect(snapshot?.selectedAgentId).toBe("agent-1");
+    expect(selected?.kind).toBe("subagent");
+    expect(selectedAgentId).toBe(snapshot?.selectedAgentId ?? null);
+  });
+
+  it("flags ambiguous multi-agent selections", () => {
+    const outcome = createOutcomeOk({});
+    const config: AgentLoopConfig = {
+      agents: [
+        { id: "two", name: "Two", prompt: "two" },
+        { id: "one", name: "One", prompt: "one" },
+      ],
+    };
+
+    validateAgentSelection({ config, outcome });
+
+    expect(outcome.diagnostics[0]?.message).toBe("Agent selection is ambiguous.");
+    expect((outcome.diagnostics[0]?.data as { agentIds?: string[] })?.agentIds).toEqual([
+      "one",
+      "two",
+    ]);
   });
 
   it("emits selected agent and item events", () => {

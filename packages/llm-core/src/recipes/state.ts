@@ -8,11 +8,12 @@ import type {
   ArtefactOf,
   Outcome,
   RecipeName,
-  RunInputOf,
   ResumeInputOf,
-  Runtime,
+  RunInputOf,
   WorkflowRuntime,
 } from "#workflow/types";
+import type { RuntimeResumeMethod, RuntimeRunMethod } from "#workflow/runtime-wrapper";
+import { wrapRuntime } from "#workflow/runtime-wrapper";
 
 export type StateValidationResult = {
   valid: boolean;
@@ -56,63 +57,17 @@ const applyStateValidationToOutcome = <T>(
   return { ...outcome, diagnostics, trace };
 };
 
-type RuntimeValidationInput<N extends RecipeName> = {
-  runtime: WorkflowRuntime<RunInputOf<N>, ArtefactOf<N>, ResumeInputOf<N>>;
-  validator: StateValidator;
-};
-
-type RuntimeWithResume<N extends RecipeName> = WorkflowRuntime<
-  RunInputOf<N>,
-  ArtefactOf<N>,
-  ResumeInputOf<N>
-> & {
-  resume: NonNullable<WorkflowRuntime<RunInputOf<N>, ArtefactOf<N>, ResumeInputOf<N>>["resume"]>;
-};
-
-type RuntimeValidationWithResumeInput<N extends RecipeName> = {
-  runtime: RuntimeWithResume<N>;
-  validator: StateValidator;
-};
-
 const runWithStateValidation = <N extends RecipeName>(
-  input: RuntimeValidationInput<N>,
-  runInput: RunInputOf<N>,
-  runtime?: Runtime,
-) =>
-  maybeMap(
-    bindFirst(applyStateValidationToOutcome, input.validator),
-    input.runtime.run(runInput, runtime),
-  );
-
-type ResumeStateValidationPayload<N extends RecipeName> = {
-  token: unknown;
-  resumeInput?: ResumeInputOf<N>;
-  runtime?: Runtime;
-};
+  validator: StateValidator,
+  next: RuntimeRunMethod<N>,
+  ...args: Parameters<RuntimeRunMethod<N>>
+) => maybeMap(bindFirst(applyStateValidationToOutcome, validator), next(...args));
 
 const resumeWithStateValidation = <N extends RecipeName>(
-  input: RuntimeValidationWithResumeInput<N>,
-  payload: ResumeStateValidationPayload<N>,
-) =>
-  maybeMap(
-    bindFirst(applyStateValidationToOutcome, input.validator),
-    input.runtime.resume(payload.token, payload.resumeInput, payload.runtime),
-  );
-
-const resumeWithStateValidationArgs = <N extends RecipeName>(
-  input: RuntimeValidationWithResumeInput<N>,
-  ...args: [token: unknown, resumeInput?: ResumeInputOf<N>, runtime?: Runtime]
-) =>
-  resumeWithStateValidation(input, {
-    token: args[0],
-    resumeInput: args[1],
-    runtime: args[2],
-  });
-
-const createRuntimeValidationInput = <N extends RecipeName>(
-  runtime: WorkflowRuntime<RunInputOf<N>, ArtefactOf<N>, ResumeInputOf<N>>,
   validator: StateValidator,
-) => ({ runtime, validator });
+  next: RuntimeResumeMethod<N>,
+  ...args: Parameters<RuntimeResumeMethod<N>>
+) => maybeMap(bindFirst(applyStateValidationToOutcome, validator), next(...args));
 
 export const wrapRuntimeWithStateValidation = <N extends RecipeName>(
   runtime: WorkflowRuntime<RunInputOf<N>, ArtefactOf<N>, ResumeInputOf<N>>,
@@ -121,16 +76,8 @@ export const wrapRuntimeWithStateValidation = <N extends RecipeName>(
   if (!validator) {
     return runtime;
   }
-  const input = createRuntimeValidationInput<N>(runtime, validator);
-  const resumeInput = runtime.resume
-    ? ({
-        runtime: runtime as RuntimeWithResume<N>,
-        validator,
-      } satisfies RuntimeValidationWithResumeInput<N>)
-    : undefined;
-  return {
-    ...runtime,
-    run: bindFirst(runWithStateValidation<N>, input),
-    resume: resumeInput ? bindFirst(resumeWithStateValidationArgs<N>, resumeInput) : undefined,
-  };
+  return wrapRuntime(runtime, {
+    run: bindFirst(runWithStateValidation<N>, validator),
+    resume: bindFirst(resumeWithStateValidation<N>, validator),
+  });
 };

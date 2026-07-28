@@ -1,5 +1,5 @@
 import { describe, expect, it } from "bun:test";
-import type { Tool } from "../../src/adapters/types";
+import type { EventStreamEvent, Tool } from "../../src/adapters/types";
 import {
   createSubagentTools,
   buildSubagentRuntimeOptions,
@@ -11,6 +11,9 @@ import type {
 } from "../../src/interaction/agent-runtime";
 import { createTraceDiagnostics } from "../../src/shared/reporting";
 import type { Outcome } from "../../src/workflow/types";
+import { createAgentEventState } from "../../src/interaction/agent-runtime-events";
+import type { InteractionEvent } from "../../src/interaction/types";
+import { isPromiseLike } from "../../src/shared/maybe";
 
 type Deferred<T> = {
   promise: Promise<T>;
@@ -33,21 +36,18 @@ const createOkOutcome = (): Outcome<unknown> => ({
 
 const createRuntime = (): AgentRuntime => ({
   run: (_input: AgentRuntimeInput) => createOkOutcome(),
-  stream: (_input: AgentRuntimeInput) => createOkOutcome(),
 });
 
 const createRuntimeFactory = () => createRuntime();
 
 const createDeferredRuntimeFactory = (deferred: Deferred<Outcome<unknown>>) => () => ({
   run: (_input: AgentRuntimeInput) => deferred.promise,
-  stream: (_input: AgentRuntimeInput) => createOkOutcome(),
 });
 
 const createThrowingRuntimeFactory = () => ({
   run: (_input: AgentRuntimeInput) => {
     throw new Error("boom");
   },
-  stream: (_input: AgentRuntimeInput) => createOkOutcome(),
 });
 
 const createRuntimeOptions = (): AgentRuntimeOptions => ({
@@ -81,6 +81,14 @@ const readErrorCode = (result: unknown): string | null => {
   return (result as { error?: string }).error ?? null;
 };
 
+const readInteractionEvent = (event: EventStreamEvent): InteractionEvent | null => {
+  const value = event.data?.event;
+  if (!value || typeof value !== "object") {
+    return null;
+  }
+  return value as InteractionEvent;
+};
+
 describe("subagent tools", () => {
   it("disables tools when subagents are disabled", () => {
     const tools = createSubagentTools({
@@ -91,6 +99,38 @@ describe("subagent tools", () => {
     });
 
     expect(tools).toBeNull();
+  });
+
+  it("exposes the four control tools in stable order", () => {
+    const tools = createSubagentTools({
+      factory: createRuntimeFactory,
+      runtimeOptions: createRuntimeOptions(),
+      interactionId: "root",
+    });
+
+    expect(tools?.map((tool) => tool.name)).toEqual([
+      "agent.spawn",
+      "agent.send",
+      "agent.wait",
+      "agent.close",
+    ]);
+  });
+
+  it("preserves synchronous tool results for synchronous runtimes", () => {
+    const tools = createSubagentTools({
+      factory: createRuntimeFactory,
+      runtimeOptions: createRuntimeOptions(),
+      interactionId: "root",
+    });
+    const spawn = requireToolExecute(readTool(tools, "agent.spawn"));
+    const send = requireToolExecute(readTool(tools, "agent.send"));
+    const wait = requireToolExecute(readTool(tools, "agent.wait"));
+    const close = requireToolExecute(readTool(tools, "agent.close"));
+
+    expect(isPromiseLike(spawn({ agentId: "agent-1" }))).toBe(false);
+    expect(isPromiseLike(send({ agentId: "agent-1", text: "hi" }))).toBe(false);
+    expect(isPromiseLike(wait({ agentId: "agent-1" }))).toBe(false);
+    expect(isPromiseLike(close({ agentId: "agent-1" }))).toBe(false);
   });
 
   it("spawns, waits, and closes subagents", async () => {
@@ -194,6 +234,27 @@ describe("subagent tools", () => {
     await firstRun;
   });
 
+  it("keeps a closed subagent closed when an in-flight run settles", async () => {
+    const deferred = createDeferred<Outcome<unknown>>();
+    const tools = createSubagentTools({
+      factory: createDeferredRuntimeFactory(deferred),
+      runtimeOptions: createRuntimeOptions(),
+      interactionId: "root",
+    });
+    const spawnExecute = requireToolExecute(readTool(tools, "agent.spawn"));
+    const sendExecute = requireToolExecute(readTool(tools, "agent.send"));
+    const closeExecute = requireToolExecute(readTool(tools, "agent.close"));
+
+    await spawnExecute({ agentId: "agent-1" });
+    const inFlight = sendExecute({ agentId: "agent-1", text: "hi" });
+    await closeExecute({ agentId: "agent-1" });
+    deferred.resolve(createOkOutcome());
+    await inFlight;
+
+    const respawned = await spawnExecute({ agentId: "agent-1" });
+    expect((respawned as { status?: string }).status).toBe("started");
+  });
+
   it("returns the last outcome when waiting after a send", async () => {
     const tools = createSubagentTools({
       factory: createRuntimeFactory,
@@ -215,10 +276,21 @@ describe("subagent tools", () => {
   });
 
   it("returns error outcomes when subagent runs throw", async () => {
+    const events: EventStreamEvent[] = [];
     const tools = createSubagentTools({
       factory: createThrowingRuntimeFactory,
       runtimeOptions: createRuntimeOptions(),
       interactionId: "root",
+      eventStream: {
+        emit: (event) => {
+          events.push(event);
+          return true;
+        },
+      },
+      eventState: createAgentEventState({
+        interactionId: "root",
+        correlationId: "correlation-1",
+      }),
     });
     const spawn = readTool(tools, "agent.spawn");
     const send = readTool(tools, "agent.send");
@@ -229,6 +301,125 @@ describe("subagent tools", () => {
     const result = await sendExecute({ agentId: "agent-1", text: "hi" });
 
     expect((result as { outcome?: Outcome<unknown> }).outcome?.status).toBe("error");
+    expect(events.map(readInteractionEvent).map((event) => event?.kind)).toEqual([
+      "subagent",
+      "subagent",
+    ]);
+    expect(
+      events
+        .map(readInteractionEvent)
+        .map((event) => (event?.kind === "subagent" ? event.event.type : null)),
+    ).toEqual(["started", "failed"]);
+  });
+
+  it("preserves lifecycle event order and subagent metadata", async () => {
+    const events: EventStreamEvent[] = [];
+    const tools = createSubagentTools({
+      factory: createRuntimeFactory,
+      runtimeOptions: createRuntimeOptions(),
+      interactionId: "root",
+      eventStream: {
+        emit: (event) => {
+          events.push(event);
+          return true;
+        },
+      },
+      eventState: createAgentEventState({
+        interactionId: "root",
+        correlationId: "correlation-1",
+      }),
+    });
+    const spawn = requireToolExecute(readTool(tools, "agent.spawn"));
+    const send = requireToolExecute(readTool(tools, "agent.send"));
+    const close = requireToolExecute(readTool(tools, "agent.close"));
+
+    await spawn({
+      agentId: "agent-1",
+      name: "Researcher",
+      description: "Searches repositories",
+      tools: ["tools.search"],
+    });
+    await send({ agentId: "agent-1", text: "hi" });
+    await close({ agentId: "agent-1" });
+
+    const interactionEvents = events.map(readInteractionEvent);
+    expect(
+      interactionEvents.map((event) => (event?.kind === "subagent" ? event.event.type : null)),
+    ).toEqual(["started", "completed", "completed"]);
+    expect(interactionEvents.map((event) => event?.meta.sequence)).toEqual([1, 2, 3]);
+    const started = interactionEvents[0];
+    if (started?.kind !== "subagent") {
+      throw new Error("Expected a subagent event.");
+    }
+    expect(started.event.agent).toEqual({
+      id: "agent-1",
+      name: "Researcher",
+      displayName: "Researcher",
+      description: "Searches repositories",
+      tools: ["tools.search"],
+    });
+    expect(started.meta.sourceId).toBe("agent.agent-1");
+    expect(started.meta.correlationId).toBe("correlation-1");
+  });
+
+  it("awaits asynchronous lifecycle emissions", async () => {
+    const emitted = createDeferred<boolean>();
+    const tools = createSubagentTools({
+      factory: createRuntimeFactory,
+      runtimeOptions: createRuntimeOptions(),
+      interactionId: "root",
+      eventStream: { emit: () => emitted.promise },
+      eventState: createAgentEventState({
+        interactionId: "root",
+        correlationId: "correlation-1",
+      }),
+    });
+    const spawn = requireToolExecute(readTool(tools, "agent.spawn"));
+
+    const result = spawn({ agentId: "agent-1" });
+    expect(isPromiseLike(result)).toBe(true);
+    emitted.resolve(true);
+    expect((await result) as { agentId?: string; status?: string }).toEqual({
+      agentId: "agent-1",
+      status: "started",
+    });
+  });
+
+  it("builds isolated run context from canonical inputs", async () => {
+    let captured: AgentRuntimeInput | null = null;
+    const factory = () => ({
+      run: (input: AgentRuntimeInput) => {
+        captured = input;
+        return createOkOutcome();
+      },
+    });
+    const tools = createSubagentTools({
+      factory,
+      runtimeOptions: createRuntimeOptions(),
+      interactionId: "root",
+      eventState: createAgentEventState({
+        interactionId: "root",
+        correlationId: "correlation-1",
+      }),
+    });
+    const spawn = requireToolExecute(readTool(tools, "agent.spawn"));
+    const send = requireToolExecute(readTool(tools, "agent.send"));
+
+    await spawn({ agentId: "agent-1" });
+    await send({
+      agentId: "agent-1",
+      text: "hello",
+      context: "repository",
+      threadId: "thread-1",
+    });
+
+    expect(captured).toMatchObject({
+      text: "hello",
+      context: "repository",
+      threadId: "thread-1",
+      interactionId: "root.subagent.agent-1",
+      correlationId: "correlation-1",
+    });
   });
 
   it("returns invalid input errors for malformed requests", async () => {
@@ -276,5 +467,31 @@ describe("subagent tools", () => {
     });
 
     expect(runtimeOptions.subagents?.enabled).toBe(false);
+  });
+
+  it("restricts spawned runtimes to the requested tools", async () => {
+    const captured: AgentRuntimeOptions[] = [];
+    const factory = (options: AgentRuntimeOptions) => {
+      captured.push(options);
+      return createRuntime();
+    };
+    const tools = createSubagentTools({
+      factory,
+      runtimeOptions: {
+        ...createRuntimeOptions(),
+        adapters: {
+          tools: [
+            { name: "tools.search", execute: () => "search" },
+            { name: "tools.write", execute: () => "write" },
+          ],
+        },
+      },
+      interactionId: "root",
+    });
+    const spawn = requireToolExecute(readTool(tools, "agent.spawn"));
+
+    await spawn({ agentId: "agent-1", tools: ["tools.search"] });
+
+    expect(captured[0]?.adapters?.tools?.map((tool) => tool.name)).toEqual(["tools.search"]);
   });
 });

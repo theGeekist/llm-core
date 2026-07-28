@@ -169,6 +169,35 @@ describe("Cache adapters", () => {
     expect(await cache.get("ai-default-ttl")).toBeNull();
   });
 
+  it("prefers explicit and configured AI SDK TTLs over the store default", async () => {
+    const entries = new Map<string, AiSdkCacheEntry>();
+    const store = asAiSdkCacheStore<AiSdkCacheEntry>({
+      get: (key: string) => entries.get(key),
+      set: (key: string, entry: AiSdkCacheEntry) => {
+        entries.set(key, entry);
+      },
+      delete: (key: string) => entries.delete(key),
+      clear: () => entries.clear(),
+      has: (key: string) => entries.has(key),
+      size: () => entries.size,
+      keys: () => Array.from(entries.keys()),
+      getDefaultTTL: () => 10,
+    });
+    const cache = fromAiSdkCacheStore(store, { defaultTtlMs: 20 });
+
+    await cache.set("configured", blob);
+    await cache.set("explicit", blob, 30);
+
+    const configured = entries.get("configured");
+    const explicit = entries.get("explicit");
+    const configuredTtl = (configured?.result.expiresAt ?? 0) - (configured?.timestamp ?? 0);
+    const explicitTtl = (explicit?.result.expiresAt ?? 0) - (explicit?.timestamp ?? 0);
+    expect(configuredTtl).toBeGreaterThanOrEqual(20);
+    expect(configuredTtl).toBeLessThan(25);
+    expect(explicitTtl).toBeGreaterThanOrEqual(30);
+    expect(explicitTtl).toBeLessThan(35);
+  });
+
   it("warns when AI SDK cache keys are missing", async () => {
     const store = asAiSdkCacheStore<AiSdkCacheEntry>({
       get: () => undefined,
@@ -383,5 +412,60 @@ describe("Cache adapters", () => {
     cache.set("sync-key", blob);
     const value = assertSyncValue(cache.get("sync-key"));
     expect(value).toEqual(blob);
+  });
+
+  it("preserves KV metadata, hides expiry metadata, and forwards context", async () => {
+    const entries = new Map<string, Blob>();
+    const calls: Array<{ operation: string; context: unknown }> = [];
+    const store = {
+      list: () => Array.from(entries.keys()),
+      mget: (keys: string[], context?: unknown) => {
+        calls.push({ operation: "get", context });
+        return keys.map((key) => entries.get(key) ?? null);
+      },
+      mset: (pairs: Array<[string, Blob]>, context?: unknown) => {
+        calls.push({ operation: "set", context });
+        pairs.forEach(([key, value]) => entries.set(key, value));
+        return null;
+      },
+      mdelete: (keys: string[], context?: unknown) => {
+        calls.push({ operation: "delete", context });
+        keys.forEach((key) => entries.delete(key));
+        return false;
+      },
+    };
+    const cache = createCacheFromKVStore(store);
+    const context = captureDiagnostics().context;
+    const value = { ...blob, metadata: { source: "test" } };
+
+    expect(await cache.set("metadata", value, 5, context)).toBeNull();
+    expect(entries.get("metadata")?.metadata).toMatchObject({
+      source: "test",
+      __cacheExpiresAt: expect.any(Number),
+    });
+    expect(await cache.get("metadata", context)).toEqual(value);
+
+    entries.set("metadata", {
+      ...value,
+      metadata: { ...value.metadata, __cacheExpiresAt: Date.now() - 1 },
+    });
+    expect(await cache.get("metadata", context)).toBeNull();
+    expect(calls.map((call) => call.operation)).toEqual(["set", "get", "get", "delete"]);
+    expect(calls.every((call) => call.context === context)).toBe(true);
+  });
+
+  it("preserves cache-specific delete result semantics", async () => {
+    expect(await createMemoryCache().delete("missing")).toBe(true);
+
+    const aiStore = asAiSdkCacheStore<AiSdkCacheEntry>({
+      get: () => undefined,
+      set: () => undefined,
+      delete: () => false,
+      clear: () => undefined,
+      has: () => false,
+      size: () => 0,
+      keys: () => [],
+    });
+    expect(await fromAiSdkCacheStore(aiStore).delete("missing")).toBe(false);
   });
 });

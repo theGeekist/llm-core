@@ -8,33 +8,14 @@ import type {
 } from "#adapters/types";
 import type { MaybePromise } from "#shared/maybe";
 import { bindFirst } from "#shared/fp";
-import { maybeTry } from "#shared/maybe";
+import { isPromiseLike, maybeTry } from "#shared/maybe";
 import { addTrace } from "#shared/reporting";
 import type { TraceEvent } from "#shared/reporting";
 import { isRecord } from "#shared/guards";
 
 export type { RetryConfig } from "#adapters/types";
 
-export type RetryAdapterKind =
-  | "model"
-  | "embedder"
-  | "retriever"
-  | "reranker"
-  | "textSplitter"
-  | "loader"
-  | "transformer"
-  | "vectorStore"
-  | "cache"
-  | "kv"
-  | "memory"
-  | "storage"
-  | "outputParser"
-  | "queryEngine"
-  | "responseSynthesizer"
-  | "image"
-  | "speech"
-  | "transcription"
-  | "tools";
+export type RetryAdapterKind = keyof RetryConfig;
 
 export type RetryPausePayload = {
   adapterKind: RetryAdapterKind;
@@ -85,7 +66,88 @@ const noopReport = (_diagnostic: AdapterDiagnostic) => {
   void _diagnostic;
 };
 
-const toRetryReason = (): RetryReason => "unknown";
+type ErrorRecord = {
+  cause?: unknown;
+  code?: unknown;
+  message?: unknown;
+  name?: unknown;
+  status?: unknown;
+  statusCode?: unknown;
+};
+
+const TIMEOUT_CODES = new Set(["ETIMEDOUT", "ESOCKETTIMEDOUT", "UND_ERR_CONNECT_TIMEOUT"]);
+const NETWORK_CODES = new Set([
+  "ECONNABORTED",
+  "ECONNREFUSED",
+  "ECONNRESET",
+  "EHOSTUNREACH",
+  "ENETUNREACH",
+  "ENOTFOUND",
+  "EAI_AGAIN",
+]);
+
+const readErrorRecord = (error: unknown): ErrorRecord | null =>
+  isRecord(error) ? (error as ErrorRecord) : null;
+
+const readErrorText = (record: ErrorRecord) =>
+  [record.name, record.code, record.message]
+    .filter((value): value is string => typeof value === "string")
+    .join(" ")
+    .toLowerCase();
+
+const readErrorStatus = (record: ErrorRecord) => {
+  const status = record.status ?? record.statusCode;
+  return typeof status === "number" ? status : null;
+};
+
+const classifyRetryReason = (error: unknown, seen = new Set<unknown>()): RetryReason => {
+  if (seen.has(error)) {
+    return "unknown";
+  }
+  seen.add(error);
+  const record = readErrorRecord(error);
+  if (!record) {
+    return "unknown";
+  }
+  const status = readErrorStatus(record);
+  if (status === 429) {
+    return "rate_limit";
+  }
+  if (status !== null && status >= 500 && status < 600) {
+    return "5xx";
+  }
+  const code = typeof record.code === "string" ? record.code.toUpperCase() : "";
+  const text = readErrorText(record);
+  if (
+    TIMEOUT_CODES.has(code) ||
+    text.includes("timeout") ||
+    text.includes("timed out") ||
+    text.includes("deadline exceeded")
+  ) {
+    return "timeout";
+  }
+  if (
+    NETWORK_CODES.has(code) ||
+    text.includes("network") ||
+    text.includes("socket") ||
+    text.includes("fetch failed")
+  ) {
+    return "network";
+  }
+  if (text.includes("rate limit") || text.includes("too many requests")) {
+    return "rate_limit";
+  }
+  return record.cause === undefined ? "unknown" : classifyRetryReason(record.cause, seen);
+};
+
+class RetryTimeoutError extends Error {
+  readonly code = "ETIMEDOUT";
+
+  constructor(timeoutMs: number) {
+    super(`Adapter call timed out after ${timeoutMs}ms.`);
+    this.name = "RetryTimeoutError";
+  }
+}
 
 const createRetryPauseSignal = (payload: RetryPausePayload): RetryPauseSignal => ({
   kind: "retry.pause",
@@ -112,6 +174,8 @@ export const normalizePolicy = (
     ...policy,
     maxAttempts: Math.max(1, policy.maxAttempts),
     backoffMs: Math.max(0, policy.backoffMs),
+    timeoutMs:
+      typeof policy.timeoutMs === "number" ? Math.max(0, policy.timeoutMs) : policy.timeoutMs,
     jitter: policy.jitter ?? "none",
   };
 };
@@ -136,55 +200,23 @@ export const mergeRetryConfig = (
   if (!defaults && !overrides) {
     return null;
   }
-  return {
-    model: mergeRetryPolicy(defaults?.model, overrides?.model),
-    embedder: mergeRetryPolicy(defaults?.embedder, overrides?.embedder),
-    retriever: mergeRetryPolicy(defaults?.retriever, overrides?.retriever),
-    reranker: mergeRetryPolicy(defaults?.reranker, overrides?.reranker),
-    textSplitter: mergeRetryPolicy(defaults?.textSplitter, overrides?.textSplitter),
-    loader: mergeRetryPolicy(defaults?.loader, overrides?.loader),
-    transformer: mergeRetryPolicy(defaults?.transformer, overrides?.transformer),
-    vectorStore: mergeRetryPolicy(defaults?.vectorStore, overrides?.vectorStore),
-    cache: mergeRetryPolicy(defaults?.cache, overrides?.cache),
-    kv: mergeRetryPolicy(defaults?.kv, overrides?.kv),
-    memory: mergeRetryPolicy(defaults?.memory, overrides?.memory),
-    storage: mergeRetryPolicy(defaults?.storage, overrides?.storage),
-    outputParser: mergeRetryPolicy(defaults?.outputParser, overrides?.outputParser),
-    queryEngine: mergeRetryPolicy(defaults?.queryEngine, overrides?.queryEngine),
-    responseSynthesizer: mergeRetryPolicy(
-      defaults?.responseSynthesizer,
-      overrides?.responseSynthesizer,
-    ),
-    image: mergeRetryPolicy(defaults?.image, overrides?.image),
-    speech: mergeRetryPolicy(defaults?.speech, overrides?.speech),
-    transcription: mergeRetryPolicy(defaults?.transcription, overrides?.transcription),
-    tools: mergeRetryPolicy(defaults?.tools, overrides?.tools),
-  };
+  const kinds = new Set<RetryAdapterKind>([
+    ...(Object.keys(defaults ?? {}) as RetryAdapterKind[]),
+    ...(Object.keys(overrides ?? {}) as RetryAdapterKind[]),
+  ]);
+  const merged: RetryConfig = {};
+  const target = merged as Record<RetryAdapterKind, RetryPolicy | null | undefined>;
+  for (const kind of kinds) {
+    target[kind] = mergeRetryPolicy(defaults?.[kind], overrides?.[kind]);
+  }
+  return merged;
 };
-
-type RetrySelection = {
-  policy?: RetryPolicy | null;
-  source: "runtime" | "metadata" | "none";
-};
-
-const isRetryAllowed = (metadata: RetryMetadata | null | undefined) => metadata?.allowed !== false;
 
 /** @internal */
 export const selectRetryPolicy = (
   policy: RetryPolicy | null | undefined,
   metadata: RetryMetadata | null | undefined,
-): RetrySelection => {
-  if (policy) {
-    return { policy: normalizePolicy(policy), source: "runtime" };
-  }
-  if (!isRetryAllowed(metadata)) {
-    return { source: "none" };
-  }
-  if (!metadata?.policy) {
-    return { source: "none" };
-  }
-  return { policy: normalizePolicy(metadata.policy), source: "metadata" };
-};
+) => normalizePolicy(policy ?? metadata?.policy);
 
 const isAllowedRetryReason = (allowed: RetryReason[] | undefined, reason: RetryReason) =>
   allowed ? allowed.includes(reason) : true;
@@ -194,8 +226,11 @@ export const filterRetryReasons = (
   policy: RetryPolicy,
   metadata: RetryMetadata | null | undefined,
 ) => {
-  if (!metadata?.retryOn || !policy.retryOn) {
+  if (!metadata?.retryOn) {
     return policy;
+  }
+  if (!policy.retryOn) {
+    return { ...policy, retryOn: [...metadata.retryOn] };
   }
   const allowed = policy.retryOn.filter(bindFirst(isAllowedRetryReason, metadata.retryOn));
   return { ...policy, retryOn: allowed };
@@ -203,16 +238,20 @@ export const filterRetryReasons = (
 
 /** @internal */
 export const shouldRetryReason = (policy: RetryPolicy, reason: RetryReason) => {
-  if (!policy.retryOn || policy.retryOn.length === 0) {
+  if (!policy.retryOn) {
     return true;
   }
   return policy.retryOn.includes(reason);
 };
 
 /** @internal */
-export const jitterDelay = (delayMs: number, jitter: RetryPolicy["jitter"]) => {
+export const jitterDelay = (
+  delayMs: number,
+  jitter: RetryPolicy["jitter"],
+  random: () => number = Math.random,
+) => {
   if (jitter === "full") {
-    return Math.floor(delayMs / 2);
+    return Math.floor(random() * delayMs);
   }
   return delayMs;
 };
@@ -269,7 +308,6 @@ type RetryCallState<TArgs extends unknown[], TResult> = {
   policy: RetryPolicy;
   maxAttempts: number;
   attempt: number;
-  lastError?: unknown;
 };
 
 const createRetryCallState = <TArgs extends unknown[], TResult>(
@@ -280,7 +318,6 @@ const createRetryCallState = <TArgs extends unknown[], TResult>(
   policy,
   maxAttempts: policy.maxAttempts,
   attempt: 0,
-  lastError: undefined,
 });
 
 const toRetryData = <TArgs extends unknown[], TResult>(
@@ -324,20 +361,56 @@ const runRetryAttempt = <TArgs extends unknown[], TResult>(
 
 const runRetryCallAttempt = <TArgs extends unknown[], TResult>(
   state: RetryCallState<TArgs, TResult>,
-) => state.input.call(...state.input.args);
+) => {
+  const startedAt = Date.now();
+  const result = state.input.call(...state.input.args);
+  const timeoutMs = state.policy.timeoutMs;
+  if (timeoutMs === null || timeoutMs === undefined) {
+    return result;
+  }
+  if (!isPromiseLike(result)) {
+    if (Date.now() - startedAt >= timeoutMs) {
+      throw new RetryTimeoutError(timeoutMs);
+    }
+    return result;
+  }
+  return new Promise<TResult>((resolve, reject) => {
+    const timer = setTimeout(() => reject(new RetryTimeoutError(timeoutMs)), timeoutMs);
+    result.then(
+      (value) => {
+        clearTimeout(timer);
+        resolve(value);
+      },
+      (error: unknown) => {
+        clearTimeout(timer);
+        reject(error);
+      },
+    );
+  });
+};
+
+const waitForRetry = <TArgs extends unknown[], TResult>(
+  state: RetryCallState<TArgs, TResult>,
+  delayMs: number,
+) =>
+  new Promise<TResult>((resolve, reject) => {
+    setTimeout(() => {
+      try {
+        Promise.resolve(runRetryAttempt(state)).then(resolve, reject);
+      } catch (error) {
+        reject(error);
+      }
+    }, delayMs);
+  });
 
 const handleRetryError = <TArgs extends unknown[], TResult>(
   state: RetryCallState<TArgs, TResult>,
   error: unknown,
 ): MaybePromise<TResult> => {
-  state.lastError = error;
   state.attempt += 1;
-  const reason = toRetryReason();
+  const reason = classifyRetryReason(error);
   const data = toRetryData(state, reason);
   if (!shouldRetryAttempt(state, reason)) {
-    return handleRetryExhausted(state, data, error);
-  }
-  if (state.attempt >= state.maxAttempts) {
     return handleRetryExhausted(state, data, error);
   }
   const delayMs = computeDelayMs(state.policy, state.attempt - 1);
@@ -345,18 +418,15 @@ const handleRetryError = <TArgs extends unknown[], TResult>(
   if (shouldPauseRetry(state.policy, delayMs)) {
     throw createRetryPauseSignal(toRetryPausePayload({ ...data, delayMs }));
   }
-  return runRetryAttempt(state);
+  return delayMs > 0 ? waitForRetry(state, delayMs) : runRetryAttempt(state);
 };
 
 const runRetryCall = <TArgs extends unknown[], TResult>(input: RetryCallInput<TArgs, TResult>) => {
-  const selection = selectRetryPolicy(input.policy, input.metadata);
-  if (!selection.policy) {
+  const selectedPolicy = selectRetryPolicy(input.policy, input.metadata);
+  if (!selectedPolicy) {
     return input.call(...input.args);
   }
-  const policy =
-    selection.source === "metadata"
-      ? filterRetryReasons(selection.policy, input.metadata)
-      : selection.policy;
+  const policy = filterRetryReasons(selectedPolicy, input.metadata);
   const state = createRetryCallState(input, policy);
   return runRetryAttempt(state);
 };
@@ -382,39 +452,19 @@ const callWithRetry = <TArgs extends unknown[], TResult>(
   overrideContext?: AdapterCallContext,
 ) => runRetryCall(buildRetryInput(input, args, overrideContext));
 
-export const wrapRetryCallOne = <TInput, TResult>(
-  input: RetryWrapperInput<[TInput], TResult>,
-  value: TInput,
-  ctx?: AdapterCallContext,
-) => callWithRetry(input, [value, ctx ?? input.context], ctx);
-
-export const wrapRetryCallZero = <TResult>(
-  input: RetryWrapperInput<[], TResult>,
-  ctx?: AdapterCallContext,
-) => callWithRetry(input, [ctx ?? input.context], ctx);
-
-export const wrapRetryCallTwo = <TFirst, TSecond, TResult>(
-  input: RetryWrapperInput<[TFirst, TSecond], TResult>,
-  ...args: [first: TFirst, second: TSecond, ctx?: AdapterCallContext]
+export const wrapRetryCall = <TArgs extends unknown[], TResult>(
+  input: RetryWrapperInput<TArgs, TResult>,
+  domainArity: number,
+  ...args: [...TArgs, AdapterCallContext?]
 ) => {
-  const ctx = args[2];
-  return callWithRetry(input, [args[0], args[1], ctx ?? input.context], ctx);
-};
-
-export const wrapRetryCallThree = <TFirst, TSecond, TThird, TResult>(
-  input: RetryWrapperInput<[TFirst, TSecond, TThird], TResult>,
-  ...args: [first: TFirst, second: TSecond, third: TThird, ctx?: AdapterCallContext]
-) => {
-  const ctx = args[3];
-  return callWithRetry(input, [args[0], args[1], args[2], ctx ?? input.context], ctx);
-};
-
-export const selectRetryConfig = (
-  config: RetryConfig | null | undefined,
-  kind: RetryAdapterKind,
-) => {
-  if (!config) {
-    return null;
+  const overrideContext = args[domainArity] as AdapterCallContext | undefined;
+  const domainArgs = args.slice(0, domainArity) as unknown[];
+  while (domainArgs.length < domainArity) {
+    domainArgs.push(undefined);
   }
-  return config[kind] ?? null;
+  return callWithRetry(
+    input,
+    [...domainArgs, overrideContext ?? input.context] as unknown as [...TArgs, AdapterCallContext?],
+    overrideContext,
+  );
 };

@@ -26,7 +26,7 @@ const vectorStore = {
 };
 
 // Reuse loader/textSplitter/embedder/vectorStore from the quick start.
-const ingest = recipes.ingest().configure({
+const ingest = recipes.ingest({
   defaults: {
     adapters: { loader, textSplitter, embedder, vectorStore },
   },

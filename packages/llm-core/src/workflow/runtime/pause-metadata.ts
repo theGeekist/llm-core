@@ -2,11 +2,28 @@ import type { InterruptStrategy } from "#adapters/types";
 import type { MaybePromise } from "#shared/maybe";
 import { bindFirst } from "#shared/fp";
 import { isRecord } from "#shared/guards";
-import { createFinalize, type FinalizeResult, type FinalizeResultInput } from "./helpers";
+import { readPipelinePauseSnapshot } from "../pause";
+import type { FinalizeResult, FinalizeResultInput } from "./helpers";
 
 type InterruptPayload = { __interrupt?: InterruptStrategy };
 
-const hasInterrupt = (value: Record<string, unknown>) => "__interrupt" in value;
+const isInterruptStrategy = (value: unknown): value is InterruptStrategy =>
+  isRecord(value) && (value.mode === "continue" || value.mode === "restart");
+
+const readSnapshotInterrupt = (result: unknown) => {
+  const payload = readPipelinePauseSnapshot(result)?.payload;
+  if (!isRecord(payload)) {
+    return null;
+  }
+  return isInterruptStrategy(payload.interrupt) ? payload.interrupt : null;
+};
+
+export const readInterruptStrategy = (result: unknown): InterruptStrategy | undefined => {
+  const direct = (result as InterruptPayload)?.__interrupt;
+  return isInterruptStrategy(direct) ? direct : (readSnapshotInterrupt(result) ?? undefined);
+};
+
+const hasInterrupt = (value: Record<string, unknown>) => readInterruptStrategy(value) !== undefined;
 
 const attachInterrupt = (interrupt: InterruptStrategy, result: unknown) => {
   if (!isRecord(result)) {
@@ -47,16 +64,8 @@ export const createFinalizeWithInterrupt = <TOutcome>(
 
 export const createRuntimeFinalize = <TOutcome>(input: {
   finalizeResult: FinalizeResult<TOutcome>;
-  recordSnapshot: (result: unknown) => MaybePromise<boolean | null>;
   interrupt?: InterruptStrategy | null;
-}) =>
-  createFinalizeWithInterrupt(
-    createFinalize(input.finalizeResult, input.recordSnapshot),
-    input.interrupt,
-  );
-
-export const readInterruptStrategy = (result: unknown): InterruptStrategy | undefined =>
-  (result as InterruptPayload)?.__interrupt;
+}) => createFinalizeWithInterrupt(input.finalizeResult, input.interrupt);
 
 export const hasRestartInterrupt = (interrupt?: InterruptStrategy) => interrupt?.mode === "restart";
 

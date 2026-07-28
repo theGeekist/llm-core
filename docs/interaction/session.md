@@ -20,11 +20,11 @@ A user returns to a page and should see the same assistant, with the same histor
 
 Sometimes the important part of a run is not only the answer, but how you arrived at it. By persisting `state.trace` you can review tool calls, retries, and intermediate steps when you debug or need to explain behaviour later.
 
-**Resumable workflows**
+**Live resumable workflows**
 
-Multi-step flows often pause and resume over hours or days. A user might fill in part of a form, switch devices, or come back after an approval step. Sessions keep the workflow state so you can resume from where the user left off.
+Multi-step flows often pause for an approval or another in-process signal. A session can resume the live pipeline snapshot without rerunning completed steps. Durable continuation across restarts or devices needs a serializable checkpoint design; persisted interaction state alone is not an execution snapshot.
 
-For short, one-off interactions such as an inline search bar or a single "answer this" call, you can work directly with the raw [Pipeline](/interaction/pipeline) and skip sessions.
+For short, one-off interactions such as an inline search bar or a single "answer this" call, use an [Interaction Handle](/interaction/pipeline) and skip sessions.
 
 ---
 
@@ -42,7 +42,7 @@ Once you have a store, you create a session instance and call `send()` when new 
 <<< @/snippets/interaction/session.ts#docs [TypeScript]
 :::
 
-`send()` returns the outcome of the interaction run for that session. The shape is the same as other runtime outcomes: `{ status, artefact, diagnostics, trace }`.
+`send()` returns either a completed interaction result or a paused outcome carrying a live snapshot. Use `session.getState()` for the current UI-ready state in either case.
 
 After each run, `session.getState()` reflects the latest **persisted** state for that session. You can use this to:
 
@@ -76,9 +76,14 @@ When a workflow returns a paused outcome:
 
 1. The session skips the `policy` and `save` hooks. Storage waits until the workflow completes.
 2. The in-memory `state` still updates from the paused snapshot so your UI can render the paused state immediately.
-3. When you resume, the session loads the last saved state, applies the resume snapshot on top of it, and continues the workflow from there.
+3. Call `session.resume(outcome.snapshot, resumeInput)` while the snapshot is still live. The session reloads the last persisted state as the policy baseline; a completed resume then runs the normal `merge` → `summarize` → `truncate` policy and save path.
 
 This pattern keeps persistence predictable: only fully completed runs update the store, while paused runs still give you a consistent view of the in-memory state.
+
+Pipeline snapshots are intentionally opaque and may contain functions, maps, sets, and runtime
+context. Do not JSON-serialize them or treat `SessionStore` as durable resume storage. If the
+process restarts, begin a new execution from persisted domain state instead of attempting to
+reconstruct the old continuation.
 
 ---
 
@@ -90,4 +95,4 @@ Sessions describe _how_ to persist and manage state rather than _where_ you run 
 - Concurrency rules for the same session come from the store implementation. For example, a Redis-backed store might use locks or transactions, while an in-memory store might keep things single-threaded.
 - The optional `context` in session options is forwarded to the `SessionStore`. You can use it for logging, tracing, or tenant-specific behaviour.
 
-If you are already familiar with Interaction Pipeline, think of sessions as the layer that gives your workflows memory and lifecycle rules over time.
+If you are already familiar with the Interaction Handle, think of sessions as the layer that gives interactions memory and lifecycle rules over time.

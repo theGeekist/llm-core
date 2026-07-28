@@ -35,7 +35,6 @@ export type RecipeRunOverrides = {
 export type AnyRecipeHandle = RecipeHandle<RecipeName, unknown>;
 
 export type RecipeHandle<N extends RecipeName, C> = {
-  configure(config: C): RecipeHandle<N, C>;
   defaults(defaults: RecipeDefaults): RecipeHandle<N, C>;
   use(recipe: AnyRecipeHandle | RecipePack): RecipeHandle<N, C>;
   explain(): RecipePlan;
@@ -132,16 +131,6 @@ const applyRunAdapters = (definition: RecipeDefinition, adapters?: AdapterBundle
   };
 };
 
-const configureRecipeHandleState = <N extends RecipeName, C>(
-  state: RecipeState<N, C>,
-  config: C,
-): RecipeHandle<N, C> & RecipeStateCarrier<N, C> =>
-  createRecipeHandleFromState({
-    factory: state.factory,
-    config,
-    extras: state.extras,
-  });
-
 const defaultsRecipeHandleState = <N extends RecipeName, C>(
   state: RecipeState<N, C>,
   defaultsInput: RecipeDefaults,
@@ -219,7 +208,6 @@ const createRecipeHandleFromState = <N extends RecipeName, C>(
   state: RecipeState<N, C>,
 ): RecipeHandle<N, C> & RecipeStateCarrier<N, C> => ({
   [RECIPE_STATE]: state,
-  configure: bindFirst(configureRecipeHandleState, state),
   defaults: bindFirst(defaultsRecipeHandleState, state),
   use: bindFirst(useRecipeHandleState, state),
   explain: bindFirst(explainRecipeHandle, state),
@@ -251,22 +239,20 @@ export const defineRecipe = <N extends RecipeName, C>(
 ): ((config?: C) => RecipeHandle<N, C>) =>
   bindFirst(createRecipeHandle<N, C>, createRecipeFactory(name, resolve));
 
-export const createConfiguredRecipeHandle = <N extends RecipeName, C>(
-  factory: RecipeFactory<N, C>,
-  config: C | undefined,
-): RecipeHandle<N, C> => createRecipeHandle(factory, config);
+type SinglePackRecipe<N extends RecipeName, C> = {
+  pack: RecipePack;
+  createRecipe: (config?: C) => RecipeHandle<N, C>;
+};
 
-export const useRecipeHandle = <N extends RecipeName, C>(
-  handle: RecipeHandle<N, C>,
-  recipe: AnyRecipeHandle | RecipePack,
-) => handle.use(recipe);
-
-export const configureRecipeHandle = <N extends RecipeName, C>(
-  handle: RecipeHandle<N, C>,
-  config: C,
-) => handle.configure(config);
-
-export const defaultsRecipeHandle = <N extends RecipeName, C>(
-  handle: RecipeHandle<N, C>,
-  defaults: RecipeDefaults,
-) => handle.defaults(defaults);
+export const defineSinglePackRecipe = <N extends RecipeName, C>(
+  name: N,
+  createPack: (config?: C) => RecipePack,
+): SinglePackRecipe<N, C> => {
+  const pack = createPack();
+  return {
+    pack,
+    createRecipe: defineRecipe(name, (config?: C) => ({
+      packs: [config ? createPack(config) : pack],
+    })),
+  };
+};

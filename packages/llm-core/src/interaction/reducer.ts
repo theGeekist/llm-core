@@ -5,7 +5,7 @@ import type {
   MessageRole,
   MessagePart,
   ModelStreamEvent,
-  QueryStreamEvent,
+  StreamEvent,
   ToolCall,
   ToolCallPart,
   ToolResult,
@@ -15,6 +15,7 @@ import type {
 import { createAdapterDiagnostic } from "#shared/diagnostics";
 import type { DiagnosticEntry } from "#shared/reporting";
 import { isRecord } from "#shared/guards";
+import { bindFirst } from "#shared/fp";
 import type { TraceEvent } from "#shared/reporting";
 import type {
   InteractionEvent,
@@ -384,32 +385,36 @@ const reduceStreamErrorEvent = (
     raw: event.raw,
   });
 
-const reduceModelError = (
+type StreamEventReducer<TType extends StreamEvent["type"]> = (
   state: InteractionState,
   meta: InteractionEventMeta,
-  event: Extract<ModelStreamEvent, { type: "error" }>,
-) => reduceStreamErrorEvent(state, meta, event);
+  event: Extract<StreamEvent, { type: TType }>,
+) => InteractionState;
 
-const reduceModelEvent = (
-  state: InteractionState,
-  meta: InteractionEventMeta,
-  event: ModelStreamEvent,
-) => {
-  switch (event.type) {
-    case "start":
-      return reduceModelStart(state, meta);
-    case "delta":
-      return reduceModelDelta(state, meta, event);
-    case "usage":
-      return reduceModelUsage(state, meta, event);
-    case "end":
-      return reduceModelEnd(state, meta, event);
-    case "error":
-      return reduceModelError(state, meta, event);
-    default:
-      return state;
-  }
+type StreamEventReducers = {
+  [TType in StreamEvent["type"]]?: StreamEventReducer<TType>;
 };
+
+type StreamReductionInput = {
+  state: InteractionState;
+  meta: InteractionEventMeta;
+  event: StreamEvent;
+};
+
+const reduceStreamEvent = (reducers: StreamEventReducers, input: StreamReductionInput) => {
+  const reducer = reducers[input.event.type] as StreamEventReducer<StreamEvent["type"]> | undefined;
+  return reducer ? reducer(input.state, input.meta, input.event) : input.state;
+};
+
+const modelEventReducers = {
+  start: reduceModelStart,
+  delta: reduceModelDelta,
+  usage: reduceModelUsage,
+  end: reduceModelEnd,
+  error: reduceStreamErrorEvent,
+} satisfies StreamEventReducers;
+
+const reduceModelEvent = bindFirst(reduceStreamEvent, modelEventReducers);
 
 const reduceQueryStart = (state: InteractionState, meta: InteractionEventMeta) => {
   const ensured = ensureStream(state, meta, "tool");
@@ -420,7 +425,7 @@ const reduceQueryStart = (state: InteractionState, meta: InteractionEventMeta) =
 const reduceQueryDelta = (
   state: InteractionState,
   meta: InteractionEventMeta,
-  event: Extract<QueryStreamEvent, { type: "delta" }>,
+  event: Extract<StreamEvent, { type: "delta" }>,
 ) => {
   const ensured = ensureStream(state, meta, "tool");
   let assembly = appendText(ensured.assembly, event.text);
@@ -432,7 +437,7 @@ const reduceQueryDelta = (
 const reduceQueryEnd = (
   state: InteractionState,
   meta: InteractionEventMeta,
-  event: Extract<QueryStreamEvent, { type: "end" }>,
+  event: Extract<StreamEvent, { type: "end" }>,
 ) => {
   const key = streamKeyFromMeta(meta);
   const assembly = readStream(state, key);
@@ -457,30 +462,14 @@ const reduceQueryEnd = (
   return appendDiagnostics(nextState, diagnostics);
 };
 
-const reduceQueryError = (
-  state: InteractionState,
-  meta: InteractionEventMeta,
-  event: Extract<QueryStreamEvent, { type: "error" }>,
-) => reduceStreamErrorEvent(state, meta, event);
+const queryEventReducers = {
+  start: reduceQueryStart,
+  delta: reduceQueryDelta,
+  end: reduceQueryEnd,
+  error: reduceStreamErrorEvent,
+} satisfies StreamEventReducers;
 
-const reduceQueryEvent = (
-  state: InteractionState,
-  meta: InteractionEventMeta,
-  event: QueryStreamEvent,
-) => {
-  switch (event.type) {
-    case "start":
-      return reduceQueryStart(state, meta);
-    case "delta":
-      return reduceQueryDelta(state, meta, event);
-    case "end":
-      return reduceQueryEnd(state, meta, event);
-    case "error":
-      return reduceQueryError(state, meta, event);
-    default:
-      return state;
-  }
-};
+const reduceQueryEvent = bindFirst(reduceStreamEvent, queryEventReducers);
 
 const reduceTraceEvent = (
   state: InteractionState,
@@ -510,10 +499,18 @@ export const reduceInteractionEvent: InteractionReducer = (state, event) => {
       nextState = reduceDiagnosticEvent(nextState, event);
       break;
     case "model":
-      nextState = reduceModelEvent(nextState, event.meta, event.event);
+      nextState = reduceModelEvent({
+        state: nextState,
+        meta: event.meta,
+        event: event.event,
+      });
       break;
     case "query":
-      nextState = reduceQueryEvent(nextState, event.meta, event.event);
+      nextState = reduceQueryEvent({
+        state: nextState,
+        meta: event.meta,
+        event: event.event,
+      });
       break;
     case "event-stream":
       nextState = reduceEventStream(nextState, event);

@@ -1,89 +1,11 @@
 // References: docs/stage-7.md (normalized adapter contracts)
 
 import type { AdapterBundle } from "#adapters/types";
+import { adapterBundleKeys, isAdapterBundleKey, mergeAdapterBundles } from "#adapters/bundle";
 import type { ConstructRequirement, AdapterProviderRegistration } from "#adapters/registry";
-import { createRegistryFromDefaults } from "#adapters/registry";
+import { createAdapterRegistry } from "#adapters/registry";
 import type { Plugin } from "./types";
 import { getEffectivePlugins } from "./plugins/effective";
-
-const adapterConstructs: Array<keyof AdapterBundle> = [
-  "cache",
-  "documents",
-  "image",
-  "speech",
-  "transcription",
-  "messages",
-  "tools",
-  "model",
-  "trace",
-  "checkpoint",
-  "eventStream",
-  "interrupt",
-  "prompts",
-  "outputParser",
-  "schemas",
-  "textSplitter",
-  "embedder",
-  "indexing",
-  "queryEngine",
-  "responseSynthesizer",
-  "retriever",
-  "reranker",
-  "loader",
-  "transformer",
-  "memory",
-  "storage",
-  "kv",
-  "vectorStore",
-];
-
-const mergeLists = <T>(left: T[] | undefined, right: T[] | undefined) =>
-  right ? [...(left ?? []), ...right] : left;
-
-const replaceIfDefined = <T>(current: T | null | undefined, next: T | null | undefined) =>
-  next === undefined || next === null ? current : next;
-
-const mergeIfDefined = <T>(current: T[] | null | undefined, next: T[] | null | undefined) =>
-  next === undefined || next === null ? current : mergeLists(current ?? undefined, next);
-
-const mergeAdapterBundle = (
-  target: AdapterBundle,
-  next: AdapterBundle,
-  mode: Plugin["mode"],
-): AdapterBundle => {
-  if (mode === "override") {
-    return { ...next };
-  }
-  const constructs =
-    target.constructs || next.constructs
-      ? { ...(target.constructs ?? {}), ...(next.constructs ?? {}) }
-      : undefined;
-  return {
-    documents: mergeIfDefined(target.documents, next.documents),
-    messages: mergeIfDefined(target.messages, next.messages),
-    tools: mergeIfDefined(target.tools, next.tools),
-    model: replaceIfDefined(target.model, next.model),
-    trace: replaceIfDefined(target.trace, next.trace),
-    checkpoint: replaceIfDefined(target.checkpoint, next.checkpoint),
-    eventStream: replaceIfDefined(target.eventStream, next.eventStream),
-    interrupt: replaceIfDefined(target.interrupt, next.interrupt),
-    prompts: mergeIfDefined(target.prompts, next.prompts),
-    outputParser: replaceIfDefined(target.outputParser, next.outputParser),
-    schemas: mergeIfDefined(target.schemas, next.schemas),
-    textSplitter: replaceIfDefined(target.textSplitter, next.textSplitter),
-    embedder: replaceIfDefined(target.embedder, next.embedder),
-    cache: replaceIfDefined(target.cache, next.cache),
-    retriever: replaceIfDefined(target.retriever, next.retriever),
-    reranker: replaceIfDefined(target.reranker, next.reranker),
-    loader: replaceIfDefined(target.loader, next.loader),
-    transformer: replaceIfDefined(target.transformer, next.transformer),
-    memory: replaceIfDefined(target.memory, next.memory),
-    storage: replaceIfDefined(target.storage, next.storage),
-    kv: replaceIfDefined(target.kv, next.kv),
-    vectorStore: replaceIfDefined(target.vectorStore, next.vectorStore),
-    constructs,
-  };
-};
 
 export const collectAdapters = (plugins: Plugin[]) => {
   const effective = getEffectivePlugins(plugins);
@@ -93,7 +15,7 @@ export const collectAdapters = (plugins: Plugin[]) => {
     if (!plugin.adapters) {
       continue;
     }
-    bundle = mergeAdapterBundle(bundle, plugin.adapters, plugin.mode);
+    bundle = mergeAdapterBundles(bundle, plugin.adapters);
   }
 
   return bundle;
@@ -103,7 +25,7 @@ const toProviderId = (pluginKey: string, construct: string) => `${pluginKey}:${c
 
 const toRegistrations = (plugin: Plugin, bundle: AdapterBundle): AdapterProviderRegistration[] => {
   const entries: AdapterProviderRegistration[] = [];
-  for (const construct of adapterConstructs) {
+  for (const construct of adapterBundleKeys) {
     const value = bundle[construct];
     if (value === undefined) {
       continue;
@@ -136,7 +58,7 @@ const toRegistrations = (plugin: Plugin, bundle: AdapterBundle): AdapterProvider
 };
 
 export const createRegistryFromPlugins = (plugins: Plugin[]) => {
-  const registry = createRegistryFromDefaults();
+  const registry = createAdapterRegistry();
   const effective = getEffectivePlugins(plugins);
   for (const plugin of effective) {
     if (!plugin.adapters) {
@@ -161,9 +83,7 @@ const toConstructRequirements = (
   }));
 
 const toCapabilityConstructs = (minimumCapabilities: string[]) =>
-  minimumCapabilities.filter((capability) =>
-    adapterConstructs.includes(capability as keyof AdapterBundle),
-  );
+  minimumCapabilities.filter(isAdapterBundleKey);
 
 const collectOptionalConstructs = (plugins: Plugin[]) => {
   const optional = new Set<string>();
@@ -173,7 +93,7 @@ const collectOptionalConstructs = (plugins: Plugin[]) => {
     if (!bundle) {
       continue;
     }
-    for (const construct of adapterConstructs) {
+    for (const construct of adapterBundleKeys) {
       if (bundle[construct] !== undefined) {
         optional.add(construct);
       }

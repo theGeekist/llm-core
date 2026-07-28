@@ -13,17 +13,13 @@ type AgentConfigPanelProps = {
   showConfig: boolean;
   onToggle: (event: MouseEvent<HTMLButtonElement>) => boolean;
   profileOptions: SelectOption[];
-  approvalOptions: SelectOption[];
   toolPresetOptions: SelectOption[];
   skillPresetOptions: SelectOption[];
-  mcpPresetOptions: SelectOption[];
   toolOptions: OptionItem[];
   skillOptions: OptionItem[];
-  mcpStatus: { value: Record<string, unknown> | null; error: string | null };
   draft: AgentConfigDraft;
   onToolPresetChange: (event: ChangeEvent<HTMLSelectElement>) => void;
   onSkillPresetChange: (event: ChangeEvent<HTMLSelectElement>) => void;
-  onMcpPresetChange: (event: ChangeEvent<HTMLSelectElement>) => void;
   onAgentToolsToggle: (entry: string) => (event: ChangeEvent<HTMLInputElement>) => boolean;
   onToolAllowlistToggle: (entry: string) => (event: ChangeEvent<HTMLInputElement>) => boolean;
   onSkillDirectoryToggle: (entry: string) => (event: ChangeEvent<HTMLInputElement>) => boolean;
@@ -37,9 +33,6 @@ type AgentConfigPanelProps = {
   onToolDenylistChange: (event: ChangeEvent<HTMLTextAreaElement>) => void;
   onSkillDirectoriesChange: (event: ChangeEvent<HTMLTextAreaElement>) => void;
   onSkillDisabledChange: (event: ChangeEvent<HTMLTextAreaElement>) => void;
-  onMcpServersChange: (event: ChangeEvent<HTMLTextAreaElement>) => void;
-  onApprovalsPolicyChange: (event: ChangeEvent<HTMLSelectElement>) => void;
-  onApprovalsCacheChange: (event: ChangeEvent<HTMLSelectElement>) => void;
   onSubagentsEnabledChange: (event: ChangeEvent<HTMLInputElement>) => void;
   onSubagentsMaxActiveChange: (event: ChangeEvent<HTMLInputElement>) => void;
   onSubagentsIdPrefixChange: (event: ChangeEvent<HTMLInputElement>) => void;
@@ -49,26 +42,17 @@ type AgentConfigPanelProps = {
   onReset: (event: MouseEvent<HTMLButtonElement>) => boolean;
 };
 
-const CACHE_OPTIONS: SelectOption[] = [
-  { value: "", label: "No cache" },
-  { value: "session", label: "Session cache" },
-];
-
 export const AgentConfigPanel: FC<AgentConfigPanelProps> = ({
   showConfig,
   onToggle,
   profileOptions,
-  approvalOptions,
   toolPresetOptions,
   skillPresetOptions,
-  mcpPresetOptions,
   toolOptions,
   skillOptions,
-  mcpStatus,
   draft,
   onToolPresetChange,
   onSkillPresetChange,
-  onMcpPresetChange,
   onAgentToolsToggle,
   onToolAllowlistToggle,
   onSkillDirectoryToggle,
@@ -82,9 +66,6 @@ export const AgentConfigPanel: FC<AgentConfigPanelProps> = ({
   onToolDenylistChange,
   onSkillDirectoriesChange,
   onSkillDisabledChange,
-  onMcpServersChange,
-  onApprovalsPolicyChange,
-  onApprovalsCacheChange,
   onSubagentsEnabledChange,
   onSubagentsMaxActiveChange,
   onSubagentsIdPrefixChange,
@@ -236,45 +217,6 @@ export const AgentConfigPanel: FC<AgentConfigPanelProps> = ({
               onChange={onSkillDisabledChange}
               helper="One skill id per line."
               rows={2}
-            />
-          </Section>
-          <Section
-            title="MCP servers"
-            description="Configure external tool servers to expose tools."
-          >
-            <SelectRow
-              id="mcp-preset"
-              label="MCP preset"
-              value={draft.mcpPresetId}
-              onChange={onMcpPresetChange}
-              options={mcpPresetOptions}
-            />
-            <TextAreaRow
-              id="mcp-servers"
-              label="MCP servers JSON"
-              value={draft.mcpServersJson}
-              onChange={onMcpServersChange}
-              helper="Leave empty if you are not using MCP."
-              rows={4}
-            />
-            {mcpStatus.error ? (
-              <p className="text-xs font-semibold text-destructive">{mcpStatus.error}</p>
-            ) : null}
-          </Section>
-          <Section title="Approvals" description="Define when tools pause for approval.">
-            <SelectRow
-              id="approvals-policy"
-              label="Policy"
-              value={draft.approvalsPolicy}
-              onChange={onApprovalsPolicyChange}
-              options={approvalOptions}
-            />
-            <SelectRow
-              id="approvals-cache"
-              label="Cache scope"
-              value={draft.approvalsCache}
-              onChange={onApprovalsCacheChange}
-              options={CACHE_OPTIONS}
             />
           </Section>
           <Section title="Sub-agents" description="Spawn specialists and route tasks to them.">

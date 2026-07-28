@@ -11,7 +11,6 @@ import {
   toCoreMessagesFromAssistantCommands,
   selectModel,
 } from "@geekist/llm-core/adapters";
-import type { AgentLoopConfig } from "@geekist/llm-core/interaction";
 import { Outcome } from "@geekist/llm-core/workflow";
 import type { OutcomeType } from "@geekist/llm-core/workflow";
 import { toCoreMessages } from "./messages";
@@ -30,7 +29,7 @@ import {
   bindFirst,
   toUndefined,
   type MaybePromise,
-} from "@geekist/llm-core";
+} from "@geekist/llm-core/functional";
 import {
   createAgentRuntime,
   resolveInteractionRecipeId,
@@ -212,40 +211,6 @@ const toModelSelection = (input: {
   tokens: input.tokens ?? null,
 });
 
-const readSelectedAgentPrompt = (config?: AgentLoopConfig): string | null => {
-  const selectedId = config?.agentSelection?.agentId ?? null;
-  const agents = config?.agents;
-  if (!agents || agents.length === 0) {
-    return null;
-  }
-  if (selectedId) {
-    for (const agent of agents) {
-      if (agent.id === selectedId) {
-        return agent.prompt ?? null;
-      }
-    }
-  }
-  const fallback = agents[0];
-  return fallback?.prompt ?? null;
-};
-
-const normalizeContextPart = (value: string | null | undefined) => {
-  if (!value) {
-    return null;
-  }
-  const trimmed = value.trim();
-  return trimmed.length > 0 ? trimmed : null;
-};
-
-const buildAgentContext = (input: { config?: AgentLoopConfig; context?: string | null }) => {
-  const prompt = normalizeContextPart(readSelectedAgentPrompt(input.config));
-  const context = normalizeContextPart(input.context ?? null);
-  if (prompt && context) {
-    return `${prompt}\n\n${context}`;
-  }
-  return prompt ?? context ?? null;
-};
-
 const readLastUserMessage = (messages: ReturnType<typeof toCoreMessages>) => {
   for (let i = messages.length - 1; i >= 0; i -= 1) {
     const message = messages[i];
@@ -321,7 +286,7 @@ const runChatRequest = (socket: ServerWebSocket<SocketData>, message: ClientChat
     const coreMessages = toCoreMessages(message.messages);
     const text = readUserInputText(coreMessages);
     const config = message.data?.agentConfig;
-    const context = buildAgentContext({ config, context: message.data?.context ?? null });
+    const context = message.data?.context;
     const threadId = message.data?.threadId ?? message.chatId;
 
     const writer = createWebSocketUiWriter(socket, message.requestId);
@@ -335,7 +300,7 @@ const runChatRequest = (socket: ServerWebSocket<SocketData>, message: ClientChat
       config,
       subagents: message.data?.subagents,
     });
-    const runResult = runtime.stream({
+    const runResult = runtime.run({
       text,
       context: context ?? undefined,
       threadId,

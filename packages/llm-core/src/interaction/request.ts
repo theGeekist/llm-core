@@ -1,14 +1,16 @@
 import type { AdapterBundle, EventStream, Message, Model } from "#adapters/types";
 import type { DiagnosticEntry } from "#shared/reporting";
-import type { MaybePromise } from "#shared/maybe";
+import { maybeChain, type MaybePromise } from "#shared/maybe";
 import type { Outcome } from "#workflow/types";
 import { createStreamingModelForInteraction } from "#workflow/stream";
-import { createRecipeRunner } from "#recipes/runner";
 import { inputs } from "#recipes/inputs";
+import { recipes } from "#recipes";
+import type { AnyRecipeHandle } from "#recipes/handle";
 import { emitInteractionEvent } from "./transport";
 import type { InteractionEvent, InteractionEventMeta } from "./types";
 import { bindFirst } from "#shared/fp";
-import { maybeAll, maybeMap, maybeTap } from "#shared/maybe";
+import { maybeMap, maybeReduce, maybeTap } from "#shared/maybe";
+import { combineTriState } from "#shared/tri-state";
 
 const INTERACTION_RECIPE_IDS = ["agent", "rag", "hitl", "chat.simple", "chat.rag"] as const;
 
@@ -143,8 +145,10 @@ const buildStreamingModel = (input: {
     nextSequence: input.nextSequence,
   });
 
-const buildRunner = (input: { recipeId: InteractionRecipeId; model: Model }) =>
-  createRecipeRunner({ recipeId: input.recipeId, model: input.model });
+const buildRecipeHandle = (input: {
+  recipeId: InteractionRecipeId;
+  model: Model;
+}): AnyRecipeHandle => recipes[input.recipeId]().defaults({ adapters: { model: input.model } });
 
 const isKnownRecipeId = (value: string): value is InteractionRecipeId =>
   (INTERACTION_RECIPE_IDS as readonly string[]).includes(value);
@@ -165,19 +169,6 @@ type DiagnosticEmitInput = {
 };
 
 const DIAGNOSTIC_SOURCE_ID = "workflow.diagnostics";
-
-const isFailure = (value: boolean | null) => value === false;
-const isNullResult = (value: boolean | null) => value === null;
-
-const combineEmitResults = (values: Array<boolean | null>) => {
-  if (values.some(isFailure)) {
-    return false;
-  }
-  if (values.some(isNullResult)) {
-    return null;
-  }
-  return true;
-};
 
 const createDiagnosticMeta = (input: {
   nextSequence: () => number;
@@ -201,19 +192,29 @@ const toDiagnosticEvent = (input: {
   meta: input.meta,
 });
 
+const emitNextDiagnostic = (
+  input: Omit<DiagnosticEmitInput, "diagnostics">,
+  previous: boolean | null,
+  entry: DiagnosticEntry,
+) => {
+  const meta = createDiagnosticMeta({
+    nextSequence: input.nextSequence,
+    interactionId: input.interactionId,
+    correlationId: input.correlationId,
+    sourceId: DIAGNOSTIC_SOURCE_ID,
+  });
+  const event = toDiagnosticEvent({ entry, meta });
+  return maybeMap(
+    bindFirst(combineTriState, previous),
+    emitInteractionEvent(input.eventStream, event),
+  );
+};
+
 const emitDiagnosticEvents = (input: DiagnosticEmitInput) => {
-  const results: Array<ReturnType<EventStream["emit"]>> = [];
-  for (const entry of input.diagnostics) {
-    const meta = createDiagnosticMeta({
-      nextSequence: input.nextSequence,
-      interactionId: input.interactionId,
-      correlationId: input.correlationId,
-      sourceId: DIAGNOSTIC_SOURCE_ID,
-    });
-    const event = toDiagnosticEvent({ entry, meta });
-    results.push(emitInteractionEvent(input.eventStream, event));
+  if (input.diagnostics.length === 0) {
+    return null;
   }
-  return maybeMap(combineEmitResults, maybeAll(results));
+  return maybeReduce(bindFirst(emitNextDiagnostic, input), null, input.diagnostics);
 };
 
 const emitDiagnosticsFromOutcome = (
@@ -252,7 +253,7 @@ export const runInteractionRequest = (
   }
   const correlationId = readCorrelationId(request);
   const nextSequence = createSequence();
-  const runner = buildRunner({ recipeId, model: request.model });
+  const handle = buildRecipeHandle({ recipeId, model: request.model });
   const streamingModel = buildStreamingModel({
     model: request.model,
     eventStream: request.eventStream,
@@ -270,14 +271,14 @@ export const runInteractionRequest = (
   const overrides = {
     adapters: buildAdapterOverrides({ request, streamingModel }),
   };
-  return maybeMap(
+  return maybeChain(
     bindFirst(emitDiagnosticsFromOutcome, {
       eventStream: request.eventStream,
       interactionId: request.interactionId,
       correlationId,
       nextSequence,
     }),
-    runner.run(input, overrides),
+    handle.run(input, overrides),
   );
 };
 

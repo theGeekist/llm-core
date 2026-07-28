@@ -1,7 +1,6 @@
 import { tool as defineTool } from "@langchain/core/tools";
 import type { AdapterCallContext, Tool } from "../types";
-import { identity } from "#shared/fp";
-import { maybeMap, type MaybePromise } from "#shared/maybe";
+import type { MaybePromise } from "#shared/maybe";
 import { reportDiagnostics, validateToolInput } from "../input-validation";
 import {
   adapterParamsToJsonSchema,
@@ -32,7 +31,7 @@ export function fromLangChainTool<TInput, TOutput>(tool: LangChainToolLike<TInpu
       reportDiagnostics(context, diagnostics);
       return null;
     }
-    return maybeMap(identity, tool.invoke(input as TInput));
+    return tool.invoke(input as TInput);
   }
 
   return {

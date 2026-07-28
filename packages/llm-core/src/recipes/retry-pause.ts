@@ -14,22 +14,7 @@ export type RetryPauseSnapshot = RetryPausePayload & {
   kind: "retry";
   input: unknown;
   step?: RetryPauseSpec;
-};
-
-export type PausedStepResult = HelperApplyResult<PipelineState> & {
-  paused: true;
-  pauseKind: PauseKind;
-  token: unknown;
-  pauseSnapshot: RetryPauseSnapshot;
-  partialArtefact: PipelineState;
-  __interrupt: InterruptStrategy;
-};
-
-type RetryPauseState = {
-  paused: true;
-  token: unknown;
-  pauseKind: PauseKind;
-  retry: RetryPausePayload;
+  interrupt: InterruptStrategy;
 };
 
 const createRetryPauseToken = () => {
@@ -49,13 +34,7 @@ const buildRetryPauseSnapshot = (
   ...payload,
   input,
   step: spec,
-});
-
-const buildRetryPauseState = (payload: RetryPausePayload, token: unknown): RetryPauseState => ({
-  paused: true,
-  token,
-  pauseKind: "system" satisfies PauseKind,
-  retry: payload,
+  interrupt: buildRetryPauseInterrupt(payload),
 });
 
 const buildRetryPauseInterrupt = (payload: RetryPausePayload) =>
@@ -71,17 +50,14 @@ type RetryPauseResultInput = {
   payload: RetryPausePayload;
 };
 
-export const toRetryPauseResult = (input: RetryPauseResultInput): PausedStepResult => {
+export const toRetryPauseResult = (
+  input: RetryPauseResultInput,
+): HelperApplyResult<PipelineState> => {
   const token = createRetryPauseToken();
-  const pauseState = buildRetryPauseState(input.payload, token);
-  input.state.__pause = pauseState;
-  return {
-    output: input.state,
-    paused: true,
-    pauseKind: pauseState.pauseKind,
+  input.state.__pause = {
     token,
-    pauseSnapshot: buildRetryPauseSnapshot(input.payload, input.input, input.spec),
-    partialArtefact: input.state,
-    __interrupt: buildRetryPauseInterrupt(input.payload),
+    pauseKind: "system" satisfies PauseKind,
+    payload: buildRetryPauseSnapshot(input.payload, input.input, input.spec),
   };
+  return { output: input.state };
 };

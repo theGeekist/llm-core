@@ -91,10 +91,10 @@ describe("adapter model selection", () => {
     expect(readGenerate(model)).toBe(true);
   });
 
-  it("returns a selector function when only options are provided", () => {
-    const selector = selectModel({ defaultSource: "ai-sdk" });
+  it("accepts explicit selector options", () => {
+    const model = selectModel({ providerId: "openai" }, { defaultSource: "ai-sdk" });
 
-    expect(typeof selector).toBe("function");
+    expect(readGenerate(model)).toBe(true);
   });
 
   it("returns langchain and llamaindex adapters", () => {

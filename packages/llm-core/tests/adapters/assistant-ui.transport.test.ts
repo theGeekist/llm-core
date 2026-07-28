@@ -1,5 +1,5 @@
 import { describe, expect, it } from "bun:test";
-import type { AssistantTransportCommand, JsonValue, MessageContent } from "#adapters";
+import type { AssistantTransportCommand, MessageContent } from "#adapters";
 import {
   parseAssistantTransportRequest,
   toCoreMessagesFromAssistantCommands,
@@ -14,266 +14,188 @@ const buildTextCommand = (text: string): AssistantTransportCommand => ({
   },
 });
 
+const buildImageCommand = (): AssistantTransportCommand => ({
+  type: "add-message",
+  message: {
+    role: "user",
+    parts: [{ type: "image", image: "https://example.com/image.png" }],
+  },
+});
+
+const buildAssistantCommand = (): AssistantTransportCommand => ({
+  type: "add-message",
+  message: {
+    role: "assistant",
+    parts: [
+      { type: "text", text: "first" },
+      { type: "text", text: "second" },
+    ],
+  },
+});
+
 const buildToolResultCommand = (): AssistantTransportCommand => ({
   type: "add-tool-result",
   toolCallId: "call-1",
   toolName: "search",
   result: { ok: true },
   isError: false,
+  artifact: { source: "assistant-ui" },
 });
 
-const buildToolResultCommandWithoutName = (): AssistantTransportCommand => ({
-  type: "add-tool-result",
-  toolCallId: "call-2",
-  result: "done",
-});
-
-const buildToolCallCommand = (): AssistantTransportCommand => ({
-  type: "add-message",
-  message: {
-    role: "assistant",
-    parts: [
-      {
-        type: "tool-call",
-        toolName: "lookup",
-        toolCallId: "call-2",
-        args: { q: "hello", nested: ["ok", 2, { fine: true }] },
-      },
-    ],
-  },
-});
-
-const buildToolResultMessage = (): AssistantTransportCommand => ({
-  type: "add-message",
-  message: {
-    role: "assistant",
-    parts: [
-      {
-        type: "tool-result",
-        toolName: "lookup",
-        toolCallId: "call-2",
-        result: { ok: true },
-        isError: true,
-      },
-    ],
-  },
-});
-
-const buildTextWithToolPartsCommand = (): AssistantTransportCommand => ({
-  type: "add-message",
-  message: {
-    role: "assistant",
-    parts: [
-      { type: "text", text: "first" },
-      { type: "tool-call", toolName: "calc", toolCallId: "call-3", args: { n: 1 } },
-      { type: "text", text: "second" },
-      {
-        type: "tool-result",
-        toolName: "calc",
-        toolCallId: "call-3",
-        result: { ok: true },
-        isError: true,
-      },
-    ],
-  },
-});
-
-const buildInvalidPartCommand = (): AssistantTransportCommand => ({
-  type: "add-message",
-  message: {
-    role: "user",
-    parts: [{ type: "text", text: 123 } as unknown as { type: "text"; text: string }],
-  },
-});
-
-const buildInvalidPartsArrayCommand = (): AssistantTransportCommand =>
-  ({
-    type: "add-message",
-    message: {
-      role: "user",
-      parts: ["not-record"],
-    },
-  }) as unknown as AssistantTransportCommand;
-
-const buildInvalidPartsTypeCommand = (): AssistantTransportCommand =>
-  ({
-    type: "add-message",
-    message: {
-      role: "user",
-      parts: "nope",
-    },
-  }) as unknown as AssistantTransportCommand;
-
-const buildToolCallWithInvalidArgs = (): AssistantTransportCommand => ({
-  type: "add-message",
-  message: {
-    role: "assistant",
-    parts: [
-      {
-        type: "tool-call",
-        toolName: "lookup",
-        toolCallId: "call-5",
-        args: { invalid: (() => null) as unknown as JsonValue },
-      },
-    ],
-  },
-});
-
-const buildInvalidCommand = (): AssistantTransportCommand =>
-  ({
-    type: "add-tool-result",
-    result: "missing id",
-  }) as AssistantTransportCommand;
+const asCommand = (value: unknown) => value as AssistantTransportCommand;
 
 describe("assistant-ui transport", () => {
-  it("parses valid assistant transport payloads", () => {
+  it("parses valid assistant transport payloads and llm-core data", () => {
     const payload = {
       commands: [buildTextCommand("hi")],
-      data: { recipeId: "chat.simple", providerId: "openai", modelId: "gpt-4o-mini" },
+      data: {
+        recipeId: "chat.simple",
+        adapterSource: "assistant-ui",
+        providerId: "openai",
+        modelId: "gpt-4o-mini",
+        chatId: "chat-1",
+      },
     };
 
     const result = parseAssistantTransportRequest(payload);
 
     expect(result).not.toBeNull();
     expect(result?.commands.length).toBe(1);
-    expect(result?.data?.recipeId).toBe("chat.simple");
+    expect(result?.data).toEqual(payload.data);
   });
 
-  it("rejects invalid payloads", () => {
+  it("rejects invalid request envelopes", () => {
     expect(parseAssistantTransportRequest(null)).toBeNull();
     expect(parseAssistantTransportRequest({})).toBeNull();
     expect(parseAssistantTransportRequest({ commands: [123] })).toBeNull();
   });
 
-  it("maps assistant commands to core messages", () => {
-    const commands = [
+  it("maps current Assistant UI message and tool-result commands to core messages", () => {
+    const messages = toCoreMessagesFromAssistantCommands([
       buildTextCommand("Hello"),
-      buildToolCallCommand(),
-      buildToolResultMessage(),
+      buildImageCommand(),
+      buildAssistantCommand(),
       buildToolResultCommand(),
-    ];
-
-    const messages = toCoreMessagesFromAssistantCommands(commands);
-    const firstContent = toMessageContent(messages[0]?.content as MessageContent);
-    const toolCallContent = toMessageContent(messages[1]?.content as MessageContent);
-    const toolResultContent = toMessageContent(messages[2]?.content as MessageContent);
-    if (typeof toolCallContent === "string" || typeof toolResultContent === "string") {
+    ]);
+    const imageContent = toMessageContent(messages[1]?.content as MessageContent);
+    const assistantContent = toMessageContent(messages[2]?.content as MessageContent);
+    const toolContent = toMessageContent(messages[3]?.content as MessageContent);
+    if (
+      typeof imageContent === "string" ||
+      typeof assistantContent === "string" ||
+      typeof toolContent === "string"
+    ) {
       throw new Error("Expected structured content");
     }
 
     expect(messages.length).toBe(4);
     expect(messages[0]?.role).toBe("user");
-    expect(messages[1]?.role).toBe("assistant");
-    expect(firstContent).not.toBeNull();
-    expect(toolCallContent.parts?.[0]?.type).toBe("tool-call");
-    expect(toolResultContent.parts?.[0]?.type).toBe("tool-result");
-    expect(messages[3]?.role).toBe("tool");
+    expect(imageContent.parts?.[0]).toEqual({
+      type: "image",
+      url: "https://example.com/image.png",
+    });
+    expect(assistantContent.text).toBe("first\nsecond");
+    expect(toolContent.parts?.[0]).toEqual({
+      type: "tool-result",
+      toolCallId: "call-1",
+      toolName: "search",
+      output: { ok: true },
+      isError: false,
+    });
+    expect(messages[3]?.metadata).toEqual({
+      assistantUi: { artifact: { source: "assistant-ui" } },
+    });
   });
 
-  it("joins structured text across multiple text parts", () => {
-    const commands = [buildTextWithToolPartsCommand()];
-
-    const messages = toCoreMessagesFromAssistantCommands(commands);
-    const content = toMessageContent(messages[0]?.content as MessageContent);
-    if (typeof content === "string") {
-      throw new Error("Expected structured content");
-    }
-
-    expect(content.text).toBe("first\nsecond");
-    expect(content.parts?.length).toBe(4);
-  });
-
-  it("rejects invalid message parts and roles", () => {
+  it("restricts add-message roles and parts to the current dependency contract", () => {
     const invalidRole = {
       commands: [
         {
           type: "add-message",
-          message: { role: "system", parts: [{ type: "text", text: "hi" }] },
+          message: { role: "tool", parts: [{ type: "text", text: "hi" }] },
         },
       ],
     };
-    const invalidPart = { commands: [buildInvalidPartCommand()] };
-    const invalidPartsArray = { commands: [buildInvalidPartsArrayCommand()] };
-    const invalidPartsType = { commands: [buildInvalidPartsTypeCommand()] };
-
-    expect(parseAssistantTransportRequest(invalidRole)).toBeNull();
-    expect(parseAssistantTransportRequest(invalidPart)).toBeNull();
-    expect(parseAssistantTransportRequest(invalidPartsArray)).toBeNull();
-    expect(parseAssistantTransportRequest(invalidPartsType)).toBeNull();
-  });
-
-  it("parses tool result commands with defaults", () => {
-    const payload = {
+    const invalidUserPart = {
       commands: [
         {
-          type: "add-tool-result",
-          toolCallId: "call-9",
-          result: "ok",
+          type: "add-message",
+          message: {
+            role: "user",
+            parts: [{ type: "tool-call", toolName: "lookup", toolCallId: "call-1" }],
+          },
+        },
+      ],
+    };
+    const invalidAssistantPart = {
+      commands: [
+        {
+          type: "add-message",
+          message: {
+            role: "assistant",
+            parts: [{ type: "image", image: "https://example.com/image.png" }],
+          },
+        },
+      ],
+    };
+    const invalidImage = {
+      commands: [
+        {
+          type: "add-message",
+          message: { role: "user", parts: [{ type: "image", image: 123 }] },
         },
       ],
     };
 
-    const result = parseAssistantTransportRequest(payload);
-
-    expect(result?.commands[0]?.type).toBe("add-tool-result");
+    expect(parseAssistantTransportRequest(invalidRole)).toBeNull();
+    expect(parseAssistantTransportRequest(invalidUserPart)).toBeNull();
+    expect(parseAssistantTransportRequest(invalidAssistantPart)).toBeNull();
+    expect(parseAssistantTransportRequest(invalidImage)).toBeNull();
   });
 
-  it("parses tool-call args with arrays and records", () => {
-    const payload = {
-      commands: [buildToolCallCommand()],
-    };
+  it("requires every current tool-result field", () => {
+    const valid = buildToolResultCommand();
+    const missingId = { ...valid, toolCallId: undefined };
+    const missingName = { ...valid, toolName: undefined };
+    const missingResult = { ...valid, result: undefined };
+    const missingError = { ...valid, isError: undefined };
 
-    const result = parseAssistantTransportRequest(payload);
-
-    expect(result?.commands[0]?.type).toBe("add-message");
+    expect(parseAssistantTransportRequest({ commands: [asCommand(missingId)] })).toBeNull();
+    expect(parseAssistantTransportRequest({ commands: [asCommand(missingName)] })).toBeNull();
+    expect(parseAssistantTransportRequest({ commands: [asCommand(missingResult)] })).toBeNull();
+    expect(parseAssistantTransportRequest({ commands: [asCommand(missingError)] })).toBeNull();
   });
 
-  it("rejects tool result commands missing toolCallId", () => {
-    const payload = {
-      commands: [buildInvalidCommand()],
-    };
+  it("preserves valid tool-result artifacts and rejects non-JSON payloads", () => {
+    const command = buildToolResultCommand();
+    const parsed = parseAssistantTransportRequest({ commands: [command] });
+    const parsedCommand = parsed?.commands[0];
 
-    const result = parseAssistantTransportRequest(payload);
-
-    expect(result).toBeNull();
-  });
-
-  it("fills tool result toolName when missing", () => {
-    const messages = toCoreMessagesFromAssistantCommands([buildToolResultCommandWithoutName()]);
-
-    const content = toMessageContent(messages[0]?.content as MessageContent);
-    if (typeof content === "string") {
-      throw new Error("Expected structured content");
+    expect(parsedCommand?.type).toBe("add-tool-result");
+    if (parsedCommand?.type === "add-tool-result") {
+      expect(parsedCommand.artifact).toEqual({ source: "assistant-ui" });
     }
-    const parts = content.parts ?? [];
-    expect(parts[0]?.type).toBe("tool-result");
-    expect((parts[0] as { toolName?: string }).toolName).toBe("tool");
+
+    expect(
+      parseAssistantTransportRequest({
+        commands: [asCommand({ ...command, result: () => null })],
+      }),
+    ).toBeNull();
+    expect(
+      parseAssistantTransportRequest({
+        commands: [asCommand({ ...command, artifact: () => null })],
+      }),
+    ).toBeNull();
   });
 
-  it("coerces invalid tool-call args into null values", () => {
-    const payload = {
-      commands: [buildToolCallWithInvalidArgs()],
-    };
-    const parsed = parseAssistantTransportRequest(payload);
-    const messages = toCoreMessagesFromAssistantCommands(parsed?.commands ?? []);
-
-    const content = toMessageContent(messages[0]?.content as MessageContent);
-    if (typeof content === "string") {
-      throw new Error("Expected structured content");
-    }
-    const parts = content.parts ?? [];
-    const toolCall = parts[0] as { input?: Record<string, unknown> };
-    expect(toolCall.input?.invalid).toBeNull();
-  });
-
-  it("accepts data payloads and ignores invalid data", () => {
-    const payload = {
-      commands: [buildTextCommand("hi")],
+  it("accepts absent artifacts and ignores invalid llm-core data", () => {
+    const command = { ...buildToolResultCommand(), artifact: undefined };
+    const result = parseAssistantTransportRequest({
+      commands: [command],
       data: "not-record",
-    };
+    });
 
-    const result = parseAssistantTransportRequest(payload);
-
+    expect(result?.commands[0]).toEqual(command);
     expect(result?.data?.recipeId).toBeUndefined();
   });
 });

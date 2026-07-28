@@ -48,8 +48,6 @@ import {
   fromLlamaIndexTraceSink,
   fromLlamaIndexVectorStore,
   fromLlamaIndexWorkflowContext,
-  fromLlamaIndexCheckpointStore,
-  fromLangGraphCheckpointer,
 } from "#adapters";
 
 type ParityEntry = {
@@ -97,7 +95,6 @@ const probes: Record<string, () => boolean> = {
   "langchain:EventStream": () => isFunction(fromLangChainEventStream),
   "langchain:Interrupt": () => isFunction(fromLangGraphInterrupt),
   "langchain:Indexing": () => isFunction(fromLangChainIndexing),
-  "langchain:Checkpoint": () => isFunction(fromLangGraphCheckpointer),
   "llamaindex:Model": () => isFunction(fromLlamaIndexModel),
   "llamaindex:Embedder": () => isFunction(fromLlamaIndexEmbeddings),
   "llamaindex:Reranker": () => isFunction(fromLlamaIndexReranker),
@@ -113,7 +110,6 @@ const probes: Record<string, () => boolean> = {
   "llamaindex:PromptTemplate": () => isFunction(fromLlamaIndexPromptTemplate),
   "llamaindex:QueryEngine": () => isFunction(fromLlamaIndexQueryEngine),
   "llamaindex:ResponseSynthesizer": () => isFunction(fromLlamaIndexResponseSynthesizer),
-  "llamaindex:Checkpoint": () => isFunction(fromLlamaIndexCheckpointStore),
   "llamaindex:EventStream": () => isFunction(fromLlamaIndexWorkflowContext),
   "llamaindex:Trace": () => isFunction(fromLlamaIndexTraceSink),
 };

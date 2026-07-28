@@ -1,3 +1,15 @@
+import type { AdapterBundle, AdapterResumeResult } from "#adapters/types";
+import { bindFirst } from "#shared/fp";
+import { maybeChain, maybeTap, maybeTry, type MaybePromise } from "#shared/maybe";
+import { applyDiagnosticsMode, type TraceEvent } from "#shared/reporting";
+import type { PipelineReporter } from "@wpkernel/pipeline/core";
+import { consumePauseSession } from "../driver/sessions";
+import type { PauseSession } from "../driver/types";
+import {
+  readPauseSnapshotReporterFromSnapshot,
+  readPauseSnapshotStateFromSnapshot,
+} from "../pause";
+import { readResumeOptions, type ResumeOptions } from "../resume";
 import type {
   ArtefactOf,
   Outcome,
@@ -7,61 +19,15 @@ import type {
   RunOptions,
   Runtime,
 } from "../types";
-import type { PipelineReporter } from "@wpkernel/pipeline/core";
-import type { AdapterBundle } from "#adapters/types";
-import type { DiagnosticEntry } from "#shared/reporting";
-import type { MaybePromise } from "#shared/maybe";
-import type { TraceEvent } from "#shared/reporting";
-import type { PauseSession } from "../driver/types";
-import { bindFirst } from "#shared/fp";
-import { maybeChain, maybeMap, maybeTap, maybeTry } from "#shared/maybe";
-import { attachAdapterContext, createAdapterContext } from "../adapter-context";
-import { createSnapshotRecorder, resolveSessionStore, type ResumeSession } from "./resume-session";
-import { readResumeOptions, type ResumeOptions } from "../resume";
-import { runResumedPipeline } from "./resume-runner";
-import { normalizeDiagnostics } from "#shared/diagnostics";
-import { applyDiagnosticsMode } from "#shared/reporting";
-import { createResultFinalizer, type FinalizeResult } from "./helpers";
+import type { FinalizeResult } from "./helpers";
 import { createRuntimeFinalize } from "./pause-metadata";
+import { executePipelineResolution } from "./pipeline-runner";
 import type {
   AdapterResolution,
   PipelineRunner,
   ResumeErrorInput,
   ResumeHandlerDeps,
 } from "./resume-types";
-import {
-  readPauseSnapshotReporterFromSnapshot,
-  readPauseSnapshotStateFromSnapshot,
-} from "../pause";
-export type ActiveResumeSession = Exclude<ResumeSession, { kind: "invalid" }>;
-
-type ResumeExecution<N extends RecipeName> = {
-  deps: ResumeHandlerDeps<N>;
-  resolvedAdapters: AdapterBundle;
-  resumeOptions: ResumeOptions;
-  resumeDiagnostics: DiagnosticEntry[];
-  resumeRuntime: Runtime | undefined;
-  resumeDiagnosticsMode: "default" | "strict";
-  runtime: Runtime | undefined;
-  trace: TraceEvent[];
-  session: ActiveResumeSession;
-  token: unknown;
-  resumeKey?: string;
-  pauseSessions: Map<unknown, PauseSession>;
-};
-
-type PauseDiagnosticsInput = {
-  session: ActiveResumeSession;
-  resumeExtraDiagnostics: DiagnosticEntry[];
-  adapterDiagnostics: DiagnosticEntry[];
-};
-
-const readPauseDiagnostics = (input: PauseDiagnosticsInput) =>
-  input.session.kind === "pause"
-    ? input.session.session
-        .getDiagnostics()
-        .concat(input.adapterDiagnostics, input.resumeExtraDiagnostics)
-    : input.resumeExtraDiagnostics.concat(input.adapterDiagnostics);
 
 type PauseSnapshot = PauseSession["snapshot"];
 
@@ -90,14 +56,12 @@ const buildResumeContext = (input: {
   adapters: input.adapters,
 });
 
-type UpdateResumeSnapshotInput = {
+const rebindPipelineSnapshot = (input: {
   snapshot: PauseSnapshot;
   runOptions: RunOptions;
   context: PipelineContext;
   reporter: PipelineReporter;
-};
-
-const updateResumeSnapshot = (input: UpdateResumeSnapshotInput): PauseSnapshot => ({
+}): PauseSnapshot => ({
   ...input.snapshot,
   state: {
     ...(readPauseSnapshotStateFromSnapshot(input.snapshot) as Record<string, unknown>),
@@ -110,7 +74,6 @@ const updateResumeSnapshot = (input: UpdateResumeSnapshotInput): PauseSnapshot =
 const readPipelineResume = (pipeline: PipelineWithExtensions | PipelineRunner) =>
   (pipeline as { resume?: PipelineWithExtensions["resume"] }).resume;
 
-/** @internal */
 export const resumePipeline = (
   pipeline: PipelineWithExtensions | PipelineRunner,
   snapshot: PauseSnapshot,
@@ -133,344 +96,134 @@ const resumeErrorFromInput = <N extends RecipeName>(
     applyDiagnosticsMode(input.readErrorDiagnostics(error), input.diagnosticsMode),
   );
 
-type CreateResumeErrorInput<N extends RecipeName> = ResumeErrorInput<ArtefactOf<N>>;
-
-const createResumeError = <N extends RecipeName>(input: CreateResumeErrorInput<N>) =>
-  bindFirst(resumeErrorFromInput<N>, {
-    trace: input.trace,
-    diagnosticsMode: input.diagnosticsMode,
-    readErrorDiagnostics: input.readErrorDiagnostics,
-    errorOutcome: input.errorOutcome,
-  });
-
-type ResumeDeleteInput = {
-  store: NonNullable<ActiveResumeSession["store"]>;
-  tokens: unknown[];
-  index: number;
-};
-
-const addTokenIfUnique = (tokens: unknown[], token: unknown) => {
-  if (token === undefined) {
-    return tokens;
-  }
-  if (!tokens.includes(token)) {
-    tokens.push(token);
-  }
-  return tokens;
-};
-
-/** @internal */
-export const collectResumeTokens = (
-  session: ActiveResumeSession,
-  token: unknown,
-  resumeKey: string | undefined,
-) => {
-  const tokens: unknown[] = [];
-  addTokenIfUnique(tokens, token);
-  if (resumeKey !== undefined) {
-    addTokenIfUnique(tokens, resumeKey);
-  }
-  if (session.kind === "snapshot") {
-    addTokenIfUnique(tokens, session.snapshot.token);
-  }
-  if (session.kind === "pause") {
-    addTokenIfUnique(tokens, session.session.snapshot.token);
-  }
-  return tokens;
-};
-
-const deleteNextResumeToken = (input: ResumeDeleteInput): MaybePromise<boolean | null> => {
-  if (input.index >= input.tokens.length) {
-    return true;
-  }
-  const result = input.store.delete(input.tokens[input.index]);
-  if (input.index + 1 >= input.tokens.length) {
-    return result;
-  }
-  return maybeChain(
-    bindFirst(deleteNextResumeToken, {
-      store: input.store,
-      tokens: input.tokens,
-      index: input.index + 1,
-    }),
-    result,
-  );
-};
-
-/** @internal */
-export const deleteResumeTokens = (store: ResumeDeleteInput["store"], tokens: unknown[]) =>
-  deleteNextResumeToken({ store, tokens, index: 0 });
-
-const createResumeDeletion = <N extends RecipeName>(
-  session: ActiveResumeSession,
-  token: unknown,
-  resumeKey: string | undefined,
-): ((outcome: Outcome<ArtefactOf<N>>) => MaybePromise<boolean | null>) | null => {
-  const store = session.store;
-  if (!store) {
-    return null;
-  }
-  return function deleteResumeSession(outcome: Outcome<ArtefactOf<N>>) {
-    if (outcome.status !== "ok") {
-      return false;
-    }
-    return deleteResumeTokens(store, collectResumeTokens(session, token, resumeKey));
-  };
-};
-
-type DeleteSessionOnSuccessInput<N extends RecipeName> = {
-  session: ActiveResumeSession;
-  token: unknown;
-  resumeKey: string | undefined;
-  outcome: MaybePromise<Outcome<ArtefactOf<N>>>;
-};
-
-const deleteSessionOnSuccess = <N extends RecipeName>(input: DeleteSessionOnSuccessInput<N>) => {
-  const deleteResumeSession = createResumeDeletion<N>(input.session, input.token, input.resumeKey);
-  return deleteResumeSession ? maybeTap(deleteResumeSession, input.outcome) : input.outcome;
-};
-
-type ContinueResumedPipelineInput<N extends RecipeName> = {
-  resumeDeps: {
-    pipeline: PipelineWithExtensions | PipelineRunner;
-    resolveAdaptersForRun: (
-      runtime?: Runtime,
-      providers?: Record<string, string>,
-    ) => MaybePromise<AdapterResolution>;
-    applyAdapterOverrides: (resolved: AdapterBundle, overrides?: AdapterBundle) => AdapterBundle;
-    toResolvedAdapters: (resolution: AdapterResolution) => AdapterBundle;
-    readContractDiagnostics: (adapters: AdapterBundle) => DiagnosticEntry[];
-    buildDiagnostics: DiagnosticEntry[];
-    strictErrorMessage: string;
-    trace: TraceEvent[];
-    toErrorOutcome: (
-      error: unknown,
-      trace: TraceEvent[],
-      diagnostics?: DiagnosticEntry[],
-    ) => Outcome<ArtefactOf<N>>;
-  };
-  resumeOptions: ResumeOptions;
-  resumeDiagnostics: DiagnosticEntry[];
-  resumeRuntime: Runtime | undefined;
-  resumeDiagnosticsMode: "default" | "strict";
-  finalize: FinalizeResult<Outcome<ArtefactOf<N>>>;
-};
-
-const continueResumedPipeline = <N extends RecipeName>(input: ContinueResumedPipelineInput<N>) =>
-  runResumedPipeline({
-    deps: input.resumeDeps,
-    resumeOptions: input.resumeOptions,
-    resumeDiagnostics: input.resumeDiagnostics,
-    resumeRuntime: input.resumeRuntime,
-    resumeDiagnosticsMode: input.resumeDiagnosticsMode,
-    finalize: input.finalize,
-  });
+const createResumeError = <N extends RecipeName>(input: ResumeErrorInput<ArtefactOf<N>>) =>
+  bindFirst(resumeErrorFromInput<N>, input);
 
 type ContinueSnapshotInput<N extends RecipeName> = {
-  pipeline: PipelineWithExtensions | PipelineRunner;
+  deps: ResumeHandlerDeps<N>;
+  resolution: AdapterResolution;
   snapshot: PauseSnapshot;
   resumeOptions: ResumeOptions;
   resumeRuntime: Runtime | undefined;
-  adapters: AdapterBundle;
   trace: TraceEvent[];
   diagnosticsMode: "default" | "strict";
-  getDiagnostics: () => DiagnosticEntry[];
+  extraDiagnostics: ReturnType<PauseSession["getDiagnostics"]>;
   finalize: FinalizeResult<Outcome<ArtefactOf<N>>>;
 };
 
-const continueSnapshotPipeline = <N extends RecipeName>(
+const selectResumeAdapters = <N extends RecipeName>(
+  input: Pick<ContinueSnapshotInput<N>, "deps" | "resumeOptions">,
+  resolution: AdapterResolution,
+) =>
+  input.deps.applyAdapterOverrides(
+    input.deps.toResolvedAdapters(resolution),
+    input.resumeOptions.adapters,
+  );
+
+const executeSnapshotPipeline = <N extends RecipeName>(
   input: ContinueSnapshotInput<N>,
-): MaybePromise<Outcome<ArtefactOf<N>>> => {
+  execution: { adaptersWithContext: AdapterBundle },
+) => {
   const reporter = resolveResumeReporter(input.snapshot, input.resumeRuntime);
   const runOptions = buildResumeRunOptions({
     resumeOptions: input.resumeOptions,
     runtime: input.resumeRuntime,
-    adapters: input.adapters,
+    adapters: execution.adaptersWithContext,
     reporter,
   });
   const context = buildResumeContext({
     reporter,
     runtime: input.resumeRuntime,
-    adapters: input.adapters,
+    adapters: execution.adaptersWithContext,
   });
-  const snapshot = updateResumeSnapshot({
-    snapshot: input.snapshot,
-    runOptions,
-    context,
-    reporter,
-  });
-  return maybeChain(
-    createResultFinalizer({
-      finalize: input.finalize,
-      getDiagnostics: input.getDiagnostics,
-      trace: input.trace,
-      diagnosticsMode: input.diagnosticsMode,
+  return resumePipeline(
+    input.deps.pipeline,
+    rebindPipelineSnapshot({
+      snapshot: input.snapshot,
+      runOptions,
+      context,
+      reporter,
     }),
-    resumePipeline(input.pipeline, snapshot, input.resumeOptions.input),
+    input.resumeOptions.input,
   );
 };
 
-const isStoredSnapshot = (
-  session: ActiveResumeSession,
-): session is Extract<ActiveResumeSession, { kind: "snapshot" }> => session.kind === "snapshot";
-
-const readStoredPipelineSnapshot = (session: Extract<ActiveResumeSession, { kind: "snapshot" }>) =>
-  session.snapshot.snapshot as PauseSnapshot | undefined;
-
-const resolveAdaptersFromProviders = <N extends RecipeName>(
-  deps: ResumeHandlerDeps<N>,
-  runtime: Runtime | undefined,
-  providers: Record<string, string>,
-) =>
-  maybeMap(
-    bindFirst(selectResolvedAdapters<N>, deps),
-    deps.resolveAdaptersForRun(runtime, providers),
-  );
-
-const selectResolvedAdapters = <N extends RecipeName>(
-  deps: ResumeHandlerDeps<N>,
-  resolution: AdapterResolution,
-) => deps.toResolvedAdapters(resolution);
-
-type ResolveEffectiveAdaptersInput<N extends RecipeName> = {
-  deps: ResumeHandlerDeps<N>;
-  resolvedAdapters: AdapterBundle;
-  resumeOptions: ResumeOptions;
-  runtime: Runtime | undefined;
-  resumeRuntime: Runtime | undefined;
-};
-
-const resolveEffectiveAdapters = <N extends RecipeName>(
-  input: ResolveEffectiveAdaptersInput<N>,
+const selectSnapshotFinalize = <N extends RecipeName>(
+  input: ContinueSnapshotInput<N>,
+  _adapters: AdapterBundle,
 ) => {
-  if (input.resumeOptions.providers) {
-    return resolveAdaptersFromProviders(
-      input.deps,
-      input.resumeRuntime ?? input.runtime,
-      input.resumeOptions.providers,
-    );
-  }
-  return input.resolvedAdapters;
+  void _adapters;
+  return input.finalize;
 };
 
-const runResumeWithAdapters = <N extends RecipeName>(
-  input: ResumeExecution<N>,
-  effectiveAdapters: AdapterBundle,
-): MaybePromise<Outcome<ArtefactOf<N>>> => {
-  const resumeExtraDiagnostics = normalizeDiagnostics(input.resumeDiagnostics, []);
-  const adapterContext = createAdapterContext();
-  const adaptersWithContext = attachAdapterContext(effectiveAdapters, adapterContext.context, {
-    retryDefaults: input.resumeRuntime?.retryDefaults,
-    retry: input.resumeRuntime?.retry,
+const continueSnapshotPipeline = <N extends RecipeName>(
+  input: ContinueSnapshotInput<N>,
+): MaybePromise<Outcome<ArtefactOf<N>>> =>
+  executePipelineResolution({
+    deps: {
+      pipeline: input.deps.pipeline,
+      readContractDiagnostics: input.deps.readContractDiagnostics,
+      buildDiagnostics: input.deps.buildDiagnostics,
+      strictErrorMessage: input.deps.strictErrorMessage,
+      toErrorOutcome: input.deps.errorOutcome,
+    },
+    resolution: input.resolution,
+    selectAdapters: bindFirst(selectResumeAdapters<N>, input),
+    input: input.resumeOptions.input,
+    runtime: input.resumeRuntime,
     trace: input.trace,
+    diagnosticsMode: input.diagnosticsMode,
+    strictDiagnostics: input.extraDiagnostics,
+    extraDiagnostics: input.extraDiagnostics,
+    createFinalize: bindFirst(selectSnapshotFinalize<N>, input),
+    execute: bindFirst(executeSnapshotPipeline<N>, input),
   });
-  const getPauseDiagnostics = bindFirst(readPauseDiagnostics, {
-    session: input.session,
-    resumeExtraDiagnostics,
-    adapterDiagnostics: adapterContext.diagnostics,
-  });
-  const store = resolveSessionStore(input.resumeRuntime ?? input.runtime, effectiveAdapters);
-  const recordSnapshot = createSnapshotRecorder(store, input.resumeRuntime ?? input.runtime);
+
+type ResumeExecution<N extends RecipeName> = {
+  deps: ResumeHandlerDeps<N>;
+  resumeOptions: ResumeOptions;
+  resumeRuntime: Runtime | undefined;
+  resumeDiagnosticsMode: "default" | "strict";
+  trace: TraceEvent[];
+  pauseSession: PauseSession;
+  token: unknown;
+};
+
+const runResumeWithResolution = <N extends RecipeName>(
+  input: ResumeExecution<N>,
+  resolution: AdapterResolution,
+): MaybePromise<Outcome<ArtefactOf<N>>> => {
+  const effectiveAdapters = selectResumeAdapters(input, resolution);
   const finalize = createRuntimeFinalize({
     finalizeResult: input.deps.finalizeResult,
-    recordSnapshot,
     interrupt: effectiveAdapters.interrupt,
   });
-
-  const resumeDeps = {
-    pipeline: input.deps.pipeline,
-    resolveAdaptersForRun: input.deps.resolveAdaptersForRun,
-    applyAdapterOverrides: input.deps.applyAdapterOverrides,
-    toResolvedAdapters: input.deps.toResolvedAdapters,
-    readContractDiagnostics: input.deps.readContractDiagnostics,
-    buildDiagnostics: input.deps.buildDiagnostics,
-    strictErrorMessage: input.deps.strictErrorMessage,
-    trace: input.trace,
-    toErrorOutcome: input.deps.errorOutcome,
-  };
-
-  if (input.session.kind === "pause") {
-    input.pauseSessions.delete(input.token);
-    const outcome = continueSnapshotPipeline<N>({
-      pipeline: input.deps.pipeline,
-      snapshot: input.session.session.snapshot,
-      resumeOptions: input.resumeOptions,
-      resumeRuntime: input.resumeRuntime,
-      adapters: adaptersWithContext,
-      trace: input.trace,
-      diagnosticsMode: input.resumeDiagnosticsMode,
-      getDiagnostics: getPauseDiagnostics,
-      finalize,
-    });
-    return deleteSessionOnSuccess<N>({
-      session: input.session,
-      token: input.token,
-      resumeKey: input.resumeKey,
-      outcome,
-    });
-  }
-
-  if (isStoredSnapshot(input.session)) {
-    const storedSnapshot = readStoredPipelineSnapshot(input.session);
-    if (storedSnapshot) {
-      const outcome = continueSnapshotPipeline<N>({
-        pipeline: input.deps.pipeline,
-        snapshot: storedSnapshot,
-        resumeOptions: input.resumeOptions,
-        resumeRuntime: input.resumeRuntime,
-        adapters: adaptersWithContext,
-        trace: input.trace,
-        diagnosticsMode: input.resumeDiagnosticsMode,
-        getDiagnostics: getPauseDiagnostics,
-        finalize,
-      });
-      return deleteSessionOnSuccess<N>({
-        session: input.session,
-        token: input.token,
-        resumeKey: input.resumeKey,
-        outcome,
-      });
-    }
-  }
-
-  const outcome = continueResumedPipeline<N>({
-    resumeDeps,
+  const outcome = continueSnapshotPipeline<N>({
+    deps: input.deps,
+    resolution,
+    snapshot: input.pauseSession.snapshot,
     resumeOptions: input.resumeOptions,
-    resumeDiagnostics: input.resumeDiagnostics,
     resumeRuntime: input.resumeRuntime,
-    resumeDiagnosticsMode: input.resumeDiagnosticsMode,
+    trace: input.trace,
+    diagnosticsMode: input.resumeDiagnosticsMode,
+    extraDiagnostics: input.pauseSession.getDiagnostics(),
     finalize,
   });
-  return deleteSessionOnSuccess<N>({
-    session: input.session,
-    token: input.token,
-    resumeKey: input.resumeKey,
-    outcome,
-  });
-};
-
-const runResumeWithResolvedAdapters = <N extends RecipeName>(input: ResumeExecution<N>) => {
-  if (input.session.kind === "pause") {
-    return runResumeWithAdapters(input, input.resolvedAdapters);
-  }
-  return maybeChain(
-    bindFirst(runResumeWithAdapters<N>, input),
-    resolveEffectiveAdapters<N>({
-      deps: input.deps,
-      resolvedAdapters: input.resolvedAdapters,
-      resumeOptions: input.resumeOptions,
-      runtime: input.runtime,
-      resumeRuntime: input.resumeRuntime,
+  return maybeTap(
+    bindFirst(consumePauseSession, {
+      sessions: input.deps.pauseSessions,
+      session: input.pauseSession,
+      token: input.token,
     }),
+    outcome,
   );
 };
 
 type ExecuteResumePipelineInput<N extends RecipeName> = {
-  resumeValue: unknown;
-  session: ActiveResumeSession;
-  resolvedAdapters: AdapterBundle;
+  resumeValue: AdapterResumeResult;
+  pauseSession: PauseSession;
+  resolution: AdapterResolution;
   token: unknown;
-  resumeKey: string | undefined;
   runtime: Runtime | undefined;
   diagnosticsMode: "default" | "strict";
   trace: TraceEvent[];
@@ -480,8 +233,7 @@ type ExecuteResumePipelineInput<N extends RecipeName> = {
 export const executeResumePipeline = <N extends RecipeName>(
   input: ExecuteResumePipelineInput<N>,
 ) => {
-  const resumeDiagnostics: DiagnosticEntry[] = [];
-  const resumeOptions = readResumeOptions(input.resumeValue, input.runtime, resumeDiagnostics);
+  const resumeOptions = readResumeOptions(input.resumeValue, input.runtime);
   const resumeRuntime = resumeOptions.runtime;
   const resumeDiagnosticsMode = resumeRuntime?.diagnostics ?? input.diagnosticsMode;
   const resumeError = createResumeError<N>({
@@ -491,21 +243,19 @@ export const executeResumePipeline = <N extends RecipeName>(
     errorOutcome: input.deps.errorOutcome,
   });
 
-  return maybeTry(
-    resumeError,
-    bindFirst(runResumeWithResolvedAdapters<N>, {
+  return maybeTry(resumeError, () => {
+    const execution: ResumeExecution<N> = {
       deps: input.deps,
-      resolvedAdapters: input.resolvedAdapters,
       resumeOptions,
-      resumeDiagnostics,
       resumeRuntime,
       resumeDiagnosticsMode,
-      runtime: input.runtime,
       trace: input.trace,
-      session: input.session,
+      pauseSession: input.pauseSession,
       token: input.token,
-      resumeKey: input.resumeKey,
-      pauseSessions: input.deps.pauseSessions,
-    }),
-  );
+    };
+    const resolution = resumeOptions.providers
+      ? input.deps.resolveAdaptersForRun(resumeRuntime ?? input.runtime, resumeOptions.providers)
+      : input.resolution;
+    return maybeChain(bindFirst(runResumeWithResolution<N>, execution), resolution);
+  });
 };

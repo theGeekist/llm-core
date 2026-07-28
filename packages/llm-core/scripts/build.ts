@@ -245,6 +245,7 @@ const run = async () => {
     };
 
     ok = (await runBuildEntry(resolve(rootDir, "index.ts"), baseOptions)) && ok;
+    ok = (await runBuildEntry(resolve(rootDir, "src/functional/index.ts"), baseOptions)) && ok;
     ok = (await runBuildEntry(resolve(rootDir, "src/recipes/index.ts"), baseOptions)) && ok;
     ok = (await runBuildEntry(resolve(rootDir, "src/interaction/index.ts"), baseOptions)) && ok;
     ok = (await runBuildEntry(resolve(rootDir, "src/shared/diagnostics.ts"), baseOptions)) && ok;

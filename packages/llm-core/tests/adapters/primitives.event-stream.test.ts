@@ -2,12 +2,19 @@ import { describe, expect, it } from "bun:test";
 import {
   createEventStreamFanout,
   createEventStreamFromTraceSink,
+  createInteractionEventDeliverySink,
+  createInteractionEventDeliveryStream,
   createInteractionEventEmitterStream,
 } from "#adapters";
 import type { EventStreamEvent } from "#adapters";
 import type { InteractionEvent } from "#interaction";
 
 const toInteractionEvent = (event: InteractionEvent): EventStreamEvent => ({
+  name: "interaction.test",
+  data: { event },
+});
+
+const toUncheckedInteractionEvent = (event: unknown): EventStreamEvent => ({
   name: "interaction.test",
   data: { event },
 });
@@ -75,7 +82,7 @@ describe("EventStream primitives", () => {
     expect(result).toBe(false);
   });
 
-  it("propagates unknown results through fanout", async () => {
+  it("reports fanout success when another sink is not applicable", async () => {
     const fanout = createEventStreamFanout([
       {
         emit() {
@@ -91,7 +98,7 @@ describe("EventStream primitives", () => {
 
     const result = await fanout.emit(createTraceEvent());
 
-    expect(result).toBeNull();
+    expect(result).toBe(true);
   });
 
   it("wraps sinks that only support emit", async () => {
@@ -119,7 +126,7 @@ describe("EventStream primitives", () => {
     expect(seen).toEqual(["trace.ok", "trace.fail"]);
   });
 
-  it("returns null when wrapped emits are unknown", async () => {
+  it("returns true when at least one wrapped emit succeeds and none fail", async () => {
     const sink = createEventStreamFromTraceSink({
       emit(event) {
         if (event.name === "trace.unknown") {
@@ -134,7 +141,31 @@ describe("EventStream primitives", () => {
       createTraceEvent("trace.unknown"),
     ]);
 
-    expect(result).toBeNull();
+    expect(result).toBe(true);
+  });
+
+  it("waits for a deferred wrapped emit before starting the next", async () => {
+    let resolveFirst: (value: boolean) => void = (_value: boolean) => undefined;
+    const seen: string[] = [];
+    const first = new Promise<boolean>((resolve) => {
+      resolveFirst = resolve;
+    });
+    const sink = createEventStreamFromTraceSink({
+      emit(event) {
+        seen.push(event.name);
+        return event.name === "trace.first" ? first : true;
+      },
+    });
+
+    const result = sink.emitMany?.([
+      createTraceEvent("trace.first"),
+      createTraceEvent("trace.second"),
+    ]);
+
+    expect(seen).toEqual(["trace.first"]);
+    resolveFirst(true);
+    expect(await result).toBe(true);
+    expect(seen).toEqual(["trace.first", "trace.second"]);
   });
 
   it("prefers emitMany when available", async () => {
@@ -161,7 +192,7 @@ describe("EventStream primitives", () => {
 
     const stream = createInteractionEventEmitterStream({
       emitter: {
-        emit(event) {
+        emit(event: string) {
           emitted.push(event as string);
           return true;
         },
@@ -183,5 +214,112 @@ describe("EventStream primitives", () => {
 
     expect(result).toBe(true);
     expect(emitted).toEqual(["diagnostic"]);
+  });
+
+  it("emits mapped events sequentially and keeps an applicable success", async () => {
+    let resolveFirst: (value: boolean) => void = (_value: boolean) => undefined;
+    const emitted: string[] = [];
+    const first = new Promise<boolean>((resolve) => {
+      resolveFirst = resolve;
+    });
+    const stream = createInteractionEventEmitterStream({
+      emitter: {
+        emit(event: string) {
+          emitted.push(event);
+          return event === "first" ? first : null;
+        },
+      },
+      mapper: {
+        mapEvent() {
+          return ["first", "second"];
+        },
+      },
+    });
+    const interactionEvent: InteractionEvent = {
+      kind: "diagnostic",
+      entry: { level: "warn", kind: "adapter", message: "demo" },
+      meta: { sequence: 1, timestamp: 0, sourceId: "test" },
+    };
+
+    const result = stream.emit(toInteractionEvent(interactionEvent));
+
+    expect(emitted).toEqual(["first"]);
+    resolveFirst(true);
+    expect(await result).toBe(true);
+    expect(emitted).toEqual(["first", "second"]);
+  });
+
+  it("rejects malformed interaction payloads before mapper state can change", async () => {
+    const mappedKinds: string[] = [];
+    const emitted: string[] = [];
+    const stream = createInteractionEventEmitterStream({
+      emitter: {
+        emit(event: string) {
+          emitted.push(event);
+          return true;
+        },
+      },
+      mapper: {
+        mapEvent(event) {
+          mappedKinds.push(event.kind);
+          return [event.kind];
+        },
+      },
+    });
+    const meta = { sequence: 1, timestamp: 0, sourceId: "test" };
+    const malformed = [
+      { kind: "model", meta },
+      { kind: "query", event: { type: "unknown" }, meta },
+      { kind: "item", event: { type: "completed", item: null }, meta },
+      { kind: "subagent", event: { type: "selected", agent: null }, meta },
+      { kind: "diagnostic", entry: { level: "warn" }, meta },
+      { kind: "trace", event: { kind: "trace.demo" }, meta },
+      { kind: "event-stream", event: { data: {} }, meta },
+    ];
+
+    for (const event of malformed) {
+      expect(await stream.emit(toUncheckedInteractionEvent(event))).toBeNull();
+    }
+
+    expect(mappedKinds).toEqual([]);
+    expect(emitted).toEqual([]);
+  });
+
+  it("shares ordered batch delivery between interaction sinks and streams", async () => {
+    const delivered: string[][] = [];
+    const mapper = {
+      mapEvent(event: InteractionEvent) {
+        return [event.kind, `${event.meta.sourceId}:${event.meta.sequence}`];
+      },
+    };
+    const deliver = (events: string[]) => {
+      delivered.push(events);
+      return events.length > 0 ? true : null;
+    };
+    const sink = createInteractionEventDeliverySink({ mapper, deliver });
+    const stream = createInteractionEventDeliveryStream({ mapper, deliver });
+    const first: InteractionEvent = {
+      kind: "diagnostic",
+      entry: { level: "warn", kind: "adapter", message: "demo" },
+      meta: { sequence: 1, timestamp: 0, sourceId: "first" },
+    };
+    const second: InteractionEvent = {
+      kind: "trace",
+      event: { kind: "trace.demo", at: "now" },
+      meta: { sequence: 2, timestamp: 0, sourceId: "second" },
+    };
+
+    expect(await sink.onEvent(first)).toBe(true);
+    expect(
+      await stream.emitMany([
+        toInteractionEvent(first),
+        createTraceEvent(),
+        toInteractionEvent(second),
+      ]),
+    ).toBe(true);
+    expect(delivered).toEqual([
+      ["diagnostic", "first:1"],
+      ["diagnostic", "first:1", "trace", "second:2"],
+    ]);
   });
 });

@@ -62,13 +62,34 @@ describe("Recipe events", () => {
     expect(result).toBe(false);
   });
 
-  it("returns null when any emit result is unknown", () => {
+  it("returns true when at least one emit succeeds and none fail", () => {
     const stream: EventStream = {
       emit: (event) => (event === eventA ? null : true),
     };
     const state = createState();
     const result = emitRecipeEvents(createContext(stream), state, [eventA, eventB]);
 
-    expect(result).toBeNull();
+    expect(result).toBe(true);
+  });
+
+  it("waits for a deferred fallback emit before starting the next", async () => {
+    let resolveFirst: (value: boolean) => void = (_value: boolean) => undefined;
+    const emitted: AdapterTraceEvent[] = [];
+    const first = new Promise<boolean>((resolve) => {
+      resolveFirst = resolve;
+    });
+    const stream: EventStream = {
+      emit: (event) => {
+        emitted.push(event);
+        return event === eventA ? first : true;
+      },
+    };
+
+    const result = emitRecipeEvents(createContext(stream), createState(), [eventA, eventB]);
+
+    expect(emitted).toEqual([eventA]);
+    resolveFirst(true);
+    expect(await result).toBe(true);
+    expect(emitted).toEqual([eventA, eventB]);
   });
 });

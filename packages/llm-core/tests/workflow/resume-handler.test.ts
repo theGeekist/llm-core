@@ -1,19 +1,24 @@
 import { describe, expect, it } from "bun:test";
 import type { AdapterBundle } from "#adapters";
-import type { DiagnosticEntry } from "#shared/reporting";
-import type { TraceEvent } from "#shared/reporting";
+import type { DiagnosticEntry, TraceEvent } from "#shared/reporting";
 import type { Outcome, Runtime } from "#workflow/types";
 import { createResumeHandler } from "../../src/workflow/runtime/resume-handler";
 import { toResolvedAdapters } from "../../src/workflow/runtime/adapters";
-import { createResumeSnapshot, diagnosticMessages } from "./helpers";
+import { diagnosticMessages } from "./helpers";
 import type { PauseSession } from "../../src/workflow/driver/types";
 import type { PipelinePauseSnapshot } from "@wpkernel/pipeline/core";
 
+const createDeferredResume = () => {
+  let release!: () => void;
+  const promise = new Promise<{ artefact: { ok: boolean } }>((resolve) => {
+    release = () => resolve({ artefact: { ok: true } });
+  });
+  return { promise, release };
+};
+
 describe("Workflow resume handler", () => {
   const baseAdapters: AdapterBundle = { constructs: {} };
-  const tokenIterator = "token-iterator";
-  const tokenSnapshot = "token-snapshot";
-  const readErrorDiagnostics = () => [] as DiagnosticEntry[];
+  const token = "token-iterator";
   const errorOutcome = (
     error: unknown,
     runtimeTrace: TraceEvent[],
@@ -29,19 +34,14 @@ describe("Workflow resume handler", () => {
     getDiagnostics: () => DiagnosticEntry[];
     trace: TraceEvent[];
     diagnosticsMode: "default" | "strict";
-    recordSnapshot?: (value: unknown) => unknown;
-  }): Outcome<Record<string, unknown>> => {
-    void input.diagnosticsMode;
-    void input.recordSnapshot;
-    return {
-      status: "ok",
-      artefact: { value: input.result },
-      trace: input.trace,
-      diagnostics: input.getDiagnostics(),
-    };
-  };
+  }): Outcome<Record<string, unknown>> => ({
+    status: "ok",
+    artefact: { value: input.result },
+    trace: input.trace,
+    diagnostics: input.getDiagnostics(),
+  });
 
-  const createPauseSession = (token: string): PauseSession => {
+  const createPauseSession = (): PauseSession => {
     const snapshot: PipelinePauseSnapshot<unknown> = {
       stageIndex: 0,
       state: {},
@@ -52,33 +52,21 @@ describe("Workflow resume handler", () => {
     return {
       snapshot,
       getDiagnostics: () => [],
-      createdAt: Date.now(),
+      createdAt: snapshot.createdAt,
     };
   };
 
-  it("continues pause sessions through store deletes", async () => {
-    const pauseSessions = new Map<unknown, PauseSession>();
-    pauseSessions.set(tokenIterator, createPauseSession(tokenIterator));
-    let deleted = false;
-    const runtime = {
-      resume: {
-        resolve: () => ({ input: "resume" }),
-        sessionStore: {
-          get: () => undefined,
-          set: () => undefined,
-          delete: () => {
-            deleted = true;
-          },
-        },
-      },
-    } satisfies Runtime;
-
-    const handler = createResumeHandler({
+  const createHandler = (input: {
+    pauseSessions: Map<unknown, PauseSession>;
+    resume: (snapshot: PipelinePauseSnapshot<unknown>, input?: unknown) => unknown;
+    readErrorDiagnostics?: (error: unknown) => DiagnosticEntry[];
+  }) =>
+    createResumeHandler({
       contractName: "agent",
       extensionRegistration: [],
       pipeline: {
         run: () => ({ artefact: { ok: true } }),
-        resume: () => ({ artefact: { ok: true } }),
+        resume: input.resume,
       },
       resolveAdaptersForRun: () => ({
         adapters: baseAdapters,
@@ -90,274 +78,91 @@ describe("Workflow resume handler", () => {
       readContractDiagnostics: () => [],
       buildDiagnostics: [],
       strictErrorMessage: "strict",
-      readErrorDiagnostics,
+      readErrorDiagnostics: input.readErrorDiagnostics ?? (() => []),
       errorOutcome,
       finalizeResult,
       baseAdapters,
-      pauseSessions,
+      pauseSessions: input.pauseSessions,
     });
 
-    const outcome = await handler(tokenIterator, undefined, runtime);
+  const runtime = {
+    resume: { resolve: () => ({ input: "resume" }) },
+  } satisfies Runtime;
+
+  it("consumes an in-memory pause session after a successful resume", async () => {
+    const pauseSessions = new Map<unknown, PauseSession>([[token, createPauseSession()]]);
+    const handler = createHandler({
+      pauseSessions,
+      resume: () => ({ artefact: { ok: true } }),
+    });
+
+    const outcome = await handler(token, undefined, runtime);
+
     expect(outcome.status).toBe("ok");
-    expect(deleted).toBe(true);
+    expect(pauseSessions.has(token)).toBe(false);
   });
 
-  it("returns diagnostics when resume handling throws", async () => {
-    const pauseSessions = new Map<unknown, PauseSession>();
-    const runtime = {
+  it("keeps a pause session available when resume fails", async () => {
+    const pauseSessions = new Map<unknown, PauseSession>([[token, createPauseSession()]]);
+    let attempts = 0;
+    const handler = createHandler({
+      pauseSessions,
+      resume: () => {
+        attempts += 1;
+        if (attempts === 1) {
+          throw new Error("resume failed");
+        }
+        return { artefact: { ok: true } };
+      },
+    });
+
+    const first = await handler(token, undefined, runtime);
+    expect(first.status).toBe("error");
+    expect(pauseSessions.has(token)).toBe(true);
+
+    const second = await handler(token, undefined, runtime);
+    expect(second.status).toBe("ok");
+    expect(pauseSessions.has(token)).toBe(false);
+  });
+
+  it("returns diagnostics when resume adapter resolution throws", async () => {
+    const pauseSessions = new Map<unknown, PauseSession>([[token, createPauseSession()]]);
+    const handler = createHandler({
+      pauseSessions,
+      resume: () => ({ artefact: { ok: true } }),
+      readErrorDiagnostics: () => [{ level: "warn", kind: "resume", message: "resume error" }],
+    });
+    const throwingRuntime = {
       resume: {
-        resolve: () => ({ input: "resume" }),
-        sessionStore: {
-          get: () => {
-            throw new Error("store boom");
-          },
-          set: () => undefined,
-          delete: () => undefined,
+        resolve: () => {
+          throw new Error("adapter boom");
         },
       },
     } satisfies Runtime;
 
-    const readErrorDiagnostics = () =>
-      [{ level: "warn", kind: "resume", message: "resume error" }] as DiagnosticEntry[];
+    const outcome = await handler(token, undefined, throwingRuntime);
 
-    const handler = createResumeHandler({
-      contractName: "agent",
-      extensionRegistration: [],
-      pipeline: {
-        run: () => ({ artefact: { ok: true } }),
-        resume: () => ({ artefact: { ok: true } }),
-      },
-      resolveAdaptersForRun: () => ({
-        adapters: baseAdapters,
-        diagnostics: [],
-        constructs: {},
-      }),
-      toResolvedAdapters,
-      applyAdapterOverrides: (resolved) => resolved,
-      readContractDiagnostics: () => [],
-      buildDiagnostics: [],
-      strictErrorMessage: "strict",
-      readErrorDiagnostics,
-      errorOutcome,
-      finalizeResult,
-      baseAdapters,
-      pauseSessions,
-    });
-
-    const outcome = await handler("token-boom", undefined, runtime);
     expect(outcome.status).toBe("error");
     expect(diagnosticMessages(outcome.diagnostics)).toContain("resume error");
+    expect(pauseSessions.has(token)).toBe(true);
   });
 
-  it("ignores provider overrides for pause resumes", async () => {
-    const pauseSessions = new Map<unknown, PauseSession>();
-    pauseSessions.set(tokenIterator, createPauseSession(tokenIterator));
-    let resolveCalls = 0;
-    const runtime = {
-      resume: {
-        resolve: () => ({ input: "resume", providers: { model: "override" } }),
-      },
-    } satisfies Runtime;
-
-    const handler = createResumeHandler({
-      contractName: "agent",
-      extensionRegistration: [],
-      pipeline: {
-        run: () => ({ artefact: { ok: true } }),
-        resume: () => ({ artefact: { ok: true } }),
-      },
-      resolveAdaptersForRun: () => {
-        resolveCalls += 1;
-        return {
-          adapters: baseAdapters,
-          diagnostics: [],
-          constructs: {},
-        };
-      },
-      toResolvedAdapters,
-      applyAdapterOverrides: (resolved) => resolved,
-      readContractDiagnostics: () => [],
-      buildDiagnostics: [],
-      strictErrorMessage: "strict",
-      readErrorDiagnostics,
-      errorOutcome,
-      finalizeResult,
-      baseAdapters,
+  it("rejects concurrent resumes and releases the claim after completion", async () => {
+    const pauseSessions = new Map<unknown, PauseSession>([[token, createPauseSession()]]);
+    const deferred = createDeferredResume();
+    const handler = createHandler({
       pauseSessions,
+      resume: () => deferred.promise,
     });
 
-    const outcome = await handler(tokenIterator, undefined, runtime);
-    expect(outcome.status).toBe("ok");
-    expect(resolveCalls).toBe(1);
-  });
+    const first = handler(token, undefined, runtime);
+    const concurrent = await handler(token, undefined, runtime);
+    expect(concurrent.status).toBe("error");
+    if (concurrent.status === "error") {
+      expect(String(concurrent.error)).toContain("already in flight");
+    }
 
-  it("uses resume error handling when store deletes fail", async () => {
-    const pauseSessions = new Map<unknown, PauseSession>();
-    const runtime = {
-      resume: {
-        resolve: () => ({ input: "resume" }),
-        sessionStore: {
-          get: () => createResumeSnapshot(tokenSnapshot, { step: 1 }),
-          set: () => undefined,
-          delete: () => {
-            throw new Error("delete failed");
-          },
-        },
-      },
-    } satisfies Runtime;
-
-    const handler = createResumeHandler({
-      contractName: "agent",
-      extensionRegistration: [],
-      pipeline: {
-        run: () => ({ artefact: { ok: true } }),
-        resume: () => ({ artefact: { ok: true } }),
-      },
-      resolveAdaptersForRun: () => ({
-        adapters: baseAdapters,
-        diagnostics: [],
-        constructs: {},
-      }),
-      toResolvedAdapters,
-      applyAdapterOverrides: (resolved) => resolved,
-      readContractDiagnostics: () => [],
-      buildDiagnostics: [],
-      strictErrorMessage: "strict",
-      readErrorDiagnostics,
-      errorOutcome,
-      finalizeResult,
-      baseAdapters,
-      pauseSessions,
-    });
-
-    const outcome = await handler(tokenSnapshot, undefined, runtime);
-    expect(outcome.status).toBe("error");
-  });
-
-  it("does not delete sessions when resume outcomes are errors", async () => {
-    const pauseSessions = new Map<unknown, PauseSession>();
-    let deleted = false;
-    const runtime = {
-      resume: {
-        resolve: () => ({ input: "resume" }),
-        sessionStore: {
-          get: () => createResumeSnapshot(tokenSnapshot, { step: 1 }),
-          set: () => undefined,
-          delete: () => {
-            deleted = true;
-          },
-        },
-      },
-    } satisfies Runtime;
-
-    const handler = createResumeHandler({
-      contractName: "agent",
-      extensionRegistration: [],
-      pipeline: {
-        run: () => ({ artefact: { ok: true } }),
-        resume: () => ({ artefact: { ok: true } }),
-      },
-      resolveAdaptersForRun: () => ({
-        adapters: baseAdapters,
-        diagnostics: [],
-        constructs: {},
-      }),
-      toResolvedAdapters,
-      applyAdapterOverrides: (resolved) => resolved,
-      readContractDiagnostics: () => [],
-      buildDiagnostics: [],
-      strictErrorMessage: "strict",
-      readErrorDiagnostics,
-      errorOutcome,
-      finalizeResult: (input) => {
-        void input.diagnosticsMode;
-        void input.recordSnapshot;
-        return {
-          status: "error",
-          error: new Error("resume failed"),
-          trace: input.trace,
-          diagnostics: [],
-        };
-      },
-      baseAdapters,
-      pauseSessions,
-    });
-
-    const outcome = await handler(tokenSnapshot, undefined, runtime);
-    expect(outcome.status).toBe("error");
-    expect(deleted).toBe(false);
-  });
-
-  it("returns paused outcomes when resume yields paused", async () => {
-    const pauseSessions = new Map<unknown, PauseSession>();
-    pauseSessions.set(tokenIterator, createPauseSession(tokenIterator));
-    let deleted = false;
-    const runtime = {
-      resume: {
-        resolve: () => ({ input: "resume" }),
-        sessionStore: {
-          get: () => undefined,
-          set: () => undefined,
-          delete: () => {
-            deleted = true;
-          },
-        },
-      },
-    } satisfies Runtime;
-
-    const handler = createResumeHandler({
-      contractName: "agent",
-      extensionRegistration: [],
-      pipeline: {
-        run: () => ({ artefact: { ok: true } }),
-        resume: () => ({
-          __paused: true,
-          snapshot: {
-            stageIndex: 0,
-            state: {},
-            token: "paused",
-            pauseKind: "human",
-            createdAt: Date.now(),
-          },
-        }),
-      },
-      resolveAdaptersForRun: () => ({
-        adapters: baseAdapters,
-        diagnostics: [],
-        constructs: {},
-      }),
-      toResolvedAdapters,
-      applyAdapterOverrides: (resolved) => resolved,
-      readContractDiagnostics: () => [],
-      buildDiagnostics: [],
-      strictErrorMessage: "strict",
-      readErrorDiagnostics,
-      errorOutcome,
-      finalizeResult: (input) => {
-        void input.diagnosticsMode;
-        void input.recordSnapshot;
-        const diagnostics = input.getDiagnostics();
-        return (input.result as { __paused?: boolean }).__paused
-          ? {
-              status: "paused",
-              token: (input.result as { snapshot?: { token?: unknown } }).snapshot?.token,
-              artefact: {},
-              trace: input.trace,
-              diagnostics,
-            }
-          : {
-              status: "ok",
-              artefact: { value: input.result },
-              trace: input.trace,
-              diagnostics,
-            };
-      },
-      baseAdapters,
-      pauseSessions,
-    });
-
-    const outcome = await handler(tokenIterator, undefined, runtime);
-    expect(outcome.status).toBe("paused");
-    expect(deleted).toBe(false);
+    deferred.release();
+    expect((await first).status).toBe("ok");
   });
 });

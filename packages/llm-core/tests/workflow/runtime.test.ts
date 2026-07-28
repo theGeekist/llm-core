@@ -77,9 +77,14 @@ describe("Workflow runtime", () => {
     const runtime = makeRuntime("hitl-gate", {
       run: () =>
         Promise.resolve({
-          paused: true,
-          token: TOKEN_PAUSED,
-          artefact: { partial: true },
+          __paused: true,
+          snapshot: {
+            stageIndex: 0,
+            state: { userState: { partial: true } },
+            token: TOKEN_PAUSED,
+            pauseKind: "human",
+            createdAt: Date.now(),
+          } satisfies PipelinePauseSnapshot<unknown>,
         }),
     });
 
@@ -128,11 +133,18 @@ describe("Workflow runtime", () => {
         },
       ],
       run: () => ({
-        paused: true,
-        token: TOKEN_PAUSED,
-        artefact: { partial: true },
-        steps,
-        state: { helperRollbacks: rollbacks },
+        __paused: true,
+        snapshot: {
+          stageIndex: 0,
+          state: {
+            userState: { partial: true },
+            steps,
+            helperRollbacks: rollbacks,
+          },
+          token: TOKEN_PAUSED,
+          pauseKind: "human",
+          createdAt: Date.now(),
+        } satisfies PipelinePauseSnapshot<unknown>,
       }),
     });
 

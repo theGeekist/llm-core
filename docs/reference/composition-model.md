@@ -39,7 +39,7 @@ Every recipe (leaf or composite) exposes the same surface:
 - `build()` - advanced, returns a reusable runnable.
 - `run(input, overrides?)` - the primary entry point.
 
-Each recipe exports `XRecipeConfig`, and `configure()` only accepts that type. There is no global config bag.
+Each recipe exports `XRecipeConfig`, and its factory only accepts that type. There is no global config bag.
 
 :::tabs
 == TypeScript
@@ -49,8 +49,7 @@ import { recipes } from "@geekist/llm-core/recipes";
 import type { RagRecipeConfig } from "@geekist/llm-core/recipes";
 
 const rag = recipes
-  .rag()
-  .configure({
+  .rag({
     prompt: { system: "You are a helpful assistant." },
     retrieval: { topK: 5 },
   } satisfies RagRecipeConfig)
@@ -68,8 +67,7 @@ const out = await rag.run({ input: "Explain DSP", documents }, { adapters: { mod
 import { recipes } from "@geekist/llm-core/recipes";
 
 const rag = recipes
-  .rag()
-  .configure({
+  .rag({
     prompt: { system: "You are a helpful assistant." },
     retrieval: { topK: 5 },
   })
@@ -124,8 +122,7 @@ const retrieval = recipes["rag.retrieval"]().defaults({ adapters: { retriever } 
 import type { AgentRecipeConfig } from "@geekist/llm-core/recipes";
 
 const agent = recipes
-  .agent()
-  .configure({ agent: { role: "support" } } satisfies AgentRecipeConfig)
+  .agent({ planning: { modelInstructions: "Act as support." } } satisfies AgentRecipeConfig)
   .defaults({ adapters: { model, tools, memory } });
 
 const out = await agent.run(
@@ -138,8 +135,7 @@ const out = await agent.run(
 
 ```js
 const agent = recipes
-  .agent()
-  .configure({ agent: { role: "support" } })
+  .agent({ planning: { modelInstructions: "Act as support." } })
   .defaults({ adapters: { model, tools, memory } });
 
 const out = await agent.run(
@@ -164,13 +160,11 @@ Packs and flows are primarily for recipe authors and internal composition. Most 
 import type { AgentRecipeConfig } from "@geekist/llm-core/recipes";
 
 const supportAgent = recipes
-  .agent()
+  .agent({
+    planning: { modelInstructions: "Act as support." },
+  } satisfies AgentRecipeConfig)
   .use(recipes.rag())
   .use(recipes.hitl())
-  .configure({
-    agent: { role: "support" },
-    rag: { retrieval: { topK: 8 } },
-  } satisfies AgentRecipeConfig)
   .defaults({ adapters: { model, tools, retriever, vectorStore } });
 
 const out = await supportAgent.run({ input: "Investigate the outage" });
@@ -180,13 +174,11 @@ const out = await supportAgent.run({ input: "Investigate the outage" });
 
 ```js
 const supportAgent = recipes
-  .agent()
+  .agent({
+    planning: { modelInstructions: "Act as support." },
+  })
   .use(recipes.rag())
   .use(recipes.hitl())
-  .configure({
-    agent: { role: "support" },
-    rag: { retrieval: { topK: 8 } },
-  })
   .defaults({ adapters: { model, tools, retriever, vectorStore } });
 
 const out = await supportAgent.run({ input: "Investigate the outage" });

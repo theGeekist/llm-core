@@ -241,6 +241,77 @@ describe("Workflow adapter context wrappers", () => {
     expect(overrideDiagnostics[0]?.message).toBe("embed");
   });
 
+  it("places default context after the real Memory.save and reset domain arguments", async () => {
+    const { context } = createAdapterContext();
+    const received: AdapterCallContext[] = [];
+    const wrapped = attachAdapterContext(
+      {
+        memory: {
+          save: (_input, _output, ctx) => {
+            if (ctx) {
+              received.push(ctx);
+            }
+            return true;
+          },
+          reset: (ctx) => {
+            if (ctx) {
+              received.push(ctx);
+            }
+            return true;
+          },
+        },
+      },
+      context,
+    );
+
+    await wrapped.memory?.save?.({ input: "hi" }, { output: "ok" });
+    await wrapped.memory?.reset?.();
+
+    expect(received).toEqual([context, context]);
+  });
+
+  it("pads optional domain arguments before injecting context", async () => {
+    const { context } = createAdapterContext();
+    let cacheTtl: number | undefined = 42;
+    let cacheContext: AdapterCallContext | undefined;
+    let listPrefix: string | undefined = "unexpected";
+    let listContext: AdapterCallContext | undefined;
+    const wrapped = attachAdapterContext(
+      {
+        cache: {
+          get: () => null,
+          set: (...args) => {
+            const ttlMs = args[2];
+            const ctx = args[3];
+            cacheTtl = ttlMs;
+            cacheContext = ctx;
+            return true;
+          },
+          delete: () => true,
+        },
+        storage: {
+          get: () => null,
+          put: () => true,
+          delete: () => true,
+          list: (prefix, ctx) => {
+            listPrefix = prefix;
+            listContext = ctx;
+            return [];
+          },
+        },
+      },
+      context,
+    );
+
+    await wrapped.cache?.set("key", { bytes: new Uint8Array() });
+    await wrapped.storage?.list();
+
+    expect(cacheTtl).toBeUndefined();
+    expect(cacheContext).toBe(context);
+    expect(listPrefix).toBeUndefined();
+    expect(listContext).toBe(context);
+  });
+
   it("retries adapter calls when retry policy is provided", async () => {
     const { context } = createAdapterContext();
     let attempts = 0;

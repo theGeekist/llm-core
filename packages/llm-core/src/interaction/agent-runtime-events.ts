@@ -7,6 +7,7 @@ import type { AgentState } from "#recipes/agentic/shared";
 import type { Outcome } from "#workflow/types";
 import { createRecipeDiagnostic } from "#shared/diagnostics";
 import type {
+  AgentDefinition,
   AgentLoopConfig,
   AgentLoopStateSnapshot,
   InteractionEvent,
@@ -15,6 +16,7 @@ import type {
   InteractionSubagentEvent,
 } from "./types";
 import { emitInteractionEvents } from "./transport";
+import { resolveAgentExecutionProfile, type AgentExecutionProfile } from "./agent-profile";
 
 export type AgentEventState = {
   interactionId: string;
@@ -64,49 +66,26 @@ export function createAgentEventState(input: {
   };
 }
 
-function trimToolName(value: string) {
-  return value.trim();
-}
-
-function isNonEmpty(value: string) {
-  return value.length > 0;
-}
-
-function normalizeToolAllowlist(list?: string[]) {
-  if (!list || list.length === 0) {
-    return null;
-  }
-  const trimmed = list.map(trimToolName).filter(isNonEmpty);
-  if (trimmed.length === 0) {
-    return null;
-  }
-  const unique = Array.from(new Set(trimmed));
-  unique.sort();
-  return unique;
-}
-
-function readSelectedAgentId(config?: AgentLoopConfig) {
-  const explicit = config?.agentSelection?.agentId;
-  if (explicit) {
-    return explicit;
-  }
-  const agents = config?.agents ?? [];
-  if (agents.length === 1) {
-    return agents[0]?.id ?? null;
-  }
-  return null;
+function readAgentExecutionProfile(
+  profile: AgentExecutionProfile | undefined,
+  config: AgentLoopConfig | undefined,
+) {
+  return profile ?? resolveAgentExecutionProfile(config);
 }
 
 function buildAgentLoopSnapshot(input: {
   config?: AgentLoopConfig;
+  profile?: AgentExecutionProfile;
   skills?: AgentLoopStateSnapshot["skills"];
-  approvalCacheKeys?: string[];
+  toolAllowlist?: string[] | null;
 }): AgentLoopStateSnapshot | null {
-  if (!input.config && !input.skills && !input.approvalCacheKeys) {
+  if (!input.config && !input.skills) {
     return null;
   }
-  const selectedAgentId = readSelectedAgentId(input.config);
-  const toolAllowlist = normalizeToolAllowlist(input.config?.tools?.allowlist);
+  const profile = readAgentExecutionProfile(input.profile, input.config);
+  const selectedAgentId = profile.selectedAgent?.id;
+  const toolAllowlist =
+    input.toolAllowlist === undefined ? profile.toolAllowlist : input.toolAllowlist;
   const snapshot: AgentLoopStateSnapshot = {};
   if (selectedAgentId) {
     snapshot.selectedAgentId = selectedAgentId;
@@ -117,22 +96,21 @@ function buildAgentLoopSnapshot(input: {
   if (input.skills) {
     snapshot.skills = input.skills;
   }
-  if (input.approvalCacheKeys) {
-    snapshot.approvalCacheKeys = input.approvalCacheKeys;
-  }
   return Object.keys(snapshot).length > 0 ? snapshot : null;
 }
 
 export function appendAgentLoopSnapshot(input: {
   config?: AgentLoopConfig;
+  profile?: AgentExecutionProfile;
   skills?: AgentLoopStateSnapshot["skills"];
-  approvalCacheKeys?: string[];
+  toolAllowlist?: string[] | null;
   outcome: Outcome<unknown>;
 }) {
   const snapshot = buildAgentLoopSnapshot({
     config: input.config,
+    profile: input.profile,
     skills: input.skills,
-    approvalCacheKeys: input.approvalCacheKeys,
+    toolAllowlist: input.toolAllowlist,
   });
   if (snapshot) {
     addTrace({ trace: input.outcome.trace }, "agent.loop.snapshot", { snapshot });
@@ -158,6 +136,15 @@ export function validateAgentSelection(input: {
 }) {
   const agentId = input.config?.agentSelection?.agentId;
   if (!agentId) {
+    const agents = input.config?.agents ?? [];
+    if (agents.length > 1) {
+      addDiagnostic(
+        { diagnostics: input.outcome.diagnostics },
+        createRecipeDiagnostic("Agent selection is ambiguous.", {
+          agentIds: agents.map((agent) => agent.id).sort(),
+        }),
+      );
+    }
     return input.outcome;
   }
   const hasAgent = hasAgentWithId(input.config?.agents, agentId);
@@ -269,22 +256,7 @@ function buildInteractionItemEvents(input: {
   return mapped;
 }
 
-function readSelectedAgent(config?: AgentLoopConfig) {
-  const agentId = readSelectedAgentId(config);
-  if (!agentId || !config?.agents) {
-    return null;
-  }
-  for (const agent of config.agents) {
-    if (agent.id === agentId) {
-      return agent;
-    }
-  }
-  return null;
-}
-
-function buildSubagentSelectedEvent(
-  agent: NonNullable<ReturnType<typeof readSelectedAgent>>,
-): InteractionSubagentEvent {
+function buildSubagentSelectedEvent(agent: AgentDefinition): InteractionSubagentEvent {
   return {
     type: "selected",
     agent: {
@@ -315,10 +287,11 @@ function buildInteractionSubagentEvent(input: {
 function buildAgentInteractionEvents(input: {
   outcome: Outcome<unknown>;
   config?: AgentLoopConfig;
+  profile?: AgentExecutionProfile;
   eventState: AgentEventState;
 }) {
   const events: InteractionEvent[] = [];
-  const selected = readSelectedAgent(input.config);
+  const selected = readAgentExecutionProfile(input.profile, input.config).selectedAgent;
   if (selected) {
     events.push(
       buildInteractionSubagentEvent({
@@ -340,6 +313,7 @@ function buildAgentInteractionEvents(input: {
 export function emitAgentLoopEvents(input: {
   outcome: Outcome<unknown>;
   config?: AgentLoopConfig;
+  profile?: AgentExecutionProfile;
   eventStream?: EventStream;
   eventState?: AgentEventState;
 }): MaybePromise<boolean | null> {
@@ -349,6 +323,7 @@ export function emitAgentLoopEvents(input: {
   const events = buildAgentInteractionEvents({
     outcome: input.outcome,
     config: input.config,
+    profile: input.profile,
     eventState: input.eventState,
   });
   if (events.length === 0) {

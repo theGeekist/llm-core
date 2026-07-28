@@ -6,8 +6,14 @@ export { createCacheFromKVStore, createMemoryCache } from "./cache";
 export { createEventStreamFanout, createEventStreamFromTraceSink } from "./event-stream";
 export { createInterruptStrategy } from "./interrupt";
 export type {
+  InteractionEventDelivery,
+  InteractionEventDeliveryOptions,
   InteractionEventEmitter,
   InteractionEventEmitterStreamOptions,
   InteractionEventMapper,
 } from "./interaction-event-emitter";
-export { createInteractionEventEmitterStream } from "./interaction-event-emitter";
+export {
+  createInteractionEventDeliverySink,
+  createInteractionEventDeliveryStream,
+  createInteractionEventEmitterStream,
+} from "./interaction-event-emitter";

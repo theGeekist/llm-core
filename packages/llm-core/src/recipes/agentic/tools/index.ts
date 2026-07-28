@@ -1,7 +1,7 @@
 import { bindFirst } from "#shared/fp";
 import { maybeMap } from "#shared/maybe";
 import { Recipe } from "../../flow";
-import { defineRecipe } from "../../handle";
+import { defineSinglePackRecipe } from "../../handle";
 import type { RecipeDefaults, StepApply } from "../../flow";
 import { AgentStateHelpers, type AgentState } from "../shared";
 import type { ModelResult, ToolResult } from "#adapters/types";
@@ -60,14 +60,7 @@ export const createAgentToolsPack = (config?: AgentToolsConfig) =>
     minimumCapabilities: ["model", "tools"],
   });
 
-const resolveToolsPack = (config?: AgentToolsConfig) =>
-  config ? createAgentToolsPack(config) : AgentToolsPack;
-
-const resolveToolsRecipeDefinition = (config?: AgentToolsConfig) => ({
-  packs: [resolveToolsPack(config)],
-});
-
-export const createAgentToolsRecipe = defineRecipe("agent", resolveToolsRecipeDefinition);
-
-export const AgentToolsPack = createAgentToolsPack();
+const tools = defineSinglePackRecipe("agent", createAgentToolsPack);
+export const createAgentToolsRecipe = tools.createRecipe;
+export const AgentToolsPack = tools.pack;
 export const agentToolsRecipe = createAgentToolsRecipe();

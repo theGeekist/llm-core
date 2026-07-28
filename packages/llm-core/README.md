@@ -39,24 +39,15 @@ deno add npm:@geekist/llm-core
 ```js
 import { fromAiSdkModel } from "@geekist/llm-core/adapters";
 import { openai } from "@ai-sdk/openai";
-import {
-  createInteractionPipelineWithDefaults,
-  runInteractionPipeline,
-} from "@geekist/llm-core/interaction";
+import { createInteractionHandle } from "@geekist/llm-core/interaction";
 
 const model = fromAiSdkModel(openai("gpt-4o-mini"));
-const pipeline = createInteractionPipelineWithDefaults();
+const interaction = createInteractionHandle({ adapters: { model } });
 
-const result = await runInteractionPipeline(pipeline, {
-  input: { message: { role: "user", content: "Hello!" } },
-  adapters: { model },
+const result = await interaction.run({
+  message: { role: "user", content: "Hello!" },
 });
-
-if ("__paused" in result && result.__paused) {
-  throw new Error("Interaction paused.");
-}
-
-console.log(result.artefact.messages[1]?.content);
+console.log(result.state.messages[1]?.content);
 ```
 
 ## Quick start (workflow recipe)

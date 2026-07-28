@@ -1,10 +1,10 @@
 // #region docs
-import { createRegistryFromDefaults } from "#adapters";
+import { createAdapterRegistry } from "#adapters";
 import type { Model } from "#adapters";
 
 const myModelAdapter = {} as Model; // Mock
 
-const registry = createRegistryFromDefaults();
+const registry = createAdapterRegistry();
 registry.registerProvider({
   construct: "model",
   providerKey: "custom",

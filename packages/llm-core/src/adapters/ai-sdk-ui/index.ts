@@ -1,15 +1,13 @@
 export type {
   AiSdkInteractionEventStreamOptions,
-  AiSdkInteractionMapper,
   AiSdkInteractionMapperOptions,
   AiSdkInteractionSinkOptions,
+  AiSdkUiMessageChunkMapper,
 } from "./interaction";
 export {
   createAiSdkInteractionEventStream,
-  createAiSdkInteractionMapper,
   createAiSdkInteractionSink,
   createAiSdkUiMessageChunkMapper,
-  toAiSdkUiMessageChunks,
 } from "./interaction";
 export type { AiSdkChatTransportOptions } from "./transport";
 export { createAiSdkChatTransport } from "./transport";

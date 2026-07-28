@@ -1,4 +1,5 @@
-import type { DiagnosticEntry, DiagnosticLevel } from "./reporting";
+import { bindFirst } from "./fp";
+import type { DiagnosticEntry, DiagnosticKind, DiagnosticLevel } from "./reporting";
 
 type AdapterDiagnosticShape = {
   level: DiagnosticLevel;
@@ -6,33 +7,21 @@ type AdapterDiagnosticShape = {
   data?: unknown;
 };
 
-export const createLifecycleDiagnostic = (message: string, data?: unknown): DiagnosticEntry => ({
+const createWarningDiagnostic = (
+  kind: DiagnosticKind,
+  message: string,
+  data?: unknown,
+): DiagnosticEntry => ({
   level: "warn",
-  kind: "pipeline",
+  kind,
   message,
   data,
 });
 
-export const createResumeDiagnostic = (message: string, data?: unknown): DiagnosticEntry => ({
-  level: "warn",
-  kind: "resume",
-  message,
-  data,
-});
-
-export const createRequirementDiagnostic = (message: string, data?: unknown): DiagnosticEntry => ({
-  level: "warn",
-  kind: "requirement",
-  message,
-  data,
-});
-
-export const createContractDiagnostic = (message: string, data?: unknown): DiagnosticEntry => ({
-  level: "warn",
-  kind: "contract",
-  message,
-  data,
-});
+export const createLifecycleDiagnostic = bindFirst(createWarningDiagnostic, "pipeline");
+export const createResumeDiagnostic = bindFirst(createWarningDiagnostic, "resume");
+export const createRequirementDiagnostic = bindFirst(createWarningDiagnostic, "requirement");
+export const createContractDiagnostic = bindFirst(createWarningDiagnostic, "contract");
 
 export const createPipelineDiagnostic = (data: unknown): DiagnosticEntry => {
   let level: DiagnosticLevel = "warn";
@@ -58,12 +47,7 @@ export const createPipelineDiagnostic = (data: unknown): DiagnosticEntry => {
   };
 };
 
-export const createRecipeDiagnostic = (message: string, data?: unknown): DiagnosticEntry => ({
-  level: "warn",
-  kind: "recipe",
-  message,
-  data,
-});
+export const createRecipeDiagnostic = bindFirst(createWarningDiagnostic, "recipe");
 
 export const createAdapterDiagnostic = (
   diagnostic: AdapterDiagnosticShape,

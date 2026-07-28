@@ -1,20 +1,11 @@
-import type { AdapterBundle, AdapterDiagnostic } from "#adapters/types";
-import type { MaybePromise } from "#shared/maybe";
-import { bindFirst, curryK } from "#shared/fp";
-import { maybeChain, maybeTry } from "#shared/maybe";
-import { attachAdapterContext, createAdapterContext } from "../adapter-context";
-import { createAdapterDiagnostic, hasErrorDiagnostics } from "#shared/diagnostics";
-import { applyDiagnosticsMode, type DiagnosticEntry, type TraceEvent } from "#shared/reporting";
+import type { AdapterBundle } from "#adapters/types";
+import { bindFirst } from "#shared/fp";
+import { maybeChain, maybeTry, type MaybePromise } from "#shared/maybe";
+import type { DiagnosticEntry, TraceEvent } from "#shared/reporting";
 import type { PipelineWithExtensions, Runtime } from "../types";
-import { createSnapshotRecorder, resolveSessionStore } from "./resume-session";
-import { createDiagnosticsGetter, type FinalizeResult } from "./helpers";
+import type { FinalizeResult } from "./helpers";
 import { createRuntimeFinalize } from "./pause-metadata";
-
-type AdapterResolution = {
-  adapters: AdapterBundle;
-  diagnostics: AdapterDiagnostic[];
-  constructs: Record<string, unknown>;
-};
+import { executePipelineResolution, type AdapterResolution } from "./pipeline-runner";
 
 type PipelineRunner = {
   run: PipelineWithExtensions["run"];
@@ -52,117 +43,40 @@ type RunContext<TOutcome> = {
   ctx: RunWorkflowContext<TOutcome>;
 };
 
-type RunPipelineInput<TOutcome> = {
-  context: RunContext<TOutcome>;
-  runtimeDiagnostics: DiagnosticEntry[];
-  contextDiagnostics: DiagnosticEntry[];
-  finalize: FinalizeResult<TOutcome>;
-};
-
-type RunPipelineResultInput<TOutcome> = {
-  context: RunContext<TOutcome>;
-  runtimeDiagnostics: DiagnosticEntry[];
-  contextDiagnostics: DiagnosticEntry[];
-  result: unknown;
-  finalize: FinalizeResult<TOutcome>;
-};
-
-const runPipelineResult = <TOutcome>(
-  input: RunPipelineResultInput<TOutcome>,
-): MaybePromise<TOutcome> => {
-  const getDiagnostics = createDiagnosticsGetter([
-    input.runtimeDiagnostics,
-    input.contextDiagnostics,
-  ]);
-  return input.finalize({
-    result: input.result,
-    getDiagnostics,
-    trace: input.context.ctx.trace,
-    diagnosticsMode: input.context.ctx.diagnosticsMode,
+const createRunFinalize = <TOutcome>(context: RunContext<TOutcome>, adapters: AdapterBundle) =>
+  createRuntimeFinalize({
+    finalizeResult: context.deps.finalizeResult,
+    interrupt: adapters.interrupt,
   });
-};
 
-const runPipeline = <TOutcome>(
+const runPipelineResolution = <TOutcome>(
   context: RunContext<TOutcome>,
   resolution: AdapterResolution,
-): MaybePromise<TOutcome> => {
-  const resolvedAdapters = context.deps.toResolvedAdapters(resolution);
-  const adapterContext = createAdapterContext();
-  const adaptersWithContext = attachAdapterContext(resolvedAdapters, adapterContext.context, {
-    retryDefaults: context.ctx.runtime?.retryDefaults,
-    retry: context.ctx.runtime?.retry,
+) =>
+  executePipelineResolution({
+    deps: context.deps,
+    resolution,
+    selectAdapters: context.deps.toResolvedAdapters,
+    input: context.ctx.input,
+    runtime: context.ctx.runtime,
     trace: context.ctx.trace,
-  });
-  const adapterDiagnostics = resolution.diagnostics.map((d) => createAdapterDiagnostic(d));
-  const contractDiagnostics = context.deps.readContractDiagnostics(resolvedAdapters);
-  const runtimeDiagnostics = adapterDiagnostics.concat(contractDiagnostics);
-  const adjustedDiagnostics = applyDiagnosticsMode(runtimeDiagnostics, context.ctx.diagnosticsMode);
-  if (context.ctx.diagnosticsMode === "strict" && hasErrorDiagnostics(adjustedDiagnostics)) {
-    const diagnostics = applyDiagnosticsMode(
-      [...context.deps.buildDiagnostics, ...runtimeDiagnostics],
-      context.ctx.diagnosticsMode,
-    );
-    return context.deps.toErrorOutcome(
-      new Error(context.deps.strictErrorMessage),
-      context.ctx.trace,
-      diagnostics,
-    );
-  }
-  const store = resolveSessionStore(context.ctx.runtime, resolvedAdapters);
-  const recordSnapshot = createSnapshotRecorder(store, context.ctx.runtime);
-  const finalize = createRuntimeFinalize({
-    finalizeResult: context.deps.finalizeResult,
-    recordSnapshot,
-    interrupt: resolvedAdapters.interrupt,
-  });
-  const handleResult = bindFirst(handlePipelineResult<TOutcome>, {
-    context,
-    runtimeDiagnostics,
-    contextDiagnostics: adapterContext.diagnostics,
-    finalize,
-  });
-  return maybeChain(
-    handleResult,
-    context.deps.pipeline.run({
-      input: context.ctx.input,
-      runtime: context.ctx.runtime,
-      reporter: context.ctx.runtime?.reporter,
-      adapters: adaptersWithContext,
-    }),
-  );
-};
-
-const handlePipelineResult = <TOutcome>(input: RunPipelineInput<TOutcome>, result: unknown) =>
-  runPipelineResult({
-    context: input.context,
-    runtimeDiagnostics: input.runtimeDiagnostics,
-    contextDiagnostics: input.contextDiagnostics,
-    result,
-    finalize: input.finalize,
+    diagnosticsMode: context.ctx.diagnosticsMode,
+    createFinalize: bindFirst(createRunFinalize<TOutcome>, context),
   });
 
 const runWithAdapters = <TOutcome>(context: RunContext<TOutcome>) =>
   maybeChain(
-    curryK(handleAdapters<TOutcome>)(context),
+    bindFirst(runPipelineResolution<TOutcome>, context),
     context.deps.resolveAdaptersForRun(context.ctx.runtime),
   );
 
-const handleAdapters = <TOutcome>(context: RunContext<TOutcome>, resolution: AdapterResolution) =>
-  runPipeline(context, resolution);
-
-const runWithExtensions = <TOutcome>(context: RunContext<TOutcome>) =>
-  maybeChain(
-    curryK(handleExtensionRegistration<TOutcome>)(context),
-    context.deps.extensionRegistration,
-  );
-
-const handleExtensionRegistration = <TOutcome>(
-  context: RunContext<TOutcome>,
-  _extensions: unknown,
-) => {
+const runAfterExtensions = <TOutcome>(context: RunContext<TOutcome>, _extensions: unknown) => {
   void _extensions;
   return runWithAdapters(context);
 };
+
+const runWithExtensions = <TOutcome>(context: RunContext<TOutcome>) =>
+  maybeChain(bindFirst(runAfterExtensions<TOutcome>, context), context.deps.extensionRegistration);
 
 export const runWorkflow = <TOutcome>(
   deps: RunWorkflowDeps<TOutcome>,

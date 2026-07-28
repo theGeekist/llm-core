@@ -1,5 +1,6 @@
 import { describe, expect, it } from "bun:test";
 import { tool as langchainTool } from "@langchain/core/tools";
+import { jsonSchema } from "ai";
 import { z } from "zod";
 import type { BaseTool } from "@llamaindex/core/llms";
 import {
@@ -67,32 +68,17 @@ describe("Adapter tools", () => {
   it("maps AI SDK tool metadata", () => {
     const sdkTool: AiToolInput = {
       description: "ai tool",
-      inputSchema: {
+      inputSchema: jsonSchema({
         type: "object",
         properties: { query: { type: "string" } },
         required: ["query"],
-      },
+      }),
       execute: ({ query }: { query: string }) => `ok:${query}`,
     };
 
     const adapter = fromAiSdkTool("ai.tool", sdkTool);
     expect(adapter.name).toBe("ai.tool");
     expect(adapter.description).toBe("ai tool");
-    expect(adapter.inputSchema?.kind).toBe(JSON_SCHEMA_KIND);
-  });
-
-  it("reads AI SDK tool schema from parameters when inputSchema is missing", () => {
-    const sdkTool: AiToolInput = {
-      description: "ai tool",
-      parameters: {
-        type: "object",
-        properties: { query: { type: "string" } },
-        required: ["query"],
-      },
-      execute: ({ query }: { query: string }) => `ok:${query}`,
-    };
-
-    const adapter = fromAiSdkTool("ai.tool", sdkTool);
     expect(adapter.inputSchema?.kind).toBe(JSON_SCHEMA_KIND);
   });
 

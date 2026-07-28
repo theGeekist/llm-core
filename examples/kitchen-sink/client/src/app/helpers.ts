@@ -3,7 +3,7 @@ import type { TransportEvent, WebSocketChatData } from "@geekist/llm-core/adapte
 import type { AdapterSource, ProviderId, RecipeId } from "../demo-options";
 import { readAvailableProviders } from "../demo-options";
 import { readProviderToken, writeProviderToken, clearProviderToken } from "../token-store";
-import { bindFirst } from "@geekist/llm-core";
+import { bindFirst } from "@geekist/llm-core/functional";
 
 export type TransportData = Omit<WebSocketChatData, "modelId"> & {
   recipeId: RecipeId;

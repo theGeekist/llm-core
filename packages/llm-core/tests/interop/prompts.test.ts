@@ -1,7 +1,7 @@
 import { describe, expect, it } from "bun:test";
 import { PromptTemplate as LangChainPromptTemplate } from "@langchain/core/prompts";
 import type { PromptTemplate as LlamaPromptTemplate } from "@llamaindex/core/prompts";
-import type { PromptTemplate } from "#workflow";
+import type { PromptTemplate } from "#adapters/types";
 
 const toPromptFromLangChain = (prompt: LangChainPromptTemplate): PromptTemplate => ({
   name: "langchain.prompt",

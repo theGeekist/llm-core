@@ -79,7 +79,6 @@
     "@langchain/community": "^1.1.1",
     "@langchain/core": "1.1.8",
     "@langchain/langgraph": "^1.0.7",
-    "@langchain/langgraph-checkpoint": "^1.0.0",
     "@langchain/ollama": "^1.1.0",
     "@langchain/openai": "^1.2.0",
     "@langchain/textsplitters": "^1.0.1",
@@ -143,6 +142,8 @@
     "#adapters/registry/*": "./src/adapters/registry/*.ts",
     "#interaction": "./src/interaction/index.ts",
     "#interaction/*": "./src/interaction/*.ts",
+    "#functional": "./src/functional/index.ts",
+    "#functional/*": "./src/functional/*.ts",
     "#recipes": "./src/recipes/index.ts",
     "#recipes/*": "./src/recipes/*.ts",
     "#recipes/agentic/*": "./src/recipes/agentic/*.ts",
@@ -168,6 +169,13 @@
       "import": "./dist/esm/src/workflow/index.js",
       "require": "./dist/cjs/src/workflow/index.cjs",
       "default": "./dist/esm/src/workflow/index.js"
+    },
+    "./functional": {
+      "types": "./dist/types/src/functional/index.d.ts",
+      "browser": "./dist/esm/src/functional/index.js",
+      "import": "./dist/esm/src/functional/index.js",
+      "require": "./dist/cjs/src/functional/index.cjs",
+      "default": "./dist/esm/src/functional/index.js"
     },
     "./adapters": {
       "types": "./dist/types/src/adapters/index.d.ts",

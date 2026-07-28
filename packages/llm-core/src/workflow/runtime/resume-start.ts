@@ -1,27 +1,16 @@
-import type { ArtefactOf, Outcome, RecipeName, ResumeInputOf, Runtime } from "../types";
-import type { AdapterBundle } from "#adapters/types";
-import type { TraceEvent } from "#shared/reporting";
-import type { PauseSession } from "../driver/types";
+import type { AdapterBundle, AdapterResumeResult } from "#adapters/types";
 import { bindFirst } from "#shared/fp";
 import { composeK, maybeChain, maybeMap } from "#shared/maybe";
-import {
-  readSessionStore,
-  resolveResumeSession,
-  resolveSessionStore,
-  type ResumeSession,
-} from "./resume-session";
-import {
-  invalidResumeTokenOutcome,
-  readPauseKindFromSession,
-  readResumeTokenFromSession,
-  requireResumeAdapter,
-} from "./resume-helpers";
+import type { TraceEvent } from "#shared/reporting";
+import type { PauseSession } from "../driver/types";
+import { toPauseKind } from "../pause";
+import type { RecipeName, ResumeInputOf, Runtime } from "../types";
+import { executeResumePipeline } from "./resume-exec";
+import { invalidResumeTokenOutcome, requireResumeAdapter } from "./resume-helpers";
 import type { AdapterResolution, ResumeHandlerDeps } from "./resume-types";
-import { executeResumePipeline, type ActiveResumeSession } from "./resume-exec";
 
 type ResumeStartInput<N extends RecipeName> = {
   token: unknown;
-  resumeKey?: string;
   resumeInput: ResumeInputOf<N> | undefined;
   runtime: Runtime | undefined;
   pauseSession: PauseSession | undefined;
@@ -31,18 +20,13 @@ type ResumeStartInput<N extends RecipeName> = {
 };
 
 type ResumeStartResolvedInput<N extends RecipeName> = ResumeStartInput<N> & {
-  resolvedAdapters: AdapterBundle;
-};
-
-type ResumeStartSessionInput<N extends RecipeName> = ResumeStartResolvedInput<N> & {
-  session: ResumeSession;
+  resolution: AdapterResolution;
 };
 
 type ResumeValueInput<N extends RecipeName> = {
-  session: ActiveResumeSession;
-  resolvedAdapters: AdapterBundle;
+  pauseSession: PauseSession;
+  resolution: AdapterResolution;
   token: unknown;
-  resumeKey?: string;
   runtime: Runtime | undefined;
   diagnosticsMode: "default" | "strict";
   trace: TraceEvent[];
@@ -51,29 +35,12 @@ type ResumeValueInput<N extends RecipeName> = {
 
 const readInterruptStrategy = (adapters: AdapterBundle) => adapters.interrupt;
 
-const handleVerifySnapshot = <N extends RecipeName>(
-  input: ResumeStartInput<N>,
-  snapshot: unknown,
-) => {
-  if (snapshot) {
-    return null;
-  }
-  return invalidResumeTokenOutcome<N>({
-    trace: input.trace,
-    diagnosticsMode: input.diagnosticsMode,
-    buildDiagnostics: input.deps.buildDiagnostics,
-    message: "Resume token is invalid or expired (checked via runtime store).",
-    code: "resume.invalidToken",
-    errorOutcome: input.deps.errorOutcome,
-  });
-};
-
 const attachResolvedAdapters = <N extends RecipeName>(
   input: ResumeStartInput<N>,
   resolution: AdapterResolution,
 ) => ({
   ...input,
-  resolvedAdapters: input.deps.toResolvedAdapters(resolution),
+  resolution,
 });
 
 const resolveStartAdapters = <N extends RecipeName>(input: ResumeStartInput<N>) =>
@@ -82,49 +49,9 @@ const resolveStartAdapters = <N extends RecipeName>(input: ResumeStartInput<N>) 
     input.deps.resolveAdaptersForRun(input.runtime),
   );
 
-const attachResumeSession = <N extends RecipeName>(
-  input: ResumeStartResolvedInput<N>,
-  session: ResumeSession,
-): ResumeStartSessionInput<N> => ({
-  ...input,
-  session,
-  token: readResumeTokenFromSession(session, input.token),
-});
-
-const resolveStartSession = <N extends RecipeName>(input: ResumeStartResolvedInput<N>) => {
-  const store = resolveSessionStore(input.runtime, input.resolvedAdapters);
-  return maybeMap(
-    bindFirst(attachResumeSession<N>, input),
-    resolveResumeSession({
-      token: input.token,
-      resumeKey: input.resumeKey,
-      session: input.pauseSession,
-      store,
-    }),
-  );
-};
-
-const startResumeAfterExtensions = <N extends RecipeName>(
-  input: ResumeStartInput<N>,
-  _extensions: unknown,
-) => {
-  void _extensions;
-  return composeK(resumeFromSession<N>, resolveStartSession<N>, resolveStartAdapters<N>)(input);
-};
-
-const startResumeAfterVerify = <N extends RecipeName>(
-  input: ResumeStartInput<N>,
-  earlyError: Outcome<ArtefactOf<N>> | undefined | null,
-) => {
-  if (earlyError) {
-    return earlyError;
-  }
-  return maybeChain(bindFirst(startResumeAfterExtensions, input), input.deps.extensionRegistration);
-};
-
-const resumeFromSession = <N extends RecipeName>(input: ResumeStartSessionInput<N>) => {
-  const { session } = input;
-  if (session.kind === "invalid") {
+const resumeFromSession = <N extends RecipeName>(input: ResumeStartResolvedInput<N>) => {
+  const pauseSession = input.pauseSession;
+  if (!pauseSession) {
     return invalidResumeTokenOutcome<N>({
       trace: input.trace,
       diagnosticsMode: input.diagnosticsMode,
@@ -146,11 +73,11 @@ const resumeFromSession = <N extends RecipeName>(input: ResumeStartSessionInput<
     return required.outcome;
   }
 
+  const resolvedAdapters = input.deps.toResolvedAdapters(input.resolution);
   const resumeValueInput: ResumeValueInput<N> = {
-    session: session as ActiveResumeSession,
-    resolvedAdapters: input.resolvedAdapters,
+    pauseSession,
+    resolution: input.resolution,
     token: input.token,
-    resumeKey: input.resumeKey,
     runtime: input.runtime,
     diagnosticsMode: input.diagnosticsMode,
     trace: input.trace,
@@ -161,12 +88,10 @@ const resumeFromSession = <N extends RecipeName>(input: ResumeStartSessionInput<
     required.adapter.resolve({
       token: input.token,
       resumeInput: input.resumeInput,
-      pauseKind: readPauseKindFromSession(session as ActiveResumeSession) ?? undefined,
-      interrupt: readInterruptStrategy(input.resolvedAdapters),
-      resumeKey: input.resumeKey,
-      resumeSnapshot: session.kind === "snapshot" ? session.snapshot : undefined,
+      pauseKind: toPauseKind(pauseSession.snapshot.pauseKind) ?? undefined,
+      interrupt: readInterruptStrategy(resolvedAdapters),
       runtime: input.runtime,
-      adapters: input.resolvedAdapters,
+      adapters: resolvedAdapters,
       declaredAdapters: input.deps.baseAdapters,
       providers: input.runtime?.providers,
     }),
@@ -175,39 +100,29 @@ const resumeFromSession = <N extends RecipeName>(input: ResumeStartSessionInput<
 
 const handleResumeValue = <N extends RecipeName>(
   input: ResumeValueInput<N>,
-  resumeValue: unknown,
+  resumeValue: AdapterResumeResult,
 ) =>
   executeResumePipeline({
     resumeValue,
-    session: input.session,
-    resolvedAdapters: input.resolvedAdapters,
+    pauseSession: input.pauseSession,
+    resolution: input.resolution,
     token: input.token,
-    resumeKey: input.resumeKey,
     runtime: input.runtime,
     diagnosticsMode: input.diagnosticsMode,
     trace: input.trace,
     deps: input.deps,
   });
 
-type StartResumePipelineInput<N extends RecipeName> = {
-  token: unknown;
-  resumeKey?: string;
-  resumeInput: ResumeInputOf<N> | undefined;
-  runtime: Runtime | undefined;
-  pauseSession: PauseSession | undefined;
-  trace: TraceEvent[];
-  diagnosticsMode: "default" | "strict";
-  deps: ResumeHandlerDeps<N>;
+const startResumeAfterExtensions = <N extends RecipeName>(
+  input: ResumeStartInput<N>,
+  _extensions: unknown,
+) => {
+  void _extensions;
+  return composeK(resumeFromSession<N>, resolveStartAdapters<N>)(input);
 };
 
-export const startResumePipeline = <N extends RecipeName>(input: StartResumePipelineInput<N>) => {
-  // Optimization: If a runtime session store is explicitly provided, check it first.
-  // This avoids expensive adapter resolution for invalid tokens.
-  const runtimeStore = readSessionStore(input.runtime);
-  const verifyKey = input.resumeKey ?? input.token;
-  const verifyToken =
-    runtimeStore && !input.pauseSession
-      ? maybeChain(bindFirst(handleVerifySnapshot, input), runtimeStore.get(verifyKey))
-      : undefined;
-  return maybeChain(bindFirst(startResumeAfterVerify, input), verifyToken);
-};
+const startResumeWithExtensions = <N extends RecipeName>(input: ResumeStartInput<N>) =>
+  maybeChain(bindFirst(startResumeAfterExtensions, input), input.deps.extensionRegistration);
+
+export const startResumePipeline = <N extends RecipeName>(input: ResumeStartInput<N>) =>
+  startResumeWithExtensions(input);

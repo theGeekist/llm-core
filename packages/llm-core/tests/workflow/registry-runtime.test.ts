@@ -1,11 +1,6 @@
 import { describe, expect, it } from "bun:test";
 import type { Model, Retriever } from "#adapters";
-import {
-  assertSyncOutcome,
-  createResumeSnapshot,
-  createTestResumeStore,
-  makeRuntime,
-} from "./helpers";
+import { assertSyncOutcome, makeRuntime } from "./helpers";
 
 describe("Workflow registry routing", () => {
   it("routes runs through builtin providers when no adapters are supplied", () => {
@@ -57,43 +52,5 @@ describe("Workflow registry routing", () => {
     expect(resolved.adapters?.retriever?.metadata).toBe(retrieverMeta);
     const result = retrieved as { documents?: unknown[] };
     expect(result.documents?.[0]).toBe(marker);
-  });
-
-  it("re-resolves providers during resume using provider overrides", () => {
-    let captured: unknown;
-    const { store: sessionStore } = createTestResumeStore();
-    sessionStore.set("token", createResumeSnapshot("token"));
-    const model: Model = {
-      generate: () => ({ text: "override" }),
-      metadata: { source: "override-model" },
-    };
-    const runtime = makeRuntime("hitl-gate", {
-      includeDefaults: false,
-      plugins: [{ key: "override.adapters", adapters: { model } }],
-      run: (options) => {
-        captured = options;
-        return { artefact: { ok: true } };
-      },
-    });
-
-    if (!runtime.resume) {
-      throw new Error("Expected resume to be available.");
-    }
-
-    const outcome = assertSyncOutcome(
-      runtime.resume("token", undefined, {
-        resume: {
-          sessionStore,
-          resolve: () => ({
-            input: { token: "token" },
-            providers: { model: "override.adapters:model" },
-          }),
-        },
-      }),
-    );
-
-    expect(outcome.status).toBe("ok");
-    const resolved = captured as { adapters?: { model?: Model } };
-    expect(resolved.adapters?.model?.metadata).toBe(model.metadata);
   });
 });

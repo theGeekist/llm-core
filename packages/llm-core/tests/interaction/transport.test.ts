@@ -1,7 +1,11 @@
 import { describe, expect, it } from "bun:test";
 import type { EventStream } from "#adapters";
 import type { InteractionEvent } from "#interaction";
-import { emitInteractionEvent, emitInteractionEvents, toEventStreamEvent } from "#interaction";
+import {
+  emitInteractionEvent,
+  emitInteractionEvents,
+  toEventStreamEvent,
+} from "../../src/interaction/transport";
 
 const createEvent = (): InteractionEvent => ({
   kind: "diagnostic",
@@ -66,5 +70,48 @@ describe("interaction transport", () => {
     const result = emitInteractionEvents(stream, events);
     expect(result).toBe(true);
     expect(received).toEqual(["interaction.diagnostic", "interaction.diagnostic"]);
+  });
+
+  it("aggregates fallback results instead of returning only the last emission", () => {
+    const results = [false, true];
+    const stream: EventStream = {
+      emit: () => results.shift() ?? null,
+    };
+
+    const result = emitInteractionEvents(stream, [createEvent(), createEvent()]);
+
+    expect(result).toBe(false);
+  });
+
+  it("ignores skipped fallback emissions when another emission succeeds", () => {
+    const results = [null, true];
+    const stream: EventStream = {
+      emit: () => results.shift() ?? null,
+    };
+
+    const result = emitInteractionEvents(stream, [createEvent(), createEvent()]);
+
+    expect(result).toBe(true);
+  });
+
+  it("waits for each asynchronous fallback emission before starting the next", async () => {
+    let resolveFirst: () => void = () => undefined;
+    let calls = 0;
+    const first = new Promise<boolean>((resolve) => {
+      resolveFirst = () => resolve(false);
+    });
+    const stream: EventStream = {
+      emit: () => {
+        calls += 1;
+        return calls === 1 ? first : true;
+      },
+    };
+
+    const result = emitInteractionEvents(stream, [createEvent(), createEvent()]);
+    expect(calls).toBe(1);
+
+    resolveFirst();
+    expect(await result).toBe(false);
+    expect(calls).toBe(2);
   });
 });

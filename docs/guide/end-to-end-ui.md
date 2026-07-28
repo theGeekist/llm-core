@@ -112,7 +112,7 @@ http://localhost:3030/chat?sessionId=demo&message=Hello
 
 ## Agentic playground (WebSocket + agent loop)
 
-The `examples/agentic` app is a fuller UI that wires the agent loop runtime to an assistant-ui chat and a configurable control panel (tools, skills, MCP, approvals, sub-agents) while still using the same event stream surface.
+The `examples/agentic` app is a fuller UI that wires the agent loop runtime to an assistant-ui chat and a configurable control panel for agent profiles, tools, skills, and sub-agents while still using the same event stream surface.
 
 ```bash
 # from the repo root

@@ -4,7 +4,7 @@ import { Document as LangChainDocument } from "@langchain/core/documents";
 import type { NodeParser } from "@llamaindex/core/node-parser";
 import { Document as LlamaDocument } from "@llamaindex/core/schema";
 import * as AiSdk from "ai";
-import type { DocumentTransformer } from "#workflow";
+import type { DocumentTransformer } from "#adapters/types";
 import { maybeMap } from "#shared/maybe";
 
 const toAdapterTransformerFromLangChain = (

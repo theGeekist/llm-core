@@ -1,5 +1,5 @@
 // #region docs
-import { createInteractionPipelineWithDefaults, runInteractionPipeline } from "#interaction";
+import { createInteractionHandle } from "#interaction";
 import { fromAiSdkModel } from "#adapters";
 import { openai } from "@ai-sdk/openai";
 
@@ -10,10 +10,9 @@ const eventStream = {
   },
 };
 
-const pipeline = createInteractionPipelineWithDefaults();
-await runInteractionPipeline(pipeline, {
-  input: { message: { role: "user", content: "Hello!" } },
+const interaction = createInteractionHandle({
   adapters: { model: fromAiSdkModel(openai("gpt-4o-mini")) },
   eventStream,
 });
+await interaction.run({ message: { role: "user", content: "Hello!" } });
 // #endregion docs

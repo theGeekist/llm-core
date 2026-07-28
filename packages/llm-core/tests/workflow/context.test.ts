@@ -1,6 +1,6 @@
 import { describe, expect, it } from "bun:test";
 import type { PipelineContext } from "#workflow/types";
-import { getAdapters } from "#workflow";
+import { getAdapters } from "#workflow/context";
 
 describe("Workflow context helpers", () => {
   it("returns adapters from context", () => {

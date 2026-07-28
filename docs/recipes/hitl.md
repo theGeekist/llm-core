@@ -33,41 +33,23 @@ and [Recipes API](/reference/recipes-api).
 
 ## 2) What you’ll usually configure
 
-Most teams keep the gate simple: a pause, a decision, and a resume. The two common configuration choices are durability and strictness. Durability decides whether you want to survive process restarts. Strictness decides whether you treat missing adapters or invalid tokens as hard errors or as recoverable problems. If you need resume across process restarts, add a cache or checkpoint adapter. Strict diagnostics at runtime will surface missing adapters or invalid tokens as immediate failures instead of letting them slip past.
+Most teams keep the gate simple: a pause, a decision, and a resume. The pipeline continuation is
+held by the live runtime, so route the decision back to the same process and runtime instance.
+Strict diagnostics surface missing resume adapters or invalid tokens as immediate failures.
 
 If you are building a UI, you can treat a paused outcome as a “review task” object: show the draft,
 collect a decision, and resume with that decision payload.
 
 ---
 
-## 3) Durable resume (cache / checkpoint)
+## 3) Process-local continuation
 
-By default, pause tokens are process-local. To resume across restarts, provide a cache or checkpoint adapter.
+Pause tokens identify opaque pipeline snapshots held by the live workflow runtime. They are valid
+only while that runtime remains in memory. Keep the runtime process alive and route the decision
+back to it. After a restart, rebuild a new run from durable domain state; caches and session stores
+do not serialize execution continuations.
 
-::: code-group
-
-```bash [npm]
-npm install @langchain/langgraph-checkpoint
-```
-
-```bash [pnpm]
-pnpm add @langchain/langgraph-checkpoint
-```
-
-```bash [yarn]
-yarn add @langchain/langgraph-checkpoint
-```
-
-```bash [bun]
-bun add @langchain/langgraph-checkpoint
-```
-
-:::
-
-<<< @/snippets/recipes/hitl/durable.js#docs
-
-See: [Adapters -> Cache](/reference/adapters-api#cache-adapters-resume-persistence) and
-[Runtime](/reference/runtime).
+See: [Runtime](/reference/runtime).
 
 ---
 
@@ -77,7 +59,8 @@ You can inspect pause events and reason about why the gate paused.
 
 <<< @/snippets/recipes/hitl/diagnostics.js#docs
 
-Diagnostics act as guardrails here. Missing cache adapters, invalid tokens, or incompatible resume inputs appear immediately in the outcome, and the trace shows exactly where the gate paused.
+Diagnostics act as guardrails here. Missing resume adapters, invalid tokens, or incompatible resume
+inputs appear immediately in the outcome, and the trace shows exactly where the gate paused.
 
 The mental model stays simple. Each run either completes or pauses, and each resume call uses a token that came from a real pause in the same workflow. That structure removes hidden states and implicit restarts, which makes it easier to understand what happened when you look back at a trace.
 

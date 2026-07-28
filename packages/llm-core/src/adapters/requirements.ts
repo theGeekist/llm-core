@@ -4,6 +4,7 @@ import type {
   AdapterMetadata,
   AdapterRequirement,
 } from "./types";
+import { hasAdapterValue, listAdapterBundleEntries, listRequirementAdapterEntries } from "./bundle";
 import { warnDiagnostic } from "./utils";
 import { isRecord } from "#shared/guards";
 
@@ -52,61 +53,10 @@ const addSource = (input: AddSourceInput) => {
   });
 };
 
-const listBundleEntries = (adapters: AdapterBundle): Array<[string, unknown]> => [
-  ["documents", adapters.documents],
-  ["messages", adapters.messages],
-  ["tools", adapters.tools],
-  ["checkpoint", adapters.checkpoint],
-  ["eventStream", adapters.eventStream],
-  ["interrupt", adapters.interrupt],
-  ["model", adapters.model],
-  ["image", adapters.image],
-  ["trace", adapters.trace],
-  ["prompts", adapters.prompts],
-  ["outputParser", adapters.outputParser],
-  ["schemas", adapters.schemas],
-  ["textSplitter", adapters.textSplitter],
-  ["embedder", adapters.embedder],
-  ["retriever", adapters.retriever],
-  ["reranker", adapters.reranker],
-  ["loader", adapters.loader],
-  ["transformer", adapters.transformer],
-  ["memory", adapters.memory],
-  ["speech", adapters.speech],
-  ["storage", adapters.storage],
-  ["transcription", adapters.transcription],
-  ["kv", adapters.kv],
-  ["vectorStore", adapters.vectorStore],
-];
-
-const listRequirementEntries = (adapters: AdapterBundle): Array<[string, unknown]> => [
-  ["checkpoint", adapters.checkpoint],
-  ["eventStream", adapters.eventStream],
-  ["interrupt", adapters.interrupt],
-  ["model", adapters.model],
-  ["image", adapters.image],
-  ["trace", adapters.trace],
-  ["outputParser", adapters.outputParser],
-  ["textSplitter", adapters.textSplitter],
-  ["embedder", adapters.embedder],
-  ["retriever", adapters.retriever],
-  ["reranker", adapters.reranker],
-  ["loader", adapters.loader],
-  ["transformer", adapters.transformer],
-  ["memory", adapters.memory],
-  ["speech", adapters.speech],
-  ["storage", adapters.storage],
-  ["transcription", adapters.transcription],
-  ["kv", adapters.kv],
-  ["vectorStore", adapters.vectorStore],
-];
-
-const hasItems = (value: unknown) => (Array.isArray(value) ? value.length > 0 : Boolean(value));
-
 const buildCapabilityPresence = (adapters: AdapterBundle, constructs: Record<string, unknown>) => {
   const capabilities: Record<string, boolean> = {};
-  for (const [key, value] of listBundleEntries(adapters)) {
-    const present = hasItems(value);
+  for (const [key, value] of listAdapterBundleEntries(adapters)) {
+    const present = hasAdapterValue(value);
     if (present) {
       capabilities[key] = true;
     }
@@ -123,7 +73,7 @@ const hasConstruct = (
   name: string,
 ) => {
   const value = (adapters as Record<string, unknown>)[name];
-  if (hasItems(value)) {
+  if (hasAdapterValue(value)) {
     return true;
   }
   return name in constructs;
@@ -135,7 +85,7 @@ export const readAdapterRequirements = (
   providers: Record<string, string>,
 ): RequirementSource[] => {
   const sources: RequirementSource[] = [];
-  for (const [key, value] of listRequirementEntries(adapters)) {
+  for (const [key, value] of listRequirementAdapterEntries(adapters)) {
     addSource({ sources, construct: key, providerId: providers[key], value });
   }
   for (const [key, value] of Object.entries(constructs)) {

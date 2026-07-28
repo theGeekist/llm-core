@@ -4,12 +4,14 @@ import type {
   ToolCallStreamController,
 } from "assistant-stream";
 import { createAssistantStreamController } from "assistant-stream";
-import type { ReadonlyJSONObject, ReadonlyJSONValue } from "assistant-stream/utils";
-import type { EventStream, EventStreamEvent, ModelStreamEvent } from "../types";
+import type { ReadonlyJSONObject } from "assistant-stream/utils";
+import type { EventStream, ModelStreamEvent } from "../types";
 import type { InteractionEvent, InteractionEventMeta } from "../../interaction/types";
-import { isRecord } from "#shared/guards";
-import { maybeChain, maybeMap, type MaybePromise } from "#shared/maybe";
-import { bindFirst, toTrue } from "#shared/fp";
+import { maybeChain, maybeMap, maybeReduce, maybeTry, type MaybePromise } from "#shared/maybe";
+import { bindFirst, toFalse, toTrue } from "#shared/fp";
+import { combineTriState } from "#shared/tri-state";
+import { createInteractionEventDeliveryStream } from "../primitives/interaction-event-emitter";
+import { toAssistantUiJsonValue } from "./json";
 
 export type AssistantUiStreamOptions = {
   includeReasoning?: boolean;
@@ -75,35 +77,6 @@ const toToolKey = (meta: InteractionEventMeta, toolName: string, toolCallId?: st
   return `${meta.sourceId}:${toolName}:${meta.sequence}`;
 };
 
-class AssistantUiStreamEventStream implements EventStream {
-  private state: AssistantUiStreamState;
-
-  constructor(state: AssistantUiStreamState) {
-    this.state = state;
-  }
-
-  emit(event: EventStreamEvent) {
-    const interactionEvent = toInteractionEvent(event);
-    if (!interactionEvent) {
-      return null;
-    }
-    const actions = mapInteractionEvent(this.state, interactionEvent);
-    return runActionSequence(this.state, actions);
-  }
-
-  emitMany(events: EventStreamEvent[]) {
-    const actions: AssistantStreamAction[] = [];
-    for (const event of events) {
-      const interactionEvent = toInteractionEvent(event);
-      if (!interactionEvent) {
-        continue;
-      }
-      appendActions(actions, mapInteractionEvent(this.state, interactionEvent));
-    }
-    return runActionSequence(this.state, actions);
-  }
-}
-
 export const createAssistantUiInteractionStream = (
   options?: AssistantUiStreamOptions,
 ): AssistantUiStreamAdapter => {
@@ -116,7 +89,10 @@ export const createAssistantUiInteractionStream = (
   return {
     stream,
     controller,
-    eventStream: new AssistantUiStreamEventStream(state),
+    eventStream: createInteractionEventDeliveryStream({
+      mapper: { mapEvent: bindFirst(mapInteractionEvent, state) },
+      deliver: bindFirst(runActionSequence, state),
+    }),
   };
 };
 
@@ -206,34 +182,24 @@ const resetToolCalls = (state: AssistantUiStreamState) => {
   state.toolCalls.clear();
 };
 
-const runActionSequence = async (
+const applyNextAction = (
+  state: AssistantUiStreamState,
+  previous: boolean | null,
+  action: AssistantStreamAction,
+) =>
+  maybeMap(
+    bindFirst(combineTriState, previous),
+    maybeTry(toFalse, () => applyAction(state, action)),
+  );
+
+const runActionSequence = (
   state: AssistantUiStreamState,
   actions: AssistantStreamAction[],
-): Promise<boolean | null> => {
+): MaybePromise<boolean | null> => {
   if (actions.length === 0) {
     return null;
   }
-  let hasTrue = false;
-  let hasFalse = false;
-  for (const action of actions) {
-    try {
-      const result = await applyAction(state, action);
-      if (result === true) {
-        hasTrue = true;
-      } else if (result === false) {
-        hasFalse = true;
-      }
-    } catch {
-      hasFalse = true;
-    }
-  }
-  if (hasFalse) {
-    return false;
-  }
-  if (hasTrue) {
-    return true;
-  }
-  return null;
+  return maybeReduce(bindFirst(applyNextAction, state), null, actions);
 };
 
 const applyAction = (
@@ -289,7 +255,7 @@ const applyToolResult = (
 ) => {
   const controller = readOrCreateToolCall(state, action);
   const response = {
-    result: toReadonlyJsonValue(action.result),
+    result: toAssistantUiJsonValue(action.result),
     isError: action.isError ?? false,
   };
   return maybeChain(bindFirst(finishToolCall, controller), controller.setResponse(response));
@@ -314,12 +280,6 @@ const readOrCreateToolCall = (
   return controller;
 };
 
-const appendActions = (target: AssistantStreamAction[], source: AssistantStreamAction[]) => {
-  for (const action of source) {
-    target.push(action);
-  }
-};
-
 const toTextAction = (text: string): AssistantStreamAction => ({ type: "text", text });
 
 const toReasoningAction = (text: string): AssistantStreamAction => ({ type: "reasoning", text });
@@ -330,16 +290,3 @@ const toCloseAction = (): AssistantStreamAction => ({ type: "close" });
 
 const toReadonlyJsonObject = (value: Record<string, unknown>): ReadonlyJSONObject =>
   value as ReadonlyJSONObject;
-
-const toReadonlyJsonValue = (value: unknown): ReadonlyJSONValue => value as ReadonlyJSONValue;
-
-const toInteractionEvent = (event: EventStreamEvent): InteractionEvent | null => {
-  if (!event.data || !isRecord(event.data)) {
-    return null;
-  }
-  const candidate = event.data.event;
-  if (!candidate || typeof candidate !== "object") {
-    return null;
-  }
-  return candidate as InteractionEvent;
-};

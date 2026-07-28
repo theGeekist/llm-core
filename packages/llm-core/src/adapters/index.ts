@@ -24,8 +24,6 @@ export type {
   AdapterResume,
   AdapterResumeRequest,
   AdapterResumeResult,
-  AdapterResumeReturn,
-  ResumeSnapshot,
   Tool,
   AdapterTraceEvent,
   EventStream,
@@ -42,7 +40,6 @@ export type {
   IndexingResult,
   KVStore,
   Cache,
-  CheckpointStore,
   InterruptStrategy,
   Memory,
   Message,
@@ -92,34 +89,7 @@ export type {
 } from "./types";
 
 export type { AiSdkCacheStore } from "./ai-sdk/cache";
-export type { LlamaIndexCheckpointEntry, LlamaIndexCheckpointStore } from "./llamaindex";
 export { type AdapterPlugin, type AdapterPluginOptions } from "./registration";
-
-export {
-  maybeChain,
-  maybeMap,
-  maybeMapArray,
-  maybeTry,
-  maybeMapOr,
-  maybeTap,
-  maybeToAsyncIterable,
-  maybeToStep,
-  collectStep,
-  isPromiseLike,
-  tryWrap,
-} from "#shared/maybe";
-export type { MaybeAsyncIterable, MaybePromise } from "#shared/maybe";
-export {
-  identity,
-  toNull,
-  toTrue,
-  toFalse,
-  bindFirst,
-  compose,
-  partialK,
-  curryK,
-  toUndefined,
-} from "#shared/fp";
 
 export * from "#shared/guards";
 
@@ -172,17 +142,13 @@ import { selectModel as selectModelImpl } from "./model-selection";
 
 export {
   createAdapterRegistry,
-  createRegistryFromDefaults,
-  getDefaultAdapterRegistry,
   type AdapterConstructName,
-  type AdapterConstructRegistration,
   type AdapterProviderFactory,
   type AdapterProviderFactoryOptions,
   type AdapterProviderRegistration,
   type AdapterRegistry,
   type AdapterRegistryResolveInput,
   type AdapterRegistryResolveResult,
-  type AdapterRegistrySnapshot,
   type ConstructRequirement,
 } from "./registry";
 
@@ -196,7 +162,11 @@ export { createMemoryCache } from "./primitives/cache";
 export { createEventStreamFanout, createEventStreamFromTraceSink } from "./primitives/event-stream";
 export { createInterruptStrategy } from "./primitives/interrupt";
 export {
+  createInteractionEventDeliverySink,
+  createInteractionEventDeliveryStream,
   createInteractionEventEmitterStream,
+  type InteractionEventDelivery,
+  type InteractionEventDeliveryOptions,
   type InteractionEventEmitter,
   type InteractionEventEmitterStreamOptions,
   type InteractionEventMapper,
@@ -228,18 +198,16 @@ export { toModelStreamEvents } from "./ai-sdk";
 export {
   createAiSdkInteractionEventStream,
   createAiSdkChatTransport,
-  createAiSdkInteractionMapper,
   createAiSdkInteractionSink,
   createAiSdkUiMessageChunkMapper,
-  toAiSdkUiMessageChunks,
   createAiSdkWebSocketChatTransport,
 } from "./ai-sdk-ui";
 export type {
   AiSdkChatTransportOptions,
   AiSdkInteractionEventStreamOptions,
-  AiSdkInteractionMapper,
   AiSdkInteractionMapperOptions,
   AiSdkInteractionSinkOptions,
+  AiSdkUiMessageChunkMapper,
   AiSdkWebSocketChatTransportOptions,
   AuthToken,
   TransportEvent,
@@ -248,16 +216,14 @@ export type {
 export {
   createAssistantUiCommandMapper,
   createAssistantUiInteractionEventStream,
-  createAssistantUiInteractionMapper,
   createAssistantUiInteractionSink,
   createAssistantUiInteractionStream,
   parseAssistantTransportRequest,
   toCoreMessagesFromAssistantCommands,
-  toAssistantUiCommands,
 } from "./assistant-ui";
 export type {
+  AssistantUiCommandMapper,
   AssistantUiInteractionEventStreamOptions,
-  AssistantUiInteractionMapper,
   AssistantUiInteractionMapperOptions,
   AssistantUiInteractionSinkOptions,
   AssistantUiStreamAdapter,
@@ -273,16 +239,14 @@ export type {
 export {
   createChatKitEventMapper,
   createChatKitInteractionEventStream,
-  createChatKitInteractionMapper,
   createChatKitInteractionSink,
-  toChatKitEvents,
   toChatKitThreadId,
 } from "./openai-chatkit";
 export { createNluxChatAdapter } from "./nlux-ui";
 export type {
   ChatKitEventName,
+  ChatKitEventMapper,
   ChatKitInteractionEventStreamOptions,
-  ChatKitInteractionMapper,
   ChatKitInteractionMapperOptions,
   ChatKitInteractionSinkOptions,
 } from "./openai-chatkit";
@@ -311,7 +275,6 @@ export { fromLangChainTransformer } from "./langchain";
 export { fromLangChainVectorStore } from "./langchain";
 export { fromLangChainIndexing } from "./langchain";
 export { toLangChainStreamEvents } from "./langchain";
-export { fromLangGraphCheckpointer } from "./langchain";
 export { fromLangGraphInterrupt } from "./langchain";
 
 export { fromLlamaIndexDocument, fromLlamaIndexNode, toLlamaIndexDocument } from "./llamaindex";
@@ -334,6 +297,5 @@ export { fromLlamaIndexTool } from "./llamaindex";
 export { fromLlamaIndexTransformer } from "./llamaindex";
 export { toLlamaIndexStreamEvents } from "./llamaindex";
 export { fromLlamaIndexWorkflowContext } from "./llamaindex";
-export { fromLlamaIndexCheckpointStore } from "./llamaindex";
 export { fromLlamaIndexTraceSink } from "./llamaindex";
 export { fromLlamaIndexVectorStore } from "./llamaindex";

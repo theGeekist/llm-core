@@ -8,7 +8,8 @@ import type {
   InteractionState,
   InteractionSubagentEvent,
 } from "#interaction";
-import { reduceInteractionEvent, toEventStreamEvent } from "#interaction";
+import { reduceInteractionEvent } from "../../src/interaction/reducer";
+import { toEventStreamEvent } from "../../src/interaction/transport";
 import { createTraceDiagnostics } from "#shared/reporting";
 
 const DEFAULT_META: InteractionEventMeta = {
@@ -26,27 +27,11 @@ function createAgentLoopConfig(): AgentLoopConfig {
         description: "Primary agent",
         prompt: "Be helpful.",
         tools: ["tools.search"],
-        mcpServers: {
-          docs: {
-            type: "http",
-            url: "https://example.com/mcp",
-            tools: ["*"],
-          },
-        },
-        infer: true,
       },
     ],
-    agentSelection: { agentId: "agent-1", allowInfer: true },
+    agentSelection: { agentId: "agent-1" },
     skills: { directories: ["./skills"], disabled: ["legacy-skill"] },
     tools: { allowlist: ["tools.search"], denylist: ["tools.write"] },
-    mcpServers: {
-      shared: {
-        type: "sse",
-        url: "https://example.com/mcp-sse",
-        tools: ["read"],
-      },
-    },
-    approvals: { policy: "on-request", cache: "session" },
   };
 }
 
@@ -62,7 +47,6 @@ function createAgentLoopSnapshot(): AgentLoopStateSnapshot {
       },
     ],
     toolAllowlist: ["tools.search"],
-    approvalCacheKeys: ["approval-1"],
   };
 }
 

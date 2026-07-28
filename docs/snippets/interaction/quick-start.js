@@ -1,28 +1,19 @@
 // #region docs
 import { fromAiSdkModel } from "#adapters";
 import { openai } from "@ai-sdk/openai";
-import { createInteractionPipelineWithDefaults, runInteractionPipeline } from "#interaction";
+import { createInteractionHandle } from "#interaction";
 
 /** @type {import("#adapters").Message} */
 const message = { role: "user", content: "Hello!" };
 const model = fromAiSdkModel(openai("gpt-4o-mini"));
+const interaction = createInteractionHandle({ adapters: { model } });
 
-const pipeline = createInteractionPipelineWithDefaults();
-// runInteractionPipeline returns MaybePromise; await only if you need async.
-const result = await runInteractionPipeline(pipeline, {
-  input: { message },
-  adapters: { model },
-});
+// run returns MaybePromise; await only if you need async.
+const result = await interaction.run({ message });
 
-if ("__paused" in result && result.__paused) {
-  throw new Error("Interaction paused.");
-}
-
-const runResult = /** @type {import("#interaction").InteractionRunResult} */ (result);
-
-if (runResult.artefact.messages[1]) {
-  console.log(runResult.artefact.messages[1].content);
+if (result.state.messages[1]) {
+  console.log(result.state.messages[1].content);
 }
 // #endregion docs
 
-void pipeline;
+void interaction;

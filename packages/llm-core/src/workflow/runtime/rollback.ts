@@ -10,7 +10,7 @@ import { bindFirst, toTrue } from "#shared/fp";
 import { maybeMap } from "#shared/maybe";
 import type { RollbackEntry, RollbackState } from "./rollback-types";
 import { readRestartInterrupt } from "./pause-metadata";
-import { readPausedReporter, readPausedSteps, readPausedUserState } from "../pause";
+import { readPausedReporter, readPausedSteps, readPauseSnapshotState } from "../pause";
 
 type RollbackResult = {
   steps?: PipelineStep[];
@@ -28,7 +28,7 @@ const isRollbackState = (value: unknown): value is RollbackState =>
   !!value && typeof value === "object";
 
 const readPausedRollbackState = (result: unknown) => {
-  const pausedState = readPausedUserState<RollbackState>(result);
+  const pausedState = readPauseSnapshotState(result);
   return isRollbackState(pausedState) ? pausedState : null;
 };
 

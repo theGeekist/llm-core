@@ -1,6 +1,6 @@
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
-import { compose } from "@geekist/llm-core";
+import { compose } from "@geekist/llm-core/functional";
 
 type ClassNameInput = ClassValue[];
 

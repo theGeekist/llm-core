@@ -50,11 +50,9 @@ export type InteractionPlan = PlanBase & {
 };
 
 export type InteractionHandle = {
-  configure(config: InteractionHandleDefaults): InteractionHandle;
   defaults(defaults: InteractionHandleDefaults): InteractionHandle;
   use(pack: InteractionStepPack | InteractionHandle): InteractionHandle;
   explain(): InteractionPlan;
-  build(): ReturnType<typeof createInteractionPipeline>;
   run(
     input: InteractionHandleInput,
     overrides?: InteractionHandleOverrides,
@@ -323,16 +321,6 @@ function createInteractionPlan(definition: InteractionDefinition): InteractionPl
   return { name: INTERACTION_PLAN_NAME, steps };
 }
 
-function configureHandleState(state: InteractionHandleState, config: InteractionHandleDefaults) {
-  return createInteractionHandleFromState({
-    base: {
-      ...state.base,
-      defaults: normalizeDefaults(config),
-    },
-    extras: state.extras,
-  });
-}
-
 function defaultsHandleState(state: InteractionHandleState, defaults: InteractionHandleDefaults) {
   return createInteractionHandleFromState({
     base: state.base,
@@ -371,10 +359,6 @@ function planHandleState(state: InteractionHandleState) {
   return createInteractionPlan(resolveDefinition(state));
 }
 
-function buildHandleState(state: InteractionHandleState) {
-  return createPipelineFromDefinition(resolveDefinition(state));
-}
-
 function runHandleState(
   state: InteractionHandleState,
   input: InteractionHandleInput,
@@ -391,11 +375,9 @@ function createInteractionHandleFromState(
 ): InteractionHandle & InteractionHandleStateCarrier {
   return {
     [INTERACTION_HANDLE_STATE]: state,
-    configure: bindFirst(configureHandleState, state),
     defaults: bindFirst(defaultsHandleState, state),
     use: bindFirst(useHandleState, state),
     explain: bindFirst(planHandleState, state),
-    build: bindFirst(buildHandleState, state),
     run: bindFirst(runHandleState, state),
   };
 }

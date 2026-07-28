@@ -1,5 +1,6 @@
 // #region docs
-import { collectStep, fromAiSdkModel, isPromiseLike, maybeToStep } from "#adapters";
+import { fromAiSdkModel } from "#adapters";
+import { collectStep, isPromiseLike, maybeToStep } from "#functional";
 import { openai } from "@ai-sdk/openai";
 
 const model = fromAiSdkModel(openai("gpt-4o-mini"));

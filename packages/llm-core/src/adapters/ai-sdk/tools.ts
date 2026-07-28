@@ -11,29 +11,11 @@ import {
 type AiJsonSchemaInput = Parameters<typeof jsonSchema>[0];
 type AiZodSchemaInput = Parameters<typeof zodSchema>[0];
 
-type AiToolLike = {
-  description?: string;
-  inputSchema?: unknown;
-  outputSchema?: unknown;
-  parameters?: unknown;
-  execute?: unknown;
-};
-
-const readToolSchema = (tool: AiTool | AiToolLike): unknown => {
-  return "inputSchema" in tool && tool.inputSchema !== undefined
-    ? tool.inputSchema
-    : "parameters" in tool
-      ? tool.parameters
-      : undefined;
-};
-
-export function fromAiSdkTool(name: string, tool: AiTool): Tool;
-export function fromAiSdkTool(name: string, tool: AiToolLike): Tool;
-export function fromAiSdkTool(name: string, tool: AiTool | AiToolLike): Tool {
+export function fromAiSdkTool(name: string, tool: AiTool): Tool {
   return {
     name,
     description: tool.description,
-    inputSchema: toSchema(readToolSchema(tool)),
+    inputSchema: toSchema(tool.inputSchema),
     outputSchema: toSchema(tool.outputSchema),
   };
 }

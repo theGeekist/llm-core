@@ -2,7 +2,7 @@ import { describe, expect, it } from "bun:test";
 import { Document as LangChainDocument } from "@langchain/core/documents";
 import { Document as LlamaDocument } from "@llamaindex/core/schema";
 import * as AiSdk from "ai";
-import type { Document } from "#workflow";
+import type { Document } from "#adapters/types";
 
 const toDocumentFromLangChain = (doc: LangChainDocument): Document => ({
   id: doc.id,

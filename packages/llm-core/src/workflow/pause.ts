@@ -5,7 +5,7 @@ import type {
   PipelineStep,
 } from "@wpkernel/pipeline/core";
 import type { PauseKind } from "#adapters/types";
-import { isRecord, isString } from "#shared/guards";
+import { isRecord } from "#shared/guards";
 
 const hasPausedFlag = (value: Record<string, unknown>) => value.__paused === true;
 
@@ -82,94 +82,13 @@ export const readPausedReporter = (value: unknown): PipelineReporter | null => {
   return (state as { context?: { reporter?: PipelineReporter } }).context?.reporter ?? null;
 };
 
-export const readPauseSnapshotToken = (value: unknown): unknown | null => {
-  if (isPipelinePaused(value)) {
-    return value.snapshot.token ?? null;
-  }
-  if (!isRecord(value) || !("token" in value)) {
-    return null;
-  }
-  return (value as { token?: unknown }).token ?? null;
-};
-
-export const isPauseResumeKey = (value: unknown): value is string =>
-  isString(value) && value.length > 0;
-
-export const readPauseResumeKeyFromState = (state: unknown): string | null => {
-  if (!state || typeof state !== "object") {
-    return null;
-  }
-  const resumeKey = (state as { __pause?: { resumeKey?: unknown } }).__pause?.resumeKey;
-  return isPauseResumeKey(resumeKey) ? resumeKey : null;
-};
-
-export const readPauseResumeKeyFromSnapshot = (
-  snapshot: ReturnType<typeof readPipelinePauseSnapshot>,
-): string | null => readPauseResumeKeyFromState(snapshot?.state);
-
-/** @internal */
-export const readPauseResumeKeyFromResult = (result: unknown): string | null => {
-  const snapshot = readPipelinePauseSnapshot(result);
-  if (snapshot) {
-    const resumeKey = readPauseResumeKeyFromSnapshot(snapshot);
-    if (resumeKey) {
-      return resumeKey;
-    }
-  }
-  const directResumeKey = (result as { resumeKey?: unknown }).resumeKey;
-  if (isPauseResumeKey(directResumeKey)) {
-    return directResumeKey;
-  }
-  const artefactResumeKey = (result as { artefact?: { __pause?: { resumeKey?: unknown } } })
-    .artefact?.__pause?.resumeKey;
-  if (isPauseResumeKey(artefactResumeKey)) {
-    return artefactResumeKey;
-  }
-  const stateResumeKey = (result as { state?: { __pause?: { resumeKey?: unknown } } }).state
-    ?.__pause?.resumeKey;
-  return isPauseResumeKey(stateResumeKey) ? stateResumeKey : null;
-};
-
-/** @internal */
-export const readPauseSnapshotPayload = (result: unknown) => {
-  const typed = result as { pauseSnapshot?: unknown; resumeSnapshot?: unknown };
-  return typed.pauseSnapshot ?? typed.resumeSnapshot;
-};
-
 /** @internal */
 export const readPauseMeta = (result: unknown) => {
   const snapshot = readPipelinePauseSnapshot(result);
-  if (snapshot) {
-    return { token: snapshot.token, pauseKind: snapshot.pauseKind };
-  }
-  const direct = result as { token?: unknown; pauseKind?: PauseKind };
-  if (direct.token !== undefined || direct.pauseKind !== undefined) {
-    return { token: direct.token, pauseKind: direct.pauseKind };
-  }
-  const artefact = (
-    result as { artefact?: { __pause?: { token?: unknown; pauseKind?: PauseKind } } }
-  ).artefact;
-  if (artefact?.__pause) {
-    return { token: artefact.__pause.token, pauseKind: artefact.__pause.pauseKind };
-  }
-  const state = (result as { state?: { __pause?: { token?: unknown; pauseKind?: PauseKind } } })
-    .state;
-  return { token: state?.__pause?.token, pauseKind: state?.__pause?.pauseKind };
+  return snapshot
+    ? { token: snapshot.token, pauseKind: toPauseKind(snapshot.pauseKind) ?? undefined }
+    : { token: undefined, pauseKind: undefined };
 };
 
 /** @internal */
-export const readPauseFlag = (result: unknown) => {
-  if (readPipelinePauseSnapshot(result)) {
-    return true;
-  }
-  const direct = (result as { paused?: boolean }).paused;
-  if (direct !== undefined) {
-    return direct;
-  }
-  const artefact = (result as { artefact?: { __pause?: { paused?: boolean } } }).artefact;
-  if (artefact?.__pause?.paused !== undefined) {
-    return artefact.__pause.paused;
-  }
-  const state = (result as { state?: { __pause?: { paused?: boolean } } }).state;
-  return state?.__pause?.paused;
-};
+export const readPauseFlag = isPipelinePaused;

@@ -1,5 +1,5 @@
 // #region docs
-import { collectStep, isPromiseLike, maybeToStep } from "#adapters";
+import { collectStep, isPromiseLike, maybeToStep } from "#functional";
 
 const model = {}; // Mock
 const call = {}; // Mock

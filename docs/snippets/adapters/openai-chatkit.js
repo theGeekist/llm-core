@@ -4,7 +4,7 @@ import { createInteractionHandle } from "#interaction";
 import { openai } from "@ai-sdk/openai";
 
 const model = fromAiSdkModel(openai("gpt-4o-mini"));
-const handle = createInteractionHandle().configure({ adapters: { model } });
+const handle = createInteractionHandle({ adapters: { model } });
 // #endregion docs
 // #region docs
 const doc = globalThis.document;

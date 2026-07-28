@@ -6,8 +6,8 @@ import type { Outcome, Runtime } from "#workflow/types";
 import { createStreamingModelForInteraction } from "#workflow/stream";
 import type { AgentInputOptions } from "#recipes/inputs";
 import { inputs } from "#recipes/inputs";
-import type { RecipeRunOverrides } from "#recipes/handle";
-import { createRecipeRunner, type RecipeRunner } from "#recipes/runner";
+import type { AnyRecipeHandle, RecipeRunOverrides } from "#recipes/handle";
+import { recipes } from "#recipes";
 import { maybeTap } from "#shared/maybe";
 import type { AgentLoopConfig, AgentLoopStateSnapshot, InteractionState } from "./types";
 import type { AgentEventState } from "./agent-runtime-events";
@@ -23,6 +23,14 @@ import type { AgentSubagentOptions } from "./agent-runtime-subagents-types";
 import { buildSubagentRuntimeOptions, createSubagentTools } from "./agent-runtime-subagents";
 import type { DiagnosticEntry } from "#shared/reporting";
 import { addDiagnostic } from "#shared/reporting";
+import { createRecipeDiagnostic } from "#shared/diagnostics";
+import {
+  applyAgentPrompt,
+  filterAgentTools,
+  readMissingAgentTools,
+  resolveAgentExecutionProfile,
+  type AgentExecutionProfile,
+} from "./agent-profile";
 
 export type AgentRuntimeOptions = {
   config?: AgentLoopConfig;
@@ -44,9 +52,6 @@ export type AgentRuntimeOverrides = {
   adapters?: AdapterBundle;
   providers?: Record<string, string>;
   runtime?: Runtime;
-  interactionId?: string;
-  correlationId?: string;
-  eventStream?: EventStream;
 };
 
 export type AgentRuntime = {
@@ -54,58 +59,41 @@ export type AgentRuntime = {
     input: AgentRuntimeInput,
     overrides?: AgentRuntimeOverrides,
   ) => MaybePromise<Outcome<unknown>>;
-  stream: (
-    input: AgentRuntimeInput,
-    overrides?: AgentRuntimeOverrides,
-  ) => MaybePromise<Outcome<unknown>>;
 };
 
 type AgentRuntimeState = {
   options: AgentRuntimeOptions;
-  runner: RecipeRunner;
+  profile: AgentExecutionProfile;
+  handle: AnyRecipeHandle;
 };
 
 function createAgentRuntimeState(options: AgentRuntimeOptions): AgentRuntimeState {
+  const adapters = { ...(options.adapters ?? {}), model: options.model };
   return {
     options,
-    runner: createRecipeRunner({
-      recipeId: "agent",
-      model: options.model,
-      adapters: options.adapters,
-      providers: options.providers,
-      runtime: options.runtime,
-    }),
+    profile: resolveAgentExecutionProfile(options.config),
+    handle: recipes.agent().defaults({ adapters }),
   };
 }
 
-function toAgentInputOptions(input: AgentRuntimeInput): AgentInputOptions {
+function toAgentInputOptions(
+  profile: AgentExecutionProfile,
+  input: AgentRuntimeInput,
+): AgentInputOptions {
   return {
     text: input.text,
-    context: input.context,
+    context: applyAgentPrompt(profile, input.context),
     threadId: input.threadId,
   };
 }
 
-function readEventStream(
-  input: AgentRuntimeInput,
-  overrides?: AgentRuntimeOverrides,
-): EventStream | undefined {
-  return overrides?.eventStream ?? input.eventStream;
-}
+const readEventStream = (input: AgentRuntimeInput): EventStream | undefined => input.eventStream;
 
-function readInteractionId(
-  input: AgentRuntimeInput,
-  overrides: AgentRuntimeOverrides | undefined,
-): string {
-  return overrides?.interactionId ?? input.interactionId ?? input.threadId ?? "agent-loop";
-}
+const readInteractionId = (input: AgentRuntimeInput): string =>
+  input.interactionId ?? input.threadId ?? "agent-loop";
 
-function readCorrelationId(
-  input: AgentRuntimeInput,
-  overrides: AgentRuntimeOverrides | undefined,
-  interactionId: string,
-): string {
-  return overrides?.correlationId ?? input.correlationId ?? interactionId;
+function readCorrelationId(input: AgentRuntimeInput, interactionId: string): string {
+  return input.correlationId ?? interactionId;
 }
 
 function readStartSequence(state?: InteractionState): number | undefined {
@@ -130,19 +118,12 @@ function buildStreamingModel(
   });
 }
 
-function mergeAdapterBundles(
-  base?: AdapterBundle,
-  next?: AdapterBundle,
-): AdapterBundle | undefined {
-  if (base && next) {
-    return { ...base, ...next };
-  }
-  return base ?? next;
-}
+const mergeObjects = <T extends object>(base?: T, next?: T): T | undefined =>
+  base && next ? { ...base, ...next } : (base ?? next);
 
 type AdapterOverrideInput = {
-  input: AgentRuntimeInput;
   overrides?: AgentRuntimeOverrides;
+  eventStream?: EventStream;
   streamingModel?: Model;
   tools?: Tool[] | null;
 };
@@ -166,13 +147,12 @@ function mergeTools(base?: Tool[] | null, next?: Tool[] | null): Tool[] | null {
 }
 
 function buildAdapterOverrides(input: AdapterOverrideInput): AdapterBundle | undefined {
-  const eventStream = readEventStream(input.input, input.overrides);
   const additions: AdapterBundle = {};
   if (input.streamingModel) {
     additions.model = input.streamingModel;
   }
-  if (eventStream) {
-    additions.eventStream = eventStream;
+  if (input.eventStream) {
+    additions.eventStream = input.eventStream;
   }
   if (input.tools) {
     additions.tools = input.tools;
@@ -181,7 +161,7 @@ function buildAdapterOverrides(input: AdapterOverrideInput): AdapterBundle | und
   if (additionsEmpty) {
     return input.overrides?.adapters;
   }
-  return mergeAdapterBundles(input.overrides?.adapters, additions);
+  return mergeObjects(input.overrides?.adapters, additions);
 }
 
 function buildRecipeOverrides(input: {
@@ -207,28 +187,24 @@ function buildRecipeOverrides(input: {
 
 type AgentOverridesInput = {
   state: AgentRuntimeState;
-  input: AgentRuntimeInput;
   overrides?: AgentRuntimeOverrides;
-  useStreamingModel: boolean;
   eventStream?: EventStream;
   eventState?: AgentEventState;
   tools?: Tool[] | null;
 };
 
 function buildAgentOverrides(input: AgentOverridesInput): RecipeRunOverrides | null {
-  const streamingModel = input.useStreamingModel
-    ? buildStreamingModel(input.state, input.eventStream, input.eventState)
-    : null;
+  const streamingModel = buildStreamingModel(input.state, input.eventStream, input.eventState);
   const adapters = buildAdapterOverrides({
-    input: input.input,
     overrides: input.overrides,
+    eventStream: input.eventStream,
     streamingModel: streamingModel ?? undefined,
     tools: input.tools ?? null,
   });
   return buildRecipeOverrides({
     adapters,
-    providers: input.overrides?.providers,
-    runtime: input.overrides?.runtime,
+    providers: mergeObjects(input.state.options.providers, input.overrides?.providers),
+    runtime: mergeObjects(input.state.options.runtime, input.overrides?.runtime),
   });
 }
 
@@ -239,6 +215,9 @@ type AgentRunContext = {
   eventStream?: EventStream;
   eventState?: AgentEventState;
   interactionId: string;
+  profile: AgentExecutionProfile;
+  snapshotToolAllowlist?: string[] | null;
+  missingTools: string[];
   tools?: Tool[] | null;
   skillState?: MaybePromise<AgentSkillState> | AgentSkillState | null;
 };
@@ -256,7 +235,7 @@ function resolveAdaptersForSkills(
   state: AgentRuntimeState,
   overrides?: AgentRuntimeOverrides,
 ): AdapterBundle | undefined {
-  return mergeAdapterBundles(state.options.adapters, overrides?.adapters);
+  return mergeObjects(state.options.adapters, overrides?.adapters);
 }
 
 function createAgentRunContext(input: {
@@ -264,9 +243,9 @@ function createAgentRunContext(input: {
   input: AgentRuntimeInput;
   overrides?: AgentRuntimeOverrides;
 }): AgentRunContext {
-  const interactionId = readInteractionId(input.input, input.overrides);
-  const eventStream = readEventStream(input.input, input.overrides);
-  const correlationId = readCorrelationId(input.input, input.overrides, interactionId);
+  const interactionId = readInteractionId(input.input);
+  const eventStream = readEventStream(input.input);
+  const correlationId = readCorrelationId(input.input, interactionId);
   const eventState = eventStream
     ? createAgentEventState({
         interactionId,
@@ -287,16 +266,22 @@ function createAgentRunContext(input: {
     adapters: resolveAdaptersForSkills(input.state, input.overrides),
     state: input.input.state,
   });
-  const tools = resolveToolsForRun({
+  const profile = input.state.profile;
+  const availableTools = resolveToolsForRun({
     base: input.state.options.adapters?.tools ?? null,
     overrides: input.overrides?.adapters?.tools ?? null,
     subagentTools,
   });
+  const tools = filterAgentTools(profile, availableTools);
+  const hasToolPolicy = profile.toolAllowlist !== null || profile.toolDenylist.length > 0;
   return {
     ...input,
     interactionId,
     eventStream,
     eventState,
+    profile,
+    snapshotToolAllowlist: hasToolPolicy ? (tools ?? []).map((tool) => tool.name) : null,
+    missingTools: readMissingAgentTools(profile, availableTools),
     tools,
     skillState,
   };
@@ -304,11 +289,27 @@ function createAgentRunContext(input: {
 
 type AgentOutcomeContext = {
   config?: AgentLoopConfig;
+  profile: AgentExecutionProfile;
+  toolAllowlist?: string[] | null;
+  missingTools?: string[];
   eventStream?: EventStream;
   eventState?: AgentEventState;
   skills?: AgentLoopStateSnapshot["skills"];
   skillDiagnostics?: DiagnosticEntry[];
 };
+
+function appendMissingToolDiagnostic(input: AgentOutcomeContext, outcome: Outcome<unknown>) {
+  if (!input.missingTools || input.missingTools.length === 0) {
+    return outcome;
+  }
+  addDiagnostic(
+    { diagnostics: outcome.diagnostics },
+    createRecipeDiagnostic("Configured agent tools are not available.", {
+      tools: input.missingTools,
+    }),
+  );
+  return outcome;
+}
 
 function appendSkillDiagnostics(
   outcome: Outcome<unknown>,
@@ -328,8 +329,11 @@ function applyAgentOutcomeUpdates(input: AgentOutcomeContext, outcome: Outcome<u
     validateAgentSelection({ config: input.config, outcome }),
     input.skillDiagnostics,
   );
+  appendMissingToolDiagnostic(input, next);
   return appendAgentLoopSnapshot({
     config: input.config,
+    profile: input.profile,
+    toolAllowlist: input.toolAllowlist,
     skills: input.skills,
     outcome: next,
   });
@@ -339,6 +343,7 @@ function emitAgentOutcomeEvents(input: AgentOutcomeContext, outcome: Outcome<unk
   return emitAgentLoopEvents({
     outcome,
     config: input.config,
+    profile: input.profile,
     eventStream: input.eventStream,
     eventState: input.eventState,
   });
@@ -393,33 +398,28 @@ function applyAgentOutcomeWithSkills(
   );
 }
 
-type AgentRuntimeExecutionConfig = {
-  state: AgentRuntimeState;
-  useStreamingModel: boolean;
-};
-
 function executeAgentRuntime(
-  config: AgentRuntimeExecutionConfig,
+  state: AgentRuntimeState,
   input: AgentRuntimeInput,
   overrides?: AgentRuntimeOverrides,
 ): MaybePromise<Outcome<unknown>> {
-  const { state, useStreamingModel } = config;
   const runContext = createAgentRunContext({ state, input, overrides });
-  const runInput = inputs.agent(toAgentInputOptions(input));
+  const runInput = inputs.agent(toAgentInputOptions(runContext.profile, input));
   const resolved = buildAgentOverrides({
     state,
-    input,
     overrides,
-    useStreamingModel,
     eventStream: runContext.eventStream,
     eventState: runContext.eventState,
     tools: runContext.tools,
   });
-  const outcome = resolved ? state.runner.run(runInput, resolved) : state.runner.run(runInput);
+  const outcome = resolved ? state.handle.run(runInput, resolved) : state.handle.run(runInput);
   return maybeChain(
     bindFirst(applyAgentOutcomeWithSkills, {
       context: {
         config: state.options.config,
+        profile: runContext.profile,
+        toolAllowlist: runContext.snapshotToolAllowlist,
+        missingTools: runContext.missingTools,
         eventStream: runContext.eventStream,
         eventState: runContext.eventState,
       },
@@ -432,7 +432,6 @@ function executeAgentRuntime(
 export function createAgentRuntime(options: AgentRuntimeOptions): AgentRuntime {
   const state = createAgentRuntimeState(options);
   return {
-    run: bindFirst(executeAgentRuntime, { state, useStreamingModel: false }),
-    stream: bindFirst(executeAgentRuntime, { state, useStreamingModel: true }),
+    run: bindFirst(executeAgentRuntime, state),
   };
 }

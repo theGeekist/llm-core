@@ -1,15 +1,13 @@
 export {
   createChatKitEventMapper,
   createChatKitInteractionEventStream,
-  createChatKitInteractionMapper,
   createChatKitInteractionSink,
-  toChatKitEvents,
   toChatKitThreadId,
 } from "./interaction";
 export type {
   ChatKitEventName,
+  ChatKitEventMapper,
   ChatKitInteractionEventStreamOptions,
-  ChatKitInteractionMapper,
   ChatKitInteractionMapperOptions,
   ChatKitInteractionSinkOptions,
 } from "./interaction";

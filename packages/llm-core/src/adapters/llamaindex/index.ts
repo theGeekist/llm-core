@@ -19,6 +19,4 @@ export { fromLlamaIndexQueryEngine } from "./query-engine";
 export { fromLlamaIndexResponseSynthesizer } from "./response-synthesizer";
 export { toLlamaIndexStreamEvents } from "./stream";
 export { fromLlamaIndexWorkflowContext } from "./event-stream";
-export { fromLlamaIndexCheckpointStore } from "./checkpoint";
 export { fromLlamaIndexTraceSink } from "./trace";
-export type { LlamaIndexCheckpointEntry, LlamaIndexCheckpointStore } from "./checkpoint";

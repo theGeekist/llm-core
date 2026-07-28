@@ -46,7 +46,7 @@ import {
   type TransportData,
   type OutcomeSummary,
 } from "./app/helpers";
-import { bindFirst } from "@geekist/llm-core";
+import { bindFirst } from "@geekist/llm-core/functional";
 import type { TransportEvent } from "@geekist/llm-core/adapters/ai-sdk-ui";
 import { ModelControls, SelectField } from "@examples/components/model-controls";
 import { useModelCatalog, useModelSelection } from "@examples/components/model-catalog";

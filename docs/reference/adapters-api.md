@@ -36,7 +36,6 @@ type AdapterBundle = {
   image?: ImageModel;
   indexing?: Indexing;
   interrupt?: InterruptStrategy;
-  checkpoint?: CheckpointStore;
   textSplitter?: TextSplitter;
   retriever?: Retriever;
   reranker?: Reranker;
@@ -73,7 +72,6 @@ const adapterBundle = {
   image: undefined,
   indexing: undefined,
   interrupt: undefined,
-  checkpoint: undefined,
   textSplitter: undefined,
   retriever: undefined,
   reranker: undefined,
@@ -114,11 +112,14 @@ Effectful adapter operations return `MaybePromise<boolean | null>`:
 - `false`: the operation failed (validation errors, missing inputs, or upstream failure).
 - `null`: not applicable (capability not supported or intentionally skipped).
 
+When several effects are aggregated, any failure returns `false`; otherwise any applicable success
+returns `true`, and `null` is reserved for the case where every effect was skipped.
+
 Examples:
 
 - Cache/storage writes and deletes: `set`, `delete`, `put`, `mset`, `mdelete`.
 - Memory writes: `append`, `reset`, `save`.
-- Orchestration: checkpoint `set/delete/touch/sweep`, event streams `emit/emitMany`, trace sinks `emit/emitMany`.
+- Orchestration: event streams `emit/emitMany` and trace sinks `emit/emitMany`.
 - Vector store deletes: `delete` returns `true/false/null` (upsert returns data or `null`).
 
 ## Output parser (LangChain only)
@@ -151,10 +152,10 @@ const value = await parser.parse("hello");
 
 :::
 
-## Cache adapters (resume persistence)
+## Cache adapters
 
-`cache` is the adapter used to persist pause sessions for `resume()`. TTL is best‑effort and depends on
-the underlying cache implementation.
+`cache` stores application and provider data. Pipeline pause snapshots are opaque, process-local
+continuations and are never written through cache adapters.
 
 ### Helpers
 
@@ -386,7 +387,7 @@ const toolPlugin = Adapter.tools("custom.tools", [{ name: "search" }]);
 
 :::
 
-For custom constructs (e.g. `mcp`), use `Adapter.register`:
+For custom constructs (e.g. `mcp`), use `Adapter.plugin`:
 
 ::: tabs
 == TypeScript
@@ -394,14 +395,14 @@ For custom constructs (e.g. `mcp`), use `Adapter.register`:
 ```ts
 import type { AdapterPlugin } from "@geekist/llm-core/adapters";
 
-const plugin = Adapter.register("custom.mcp", "mcp", { client });
+const plugin = Adapter.plugin("custom.mcp", { constructs: { mcp: { client } } });
 plugin satisfies AdapterPlugin;
 ```
 
 == JavaScript
 
 ```js
-const plugin = Adapter.register("custom.mcp", "mcp", { client });
+const plugin = Adapter.plugin("custom.mcp", { constructs: { mcp: { client } } });
 ```
 
 :::
@@ -416,10 +417,10 @@ llm-core avoids silent adapter conflicts and hidden overrides.
 == TypeScript
 
 ```ts
-import { createRegistryFromDefaults } from "@geekist/llm-core/adapters";
+import { createAdapterRegistry } from "@geekist/llm-core/adapters";
 import type { Model } from "@geekist/llm-core/adapters";
 
-const registry = createRegistryFromDefaults();
+const registry = createAdapterRegistry();
 registry.registerProvider({
   construct: "model",
   providerKey: "custom",
@@ -436,9 +437,9 @@ const { adapters, diagnostics } = registry.resolve({
 == JavaScript
 
 ```js
-import { createRegistryFromDefaults } from "@geekist/llm-core/adapters";
+import { createAdapterRegistry } from "@geekist/llm-core/adapters";
 
-const registry = createRegistryFromDefaults();
+const registry = createAdapterRegistry();
 registry.registerProvider({
   construct: "model",
   providerKey: "custom",
@@ -460,13 +461,8 @@ const { adapters, diagnostics } = registry.resolve({
 == TypeScript
 
 ```ts
-import type {
-  MaybeAsyncIterable,
-  Model,
-  ModelCall,
-  ModelResult,
-  ModelStreamEvent,
-} from "@geekist/llm-core/adapters";
+import type { Model, ModelCall, ModelResult, ModelStreamEvent } from "@geekist/llm-core/adapters";
+import type { MaybeAsyncIterable, MaybePromise } from "@geekist/llm-core/functional";
 
 type Model = {
   generate(call: ModelCall): MaybePromise<ModelResult>;
@@ -628,6 +624,7 @@ However, if you are migrating existing LangChain parsers, we support them as a d
 
 ```ts
 import type { AdapterCallContext, OutputParser } from "@geekist/llm-core/adapters";
+import type { MaybePromise } from "@geekist/llm-core/functional";
 
 type OutputParser = {
   parse: (text: string, context?: AdapterCallContext) => MaybePromise<unknown>;
@@ -705,6 +702,7 @@ const query = {
 
 ```ts
 import type { Schema, Tool } from "@geekist/llm-core/adapters";
+import type { MaybePromise } from "@geekist/llm-core/functional";
 
 type Tool = {
   name: string;

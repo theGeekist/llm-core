@@ -123,6 +123,7 @@ Agent loop contracts live in the interaction layer:
 
 ```ts
 import type {
+  AgentExecutionProfile,
   AgentLoopConfig,
   AgentLoopStateSnapshot,
   InteractionItemEvent,
@@ -167,20 +168,23 @@ Capability resolution is deterministic and reducer-driven.
 
 ## Agent Loop Snapshots
 
-When an agent loop is used, the runtime records a deterministic snapshot per run and emits it as a trace entry (`agent.loop.snapshot`). The snapshot captures selected agent IDs, normalized tool allowlists, and any loaded skills (with hashes) when a `skills` adapter is registered. The skills adapter is runtime-specific so worker environments can supply a loader that uses fetch + `crypto.subtle` instead of `fs`; if skills are configured but no adapter is available, the runtime emits a contract diagnostic and omits skills from the snapshot. On resume, the runtime reloads skills and compares hashes; mismatches emit resume diagnostics.
+When an agent loop is used, the runtime first resolves `AgentLoopConfig` into one `AgentExecutionProfile`. Explicit selection wins; a sole configured agent is selected automatically; multiple agents without an explicit selector remain unselected and emit an ambiguity diagnostic. The selected prompt is prepended once to caller context. Global and per-agent tool allowlists are intersected, the denylist wins, and the resulting tools are sorted by name.
+
+The runtime records a deterministic snapshot per run and emits it as a trace entry (`agent.loop.snapshot`). The snapshot captures the selected agent ID, effective tool allowlist, and any loaded skills (with hashes) when a `skills` adapter is registered. The skills adapter is runtime-specific so worker environments can supply a loader that uses fetch + `crypto.subtle` instead of `fs`; if skills are configured but no adapter is available, the runtime emits a contract diagnostic and omits skills from the snapshot. On resume, the runtime reloads skills and compares hashes; mismatches emit resume diagnostics.
 
 Determinism rules are part of the contract:
 
-- Agents are ordered by ID for tie-breaking.
+- Agent selection is an explicit ID, or the sole configured agent when exactly one exists.
 - Skills are deduped and sorted by scope, then name, then path.
-- Tool allowlists are normalized (trimmed, deduped, sorted) before use.
-- Sub-agents and approval cache keys follow the same determinism rules.
+- Tool allowlists and denylists are normalized before they filter executable tools.
+- Sub-agent identifiers and tool scopes follow the same determinism rules.
 
-When an `EventStream` is attached, the agent runtime emits `interaction.subagent` for the selected agent and `interaction.item` events for plan and response items in a stable order so UIs can consume loop items without reinterpreting model deltas.
+When an `EventStream` is attached to the `run` input, the agent runtime consumes the model's streaming capability and emits model events alongside `interaction.subagent` for the selected agent and `interaction.item` events for plan and response items. Without an event stream, `run` uses the model's regular generate path.
 
 The agent runtime also registers sub-agent tools by default:
 
-- `agent.spawn` — create a sub-agent slot (bounded by `subagents.maxActive`, default 4).
+- `agent.spawn` — create a sub-agent slot (bounded by `subagents.maxActive`, default 4); an
+  optional `tools` list narrows the child runtime's executable tools.
 - `agent.send` — run the sub-agent with new input and return its outcome.
 - `agent.wait` — return the last known outcome for a sub-agent.
 - `agent.close` — close a sub-agent slot and emit a completion event.
@@ -212,7 +216,11 @@ if (out.status === "paused") {
 
 :::
 
-If a recipe supports it, `resume(token, resumeInput?, runtime?)` is exposed; it uses `runtime.resume.resolve(...)` when provided and returns an error outcome when missing (including a `resume.invalidToken` diagnostic when the token is unknown). Paused tokens are process-local unless you supply a durable resume store via runtime configuration (prefer `adapters.checkpoint`, or `adapters.cache` as a fallback).
+If a recipe supports it, `resume(token, resumeInput?, runtime?)` is exposed; it uses
+`runtime.resume.resolve(...)` when provided and returns an error outcome when missing (including a
+`resume.invalidToken` diagnostic when the token is unknown). Pause tokens and their pipeline
+snapshots are process-local. Resume them on the same live runtime; an unknown token cannot be
+reconstructed from cache or storage.
 
 If helpers registered rollbacks, they are executed before the paused outcome is returned when the
 resolved interrupt strategy is `restart`. Rollback failures are reported through the runtime reporter.

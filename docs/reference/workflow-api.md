@@ -39,22 +39,7 @@ The workflow instance is the engine. These methods are the advanced surface:
 
 ---
 
-## 3) Builder surface (advanced)
-
-`Workflow.recipe(name)` returns a builder with the same ergonomic surface as recipe/interaction handles:
-
-- `configure({ diagnostics?, pipelineFactory? })` — advanced wiring + diagnostics hooks.
-- `defaults(runtime)` — runtime defaults (retry, providers, diagnostics mode).
-- `use(plugin)` — add plugins (adapters, hooks, helpers).
-- `explain()` — composition snapshot (plugins, capabilities, overrides, requirements).
-- `build()` — returns a workflow runtime.
-- `run(input, runtime?)` — one‑shot execution.
-
-Use the builder when you want advanced control without touching recipes directly.
-
----
-
-## 4) Outcomes are explicit
+## 3) Outcomes are explicit
 
 Every `run()` returns an outcome with trace and diagnostics.
 
@@ -76,7 +61,7 @@ Helpers live in `Outcome.*` and remain exhaustive.
 
 ---
 
-## 5) Agent loop contract (interaction semantics)
+## 4) Agent loop contract (interaction semantics)
 
 The agent loop contract is defined in the interaction layer, not the workflow engine. It describes
 the **event semantics** and **state snapshot** shape that an agentic loop must emit, regardless of
@@ -95,7 +80,7 @@ UI integrations and deterministic replay are defined.
 
 ---
 
-## 6) Runtime channel (operational controls)
+## 5) Runtime channel (operational controls)
 
 Runtime is where **budget**, **persistence**, **trace sinks**, and **resume** are configured. This
 keeps recipes pure and deterministic.

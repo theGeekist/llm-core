@@ -2,9 +2,7 @@ import { describe, expect, it } from "bun:test";
 import {
   createAssistantUiCommandMapper,
   createAssistantUiInteractionEventStream,
-  createAssistantUiInteractionMapper,
   createAssistantUiInteractionSink,
-  toAssistantUiCommands,
 } from "#adapters";
 import type { ModelStreamEvent } from "#adapters";
 import type { InteractionEvent, InteractionEventMeta } from "#interaction";
@@ -43,7 +41,7 @@ const createSender = (capture: CommandCapture) => (command: AssistantTransportCo
 
 describe("Adapter assistant-ui mapping", () => {
   it("maps model deltas into assistant add-message commands", () => {
-    const mapper = createAssistantUiInteractionMapper();
+    const mapper = createAssistantUiCommandMapper();
 
     const events = [
       modelEvent(1, { type: "start", id: "m1" }),
@@ -51,7 +49,7 @@ describe("Adapter assistant-ui mapping", () => {
       modelEvent(3, { type: "end", finishReason: "stop" }),
     ];
 
-    const commands = events.flatMap((event) => mapper.mapEvent(event));
+    const commands = events.flatMap((event) => mapper(event));
 
     expect(commands).toEqual([
       {
@@ -65,7 +63,7 @@ describe("Adapter assistant-ui mapping", () => {
   });
 
   it("includes reasoning when configured", () => {
-    const mapper = createAssistantUiInteractionMapper({ includeReasoning: true });
+    const mapper = createAssistantUiCommandMapper({ includeReasoning: true });
 
     const events = [
       modelEvent(1, { type: "delta", text: "hello" }),
@@ -73,7 +71,7 @@ describe("Adapter assistant-ui mapping", () => {
       modelEvent(3, { type: "end", finishReason: "stop" }),
     ];
 
-    const commands = events.flatMap((event) => mapper.mapEvent(event));
+    const commands = events.flatMap((event) => mapper(event));
 
     expect(commands).toEqual([
       {
@@ -90,7 +88,7 @@ describe("Adapter assistant-ui mapping", () => {
   });
 
   it("maps tool results into add-tool-result commands", () => {
-    const mapper = createAssistantUiInteractionMapper();
+    const mapper = createAssistantUiCommandMapper();
 
     const events = [
       modelEvent(1, {
@@ -103,7 +101,7 @@ describe("Adapter assistant-ui mapping", () => {
       }),
     ];
 
-    const commands = events.flatMap((event) => mapper.mapEvent(event));
+    const commands = events.flatMap((event) => mapper(event));
 
     expect(commands).toEqual([
       {
@@ -123,13 +121,63 @@ describe("Adapter assistant-ui mapping", () => {
     ]);
   });
 
+  it("preserves JSON tool results and tags values that cannot be serialized", () => {
+    const mapper = createAssistantUiCommandMapper();
+    const valid = { nested: [null, true, 1, "value"] };
+    const circular: { self?: unknown } = {};
+    circular.self = circular;
+    function toolResult() {
+      return "unused";
+    }
+    const events = [
+      modelEvent(1, {
+        type: "delta",
+        toolResult: { name: "valid", result: valid },
+      }),
+      modelEvent(2, {
+        type: "delta",
+        toolResult: { name: "error", result: new Error("boom") },
+      }),
+      modelEvent(3, {
+        type: "delta",
+        toolResult: { name: "bigint", result: 42n },
+      }),
+      modelEvent(4, {
+        type: "delta",
+        toolResult: { name: "function", result: toolResult },
+      }),
+      modelEvent(5, {
+        type: "delta",
+        toolResult: { name: "circular", result: circular },
+      }),
+    ];
+
+    const commands = events.flatMap((event) => mapper(event));
+    const results = commands.map((command) =>
+      command.type === "add-tool-result" ? command.result : null,
+    );
+
+    expect(results[0]).toBe(valid);
+    expect(results.slice(1)).toEqual([
+      { type: "llm-core.non-json-value", reason: "error", message: "boom" },
+      { type: "llm-core.non-json-value", reason: "bigint", message: "42" },
+      { type: "llm-core.non-json-value", reason: "function", message: "toolResult" },
+      {
+        type: "llm-core.non-json-value",
+        reason: "circular",
+        message: "Circular reference",
+      },
+    ]);
+    expect(() => JSON.stringify(results)).not.toThrow();
+  });
+
   it("fills fallback text from end events", () => {
-    const mapper = createAssistantUiInteractionMapper();
+    const mapper = createAssistantUiCommandMapper();
 
     const commands = [
       modelEvent(1, { type: "start", id: "m1" }),
       modelEvent(2, { type: "end", text: "final" }),
-    ].flatMap((event) => mapper.mapEvent(event));
+    ].flatMap((event) => mapper(event));
 
     expect(commands).toEqual([
       {
@@ -143,7 +191,7 @@ describe("Adapter assistant-ui mapping", () => {
   });
 
   it("applies custom reasoning and error prefixes", () => {
-    const mapper = createAssistantUiInteractionMapper({
+    const mapper = createAssistantUiCommandMapper({
       includeReasoning: true,
       reasoningPrefix: "Why: ",
       errorPrefix: "Oops: ",
@@ -153,7 +201,7 @@ describe("Adapter assistant-ui mapping", () => {
       modelEvent(1, { type: "delta", text: "hello" }),
       modelEvent(2, { type: "delta", reasoning: "because" }),
       modelEvent(3, { type: "error", error: "boom" }),
-    ].flatMap((event) => mapper.mapEvent(event));
+    ].flatMap((event) => mapper(event));
 
     expect(commands).toEqual([
       {
@@ -167,10 +215,10 @@ describe("Adapter assistant-ui mapping", () => {
   });
 
   it("handles non-string error payloads", () => {
-    const mapper = createAssistantUiInteractionMapper();
+    const mapper = createAssistantUiCommandMapper();
     const error = { message: "Bad request", code: "E_BAD" };
 
-    const commands = mapper.mapEvent(modelEvent(1, { type: "error", error }));
+    const commands = mapper(modelEvent(1, { type: "error", error }));
 
     expect(commands).toEqual([
       {
@@ -184,11 +232,11 @@ describe("Adapter assistant-ui mapping", () => {
   });
 
   it("handles circular error payloads", () => {
-    const mapper = createAssistantUiInteractionMapper();
+    const mapper = createAssistantUiCommandMapper();
     const error: { self?: unknown } = {};
     error.self = error;
 
-    const commands = mapper.mapEvent(modelEvent(1, { type: "error", error }));
+    const commands = mapper(modelEvent(1, { type: "error", error }));
 
     expect(commands).toEqual([
       {
@@ -202,13 +250,13 @@ describe("Adapter assistant-ui mapping", () => {
   });
 
   it("generates tool call ids when missing", () => {
-    const mapper = createAssistantUiInteractionMapper();
+    const mapper = createAssistantUiCommandMapper();
     const event = modelEvent(1, {
       type: "delta",
       toolResult: { toolCallId: null, name: "lookup", result: { ok: true } },
     });
 
-    const commands = mapper.mapEvent(event);
+    const commands = mapper(event);
 
     expect(commands).toEqual([
       {
@@ -222,8 +270,8 @@ describe("Adapter assistant-ui mapping", () => {
   });
 
   it("drops non-model events", () => {
-    const mapper = createAssistantUiInteractionMapper();
-    const commands = mapper.mapEvent({
+    const mapper = createAssistantUiCommandMapper();
+    const commands = mapper({
       kind: "trace",
       event: { kind: "trace", at: "now", data: {} },
       meta: baseMeta(1),
@@ -321,17 +369,11 @@ describe("Adapter assistant-ui mapping", () => {
     expect(result).toBe(false);
   });
 
-  it("supports helper usage with a shared mapper", () => {
-    const mapper = createAssistantUiInteractionMapper();
+  it("preserves cross-event state in a bound mapper", () => {
+    const mapper = createAssistantUiCommandMapper();
 
-    const deltaCommands = toAssistantUiCommands(
-      mapper,
-      modelEvent(1, { type: "delta", text: "hello" }),
-    );
-    const endCommands = toAssistantUiCommands(
-      mapper,
-      modelEvent(2, { type: "end", finishReason: "stop" }),
-    );
+    const deltaCommands = mapper(modelEvent(1, { type: "delta", text: "hello" }));
+    const endCommands = mapper(modelEvent(2, { type: "end", finishReason: "stop" }));
 
     expect(deltaCommands).toEqual([]);
     expect(endCommands).toEqual([
@@ -361,19 +403,5 @@ describe("Adapter assistant-ui mapping", () => {
         },
       },
     ]);
-  });
-
-  it("keeps direct helper usage with mapper options", () => {
-    const deltaCommands = toAssistantUiCommands(
-      { includeReasoning: true },
-      modelEvent(1, { type: "delta", reasoning: "thinking" }),
-    );
-    const endCommands = toAssistantUiCommands(
-      { includeReasoning: true },
-      modelEvent(2, { type: "end", finishReason: "stop" }),
-    );
-
-    expect(deltaCommands).toEqual([]);
-    expect(endCommands).toEqual([]);
   });
 });

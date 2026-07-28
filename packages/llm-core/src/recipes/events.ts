@@ -1,5 +1,6 @@
-import { maybeMap, maybeAll } from "#shared/maybe";
-import { isNull } from "#shared/guards";
+import { bindFirst } from "#shared/fp";
+import { maybeMap, maybeReduce } from "#shared/maybe";
+import { combineTriState } from "#shared/tri-state";
 import type { AdapterTraceEvent, EventStream } from "#adapters/types";
 import type { PipelineContext, PipelineState } from "#workflow/types";
 
@@ -36,26 +37,16 @@ const appendEvents = (state: PipelineState, events: AdapterTraceEvent[]) => {
   return list;
 };
 
-const isFailure = (value: boolean | null) => value === false;
-
-const combineResults = (values: Array<boolean | null>) => {
-  if (values.some(isFailure)) {
-    return false;
-  }
-  if (values.some(isNull)) {
-    return null;
-  }
-  return true;
-};
-
 const emitEventWithStream = (stream: EventStream, event: AdapterTraceEvent) => stream.emit(event);
 
+const emitNextEvent = (stream: EventStream, previous: boolean | null, event: AdapterTraceEvent) =>
+  maybeMap(bindFirst(combineTriState, previous), emitEventWithStream(stream, event));
+
 const emitEventsSequentially = (stream: EventStream, events: AdapterTraceEvent[]) => {
-  const results: Array<ReturnType<EventStream["emit"]>> = [];
-  for (const event of events) {
-    results.push(emitEventWithStream(stream, event));
+  if (events.length === 0) {
+    return null;
   }
-  return maybeMap(combineResults, maybeAll(results));
+  return maybeReduce(bindFirst(emitNextEvent, stream), null, events);
 };
 
 const emitEventsWithStream = (stream: EventStream, events: AdapterTraceEvent[]) => {

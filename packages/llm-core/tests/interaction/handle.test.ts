@@ -1,13 +1,12 @@
 import { describe, expect, it } from "bun:test";
 import {
   createInteractionHandle,
-  type InteractionRunOutcome,
-  type InteractionPauseRequest,
   type InteractionStepApply,
   type InteractionStepPack,
   type InteractionState,
 } from "#interaction";
 import { createEmptyState, readPausedState } from "../../src/interaction/handle";
+import type { InteractionPauseRequest, InteractionRunOutcome } from "../../src/interaction/types";
 import { isPromiseLike } from "@wpkernel/pipeline/core";
 import { createMockModel, createMockMessage } from "../fixtures/factories";
 import type { Message } from "#adapters";
@@ -128,22 +127,6 @@ describe("interaction handle", () => {
       throw new Error("Expected sync handle result.");
     }
     expect(result.state.messages[2]?.content).toBe("hint");
-  });
-
-  it("applies configured defaults when building handles", () => {
-    const handle = createInteractionHandle({
-      adapters: { model: createMockModel("base") },
-    }).configure({
-      adapters: { model: createMockModel("configured") },
-    });
-    const result = handle.run({ message: createMockMessage("hi") });
-
-    expect(isPromiseLike(result)).toBe(false);
-    if (isPromiseLike(result)) {
-      throw new Error("Expected sync handle result.");
-    }
-
-    expect(result.state.messages[1]?.content).toBe("configured");
   });
 
   it("merges defaults after creation", () => {

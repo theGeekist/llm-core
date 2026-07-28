@@ -56,8 +56,7 @@ import { recipes } from "@geekist/llm-core/recipes";
 import type { AgentRecipeConfig } from "@geekist/llm-core/recipes";
 
 // Configure once, reuse across requests.
-const agent = recipes["agent"]()
-  .configure({
+const agent = recipes["agent"]({
     planning: { modelInstructions: "Plan before acting." },
     tools: { toolChoice: "auto" },
   } satisfies AgentRecipeConfig)
@@ -72,8 +71,7 @@ const result = await agent.run({ input: "Help me debug this RAG flow." });
 import { recipes } from "@geekist/llm-core/recipes";
 
 // Configure once, reuse across requests.
-const agent = recipes["agent"]()
-  .configure({
+const agent = recipes["agent"]({
     planning: { modelInstructions: "Plan before acting." },
     tools: { toolChoice: "auto" },
   })
@@ -86,7 +84,7 @@ const result = await agent.run({ input: "Help me debug this RAG flow." });
 
 ## Recipe-specific config (no global junk drawer)
 
-Each recipe exports its own config type. `configure()` only accepts that type.
+Each recipe factory accepts its own config type.
 There is no global `RecipeConfig` bag.
 
 ::: tabs
@@ -95,7 +93,7 @@ There is no global `RecipeConfig` bag.
 ```ts
 import type { RagRecipeConfig } from "@geekist/llm-core/recipes";
 
-const rag = recipes["rag"]().configure({
+const rag = recipes["rag"]({
   retrieval: { topK: 8 },
   synthesis: { system: "Cite your sources." },
 } satisfies RagRecipeConfig);
@@ -104,7 +102,7 @@ const rag = recipes["rag"]().configure({
 == JavaScript
 
 ```js
-const rag = recipes["rag"]().configure({
+const rag = recipes["rag"]({
   retrieval: { topK: 8 },
   synthesis: { system: "Cite your sources." },
 });
@@ -145,8 +143,7 @@ console.log(plan.steps.map((step) => step.id));
 == TypeScript
 
 ```ts
-const runnable = recipes["rag"]()
-  .configure({ retrieval: { topK: 5 } })
+const runnable = recipes["rag"]({ retrieval: { topK: 5 } })
   .defaults({ adapters: { model, retriever } }) // Keep wiring separate.
   .build();
 
@@ -157,8 +154,7 @@ const outcome = await(runnable as RagRunnable)({ input: "Explain DSP." });
 == JavaScript
 
 ```js
-const runnable = recipes["rag"]()
-  .configure({ retrieval: { topK: 5 } })
+const runnable = recipes["rag"]({ retrieval: { topK: 5 } })
   .defaults({ adapters: { model, retriever } }) // Keep wiring separate.
   .build();
 

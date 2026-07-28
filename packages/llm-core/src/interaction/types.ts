@@ -6,7 +6,12 @@ import type {
   ModelStreamEvent,
   QueryStreamEvent,
 } from "#adapters/types";
-import type { PipelineDiagnostic, PipelinePaused, PipelineStep } from "@wpkernel/pipeline/core";
+import type {
+  PipelineDiagnostic,
+  PipelinePaused,
+  PipelinePauseSnapshot,
+  PipelineStep,
+} from "@wpkernel/pipeline/core";
 import type { DiagnosticEntry } from "#shared/reporting";
 import type { MaybePromise } from "#shared/maybe";
 import type { TraceEvent } from "#shared/reporting";
@@ -86,40 +91,18 @@ export type InteractionEvent =
   | { kind: "subagent"; event: InteractionSubagentEvent; meta: InteractionEventMeta }
   | { kind: "event-stream"; event: EventStreamEvent; meta: InteractionEventMeta };
 
-export type AgentApprovalPolicy = "never" | "on-request" | "unless-trusted" | "on-failure";
-
-export type AgentApprovalsConfig = {
-  policy?: AgentApprovalPolicy;
-  cache?: "session";
-};
-
-export type AgentMcpServerConfig = {
-  type?: "local" | "stdio" | "http" | "sse";
-  tools: string[];
-  command?: string;
-  args?: string[];
-  env?: Record<string, string>;
-  cwd?: string;
-  url?: string;
-  headers?: Record<string, string>;
-  timeoutMs?: number;
-};
-
 export type AgentDefinition = {
   id: string;
   name: string;
   description?: string;
   prompt: string;
   tools?: string[] | null;
-  mcpServers?: Record<string, AgentMcpServerConfig>;
-  infer?: boolean;
 };
 
 export type AgentLoopConfig = {
   agents?: AgentDefinition[];
   agentSelection?: {
     agentId?: string;
-    allowInfer?: boolean;
   };
   skills?: {
     directories?: string[];
@@ -129,8 +112,6 @@ export type AgentLoopConfig = {
     allowlist?: string[];
     denylist?: string[];
   };
-  mcpServers?: Record<string, AgentMcpServerConfig>;
-  approvals?: AgentApprovalsConfig;
 };
 
 export type AgentLoopStateSnapshot = {
@@ -142,7 +123,6 @@ export type AgentLoopStateSnapshot = {
     hash: string;
   }>;
   toolAllowlist?: string[] | null;
-  approvalCacheKeys?: string[];
 };
 
 export type InteractionState = TraceDiagnostics & {
@@ -186,6 +166,26 @@ export type InteractionRunResult = {
 
 export type InteractionRunOutcome = InteractionRunResult | PipelinePaused<Record<string, unknown>>;
 
+/**
+ * A live pipeline continuation. It may contain runtime values and is not a durable JSON payload.
+ */
+export type InteractionPauseSnapshot = PipelinePauseSnapshot<Record<string, unknown>>;
+
+export type InteractionSessionIdentity = {
+  sessionId: string;
+  userId?: string;
+};
+
+export type InteractionSessionPauseSnapshot = InteractionPauseSnapshot & {
+  interactionSession: InteractionSessionIdentity;
+};
+
+export type InteractionSessionPaused = Omit<PipelinePaused<Record<string, unknown>>, "snapshot"> & {
+  snapshot: InteractionSessionPauseSnapshot;
+};
+
+export type InteractionSessionOutcome = InteractionRunResult | InteractionSessionPaused;
+
 export type InteractionContext = ExecutionContextBase & {
   reducer: InteractionReducer;
   eventStream?: EventStream;
@@ -215,9 +215,14 @@ export type SessionPolicy = {
   truncate?: (state: InteractionState) => MaybePromise<InteractionState>;
 };
 
+export type InteractionSessionResume = (
+  snapshot: InteractionSessionPauseSnapshot,
+  resumeInput?: unknown,
+) => MaybePromise<InteractionSessionOutcome>;
+
 export type InteractionSession = {
   getState: () => InteractionState;
-  send: (message: Message) => MaybePromise<InteractionRunOutcome>;
-  save?: () => MaybePromise<boolean | null>;
+  send: (message: Message) => MaybePromise<InteractionSessionOutcome>;
+  resume: InteractionSessionResume;
 };
 export type InteractionHelperEventStream = EventStream;

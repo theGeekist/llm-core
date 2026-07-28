@@ -5,7 +5,7 @@ describe("Adapter registration helpers", () => {
   const CUSTOM_PREFIX = "custom";
 
   it("builds a plugin with a single construct", () => {
-    const plugin = Adapter.register(`${CUSTOM_PREFIX}.retriever`, "retriever", {
+    const plugin = Adapter.retriever(`${CUSTOM_PREFIX}.retriever`, {
       retrieve: () => ({ documents: [] }),
     });
     expect(plugin.key).toBe(`${CUSTOM_PREFIX}.retriever`);
@@ -13,19 +13,23 @@ describe("Adapter registration helpers", () => {
   });
 
   it("stores unknown constructs under constructs", () => {
-    const plugin = Adapter.register(`${CUSTOM_PREFIX}.thing`, "mcp", { client: "ok" });
-    expect(plugin.adapters.constructs).toEqual({ mcp: { client: "ok" } });
-  });
-
-  it("treats constructs as the full constructs map", () => {
-    const plugin = Adapter.register(`${CUSTOM_PREFIX}.constructs`, "constructs", {
-      mcp: { client: "ok" },
+    const plugin = Adapter.plugin(`${CUSTOM_PREFIX}.thing`, {
+      constructs: { mcp: { client: "ok" } },
     });
     expect(plugin.adapters.constructs).toEqual({ mcp: { client: "ok" } });
   });
 
-  it("wraps non-object constructs values for convenience", () => {
-    const plugin = Adapter.register(`${CUSTOM_PREFIX}.value`, "constructs", "plain");
+  it("treats constructs as the full constructs map", () => {
+    const plugin = Adapter.plugin(`${CUSTOM_PREFIX}.constructs`, {
+      constructs: { mcp: { client: "ok" } },
+    });
+    expect(plugin.adapters.constructs).toEqual({ mcp: { client: "ok" } });
+  });
+
+  it("accepts explicit construct values", () => {
+    const plugin = Adapter.plugin(`${CUSTOM_PREFIX}.value`, {
+      constructs: { value: "plain" },
+    });
     expect(plugin.adapters.constructs).toEqual({ value: "plain" });
   });
 
@@ -60,11 +64,6 @@ describe("Adapter registration helpers", () => {
       set: () => null,
       delete: () => null,
     });
-    const checkpoint = Adapter.checkpoint(`${CUSTOM_PREFIX}.checkpoint`, {
-      get: () => null,
-      set: () => null,
-      delete: () => null,
-    });
     const eventStream = Adapter.eventStream(`${CUSTOM_PREFIX}.eventStream`, {
       emit: () => null,
     });
@@ -93,7 +92,6 @@ describe("Adapter registration helpers", () => {
     expect(vectorStore.adapters.vectorStore).toBeDefined();
     expect(memory.adapters.memory).toBeDefined();
     expect(cache.adapters.cache).toBeDefined();
-    expect(checkpoint.adapters.checkpoint).toBeDefined();
     expect(eventStream.adapters.eventStream).toBeDefined();
     expect(interrupt.adapters.interrupt).toBeDefined();
     expect(trace.adapters.trace).toBeDefined();

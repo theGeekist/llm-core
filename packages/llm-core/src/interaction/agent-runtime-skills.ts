@@ -29,6 +29,7 @@ type SkillLoadInput = {
 };
 
 const AGENT_LOOP_SNAPSHOT_KIND = "agent.loop.snapshot";
+const SKILL_IDENTITY_KEYS = ["scope", "id", "path", "hash"] as const;
 
 function readSkillLoader(adapters?: AdapterBundle): SkillLoader | null {
   return adapters?.skills ?? null;
@@ -101,61 +102,28 @@ function sanitizeSkillEntry(entry: SkillSnapshotEntry): SkillSnapshotEntry | nul
   };
 }
 
-function compareSkillScope(a: SkillSnapshotEntry, b: SkillSnapshotEntry): number {
-  if (a.scope < b.scope) {
+function compareSkillValues(left: string, right: string): number {
+  if (left < right) {
     return -1;
   }
-  if (a.scope > b.scope) {
+  if (left > right) {
     return 1;
   }
   return 0;
 }
 
-function compareSkillId(a: SkillSnapshotEntry, b: SkillSnapshotEntry): number {
-  if (a.id < b.id) {
-    return -1;
-  }
-  if (a.id > b.id) {
-    return 1;
-  }
-  return 0;
-}
-
-function compareSkillPath(a: SkillSnapshotEntry, b: SkillSnapshotEntry): number {
-  if (a.path < b.path) {
-    return -1;
-  }
-  if (a.path > b.path) {
-    return 1;
+function compareSkills(left: SkillSnapshotEntry, right: SkillSnapshotEntry): number {
+  for (const key of SKILL_IDENTITY_KEYS) {
+    const comparison = compareSkillValues(left[key], right[key]);
+    if (comparison !== 0) {
+      return comparison;
+    }
   }
   return 0;
 }
 
-function compareSkillHash(a: SkillSnapshotEntry, b: SkillSnapshotEntry): number {
-  if (a.hash < b.hash) {
-    return -1;
-  }
-  if (a.hash > b.hash) {
-    return 1;
-  }
-  return 0;
-}
-
-function compareSkills(a: SkillSnapshotEntry, b: SkillSnapshotEntry): number {
-  const scope = compareSkillScope(a, b);
-  if (scope !== 0) {
-    return scope;
-  }
-  const id = compareSkillId(a, b);
-  if (id !== 0) {
-    return id;
-  }
-  const path = compareSkillPath(a, b);
-  if (path !== 0) {
-    return path;
-  }
-  return compareSkillHash(a, b);
-}
+const createSkillIdentity = (entry: SkillSnapshotEntry) =>
+  SKILL_IDENTITY_KEYS.map((key) => entry[key]).join(":");
 
 function normalizeSkills(skills: SkillSnapshotEntry[]): SkillSnapshotEntry[] {
   const cleaned: SkillSnapshotEntry[] = [];
@@ -172,7 +140,7 @@ function normalizeSkills(skills: SkillSnapshotEntry[]): SkillSnapshotEntry[] {
   const deduped: SkillSnapshotEntry[] = [];
   let lastKey = "";
   for (const entry of cleaned) {
-    const key = `${entry.scope}:${entry.id}:${entry.path}:${entry.hash}`;
+    const key = createSkillIdentity(entry);
     if (key !== lastKey) {
       deduped.push(entry);
       lastKey = key;
@@ -249,12 +217,7 @@ function areSkillSnapshotsEqual(
     if (!left || !right) {
       return false;
     }
-    if (
-      left.id !== right.id ||
-      left.scope !== right.scope ||
-      left.path !== right.path ||
-      left.hash !== right.hash
-    ) {
+    if (compareSkills(left, right) !== 0) {
       return false;
     }
   }

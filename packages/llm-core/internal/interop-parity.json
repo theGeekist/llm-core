@@ -214,8 +214,8 @@
     {
       "construct": "Checkpoint",
       "ecosystem": "langchain",
-      "status": "full",
-      "probe": "langchain:Checkpoint"
+      "status": "missing",
+      "note": "Opaque pipeline continuations are intentionally process-local."
     },
     {
       "construct": "EventStream",
@@ -369,9 +369,8 @@
     {
       "construct": "Checkpoint",
       "ecosystem": "llamaindex",
-      "status": "full",
-      "probe": "llamaindex:Checkpoint",
-      "note": "Adapter wraps SnapshotData stores for workflow state snapshots."
+      "status": "missing",
+      "note": "LlamaIndex exposes workflow snapshots but no durable checkpoint store contract."
     },
     {
       "construct": "EventStream",

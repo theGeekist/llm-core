@@ -1,7 +1,5 @@
-import { Workflow } from "#workflow";
 import { createRuntime } from "#workflow/runtime";
 import { getRecipe } from "#workflow/recipe-registry";
-import type { ResumeSnapshot } from "#adapters";
 import type { Outcome, Plugin, RecipeName } from "#workflow/types";
 
 const ERROR_MISSING_CONTRACT = "Missing recipe contract.";
@@ -57,44 +55,6 @@ type TestRunOptions = {
   adapters?: unknown;
 };
 
-export const createTestResumeStore = <TToken = string>() => {
-  const sessions = new Map<TToken, ResumeSnapshot>();
-  const store = {
-    get: (key: unknown) => sessions.get(key as TToken) ?? null,
-    set: (key: unknown, value: ResumeSnapshot) => {
-      sessions.set(key as TToken, value);
-      return true;
-    },
-    delete: (key: unknown) => {
-      sessions.delete(key as TToken);
-      return true;
-    },
-    list: (prefix: unknown) =>
-      Promise.resolve(
-        Array.from(sessions.entries())
-          .filter(([key]) => String(key).startsWith(String(prefix)))
-          .map(([key]) => key),
-      ),
-  };
-  return { store, sessions };
-};
-
-export const createResumeSnapshot = (
-  token: unknown,
-  payload?: unknown,
-  options?: { pauseKind?: ResumeSnapshot["pauseKind"]; resumeKey?: string },
-): ResumeSnapshot => {
-  const createdAt = Date.now();
-  return {
-    token,
-    createdAt,
-    lastAccessedAt: createdAt,
-    pauseKind: options?.pauseKind,
-    resumeKey: options?.resumeKey,
-    payload,
-  };
-};
-
 export const makeRuntime = (
   name: RecipeName,
   options?: {
@@ -134,16 +94,12 @@ export const makeWorkflow = (
   plugins: Plugin[] = [],
   options?: { includeDefaults?: boolean },
 ) => {
-  if (options?.includeDefaults === false) {
-    const contract = getContract(name);
-    return createRuntime({
-      contract,
-      plugins,
-    });
-  }
-  let builder = Workflow.recipe(name);
-  for (const plugin of plugins) {
-    builder = builder.use(plugin);
-  }
-  return builder.build();
+  const contract = getContract(name);
+  return createRuntime({
+    contract,
+    plugins:
+      options?.includeDefaults === false
+        ? plugins
+        : [...(contract.defaultPlugins ?? []), ...plugins],
+  });
 };

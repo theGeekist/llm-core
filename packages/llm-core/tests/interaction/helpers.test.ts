@@ -1,5 +1,6 @@
 import { describe, expect, it } from "bun:test";
-import type { InteractionPauseRequest, InteractionState } from "#interaction";
+import type { InteractionState } from "#interaction";
+import type { InteractionPauseRequest } from "../../src/interaction/types";
 import {
   applyPauseStage,
   clearPauseRequest,
@@ -9,6 +10,7 @@ import {
 import { createEmptyState } from "../../src/interaction/handle";
 import {
   applyRunModelCore,
+  applyModelStream,
   applyCaptureInput,
   mergeInteractionPrivate,
   requestInteractionPause,
@@ -19,7 +21,8 @@ import {
   emitInteraction,
   emitInteractionEventsForContext,
 } from "../../src/interaction/event-utils";
-import type { EventStream, Message, ModelResult } from "#adapters";
+import type { EventStream, Message, ModelResult, ModelStreamEvent } from "#adapters";
+import { isPromiseLike, toStep } from "../../src/shared/maybe";
 
 const createState = (): InteractionState => ({
   messages: [],
@@ -180,6 +183,35 @@ describe("interaction helpers", () => {
     const input = { message: createMessage("hi") };
     const result = applyRunModelCore(state, createContext(), input);
     expect(result).toBe(state);
+  });
+
+  it("folds large synchronous model streams without overflowing the stack", () => {
+    const state = createState();
+    const events: ModelStreamEvent[] = Array.from({ length: 20_000 }, () => ({
+      type: "delta",
+      text: "x",
+    }));
+    const context = {
+      ...createContext(),
+      reducer: (current: InteractionState, event: { meta: { sequence: number } }) => {
+        current.lastSequence = event.meta.sequence;
+        return current;
+      },
+    };
+
+    const result = applyModelStream({
+      state,
+      context,
+      interactionInput: {},
+      sourceId: "model.primary",
+      stream: toStep(events),
+    });
+
+    expect(isPromiseLike(result)).toBe(false);
+    if (isPromiseLike(result)) {
+      throw new Error("Expected synchronous stream folding to stay synchronous.");
+    }
+    expect(result.lastSequence).toBe(20_000);
   });
 
   it("creates empty interaction state defaults", () => {

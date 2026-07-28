@@ -1,7 +1,7 @@
 import http from "node:http";
 import { createInteractionSession } from "@geekist/llm-core/interaction";
 import { createBuiltinModel } from "@geekist/llm-core/adapters";
-import { bindFirst } from "@geekist/llm-core";
+import { bindFirst } from "@geekist/llm-core/functional";
 
 const PORT = 3030;
 const store = new MemorySessionStore();

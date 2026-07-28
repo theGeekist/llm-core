@@ -1,16 +1,13 @@
 import type { ArtefactOf, Outcome, PipelineWithExtensions, RecipeName, Runtime } from "../types";
-import type { AdapterBundle, AdapterDiagnostic } from "#adapters/types";
+import type { AdapterBundle } from "#adapters/types";
 import type { DiagnosticEntry } from "#shared/reporting";
 import type { TraceEvent } from "#shared/reporting";
 import type { MaybePromise } from "#shared/maybe";
 import type { PauseSession } from "../driver/types";
 import type { FinalizeResult } from "./helpers";
+import type { AdapterResolution } from "./pipeline-runner";
 
-export type AdapterResolution = {
-  adapters: AdapterBundle;
-  diagnostics: AdapterDiagnostic[];
-  constructs: Record<string, unknown>;
-};
+export type { AdapterResolution } from "./pipeline-runner";
 
 export type PipelineRunner = {
   run: PipelineWithExtensions["run"];

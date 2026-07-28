@@ -12,6 +12,10 @@ import type {
 } from "../../src/adapters/types";
 import { createBuiltinModel, createBuiltinTools } from "../../src/adapters";
 import { createAgentRuntime } from "../../src/interaction";
+import {
+  filterAgentTools,
+  resolveAgentExecutionProfile,
+} from "../../src/interaction/agent-profile";
 import { bindFirst } from "../../src/shared/fp";
 import type { InteractionState } from "../../src/interaction/types";
 import type { TraceEvent } from "../../src/shared/reporting";
@@ -60,6 +64,13 @@ const runToolCallModel = (state: ToolCallModelState, call: ModelCall): ModelResu
 
 const createToolCallModel = (toolCalls: ToolCall[]): Model => ({
   generate: bindFirst(runToolCallModel, { toolCalls }),
+});
+
+const createRecordingModel = (calls: ModelCall[]): Model => ({
+  generate: (call) => {
+    calls.push(call);
+    return { text: "done" };
+  },
 });
 
 const loadSkills = (input: { skills: SkillSnapshotEntry[] }) => ({ skills: input.skills });
@@ -129,10 +140,35 @@ describe("createAgentRuntime", () => {
     expect(result.status).toBe("ok");
   });
 
+  it("uses model generation when no event stream is attached", async () => {
+    let generateCalls = 0;
+    let streamCalls = 0;
+    const runtime = createAgentRuntime({
+      model: {
+        generate: () => {
+          generateCalls += 1;
+          return { text: "generated" };
+        },
+        stream: () => {
+          streamCalls += 1;
+          return [{ type: "end", text: "streamed" }];
+        },
+      },
+    });
+
+    const result = await runtime.run({ text: "hello" });
+
+    expect(result.status).toBe("ok");
+    expect(generateCalls).toBeGreaterThan(0);
+    expect(streamCalls).toBe(0);
+  });
+
   it("emits item events and records snapshots", async () => {
     const runtime = createAgentRuntime({
       model: createBuiltinModel(),
-      adapters: { tools: createBuiltinTools() },
+      adapters: {
+        tools: createBuiltinTools([{ name: "tools.search" }, { name: "tools.write" }]),
+      },
       config: {
         agents: [
           {
@@ -229,6 +265,114 @@ describe("createAgentRuntime", () => {
     const result = await runtime.run({ text: "hello" });
 
     expect(result.diagnostics.some((entry) => entry.message.includes("agent id"))).toBe(true);
+    expect(readSnapshotFromTrace(result.trace)?.selectedAgentId).toBeUndefined();
+  });
+
+  it("applies the selected prompt and effective tool policy", async () => {
+    const calls: ModelCall[] = [];
+    const executed: string[] = [];
+    const tools = ["tools.write", "tools.search", "tools.delete"].map((name) => ({
+      name,
+      execute: () => {
+        executed.push(name);
+        return name;
+      },
+    }));
+    const runtime = createAgentRuntime({
+      model: createRecordingModel(calls),
+      adapters: { tools },
+      config: {
+        agents: [
+          {
+            id: "agent-1",
+            name: "Primary",
+            prompt: "Be precise.",
+            tools: ["tools.search", "tools.write"],
+          },
+        ],
+        tools: {
+          allowlist: ["tools.write", "tools.search", "tools.delete"],
+          denylist: ["tools.write"],
+        },
+      },
+    });
+
+    await runtime.run({ text: "hello", context: "Use the repository." });
+
+    expect(calls[0]?.system).toBe("Be precise.\n\nUse the repository.");
+    expect(
+      filterAgentTools(
+        resolveAgentExecutionProfile({
+          agents: [
+            {
+              id: "agent-1",
+              name: "Primary",
+              prompt: "Be precise.",
+              tools: ["tools.search", "tools.write"],
+            },
+          ],
+          tools: {
+            allowlist: ["tools.write", "tools.search", "tools.delete"],
+            denylist: ["tools.write"],
+          },
+        }),
+        tools,
+      )?.map((tool) => tool.name),
+    ).toEqual(["tools.search"]);
+    expect(executed).toEqual([]);
+  });
+
+  it("reports configured tools that are unavailable", async () => {
+    const runtime = createAgentRuntime({
+      model: createBuiltinModel(),
+      adapters: { tools: [{ name: "tools.search" }] },
+      config: { tools: { allowlist: ["tools.search", "tools.missing"] } },
+    });
+
+    const result = await runtime.run({ text: "hello" });
+    const diagnostic = result.diagnostics.find(
+      (entry) => entry.message === "Configured agent tools are not available.",
+    );
+
+    expect((diagnostic?.data as { tools?: string[] })?.tools).toEqual(["tools.missing"]);
+    expect(readSnapshotFromTrace(result.trace)?.toolAllowlist).toEqual(["tools.search"]);
+  });
+
+  it("treats empty global allowlists as unrestricted", async () => {
+    const tools = [{ name: "tools.search" }, { name: "tools.write" }];
+    const config = { tools: { allowlist: [" ", ""] } };
+    const runtime = createAgentRuntime({
+      model: createBuiltinModel(),
+      adapters: { tools },
+      config,
+    });
+
+    const result = await runtime.run({ text: "hello" });
+
+    expect(
+      filterAgentTools(resolveAgentExecutionProfile(config), tools)?.map((tool) => tool.name),
+    ).toEqual(["tools.search", "tools.write"]);
+    expect(readSnapshotFromTrace(result.trace)?.toolAllowlist).toBeUndefined();
+    expect(
+      result.diagnostics.some(
+        (entry) => entry.message === "Configured agent tools are not available.",
+      ),
+    ).toBe(false);
+  });
+
+  it("preserves an explicitly empty selected-agent tool scope", () => {
+    const tools = [{ name: "tools.search" }];
+    const profile = resolveAgentExecutionProfile({
+      agents: [{ id: "one", name: "One", prompt: "one", tools: [] }],
+    });
+
+    expect(filterAgentTools(profile, tools)).toEqual([]);
+  });
+
+  it("preserves adapter tool order when no policy is configured", () => {
+    const tools = [{ name: "tools.write" }, { name: "tools.search" }];
+
+    expect(filterAgentTools(resolveAgentExecutionProfile(), tools)).toEqual(tools);
   });
 
   it("runs subagent tools and emits lifecycle events", async () => {
@@ -299,14 +443,14 @@ describe("createAgentRuntime", () => {
     ).toBe(true);
   });
 
-  it("emits interaction model events when streaming", async () => {
+  it("infers model streaming from an attached event stream", async () => {
     const runtime = createAgentRuntime({
       model: createStreamingModel(),
       adapters: { tools: createBuiltinTools() },
     });
     const recording = createRecordingEventStream();
 
-    const result = await runtime.stream({
+    const result = await runtime.run({
       text: "hello",
       eventStream: recording.stream,
       interactionId: "interaction-1",

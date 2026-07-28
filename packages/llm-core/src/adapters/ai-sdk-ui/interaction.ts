@@ -1,8 +1,12 @@
 import type { FinishReason, UIMessageChunk, UIMessageStreamWriter } from "ai";
-import type { EventStream, EventStreamEvent, ModelStreamEvent } from "../types";
+import type { ModelStreamEvent } from "../types";
 import type { InteractionEvent, InteractionEventMeta } from "../../interaction/types";
 import { bindFirst } from "#shared/fp";
 import { isRecord } from "#shared/guards";
+import {
+  createInteractionEventDeliverySink,
+  createInteractionEventDeliveryStream,
+} from "../primitives/interaction-event-emitter";
 
 export type AiSdkInteractionMapperOptions = {
   messageId?: string;
@@ -14,19 +18,21 @@ export type AiSdkInteractionMapperOptions = {
   eventTransient?: boolean;
 };
 
-export type AiSdkInteractionMapper = {
+type AiSdkInteractionMapper = {
   mapEvent: (event: InteractionEvent) => UIMessageChunk[];
   reset: () => void;
 };
 
+export type AiSdkUiMessageChunkMapper = (event: InteractionEvent) => UIMessageChunk[];
+
 export type AiSdkInteractionSinkOptions = {
   writer: UIMessageStreamWriter;
-  mapper?: AiSdkInteractionMapper;
+  mapper?: AiSdkUiMessageChunkMapper;
 };
 
 export type AiSdkInteractionEventStreamOptions = {
   writer: UIMessageStreamWriter;
-  mapper?: AiSdkInteractionMapper;
+  mapper?: AiSdkUiMessageChunkMapper;
 };
 
 type InteractionDataChunk = {
@@ -143,12 +149,6 @@ const createFinishChunk = (
     chunk.messageMetadata = messageMetadata;
   }
   return chunk;
-};
-
-const appendChunks = (target: UIMessageChunk[], source: UIMessageChunk[]) => {
-  for (const chunk of source) {
-    target.push(chunk);
-  }
 };
 
 const appendChunk = (target: UIMessageChunk[], chunk: UIMessageChunk) => {
@@ -451,69 +451,9 @@ class AiSdkInteractionMapperImpl implements AiSdkInteractionMapper {
   }
 }
 
-export const createAiSdkInteractionMapper = (
+const createAiSdkInteractionMapper = (
   options?: AiSdkInteractionMapperOptions,
 ): AiSdkInteractionMapper => new AiSdkInteractionMapperImpl(options);
-
-class AiSdkInteractionSinkImpl {
-  private writer: UIMessageStreamWriter;
-  private mapper: AiSdkInteractionMapper;
-
-  constructor(options: AiSdkInteractionSinkOptions) {
-    this.writer = options.writer;
-    this.mapper = options.mapper ?? createAiSdkInteractionMapper();
-  }
-
-  onEvent(event: InteractionEvent) {
-    const chunks = this.mapper.mapEvent(event);
-    return writeChunks(this.writer, chunks);
-  }
-}
-
-class AiSdkInteractionEventStreamImpl implements EventStream {
-  private writer: UIMessageStreamWriter;
-  private mapper: AiSdkInteractionMapper;
-
-  constructor(options: AiSdkInteractionEventStreamOptions) {
-    this.writer = options.writer;
-    this.mapper = options.mapper ?? createAiSdkInteractionMapper();
-  }
-
-  emit(event: EventStreamEvent) {
-    const interactionEvent = toInteractionEvent(event);
-    if (!interactionEvent) {
-      return null;
-    }
-    const chunks = this.mapper.mapEvent(interactionEvent);
-    return writeChunks(this.writer, chunks);
-  }
-
-  emitMany(events: EventStreamEvent[]) {
-    const chunks: UIMessageChunk[] = [];
-    for (const event of events) {
-      const interactionEvent = toInteractionEvent(event);
-      if (!interactionEvent) {
-        continue;
-      }
-      appendChunks(chunks, this.mapper.mapEvent(interactionEvent));
-    }
-    if (!chunks.length) {
-      return null;
-    }
-    return writeChunks(this.writer, chunks);
-  }
-}
-
-const toInteractionEvent = (event: EventStreamEvent): InteractionEvent | null => {
-  if (!event.data || !isRecord(event.data)) {
-    return null;
-  }
-  const candidate = event.data.event;
-  if (!candidate || typeof candidate !== "object") {
-    return null;
-  }
-  return candidate as InteractionEvent;
-};
 
 const writeChunks = (writer: UIMessageStreamWriter, chunks: UIMessageChunk[]) => {
   if (!chunks.length) {
@@ -530,32 +470,23 @@ const writeChunks = (writer: UIMessageStreamWriter, chunks: UIMessageChunk[]) =>
 };
 
 export const createAiSdkInteractionSink = (options: AiSdkInteractionSinkOptions) =>
-  new AiSdkInteractionSinkImpl(options);
+  createInteractionEventDeliverySink({
+    mapper: { mapEvent: options.mapper ?? createAiSdkUiMessageChunkMapper() },
+    deliver: bindFirst(writeChunks, options.writer),
+  });
 
 export const createAiSdkInteractionEventStream = (options: AiSdkInteractionEventStreamOptions) =>
-  new AiSdkInteractionEventStreamImpl(options);
+  createInteractionEventDeliveryStream({
+    mapper: { mapEvent: options.mapper ?? createAiSdkUiMessageChunkMapper() },
+    deliver: bindFirst(writeChunks, options.writer),
+  });
 
 const mapAiSdkUiMessageChunks = (
   mapper: AiSdkInteractionMapper,
   event: InteractionEvent,
 ): UIMessageChunk[] => mapper.mapEvent(event);
 
-export const createAiSdkUiMessageChunkMapper = (options?: AiSdkInteractionMapperOptions) =>
+export const createAiSdkUiMessageChunkMapper = (
+  options?: AiSdkInteractionMapperOptions,
+): AiSdkUiMessageChunkMapper =>
   bindFirst(mapAiSdkUiMessageChunks, createAiSdkInteractionMapper(options));
-
-export const toAiSdkUiMessageChunks = (
-  input: AiSdkInteractionMapper | AiSdkInteractionMapperOptions | undefined,
-  event: InteractionEvent,
-): UIMessageChunk[] => {
-  const mapper = isAiSdkInteractionMapper(input) ? input : createAiSdkInteractionMapper(input);
-  return mapAiSdkUiMessageChunks(mapper, event);
-};
-
-const isAiSdkInteractionMapper = (
-  value: AiSdkInteractionMapper | AiSdkInteractionMapperOptions | undefined,
-): value is AiSdkInteractionMapper =>
-  isRecord(value) &&
-  "mapEvent" in value &&
-  "reset" in value &&
-  typeof (value as { mapEvent?: unknown }).mapEvent === "function" &&
-  typeof (value as { reset?: unknown }).reset === "function";

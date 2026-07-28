@@ -22,7 +22,7 @@ const config = {
   },
 } satisfies RagRecipeConfig;
 
-const rag = recipes.rag().configure(config);
+const rag = recipes.rag(config);
 
 // #endregion docs
 void rag;

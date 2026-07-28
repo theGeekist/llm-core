@@ -1,7 +1,7 @@
 import { bindFirst } from "#shared/fp";
 import { maybeMap } from "#shared/maybe";
 import { Recipe } from "../../flow";
-import { defineRecipe } from "../../handle";
+import { defineSinglePackRecipe } from "../../handle";
 import type { RecipeDefaults, StepApply } from "../../flow";
 import { RagStateHelpers, type RagState } from "../shared";
 import type { ModelResult } from "#adapters/types";
@@ -41,15 +41,8 @@ export const createRagSynthesisPack = (config?: RagSynthesisConfig) =>
     minimumCapabilities: ["model"],
   });
 
-const resolveSynthesisPack = (config?: RagSynthesisConfig) =>
-  config ? createRagSynthesisPack(config) : RagSynthesisPack;
-
-const resolveSynthesisRecipeDefinition = (config?: RagSynthesisConfig) => ({
-  packs: [resolveSynthesisPack(config)],
-});
-
-export const createRagSynthesisRecipe = defineRecipe("rag", resolveSynthesisRecipeDefinition);
-
 // Use when you want a model-only synthesis step that can be shared across flows.
-export const RagSynthesisPack = createRagSynthesisPack();
+const synthesis = defineSinglePackRecipe("rag", createRagSynthesisPack);
+export const createRagSynthesisRecipe = synthesis.createRecipe;
+export const RagSynthesisPack = synthesis.pack;
 export const ragSynthesisRecipe = createRagSynthesisRecipe();

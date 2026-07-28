@@ -13,10 +13,9 @@ import {
   type TraceEvent,
 } from "#shared/reporting";
 import { bindFirst } from "#shared/fp";
-import { maybeTry } from "#shared/maybe";
+import { maybeTap, maybeTry } from "#shared/maybe";
 import type { ResumeHandlerDeps } from "#workflow/runtime/resume-types";
 import { startResumePipeline } from "#workflow/runtime/resume-start";
-import { readResumeTokenInput } from "#workflow/runtime/resume-helpers";
 
 type ResumeHandlerErrorInput<N extends RecipeName> = {
   deps: ResumeHandlerDeps<N>;
@@ -34,25 +33,37 @@ const handleResumeHandlerError = <N extends RecipeName>(
     applyDiagnosticsMode(input.deps.readErrorDiagnostics(error), input.diagnosticsMode),
   );
 
-export const createResumeHandler =
-  <N extends RecipeName>(
-    deps: ResumeHandlerDeps<N>,
-  ): NonNullable<WorkflowRuntime<RunInputOf<N>, ArtefactOf<N>, ResumeInputOf<N>>["resume"]> =>
-  (token: unknown, resumeInput?: ResumeInputOf<N>, runtime?: Runtime) => {
+type PauseSessionClaim = {
+  inFlight: Set<unknown>;
+  token: unknown;
+};
+
+const releasePauseSessionClaim = (claim: PauseSessionClaim) => claim.inFlight.delete(claim.token);
+
+export const createResumeHandler = <N extends RecipeName>(deps: ResumeHandlerDeps<N>) => {
+  const inFlightPauseSessions = new Set<unknown>();
+  const resume: NonNullable<
+    WorkflowRuntime<RunInputOf<N>, ArtefactOf<N>, ResumeInputOf<N>>["resume"]
+  > = (token: unknown, resumeInput?: ResumeInputOf<N>, runtime?: Runtime) => {
     const trace = createTraceDiagnostics().trace;
     addTrace({ trace }, "run.start", { recipe: deps.contractName, resume: true });
     const diagnosticsMode = runtime?.diagnostics ?? "default";
-    const tokenInput = readResumeTokenInput(token);
-    const pauseSession = deps.pauseSessions.get(tokenInput.token);
     const handleError = bindFirst(handleResumeHandlerError, {
       deps,
       trace,
       diagnosticsMode,
     });
+    if (inFlightPauseSessions.has(token)) {
+      return handleError(new Error("Resume token is already in flight."));
+    }
+
+    const pauseSession = deps.pauseSessions.get(token);
+    if (pauseSession) {
+      inFlightPauseSessions.add(token);
+    }
 
     const performResume = bindFirst(startResumePipeline<N>, {
-      token: tokenInput.token,
-      resumeKey: tokenInput.resumeKey,
+      token,
       resumeInput,
       runtime,
       pauseSession,
@@ -61,5 +72,16 @@ export const createResumeHandler =
       deps,
     });
 
-    return maybeTry(handleError, performResume);
+    const outcome = maybeTry(handleError, performResume);
+    return pauseSession
+      ? maybeTap(
+          bindFirst(releasePauseSessionClaim, {
+            inFlight: inFlightPauseSessions,
+            token,
+          }),
+          outcome,
+        )
+      : outcome;
   };
+  return resume;
+};

@@ -1,6 +1,7 @@
 // References: docs/workflow-notes.md (capability discovery)
 
 import type { AdapterBundle } from "#adapters/types";
+import { adapterBundleKeys, listAdapterBundleEntries, toAdapterCapability } from "#adapters/bundle";
 import type { CapabilitiesSnapshot, Plugin } from "./types";
 import { getEffectivePlugins } from "./plugins/effective";
 
@@ -19,37 +20,12 @@ const mergeArrays: CapabilityReducer = (prev, next) => {
 };
 
 const capabilityReducers: Record<string, CapabilityReducer> = {
+  ...Object.fromEntries(adapterBundleKeys.map((key) => [key, replace])),
   tools: mergeArrays,
-  retriever: replace,
-  model: replace,
-  image: replace,
   evaluator: replace,
-  embedder: replace,
   hitl: replace,
   recipe: replace,
-  trace: replace,
-  checkpoint: replace,
-  eventStream: replace,
-  interrupt: replace,
   dataset: replace,
-  textSplitter: replace,
-  reranker: replace,
-  loader: replace,
-  transformer: replace,
-  memory: replace,
-  indexing: replace,
-  queryEngine: replace,
-  responseSynthesizer: replace,
-  speech: replace,
-  storage: replace,
-  transcription: replace,
-  kv: replace,
-  vectorStore: replace,
-  prompts: replace,
-  outputParser: replace,
-  schemas: replace,
-  documents: replace,
-  messages: replace,
 };
 
 const addCapability = (capabilities: Record<string, unknown>, key: string, value: unknown) => {
@@ -71,8 +47,6 @@ const addAdapterCapability = (
   capabilities[key] = value;
 };
 
-const hasItems = (values: unknown) => (Array.isArray(values) ? values.length > 0 : Boolean(values));
-
 const addAdapterCapabilities = (
   capabilities: Record<string, unknown>,
   adapters?: AdapterBundle,
@@ -80,37 +54,8 @@ const addAdapterCapabilities = (
   if (!adapters) {
     return;
   }
-  const entries: Array<[string, unknown]> = [
-    ["documents", hasItems(adapters.documents) ? true : undefined],
-    ["messages", hasItems(adapters.messages) ? true : undefined],
-    ["tools", hasItems(adapters.tools) ? true : undefined],
-    ["model", adapters.model],
-    ["image", adapters.image],
-    ["trace", adapters.trace],
-    ["checkpoint", adapters.checkpoint],
-    ["eventStream", adapters.eventStream],
-    ["interrupt", adapters.interrupt],
-    ["prompts", hasItems(adapters.prompts) ? true : undefined],
-    ["outputParser", adapters.outputParser],
-    ["schemas", hasItems(adapters.schemas) ? true : undefined],
-    ["textSplitter", adapters.textSplitter],
-    ["embedder", adapters.embedder],
-    ["retriever", adapters.retriever],
-    ["reranker", adapters.reranker],
-    ["loader", adapters.loader],
-    ["transformer", adapters.transformer],
-    ["memory", adapters.memory],
-    ["indexing", adapters.indexing],
-    ["queryEngine", adapters.queryEngine],
-    ["responseSynthesizer", adapters.responseSynthesizer],
-    ["speech", adapters.speech],
-    ["storage", adapters.storage],
-    ["transcription", adapters.transcription],
-    ["kv", adapters.kv],
-    ["vectorStore", adapters.vectorStore],
-  ];
-  for (const [key, value] of entries) {
-    addAdapterCapability(capabilities, key, value);
+  for (const [key, value] of listAdapterBundleEntries(adapters)) {
+    addAdapterCapability(capabilities, key, toAdapterCapability(key, value));
   }
 };
 

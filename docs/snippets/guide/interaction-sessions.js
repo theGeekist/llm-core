@@ -70,8 +70,8 @@ function emitEvent(event) {
 }
 
 /**
- * @param {import("#interaction").InteractionRunOutcome} outcome
- * @returns {outcome is import("#interaction").PipelinePaused<Record<string, unknown>>}
+ * @param {import("#interaction").InteractionSessionOutcome} outcome
+ * @returns {outcome is import("#interaction").InteractionSessionPaused}
  */
 function isPausedOutcome(outcome) {
   return (

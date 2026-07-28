@@ -1,32 +1,25 @@
 import type { AdapterTraceEvent, EventStream } from "../types";
 import { bindFirst } from "#shared/fp";
-import { maybeAll, maybeMap } from "#shared/maybe";
-
-const toBoolean = (value: unknown): boolean | null => (value === null ? null : value !== false);
-const isFailure = (value: boolean | null) => value === false;
-const isUnknown = (value: boolean | null) => value === null;
-const allSuccessful = (values: Array<boolean | null>) => {
-  if (values.some(isFailure)) {
-    return false;
-  }
-  if (values.some(isUnknown)) {
-    return null;
-  }
-  return true;
-};
+import { maybeAll, maybeMap, maybeReduce } from "#shared/maybe";
+import { combineTriState, combineTriStates, normalizeTriState } from "#shared/tri-state";
 
 const emitTraceEvent = (sink: EventStream, event: AdapterTraceEvent) =>
-  maybeMap(toBoolean, sink.emit(event));
+  maybeMap(normalizeTriState, sink.emit(event));
+
+const emitNextTraceEvent = (
+  sink: EventStream,
+  previous: boolean | null,
+  event: AdapterTraceEvent,
+) => maybeMap(bindFirst(combineTriState, previous), emitTraceEvent(sink, event));
 
 const emitTraceEvents = (sink: EventStream, events: AdapterTraceEvent[]) => {
   if (sink.emitMany) {
-    return maybeMap(toBoolean, sink.emitMany(events));
+    return maybeMap(normalizeTriState, sink.emitMany(events));
   }
-  const results: Array<ReturnType<typeof emitTraceEvent>> = [];
-  for (const event of events) {
-    results.push(emitTraceEvent(sink, event));
+  if (events.length === 0) {
+    return null;
   }
-  return maybeMap(allSuccessful, maybeAll(results));
+  return maybeReduce(bindFirst(emitNextTraceEvent, sink), null, events);
 };
 
 export const createEventStreamFromTraceSink = (sink: EventStream): EventStream => ({
@@ -45,7 +38,7 @@ const emitFanoutEvent = (streams: EventStream[], event: AdapterTraceEvent) => {
     return null;
   }
   const results = streams.map(bindFirst(emitTraceEventForStream, event));
-  return maybeMap(allSuccessful, maybeAll(results));
+  return maybeMap(combineTriStates, maybeAll(results));
 };
 
 const emitFanoutEvents = (streams: EventStream[], events: AdapterTraceEvent[]) => {
@@ -53,7 +46,7 @@ const emitFanoutEvents = (streams: EventStream[], events: AdapterTraceEvent[]) =
     return null;
   }
   const results = streams.map(bindFirst(emitTraceEventsForStream, events));
-  return maybeMap(allSuccessful, maybeAll(results));
+  return maybeMap(combineTriStates, maybeAll(results));
 };
 
 export const createEventStreamFanout = (streams: EventStream[]): EventStream => ({

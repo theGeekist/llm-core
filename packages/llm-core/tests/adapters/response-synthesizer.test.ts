@@ -1,12 +1,8 @@
 import { describe, expect, it } from "bun:test";
 import type { BaseSynthesizer } from "@llamaindex/core/response-synthesizers";
 import { EngineResponse } from "@llamaindex/core/schema";
-import {
-  collectStep,
-  fromLlamaIndexResponseSynthesizer,
-  isPromiseLike,
-  maybeToStep,
-} from "#adapters";
+import { fromLlamaIndexResponseSynthesizer } from "#adapters";
+import { collectStep, isPromiseLike, maybeToStep } from "#functional";
 import { captureDiagnostics } from "./helpers";
 
 const asAsyncIterable = <T>(values: T[]): AsyncIterable<T> => ({

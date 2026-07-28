@@ -8,10 +8,7 @@ const config = {
   candidateCount: 3,
 } satisfies EvalConfig;
 
-const evaluate = recipes
-  .eval()
-  .configure(config)
-  .defaults({
+const evaluate = recipes.eval(config).defaults({
     adapters: { model: fromAiSdkModel(openai("gpt-4o-mini")) },
   });
 

@@ -12,6 +12,7 @@ import type {
 } from "@wpkernel/pipeline/core";
 import { createHelper } from "@wpkernel/pipeline/core";
 import { bindFirst } from "#shared/fp";
+import { maybeMap } from "#shared/maybe";
 import { hasKeys } from "#shared/guards";
 import type {
   InteractionContext,
@@ -202,6 +203,40 @@ export type InteractionStepApply = (
   next?: () => MaybePromise<void>,
 ) => MaybePromise<HelperApplyResult<InteractionState> | void>;
 
+const assignInteractionOutput = (target: InteractionState, source: InteractionState) => {
+  target.messages = source.messages;
+  target.diagnostics = source.diagnostics;
+  target.trace = source.trace;
+  target.events = source.events;
+  target.lastSequence = source.lastSequence;
+  target.private = source.private;
+  return target;
+};
+
+const adoptInteractionStepOutput = (
+  output: InteractionState,
+  result: HelperApplyResult<InteractionState> | void,
+): HelperApplyResult<InteractionState> | void => {
+  if (!result?.output || result.output === output) {
+    return result;
+  }
+  return {
+    ...result,
+    output: assignInteractionOutput(output, result.output),
+  };
+};
+
+const applyInteractionStep = (
+  apply: InteractionStepApply,
+  options: HelperApplyOptions<
+    InteractionContext,
+    InteractionInput,
+    InteractionState,
+    PipelineReporter
+  >,
+  next?: () => MaybePromise<void>,
+) => maybeMap(bindFirst(adoptInteractionStepOutput, options.output), apply(options, next));
+
 export const createInteractionStep = (options: {
   key: string;
   apply: InteractionStepApply;
@@ -217,7 +252,7 @@ export const createInteractionStep = (options: {
     priority: options.priority,
     dependsOn: options.dependsOn,
     origin: options.origin,
-    apply: options.apply,
+    apply: bindFirst(applyInteractionStep, options.apply),
   });
 
 export const createInteractionReducer = (reducer?: InteractionReducer) =>

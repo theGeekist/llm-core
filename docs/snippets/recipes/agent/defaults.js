@@ -3,7 +3,7 @@ import { recipes } from "#recipes";
 /** @type {any} */
 const myMemoryAdapter = {};
 
-const agent = recipes.agent().configure({
+const agent = recipes.agent({
   tools: {
     defaults: {
       adapters: {

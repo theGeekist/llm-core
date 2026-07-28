@@ -3,7 +3,7 @@
 import type { ChangeEvent, FC, ReactNode } from "react";
 import type { AdapterSource, AgentProfile, SelectOption } from "../demo-options";
 import type { AgentConfigDraft } from "./types";
-import { readListFromInput, readMcpJsonStatus } from "./agent-config";
+import { readListFromInput } from "./agent-config";
 import { Select } from "../components/ui/select";
 import { Toggle } from "../components/ui/toggle";
 
@@ -15,12 +15,8 @@ type AgentNarrativeProps = {
   profile: AgentProfile;
   toolPresetOptions: SelectOption[];
   skillPresetOptions: SelectOption[];
-  mcpPresetOptions: SelectOption[];
-  approvalOptions: SelectOption[];
   onToolPresetChange: (event: ChangeEvent<HTMLSelectElement>) => void;
   onSkillPresetChange: (event: ChangeEvent<HTMLSelectElement>) => void;
-  onMcpPresetChange: (event: ChangeEvent<HTMLSelectElement>) => void;
-  onApprovalsPolicyChange: (event: ChangeEvent<HTMLSelectElement>) => void;
   onSubagentsEnabledChange: (event: ChangeEvent<HTMLInputElement>) => void;
 };
 
@@ -32,32 +28,21 @@ export const AgentNarrative: FC<AgentNarrativeProps> = ({
   profile,
   toolPresetOptions,
   skillPresetOptions,
-  mcpPresetOptions,
-  approvalOptions,
   onToolPresetChange,
   onSkillPresetChange,
-  onMcpPresetChange,
-  onApprovalsPolicyChange,
   onSubagentsEnabledChange,
 }) => {
   const toolsCount = readListFromInput(draft.toolAllowlist).length;
   const skillsCount = readListFromInput(draft.skillDirectories).length;
-  const mcpStatus = readMcpJsonStatus(draft.mcpServersJson);
-  const mcpCount = mcpStatus.value ? Object.keys(mcpStatus.value).length : 0;
 
   const items = buildItems({
     toolsCount,
     skillsCount,
-    mcpCount,
     draft,
     toolPresetOptions,
     skillPresetOptions,
-    mcpPresetOptions,
-    approvalOptions,
     onToolPresetChange,
     onSkillPresetChange,
-    onMcpPresetChange,
-    onApprovalsPolicyChange,
     onSubagentsEnabledChange,
   });
 
@@ -83,7 +68,7 @@ export const AgentNarrative: FC<AgentNarrativeProps> = ({
             Config summary
           </div>
           <p className="text-xs text-muted-foreground">
-            Deterministic ordering applied across tools, skills, and approvals.
+            Deterministic ordering applied across tools and skills.
           </p>
 
           <ul className="agentic-config">
@@ -108,16 +93,11 @@ type Item = {
 type ItemsInput = {
   toolsCount: number;
   skillsCount: number;
-  mcpCount: number;
   draft: AgentConfigDraft;
   toolPresetOptions: SelectOption[];
   skillPresetOptions: SelectOption[];
-  mcpPresetOptions: SelectOption[];
-  approvalOptions: SelectOption[];
   onToolPresetChange: (event: ChangeEvent<HTMLSelectElement>) => void;
   onSkillPresetChange: (event: ChangeEvent<HTMLSelectElement>) => void;
-  onMcpPresetChange: (event: ChangeEvent<HTMLSelectElement>) => void;
-  onApprovalsPolicyChange: (event: ChangeEvent<HTMLSelectElement>) => void;
   onSubagentsEnabledChange: (event: ChangeEvent<HTMLInputElement>) => void;
 };
 
@@ -143,30 +123,6 @@ const buildItems = (input: ItemsInput): Item[] => [
         options={input.skillPresetOptions}
         suffix={`${input.skillsCount} directories`}
         onChange={input.onSkillPresetChange}
-      />
-    ),
-  },
-  {
-    label: "MCP",
-    content: (
-      <Select
-        id="mcp"
-        value={input.draft.mcpPresetId}
-        options={input.mcpPresetOptions}
-        suffix={`${input.mcpCount} servers`}
-        onChange={input.onMcpPresetChange}
-      />
-    ),
-  },
-  {
-    label: "Approvals",
-    content: (
-      <Select
-        id="approvals"
-        value={input.draft.approvalsPolicy}
-        options={input.approvalOptions}
-        suffix="Policy"
-        onChange={input.onApprovalsPolicyChange}
       />
     ),
   },

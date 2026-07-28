@@ -1,5 +1,7 @@
 import type { EventStream, EventStreamEvent } from "#adapters/types";
-import type { MaybePromise } from "#shared/maybe";
+import { maybeMap, maybeReduce, type MaybePromise } from "#shared/maybe";
+import { bindFirst } from "#shared/fp";
+import { combineTriState } from "#shared/tri-state";
 import type { InteractionEvent, InteractionState } from "./types";
 
 export type InteractionSink = {
@@ -19,6 +21,12 @@ export const emitInteractionEvent = (
   event: InteractionEvent,
 ): MaybePromise<boolean | null> => stream.emit(toEventStreamEvent(event));
 
+const emitNextInteractionEvent = (
+  input: { stream: EventStream; event: InteractionEvent },
+  previous: boolean | null,
+) =>
+  maybeMap(bindFirst(combineTriState, previous), emitInteractionEvent(input.stream, input.event));
+
 export const emitInteractionEvents = (
   stream: EventStream,
   events: InteractionEvent[],
@@ -30,9 +38,10 @@ export const emitInteractionEvents = (
     }
     return stream.emitMany(mapped);
   }
-  let last: MaybePromise<boolean | null> = null;
-  for (const event of events) {
-    last = stream.emit(toEventStreamEvent(event));
+  if (events.length === 0) {
+    return null;
   }
-  return last;
+  const emit = (previous: boolean | null, event: InteractionEvent) =>
+    emitNextInteractionEvent({ stream, event }, previous);
+  return maybeReduce(emit, null, events);
 };

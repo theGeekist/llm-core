@@ -3,7 +3,7 @@ import type { TransportEvent } from "@geekist/llm-core/adapters/ai-sdk-ui";
 import type { AdapterSource, ProviderId } from "../demo-options";
 import { readAvailableProviders } from "../demo-options";
 import { readProviderToken, writeProviderToken, clearProviderToken } from "../token-store";
-import { bindFirst } from "@geekist/llm-core";
+import { bindFirst } from "@geekist/llm-core/functional";
 import type { OutcomeSummary, TransportData } from "./types";
 
 const applyTokenChange = (

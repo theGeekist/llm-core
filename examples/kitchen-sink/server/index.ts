@@ -28,7 +28,7 @@ import {
   bindFirst,
   toUndefined,
   type MaybePromise,
-} from "@geekist/llm-core";
+} from "@geekist/llm-core/functional";
 import { resolveInteractionRecipeId, runInteractionRequest } from "@geekist/llm-core/interaction";
 
 const PORT = 3001;

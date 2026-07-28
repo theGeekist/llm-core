@@ -1,7 +1,7 @@
 import { bindFirst } from "#shared/fp";
 import { maybeMap } from "#shared/maybe";
 import { Recipe } from "../../flow";
-import { defineRecipe } from "../../handle";
+import { defineSinglePackRecipe } from "../../handle";
 import type { RecipeDefaults, StepApply } from "../../flow";
 import { AgentStateHelpers, type AgentState } from "../shared";
 import type { ModelResult } from "#adapters/types";
@@ -44,14 +44,7 @@ export const createAgentPlanningPack = (config?: AgentPlanningConfig) =>
     minimumCapabilities: ["model"],
   });
 
-const resolvePlanningPack = (config?: AgentPlanningConfig) =>
-  config ? createAgentPlanningPack(config) : AgentPlanningPack;
-
-const resolvePlanningRecipeDefinition = (config?: AgentPlanningConfig) => ({
-  packs: [resolvePlanningPack(config)],
-});
-
-export const createAgentPlanningRecipe = defineRecipe("agent", resolvePlanningRecipeDefinition);
-
-export const AgentPlanningPack = createAgentPlanningPack();
+const planning = defineSinglePackRecipe("agent", createAgentPlanningPack);
+export const createAgentPlanningRecipe = planning.createRecipe;
+export const AgentPlanningPack = planning.pack;
 export const agentPlanningRecipe = createAgentPlanningRecipe();

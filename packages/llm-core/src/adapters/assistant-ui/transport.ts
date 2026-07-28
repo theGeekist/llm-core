@@ -1,47 +1,20 @@
+import type { AssistantTransportCommand as ExternalAssistantTransportCommand } from "@assistant-ui/react";
+import type { ReadonlyJSONValue } from "assistant-stream/utils";
 import type { Message, MessagePart } from "../types";
 import { isRecord } from "#shared/guards";
 
-export type JsonValue =
-  | string
-  | number
-  | boolean
-  | null
-  | JsonValue[]
-  | { [key: string]: JsonValue };
+export type JsonValue = ReadonlyJSONValue;
 
-export type AssistantTransportMessagePart =
-  | { type: "text"; text: string }
-  | {
-      type: "tool-call";
-      toolName: string;
-      toolCallId?: string | null;
-      args?: Record<string, JsonValue> | null;
-    }
-  | {
-      type: "tool-result";
-      toolName: string;
-      toolCallId?: string | null;
-      result: JsonValue;
-      isError?: boolean | null;
-    };
+export type AddMessageCommand = Extract<ExternalAssistantTransportCommand, { type: "add-message" }>;
 
-export type AssistantTransportMessage = {
-  role: "user" | "assistant" | "tool";
-  parts: AssistantTransportMessagePart[];
-};
+export type AddToolResultCommand = Extract<
+  ExternalAssistantTransportCommand,
+  { type: "add-tool-result" }
+>;
 
-export type AddMessageCommand = {
-  type: "add-message";
-  message: AssistantTransportMessage;
-};
+export type AssistantTransportMessage = AddMessageCommand["message"];
 
-export type AddToolResultCommand = {
-  type: "add-tool-result";
-  toolCallId: string;
-  toolName?: string | null;
-  result: JsonValue;
-  isError?: boolean | null;
-};
+export type AssistantTransportMessagePart = AssistantTransportMessage["parts"][number];
 
 export type AssistantTransportCommand = AddMessageCommand | AddToolResultCommand;
 
@@ -119,15 +92,22 @@ const readCommand = (value: unknown): AssistantTransportCommand | null => {
     return { type: "add-message", message };
   }
   if (value.type === "add-tool-result") {
-    if (typeof value.toolCallId !== "string") {
+    if (
+      typeof value.toolCallId !== "string" ||
+      typeof value.toolName !== "string" ||
+      typeof value.isError !== "boolean" ||
+      !isJsonValue(value.result) ||
+      (value.artifact !== undefined && !isJsonValue(value.artifact))
+    ) {
       return null;
     }
     return {
       type: "add-tool-result",
       toolCallId: value.toolCallId,
-      toolName: typeof value.toolName === "string" ? value.toolName : null,
-      result: readJsonValue(value.result),
-      isError: typeof value.isError === "boolean" ? value.isError : null,
+      toolName: value.toolName,
+      result: value.result,
+      isError: value.isError,
+      artifact: value.artifact,
     };
   }
   return null;
@@ -137,26 +117,29 @@ const readMessage = (value: unknown): AssistantTransportMessage | null => {
   if (!isRecord(value)) {
     return null;
   }
-  if (value.role !== "user" && value.role !== "assistant" && value.role !== "tool") {
-    return null;
-  }
   if (!Array.isArray(value.parts)) {
     return null;
   }
-  const parts = readParts(value.parts);
-  if (!parts) {
-    return null;
+  if (value.role === "user") {
+    const parts = readUserParts(value.parts);
+    return parts ? { role: "user", parts } : null;
   }
-  return {
-    role: value.role,
-    parts,
-  };
+  if (value.role === "assistant") {
+    const parts = readAssistantParts(value.parts);
+    return parts ? { role: "assistant", parts } : null;
+  }
+  return null;
 };
 
-const readParts = (value: unknown[]): AssistantTransportMessagePart[] | null => {
-  const parts: AssistantTransportMessagePart[] = [];
+type UserMessage = Extract<AssistantTransportMessage, { role: "user" }>;
+type UserMessagePart = UserMessage["parts"][number];
+type AssistantMessage = Extract<AssistantTransportMessage, { role: "assistant" }>;
+type AssistantMessagePart = AssistantMessage["parts"][number];
+
+const readUserParts = (value: unknown[]): UserMessage["parts"] | null => {
+  const parts: UserMessagePart[] = [];
   for (const entry of value) {
-    const parsed = readPart(entry);
+    const parsed = readUserPart(entry);
     if (!parsed) {
       return null;
     }
@@ -165,29 +148,35 @@ const readParts = (value: unknown[]): AssistantTransportMessagePart[] | null => 
   return parts;
 };
 
-const readPart = (value: unknown): AssistantTransportMessagePart | null => {
+const readAssistantParts = (value: unknown[]): AssistantMessage["parts"] | null => {
+  const parts: AssistantMessagePart[] = [];
+  for (const entry of value) {
+    const parsed = readTextPart(entry);
+    if (!parsed) {
+      return null;
+    }
+    parts.push(parsed);
+  }
+  return parts;
+};
+
+const readUserPart = (value: unknown): UserMessagePart | null => {
+  const text = readTextPart(value);
+  if (text) {
+    return text;
+  }
+  if (isRecord(value) && value.type === "image" && typeof value.image === "string") {
+    return { type: "image", image: value.image };
+  }
+  return null;
+};
+
+const readTextPart = (value: unknown): AssistantMessagePart | null => {
   if (!isRecord(value)) {
     return null;
   }
   if (value.type === "text" && typeof value.text === "string") {
     return { type: "text", text: value.text };
-  }
-  if (value.type === "tool-call" && typeof value.toolName === "string") {
-    return {
-      type: "tool-call",
-      toolName: value.toolName,
-      toolCallId: typeof value.toolCallId === "string" ? value.toolCallId : null,
-      args: isRecord(value.args) ? toJsonRecord(value.args) : null,
-    };
-  }
-  if (value.type === "tool-result" && typeof value.toolName === "string") {
-    return {
-      type: "tool-result",
-      toolName: value.toolName,
-      toolCallId: typeof value.toolCallId === "string" ? value.toolCallId : null,
-      result: readJsonValue(value.result),
-      isError: typeof value.isError === "boolean" ? value.isError : null,
-    };
   }
   return null;
 };
@@ -201,7 +190,7 @@ const toMessageFromTransport = (message: AssistantTransportMessage): Message | n
   };
 };
 
-const toMessageParts = (parts: AssistantTransportMessagePart[]): MessagePart[] => {
+const toMessageParts = (parts: readonly AssistantTransportMessagePart[]): MessagePart[] => {
   const output: MessagePart[] = [];
   for (const part of parts) {
     const mapped = toMessagePart(part);
@@ -216,22 +205,8 @@ const toMessagePart = (part: AssistantTransportMessagePart): MessagePart | null 
   if (part.type === "text") {
     return { type: "text", text: part.text };
   }
-  if (part.type === "tool-call") {
-    return {
-      type: "tool-call",
-      toolCallId: part.toolCallId ?? null,
-      toolName: part.toolName,
-      input: part.args ?? {},
-    };
-  }
-  if (part.type === "tool-result") {
-    return {
-      type: "tool-result",
-      toolCallId: part.toolCallId ?? null,
-      toolName: part.toolName,
-      output: part.result,
-      isError: part.isError ?? null,
-    };
+  if (part.type === "image") {
+    return { type: "image", url: part.image };
   }
   return null;
 };
@@ -245,12 +220,14 @@ const toToolResultMessage = (command: AddToolResultCommand): Message => ({
       {
         type: "tool-result",
         toolCallId: command.toolCallId,
-        toolName: command.toolName ?? "tool",
+        toolName: command.toolName,
         output: command.result,
-        isError: command.isError ?? null,
+        isError: command.isError,
       },
     ],
   },
+  metadata:
+    command.artifact === undefined ? undefined : { assistantUi: { artifact: command.artifact } },
 });
 
 const readStructuredText = (parts: MessagePart[]): string => {
@@ -276,13 +253,6 @@ const readData = (value: unknown): AssistantTransportRequest["data"] => {
   };
 };
 
-const readJsonValue = (value: unknown): JsonValue => {
-  if (isJsonValue(value)) {
-    return value;
-  }
-  return null;
-};
-
 const isJsonValue = (value: unknown): value is JsonValue => {
   if (
     value === null ||
@@ -299,12 +269,4 @@ const isJsonValue = (value: unknown): value is JsonValue => {
     return Object.values(value).every(isJsonValue);
   }
   return false;
-};
-
-const toJsonRecord = (value: Record<string, unknown>): Record<string, JsonValue> => {
-  const result: Record<string, JsonValue> = {};
-  for (const [key, entry] of Object.entries(value)) {
-    result[key] = readJsonValue(entry);
-  }
-  return result;
 };

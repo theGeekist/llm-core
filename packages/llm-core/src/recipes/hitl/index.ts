@@ -1,9 +1,10 @@
 import { Recipe } from "../flow";
-import { defineRecipe } from "../handle";
+import { defineSinglePackRecipe } from "../handle";
 import type { RecipeDefaults, StepApply } from "../flow";
 import type { PauseKind } from "#adapters/types";
 import { readString } from "#adapters/utils";
 import { isRecord } from "#shared/guards";
+import { bindFirst } from "#shared/fp";
 
 export type HitlConfig = {
   defaults?: RecipeDefaults;
@@ -45,8 +46,16 @@ const createPauseToken = () => {
   return `hitl:${Date.now()}`;
 };
 
+type HitlPausePayload = {
+  kind: "hitl";
+  input: unknown;
+};
+
 // Gate step that pauses until a decision is provided.
-const applyGate: StepApply = ({ input, state }) => {
+const applyGate = (
+  pauseKind: PauseKind,
+  { input, state }: Parameters<StepApply>[0],
+): ReturnType<StepApply> => {
   const hitl = readStateRecord(state);
   const { decision, notes } = readDecision(input);
   if (decision) {
@@ -56,40 +65,34 @@ const applyGate: StepApply = ({ input, state }) => {
     return null;
   }
   hitl.status = "pending";
+  const token = createPauseToken();
   state.__pause = {
-    paused: true,
-    token: createPauseToken(),
-    pauseKind: "human" satisfies PauseKind,
+    token,
+    pauseKind,
+    payload: {
+      kind: "hitl",
+      input,
+    } satisfies HitlPausePayload,
   };
-  return {
-    output: state,
-    paused: true,
-    pauseKind: "human" satisfies PauseKind,
-    token: (state.__pause as { token?: unknown }).token,
-    partialArtefact: state,
-  };
+  return { output: state };
 };
 
 type PackTools = Parameters<typeof Recipe.pack>[1] extends (tools: infer T) => unknown ? T : never;
 
-const defineHitlSteps = ({ step }: PackTools) => ({
-  gate: step("gate", applyGate),
-});
+const createHitlSteps =
+  (pauseKind: PauseKind) =>
+  ({ step }: PackTools) => ({
+    gate: step("gate", bindFirst(applyGate, pauseKind)),
+  });
 
 export const createHitlPack = (config?: HitlConfig) =>
-  Recipe.pack("hitl", defineHitlSteps, {
+  Recipe.pack("hitl", createHitlSteps(config?.pauseKind ?? "human"), {
     defaults: config?.defaults,
     minimumCapabilities: ["hitl"],
   });
 
-const resolveHitlPack = (config?: HitlConfig) => (config ? createHitlPack(config) : HitlPack);
-
-const resolveHitlRecipeDefinition = (config?: HitlConfig) => ({
-  packs: [resolveHitlPack(config)],
-});
-
 // Full HITL recipe that pauses by default and resumes when a decision is provided.
-export const createHitlRecipe = defineRecipe("hitl-gate", resolveHitlRecipeDefinition);
-
-export const HitlPack = createHitlPack();
+const hitl = defineSinglePackRecipe("hitl-gate", createHitlPack);
+export const createHitlRecipe = hitl.createRecipe;
+export const HitlPack = hitl.pack;
 export const hitlRecipe = createHitlRecipe;

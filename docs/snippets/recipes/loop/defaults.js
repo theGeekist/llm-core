@@ -3,7 +3,7 @@ import { recipes } from "#recipes";
 import { fromAiSdkModel } from "#adapters";
 import { openai } from "@ai-sdk/openai";
 
-const loop = recipes.loop().configure({
+const loop = recipes.loop({
   defaults: {
     adapters: { model: fromAiSdkModel(openai("gpt-4o-mini")) },
   },

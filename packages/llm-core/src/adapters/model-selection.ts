@@ -6,7 +6,7 @@ import { ChatOllama } from "@langchain/ollama";
 import { openai as llamaOpenAI } from "@llamaindex/openai";
 import { fromAiSdkModel, fromLangChainModel, fromLlamaIndexModel } from "./index";
 import type { Model } from "./types";
-import { bindFirst, compose } from "#shared/fp";
+import { compose } from "#shared/fp";
 
 export type AdapterSource = "ai-sdk" | "langchain" | "llamaindex";
 export type ProviderId = "openai" | "anthropic" | "ollama";
@@ -66,23 +66,6 @@ const readDefaultProviderMap = (options?: ModelSelectorOptions) => ({
   ...DEFAULT_PROVIDER,
   ...(options?.defaultProviders ?? {}),
 });
-
-const hasOwn = (value: Record<string, unknown>, key: string) =>
-  Object.prototype.hasOwnProperty.call(value, key);
-
-const isModelSelectorOptions = (value: unknown): value is ModelSelectorOptions => {
-  if (!value || typeof value !== "object") {
-    return false;
-  }
-  const record = value as Record<string, unknown>;
-  return (
-    hasOwn(record, "modelOptions") ||
-    hasOwn(record, "defaultSource") ||
-    hasOwn(record, "defaultProviders") ||
-    hasOwn(record, "readToken") ||
-    hasOwn(record, "readOllamaBaseUrl")
-  );
-};
 
 const readAdapterSource = (
   value: AdapterSource | null | undefined,
@@ -252,16 +235,6 @@ const selectModelWithOptions = (
 export function selectModel(
   selection?: ModelSelection | null,
   options?: ModelSelectorOptions,
-): Model;
-export function selectModel(
-  options?: ModelSelectorOptions,
-): (selection?: ModelSelection | null) => Model;
-export function selectModel(
-  selection?: ModelSelection | null | ModelSelectorOptions,
-  options?: ModelSelectorOptions,
-) {
-  if (arguments.length === 1 && isModelSelectorOptions(selection)) {
-    return bindFirst(selectModelWithOptions, selection);
-  }
-  return selectModelWithOptions(options, selection as ModelSelection | null | undefined);
+): Model {
+  return selectModelWithOptions(options, selection);
 }

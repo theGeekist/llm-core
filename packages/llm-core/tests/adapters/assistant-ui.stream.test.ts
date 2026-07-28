@@ -145,6 +145,30 @@ describe("assistant-ui stream adapter", () => {
     expect(capture.closed).toBe(1);
   });
 
+  it("normalizes non-JSON tool results before writing stream responses", async () => {
+    const adapter = createAssistantUiInteractionStream();
+    const capture = createCapture();
+    const toolCapture = attachCapture(adapter, capture);
+    const circular: { self?: unknown } = {};
+    circular.self = circular;
+
+    await emitModelEvents(adapter, [
+      {
+        type: "delta",
+        toolResult: { name: "lookup", toolCallId: "call-1", result: circular },
+      },
+    ]);
+
+    expect(toolCapture.toolCallCapture.responses[0]).toEqual({
+      result: {
+        type: "llm-core.non-json-value",
+        reason: "circular",
+        message: "Circular reference",
+      },
+      isError: false,
+    });
+  });
+
   it("emits error text and closes on model errors", async () => {
     const adapter = createAssistantUiInteractionStream({ errorPrefix: "Oops: " });
     const capture = createCapture();

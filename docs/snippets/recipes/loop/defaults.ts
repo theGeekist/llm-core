@@ -10,7 +10,7 @@ const config = {
   },
 } satisfies LoopConfig;
 
-const loop = recipes.loop().configure(config);
+const loop = recipes.loop(config);
 
 // #endregion docs
 void loop;

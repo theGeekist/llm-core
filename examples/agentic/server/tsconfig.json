@@ -10,6 +10,9 @@
     "types": ["bun-types", "node"],
     "typeRoots": ["../../../node_modules/@types"],
     "skipLibCheck": true,
-    "baseUrl": "."
+    "baseUrl": ".",
+    "paths": {
+      "@geekist/llm-core/functional": ["../../../packages/llm-core/src/functional/index.ts"]
+    }
   }
 }

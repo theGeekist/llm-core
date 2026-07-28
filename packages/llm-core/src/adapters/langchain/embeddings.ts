@@ -1,7 +1,5 @@
 import type { EmbeddingsInterface } from "@langchain/core/embeddings";
 import type { AdapterCallContext, Embedder } from "../types";
-import { identity } from "#shared/fp";
-import { maybeMap } from "#shared/maybe";
 import {
   reportDiagnostics,
   validateEmbedderBatchInput,
@@ -15,7 +13,7 @@ export function fromLangChainEmbeddings(embeddings: EmbeddingsInterface<number[]
       reportDiagnostics(context, diagnostics);
       return [];
     }
-    return maybeMap(identity, embeddings.embedQuery(text));
+    return embeddings.embedQuery(text);
   }
 
   function embedMany(texts: string[], context?: AdapterCallContext) {
@@ -24,7 +22,7 @@ export function fromLangChainEmbeddings(embeddings: EmbeddingsInterface<number[]
       reportDiagnostics(context, diagnostics);
       return [];
     }
-    return maybeMap(identity, embeddings.embedDocuments(texts));
+    return embeddings.embedDocuments(texts);
   }
 
   return { embed, embedMany };

@@ -173,19 +173,16 @@ describe("Adapter AI SDK chat transport", () => {
     expect(capture.input?.state?.messages.length).toBe(1);
   });
 
-  it("accepts custom mappers and reconnects with null streams", async () => {
+  it("accepts a custom mapper factory and reconnects with null streams", async () => {
     const capture: RunCapture = {};
     const mapperCalls: string[] = [];
-    const mapper = {
-      mapEvent(event: InteractionEvent) {
-        mapperCalls.push(event.kind);
-        return [];
-      },
-      reset() {},
+    const createMapper = () => (event: InteractionEvent) => {
+      mapperCalls.push(event.kind);
+      return [];
     };
     const events = [modelEvent(1, { type: "delta", text: "hello" })];
     const handle = createHandle(capture, events);
-    const transport = createAiSdkChatTransport({ handle, mapper });
+    const transport = createAiSdkChatTransport({ handle, createMapper });
 
     const stream = await transport.sendMessages({
       trigger: "submit-message",
@@ -201,5 +198,36 @@ describe("Adapter AI SDK chat transport", () => {
 
     expect(mapperCalls).toEqual(["model"]);
     expect(reconnect).toBeNull();
+  });
+
+  it("creates an isolated mapper for each send request", async () => {
+    const capture: RunCapture = {};
+    const mapperCalls: string[][] = [];
+    const events = [modelEvent(1, { type: "delta", text: "hello" })];
+    const handle = createHandle(capture, events);
+    const transport = createAiSdkChatTransport({
+      handle,
+      createMapper() {
+        const calls: string[] = [];
+        mapperCalls.push(calls);
+        return (event) => {
+          calls.push(event.kind);
+          return [];
+        };
+      },
+    });
+    const options = {
+      trigger: "submit-message" as const,
+      chatId: "chat-5",
+      messageId: undefined,
+      messages: [makeUiMessage("m1", "user", "hello")],
+      abortSignal: undefined,
+    };
+
+    await readStream(await transport.sendMessages(options));
+    await readStream(await transport.sendMessages(options));
+
+    expect(mapperCalls).toEqual([["model"], ["model"]]);
+    expect(mapperCalls[0]).not.toBe(mapperCalls[1]);
   });
 });

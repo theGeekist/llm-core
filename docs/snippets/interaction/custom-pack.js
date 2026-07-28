@@ -1,5 +1,5 @@
 // #region docs
-import { createInteractionPipelineWithDefaults, registerInteractionPack } from "#interaction";
+import { createInteractionHandle } from "#interaction";
 
 /** @type {import("#interaction").InteractionStepApply} */
 const appendHint = (options) => {
@@ -12,7 +12,8 @@ const appendHint = (options) => {
   return { output };
 };
 
-const PostProcessPack = {
+/** @type {import("#interaction").InteractionStepPack} */
+const postProcess = {
   name: "post-process",
   steps: [
     {
@@ -23,8 +24,7 @@ const PostProcessPack = {
   ],
 };
 
-const pipeline = createInteractionPipelineWithDefaults();
-registerInteractionPack(pipeline, PostProcessPack);
+const interaction = createInteractionHandle().use(postProcess);
 // #endregion docs
 
-void pipeline;
+void interaction;

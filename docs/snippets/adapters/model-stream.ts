@@ -1,6 +1,6 @@
 // #region docs
 import type { Model, ModelCall } from "#adapters";
-import { collectStep, isPromiseLike, maybeToStep } from "#adapters";
+import { collectStep, isPromiseLike, maybeToStep } from "#functional";
 
 const model = {} as Model; // Mock
 const call = {} as ModelCall; // Mock

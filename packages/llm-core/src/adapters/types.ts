@@ -11,7 +11,6 @@ export type {
   RetryMetadata,
   RetryPolicy,
   RetryReason,
-  ResumeSnapshot,
 } from "./types/core";
 
 export type { Document } from "./types/documents";
@@ -106,7 +105,7 @@ export type {
   SynthesisInput,
 } from "./types/engines";
 
-export type { CheckpointStore, InterruptStrategy } from "./types/orchestration";
+export type { InterruptStrategy } from "./types/orchestration";
 
 export type {
   VectorRecord,
@@ -126,5 +125,4 @@ export type {
   AdapterResume,
   AdapterResumeRequest,
   AdapterResumeResult,
-  AdapterResumeReturn,
 } from "./types/bundle";

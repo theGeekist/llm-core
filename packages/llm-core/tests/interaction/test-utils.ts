@@ -1,4 +1,4 @@
-import type { InteractionRunOutcome, InteractionRunResult } from "#interaction";
+import type { InteractionRunOutcome, InteractionRunResult } from "../../src/interaction/types";
 import type { PipelinePaused } from "@wpkernel/pipeline/core";
 
 export const isPausedResult = (value: unknown): value is PipelinePaused<Record<string, unknown>> =>

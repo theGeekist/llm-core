@@ -2,8 +2,6 @@ import type { BaseTool } from "@llamaindex/core/llms";
 import { tool as defineTool } from "@llamaindex/core/tools";
 import type { JSONValue } from "@llamaindex/core/global";
 import type { AdapterCallContext, Schema, Tool } from "../types";
-import { identity } from "#shared/fp";
-import { maybeMap } from "#shared/maybe";
 import {
   adapterParamsToJsonSchema,
   normalizeObjectSchema,
@@ -11,6 +9,7 @@ import {
   toSchema,
 } from "../schema";
 import { reportDiagnostics, validateToolInput } from "../input-validation";
+import { maybeMap } from "#shared/maybe";
 
 export function fromLlamaIndexTool(tool: BaseTool): Tool {
   const parameters = tool.metadata.parameters;
@@ -21,14 +20,15 @@ export function fromLlamaIndexTool(tool: BaseTool): Tool {
     inputSchema,
   };
 
-  const execute = tool.call
+  const call = tool.call;
+  const execute = call
     ? (input: unknown, context?: AdapterCallContext) => {
         const diagnostics = validateToolInput(adapterShape, input);
         if (diagnostics.length > 0) {
           reportDiagnostics(context, diagnostics);
           return null;
         }
-        return maybeMap(identity, tool.call?.(input));
+        return call(input);
       }
     : undefined;
 

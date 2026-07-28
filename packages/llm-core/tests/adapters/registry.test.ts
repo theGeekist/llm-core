@@ -1,9 +1,5 @@
 import { describe, expect, it } from "bun:test";
-import {
-  createAdapterRegistry,
-  createRegistryFromDefaults,
-  type ConstructRequirement,
-} from "#adapters";
+import { createAdapterRegistry, type ConstructRequirement } from "#adapters";
 import { assertSyncValue } from "./helpers";
 
 const resolve = (
@@ -24,7 +20,7 @@ const PROVIDER_CUSTOM_TOOLS = "custom:tools";
 
 describe("Adapter registry", () => {
   it("resolves builtin providers by default", () => {
-    const registry = createRegistryFromDefaults();
+    const registry = createAdapterRegistry();
     const result = assertSyncValue(
       resolve(registry, [
         { name: CONSTRUCT_MODEL, required: true },
@@ -37,8 +33,24 @@ describe("Adapter registry", () => {
     expect(result.providers.tools).toBe("builtin:tools");
   });
 
+  it("creates isolated registries", () => {
+    const first = createAdapterRegistry();
+    first.registerProvider({
+      construct: CONSTRUCT_MODEL,
+      providerKey: "test",
+      id: PROVIDER_TEST_MODEL,
+      priority: 10,
+      factory: () => ({ generate: () => ({ text: "custom" }) }),
+    });
+
+    const second = createAdapterRegistry();
+    const result = assertSyncValue(resolve(second, [{ name: CONSTRUCT_MODEL, required: true }]));
+
+    expect(result.providers.model).toBe("builtin:model");
+  });
+
   it("prefers higher priority providers", () => {
-    const registry = createRegistryFromDefaults();
+    const registry = createAdapterRegistry();
     registry.registerProvider({
       construct: CONSTRUCT_MODEL,
       providerKey: "test",
@@ -51,7 +63,7 @@ describe("Adapter registry", () => {
   });
 
   it("honors explicit provider overrides", () => {
-    const registry = createRegistryFromDefaults();
+    const registry = createAdapterRegistry();
     registry.registerProvider({
       construct: CONSTRUCT_TOOLS,
       providerKey: "custom",
@@ -70,30 +82,9 @@ describe("Adapter registry", () => {
 
   it("reports missing providers for required constructs", () => {
     const registry = createAdapterRegistry();
-    registry.registerConstruct({ name: CONSTRUCT_MODEL });
-    const result = assertSyncValue(resolve(registry, [{ name: CONSTRUCT_MODEL, required: true }]));
+    const result = assertSyncValue(resolve(registry, [{ name: "missing", required: true }]));
     expect(result.diagnostics[0]?.message).toBe(DIAG_MISSING);
     expect(result.diagnostics[0]?.level).toBe("error");
-  });
-
-  it("registers constructs when providers are added", () => {
-    const registry = createAdapterRegistry();
-    registry.registerProvider({
-      construct: "custom",
-      providerKey: "test",
-      id: "test:custom",
-      factory: () => ({ ok: true }),
-    });
-
-    expect(registry.listConstructs().map((entry) => entry.name)).toContain("custom");
-  });
-
-  it("warns when registering duplicate constructs", () => {
-    const registry = createAdapterRegistry();
-    registry.registerConstruct({ name: CONSTRUCT_MODEL });
-    registry.registerConstruct({ name: CONSTRUCT_MODEL });
-
-    expect(registry.snapshot().diagnostics[0]?.message).toBe("construct_contract_conflict");
   });
 
   it("reports capability mismatches", () => {
@@ -166,17 +157,17 @@ describe("Adapter registry", () => {
       factory: () => ({ generate: () => ({ text: "override" }) }),
     });
 
-    const providers = registry.listProviders(CONSTRUCT_MODEL);
-    expect(providers).toHaveLength(1);
-    expect(providers[0]?.factory).toBeDefined();
+    const result = assertSyncValue(
+      resolve(registry, [{ name: CONSTRUCT_MODEL }], { model: PROVIDER_TEST_MODEL }),
+    );
+    expect(result.adapters.model?.generate({ messages: [] })).toEqual({ text: "override" });
   });
 
   it("reports provider id overrides that do not exist", () => {
     const registry = createAdapterRegistry();
-    registry.registerConstruct({ name: CONSTRUCT_MODEL });
     const result = assertSyncValue(
-      resolve(registry, [{ name: CONSTRUCT_MODEL, required: false }], {
-        model: "missing-provider",
+      resolve(registry, [{ name: "missing", required: false }], {
+        missing: "missing-provider",
       }),
     );
 
@@ -274,5 +265,36 @@ describe("Adapter registry", () => {
     });
     const result = assertSyncValue(resolve(registry, [{ name: "documents", required: false }]));
     expect(result.diagnostics).toBeArrayOfSize(0);
+  });
+
+  it("resolves asynchronous providers sequentially in requirement order", async () => {
+    const registry = createAdapterRegistry();
+    const order: string[] = [];
+    registry.registerProvider({
+      construct: "first",
+      providerKey: "test",
+      id: "test:first",
+      factory: async () => {
+        order.push("first");
+        return { first: true };
+      },
+    });
+    registry.registerProvider({
+      construct: "second",
+      providerKey: "test",
+      id: "test:second",
+      factory: () => {
+        order.push("second");
+        return { second: true };
+      },
+    });
+
+    const result = await resolve(registry, [{ name: "first" }, { name: "second" }]);
+
+    expect(order).toEqual(["first", "second"]);
+    expect(result.constructs).toEqual({
+      first: { first: true },
+      second: { second: true },
+    });
   });
 });

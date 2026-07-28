@@ -16,7 +16,7 @@ const config = {
   },
 } satisfies IngestConfig;
 
-const ingest = recipes.ingest().configure(config);
+const ingest = recipes.ingest(config);
 
 // #endregion docs
 

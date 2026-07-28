@@ -1,10 +1,8 @@
 import { describe, expect, it } from "bun:test";
 import {
   createAiSdkInteractionEventStream,
-  createAiSdkInteractionMapper,
   createAiSdkInteractionSink,
   createAiSdkUiMessageChunkMapper,
-  toAiSdkUiMessageChunks,
 } from "#adapters";
 import type { ModelStreamEvent } from "#adapters";
 import type { InteractionEvent, InteractionEventMeta } from "#interaction";
@@ -63,7 +61,7 @@ const createWriter = (capture: ChunkCapture) => ({
 
 describe("Adapter AI SDK UI mapping", () => {
   it("maps model events into UI message chunks", () => {
-    const mapper = createAiSdkInteractionMapper({ messageId: "m1" });
+    const mapper = createAiSdkUiMessageChunkMapper({ messageId: "m1" });
 
     const events = [
       modelEvent(1, { type: "start", id: "m1" }),
@@ -71,7 +69,7 @@ describe("Adapter AI SDK UI mapping", () => {
       modelEvent(3, { type: "end", finishReason: "stop" }),
     ];
 
-    const chunks = events.flatMap((event) => mapper.mapEvent(event));
+    const chunks = events.flatMap((event) => mapper(event));
 
     expect(chunks).toEqual([
       { type: "start", messageId: "m1" },
@@ -83,7 +81,7 @@ describe("Adapter AI SDK UI mapping", () => {
   });
 
   it("maps tool events into tool chunks", () => {
-    const mapper = createAiSdkInteractionMapper({ messageId: "m2" });
+    const mapper = createAiSdkUiMessageChunkMapper({ messageId: "m2" });
 
     const events = [
       modelEvent(1, {
@@ -100,7 +98,7 @@ describe("Adapter AI SDK UI mapping", () => {
       }),
     ];
 
-    const chunks = events.flatMap((event) => mapper.mapEvent(event));
+    const chunks = events.flatMap((event) => mapper(event));
 
     expect(chunks).toEqual([
       { type: "start", messageId: "m2" },
@@ -124,9 +122,9 @@ describe("Adapter AI SDK UI mapping", () => {
   });
 
   it("maps trace and diagnostic events into data chunks", () => {
-    const mapper = createAiSdkInteractionMapper({ dataIdPrefix: "capture" });
+    const mapper = createAiSdkUiMessageChunkMapper({ dataIdPrefix: "capture" });
 
-    const chunks = [traceEvent(1), diagnosticEvent(2)].flatMap((event) => mapper.mapEvent(event));
+    const chunks = [traceEvent(1), diagnosticEvent(2)].flatMap((event) => mapper(event));
 
     expect(chunks).toEqual([
       {
@@ -145,26 +143,20 @@ describe("Adapter AI SDK UI mapping", () => {
   });
 
   it("resets messageId across interactions when no explicit id is set", () => {
-    const mapper = createAiSdkInteractionMapper();
+    const mapper = createAiSdkUiMessageChunkMapper();
 
-    const first = mapper.mapEvent(modelEvent(1, { type: "start", id: "m1" }, "one"));
-    const second = mapper.mapEvent(modelEvent(1, { type: "start", id: "m2" }, "two"));
+    const first = mapper(modelEvent(1, { type: "start", id: "m1" }, "one"));
+    const second = mapper(modelEvent(1, { type: "start", id: "m2" }, "two"));
 
     expect(first).toEqual([{ type: "start", messageId: "m1" }]);
     expect(second).toEqual([{ type: "start", messageId: "m2" }]);
   });
 
-  it("supports stateless helper usage with a shared mapper", () => {
-    const mapper = createAiSdkInteractionMapper();
+  it("preserves cross-event state in a bound mapper", () => {
+    const mapper = createAiSdkUiMessageChunkMapper();
 
-    const deltaChunks = toAiSdkUiMessageChunks(
-      mapper,
-      modelEvent(1, { type: "delta", text: "hi" }),
-    );
-    const endChunks = toAiSdkUiMessageChunks(
-      mapper,
-      modelEvent(2, { type: "end", finishReason: "stop" }),
-    );
+    const deltaChunks = mapper(modelEvent(1, { type: "delta", text: "hi" }));
+    const endChunks = mapper(modelEvent(2, { type: "end", finishReason: "stop" }));
 
     expect(deltaChunks).toEqual([
       { type: "start", messageId: "interaction-1" },
@@ -195,10 +187,10 @@ describe("Adapter AI SDK UI mapping", () => {
   });
 
   it("closes active parts on error events", () => {
-    const mapper = createAiSdkInteractionMapper();
+    const mapper = createAiSdkUiMessageChunkMapper();
 
-    const deltaChunks = mapper.mapEvent(modelEvent(1, { type: "delta", text: "hi" }));
-    const errorChunks = mapper.mapEvent(modelEvent(2, { type: "error", error: "boom" }));
+    const deltaChunks = mapper(modelEvent(1, { type: "delta", text: "hi" }));
+    const errorChunks = mapper(modelEvent(2, { type: "error", error: "boom" }));
 
     expect(deltaChunks).toEqual([
       { type: "start", messageId: "interaction-1" },

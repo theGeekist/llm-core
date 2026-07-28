@@ -101,17 +101,14 @@ Agentic flows use the same interaction stream but extend it with item and sub-ag
 This structure makes it possible to build chat UIs, inspectors, or dashboards in environments that do not use the workflow runtime directly.
 
 ```js
-import {
-  createInteractionPipelineWithDefaults,
-  runInteractionPipeline,
-} from "@geekist/llm-core/interaction";
+import { createInteractionHandle } from "@geekist/llm-core/interaction";
 
-const pipeline = createInteractionPipelineWithDefaults();
-const result = await runInteractionPipeline(pipeline, {
-  input: { message: { role: "user", content: "Hello!" } },
+const interaction = createInteractionHandle();
+const result = await interaction.run({
+  message: { role: "user", content: "Hello!" },
 });
 
-console.log(result.artefact.messages);
+console.log(result.state.messages);
 ```
 
 Learn more in:

@@ -2,7 +2,7 @@ import type { Tool, ToolCall, ToolResult } from "#adapters/types";
 import type { Message, MessagePart } from "#adapters/types/messages";
 import { bindFirst } from "#shared/fp";
 import { isRecord } from "#shared/guards";
-import { maybeAll, maybeMap, maybeTap, maybeTry } from "#shared/maybe";
+import { maybeAll, maybeChain, maybeMap, maybeTap, maybeTry } from "#shared/maybe";
 import type {
   InteractionContext,
   InteractionEvent,
@@ -174,19 +174,7 @@ const buildToolResultEvents = (input: {
   return events;
 };
 
-const assignInteractionState = (target: InteractionState, source: InteractionState) => {
-  target.messages = source.messages;
-  target.diagnostics = source.diagnostics;
-  target.trace = source.trace;
-  target.events = source.events;
-  target.lastSequence = source.lastSequence;
-  target.private = source.private;
-  return target;
-};
-
-const toInteractionOutput = (input: { output: InteractionState }, nextState: InteractionState) => ({
-  output: assignInteractionState(input.output, nextState),
-});
+const toInteractionOutput = (output: InteractionState) => ({ output });
 
 const emitToolEvents = (
   input: { context: InteractionContext; events: InteractionEvent[] },
@@ -243,8 +231,8 @@ export const applyRunTools: InteractionStepApply = (options) => {
   const tools = options.context.adapters?.tools ?? [];
   const executed = executeToolCalls(tools, calls);
   return maybeMap(
-    bindFirst(toInteractionOutput, { output: options.output }),
-    maybeMap(
+    toInteractionOutput,
+    maybeChain(
       bindFirst(applyToolExecutionResults, {
         state: options.output,
         context: options.context,

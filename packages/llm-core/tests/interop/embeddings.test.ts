@@ -2,18 +2,17 @@ import { describe, expect, it } from "bun:test";
 import type { EmbeddingsInterface } from "@langchain/core/embeddings";
 import type { BaseEmbedding } from "@llamaindex/core/embeddings";
 import { embed, embedMany, type EmbeddingModel } from "ai";
-import type { Embedder } from "#workflow";
-import { identity } from "../../src/shared/fp";
+import type { Embedder } from "#adapters/types";
 import { maybeMap } from "../../src/shared/maybe";
 
 const toEmbedderFromLangChain = (embeddings: EmbeddingsInterface<number[]>): Embedder => ({
-  embed: (text) => maybeMap(identity, embeddings.embedQuery(text)),
-  embedMany: (texts) => maybeMap(identity, embeddings.embedDocuments(texts)),
+  embed: (text) => embeddings.embedQuery(text),
+  embedMany: (texts) => embeddings.embedDocuments(texts),
 });
 
 const toEmbedderFromLlama = (embedding: BaseEmbedding): Embedder => ({
-  embed: (text) => maybeMap(identity, embedding.getTextEmbedding(text)),
-  embedMany: (texts) => maybeMap(identity, embedding.getTextEmbeddings(texts)),
+  embed: (text) => embedding.getTextEmbedding(text),
+  embedMany: (texts) => embedding.getTextEmbeddings(texts),
 });
 
 const toEmbedderFromAiSdk = (model: EmbeddingModel<string>): Embedder => ({

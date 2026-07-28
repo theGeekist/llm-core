@@ -6,7 +6,7 @@ import { createUIMessageStream } from "ai";
 
 const model = fromAiSdkModel(openai("gpt-4o-mini"));
 
-const handle = createInteractionHandle().configure({
+const handle = createInteractionHandle({
   adapters: { model },
 });
 

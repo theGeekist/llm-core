@@ -1,11 +1,12 @@
 import type { Model, ModelCall, ModelResult, ModelStreamEvent } from "#adapters/types";
 import type { Message } from "#adapters/types/messages";
 import { bindFirst } from "#shared/fp";
-import { maybeChain, maybeMap, maybeTap, maybeToStep, maybeTry } from "#shared/maybe";
+import { foldStep, maybeChain, maybeMap, maybeTap, maybeToStep, maybeTry } from "#shared/maybe";
 import type { MaybeAsyncIterable, MaybePromise, Step } from "#shared/maybe";
 import type { PipelinePaused } from "@wpkernel/pipeline/core";
 import { isString } from "#shared/guards";
 import {
+  createContext,
   createInteractionPipeline,
   createInteractionReducer,
   createInteractionStep,
@@ -75,17 +76,6 @@ export const appendMessage = (state: InteractionState, message: Message) => ({
   ...state,
   messages: [...state.messages, message],
 });
-
-/** @internal */
-export const assignInteractionState = (target: InteractionState, source: InteractionState) => {
-  target.messages = source.messages;
-  target.diagnostics = source.diagnostics;
-  target.trace = source.trace;
-  target.events = source.events;
-  target.lastSequence = source.lastSequence;
-  target.private = source.private;
-  return target;
-};
 
 /** @internal */
 export function mergeInteractionPrivate(
@@ -236,12 +226,7 @@ export const toInteractionEvents = (input: InteractionEventsInput): InteractionE
   return items;
 };
 
-const toInteractionOutput = (
-  options: { output: InteractionState },
-  nextState: InteractionState,
-) => ({
-  output: assignInteractionState(options.output, nextState),
-});
+const toInteractionOutput = (output: InteractionState) => ({ output });
 
 type ModelRunContext = {
   state: InteractionState;
@@ -272,11 +257,6 @@ type ApplyModelStreamInput = ModelRunContext & {
   stream: Step<ModelStreamEvent>;
 };
 
-const readStepNext = <T>(step: Step<T>) => step.next();
-
-const applyModelStreamLoopUnsafe = (input: ApplyModelStreamInput): MaybePromise<InteractionState> =>
-  maybeChain(bindFirst(applyModelStreamResult, input), readStepNext(input.stream));
-
 /** @internal */
 export const applyModelStreamResult = (
   input: ApplyModelStreamInput,
@@ -287,23 +267,28 @@ export const applyModelStreamResult = (
   }
   const meta = createMeta(input.state, input.interactionInput, input.sourceId);
   const event: InteractionEvent = { kind: "model", event: result.value, meta };
-  return maybeChain(
-    bindFirst(applyModelStreamContinue, input),
-    reduceAndEmitInteraction(input.state, input.context, event),
+  return reduceAndEmitInteraction(input.state, input.context, event);
+};
+
+const applyModelStreamEvent = (
+  input: ApplyModelStreamInput,
+  state: InteractionState,
+  event: ModelStreamEvent,
+): MaybePromise<InteractionState> => {
+  input.state = state;
+  return maybeMap(
+    bindFirst(updateModelStreamState, input),
+    applyModelStreamResult(input, { done: false, value: event }),
   );
 };
 
-const applyModelStreamContinue = (
+const updateModelStreamState = (
   input: ApplyModelStreamInput,
-  nextState: InteractionState,
-): MaybePromise<InteractionState> =>
-  applyModelStreamLoopSafe({
-    state: nextState,
-    context: input.context,
-    interactionInput: input.interactionInput,
-    sourceId: input.sourceId,
-    stream: input.stream,
-  });
+  state: InteractionState,
+): InteractionState => {
+  input.state = state;
+  return state;
+};
 
 const applyModelError = (
   input: ModelRunContext,
@@ -314,12 +299,14 @@ const applyModelError = (
   return reduceAndEmitInteraction(input.state, input.context, event);
 };
 
-const applyModelStreamLoopSafe = (input: ApplyModelStreamInput): MaybePromise<InteractionState> =>
-  maybeTry(bindFirst(applyModelError, input), bindFirst(applyModelStreamLoopUnsafe, input));
+const foldModelStream = (input: ApplyModelStreamInput) =>
+  foldStep(bindFirst(applyModelStreamEvent, input), input.state, input.stream);
 
 /** @internal */
-export const applyModelStream = (input: ApplyModelStreamInput): MaybePromise<InteractionState> =>
-  applyModelStreamLoopSafe(input);
+export const applyModelStream = (input: ApplyModelStreamInput): MaybePromise<InteractionState> => {
+  const tracked = { ...input };
+  return maybeTry(bindFirst(applyModelError, tracked), bindFirst(foldModelStream, tracked));
+};
 
 type ApplyModelGenerateInput = ModelRunContext & {
   model: Model;
@@ -381,14 +368,11 @@ export const applyCaptureInput: InteractionStepApply = (options) => {
     return { output: options.output };
   }
   const nextState = appendMessage(options.output, message);
-  return { output: assignInteractionState(options.output, nextState) };
+  return { output: nextState };
 };
 
 export const applyRunModel: InteractionStepApply = (options) =>
-  maybeMap(
-    bindFirst(toInteractionOutput, options),
-    applyRunModelCore(options.output, options.context, options.input),
-  );
+  maybeMap(toInteractionOutput, applyRunModelCore(options.output, options.context, options.input));
 
 export const InteractionCorePack: InteractionStepPack = {
   name: "interaction-core",
@@ -429,3 +413,43 @@ export const runInteractionPipeline = (pipeline: unknown, options: InteractionRu
   };
   return runner.run(options);
 };
+
+export const resumeInteractionPipeline = (
+  pipeline: unknown,
+  snapshot: PipelinePaused<Record<string, unknown>>["snapshot"],
+  resumeInput?: unknown,
+) => {
+  const runner = pipeline as {
+    resume: (
+      value: PipelinePaused<Record<string, unknown>>["snapshot"],
+      input?: unknown,
+    ) => MaybePromise<InteractionRunOutcome>;
+  };
+  return runner.resume(snapshot, resumeInput);
+};
+
+type InteractionResumeState = Record<string, unknown> & {
+  runOptions?: InteractionRunOptions;
+};
+
+/** @internal */
+export function rebindInteractionResumeSnapshot(
+  snapshot: PipelinePaused<Record<string, unknown>>["snapshot"],
+  overrides: Pick<InteractionRunOptions, "adapters" | "eventStream" | "reducer" | "reporter">,
+) {
+  const state = snapshot.state as InteractionResumeState;
+  if (!state.runOptions) {
+    return snapshot;
+  }
+  const runOptions: InteractionRunOptions = { ...state.runOptions, ...overrides };
+  const context = createContext(runOptions);
+  return {
+    ...snapshot,
+    state: {
+      ...state,
+      context,
+      reporter: context.reporter,
+      runOptions,
+    },
+  };
+}

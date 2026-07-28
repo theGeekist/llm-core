@@ -1,252 +1,299 @@
 import type { EventStream, Tool } from "#adapters/types";
-import { bindFirst } from "#shared/fp";
-import { maybeMap, maybeTry } from "#shared/maybe";
-import type { AgentRuntimeInput, AgentRuntimeOptions } from "./agent-runtime";
+import { readRecord, readString, readStringArray } from "#adapters/utils";
+import { maybeChain, maybeMap, maybeTap, maybeTry, type MaybePromise } from "#shared/maybe";
+import { createTraceDiagnostics } from "#shared/reporting";
+import type { Outcome } from "#workflow/types";
+import type { AgentRuntime, AgentRuntimeInput, AgentRuntimeOptions } from "./agent-runtime";
 import type { AgentEventState } from "./agent-runtime-events";
-import {
-  applySubagentOutcome,
-  buildCloseResult,
-  buildErrorResult,
-  buildMissingResult,
-  buildSpawnResult,
-  buildSubagentCompleted,
-  buildSubagentInteractionId,
-  buildSubagentSelected,
-  buildSubagentStarted,
-  buildWaitResult,
-  countActiveSubagents,
-  createSubagentRecord,
-  emitSubagentEvent,
-  findSubagentRecord,
-  handleSubagentRunError,
-  readSendInput,
-  readSpawnInput,
-  readWaitInput,
-  runSubagent,
-  wrapLastOutcome,
-  wrapSendResult,
-} from "./agent-runtime-subagents-helpers";
-import type {
-  AgentRuntimeFactory,
-  AgentSubagentOptions,
-  CloseInput,
-  SendInput,
-  SpawnInput,
-  SubagentManager,
-  SubagentRecord,
-  WaitInput,
-} from "./agent-runtime-subagents-types";
-import { DEFAULT_ID_PREFIX, DEFAULT_MAX_ACTIVE } from "./agent-runtime-subagents-types";
+import { emitInteractionEvents } from "./transport";
+import type { InteractionEvent, InteractionEventMeta, InteractionSubagentEvent } from "./types";
+import type { AgentSubagentOptions } from "./agent-runtime-subagents-types";
 
-function incrementSequence(state: { current: number }) {
-  state.current += 1;
-  return state.current;
-}
+const DEFAULT_MAX_ACTIVE = 4;
+const DEFAULT_ID_PREFIX = "subagent";
 
-function createSequence() {
-  return bindFirst(incrementSequence, { current: 0 });
-}
+type AgentRuntimeFactory = (options: AgentRuntimeOptions) => AgentRuntime;
+type SubagentStatus = "idle" | "running" | "closed";
 
-function readEnabled(options?: AgentSubagentOptions) {
-  return options?.enabled ?? true;
-}
+type SubagentRecord = {
+  id: string;
+  runtime: AgentRuntime;
+  status: SubagentStatus;
+  lastOutcome?: Outcome<unknown> | null;
+  name?: string | null;
+  description?: string | null;
+  tools?: string[] | null;
+};
 
-function readMaxActive(options?: AgentSubagentOptions) {
-  return Math.max(1, options?.maxActive ?? DEFAULT_MAX_ACTIVE);
-}
+type SpawnInput = {
+  agentId?: string | null;
+  name?: string | null;
+  description?: string | null;
+  tools?: string[] | null;
+};
 
-function readIdPrefix(options?: AgentSubagentOptions) {
-  return options?.idPrefix ?? DEFAULT_ID_PREFIX;
-}
+type SendInput = {
+  agentId: string;
+  text: string;
+  context?: string;
+  threadId?: string;
+};
 
-function buildSubagentManager(input: {
+type ManagerInput = {
   factory: AgentRuntimeFactory;
   runtimeOptions: AgentRuntimeOptions;
   interactionId: string;
   eventStream?: EventStream;
   eventState?: AgentEventState;
   options?: AgentSubagentOptions;
-}): SubagentManager {
+};
+
+const readField = (value: unknown, key: string) => readString((readRecord(value) ?? {})[key]);
+
+const readAgentId = (value: unknown) => readField(value, "agentId");
+
+const readSpawnInput = (value: unknown): SpawnInput => {
+  const record = readRecord(value) ?? {};
   return {
-    records: [],
-    maxActive: readMaxActive(input.options),
-    idPrefix: readIdPrefix(input.options),
-    nextId: createSequence(),
-    runtimeFactory: input.factory,
-    runtimeOptions: input.runtimeOptions,
-    eventStream: input.eventStream,
-    eventState: input.eventState,
-    interactionId: input.interactionId,
+    agentId: readString(record.agentId),
+    name: readString(record.name),
+    description: readString(record.description),
+    tools: readStringArray(record.tools) ?? null,
   };
-}
+};
 
-function ensureSubagentRecord(manager: SubagentManager, agentId: string) {
-  return findSubagentRecord(manager, agentId);
-}
-
-function removeSubagentRecord(manager: SubagentManager, record: SubagentRecord) {
-  const index = manager.records.indexOf(record);
-  if (index < 0) {
-    return false;
-  }
-  manager.records.splice(index, 1);
-  return true;
-}
-
-function ensureSubagentAvailable(manager: SubagentManager, agentId: string) {
-  const record = ensureSubagentRecord(manager, agentId);
-  if (!record || record.status === "closed") {
+const readSendInput = (value: unknown): SendInput | null => {
+  const agentId = readAgentId(value);
+  const text = readField(value, "text");
+  if (!agentId || !text) {
     return null;
   }
-  return record;
-}
+  return {
+    agentId,
+    text,
+    context: readField(value, "context") ?? undefined,
+    threadId: readField(value, "threadId") ?? undefined,
+  };
+};
 
-function buildSubagentRunInput(
-  manager: SubagentManager,
+const buildError = (error: string, data?: Record<string, unknown>) => ({
+  ...(data ?? {}),
+  error,
+});
+
+const buildAgent = (record: SubagentRecord) => ({
+  id: record.id,
+  name: record.name ?? record.id,
+  displayName: record.name ?? record.id,
+  description: record.description ?? undefined,
+  tools: record.tools ?? null,
+});
+
+const buildSubagentEvent = (
+  type: InteractionSubagentEvent["type"],
   record: SubagentRecord,
-  input: SendInput,
-): AgentRuntimeInput {
+): InteractionSubagentEvent => ({
+  type,
+  error: type === "failed" ? "subagent_failed" : undefined,
+  agent: buildAgent(record),
+});
+
+const createEventMeta = (state: AgentEventState, agentId: string): InteractionEventMeta => ({
+  sequence: state.nextSequence(),
+  timestamp: Date.now(),
+  sourceId: `agent.${agentId}`,
+  correlationId: state.correlationId,
+  interactionId: state.interactionId,
+});
+
+const toInteractionEvent = (
+  state: AgentEventState,
+  event: InteractionSubagentEvent,
+): InteractionEvent => ({
+  kind: "subagent",
+  event,
+  meta: createEventMeta(state, event.agent.id),
+});
+
+const toErrorOutcome = (error: unknown): Outcome<unknown> => ({
+  status: "error",
+  error,
+  ...createTraceDiagnostics(),
+});
+
+const buildOutcomeResult = (agentId: string, outcome: Outcome<unknown> | null) => ({
+  agentId,
+  outcome,
+});
+
+const restrictSubagentTools = (
+  options: AgentRuntimeOptions,
+  toolNames: string[] | null | undefined,
+): AgentRuntimeOptions => {
+  if (toolNames === null || toolNames === undefined) {
+    return options;
+  }
+  const allowed = new Set(toolNames);
   return {
-    text: input.text,
-    context: input.context,
-    threadId: input.threadId,
-    interactionId: buildSubagentInteractionId(manager.interactionId, record.id),
-    correlationId: manager.eventState?.correlationId,
-    eventStream: manager.eventStream,
+    ...options,
+    adapters: {
+      ...(options.adapters ?? {}),
+      tools: (options.adapters?.tools ?? []).filter((tool) => allowed.has(tool.name)),
+    },
   };
-}
+};
 
-function runSubagentWithEvents(input: {
-  manager: SubagentManager;
-  record: SubagentRecord;
-  runInput: AgentRuntimeInput;
-}) {
-  const run = bindFirst(runSubagent, { record: input.record, runInput: input.runInput });
-  const withOutcome = maybeTry(bindFirst(handleSubagentRunError, input), run);
-  const applied = maybeMap(bindFirst(applySubagentOutcome, input), withOutcome);
-  return maybeMap(bindFirst(wrapSendResult, { agentId: input.record.id }), applied);
-}
+function createSubagentManager(input: ManagerInput) {
+  const records = new Map<string, SubagentRecord>();
+  const maxActive = Math.max(1, input.options?.maxActive ?? DEFAULT_MAX_ACTIVE);
+  const idPrefix = input.options?.idPrefix ?? DEFAULT_ID_PREFIX;
+  let nextId = 0;
 
-function spawnSubagent(manager: SubagentManager, input: SpawnInput) {
-  const agentId = input.agentId ?? `${manager.idPrefix}.${manager.nextId()}`;
-  const existing = findSubagentRecord(manager, agentId);
-  if (existing) {
-    if (existing.status !== "closed") {
-      emitSubagentEvent(manager, buildSubagentSelected(existing));
-      return buildSpawnResult(existing.id, "exists");
+  const emit = (event: InteractionSubagentEvent): MaybePromise<boolean | null> => {
+    if (!input.eventStream || !input.eventState) {
+      return null;
     }
-    removeSubagentRecord(manager, existing);
-  }
-  if (countActiveSubagents(manager) >= manager.maxActive) {
-    return buildErrorResult("subagent_limit_reached", { maxActive: manager.maxActive });
-  }
-  const record = createSubagentRecord(manager, { ...input, agentId });
-  manager.records.push(record);
-  emitSubagentEvent(manager, buildSubagentStarted(record));
-  return buildSpawnResult(record.id, "started");
-}
-
-function sendToSubagent(manager: SubagentManager, input: SendInput) {
-  const record = ensureSubagentAvailable(manager, input.agentId);
-  if (!record) {
-    return buildMissingResult("subagent_not_found", input.agentId);
-  }
-  if (record.status === "running") {
-    return buildErrorResult("subagent_busy", { agentId: record.id });
-  }
-  record.status = "running";
-  const runInput = buildSubagentRunInput(manager, record, input);
-  return runSubagentWithEvents({ manager, record, runInput });
-}
-
-function waitForSubagent(manager: SubagentManager, input: WaitInput) {
-  const record = ensureSubagentAvailable(manager, input.agentId);
-  if (!record) {
-    return buildMissingResult("subagent_not_found", input.agentId);
-  }
-  if (!record.lastOutcome) {
-    return buildWaitResult(record.id, null);
-  }
-  return wrapLastOutcome({ agentId: record.id, outcome: record.lastOutcome });
-}
-
-function closeSubagent(manager: SubagentManager, input: CloseInput) {
-  const record = findSubagentRecord(manager, input.agentId);
-  if (!record) {
-    return buildMissingResult("subagent_not_found", input.agentId);
-  }
-  record.status = "closed";
-  emitSubagentEvent(manager, buildSubagentCompleted(record));
-  return buildCloseResult(record.id, true);
-}
-
-function runSpawnTool(manager: SubagentManager, input: unknown) {
-  return spawnSubagent(manager, readSpawnInput(input));
-}
-
-function runSendTool(manager: SubagentManager, input: unknown) {
-  const parsed = readSendInput(input);
-  if (!parsed) {
-    return buildMissingResult("subagent_invalid_input");
-  }
-  return sendToSubagent(manager, parsed);
-}
-
-function runWaitTool(manager: SubagentManager, input: unknown) {
-  const parsed = readWaitInput(input);
-  if (!parsed) {
-    return buildMissingResult("subagent_invalid_input");
-  }
-  return waitForSubagent(manager, parsed);
-}
-
-function runCloseTool(manager: SubagentManager, input: unknown) {
-  const parsed = readWaitInput(input);
-  if (!parsed) {
-    return buildMissingResult("subagent_invalid_input");
-  }
-  return closeSubagent(manager, parsed);
-}
-
-function createSpawnTool(manager: SubagentManager): Tool {
-  return {
-    name: "agent.spawn",
-    description: "Spawn a sub-agent instance.",
-    execute: bindFirst(runSpawnTool, manager),
+    return emitInteractionEvents(input.eventStream, [toInteractionEvent(input.eventState, event)]);
   };
-}
 
-function createSendTool(manager: SubagentManager): Tool {
-  return {
-    name: "agent.send",
-    description: "Send input to a sub-agent and return its outcome.",
-    execute: bindFirst(runSendTool, manager),
+  const emitForResult = <T>(event: InteractionSubagentEvent, result: T) =>
+    maybeTap(() => emit(event), result);
+
+  const available = (agentId: string) => {
+    const record = records.get(agentId);
+    return record?.status === "closed" ? null : (record ?? null);
   };
-}
 
-function createWaitTool(manager: SubagentManager): Tool {
-  return {
-    name: "agent.wait",
-    description: "Wait for a sub-agent to finish and return its last outcome.",
-    execute: bindFirst(runWaitTool, manager),
+  const activeCount = () => {
+    let count = 0;
+    for (const record of records.values()) {
+      if (record.status !== "closed") {
+        count += 1;
+      }
+    }
+    return count;
   };
-}
 
-function createCloseTool(manager: SubagentManager): Tool {
-  return {
-    name: "agent.close",
-    description: "Close a sub-agent instance.",
-    execute: bindFirst(runCloseTool, manager),
+  const settle = (record: SubagentRecord, outcome: Outcome<unknown>) => {
+    if (record.status === "closed") {
+      return outcome;
+    }
+    record.status = "idle";
+    record.lastOutcome = outcome;
+    const type = outcome.status === "error" ? "failed" : "completed";
+    return maybeTap(() => emit(buildSubagentEvent(type, record)), outcome);
   };
-}
 
-function createToolList(manager: SubagentManager): Tool[] {
+  const spawn = (value: unknown) => {
+    const parsed = readSpawnInput(value);
+    if (parsed.agentId === null || parsed.agentId === undefined) {
+      nextId += 1;
+    }
+    const agentId = parsed.agentId ?? `${idPrefix}.${nextId}`;
+    const existing = records.get(agentId);
+    if (existing && existing.status !== "closed") {
+      return emitForResult(buildSubagentEvent("selected", existing), {
+        agentId,
+        status: "exists",
+      });
+    }
+    if (existing) {
+      records.delete(agentId);
+    }
+    if (activeCount() >= maxActive) {
+      return buildError("subagent_limit_reached", { maxActive });
+    }
+    const record: SubagentRecord = {
+      id: agentId,
+      runtime: input.factory(restrictSubagentTools(input.runtimeOptions, parsed.tools)),
+      status: "idle",
+      name: parsed.name ?? null,
+      description: parsed.description ?? null,
+      tools: parsed.tools ?? null,
+    };
+    records.set(agentId, record);
+    return emitForResult(buildSubagentEvent("started", record), {
+      agentId,
+      status: "started",
+    });
+  };
+
+  const send = (value: unknown) => {
+    const parsed = readSendInput(value);
+    if (!parsed) {
+      return buildError("subagent_invalid_input");
+    }
+    const record = available(parsed.agentId);
+    if (!record) {
+      return buildError("subagent_not_found", { agentId: parsed.agentId });
+    }
+    if (record.status === "running") {
+      return buildError("subagent_busy", { agentId: record.id });
+    }
+    record.status = "running";
+    const runInput: AgentRuntimeInput = {
+      text: parsed.text,
+      context: parsed.context,
+      threadId: parsed.threadId,
+      interactionId: `${input.interactionId}.subagent.${record.id}`,
+      correlationId: input.eventState?.correlationId,
+      eventStream: input.eventStream,
+    };
+    const outcome = maybeTry(toErrorOutcome, () => record.runtime.run(runInput));
+    const settled = maybeChain((result) => settle(record, result), outcome);
+    return maybeMap((result) => buildOutcomeResult(record.id, result), settled);
+  };
+
+  const wait = (value: unknown) => {
+    const agentId = readAgentId(value);
+    if (!agentId) {
+      return buildError("subagent_invalid_input");
+    }
+    const record = available(agentId);
+    if (!record) {
+      return buildError("subagent_not_found", { agentId });
+    }
+    return buildOutcomeResult(record.id, record.lastOutcome ?? null);
+  };
+
+  const close = (value: unknown) => {
+    const agentId = readAgentId(value);
+    if (!agentId) {
+      return buildError("subagent_invalid_input");
+    }
+    const record = records.get(agentId);
+    if (!record) {
+      return buildError("subagent_not_found", { agentId });
+    }
+    record.status = "closed";
+    return emitForResult(buildSubagentEvent("completed", record), {
+      agentId,
+      closed: true,
+    });
+  };
+
   return [
-    createSpawnTool(manager),
-    createSendTool(manager),
-    createWaitTool(manager),
-    createCloseTool(manager),
-  ];
+    {
+      name: "agent.spawn",
+      description: "Spawn a sub-agent instance.",
+      execute: spawn,
+    },
+    {
+      name: "agent.send",
+      description: "Send input to a sub-agent and return its outcome.",
+      execute: send,
+    },
+    {
+      name: "agent.wait",
+      description: "Read a sub-agent's last known outcome.",
+      execute: wait,
+    },
+    {
+      name: "agent.close",
+      description: "Close a sub-agent instance.",
+      execute: close,
+    },
+  ] satisfies Tool[];
 }
 
 export function buildSubagentRuntimeOptions(options: AgentRuntimeOptions): AgentRuntimeOptions {
@@ -256,17 +303,9 @@ export function buildSubagentRuntimeOptions(options: AgentRuntimeOptions): Agent
   };
 }
 
-export function createSubagentTools(input: {
-  factory: AgentRuntimeFactory;
-  runtimeOptions: AgentRuntimeOptions;
-  interactionId: string;
-  eventStream?: EventStream;
-  eventState?: AgentEventState;
-  options?: AgentSubagentOptions;
-}): Tool[] | null {
-  if (!readEnabled(input.options)) {
+export function createSubagentTools(input: ManagerInput): Tool[] | null {
+  if (!(input.options?.enabled ?? true)) {
     return null;
   }
-  const manager = buildSubagentManager(input);
-  return createToolList(manager);
+  return createSubagentManager(input);
 }

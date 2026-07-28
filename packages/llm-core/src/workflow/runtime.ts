@@ -124,32 +124,10 @@ type PausedOutcomeInput<N extends RecipeName> = {
   trace: TraceEvent[];
   diagnostics: DiagnosticEntry[];
   readPartial: (result: unknown) => Partial<ArtefactOf<N>>;
-  recordSnapshot?: (result: unknown) => MaybePromise<boolean | null>;
 };
-
-const toPausedOutcomeAfterSnapshot = <N extends RecipeName>(input: PausedOutcomeInput<N>) =>
-  toPausedOutcome({
-    result: input.result,
-    trace: input.trace,
-    diagnostics: input.diagnostics,
-    readPartial: input.readPartial,
-  });
-
-const finalizePausedSnapshot = <N extends RecipeName>(input: PausedOutcomeInput<N>) => {
-  if (!input.recordSnapshot) {
-    return toPausedOutcomeAfterSnapshot(input);
-  }
-  return maybeChain(
-    bindFirst(toPausedOutcomeAfterSnapshot<N>, input),
-    input.recordSnapshot(input.result),
-  );
-};
-
-const runPausedRollback = <N extends RecipeName>(input: PausedOutcomeInput<N>) =>
-  runPauseRollback(input.result);
 
 const finalizePausedResult = <N extends RecipeName>(input: PausedOutcomeInput<N>) =>
-  maybeChain(bindFirst(finalizePausedSnapshot<N>, input), runPausedRollback(input));
+  maybeChain(bindFirst(toPausedOutcome<N>, input), runPauseRollback(input.result));
 
 const finalizeRuntimeResult = <N extends RecipeName>(
   input: FinalizeRuntimeInput<N>,
@@ -169,7 +147,6 @@ const finalizeRuntimeResult = <N extends RecipeName>(
       trace: payload.trace,
       diagnostics,
       readPartial: input.readPartial,
-      recordSnapshot: payload.recordSnapshot,
     });
   }
   return toOkOutcome({
@@ -195,7 +172,6 @@ const resolveAdaptersForRunWithInput = (
     constructs: input.constructRequirements,
     providers: providers ?? runtime?.providers,
     defaults: input.defaultProviders,
-    reporter: runtime?.reporter,
   });
 
 const createResolveAdaptersForRun = (input: ResolveAdaptersInput) =>
@@ -232,27 +208,10 @@ const createCapabilitiesGetter = (
     resolveCapabilitiesSnapshotFn,
   });
 
-const getDeclaredAdapters = (baseAdapters: AdapterBundle) => baseAdapters;
-
-const createDeclaredAdaptersGetter = (baseAdapters: AdapterBundle) =>
-  bindFirst(getDeclaredAdapters, baseAdapters);
-
-const getDeclaredCapabilities = (declaredCapabilities: Record<string, unknown>) =>
-  declaredCapabilities;
-
-const createDeclaredCapabilitiesGetter = (declaredCapabilities: Record<string, unknown>) =>
-  bindFirst(getDeclaredCapabilities, declaredCapabilities);
-
-const getAdapters = (resolveAdaptersSnapshotFn: () => MaybePromise<AdapterBundle>) =>
-  resolveAdaptersSnapshotFn();
-
-const createAdaptersGetter = (resolveAdaptersSnapshotFn: () => MaybePromise<AdapterBundle>) =>
-  bindFirst(getAdapters, resolveAdaptersSnapshotFn);
-
-const getExplain = (explain: ReturnType<typeof buildExplainSnapshot>) => explain;
-
-const createExplainGetter = (explain: ReturnType<typeof buildExplainSnapshot>) =>
-  bindFirst(getExplain, explain);
+const createValueGetter =
+  <T>(value: T) =>
+  () =>
+    value;
 
 export const createRuntime = <N extends RecipeName>({
   contract,
@@ -358,16 +317,15 @@ export const createRuntime = <N extends RecipeName>({
     resolveAdaptersSnapshotFn,
     resolveCapabilitiesSnapshotFn,
   );
-  const declaredAdapterBundle = createDeclaredAdaptersGetter(baseAdapters);
-  const declaredCapabilitiesSnapshot = createDeclaredCapabilitiesGetter(declaredCapabilities);
-  const adapterBundle = createAdaptersGetter(resolveAdaptersSnapshotFn);
-  const explainSnapshot = createExplainGetter(explain);
+  const declaredAdapterBundle = createValueGetter(baseAdapters);
+  const declaredCapabilitiesSnapshot = createValueGetter(declaredCapabilities);
+  const explainSnapshot = createValueGetter(explain);
 
   return {
     run,
     resume,
     capabilities,
-    adapters: adapterBundle,
+    adapters: resolveAdaptersSnapshotFn,
     declaredAdapters: declaredAdapterBundle,
     explain: explainSnapshot,
     contract: contractView,

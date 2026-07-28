@@ -1,15 +1,13 @@
 export type {
+  AssistantUiCommandMapper,
   AssistantUiInteractionEventStreamOptions,
-  AssistantUiInteractionMapper,
   AssistantUiInteractionMapperOptions,
   AssistantUiInteractionSinkOptions,
 } from "./interaction";
 export {
   createAssistantUiCommandMapper,
   createAssistantUiInteractionEventStream,
-  createAssistantUiInteractionMapper,
   createAssistantUiInteractionSink,
-  toAssistantUiCommands,
 } from "./interaction";
 export type { AssistantUiStreamAdapter, AssistantUiStreamOptions } from "./stream";
 export { createAssistantUiInteractionStream } from "./stream";

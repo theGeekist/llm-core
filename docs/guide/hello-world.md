@@ -19,7 +19,7 @@ If you are new to interactions, start here first:
 
 ## Agent runtime quickstart
 
-If you want the canonical agent loop without wiring recipes by hand, start with the agent runtime. It exposes a small `run`/`stream` surface while still using the same recipe system under the hood, and any internal packs remain an implementation detail behind that recipe surface.
+If you want the canonical agent loop without wiring recipes by hand, start with the agent runtime. It exposes one `run` method while still using the same recipe system under the hood. Pass an `eventStream` with the run input when model and agent events should be streamed; internal packs remain an implementation detail behind that recipe surface.
 
 ::: code-group
 <<< @/snippets/guide/agent-runtime.js#run [JavaScript]

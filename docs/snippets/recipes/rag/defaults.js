@@ -6,7 +6,7 @@ const myRetriever = {};
 /** @type {any} */
 const myModel = {};
 
-const rag = recipes.rag().configure({
+const rag = recipes.rag({
   retrieval: {
     defaults: {
       adapters: {

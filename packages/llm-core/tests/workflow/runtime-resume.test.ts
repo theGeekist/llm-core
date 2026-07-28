@@ -1,16 +1,26 @@
 import { describe, expect, it } from "bun:test";
 import { createBuiltinTrace, createInterruptStrategy } from "#adapters";
 import { createPipelineRollback, type PipelinePauseSnapshot } from "@wpkernel/pipeline/core";
-import {
-  assertSyncOutcome,
-  createResumeSnapshot,
-  createTestResumeStore,
-  diagnosticMessages,
-  makeRuntime,
-  makeWorkflow,
-} from "./helpers";
+import { assertSyncOutcome, diagnosticMessages, makeRuntime, makeWorkflow } from "./helpers";
 
 const ERROR_RESUME = "Expected resume to be available.";
+const TOKEN = "token-1";
+
+const createPauseSnapshot = (
+  token: unknown = TOKEN,
+  state: Record<string, unknown> = { userState: { pending: true } },
+): PipelinePauseSnapshot<unknown> => ({
+  stageIndex: 0,
+  state,
+  token,
+  pauseKind: "human",
+  createdAt: Date.now(),
+});
+
+const createPausedResult = (snapshot = createPauseSnapshot()) => ({
+  __paused: true as const,
+  snapshot,
+});
 
 const createRollbackFixture = (onRollback: () => void) => {
   const rollback = createPipelineRollback(onRollback);
@@ -42,74 +52,45 @@ const createRollbackFixture = (onRollback: () => void) => {
 };
 
 describe("Workflow runtime resume", () => {
-  const TOKEN_PAUSED = "token-1";
-
-  it("exposes resume only for recipes that support paused", () => {
-    const resumable = makeWorkflow("hitl-gate");
-    const nonResumable = makeWorkflow("rag");
-
-    expect(resumable.resume).toBeFunction();
-    expect(nonResumable.resume).toBeUndefined();
+  it("exposes resume only for recipes that support pause", () => {
+    expect(makeWorkflow("hitl-gate").resume).toBeFunction();
+    expect(makeWorkflow("rag").resume).toBeUndefined();
   });
 
-  it("returns an error outcome when resume has no adapter", () => {
-    const resumable = makeRuntime("hitl-gate", {
-      run: () => ({
-        __paused: true,
-        snapshot: {
-          stageIndex: 0,
-          state: { userState: { ok: true } },
-          token: TOKEN_PAUSED,
-          pauseKind: "human",
-          createdAt: Date.now(),
-        } satisfies PipelinePauseSnapshot<unknown>,
-      }),
+  it("returns an error outcome when a live pause has no resume adapter", () => {
+    const runtime = makeRuntime("hitl-gate", {
+      run: () => createPausedResult(),
+      resume: () => ({ artefact: { ok: true } }),
     });
-    if (!resumable.resume) {
+    if (!runtime.resume) {
       throw new Error(ERROR_RESUME);
     }
 
-    const paused = assertSyncOutcome(resumable.run({ input: "gate" }));
-    expect(paused.status).toBe("paused");
+    expect(assertSyncOutcome(runtime.run({ input: "gate" })).status).toBe("paused");
+    const outcome = assertSyncOutcome(runtime.resume(TOKEN, { answer: "yes" }));
 
-    const outcome = assertSyncOutcome(resumable.resume(TOKEN_PAUSED, { answer: "yes" }));
     expect(outcome.status).toBe("error");
-    if (outcome.status !== "error") {
-      throw new Error("Expected error outcome.");
+    if (outcome.status === "error") {
+      expect(String(outcome.error)).toContain("Resume requires a resume adapter.");
     }
-    expect(String(outcome.error)).toContain("Resume requires a resume adapter.");
   });
 
-  it("returns an error outcome when resume token is invalid", () => {
-    const resumable = makeWorkflow("hitl-gate");
-    if (!resumable.resume) {
+  it("returns an error outcome when the process-local token is unknown", () => {
+    const runtime = makeWorkflow("hitl-gate");
+    if (!runtime.resume) {
       throw new Error(ERROR_RESUME);
     }
 
-    const outcome = assertSyncOutcome(resumable.resume("missing-token"));
+    const outcome = assertSyncOutcome(runtime.resume("missing-token"));
+
     expect(outcome.status).toBe("error");
-    if (outcome.status !== "error") {
-      throw new Error("Expected error outcome.");
-    }
     expect(diagnosticMessages(outcome.diagnostics)).toContain(
       "Resume token is invalid or expired.",
     );
   });
 
-  it("uses the resume adapter to resume runs", () => {
-    let capturedRequest: unknown;
-    const { store: sessionStore } = createTestResumeStore();
-    const pauseSnapshot: PipelinePauseSnapshot<unknown> = {
-      stageIndex: 0,
-      state: { userState: { pending: true } },
-      token: "token-1",
-      pauseKind: "human",
-      createdAt: Date.now(),
-    };
-    sessionStore.set("token-1", {
-      ...createResumeSnapshot("token-1", { pending: true }, { pauseKind: "human" }),
-      snapshot: pauseSnapshot,
-    });
+  it("resolves resume input and rebinds the opaque pipeline snapshot", () => {
+    let capturedRequest: Record<string, unknown> | undefined;
     const runtime = makeRuntime("hitl-gate", {
       includeDefaults: false,
       plugins: [
@@ -121,23 +102,22 @@ describe("Workflow runtime resume", () => {
           },
         },
       ],
-      run: () => ({ artefact: { ok: true } }),
+      run: () => createPausedResult(),
       resume: (_snapshot, resumeInput) => ({ artefact: { resumed: resumeInput } }),
     });
-
     if (!runtime.resume) {
       throw new Error(ERROR_RESUME);
     }
+    expect(assertSyncOutcome(runtime.run({ input: "gate" })).status).toBe("paused");
 
     const outcome = assertSyncOutcome(
       runtime.resume(
-        "token-1",
+        TOKEN,
         { decision: "approve" },
         {
           resume: {
-            sessionStore,
             resolve: (request) => {
-              capturedRequest = request;
+              capturedRequest = request as unknown as Record<string, unknown>;
               return { input: request.resumeInput };
             },
           },
@@ -145,48 +125,43 @@ describe("Workflow runtime resume", () => {
       ),
     );
 
-    expect(outcome.status).toBe("ok");
-    expect(capturedRequest).toMatchObject({
-      token: "token-1",
-      pauseKind: "human",
-      interrupt: { mode: "restart", reason: "test" },
-    });
     expect(outcome).toMatchObject({
       status: "ok",
       artefact: { resumed: { decision: "approve" } },
     });
+    expect(capturedRequest).toMatchObject({
+      token: TOKEN,
+      pauseKind: "human",
+      interrupt: { mode: "restart", reason: "test" },
+    });
+    expect(capturedRequest).not.toHaveProperty("resumeKey");
+    expect(capturedRequest).not.toHaveProperty("resumeSnapshot");
   });
 
-  it("supports async resume adapters during resume", async () => {
-    let captured: unknown;
-    const { store: sessionStore } = createTestResumeStore();
-    sessionStore.set("token-2", createResumeSnapshot("token-2"));
+  it("supports async resume adapters without normalizing sync pipelines to promises", async () => {
     const runtime = makeRuntime("hitl-gate", {
       includeDefaults: false,
-      run: (options) => {
-        captured = options;
-        return { artefact: { ok: true } };
-      },
+      run: () => createPausedResult(),
+      resume: (_snapshot, resumeInput) => ({ artefact: { resumed: resumeInput } }),
     });
-
     if (!runtime.resume) {
       throw new Error(ERROR_RESUME);
     }
+    expect(assertSyncOutcome(runtime.run({ input: "gate" })).status).toBe("paused");
 
-    const outcome = await runtime.resume("token-2", undefined, {
+    const outcome = await runtime.resume(TOKEN, undefined, {
       resume: {
-        sessionStore,
         resolve: async ({ token }) => ({ input: { token } }),
       },
     });
 
-    expect(outcome.status).toBe("ok");
-    expect(captured).toMatchObject({ input: { token: "token-2" } });
+    expect(outcome).toMatchObject({
+      status: "ok",
+      artefact: { resumed: { token: TOKEN } },
+    });
   });
 
-  it("uses the resume runtime diagnostics mode", () => {
-    const { store: sessionStore } = createTestResumeStore();
-    sessionStore.set("token-4", createResumeSnapshot("token-4"));
+  it("uses runtime diagnostics selected by the resume adapter", () => {
     const runtime = makeRuntime("hitl-gate", {
       includeDefaults: false,
       plugins: [
@@ -194,21 +169,21 @@ describe("Workflow runtime resume", () => {
         { key: "cap.evaluator", capabilities: { evaluator: { name: "stub" } } },
         { key: "cap.hitl", capabilities: { hitl: { adapter: "stub" } } },
       ],
-      run: () => ({
+      run: () => createPausedResult(),
+      resume: () => ({
         artefact: { ok: true },
         diagnostics: [{ type: "missing-dependency", message: "missing adapter" }],
       }),
     });
-
     if (!runtime.resume) {
       throw new Error(ERROR_RESUME);
     }
+    expect(assertSyncOutcome(runtime.run({ input: "gate" })).status).toBe("paused");
 
     const outcome = assertSyncOutcome(
-      runtime.resume("token-4", undefined, {
+      runtime.resume(TOKEN, undefined, {
         resume: {
-          sessionStore,
-          resolve: () => ({ input: { token: "token-4" }, runtime: { diagnostics: "strict" } }),
+          resolve: () => ({ input: undefined, runtime: { diagnostics: "strict" } }),
         },
       }),
     );
@@ -217,110 +192,37 @@ describe("Workflow runtime resume", () => {
     expect(diagnosticMessages(outcome.diagnostics)).toContain("missing adapter");
   });
 
-  it("treats resume envelopes with extra keys as input", () => {
-    let captured: unknown;
-    const { store: sessionStore } = createTestResumeStore();
-    sessionStore.set("token-5", createResumeSnapshot("token-5"));
+  it("derives event streams from trace sinks while rebinding resume context", () => {
+    let capturedAdapters: unknown;
     const runtime = makeRuntime("hitl-gate", {
       includeDefaults: false,
-      run: (options) => {
-        captured = options.input;
+      plugins: [{ key: "adapter.trace", adapters: { trace: createBuiltinTrace() } }],
+      run: () => createPausedResult(),
+      resume: (snapshot) => {
+        capturedAdapters = (snapshot as { state: { context?: { adapters?: unknown } } }).state
+          .context?.adapters;
         return { artefact: { ok: true } };
       },
     });
-
     if (!runtime.resume) {
       throw new Error(ERROR_RESUME);
     }
+    expect(assertSyncOutcome(runtime.run({ input: "gate" })).status).toBe("paused");
 
-    const resumeInput = { input: { token: "token-5" }, extra: "keep" };
     const outcome = assertSyncOutcome(
-      runtime.resume("token-5", undefined, {
-        resume: {
-          sessionStore,
-          resolve: () => resumeInput,
-        },
+      runtime.resume(TOKEN, undefined, {
+        resume: { resolve: ({ token }) => ({ input: { token } }) },
       }),
     );
 
     expect(outcome.status).toBe("ok");
-    expect(captured).toEqual(resumeInput);
-    expect(diagnosticMessages(outcome.diagnostics)).toContain(
-      "Resume adapter returned an object with extra keys; treating it as input.",
-    );
-  });
-
-  it("warns when resume adapter returns an object without input", () => {
-    const { store: sessionStore } = createTestResumeStore();
-    sessionStore.set("token-3", createResumeSnapshot("token-3"));
-    const runtime = makeRuntime("hitl-gate", {
-      includeDefaults: false,
-      run: () => ({ artefact: { ok: true } }),
-    });
-
-    if (!runtime.resume) {
-      throw new Error(ERROR_RESUME);
-    }
-
-    const outcome = assertSyncOutcome(
-      runtime.resume("token-3", undefined, {
-        resume: {
-          sessionStore,
-          resolve: () => ({ runtime: { diagnostics: "default" } }),
-        },
-      }),
-    );
-
-    expect(outcome.status).toBe("ok");
-    expect(diagnosticMessages(outcome.diagnostics)).toContain(
-      "Resume adapter returned an object without an input; treating it as input.",
-    );
-  });
-
-  it("derives event streams from trace sinks during resume", () => {
-    let captured: unknown;
-    const { store: sessionStore } = createTestResumeStore();
-    sessionStore.set("token-6", createResumeSnapshot("token-6"));
-    const runtime = makeRuntime("hitl-gate", {
-      includeDefaults: false,
-      plugins: [
-        {
-          key: "adapter.trace",
-          adapters: {
-            trace: createBuiltinTrace(),
-          },
-        },
-      ],
-      run: (options) => {
-        captured = options.adapters;
-        return { artefact: { ok: true } };
-      },
-    });
-
-    if (!runtime.resume) {
-      throw new Error(ERROR_RESUME);
-    }
-
-    const outcome = assertSyncOutcome(
-      runtime.resume("token-6", undefined, {
-        resume: {
-          sessionStore,
-          resolve: ({ token }) => ({ input: { token } }),
-        },
-      }),
-    );
-
-    expect(outcome.status).toBe("ok");
-    expect(captured).toMatchObject({
+    expect(capturedAdapters).toMatchObject({
       trace: expect.any(Object),
       eventStream: expect.any(Object),
     });
   });
 
-  it("runs helper rollbacks when a resumed pipeline pauses", () => {
-    const token = "token-rollback";
-    const { store: sessionStore } = createTestResumeStore();
-    sessionStore.set(token, createResumeSnapshot(token));
+  it("runs helper rollbacks when a resumed pipeline pauses again", () => {
     let rolledBack = false;
     const fixture = createRollbackFixture(() => {
       rolledBack = true;
@@ -333,24 +235,24 @@ describe("Workflow runtime resume", () => {
           adapters: { interrupt: createInterruptStrategy("restart") },
         },
       ],
-      run: () => ({
-        paused: true,
-        token,
-        artefact: { partial: true },
-        ...fixture,
-      }),
+      run: () => createPausedResult(),
+      resume: () =>
+        createPausedResult(
+          createPauseSnapshot("replacement-token", {
+            userState: { partial: true },
+            steps: fixture.steps,
+            helperRollbacks: fixture.state.helperRollbacks,
+          }),
+        ),
     });
-
     if (!runtime.resume) {
       throw new Error(ERROR_RESUME);
     }
+    expect(assertSyncOutcome(runtime.run({ input: "gate" })).status).toBe("paused");
 
     const outcome = assertSyncOutcome(
-      runtime.resume(token, undefined, {
-        resume: {
-          sessionStore,
-          resolve: ({ token: resumeToken }) => ({ input: { token: resumeToken } }),
-        },
+      runtime.resume(TOKEN, undefined, {
+        resume: { resolve: ({ token }) => ({ input: { token } }) },
       }),
     );
 

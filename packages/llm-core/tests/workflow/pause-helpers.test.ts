@@ -1,16 +1,11 @@
 import { describe, expect, it } from "bun:test";
 import type { PipelinePauseSnapshot } from "@wpkernel/pipeline/core";
 import {
-  isPauseResumeKey,
   isPipelinePaused,
   readPausedSteps,
   readPauseFlag,
   readPauseMeta,
-  readPauseResumeKeyFromResult,
-  readPauseResumeKeyFromState,
-  readPauseSnapshotPayload,
   readPauseSnapshotReporterFromSnapshot,
-  readPauseSnapshotToken,
 } from "../../src/workflow/pause";
 
 const createSnapshot = (
@@ -26,36 +21,11 @@ const createSnapshot = (
 });
 
 describe("workflow pause helpers", () => {
-  it("reads pause tokens from paused envelopes or direct tokens", () => {
-    const snapshot = createSnapshot({});
-    expect(readPauseSnapshotToken({ __paused: true, snapshot })).toBe("token-1");
-    expect(readPauseSnapshotToken({ token: "direct-token" })).toBe("direct-token");
-    expect(readPauseSnapshotToken({})).toBeNull();
-  });
-
   it("detects pipeline paused envelopes and missing snapshots", () => {
     const snapshot = createSnapshot({});
     expect(isPipelinePaused({ __paused: true, snapshot })).toBe(true);
     expect(isPipelinePaused({ __paused: false })).toBe(false);
     expect(readPausedSteps({})).toEqual([]);
-  });
-
-  it("detects pause resume keys from results", () => {
-    const snapshot = createSnapshot({ __pause: { resumeKey: "resume-snapshot" } });
-    expect(readPauseResumeKeyFromResult({ __paused: true, snapshot })).toBe("resume-snapshot");
-    expect(readPauseResumeKeyFromResult({ resumeKey: "resume-direct" })).toBe("resume-direct");
-    expect(
-      readPauseResumeKeyFromResult({ artefact: { __pause: { resumeKey: "resume-artefact" } } }),
-    ).toBe("resume-artefact");
-    expect(
-      readPauseResumeKeyFromResult({ state: { __pause: { resumeKey: "resume-state" } } }),
-    ).toBe("resume-state");
-    expect(readPauseResumeKeyFromState(null)).toBeNull();
-  });
-
-  it("reads pause payload fallbacks", () => {
-    expect(readPauseSnapshotPayload({ pauseSnapshot: { step: 1 } })).toEqual({ step: 1 });
-    expect(readPauseSnapshotPayload({ resumeSnapshot: { step: 2 } })).toEqual({ step: 2 });
   });
 
   it("reads pause metadata and flags", () => {
@@ -64,9 +34,17 @@ describe("workflow pause helpers", () => {
     expect(readPauseMeta(paused)).toEqual({ token: "token-1", pauseKind: "human" });
     expect(readPauseFlag(paused)).toBe(true);
     expect(readPauseFlag({ paused: false })).toBe(false);
-    expect(
-      readPauseMeta({ state: { __pause: { token: "state-token", pauseKind: "system" } } }),
-    ).toEqual({ token: "state-token", pauseKind: "system" });
+    expect(readPauseMeta({ token: "direct-token", pauseKind: "system" })).toEqual({
+      token: undefined,
+      pauseKind: undefined,
+    });
+  });
+
+  it("handles null and primitive pause values", () => {
+    for (const value of [null, undefined, false, 0, "pause"]) {
+      expect(readPauseMeta(value)).toEqual({ token: undefined, pauseKind: undefined });
+      expect(readPauseFlag(value)).toBe(false);
+    }
   });
 
   it("reads pause reporters from snapshots", () => {
@@ -75,11 +53,5 @@ describe("workflow pause helpers", () => {
     expect(readPauseSnapshotReporterFromSnapshot(snapshot)).toBe(reporter);
     const contextSnapshot = createSnapshot({ context: { reporter } });
     expect(readPauseSnapshotReporterFromSnapshot(contextSnapshot)).toBe(reporter);
-  });
-
-  it("validates resume keys", () => {
-    expect(isPauseResumeKey("key")).toBe(true);
-    expect(isPauseResumeKey("")).toBe(false);
-    expect(isPauseResumeKey(42)).toBe(false);
   });
 });

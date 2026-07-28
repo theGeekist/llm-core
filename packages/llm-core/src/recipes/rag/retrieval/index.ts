@@ -1,5 +1,5 @@
 import { Recipe } from "../../flow";
-import { defineRecipe } from "../../handle";
+import { defineSinglePackRecipe } from "../../handle";
 import type { RecipeDefaults, StepApply } from "../../flow";
 import { RagStateHelpers } from "../shared";
 
@@ -36,15 +36,8 @@ export const createRagRetrievalPack = (config?: RagRetrievalConfig) =>
     minimumCapabilities: ["retriever"],
   });
 
-const resolveRetrievalPack = (config?: RagRetrievalConfig) =>
-  config ? createRagRetrievalPack(config) : RagRetrievalPack;
-
-const resolveRetrievalRecipeDefinition = (config?: RagRetrievalConfig) => ({
-  packs: [resolveRetrievalPack(config)],
-});
-
-export const createRagRetrievalRecipe = defineRecipe("rag", resolveRetrievalRecipeDefinition);
-
 // Use when you want a retriever-first pack that is easily composed into larger flows.
-export const RagRetrievalPack = createRagRetrievalPack();
+const retrieval = defineSinglePackRecipe("rag", createRagRetrievalPack);
+export const createRagRetrievalRecipe = retrieval.createRecipe;
+export const RagRetrievalPack = retrieval.pack;
 export const ragRetrievalRecipe = createRagRetrievalRecipe();

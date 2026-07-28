@@ -1,5 +1,5 @@
 import { describe, expect, it } from "bun:test";
-import { reduceInteractionEvent, reduceInteractionEvents } from "#interaction";
+import { reduceInteractionEvent, reduceInteractionEvents } from "../../src/interaction/reducer";
 import type { InteractionEvent, InteractionState } from "#interaction";
 import type { Document, Message } from "#adapters";
 
@@ -291,6 +291,20 @@ describe("interaction reducer", () => {
     expect(result.private?.raw?.["model.primary:usage"]).toEqual(usageEvent.event);
     expect(result.private?.raw?.["event-stream:model.result"]).toEqual(streamEvent.event);
     expect(result.events).toBeUndefined();
+  });
+
+  it("keeps model-only usage semantics out of query streams", () => {
+    const state = createState();
+    const usageEvent: InteractionEvent = {
+      kind: "query",
+      event: { type: "usage", usage: { totalTokens: 10 } },
+      meta: createMeta(1, "query.primary"),
+    };
+
+    const result = reduceInteractionEvent(state, usageEvent);
+
+    expect(result.private?.raw?.["query.primary:usage"]).toBeUndefined();
+    expect(result.events).toEqual([usageEvent]);
   });
 
   it("stores query raw payloads in private state", () => {

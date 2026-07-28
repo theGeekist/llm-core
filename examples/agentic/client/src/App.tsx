@@ -21,10 +21,8 @@ import {
   readProviderOption,
   readAgentProfile,
   PROFILE_SELECT_OPTIONS,
-  APPROVAL_SELECT_OPTIONS,
   TOOL_PRESET_OPTIONS,
   SKILL_PRESET_OPTIONS,
-  MCP_PRESET_OPTIONS,
   TOOL_OPTIONS,
   SKILL_DIRECTORY_OPTIONS,
   type AdapterSource,
@@ -49,9 +47,9 @@ import {
   bindTokenChange,
   bindClearToken,
 } from "./app/transport-helpers";
-import { applyTransportDraftUpdate, buildAgentDraft, readMcpJsonStatus } from "./app/agent-config";
+import { applyTransportDraftUpdate, buildAgentDraft } from "./app/agent-config";
 import type { AgentConfigDraft, OutcomeSummary, TransportData } from "./app/types";
-import { bindFirst } from "@geekist/llm-core";
+import { bindFirst } from "@geekist/llm-core/functional";
 import type { TransportEvent } from "@geekist/llm-core/adapters/ai-sdk-ui";
 import { ModelControls } from "@examples/components/model-controls";
 import { useModelCatalog, useModelSelection } from "@examples/components/model-catalog";
@@ -106,7 +104,6 @@ export function App() {
   const hasToken = !!token;
   const canSend = readCanSend({ hasToken, requiresToken: provider.requiresToken });
   const profile = readAgentProfile(draft.profileId);
-  const mcpStatus = readMcpJsonStatus(draft.mcpServersJson);
   const fallbackModels = readAvailableModels(adapterSource, providerId);
   const modelCatalog = useModelCatalog({
     providerId,
@@ -190,29 +187,21 @@ export function App() {
               profile={profile}
               toolPresetOptions={TOOL_PRESET_OPTIONS}
               skillPresetOptions={SKILL_PRESET_OPTIONS}
-              mcpPresetOptions={MCP_PRESET_OPTIONS}
-              approvalOptions={APPROVAL_SELECT_OPTIONS}
               onToolPresetChange={bindings.onToolPresetChange}
               onSkillPresetChange={bindings.onSkillPresetChange}
-              onMcpPresetChange={bindings.onMcpPresetChange}
-              onApprovalsPolicyChange={bindings.onApprovalsPolicyChange}
               onSubagentsEnabledChange={bindings.onSubagentsEnabledChange}
             />
             <AgentConfigPanel
               showConfig={showConfig}
               onToggle={bindings.onToggleConfig}
               profileOptions={PROFILE_SELECT_OPTIONS}
-              approvalOptions={APPROVAL_SELECT_OPTIONS}
               toolPresetOptions={TOOL_PRESET_OPTIONS}
               skillPresetOptions={SKILL_PRESET_OPTIONS}
-              mcpPresetOptions={MCP_PRESET_OPTIONS}
               toolOptions={TOOL_OPTIONS}
               skillOptions={SKILL_DIRECTORY_OPTIONS}
-              mcpStatus={mcpStatus}
               draft={draft}
               onToolPresetChange={bindings.onToolPresetChange}
               onSkillPresetChange={bindings.onSkillPresetChange}
-              onMcpPresetChange={bindings.onMcpPresetChange}
               onAgentToolsToggle={bindings.onAgentToolsToggle}
               onToolAllowlistToggle={bindings.onToolAllowlistToggle}
               onSkillDirectoryToggle={bindings.onSkillDirectoryToggle}
@@ -226,9 +215,6 @@ export function App() {
               onToolDenylistChange={bindings.onToolDenylistChange}
               onSkillDirectoriesChange={bindings.onSkillDirectoriesChange}
               onSkillDisabledChange={bindings.onSkillDisabledChange}
-              onMcpServersChange={bindings.onMcpServersChange}
-              onApprovalsPolicyChange={bindings.onApprovalsPolicyChange}
-              onApprovalsCacheChange={bindings.onApprovalsCacheChange}
               onSubagentsEnabledChange={bindings.onSubagentsEnabledChange}
               onSubagentsMaxActiveChange={bindings.onSubagentsMaxActiveChange}
               onSubagentsIdPrefixChange={bindings.onSubagentsIdPrefixChange}

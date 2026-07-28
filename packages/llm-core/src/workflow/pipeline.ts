@@ -1,9 +1,17 @@
 import { makeResumablePipeline } from "@wpkernel/pipeline";
-import type { PipelineDiagnostic, PipelineReporter, PipelineStep } from "@wpkernel/pipeline/core";
+import type {
+  PipelineDiagnostic,
+  PipelinePauseOptions,
+  PipelinePaused,
+  PipelineReporter,
+  PipelineStep,
+} from "@wpkernel/pipeline/core";
 import type { PipelineContext, PipelineState, Plugin, RecipeContract, RunOptions } from "./types";
 import { getEffectivePlugins } from "./plugins/effective";
 import { createDefaultReporter } from "./extensions";
 import { bindFirst } from "#shared/fp";
+import { isRecord } from "#shared/guards";
+import type { PauseRequest } from "#shared/types";
 import type { RollbackEntry, RollbackState } from "./runtime/rollback-types";
 import { readPipelineArtefact } from "#shared/outcome";
 
@@ -19,6 +27,24 @@ type HelperStageState = {
   context: PipelineContext;
   runOptions: RunOptions;
   userState: PipelineState;
+};
+
+type WorkflowPipelineState = {
+  userState: PipelineState;
+};
+
+type WorkflowRunnerEnv = {
+  pause?: (
+    state: WorkflowPipelineState,
+    options?: PipelinePauseOptions,
+  ) => PipelinePaused<WorkflowPipelineState>;
+};
+
+type WorkflowStageDeps = {
+  runnerEnv: WorkflowRunnerEnv;
+  makeLifecycleStage: (name: string) => unknown;
+  makeHelperStage: (kind: string, spec: unknown) => unknown;
+  finalizeResult: unknown;
 };
 
 const collectHelperKinds = (contract: RecipeContract, plugins: Plugin[]) => {
@@ -87,18 +113,53 @@ const makeHelperStage = (
     makeArgs: createHelperArgs,
   });
 
+/** @internal */
+export const readPauseRequest = (state: PipelineState): PauseRequest | null =>
+  isRecord(state.__pause) ? (state.__pause as PauseRequest) : null;
+
+/** @internal */
+export const clearPauseRequest = (state: PipelineState): PipelineState => {
+  if (!("__pause" in state)) {
+    return state;
+  }
+  const nextState = { ...state };
+  delete nextState.__pause;
+  return nextState;
+};
+
+const replaceUserState = (state: WorkflowPipelineState, userState: PipelineState) => ({
+  ...state,
+  userState,
+});
+
+const toPauseOptions = (pause: PauseRequest): PipelinePauseOptions => ({
+  token: pause.token,
+  pauseKind: pause.pauseKind,
+  payload: pause.payload,
+});
+
+/** @internal */
+export const applyPauseStage = (deps: WorkflowStageDeps, state: WorkflowPipelineState) => {
+  const pause = readPauseRequest(state.userState);
+  if (!pause || !deps.runnerEnv.pause) {
+    return state;
+  }
+  return deps.runnerEnv.pause(
+    replaceUserState(state, clearPauseRequest(state.userState)),
+    toPauseOptions(pause),
+  );
+};
+
+const createPauseStage = (deps: WorkflowStageDeps) => bindFirst(applyPauseStage, deps);
+
 const makeCreateStages = (contract: RecipeContract, plugins: Plugin[]) =>
   function createStages(deps: unknown) {
-    const stageDeps = deps as {
-      makeLifecycleStage: (name: string) => unknown;
-      makeHelperStage: (kind: string, spec: unknown) => unknown;
-      finalizeResult: unknown;
-    };
+    const stageDeps = deps as WorkflowStageDeps;
     const lifecycles = contract.extensionPoints.map((name) => stageDeps.makeLifecycleStage(name));
     const helperStages = collectHelperKinds(contract, plugins).map((kind) =>
       makeHelperStage(kind, stageDeps),
     );
-    return [...lifecycles, ...helperStages, stageDeps.finalizeResult];
+    return [...lifecycles, ...helperStages, createPauseStage(stageDeps), stageDeps.finalizeResult];
   };
 
 const createRunResult = (

@@ -1,7 +1,7 @@
 import { bindFirst, toNull } from "#shared/fp";
 import { maybeAll, maybeMap } from "#shared/maybe";
 import { Recipe } from "../flow";
-import { defineRecipe } from "../handle";
+import { defineSinglePackRecipe } from "../handle";
 import type { RecipeDefaults, StepApply } from "../flow";
 import type { Document, Embedder, TextSplitter, VectorRecord } from "#adapters/types";
 import { readString } from "#adapters/utils";
@@ -230,15 +230,8 @@ export const createIngestPack = (config?: IngestConfig) =>
     minimumCapabilities: ["vectorStore"],
   });
 
-const resolveIngestPack = (config?: IngestConfig) =>
-  config ? createIngestPack(config) : IngestPack;
-
-const resolveIngestRecipeDefinition = (config?: IngestConfig) => ({
-  packs: [resolveIngestPack(config)],
-});
-
 // Full ingestion recipe: load -> split -> embed -> index.
-export const createIngestRecipe = defineRecipe("ingest", resolveIngestRecipeDefinition);
-
+const ingest = defineSinglePackRecipe("ingest", createIngestPack);
+export const createIngestRecipe = ingest.createRecipe;
 export const ingestRecipe = createIngestRecipe;
-export const IngestPack = createIngestPack();
+export const IngestPack = ingest.pack;

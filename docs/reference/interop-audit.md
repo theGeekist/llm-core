@@ -68,7 +68,6 @@ Packages audited:
 - `@langchain/ollama`
 - `@langchain/textsplitters`
 - `@langchain/langgraph` (checkpoints/interrupts)
-- `@langchain/langgraph-checkpoint`
 
 Core module inventory (from `@langchain/core/*.d.ts`):
 
@@ -81,7 +80,7 @@ Mapping to our primitives:
 
 - `Model`, `Embedder`, `Retriever`, `Reranker`, `TextSplitter`, `Transformer`,
   `DocumentLoader`, `VectorStore`, `Memory`, `KVStore`, `Cache`, `Tool`, `PromptTemplate`,
-  `OutputParser`, `StructuredQuery`, `Trace`, `EventStream`, `Indexing`, `Checkpoint`
+  `OutputParser`, `StructuredQuery`, `Trace`, `EventStream`, `Indexing`
   → **covered**.
 - `Runnable`, `Agents`, `ChatHistory`
   → **not covered**.
@@ -107,8 +106,10 @@ Mapping to our primitives:
 - `Model`, `Embedder`, `Retriever`, `Reranker`, `TextSplitter`, `Transformer`,
   `DocumentLoader`, `VectorStore`, `Memory`, `KVStore`, `Cache`, `Tool`, `PromptTemplate`
   → **covered**.
-- `QueryEngine`, `ResponseSynthesizer`, `EventStream`, `Checkpoint`
+- `QueryEngine`, `ResponseSynthesizer`, `EventStream`
   → **covered**.
+- `Checkpoint`
+  → **not covered**; LlamaIndex has workflow snapshots but no durable checkpoint store contract.
 - `ChatEngine`, `Agent`, `Indices`
   → **not covered**.
 
@@ -167,7 +168,7 @@ We provide **Interaction Adapters** that bridge our `InteractionEvent` stream (g
 - **Adapter**: `createAiSdkInteractionEventStream`
 - **Function**: Converts our events into AI SDK's `UIMessage` stream format (text parts, tool calls, tool results).
 - **Transport**: `createAiSdkChatTransport` (mirrors `LanguageModelV1` for use with `streamText` / `useChat` on the server).
-- **Helpers**: `toAiSdkUiMessageChunks`, `createAiSdkInteractionMapper`, `createAiSdkInteractionSink`.
+- **Helpers**: `createAiSdkUiMessageChunkMapper`, `createAiSdkInteractionSink`.
 
 ### Assistant UI (`@assistant-ui/react`)
 
@@ -206,7 +207,7 @@ Legend:
 | Transformer         | missing | full      | full       | AI SDK has no transformer; LC/LI supported.                         |
 | Storage (KVStore)   | missing | full      | full       | AI SDK has no storage adapter.                                      |
 | Cache               | partial | partial   | partial    | AI SDK CacheStore + LC BaseStore + LI BaseKVStore; TTL best-effort. |
-| Checkpoint          | missing | full      | full       | LlamaIndex snapshots map via SnapshotData stores.                   |
+| Checkpoint          | missing | missing   | missing    | Opaque pipeline continuations are intentionally process-local.      |
 | EventStream         | missing | full      | full       | LangChain via callback handlers; LlamaIndex workflow events.        |
 | Interrupt           | missing | full      | missing    | LangGraph interrupt semantics map to restart strategies.            |
 | Memory              | partial | full      | full       | AI SDK has a memory provider (`@ai-sdk-tools/memory`), mapped.      |

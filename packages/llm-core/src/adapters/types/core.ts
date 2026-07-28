@@ -45,7 +45,6 @@ export type RetryConfig = {
 };
 
 export type RetryMetadata = {
-  allowed?: boolean | null;
   retryOn?: RetryReason[] | null;
   restartable?: boolean | null;
   policy?: RetryPolicy | null;
@@ -58,16 +57,6 @@ export type AdapterDiagnostic = {
 };
 
 export type PauseKind = "human" | "external" | "system";
-
-export type ResumeSnapshot = {
-  token: unknown;
-  resumeKey?: string | null;
-  pauseKind?: PauseKind | null;
-  createdAt: number;
-  lastAccessedAt?: number | null;
-  payload?: unknown | null;
-  snapshot?: unknown | null;
-};
 
 export type AdapterCallContext = {
   report?: (diagnostic: AdapterDiagnostic) => void;

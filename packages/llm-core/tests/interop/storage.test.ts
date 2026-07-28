@@ -2,7 +2,7 @@ import { describe, expect, it } from "bun:test";
 import type { BaseStore } from "@langchain/core/stores";
 import type { BaseDocumentStore } from "@llamaindex/core/storage/doc-store";
 import * as AiSdk from "ai";
-import type { KVStore } from "#workflow";
+import type { KVStore } from "#adapters/types";
 import { toNull } from "../../src/shared/fp";
 import { maybeAll, maybeMap } from "../../src/shared/maybe";
 

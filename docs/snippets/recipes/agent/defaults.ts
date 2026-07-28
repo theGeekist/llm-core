@@ -23,7 +23,7 @@ const config = {
   },
 } satisfies AgentRecipeConfig;
 
-const agent = recipes.agent().configure(config);
+const agent = recipes.agent(config);
 
 // #endregion docs
 void agent;

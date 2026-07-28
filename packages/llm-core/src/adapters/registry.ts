@@ -1,22 +1,11 @@
-import {
-  createHelper,
-  makePipeline,
-  type PipelineDiagnostic,
-  type PipelineReporter,
-} from "@wpkernel/pipeline/core";
 import type { AdapterBundle, AdapterDiagnostic } from "./types";
-import { maybeMap, type MaybePromise } from "#shared/maybe";
+import { maybeChain, maybeMap, type MaybePromise } from "#shared/maybe";
 import { createBuiltinModel } from "./primitives/model";
 import { createBuiltinTools } from "./primitives/tools";
 import { createBuiltinRetriever } from "./primitives/retriever";
 import { createBuiltinTrace } from "./primitives/trace";
 import { validateAdapterRequirements } from "./requirements";
-import { readPipelineArtefact } from "#shared/outcome";
-import {
-  createDefaultReporter,
-  pipelineDiagnostic,
-  registryDiagnostic,
-} from "./registry/diagnostics";
+import { registryDiagnostic } from "./registry/diagnostics";
 import { addAdapterValue, createState, type RegistryState } from "./registry/state";
 import { createReporters, toRequirementMap } from "./registry/requirements";
 import { resolveProviderSelection, validateCapabilities } from "./registry/selection";
@@ -34,7 +23,6 @@ export type AdapterRegistryResolveInput = {
   constructs: ConstructRequirement[];
   providers?: Record<string, string>;
   defaults?: Record<string, string>;
-  reporter?: PipelineReporter;
 };
 
 export type AdapterRegistryResolveResult = {
@@ -66,63 +54,16 @@ export type AdapterProviderRegistration<T = unknown> = {
   factory: AdapterProviderFactory<T>;
 };
 
-export type AdapterConstructRegistration = {
-  name: AdapterConstructName;
-};
-
-export type AdapterRegistrySnapshot = {
-  constructs: AdapterConstructRegistration[];
-  providers: AdapterProviderRegistration[];
-  diagnostics: AdapterDiagnostic[];
-};
-
 export type AdapterRegistry = {
-  registerConstruct: (construct: AdapterConstructRegistration) => void;
   registerProvider: (provider: AdapterProviderRegistration) => void;
   resolve: (request: AdapterRegistryResolveInput) => MaybePromise<AdapterRegistryResolveResult>;
-  listConstructs: () => AdapterConstructRegistration[];
-  listProviders: (construct: AdapterConstructName) => AdapterProviderRegistration[];
-  snapshot: () => AdapterRegistrySnapshot;
 };
 
-type RegistryContext = {
-  reporter: PipelineReporter;
-  request: AdapterRegistryResolveInput;
-};
-
-export const createAdapterRegistry = (
-  initialSnapshot?: AdapterRegistrySnapshot,
-): AdapterRegistry => {
-  const constructs = new Map<AdapterConstructName, AdapterConstructRegistration>();
+export const createAdapterRegistry = (): AdapterRegistry => {
   const providers = new Map<AdapterConstructName, AdapterProviderRegistration[]>();
   const registrationDiagnostics: AdapterDiagnostic[] = [];
 
-  if (initialSnapshot) {
-    for (const construct of initialSnapshot.constructs) {
-      constructs.set(construct.name, construct);
-    }
-    for (const provider of initialSnapshot.providers) {
-      const list = providers.get(provider.construct) ?? [];
-      list.push(provider);
-      providers.set(provider.construct, list);
-    }
-    registrationDiagnostics.push(...initialSnapshot.diagnostics);
-  }
-
-  const registerConstruct = (construct: AdapterConstructRegistration) => {
-    if (constructs.has(construct.name)) {
-      registrationDiagnostics.push(
-        registryDiagnostic("warn", "construct_contract_conflict", { construct: construct.name }),
-      );
-      return;
-    }
-    constructs.set(construct.name, construct);
-  };
-
   const registerProvider = (provider: AdapterProviderRegistration) => {
-    if (!constructs.has(provider.construct)) {
-      registerConstruct({ name: provider.construct });
-    }
     const list = providers.get(provider.construct) ?? [];
     const existingIndex = list.findIndex((entry) => entry.id === provider.id);
     if (existingIndex >= 0) {
@@ -148,44 +89,7 @@ export const createAdapterRegistry = (
 
   const resolve = (request: AdapterRegistryResolveInput) => {
     const requirements = toRequirementMap(request.constructs);
-    const helperKinds = Array.from(requirements.keys());
-    const pipeline = makePipeline<
-      AdapterRegistryResolveInput,
-      RegistryContext,
-      PipelineReporter,
-      RegistryState,
-      PipelineDiagnostic,
-      AdapterRegistryResolveResult
-    >({
-      helperKinds,
-      createContext: (options) => ({
-        reporter: options.reporter ?? createDefaultReporter(),
-        request: options,
-      }),
-      createState: () => createState(registrationDiagnostics),
-      createRunResult: (options: {
-        artifact: RegistryState;
-        diagnostics: readonly PipelineDiagnostic[];
-      }) => {
-        const state = readPipelineArtefact({
-          artefact: options.artifact,
-        }) as RegistryState;
-        const dependencyDiagnostics = validateAdapterRequirements(
-          state.adapters,
-          state.constructs,
-          state.providers,
-        );
-        return {
-          adapters: state.adapters,
-          diagnostics: state.diagnostics
-            .concat(options.diagnostics.map(pipelineDiagnostic))
-            .concat(dependencyDiagnostics),
-          providers: state.providers,
-          constructs: state.constructs,
-        };
-      },
-    });
-
+    let resolved: MaybePromise<RegistryState> = createState(registrationDiagnostics);
     for (const requirement of requirements.values()) {
       const overrides = request.providers ?? {};
       const defaults = request.defaults ?? {};
@@ -218,104 +122,79 @@ export const createAdapterRegistry = (
           );
         }
       }
-      pipeline.use(
-        createHelper<RegistryContext, unknown, unknown, PipelineReporter>({
-          key: `registry:resolve:${requirement.name}`,
-          kind: requirement.name,
-          mode: "extend",
-          priority: 0,
-          // Registry resolution does not enforce construct dependencies; recipe wiring does.
-          apply: (options) => {
-            const state = (options as { userState?: RegistryState }).userState;
-            if (!state) {
-              return null as unknown as void;
-            }
-            const req = requirements.get(requirement.name) ?? requirement;
-            state.diagnostics.push(...diagnostics);
-            if (!selected) {
-              return null as unknown as void;
-            }
-            state.providers[requirement.name] = selected.id;
-            return maybeMap(
-              (value) => addAdapterValue(state, requirement.name, value),
-              selected.factory({
-                construct: requirement.name,
-                providerKey: selected.providerKey,
-                providerId: selected.id,
-                requirement: req,
-              }),
-            ) as unknown as void;
+      resolved = maybeChain((state) => {
+        state.diagnostics.push(...diagnostics);
+        if (!selected) {
+          return state;
+        }
+        state.providers[requirement.name] = selected.id;
+        return maybeMap(
+          (value) => {
+            addAdapterValue(state, requirement.name, value);
+            return state;
           },
-        }),
-      );
+          selected.factory({
+            construct: requirement.name,
+            providerKey: selected.providerKey,
+            providerId: selected.id,
+            requirement,
+          }),
+        );
+      }, resolved);
     }
 
-    return pipeline.run(request);
+    return maybeMap((state): AdapterRegistryResolveResult => {
+      const dependencyDiagnostics = validateAdapterRequirements(
+        state.adapters,
+        state.constructs,
+        state.providers,
+      );
+      return {
+        adapters: state.adapters,
+        diagnostics: state.diagnostics.concat(dependencyDiagnostics),
+        providers: state.providers,
+        constructs: state.constructs,
+      };
+    }, resolved);
   };
 
-  const listConstructs = () => Array.from(constructs.values());
-
-  const snapshot = () => ({
-    constructs: listConstructs(),
-    providers: Array.from(providers.values()).flat(),
-    diagnostics: [...registrationDiagnostics],
-  });
+  for (const provider of builtinProviders) {
+    registerProvider(provider);
+  }
 
   return {
-    registerConstruct,
     registerProvider,
     resolve,
-    listConstructs,
-    listProviders,
-    snapshot,
   };
 };
 
-const registerBuiltins = (registry: AdapterRegistry) => {
-  registry.registerConstruct({ name: "model" });
-  registry.registerConstruct({ name: "tools" });
-  registry.registerConstruct({ name: "retriever" });
-  registry.registerConstruct({ name: "trace" });
-  registry.registerProvider({
+const builtinProviders: AdapterProviderRegistration[] = [
+  {
     construct: "model",
     providerKey: "builtin",
     id: "builtin:model",
     priority: 0,
     factory: () => createBuiltinModel(),
-  });
-  registry.registerProvider({
+  },
+  {
     construct: "tools",
     providerKey: "builtin",
     id: "builtin:tools",
     priority: 0,
     factory: () => createBuiltinTools(),
-  });
-  registry.registerProvider({
+  },
+  {
     construct: "retriever",
     providerKey: "builtin",
     id: "builtin:retriever",
     priority: 0,
     factory: () => createBuiltinRetriever(),
-  });
-  registry.registerProvider({
+  },
+  {
     construct: "trace",
     providerKey: "builtin",
     id: "builtin:trace",
     priority: 0,
     factory: () => createBuiltinTrace(),
-  });
-};
-
-let defaultRegistry: AdapterRegistry | undefined;
-
-export const getDefaultAdapterRegistry = () => {
-  if (!defaultRegistry) {
-    const registry = createAdapterRegistry();
-    registerBuiltins(registry);
-    defaultRegistry = registry;
-  }
-  return defaultRegistry;
-};
-
-export const createRegistryFromDefaults = () =>
-  createAdapterRegistry(getDefaultAdapterRegistry().snapshot());
+  },
+];

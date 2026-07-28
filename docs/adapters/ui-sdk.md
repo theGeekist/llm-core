@@ -83,7 +83,7 @@ Events of type `trace`, `diagnostic`, `query`, and `event-stream` become `data-*
 
 Message and part identifiers follow deterministic rules based on interaction metadata. Client code can resume a stream or merge multiple streams and still rely on stable identifiers.
 
-When you need deterministic grouping across several events, use a shared mapper:
+When you need deterministic grouping across several events, create one bound mapper and reuse it:
 
 <<< @/snippets/adapters/ui-sdk-mapper.js#docs
 
