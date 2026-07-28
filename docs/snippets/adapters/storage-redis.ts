@@ -5,12 +5,12 @@ import type { KVStore } from "#adapters";
 const entries = new Map<string, unknown>();
 const store: KVStore = {
   list: () => Array.from(entries.keys()),
-  mget: (keys) => keys.map((key) => entries.get(key)),
-  mset: (pairs) => {
+  mget: ({ keys }) => keys.map((key) => entries.get(key)),
+  mset: ({ pairs }) => {
     pairs.forEach(([key, value]) => entries.set(key, value));
     return true;
   },
-  mdelete: (keys) => {
+  mdelete: ({ keys }) => {
     keys.forEach((key) => entries.delete(key));
     return true;
   },
@@ -18,5 +18,5 @@ const store: KVStore = {
 
 // #region docs
 // Store arbitrary session data
-await store.mset([["user:123:preferences", { theme: "dark" }]]);
+await store.mset({ pairs: [["user:123:preferences", { theme: "dark" }]] });
 // #endregion docs

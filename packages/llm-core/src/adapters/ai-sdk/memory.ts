@@ -4,7 +4,7 @@ import type {
   MemoryScope,
   WorkingMemory,
 } from "@ai-sdk-tools/memory";
-import type { AdapterCallContext, Memory, Turn, Thread } from "../types";
+import type { AdapterCallContext, AdapterRequest, Memory, Turn, Thread } from "../types";
 import { toTrue } from "#shared/fp";
 import { maybeMap } from "#shared/maybe";
 import {
@@ -86,7 +86,7 @@ const reportProviderMissing = (
 };
 
 export function fromAiSdkMemory(provider: MemoryProvider, options?: AiSdkMemoryOptions): Memory {
-  function read(threadId: string, context?: AdapterCallContext) {
+  function read({ threadId, context }: AdapterRequest<{ threadId: string }>) {
     const diagnostics = validateThreadId(threadId, "read");
     if (diagnostics.length > 0) {
       reportDiagnostics(context, diagnostics);
@@ -102,7 +102,7 @@ export function fromAiSdkMemory(provider: MemoryProvider, options?: AiSdkMemoryO
     );
   }
 
-  function append(threadId: string, turn: Turn, context?: AdapterCallContext) {
+  function append({ threadId, turn, context }: AdapterRequest<{ threadId: string; turn: Turn }>) {
     const diagnostics = validateThreadId(threadId, "append").concat(validateMemoryTurn(turn));
     if (diagnostics.length > 0) {
       reportDiagnostics(context, diagnostics);
@@ -123,7 +123,7 @@ export function fromAiSdkMemory(provider: MemoryProvider, options?: AiSdkMemoryO
     return maybeMap(toTrue, provider.saveMessage(message));
   }
 
-  function load(input: Record<string, unknown>, context?: AdapterCallContext) {
+  function load({ input, context }: AdapterRequest<{ input: Record<string, unknown> }>) {
     const diagnostics = validateMemoryLoadInput(input);
     if (diagnostics.length > 0) {
       reportDiagnostics(context, diagnostics);
@@ -148,11 +148,14 @@ export function fromAiSdkMemory(provider: MemoryProvider, options?: AiSdkMemoryO
     );
   }
 
-  function save(
-    input: Record<string, unknown>,
-    output: Record<string, unknown>,
-    context?: AdapterCallContext,
-  ) {
+  function save({
+    input,
+    output,
+    context,
+  }: AdapterRequest<{
+    input: Record<string, unknown>;
+    output: Record<string, unknown>;
+  }>) {
     const diagnostics = validateMemorySaveInput(input, output);
     if (diagnostics.length > 0) {
       reportDiagnostics(context, diagnostics);

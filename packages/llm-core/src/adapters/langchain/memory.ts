@@ -1,5 +1,5 @@
 import type { BaseMemory } from "@langchain/core/memory";
-import type { AdapterCallContext, Memory } from "../types";
+import type { AdapterRequest, Memory } from "../types";
 import { toTrue } from "#shared/fp";
 import { maybeMap } from "#shared/maybe";
 import {
@@ -9,7 +9,7 @@ import {
 } from "../input-validation";
 
 export function fromLangChainMemory(memory: BaseMemory): Memory {
-  function load(input: Record<string, unknown>, context?: AdapterCallContext) {
+  function load({ input, context }: AdapterRequest<{ input: Record<string, unknown> }>) {
     const diagnostics = validateMemoryLoadInput(input);
     if (diagnostics.length > 0) {
       reportDiagnostics(context, diagnostics);
@@ -18,11 +18,14 @@ export function fromLangChainMemory(memory: BaseMemory): Memory {
     return maybeMap(toRecord, memory.loadMemoryVariables(input));
   }
 
-  function save(
-    input: Record<string, unknown>,
-    output: Record<string, unknown>,
-    context?: AdapterCallContext,
-  ) {
+  function save({
+    input,
+    output,
+    context,
+  }: AdapterRequest<{
+    input: Record<string, unknown>;
+    output: Record<string, unknown>;
+  }>) {
     const diagnostics = validateMemorySaveInput(input, output);
     if (diagnostics.length > 0) {
       reportDiagnostics(context, diagnostics);

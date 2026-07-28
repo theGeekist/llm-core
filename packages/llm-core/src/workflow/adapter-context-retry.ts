@@ -26,13 +26,13 @@ type RetryWrapContext = {
   trace?: TraceEvent[];
 };
 
-type AdapterFunction = (...args: never[]) => MaybePromise<unknown>;
+type AdapterFunction = (request: object) => MaybePromise<unknown>;
 
 type WrapAdapterMethodInput<TFunction extends AdapterFunction> = {
   context: RetryWrapContext;
   adapterKind: RetryAdapterKind;
   method: string;
-  domainArity: number;
+  attachContext?: boolean;
   fn: TFunction;
   metadata?: RetryMetadata | null;
 };
@@ -51,10 +51,10 @@ const readRetryPolicy = (retry: RetryConfig | null | undefined, kind: RetryAdapt
 
 const buildRetryWrapperInput = <TFunction extends AdapterFunction>(
   input: WrapAdapterMethodInput<TFunction>,
-): RetryWrapperInput<unknown[], unknown> => ({
+): RetryWrapperInput<object, unknown> => ({
   adapterKind: input.adapterKind,
   method: input.method,
-  call: input.fn as unknown as (...args: unknown[]) => MaybePromise<unknown>,
+  call: input.fn as unknown as (request: object) => MaybePromise<unknown>,
   policy: readRetryPolicy(input.context.retry, input.adapterKind),
   metadata: input.metadata,
   trace: input.context.trace,
@@ -65,16 +65,16 @@ const wrapAdapterMethod = <TFunction extends AdapterFunction>(
   input: WrapAdapterMethodInput<TFunction>,
 ): TFunction => {
   const wrapperInput = buildRetryWrapperInput(input);
-  return ((...args: unknown[]) =>
-    wrapRetryCall(wrapperInput, input.domainArity, ...args)) as unknown as TFunction;
+  return ((request: object) =>
+    wrapRetryCall(wrapperInput, request, input.attachContext)) as unknown as TFunction;
 };
 
 const canRetryStream = (policy?: RetryPolicy | null, metadata?: RetryMetadata | null) =>
   !!policy && metadata?.restartable === true;
 
 type RetryMethodDescriptor = {
-  domainArity: 0 | 1 | 2 | 3;
   restartable?: true;
+  attachContext?: false;
 };
 
 type AdapterForKind<TKind extends RetryAdapterKind> = TKind extends "tools"
@@ -96,73 +96,71 @@ type RetryMethodCatalogue = {
   >;
 };
 
-/**
- * The domain arity excludes the optional AdapterCallContext. Keeping that fact in
- * one catalogue prevents optional domain arguments from being mistaken for context.
- */
 export const RETRY_METHODS = {
   model: {
-    generate: { domainArity: 1 },
-    stream: { domainArity: 1, restartable: true },
+    generate: { attachContext: false },
+    stream: { restartable: true, attachContext: false },
   },
   embedder: {
-    embed: { domainArity: 1 },
-    embedMany: { domainArity: 1 },
+    embed: {},
+    embedMany: {},
   },
-  retriever: { retrieve: { domainArity: 1 } },
-  reranker: { rerank: { domainArity: 2 } },
+  retriever: { retrieve: {} },
+  reranker: { rerank: {} },
   textSplitter: {
-    split: { domainArity: 1 },
-    splitBatch: { domainArity: 1 },
-    splitWithMetadata: { domainArity: 1 },
+    split: {},
+    splitBatch: {},
+    splitWithMetadata: {},
   },
-  loader: { load: { domainArity: 0 } },
-  transformer: { transform: { domainArity: 1 } },
+  loader: { load: {} },
+  transformer: { transform: {} },
+  indexing: { index: {} },
   vectorStore: {
-    upsert: { domainArity: 1 },
-    delete: { domainArity: 1 },
+    upsert: {},
+    delete: {},
   },
   cache: {
-    get: { domainArity: 1 },
-    set: { domainArity: 3 },
-    delete: { domainArity: 1 },
+    get: {},
+    set: {},
+    delete: {},
   },
   kv: {
-    mget: { domainArity: 1 },
-    mset: { domainArity: 1 },
-    mdelete: { domainArity: 1 },
-    list: { domainArity: 1 },
+    mget: {},
+    mset: {},
+    mdelete: {},
+    list: {},
   },
   memory: {
-    append: { domainArity: 2 },
-    load: { domainArity: 1 },
-    read: { domainArity: 1 },
-    reset: { domainArity: 0 },
-    save: { domainArity: 2 },
-    summarize: { domainArity: 1 },
+    append: {},
+    load: {},
+    read: {},
+    reset: {},
+    save: {},
+    summarize: {},
   },
   storage: {
-    delete: { domainArity: 1 },
-    get: { domainArity: 1 },
-    list: { domainArity: 1 },
-    put: { domainArity: 2 },
+    delete: {},
+    get: {},
+    list: {},
+    put: {},
   },
-  outputParser: { parse: { domainArity: 1 } },
+  outputParser: { parse: {} },
   queryEngine: {
-    query: { domainArity: 1 },
-    stream: { domainArity: 1, restartable: true },
+    query: {},
+    stream: { restartable: true },
   },
   responseSynthesizer: {
-    synthesize: { domainArity: 1 },
-    stream: { domainArity: 1, restartable: true },
+    synthesize: {},
+    stream: { restartable: true },
   },
-  image: { generate: { domainArity: 1 } },
-  speech: { generate: { domainArity: 1 } },
-  transcription: { generate: { domainArity: 1 } },
-  tools: { execute: { domainArity: 1 } },
+  image: { generate: {} },
+  speech: { generate: {} },
+  transcription: { generate: {} },
+  skills: { load: {} },
+  tools: { execute: {} },
 } as const satisfies RetryMethodCatalogue;
 
-type RetryableFunction = (...args: never[]) => MaybePromise<unknown>;
+type RetryableFunction = (request: object) => MaybePromise<unknown>;
 type RetryableAdapter = Record<string, unknown> & {
   metadata?: { retry?: RetryMetadata | null } | null;
 };
@@ -209,7 +207,7 @@ const wrapRetryableAdapter = (
       context,
       adapterKind,
       method,
-      domainArity: descriptor.domainArity,
+      attachContext: descriptor.attachContext !== false,
       fn: fn.bind(adapter) as RetryableFunction,
       metadata,
     });
@@ -244,8 +242,14 @@ const wrapAdaptersWithRetry = (
   return wrapped as AdapterBundle;
 };
 
-export const attachAdapterContext = (
-  adapters: AdapterBundle,
-  context: AdapterCallContext,
-  options?: AdapterContextOptions,
-): AdapterBundle => wrapAdaptersWithRetry(adapters, createRetryWrapContext(context, options));
+export type AttachAdapterContextRequest = AdapterContextOptions & {
+  adapters: AdapterBundle;
+  context: AdapterCallContext;
+};
+
+export const attachAdapterContext = ({
+  adapters,
+  context,
+  ...options
+}: AttachAdapterContextRequest): AdapterBundle =>
+  wrapAdaptersWithRetry(adapters, createRetryWrapContext(context, options));

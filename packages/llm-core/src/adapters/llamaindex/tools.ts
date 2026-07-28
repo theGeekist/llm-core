@@ -1,7 +1,7 @@
 import type { BaseTool } from "@llamaindex/core/llms";
 import { tool as defineTool } from "@llamaindex/core/tools";
 import type { JSONValue } from "@llamaindex/core/global";
-import type { AdapterCallContext, Schema, Tool } from "../types";
+import type { AdapterRequest, Schema, Tool } from "../types";
 import {
   adapterParamsToJsonSchema,
   normalizeObjectSchema,
@@ -22,7 +22,7 @@ export function fromLlamaIndexTool(tool: BaseTool): Tool {
 
   const call = tool.call;
   const execute = call
-    ? (input: unknown, context?: AdapterCallContext) => {
+    ? ({ input, context }: AdapterRequest<{ input: unknown }>) => {
         const diagnostics = validateToolInput(adapterShape, input);
         if (diagnostics.length > 0) {
           reportDiagnostics(context, diagnostics);
@@ -48,7 +48,7 @@ export function toLlamaIndexTool(adapterTool: Tool): BaseTool {
     toSchema(adapterTool.params ? adapterParamsToJsonSchema(adapterTool.params) : undefined);
   const schema = inputSchema ? toLlamaIndexSchema(inputSchema) : adapterParamsToJsonSchema();
   const execute = adapterTool.execute
-    ? (input: unknown) => maybeMap((value) => value as JSONValue, adapterTool.execute?.(input))
+    ? (input: unknown) => maybeMap((value) => value as JSONValue, adapterTool.execute?.({ input }))
     : (input: unknown) => input as JSONValue;
 
   return defineTool({

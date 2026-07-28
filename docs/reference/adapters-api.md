@@ -137,7 +137,7 @@ import { StringOutputParser } from "@langchain/core/output_parsers";
 import type { OutputParser } from "@geekist/llm-core/adapters";
 
 const parser: OutputParser = fromLangChainOutputParser(new StringOutputParser());
-const value = await parser.parse("hello");
+const value = await parser.parse({ text: "hello" });
 ```
 
 == JavaScript
@@ -147,7 +147,7 @@ import { fromLangChainOutputParser } from "@geekist/llm-core/adapters";
 import { StringOutputParser } from "@langchain/core/output_parsers";
 
 const parser = fromLangChainOutputParser(new StringOutputParser());
-const value = await parser.parse("hello");
+const value = await parser.parse({ text: "hello" });
 ```
 
 :::
@@ -336,7 +336,7 @@ import type { AdapterDiagnostic, Retriever } from "@geekist/llm-core/adapters";
 const diagnostics: AdapterDiagnostic[] = [];
 const context = { report: (entry: AdapterDiagnostic) => diagnostics.push(entry) };
 const adapter: Retriever = { retrieve: () => ({ documents: [] }) };
-const result = await adapter.retrieve("", context);
+const result = await adapter.retrieve({ query: "", context });
 // diagnostics includes "retriever_query_missing"
 ```
 
@@ -345,7 +345,7 @@ const result = await adapter.retrieve("", context);
 ```js
 const diagnostics = [];
 const context = { report: (entry) => diagnostics.push(entry) };
-const result = await adapter.retrieve("", context);
+const result = await adapter.retrieve({ query: "", context });
 // diagnostics includes "retriever_query_missing"
 ```
 
@@ -623,11 +623,11 @@ However, if you are migrating existing LangChain parsers, we support them as a d
 == TypeScript
 
 ```ts
-import type { AdapterCallContext, OutputParser } from "@geekist/llm-core/adapters";
+import type { AdapterRequest, OutputParser } from "@geekist/llm-core/adapters";
 import type { MaybePromise } from "@geekist/llm-core/functional";
 
 type OutputParser = {
-  parse: (text: string, context?: AdapterCallContext) => MaybePromise<unknown>;
+  parse: (request: AdapterRequest<{ text: string }>) => MaybePromise<unknown>;
   formatInstructions?: (options?: Record<string, unknown>) => MaybePromise<string>;
 };
 ```
@@ -636,7 +636,7 @@ type OutputParser = {
 
 ```js
 const parser = {
-  parse: (text) => JSON.parse(text),
+  parse: ({ text }) => JSON.parse(text),
   formatInstructions: () => "Return JSON",
 };
 ```
@@ -701,7 +701,7 @@ const query = {
 == TypeScript
 
 ```ts
-import type { Schema, Tool } from "@geekist/llm-core/adapters";
+import type { AdapterRequest, Schema, Tool } from "@geekist/llm-core/adapters";
 import type { MaybePromise } from "@geekist/llm-core/functional";
 
 type Tool = {
@@ -710,7 +710,7 @@ type Tool = {
   params?: Array<{ name: string; type: string; required?: boolean }>;
   inputSchema?: Schema;
   outputSchema?: Schema;
-  execute?: (input: unknown) => MaybePromise<unknown>;
+  execute?: (request: AdapterRequest<{ input: unknown }>) => MaybePromise<unknown>;
 };
 ```
 
@@ -721,7 +721,7 @@ const tool = {
   name: "search",
   description: "Search the docs",
   params: [{ name: "query", type: "string", required: true }],
-  execute: async (input) => ({ ok: true, input }),
+  execute: async ({ input }) => ({ ok: true, input }),
 };
 ```
 

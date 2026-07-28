@@ -83,7 +83,7 @@ describe("interaction run-tools", () => {
     const tools = [
       {
         name: "echo",
-        execute: (input: unknown) => input,
+        execute: ({ input }: { input: unknown }) => input,
       },
     ];
     const options = createOptions({ state, adapters: { tools } });

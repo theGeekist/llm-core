@@ -184,7 +184,7 @@ function createSubagentManager(input: ManagerInput) {
     return maybeTap(() => emit(buildSubagentEvent(type, record)), outcome);
   };
 
-  const spawn = (value: unknown) => {
+  const spawn: NonNullable<Tool["execute"]> = ({ input: value }) => {
     const parsed = readSpawnInput(value);
     if (parsed.agentId === null || parsed.agentId === undefined) {
       nextId += 1;
@@ -218,7 +218,7 @@ function createSubagentManager(input: ManagerInput) {
     });
   };
 
-  const send = (value: unknown) => {
+  const send: NonNullable<Tool["execute"]> = ({ input: value }) => {
     const parsed = readSendInput(value);
     if (!parsed) {
       return buildError("subagent_invalid_input");
@@ -244,7 +244,7 @@ function createSubagentManager(input: ManagerInput) {
     return maybeMap((result) => buildOutcomeResult(record.id, result), settled);
   };
 
-  const wait = (value: unknown) => {
+  const wait: NonNullable<Tool["execute"]> = ({ input: value }) => {
     const agentId = readAgentId(value);
     if (!agentId) {
       return buildError("subagent_invalid_input");
@@ -256,7 +256,7 @@ function createSubagentManager(input: ManagerInput) {
     return buildOutcomeResult(record.id, record.lastOutcome ?? null);
   };
 
-  const close = (value: unknown) => {
+  const close: NonNullable<Tool["execute"]> = ({ input: value }) => {
     const agentId = readAgentId(value);
     if (!agentId) {
       return buildError("subagent_invalid_input");

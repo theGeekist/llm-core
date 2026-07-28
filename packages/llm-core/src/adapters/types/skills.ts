@@ -1,4 +1,4 @@
-import type { AdapterCallContext, AdapterDiagnostic, AdapterMetadata } from "./core";
+import type { AdapterDiagnostic, AdapterMetadata, AdapterRequest } from "./core";
 import type { MaybePromise } from "#shared/maybe";
 
 export type SkillScope = "repo" | "user" | "system" | "admin";
@@ -21,6 +21,6 @@ export type SkillLoadResult = {
 };
 
 export type SkillLoader = {
-  load: (request: SkillLoadRequest, context?: AdapterCallContext) => MaybePromise<SkillLoadResult>;
+  load: (request: AdapterRequest<SkillLoadRequest>) => MaybePromise<SkillLoadResult>;
   metadata?: AdapterMetadata | null;
 };

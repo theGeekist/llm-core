@@ -1,4 +1,4 @@
-import type { AdapterCallContext, AdapterMetadata } from "./core";
+import type { AdapterMetadata, AdapterRequest } from "./core";
 import type { Document } from "./documents";
 import type { DocumentLoader } from "./retrieval";
 import type { MaybePromise } from "#shared/maybe";
@@ -25,6 +25,6 @@ export type IndexingResult = {
 };
 
 export type Indexing = {
-  index(input: IndexingInput, context?: AdapterCallContext): MaybePromise<IndexingResult>;
+  index(request: AdapterRequest<IndexingInput>): MaybePromise<IndexingResult>;
   metadata?: AdapterMetadata;
 };

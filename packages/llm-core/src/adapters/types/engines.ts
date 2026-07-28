@@ -1,9 +1,4 @@
-import type {
-  AdapterCallContext,
-  AdapterDiagnostic,
-  AdapterMetadata,
-  AdapterTraceEvent,
-} from "./core";
+import type { AdapterDiagnostic, AdapterMetadata, AdapterRequest, AdapterTraceEvent } from "./core";
 import type { Document } from "./documents";
 import type { RetrievalQuery } from "./retrieval";
 import type { StreamEvent } from "./stream";
@@ -22,11 +17,8 @@ export type QueryResult = {
 export type QueryStreamEvent = StreamEvent;
 
 export type QueryEngine = {
-  query(query: RetrievalQuery, context?: AdapterCallContext): MaybePromise<QueryResult>;
-  stream?(
-    query: RetrievalQuery,
-    context?: AdapterCallContext,
-  ): MaybeAsyncIterable<QueryStreamEvent>;
+  query(request: AdapterRequest<{ query: RetrievalQuery }>): MaybePromise<QueryResult>;
+  stream?(request: AdapterRequest<{ query: RetrievalQuery }>): MaybeAsyncIterable<QueryStreamEvent>;
   metadata?: AdapterMetadata;
 };
 
@@ -36,10 +28,7 @@ export type SynthesisInput = {
 };
 
 export type ResponseSynthesizer = {
-  synthesize(input: SynthesisInput, context?: AdapterCallContext): MaybePromise<QueryResult>;
-  stream?(
-    input: SynthesisInput,
-    context?: AdapterCallContext,
-  ): MaybeAsyncIterable<QueryStreamEvent>;
+  synthesize(request: AdapterRequest<SynthesisInput>): MaybePromise<QueryResult>;
+  stream?(request: AdapterRequest<SynthesisInput>): MaybeAsyncIterable<QueryStreamEvent>;
   metadata?: AdapterMetadata;
 };

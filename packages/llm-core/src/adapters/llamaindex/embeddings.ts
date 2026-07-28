@@ -1,5 +1,5 @@
 import type { BaseEmbedding } from "@llamaindex/core/embeddings";
-import type { AdapterCallContext, Embedder } from "../types";
+import type { AdapterRequest, Embedder } from "../types";
 import {
   reportDiagnostics,
   validateEmbedderBatchInput,
@@ -7,7 +7,7 @@ import {
 } from "../input-validation";
 
 export function fromLlamaIndexEmbeddings(embedding: BaseEmbedding): Embedder {
-  function embed(text: string, context?: AdapterCallContext) {
+  function embed({ text, context }: AdapterRequest<{ text: string }>) {
     const diagnostics = validateEmbedderInput(text);
     if (diagnostics.length > 0) {
       reportDiagnostics(context, diagnostics);
@@ -16,7 +16,7 @@ export function fromLlamaIndexEmbeddings(embedding: BaseEmbedding): Embedder {
     return embedding.getTextEmbedding(text);
   }
 
-  function embedMany(texts: string[], context?: AdapterCallContext) {
+  function embedMany({ texts, context }: AdapterRequest<{ texts: string[] }>) {
     const diagnostics = validateEmbedderBatchInput(texts);
     if (diagnostics.length > 0) {
       reportDiagnostics(context, diagnostics);

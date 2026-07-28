@@ -30,6 +30,8 @@ const complexEngine = new DemoQueryEngine();
 const queryEngine = fromLlamaIndexQueryEngine(complexEngine);
 
 // 3. Use it in your workflow
-const result = await queryEngine.query("Compare Q1 revenue for Apple and Google");
+const result = await queryEngine.query({
+  query: "Compare Q1 revenue for Apple and Google",
+});
 console.log(result.text);
 // #endregion docs

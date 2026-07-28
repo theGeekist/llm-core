@@ -13,7 +13,7 @@ import type { Retriever } from "#adapters/types";
 import { maybeMap } from "#shared/maybe";
 
 const toRetrieverFromLangChain = (retriever: BaseRetrieverInterface): Retriever => ({
-  retrieve: (query) =>
+  retrieve: ({ query }) =>
     maybeMap(
       (docs) => ({
         query,
@@ -28,7 +28,7 @@ const toRetrieverFromLangChain = (retriever: BaseRetrieverInterface): Retriever 
 });
 
 const toRetrieverFromLlama = (retriever: LlamaRetriever): Retriever => ({
-  retrieve: (query) =>
+  retrieve: ({ query }) =>
     maybeMap(
       (nodes) => ({
         query,
@@ -60,7 +60,7 @@ describe("Interop retriever", () => {
     } as unknown as BaseRetrieverInterface;
 
     const adapted = toRetrieverFromLangChain(retriever);
-    const result = await adapted.retrieve("query");
+    const result = await adapted.retrieve({ query: "query" });
     expect(result.documents[0]?.text).toBe("hello");
   });
 
@@ -72,7 +72,7 @@ describe("Interop retriever", () => {
     } as unknown as LlamaRetriever;
 
     const adapted = toRetrieverFromLlama(retriever);
-    const result = await adapted.retrieve("query");
+    const result = await adapted.retrieve({ query: "query" });
     expect(result.documents[0]?.text).toBe("hello");
   });
 

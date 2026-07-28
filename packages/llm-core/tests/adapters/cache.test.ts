@@ -23,37 +23,37 @@ describe("MemoryCache", () => {
 
   it("stores and retrieves values", async () => {
     const cache = createMemoryCache();
-    await cache.set("key1", blob);
-    const result = await cache.get("key1");
+    await cache.set({ key: "key1", value: blob });
+    const result = await cache.get({ key: "key1" });
     expect(result).toEqual(blob);
   });
 
   it("returns null for missing keys", async () => {
     const cache = createMemoryCache();
-    const result = await cache.get("missing");
+    const result = await cache.get({ key: "missing" });
     expect(result).toBeNull();
   });
 
   it("deletes values", async () => {
     const cache = createMemoryCache();
-    await cache.set("key1", blob);
-    await cache.delete("key1");
-    const result = await cache.get("key1");
+    await cache.set({ key: "key1", value: blob });
+    await cache.delete({ key: "key1" });
+    const result = await cache.get({ key: "key1" });
     expect(result).toBeNull();
   });
 
   it("respects TTL", async () => {
     const cache = createMemoryCache();
-    await cache.set("key1", blob, 10); // 10ms TTL
+    await cache.set({ key: "key1", value: blob, ttlMs: 10 }); // 10ms TTL
 
     // Immediately available
-    expect(await cache.get("key1")).toEqual(blob);
+    expect(await cache.get({ key: "key1" })).toEqual(blob);
 
     // Wait for expiration
     await new Promise((resolve) => setTimeout(resolve, 20));
 
     // Should be gone
-    expect(await cache.get("key1")).toBeNull();
+    expect(await cache.get({ key: "key1" })).toBeNull();
   });
 
   it("validates keys", async () => {
@@ -63,10 +63,10 @@ describe("MemoryCache", () => {
       report: (d: AdapterDiagnostic) => diagnostics.push(d),
     };
 
-    await cache.set("", blob, undefined, context);
-    await cache.delete("", context);
+    await cache.set({ key: "", value: blob, context });
+    await cache.delete({ key: "", context });
     expect(diagnostics.length).toBeGreaterThan(0);
-    expect(await cache.get("")).toBeNull();
+    expect(await cache.get({ key: "" })).toBeNull();
   });
 });
 
@@ -77,12 +77,12 @@ describe("Cache adapters", () => {
     const entries = new Map<string, Blob>();
     const store = {
       list: () => Array.from(entries.keys()),
-      mget: (keys: string[]) => keys.map((key) => entries.get(key)),
-      mset: (pairs: Array<[string, Blob]>) => {
+      mget: ({ keys }: { keys: string[] }) => keys.map((key) => entries.get(key)),
+      mset: ({ pairs }: { pairs: Array<[string, Blob]> }) => {
         pairs.forEach(([key, value]) => entries.set(key, value));
         return null;
       },
-      mdelete: (keys: string[]) => {
+      mdelete: ({ keys }: { keys: string[] }) => {
         keys.forEach((key) => entries.delete(key));
         return null;
       },
@@ -90,24 +90,24 @@ describe("Cache adapters", () => {
 
     const cache = createCacheFromKVStore({
       ...store,
-      mget: (keys) => store.mget(keys).map((val) => val ?? null),
+      mget: (request) => store.mget(request).map((val) => val ?? null),
     });
-    await cache.set("kv-key", blob);
-    expect(await cache.get("kv-key")).toEqual(blob);
-    await cache.delete("kv-key");
-    expect(await cache.get("kv-key")).toBeNull();
+    await cache.set({ key: "kv-key", value: blob });
+    expect(await cache.get({ key: "kv-key" })).toEqual(blob);
+    await cache.delete({ key: "kv-key" });
+    expect(await cache.get({ key: "kv-key" })).toBeNull();
   });
 
   it("respects TTL for KV store caches", async () => {
     const entries = new Map<string, Blob>();
     const store = {
       list: () => Array.from(entries.keys()),
-      mget: (keys: string[]) => keys.map((key) => entries.get(key)),
-      mset: (pairs: Array<[string, Blob]>) => {
+      mget: ({ keys }: { keys: string[] }) => keys.map((key) => entries.get(key)),
+      mset: ({ pairs }: { pairs: Array<[string, Blob]> }) => {
         pairs.forEach(([key, value]) => entries.set(key, value));
         return null;
       },
-      mdelete: (keys: string[]) => {
+      mdelete: ({ keys }: { keys: string[] }) => {
         keys.forEach((key) => entries.delete(key));
         return null;
       },
@@ -115,13 +115,13 @@ describe("Cache adapters", () => {
 
     const cache = createCacheFromKVStore({
       ...store,
-      mget: (keys) => store.mget(keys).map((val) => val ?? null),
+      mget: (request) => store.mget(request).map((val) => val ?? null),
     });
-    await cache.set("kv-ttl", blob, 5);
-    expect(await cache.get("kv-ttl")).toEqual(blob);
+    await cache.set({ key: "kv-ttl", value: blob, ttlMs: 5 });
+    expect(await cache.get({ key: "kv-ttl" })).toEqual(blob);
 
     await new Promise((resolve) => setTimeout(resolve, 10));
-    expect(await cache.get("kv-ttl")).toBeNull();
+    expect(await cache.get({ key: "kv-ttl" })).toBeNull();
   });
 
   it("wraps AI SDK cache stores and respects TTL", async () => {
@@ -139,11 +139,11 @@ describe("Cache adapters", () => {
     });
 
     const cache = fromAiSdkCacheStore(store);
-    await cache.set("ai-key", blob, 5);
-    expect(await cache.get("ai-key")).toEqual(blob);
+    await cache.set({ key: "ai-key", value: blob, ttlMs: 5 });
+    expect(await cache.get({ key: "ai-key" })).toEqual(blob);
 
     await new Promise((resolve) => setTimeout(resolve, 10));
-    expect(await cache.get("ai-key")).toBeNull();
+    expect(await cache.get({ key: "ai-key" })).toBeNull();
   });
 
   it("uses AI SDK default TTL when no ttl is provided", async () => {
@@ -162,11 +162,11 @@ describe("Cache adapters", () => {
     });
 
     const cache = fromAiSdkCacheStore(store);
-    await cache.set("ai-default-ttl", blob);
-    expect(await cache.get("ai-default-ttl")).toEqual(blob);
+    await cache.set({ key: "ai-default-ttl", value: blob });
+    expect(await cache.get({ key: "ai-default-ttl" })).toEqual(blob);
 
     await new Promise((resolve) => setTimeout(resolve, 5));
-    expect(await cache.get("ai-default-ttl")).toBeNull();
+    expect(await cache.get({ key: "ai-default-ttl" })).toBeNull();
   });
 
   it("prefers explicit and configured AI SDK TTLs over the store default", async () => {
@@ -185,8 +185,8 @@ describe("Cache adapters", () => {
     });
     const cache = fromAiSdkCacheStore(store, { defaultTtlMs: 20 });
 
-    await cache.set("configured", blob);
-    await cache.set("explicit", blob, 30);
+    await cache.set({ key: "configured", value: blob });
+    await cache.set({ key: "explicit", value: blob, ttlMs: 30 });
 
     const configured = entries.get("configured");
     const explicit = entries.get("explicit");
@@ -211,9 +211,9 @@ describe("Cache adapters", () => {
     const cache = fromAiSdkCacheStore(store);
     const { context, diagnostics } = captureDiagnostics();
 
-    await cache.get("", context);
-    await cache.set("", blob, undefined, context);
-    await cache.delete("", context);
+    await cache.get({ key: "", context });
+    await cache.set({ key: "", value: blob, context });
+    await cache.delete({ key: "", context });
 
     const messages = diagnostics.map((entry) => entry.message);
     expect(messages).toContain("storage_key_missing");
@@ -230,7 +230,7 @@ describe("Cache adapters", () => {
       keys: () => [],
     });
     const cache = fromAiSdkCacheStore(store);
-    expect(await cache.get("missing")).toBeNull();
+    expect(await cache.get({ key: "missing" })).toBeNull();
   });
 
   it("wraps LangChain stores as caches", async () => {
@@ -253,10 +253,10 @@ describe("Cache adapters", () => {
     });
 
     const cache = fromLangChainStoreCache(store);
-    await cache.set("lc-key", blob);
-    expect(await cache.get("lc-key")).toEqual(blob);
-    await cache.delete("lc-key");
-    expect(await cache.get("lc-key")).toBeNull();
+    await cache.set({ key: "lc-key", value: blob });
+    expect(await cache.get({ key: "lc-key" })).toEqual(blob);
+    await cache.delete({ key: "lc-key" });
+    expect(await cache.get({ key: "lc-key" })).toBeNull();
   });
 
   it("respects TTL for LangChain caches", async () => {
@@ -279,11 +279,11 @@ describe("Cache adapters", () => {
     });
 
     const cache = fromLangChainStoreCache(store);
-    await cache.set("lc-ttl", blob, 5);
-    expect(await cache.get("lc-ttl")).toEqual(blob);
+    await cache.set({ key: "lc-ttl", value: blob, ttlMs: 5 });
+    expect(await cache.get({ key: "lc-ttl" })).toEqual(blob);
 
     await new Promise((resolve) => setTimeout(resolve, 10));
-    expect(await cache.get("lc-ttl")).toBeNull();
+    expect(await cache.get({ key: "lc-ttl" })).toBeNull();
   });
 
   it("returns undefined when LangChain cache values are not blobs", async () => {
@@ -297,7 +297,7 @@ describe("Cache adapters", () => {
     });
 
     const cache = fromLangChainStoreCache(store);
-    expect(await cache.get("key")).toBeNull();
+    expect(await cache.get({ key: "key" })).toBeNull();
   });
 
   it("warns when LangChain cache keys are missing", async () => {
@@ -312,9 +312,9 @@ describe("Cache adapters", () => {
     const cache = fromLangChainStoreCache(store);
     const { context, diagnostics } = captureDiagnostics();
 
-    await cache.get("", context);
-    await cache.set("", blob, undefined, context);
-    await cache.delete("", context);
+    await cache.get({ key: "", context });
+    await cache.set({ key: "", value: blob, context });
+    await cache.delete({ key: "", context });
 
     const messages = diagnostics.map((entry) => entry.message);
     expect(messages).toContain("storage_key_missing");
@@ -336,10 +336,10 @@ describe("Cache adapters", () => {
     });
 
     const cache = fromLlamaIndexKVStoreCache(store);
-    await cache.set("li-key", blob);
-    expect(await cache.get("li-key")).toEqual(blob);
-    await cache.delete("li-key");
-    expect(await cache.get("li-key")).toBeNull();
+    await cache.set({ key: "li-key", value: blob });
+    expect(await cache.get({ key: "li-key" })).toEqual(blob);
+    await cache.delete({ key: "li-key" });
+    expect(await cache.get({ key: "li-key" })).toBeNull();
   });
 
   it("respects TTL for LlamaIndex caches", async () => {
@@ -358,11 +358,11 @@ describe("Cache adapters", () => {
     });
 
     const cache = fromLlamaIndexKVStoreCache(store);
-    await cache.set("li-ttl", blob, 5);
-    expect(await cache.get("li-ttl")).toEqual(blob);
+    await cache.set({ key: "li-ttl", value: blob, ttlMs: 5 });
+    expect(await cache.get({ key: "li-ttl" })).toEqual(blob);
 
     await new Promise((resolve) => setTimeout(resolve, 10));
-    expect(await cache.get("li-ttl")).toBeNull();
+    expect(await cache.get({ key: "li-ttl" })).toBeNull();
   });
   it("returns undefined when LlamaIndex cache values are not blobs", async () => {
     const store = asLlamaIndexKVStore({
@@ -373,7 +373,7 @@ describe("Cache adapters", () => {
     });
 
     const cache = fromLlamaIndexKVStoreCache(store);
-    expect(await cache.get("key")).toBeNull();
+    expect(await cache.get({ key: "key" })).toBeNull();
   });
 
   it("warns when LlamaIndex cache keys are missing", async () => {
@@ -386,9 +386,9 @@ describe("Cache adapters", () => {
     const cache = fromLlamaIndexKVStoreCache(store);
     const { context, diagnostics } = captureDiagnostics();
 
-    await cache.get("", context);
-    await cache.set("", blob, undefined, context);
-    await cache.delete("", context);
+    await cache.get({ key: "", context });
+    await cache.set({ key: "", value: blob, context });
+    await cache.delete({ key: "", context });
 
     const messages = diagnostics.map((entry) => entry.message);
     expect(messages).toContain("storage_key_missing");
@@ -409,8 +409,8 @@ describe("Cache adapters", () => {
     });
 
     const cache = fromAiSdkCacheStore(store);
-    cache.set("sync-key", blob);
-    const value = assertSyncValue(cache.get("sync-key"));
+    cache.set({ key: "sync-key", value: blob });
+    const value = assertSyncValue(cache.get({ key: "sync-key" }));
     expect(value).toEqual(blob);
   });
 
@@ -419,16 +419,16 @@ describe("Cache adapters", () => {
     const calls: Array<{ operation: string; context: unknown }> = [];
     const store = {
       list: () => Array.from(entries.keys()),
-      mget: (keys: string[], context?: unknown) => {
+      mget: ({ keys, context }: { keys: string[]; context?: unknown }) => {
         calls.push({ operation: "get", context });
         return keys.map((key) => entries.get(key) ?? null);
       },
-      mset: (pairs: Array<[string, Blob]>, context?: unknown) => {
+      mset: ({ pairs, context }: { pairs: Array<[string, Blob]>; context?: unknown }) => {
         calls.push({ operation: "set", context });
         pairs.forEach(([key, value]) => entries.set(key, value));
         return null;
       },
-      mdelete: (keys: string[], context?: unknown) => {
+      mdelete: ({ keys, context }: { keys: string[]; context?: unknown }) => {
         calls.push({ operation: "delete", context });
         keys.forEach((key) => entries.delete(key));
         return false;
@@ -438,24 +438,24 @@ describe("Cache adapters", () => {
     const context = captureDiagnostics().context;
     const value = { ...blob, metadata: { source: "test" } };
 
-    expect(await cache.set("metadata", value, 5, context)).toBeNull();
+    expect(await cache.set({ key: "metadata", value, ttlMs: 5, context })).toBeNull();
     expect(entries.get("metadata")?.metadata).toMatchObject({
       source: "test",
       __cacheExpiresAt: expect.any(Number),
     });
-    expect(await cache.get("metadata", context)).toEqual(value);
+    expect(await cache.get({ key: "metadata", context })).toEqual(value);
 
     entries.set("metadata", {
       ...value,
       metadata: { ...value.metadata, __cacheExpiresAt: Date.now() - 1 },
     });
-    expect(await cache.get("metadata", context)).toBeNull();
+    expect(await cache.get({ key: "metadata", context })).toBeNull();
     expect(calls.map((call) => call.operation)).toEqual(["set", "get", "get", "delete"]);
     expect(calls.every((call) => call.context === context)).toBe(true);
   });
 
   it("preserves cache-specific delete result semantics", async () => {
-    expect(await createMemoryCache().delete("missing")).toBe(true);
+    expect(await createMemoryCache().delete({ key: "missing" })).toBe(true);
 
     const aiStore = asAiSdkCacheStore<AiSdkCacheEntry>({
       get: () => undefined,
@@ -466,6 +466,6 @@ describe("Cache adapters", () => {
       size: () => 0,
       keys: () => [],
     });
-    expect(await fromAiSdkCacheStore(aiStore).delete("missing")).toBe(false);
+    expect(await fromAiSdkCacheStore(aiStore).delete({ key: "missing" })).toBe(false);
   });
 });

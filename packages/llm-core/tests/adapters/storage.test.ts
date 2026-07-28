@@ -14,11 +14,11 @@ describe("Adapter storage", () => {
     });
 
     const adapter = fromLangChainStore(store);
-    await expect(adapter.mget(["key"])).resolves.toEqual([undefined]);
-    await expect(adapter.mset([["key", { ok: true }]])).resolves.toBe(true);
-    await expect(adapter.mdelete(["key"])).resolves.toBe(true);
-    await expect(adapter.list?.()).resolves.toEqual(["key"]);
-    await expect(adapter.list?.("pref")).resolves.toEqual(["pref:one"]);
+    await expect(adapter.mget({ keys: ["key"] })).resolves.toEqual([undefined]);
+    await expect(adapter.mset({ pairs: [["key", { ok: true }]] })).resolves.toBe(true);
+    await expect(adapter.mdelete({ keys: ["key"] })).resolves.toBe(true);
+    await expect(adapter.list?.({})).resolves.toEqual(["key"]);
+    await expect(adapter.list?.({ prefix: "pref" })).resolves.toEqual(["pref:one"]);
   });
 
   it("warns when kv keys are missing", async () => {
@@ -33,7 +33,7 @@ describe("Adapter storage", () => {
     const adapter = fromLangChainStore(store);
     const { context, diagnostics } = captureDiagnostics();
 
-    const result = await adapter.mget([], context);
+    const result = await adapter.mget({ keys: [], context });
     expect(result).toEqual([]);
     expect(diagnostics[0]?.message).toBe("kv_keys_missing");
   });
@@ -50,8 +50,8 @@ describe("Adapter storage", () => {
     const adapter = fromLangChainStore(store);
     const { context, diagnostics } = captureDiagnostics();
 
-    await adapter.mset([], context);
-    await adapter.mdelete([], context);
+    await adapter.mset({ pairs: [], context });
+    await adapter.mdelete({ keys: [], context });
     expect(diagnostics.map((entry) => entry.message)).toContain("kv_pairs_missing");
     expect(diagnostics.map((entry) => entry.message)).toContain("kv_keys_missing");
   });
@@ -72,19 +72,21 @@ describe("Adapter storage", () => {
     });
 
     const adapter = fromLlamaIndexDocumentStore(store);
-    await expect(adapter.mget(["key"])).resolves.toEqual([{ id: "key", text: "doc" }]);
+    await expect(adapter.mget({ keys: ["key"] })).resolves.toEqual([{ id: "key", text: "doc" }]);
     await expect(
-      adapter.mset?.([
-        ["doc-1", { text: "doc-1" }],
-        ["doc-2", { text: "skip" }],
-      ]),
+      adapter.mset?.({
+        pairs: [
+          ["doc-1", { text: "doc-1" }],
+          ["doc-2", { text: "skip" }],
+        ],
+      }),
     ).resolves.toBe(true);
     expect(saved).toMatchObject([
       { id_: "doc-1", text: "doc-1" },
       { id_: "doc-2", text: "skip" },
     ]);
-    await expect(adapter.mdelete?.(["doc-1"])).resolves.toBe(true);
-    await expect(adapter.list?.()).resolves.toEqual(["doc-1", "doc-2"]);
+    await expect(adapter.mdelete?.({ keys: ["doc-1"] })).resolves.toBe(true);
+    await expect(adapter.list?.({})).resolves.toEqual(["doc-1", "doc-2"]);
   });
 
   it("warns when LlamaIndex kv inputs are missing", async () => {
@@ -97,9 +99,9 @@ describe("Adapter storage", () => {
     const adapter = fromLlamaIndexDocumentStore(store);
     const { context, diagnostics } = captureDiagnostics();
 
-    await adapter.mget([], context);
-    await adapter.mset?.([], context);
-    await adapter.mdelete?.([], context);
+    await adapter.mget({ keys: [], context });
+    await adapter.mset?.({ pairs: [], context });
+    await adapter.mdelete?.({ keys: [], context });
     expect(diagnostics.map((entry) => entry.message)).toContain("kv_keys_missing");
     expect(diagnostics.map((entry) => entry.message)).toContain("kv_pairs_missing");
   });

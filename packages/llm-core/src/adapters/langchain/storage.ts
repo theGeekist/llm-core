@@ -1,5 +1,5 @@
 import type { BaseStore } from "@langchain/core/stores";
-import type { AdapterCallContext, KVStore } from "../types";
+import type { KVStore } from "../types";
 import { toTrue } from "#shared/fp";
 import { maybeMap } from "#shared/maybe";
 import { reportDiagnostics, validateKvKeys, validateKvPairs } from "../input-validation";
@@ -14,13 +14,12 @@ const collectKeys = async (store: BaseStore<string, unknown>, prefix?: string) =
 };
 
 export function fromLangChainStore(store: BaseStore<string, unknown>): KVStore {
-  function list(prefix?: string, _context?: AdapterCallContext) {
-    void _context;
+  function list({ prefix }: Parameters<KVStore["list"]>[0]) {
     return collectKeys(store, prefix);
   }
 
   return {
-    mget: (keys, context) => {
+    mget: ({ keys, context }) => {
       const diagnostics = validateKvKeys(keys, "mget");
       if (diagnostics.length > 0) {
         reportDiagnostics(context, diagnostics);
@@ -28,7 +27,7 @@ export function fromLangChainStore(store: BaseStore<string, unknown>): KVStore {
       }
       return store.mget(keys);
     },
-    mset: (pairs, context) => {
+    mset: ({ pairs, context }) => {
       const diagnostics = validateKvPairs(pairs);
       if (diagnostics.length > 0) {
         reportDiagnostics(context, diagnostics);
@@ -36,7 +35,7 @@ export function fromLangChainStore(store: BaseStore<string, unknown>): KVStore {
       }
       return maybeMap(toTrue, store.mset(pairs));
     },
-    mdelete: (keys, context) => {
+    mdelete: ({ keys, context }) => {
       const diagnostics = validateKvKeys(keys, "mdelete");
       if (diagnostics.length > 0) {
         reportDiagnostics(context, diagnostics);

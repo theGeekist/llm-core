@@ -70,7 +70,7 @@ const applyLoad: StepApply = ({ context, state }) => {
   if (!loader) {
     return null;
   }
-  return maybeMap(bindFirst(applyLoadResult, ingest), loader.load());
+  return maybeMap(bindFirst(applyLoadResult, ingest), loader.load({}));
 };
 
 type DocumentMetadata = Document["metadata"];
@@ -93,7 +93,7 @@ type TextSplitterWithMetadata = TextSplitter & {
 };
 
 const splitDocumentWithMetadata = (splitter: TextSplitterWithMetadata, doc: Document) =>
-  maybeMap(bindFirst(toChunkDocuments, doc), splitter.splitWithMetadata(doc.text));
+  maybeMap(bindFirst(toChunkDocuments, doc), splitter.splitWithMetadata({ text: doc.text }));
 
 const toSimpleChunkDocument = (source: Document, text: string) => ({
   text,
@@ -104,7 +104,7 @@ const toSimpleChunkDocuments = (source: Document, chunks: string[]) =>
   chunks.map(bindFirst(toSimpleChunkDocument, source));
 
 const splitDocumentSimple = (splitter: TextSplitter, doc: Document) =>
-  maybeMap(bindFirst(toSimpleChunkDocuments, doc), splitter.split(doc.text));
+  maybeMap(bindFirst(toSimpleChunkDocuments, doc), splitter.split({ text: doc.text }));
 
 const flattenChunks = (chunks: Document[][]) => chunks.flat();
 
@@ -152,7 +152,10 @@ const toVectorRecords = (documents: Document[], vectors: number[][]) =>
 type EmbedderWithMany = Embedder & { embedMany: NonNullable<Embedder["embedMany"]> };
 
 const embedDocumentsMany = (embedder: EmbedderWithMany, documents: Document[]) =>
-  maybeMap(bindFirst(toVectorRecords, documents), embedder.embedMany(readDocumentTexts(documents)));
+  maybeMap(
+    bindFirst(toVectorRecords, documents),
+    embedder.embedMany({ texts: readDocumentTexts(documents) }),
+  );
 
 const toVectorFromValues = (doc: Document, values: number[]): VectorRecord => ({
   document: doc,
@@ -160,7 +163,7 @@ const toVectorFromValues = (doc: Document, values: number[]): VectorRecord => ({
 });
 
 const embedDocument = (embedder: Embedder, doc: Document) =>
-  maybeMap(bindFirst(toVectorFromValues, doc), embedder.embed(doc.text));
+  maybeMap(bindFirst(toVectorFromValues, doc), embedder.embed({ text: doc.text }));
 
 const embedDocuments = (embedder: Embedder, documents: Document[]) => {
   if (embedder.embedMany) {

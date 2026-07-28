@@ -1,6 +1,6 @@
 import type { Document } from "@langchain/core/documents";
 import type { TextSplitter as LanchainTextSplitter } from "@langchain/textsplitters";
-import type { AdapterCallContext, TextSplitter } from "../types";
+import type { AdapterRequest, TextSplitter } from "../types";
 import { maybeMap, maybeAll } from "#shared/maybe";
 import {
   reportDiagnostics,
@@ -13,7 +13,7 @@ function toWithMetadata(documents: Document[]) {
 }
 
 export function fromLangChainTextSplitter(splitter: LanchainTextSplitter): TextSplitter {
-  function split(text: string, context?: AdapterCallContext) {
+  function split({ text, context }: AdapterRequest<{ text: string }>) {
     const diagnostics = validateTextSplitterInput(text);
     if (diagnostics.length > 0) {
       reportDiagnostics(context, diagnostics);
@@ -22,7 +22,7 @@ export function fromLangChainTextSplitter(splitter: LanchainTextSplitter): TextS
     return splitter.splitText(text);
   }
 
-  function splitBatch(texts: string[], context?: AdapterCallContext) {
+  function splitBatch({ texts, context }: AdapterRequest<{ texts: string[] }>) {
     const diagnostics = validateTextSplitterBatchInput(texts);
     if (diagnostics.length > 0) {
       reportDiagnostics(context, diagnostics);
@@ -31,7 +31,7 @@ export function fromLangChainTextSplitter(splitter: LanchainTextSplitter): TextS
     return maybeAll(texts.map((text) => splitter.splitText(text)));
   }
 
-  function splitWithMetadata(text: string, context?: AdapterCallContext) {
+  function splitWithMetadata({ text, context }: AdapterRequest<{ text: string }>) {
     const diagnostics = validateTextSplitterInput(text);
     if (diagnostics.length > 0) {
       reportDiagnostics(context, diagnostics);

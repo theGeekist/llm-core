@@ -54,9 +54,9 @@ export const createMemoryCache = (): Cache => {
 export const createCacheFromKVStore = (store: KVStore<Blob>): Cache =>
   createCacheAdapter<Array<Blob | null>, Blob>({
     backend: {
-      read: (key, context) => store.mget([key], context),
-      write: (key, entry, context) => store.mset([[key, entry]], context),
-      remove: (key, context) => store.mdelete([key], context),
+      read: (key, context) => store.mget({ keys: [key], context }),
+      write: (key, entry, context) => store.mset({ pairs: [[key, entry]], context }),
+      remove: (key, context) => store.mdelete({ keys: [key], context }),
     },
     decode: (entries) => {
       const value = Array.isArray(entries) ? entries[0] : entries;

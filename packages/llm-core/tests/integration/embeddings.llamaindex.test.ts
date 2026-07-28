@@ -14,7 +14,7 @@ describe("Integration embeddings (LlamaIndex/OpenAI)", () => {
         model: process.env.OPENAI_EMBED_MODEL ?? "text-embedding-3-small",
       });
       const adapter = fromLlamaIndexEmbeddings(embedder);
-      const vector = await adapter.embed("hello world");
+      const vector = await adapter.embed({ text: "hello world" });
       expect(vector.length).toBeGreaterThan(0);
     },
     OPENAI_TIMEOUT_MS,

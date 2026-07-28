@@ -34,7 +34,7 @@ describe("Integration output parser (AI SDK/OpenAI)", () => {
       const outputParser = createOutputParser();
 
       const result = await model.generate({ prompt, responseSchema: schema });
-      const parsed = await outputParser.parse(result.text ?? "");
+      const parsed = await outputParser.parse({ text: result.text ?? "" });
 
       expect(result.text?.length).toBeGreaterThan(0);
       expectTelemetryPresence(result);
@@ -55,7 +55,7 @@ describe("Integration output parser (LangChain/OpenAI)", () => {
       const outputParser = createOutputParser();
 
       const result = await model.generate({ prompt, responseSchema: schema });
-      const parsed = await outputParser.parse(result.text ?? "");
+      const parsed = await outputParser.parse({ text: result.text ?? "" });
 
       expect(result.text?.length).toBeGreaterThan(0);
       expectTelemetryPresence(result);
@@ -76,7 +76,7 @@ describe("Integration output parser (LlamaIndex/OpenAI)", () => {
       const outputParser = createOutputParser();
 
       const result = await model.generate({ prompt, responseSchema: schema });
-      const parsed = await outputParser.parse(result.text ?? "");
+      const parsed = await outputParser.parse({ text: result.text ?? "" });
 
       expect(result.text?.length).toBeGreaterThan(0);
       expectTelemetryPresence(result);

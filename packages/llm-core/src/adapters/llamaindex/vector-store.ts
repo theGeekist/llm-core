@@ -2,6 +2,7 @@ import { Document as LlamaDocument } from "@llamaindex/core/schema";
 import type { BaseVectorStore } from "@llamaindex/core/vector-store";
 import type {
   AdapterCallContext,
+  AdapterRequest,
   VectorRecord,
   VectorStore,
   VectorStoreDeleteInput,
@@ -72,14 +73,16 @@ const reportDeleteFilterUnsupported = (context?: AdapterCallContext) => {
 };
 
 export function fromLlamaIndexVectorStore(store: BaseVectorStore): VectorStore {
-  const upsert = (input: VectorStoreUpsertInput, context?: AdapterCallContext) => {
+  const upsert = (input: AdapterRequest<VectorStoreUpsertInput>) => {
+    const { context } = input;
     const diagnostics = validateVectorStoreUpsertInput(input);
     reportDiagnostics(context, diagnostics);
     const payload = toUpsertPayload(input);
     return maybeMap(toUpsertResult, store.add(payload.nodes));
   };
 
-  const remove = (input: VectorStoreDeleteInput, context?: AdapterCallContext) => {
+  const remove = (input: AdapterRequest<VectorStoreDeleteInput>) => {
+    const { context } = input;
     const diagnostics = validateVectorStoreDeleteInput(input);
     reportDiagnostics(context, diagnostics);
     if (diagnostics.length > 0) {

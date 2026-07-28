@@ -114,7 +114,7 @@ const executeToolCall = (tool: Tool | undefined, call: ToolCall): MaybePromise<T
       toolCallId: call.id,
       result,
     }),
-    tool.execute(call.arguments),
+    tool.execute({ input: call.arguments }),
   );
 };
 

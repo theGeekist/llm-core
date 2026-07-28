@@ -10,8 +10,8 @@ describe("Adapter embeddings", () => {
     });
 
     const adapter = fromLangChainEmbeddings(embeddings);
-    expect(adapter.embed("hi")).toEqual([0.1, 0.2]);
-    expect(adapter.embedMany?.(["hi"])).toEqual([[0.1, 0.2]]);
+    expect(adapter.embed({ text: "hi" })).toEqual([0.1, 0.2]);
+    expect(adapter.embedMany?.({ texts: ["hi"] })).toEqual([[0.1, 0.2]]);
   });
 
   it("maps LangChain embeddings with async returns", async () => {
@@ -21,8 +21,8 @@ describe("Adapter embeddings", () => {
     });
 
     const adapter = fromLangChainEmbeddings(embeddings);
-    await expect(adapter.embed("hi")).resolves.toEqual([0.3, 0.4]);
-    await expect(adapter.embedMany?.(["hi"])).resolves.toEqual([[0.3, 0.4]]);
+    await expect(adapter.embed({ text: "hi" })).resolves.toEqual([0.3, 0.4]);
+    await expect(adapter.embedMany?.({ texts: ["hi"] })).resolves.toEqual([[0.3, 0.4]]);
   });
 
   it("maps LlamaIndex embeddings with sync and async returns", async () => {
@@ -32,8 +32,8 @@ describe("Adapter embeddings", () => {
     });
 
     const adapter = fromLlamaIndexEmbeddings(embedding);
-    expect(adapter.embed("hi")).toEqual([0.5, 0.6]);
-    await expect(adapter.embedMany?.(["hi"])).resolves.toEqual([[0.5, 0.6]]);
+    expect(adapter.embed({ text: "hi" })).toEqual([0.5, 0.6]);
+    await expect(adapter.embedMany?.({ texts: ["hi"] })).resolves.toEqual([[0.5, 0.6]]);
   });
 
   it("warns when embeddings inputs are missing", () => {
@@ -44,7 +44,7 @@ describe("Adapter embeddings", () => {
     const adapter = fromLangChainEmbeddings(embeddings);
     const { context, diagnostics } = captureDiagnostics();
 
-    expect(adapter.embed("", context)).toEqual([]);
+    expect(adapter.embed({ text: "", context })).toEqual([]);
     expect(diagnostics[0]?.message).toBe("embedder_input_missing");
   });
 
@@ -56,7 +56,7 @@ describe("Adapter embeddings", () => {
     const adapter = fromLangChainEmbeddings(embeddings);
     const { context, diagnostics } = captureDiagnostics();
 
-    expect(adapter.embedMany?.([" "], context)).toEqual([]);
+    expect(adapter.embedMany?.({ texts: [" "], context })).toEqual([]);
     expect(diagnostics[0]?.message).toBe("embedder_input_missing");
   });
 
@@ -68,7 +68,7 @@ describe("Adapter embeddings", () => {
     const adapter = fromLlamaIndexEmbeddings(embedding);
     const { context, diagnostics } = captureDiagnostics();
 
-    expect(adapter.embedMany?.([" "], context)).toEqual([]);
+    expect(adapter.embedMany?.({ texts: [" "], context })).toEqual([]);
     expect(diagnostics[0]?.message).toBe("embedder_input_missing");
   });
 
@@ -80,7 +80,7 @@ describe("Adapter embeddings", () => {
     const adapter = fromLlamaIndexEmbeddings(embedding);
     const { context, diagnostics } = captureDiagnostics();
 
-    expect(adapter.embed(" ", context)).toEqual([]);
+    expect(adapter.embed({ text: " ", context })).toEqual([]);
     expect(diagnostics[0]?.message).toBe("embedder_input_missing");
   });
 
@@ -103,10 +103,10 @@ describe("Adapter embeddings", () => {
     const adapter = fromAiSdkEmbeddings("test-model" as never);
     expect(adapter.embed).toBeFunction();
     expect(adapter.embedMany).toBeFunction();
-    expect(adapter.embed("hi")).toEqual([2]);
-    await expect(adapter.embed("async")).resolves.toEqual([5]);
-    expect(adapter.embedMany?.(["a", "abcd"])).toEqual([[1], [4]]);
-    await expect(adapter.embedMany?.(["a", "async"])).resolves.toEqual([[1], [5]]);
+    expect(adapter.embed({ text: "hi" })).toEqual([2]);
+    await expect(adapter.embed({ text: "async" })).resolves.toEqual([5]);
+    expect(adapter.embedMany?.({ texts: ["a", "abcd"] })).toEqual([[1], [4]]);
+    await expect(adapter.embedMany?.({ texts: ["a", "async"] })).resolves.toEqual([[1], [5]]);
     mock.restore();
   });
 
@@ -115,8 +115,8 @@ describe("Adapter embeddings", () => {
     const { fromAiSdkEmbeddings } = await import("../../src/adapters/ai-sdk/embeddings.ts");
     const adapter = fromAiSdkEmbeddings("test-model" as never);
 
-    expect(adapter.embed(" ", context)).toEqual([]);
-    expect(adapter.embedMany?.([], context)).toEqual([]);
+    expect(adapter.embed({ text: " ", context })).toEqual([]);
+    expect(adapter.embedMany?.({ texts: [], context })).toEqual([]);
     expect(diagnostics.map((entry) => entry.message)).toContain("embedder_input_missing");
   });
 });

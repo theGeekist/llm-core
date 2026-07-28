@@ -1,4 +1,4 @@
-import type { AdapterCallContext, AdapterMetadata } from "./core";
+import type { AdapterMetadata, AdapterRequest } from "./core";
 import type { Document } from "./documents";
 import type { MaybePromise } from "#shared/maybe";
 
@@ -30,10 +30,9 @@ export type VectorStoreUpsertResult = {
 
 export type VectorStore = {
   upsert(
-    input: VectorStoreUpsertInput,
-    context?: AdapterCallContext,
+    request: AdapterRequest<VectorStoreUpsertInput>,
   ): MaybePromise<VectorStoreUpsertResult | null>;
-  delete(input: VectorStoreDeleteInput, context?: AdapterCallContext): MaybePromise<boolean | null>;
+  delete(request: AdapterRequest<VectorStoreDeleteInput>): MaybePromise<boolean | null>;
   info?: VectorStoreInfo;
   metadata?: AdapterMetadata;
 };

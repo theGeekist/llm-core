@@ -1,5 +1,5 @@
 import type { RerankingModelV3 } from "@ai-sdk/provider";
-import type { AdapterCallContext, Document, Reranker, RetrievalQuery } from "../types";
+import type { AdapterRequest, Document, Reranker, RetrievalQuery } from "../types";
 import { toQueryText } from "../retrieval-query";
 import { maybeMap } from "#shared/maybe";
 import type { MaybePromise } from "#shared/maybe";
@@ -18,7 +18,11 @@ const mapRanking = (documents: Document[], ranking: RerankResult["ranking"]) =>
   }, []);
 
 export function fromAiSdkReranker(model: RerankingModelV3): Reranker {
-  function rerank(query: RetrievalQuery, documents: Document[], context?: AdapterCallContext) {
+  function rerank({
+    query,
+    documents,
+    context,
+  }: AdapterRequest<{ query: RetrievalQuery; documents: Document[] }>) {
     const diagnostics = validateRerankerInput(query, documents);
     if (diagnostics.length > 0) {
       reportDiagnostics(context, diagnostics);

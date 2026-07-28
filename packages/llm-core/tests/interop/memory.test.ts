@@ -8,12 +8,12 @@ import { maybeMap } from "../../src/shared/maybe";
 import { toNull } from "../../src/shared/fp";
 
 const toMemoryFromLangChain = (memory: LangChainMemory): Memory => ({
-  load: (input) => memory.loadMemoryVariables(input),
-  save: (input, output) => maybeMap(toNull, memory.saveContext(input, output)),
+  load: ({ input }) => memory.loadMemoryVariables(input),
+  save: ({ input, output }) => maybeMap(toNull, memory.saveContext(input, output)),
 });
 
 const toMemoryFromLlama = (memory: LlamaMemory): Memory => ({
-  read: (threadId) => {
+  read: ({ threadId }) => {
     void threadId;
     return maybeMap(
       (messages) => ({
@@ -26,7 +26,7 @@ const toMemoryFromLlama = (memory: LlamaMemory): Memory => ({
       memory.getLLM(),
     );
   },
-  append: (_threadId, turn) => {
+  append: ({ threadId: _threadId, turn }) => {
     void _threadId;
     const role = turn.role === "tool" ? "assistant" : turn.role;
     return maybeMap(toNull, memory.add({ role, content: turn.content }));

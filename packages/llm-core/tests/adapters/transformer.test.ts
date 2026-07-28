@@ -12,7 +12,7 @@ describe("Adapter transformers", () => {
     } as BaseDocumentTransformer;
 
     const adapter = fromLangChainTransformer(transformer);
-    const result = await adapter.transform([{ text: "hello" }]);
+    const result = await adapter.transform({ documents: [{ text: "hello" }] });
     expect(result[0]?.text).toBe("hello");
   });
 
@@ -22,7 +22,7 @@ describe("Adapter transformers", () => {
     });
 
     const adapter = fromLlamaIndexTransformer(parser);
-    const result = await adapter.transform([{ text: "hello" }]);
+    const result = await adapter.transform({ documents: [{ text: "hello" }] });
     expect(result[0]?.text).toBe("hello");
   });
 
@@ -33,7 +33,7 @@ describe("Adapter transformers", () => {
     const adapter = fromLangChainTransformer(transformer);
     const { context, diagnostics } = captureDiagnostics();
 
-    const result = await adapter.transform([], context);
+    const result = await adapter.transform({ documents: [], context });
     expect(result).toEqual([]);
     expect(diagnostics[0]?.message).toBe("transformer_documents_missing");
   });
@@ -45,7 +45,7 @@ describe("Adapter transformers", () => {
     const adapter = fromLlamaIndexTransformer(parser);
     const { context, diagnostics } = captureDiagnostics();
 
-    const result = await adapter.transform([], context);
+    const result = await adapter.transform({ documents: [], context });
     expect(result).toEqual([]);
     expect(diagnostics[0]?.message).toBe("transformer_documents_missing");
   });

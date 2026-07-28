@@ -10,10 +10,10 @@ import {
 import type { RetryWrapperInput } from "../../src/workflow/runtime/retry";
 
 const wrapRetryCallOne = <TInput, TResult>(
-  input: RetryWrapperInput<[TInput], TResult>,
+  input: RetryWrapperInput<{ value: TInput; context?: AdapterCallContext }, TResult>,
   value: TInput,
   context?: AdapterCallContext,
-) => wrapRetryCall(input, 1, value, context);
+) => wrapRetryCall(input, { value, context });
 
 describe("Workflow runtime retry helpers", () => {
   it("merges retry configs by adapter kind", () => {

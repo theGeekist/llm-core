@@ -1,4 +1,4 @@
-import type { AdapterCallContext, AdapterMetadata } from "./core";
+import type { AdapterMetadata, AdapterRequest } from "./core";
 import type { MessageRole } from "./messages";
 import type { MaybePromise } from "#shared/maybe";
 
@@ -16,18 +16,18 @@ export type Thread = {
 };
 
 export type Memory = {
-  append?(threadId: string, turn: Turn, context?: AdapterCallContext): MaybePromise<boolean | null>;
+  append?(request: AdapterRequest<{ threadId: string; turn: Turn }>): MaybePromise<boolean | null>;
   load?(
-    input: Record<string, unknown>,
-    context?: AdapterCallContext,
+    request: AdapterRequest<{ input: Record<string, unknown> }>,
   ): MaybePromise<Record<string, unknown>>;
-  read?(threadId: string, context?: AdapterCallContext): MaybePromise<Thread | null>;
-  reset?(context?: AdapterCallContext): MaybePromise<boolean | null>;
+  read?(request: AdapterRequest<{ threadId: string }>): MaybePromise<Thread | null>;
+  reset?(request: AdapterRequest): MaybePromise<boolean | null>;
   save?(
-    input: Record<string, unknown>,
-    output: Record<string, unknown>,
-    context?: AdapterCallContext,
+    request: AdapterRequest<{
+      input: Record<string, unknown>;
+      output: Record<string, unknown>;
+    }>,
   ): MaybePromise<boolean | null>;
-  summarize?(threadId: string, context?: AdapterCallContext): MaybePromise<string | null>;
+  summarize?(request: AdapterRequest<{ threadId: string }>): MaybePromise<string | null>;
   metadata?: AdapterMetadata;
 };

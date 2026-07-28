@@ -42,11 +42,11 @@ describe("Adapter tool helpers", () => {
     const tool = Tooling.create({
       name: "echo",
       params: [{ name: "value", type: "string", required: true }],
-      execute: (input) => input,
+      execute: ({ input }) => input,
     });
 
-    const missing = await tool.execute?.(undefined, context);
-    const value = await tool.execute?.({ value: "ok" }, context);
+    const missing = await tool.execute?.({ input: undefined, context });
+    const value = await tool.execute?.({ input: { value: "ok" }, context });
 
     expect(missing).toBeNull();
     expect(value).toEqual({ value: "ok" });

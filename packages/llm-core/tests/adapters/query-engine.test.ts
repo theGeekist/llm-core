@@ -29,7 +29,7 @@ describe("Adapter LlamaIndex query engine", () => {
     const engine = createQueryEngine(response, asAsyncIterable([]));
 
     const adapter = fromLlamaIndexQueryEngine(engine);
-    const result = await adapter.query("hello");
+    const result = await adapter.query({ query: "hello" });
     expect(result.text).toBe("ok");
     expect(result.sources?.[0]?.text).toBe("source");
   });
@@ -43,7 +43,7 @@ describe("Adapter LlamaIndex query engine", () => {
       throw new Error("stream not supported");
     }
     const events: Array<{ type: string; text?: string }> = [];
-    const stream = await adapter.stream("hi");
+    const stream = await adapter.stream({ query: "hi" });
     const stepResult = maybeToStep(stream);
     const step = isPromiseLike(stepResult) ? await stepResult : stepResult;
     const collected = collectStep(step);
@@ -65,7 +65,7 @@ describe("Adapter LlamaIndex query engine", () => {
       throw new Error("stream not supported");
     }
     const events: Array<{ type: string; diagnostics?: Array<{ message: string }> }> = [];
-    const stream = await adapter.stream(" ");
+    const stream = await adapter.stream({ query: " " });
     const stepResult = maybeToStep(stream);
     const step = isPromiseLike(stepResult) ? await stepResult : stepResult;
     const collected = collectStep(step);
@@ -87,7 +87,7 @@ describe("Adapter LlamaIndex query engine", () => {
     const adapter = fromLlamaIndexQueryEngine(engine);
     const { context, diagnostics } = captureDiagnostics();
 
-    const result = await adapter.query(" ", context);
+    const result = await adapter.query({ query: " ", context });
     expect(result.text).toBe("");
     expect(result.diagnostics?.map((entry) => entry.message)).toContain(
       "query_engine_query_missing",

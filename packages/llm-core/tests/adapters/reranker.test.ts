@@ -14,7 +14,7 @@ describe("Adapter rerankers", () => {
     } as BaseDocumentCompressor;
 
     const adapter = fromLangChainReranker(compressor);
-    const result = await adapter.rerank("query", [{ text: "hello" }]);
+    const result = await adapter.rerank({ query: "query", documents: [{ text: "hello" }] });
     expect(result[0]?.text).toBe("hello");
   });
 
@@ -25,7 +25,7 @@ describe("Adapter rerankers", () => {
     });
 
     const adapter = fromLlamaIndexReranker(reranker);
-    const result = await adapter.rerank("query", [{ text: "hello" }]);
+    const result = await adapter.rerank({ query: "query", documents: [{ text: "hello" }] });
     expect(result[0]?.text).toBe("hello");
   });
 
@@ -43,7 +43,10 @@ describe("Adapter rerankers", () => {
         }),
     });
     const adapter = fromAiSdkReranker(model);
-    const result = await adapter.rerank("query", [{ text: "first" }, { text: "second" }]);
+    const result = await adapter.rerank({
+      query: "query",
+      documents: [{ text: "first" }, { text: "second" }],
+    });
     expect(result[0]?.text).toBe("second");
     expect(result[0]?.score).toBe(0.9);
   });
@@ -59,7 +62,7 @@ describe("Adapter rerankers", () => {
         }),
     });
     const adapter = fromAiSdkReranker(model);
-    const result = await adapter.rerank("query", [{ text: "first" }]);
+    const result = await adapter.rerank({ query: "query", documents: [{ text: "first" }] });
     expect(result).toEqual([]);
   });
 
@@ -70,7 +73,7 @@ describe("Adapter rerankers", () => {
     const adapter = fromLangChainReranker(compressor);
     const { context, diagnostics } = captureDiagnostics();
 
-    const result = await adapter.rerank(" ", [], context);
+    const result = await adapter.rerank({ query: " ", documents: [], context });
     expect(result).toEqual([]);
     expect(diagnostics.map((entry) => entry.message)).toEqual([
       "reranker_documents_missing",
@@ -88,7 +91,7 @@ describe("Adapter rerankers", () => {
     const adapter = fromAiSdkReranker(model);
     const { context, diagnostics } = captureDiagnostics();
 
-    const result = await adapter.rerank(" ", [], context);
+    const result = await adapter.rerank({ query: " ", documents: [], context });
     expect(result).toEqual([]);
     expect(diagnostics.map((entry) => entry.message)).toEqual([
       "reranker_documents_missing",

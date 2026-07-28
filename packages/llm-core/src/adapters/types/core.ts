@@ -30,6 +30,7 @@ export type RetryConfig = {
   textSplitter?: RetryPolicy | null;
   loader?: RetryPolicy | null;
   transformer?: RetryPolicy | null;
+  indexing?: RetryPolicy | null;
   vectorStore?: RetryPolicy | null;
   cache?: RetryPolicy | null;
   kv?: RetryPolicy | null;
@@ -41,6 +42,7 @@ export type RetryConfig = {
   image?: RetryPolicy | null;
   speech?: RetryPolicy | null;
   transcription?: RetryPolicy | null;
+  skills?: RetryPolicy | null;
   tools?: RetryPolicy | null;
 };
 
@@ -60,6 +62,10 @@ export type PauseKind = "human" | "external" | "system";
 
 export type AdapterCallContext = {
   report?: (diagnostic: AdapterDiagnostic) => void;
+};
+
+export type AdapterRequest<T extends object = object> = T & {
+  context?: AdapterCallContext;
 };
 
 export type TraceIdentity = {

@@ -11,18 +11,18 @@ describe("Adapter text splitters", () => {
     const splitter = new RecursiveCharacterTextSplitter({ chunkSize: 10, chunkOverlap: 0 });
     const adapter = fromLangChainTextSplitter(splitter);
 
-    await expect(adapter.split(SAMPLE)).resolves.toBeArray();
-    await expect(adapter.splitBatch?.([SAMPLE])).resolves.toBeArray();
-    await expect(adapter.splitWithMetadata?.(SAMPLE)).resolves.toBeArray();
+    await expect(adapter.split({ text: SAMPLE })).resolves.toBeArray();
+    await expect(adapter.splitBatch?.({ texts: [SAMPLE] })).resolves.toBeArray();
+    await expect(adapter.splitWithMetadata?.({ text: SAMPLE })).resolves.toBeArray();
   });
 
   it("adapts LlamaIndex text splitters", () => {
     const splitter = new SentenceSplitter();
     const adapter = fromLlamaIndexTextSplitter(splitter);
 
-    expect(adapter.split(SAMPLE)).toBeArray();
-    expect(adapter.splitBatch?.([SAMPLE])).toBeArray();
-    expect(adapter.splitWithMetadata?.(SAMPLE)).toBeArray();
+    expect(adapter.split({ text: SAMPLE })).toBeArray();
+    expect(adapter.splitBatch?.({ texts: [SAMPLE] })).toBeArray();
+    expect(adapter.splitWithMetadata?.({ text: SAMPLE })).toBeArray();
   });
 
   it("warns when text splitter inputs are missing", async () => {
@@ -30,7 +30,7 @@ describe("Adapter text splitters", () => {
     const adapter = fromLangChainTextSplitter(splitter);
     const { context, diagnostics } = captureDiagnostics();
 
-    const result = await adapter.split(" ", context);
+    const result = await adapter.split({ text: " ", context });
     expect(result).toEqual([]);
     expect(diagnostics[0]?.message).toBe("text_splitter_input_missing");
   });
@@ -40,7 +40,7 @@ describe("Adapter text splitters", () => {
     const adapter = fromLangChainTextSplitter(splitter);
     const { context, diagnostics } = captureDiagnostics();
 
-    const result = await adapter.splitBatch?.([" "], context);
+    const result = await adapter.splitBatch?.({ texts: [" "], context });
     expect(result).toEqual([]);
     expect(diagnostics[0]?.message).toBe("text_splitter_input_missing");
   });
@@ -50,9 +50,9 @@ describe("Adapter text splitters", () => {
     const adapter = fromLlamaIndexTextSplitter(splitter);
     const { context, diagnostics } = captureDiagnostics();
 
-    const result = adapter.split(" ", context);
-    const batch = adapter.splitBatch?.([" "], context);
-    const withMeta = adapter.splitWithMetadata?.(" ", context);
+    const result = adapter.split({ text: " ", context });
+    const batch = adapter.splitBatch?.({ texts: [" "], context });
+    const withMeta = adapter.splitWithMetadata?.({ text: " ", context });
     expect(result).toEqual([]);
     expect(batch).toEqual([]);
     expect(withMeta).toEqual([]);

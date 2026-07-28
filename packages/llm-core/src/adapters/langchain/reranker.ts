@@ -1,12 +1,16 @@
 import type { BaseDocumentCompressor } from "@langchain/core/retrievers/document_compressors";
-import type { AdapterCallContext, Document, Reranker, RetrievalQuery } from "../types";
+import type { AdapterRequest, Document, Reranker, RetrievalQuery } from "../types";
 import { maybeMapArray } from "#shared/maybe";
 import { toQueryText } from "../retrieval-query";
 import { toLangChainDocument } from "./documents";
 import { reportDiagnostics, validateRerankerInput } from "../input-validation";
 
 export function fromLangChainReranker(compressor: BaseDocumentCompressor): Reranker {
-  function rerank(query: RetrievalQuery, documents: Document[], context?: AdapterCallContext) {
+  function rerank({
+    query,
+    documents,
+    context,
+  }: AdapterRequest<{ query: RetrievalQuery; documents: Document[] }>) {
     const diagnostics = validateRerankerInput(query, documents);
     if (diagnostics.length > 0) {
       reportDiagnostics(context, diagnostics);

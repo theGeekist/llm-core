@@ -34,7 +34,10 @@ const applyMemoryLoad: StepApply = ({ context, state }) => {
   if (!memory?.load) {
     return null;
   }
-  return maybeMap(bindFirst(applyMemoryLoadResult, agent), memory.load(buildMemoryInput(agent)));
+  return maybeMap(
+    bindFirst(applyMemoryLoadResult, agent),
+    memory.load({ input: buildMemoryInput(agent) }),
+  );
 };
 
 const applyMemorySave: StepApply = ({ context, state }) => {
@@ -43,7 +46,13 @@ const applyMemorySave: StepApply = ({ context, state }) => {
   if (!memory?.save) {
     return null;
   }
-  return maybeMap(toNull, memory.save(buildMemoryInput(agent), { response: agent.response ?? "" }));
+  return maybeMap(
+    toNull,
+    memory.save({
+      input: buildMemoryInput(agent),
+      output: { response: agent.response ?? "" },
+    }),
+  );
 };
 
 type PackTools = Parameters<typeof Recipe.pack>[1] extends (tools: infer T) => unknown ? T : never;

@@ -10,7 +10,7 @@ import { maybeMap } from "#shared/maybe";
 const toAdapterTransformerFromLangChain = (
   transformer: BaseDocumentTransformer,
 ): DocumentTransformer => ({
-  transform: (documents) => {
+  transform: ({ documents }) => {
     const langchainDocs = documents.map(
       (doc) =>
         new LangChainDocument({
@@ -32,7 +32,7 @@ const toAdapterTransformerFromLangChain = (
 });
 
 const toAdapterTransformerFromLlama = (parser: NodeParser): DocumentTransformer => ({
-  transform: (documents) => {
+  transform: ({ documents }) => {
     const llamaDocs = documents.map(
       (doc) => new LlamaDocument({ text: doc.text, metadata: doc.metadata }),
     );
@@ -55,7 +55,7 @@ describe("Interop transformer", () => {
     } as BaseDocumentTransformer;
 
     const adapted = toAdapterTransformerFromLangChain(transformer);
-    const result = await adapted.transform([{ text: "hello" }]);
+    const result = await adapted.transform({ documents: [{ text: "hello" }] });
     expect(result[0]?.text).toBe("hello");
   });
 
@@ -65,7 +65,7 @@ describe("Interop transformer", () => {
     } as unknown as NodeParser;
 
     const adapted = toAdapterTransformerFromLlama(parser);
-    const result = await adapted.transform([{ text: "hello" }]);
+    const result = await adapted.transform({ documents: [{ text: "hello" }] });
     expect(result[0]?.text).toBe("hello");
   });
 

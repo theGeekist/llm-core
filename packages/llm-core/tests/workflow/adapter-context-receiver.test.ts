@@ -15,8 +15,8 @@ describe("Workflow adapter context receivers", () => {
     class StatefulOutputParser {
       readonly #format = "stateful-format";
 
-      parse(input: string) {
-        return input;
+      parse({ text }: { text: string }) {
+        return text;
       }
 
       formatInstructions() {
@@ -25,13 +25,13 @@ describe("Workflow adapter context receivers", () => {
     }
 
     const { context } = createAdapterContext();
-    const wrapped = attachAdapterContext(
-      {
+    const wrapped = attachAdapterContext({
+      adapters: {
         model: new StatefulModel(),
         outputParser: new StatefulOutputParser(),
       },
       context,
-    );
+    });
 
     expect(await wrapped.model?.generate({ prompt: "hello" })).toEqual({
       text: "stateful-result",
@@ -41,8 +41,8 @@ describe("Workflow adapter context receivers", () => {
 
   it("preserves object-literal adapter method receivers", async () => {
     const { context } = createAdapterContext();
-    const wrapped = attachAdapterContext(
-      {
+    const wrapped = attachAdapterContext({
+      adapters: {
         model: {
           prefix: "literal",
           generate() {
@@ -51,7 +51,7 @@ describe("Workflow adapter context receivers", () => {
         } as Model & { prefix: string },
       },
       context,
-    );
+    });
 
     expect(await wrapped.model?.generate({ prompt: "hello" })).toEqual({
       text: "literal-result",

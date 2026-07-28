@@ -32,21 +32,21 @@ type RetryPauseSignal = {
   payload: RetryPausePayload;
 };
 
-type RetryCallInput<TArgs extends unknown[], TResult> = {
+type RetryCallInput<TRequest extends object, TResult> = {
   adapterKind: RetryAdapterKind;
   method: string;
-  call: (...args: [...TArgs, AdapterCallContext?]) => MaybePromise<TResult>;
-  args: [...TArgs, AdapterCallContext?];
+  call: (request: TRequest) => MaybePromise<TResult>;
+  request: TRequest;
   policy?: RetryPolicy | null;
   metadata?: RetryMetadata | null;
   trace?: TraceEvent[];
   report?: AdapterCallContext["report"];
 };
 
-export type RetryWrapperInput<TArgs extends unknown[], TResult> = {
+export type RetryWrapperInput<TRequest extends object, TResult> = {
   adapterKind: RetryAdapterKind;
   method: string;
-  call: (...args: [...TArgs, AdapterCallContext?]) => MaybePromise<TResult>;
+  call: (request: TRequest) => MaybePromise<TResult>;
   policy?: RetryPolicy | null;
   metadata?: RetryMetadata | null;
   trace?: TraceEvent[];
@@ -303,25 +303,25 @@ const readRetryMode = (policy: RetryPolicy) => policy.mode ?? "pause";
 const shouldPauseRetry = (policy: RetryPolicy, delayMs: number) =>
   readRetryMode(policy) === "pause" && delayMs > 0;
 
-type RetryCallState<TArgs extends unknown[], TResult> = {
-  input: RetryCallInput<TArgs, TResult>;
+type RetryCallState<TRequest extends object, TResult> = {
+  input: RetryCallInput<TRequest, TResult>;
   policy: RetryPolicy;
   maxAttempts: number;
   attempt: number;
 };
 
-const createRetryCallState = <TArgs extends unknown[], TResult>(
-  input: RetryCallInput<TArgs, TResult>,
+const createRetryCallState = <TRequest extends object, TResult>(
+  input: RetryCallInput<TRequest, TResult>,
   policy: RetryPolicy,
-): RetryCallState<TArgs, TResult> => ({
+): RetryCallState<TRequest, TResult> => ({
   input,
   policy,
   maxAttempts: policy.maxAttempts,
   attempt: 0,
 });
 
-const toRetryData = <TArgs extends unknown[], TResult>(
-  state: RetryCallState<TArgs, TResult>,
+const toRetryData = <TRequest extends object, TResult>(
+  state: RetryCallState<TRequest, TResult>,
   reason: RetryReason,
 ) => ({
   adapterKind: state.input.adapterKind,
@@ -331,8 +331,8 @@ const toRetryData = <TArgs extends unknown[], TResult>(
   reason,
 });
 
-const shouldRetryAttempt = <TArgs extends unknown[], TResult>(
-  state: RetryCallState<TArgs, TResult>,
+const shouldRetryAttempt = <TRequest extends object, TResult>(
+  state: RetryCallState<TRequest, TResult>,
   reason: RetryReason,
 ) => {
   if (!shouldRetryReason(state.policy, reason)) {
@@ -341,8 +341,8 @@ const shouldRetryAttempt = <TArgs extends unknown[], TResult>(
   return state.attempt < state.maxAttempts;
 };
 
-const handleRetryExhausted = <TArgs extends unknown[], TResult>(
-  state: RetryCallState<TArgs, TResult>,
+const handleRetryExhausted = <TRequest extends object, TResult>(
+  state: RetryCallState<TRequest, TResult>,
   data: Record<string, unknown>,
   error: unknown,
 ) => {
@@ -351,19 +351,19 @@ const handleRetryExhausted = <TArgs extends unknown[], TResult>(
   throw error;
 };
 
-const runRetryAttempt = <TArgs extends unknown[], TResult>(
-  state: RetryCallState<TArgs, TResult>,
+const runRetryAttempt = <TRequest extends object, TResult>(
+  state: RetryCallState<TRequest, TResult>,
 ): MaybePromise<TResult> =>
   maybeTry(
-    bindFirst(handleRetryError<TArgs, TResult>, state),
-    bindFirst(runRetryCallAttempt<TArgs, TResult>, state),
+    bindFirst(handleRetryError<TRequest, TResult>, state),
+    bindFirst(runRetryCallAttempt<TRequest, TResult>, state),
   );
 
-const runRetryCallAttempt = <TArgs extends unknown[], TResult>(
-  state: RetryCallState<TArgs, TResult>,
+const runRetryCallAttempt = <TRequest extends object, TResult>(
+  state: RetryCallState<TRequest, TResult>,
 ) => {
   const startedAt = Date.now();
-  const result = state.input.call(...state.input.args);
+  const result = state.input.call(state.input.request);
   const timeoutMs = state.policy.timeoutMs;
   if (timeoutMs === null || timeoutMs === undefined) {
     return result;
@@ -389,8 +389,8 @@ const runRetryCallAttempt = <TArgs extends unknown[], TResult>(
   });
 };
 
-const waitForRetry = <TArgs extends unknown[], TResult>(
-  state: RetryCallState<TArgs, TResult>,
+const waitForRetry = <TRequest extends object, TResult>(
+  state: RetryCallState<TRequest, TResult>,
   delayMs: number,
 ) =>
   new Promise<TResult>((resolve, reject) => {
@@ -403,8 +403,8 @@ const waitForRetry = <TArgs extends unknown[], TResult>(
     }, delayMs);
   });
 
-const handleRetryError = <TArgs extends unknown[], TResult>(
-  state: RetryCallState<TArgs, TResult>,
+const handleRetryError = <TRequest extends object, TResult>(
+  state: RetryCallState<TRequest, TResult>,
   error: unknown,
 ): MaybePromise<TResult> => {
   state.attempt += 1;
@@ -421,50 +421,50 @@ const handleRetryError = <TArgs extends unknown[], TResult>(
   return delayMs > 0 ? waitForRetry(state, delayMs) : runRetryAttempt(state);
 };
 
-const runRetryCall = <TArgs extends unknown[], TResult>(input: RetryCallInput<TArgs, TResult>) => {
+const runRetryCall = <TRequest extends object, TResult>(
+  input: RetryCallInput<TRequest, TResult>,
+) => {
   const selectedPolicy = selectRetryPolicy(input.policy, input.metadata);
   if (!selectedPolicy) {
-    return input.call(...input.args);
+    return input.call(input.request);
   }
   const policy = filterRetryReasons(selectedPolicy, input.metadata);
   const state = createRetryCallState(input, policy);
   return runRetryAttempt(state);
 };
 
-const buildRetryInput = <TArgs extends unknown[], TResult>(
-  input: RetryWrapperInput<TArgs, TResult>,
-  args: [...TArgs, AdapterCallContext?],
+const buildRetryInput = <TRequest extends object, TResult>(
+  input: RetryWrapperInput<TRequest, TResult>,
+  request: TRequest,
   overrideContext?: AdapterCallContext,
-): RetryCallInput<TArgs, TResult> => ({
+): RetryCallInput<TRequest, TResult> => ({
   adapterKind: input.adapterKind,
   method: input.method,
   call: input.call,
-  args,
+  request,
   policy: input.policy,
   metadata: input.metadata,
   trace: input.trace,
   report: overrideContext?.report ?? input.context.report,
 });
 
-const callWithRetry = <TArgs extends unknown[], TResult>(
-  input: RetryWrapperInput<TArgs, TResult>,
-  args: [...TArgs, AdapterCallContext?],
+const callWithRetry = <TRequest extends object, TResult>(
+  input: RetryWrapperInput<TRequest, TResult>,
+  request: TRequest,
   overrideContext?: AdapterCallContext,
-) => runRetryCall(buildRetryInput(input, args, overrideContext));
+) => runRetryCall(buildRetryInput(input, request, overrideContext));
 
-export const wrapRetryCall = <TArgs extends unknown[], TResult>(
-  input: RetryWrapperInput<TArgs, TResult>,
-  domainArity: number,
-  ...args: [...TArgs, AdapterCallContext?]
+export const wrapRetryCall = <TRequest extends object, TResult>(
+  input: RetryWrapperInput<TRequest, TResult>,
+  request: TRequest,
+  attachContext = true,
 ) => {
-  const overrideContext = args[domainArity] as AdapterCallContext | undefined;
-  const domainArgs = args.slice(0, domainArity) as unknown[];
-  while (domainArgs.length < domainArity) {
-    domainArgs.push(undefined);
-  }
-  return callWithRetry(
-    input,
-    [...domainArgs, overrideContext ?? input.context] as unknown as [...TArgs, AdapterCallContext?],
-    overrideContext,
-  );
+  const overrideContext =
+    attachContext && "context" in request
+      ? (request.context as AdapterCallContext | undefined)
+      : undefined;
+  const effectiveRequest = attachContext
+    ? ({ ...request, context: overrideContext ?? input.context } as TRequest)
+    : request;
+  return callWithRetry(input, effectiveRequest, overrideContext);
 };

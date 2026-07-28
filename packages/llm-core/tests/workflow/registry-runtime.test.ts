@@ -47,7 +47,7 @@ describe("Workflow registry routing", () => {
       adapters?: { model?: Model; retriever?: Retriever };
     };
     expect(resolved.adapters?.model?.metadata).toBe(modelMeta);
-    const retrieved = resolved.adapters?.retriever?.retrieve("q");
+    const retrieved = resolved.adapters?.retriever?.retrieve({ query: "q" });
     expect(retrieved && typeof retrieved === "object").toBe(true);
     expect(resolved.adapters?.retriever?.metadata).toBe(retrieverMeta);
     const result = retrieved as { documents?: unknown[] };

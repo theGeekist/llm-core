@@ -13,7 +13,7 @@ import type { Reranker } from "#adapters/types";
 import { maybeMap } from "#shared/maybe";
 
 const toRerankerFromLangChain = (compressor: BaseDocumentCompressor): Reranker => ({
-  rerank: (query, documents) => {
+  rerank: ({ query, documents }) => {
     const langchainDocs = documents.map(
       (doc) =>
         new LangChainDocument({
@@ -35,7 +35,7 @@ const toRerankerFromLangChain = (compressor: BaseDocumentCompressor): Reranker =
 });
 
 const toRerankerFromLlama = (reranker: BaseNodePostprocessor): Reranker => ({
-  rerank: (query, documents) => {
+  rerank: ({ query, documents }) => {
     const nodes: NodeWithScore[] = documents.map((doc) => ({
       node: new LlamaDocument({ text: doc.text, metadata: doc.metadata }),
       score: doc.score,
@@ -67,7 +67,7 @@ describe("Interop reranker", () => {
     } as BaseDocumentCompressor;
 
     const adapted = toRerankerFromLangChain(compressor);
-    const result = await adapted.rerank("query", [{ text: "hello" }]);
+    const result = await adapted.rerank({ query: "query", documents: [{ text: "hello" }] });
     expect(result[0]?.text).toBe("hello");
   });
 
@@ -77,7 +77,7 @@ describe("Interop reranker", () => {
     } as BaseNodePostprocessor;
 
     const adapted = toRerankerFromLlama(reranker);
-    const result = await adapted.rerank("query", [{ text: "hello" }]);
+    const result = await adapted.rerank({ query: "query", documents: [{ text: "hello" }] });
     expect(result[0]?.text).toBe("hello");
   });
 
@@ -92,7 +92,7 @@ describe("Interop reranker", () => {
         }),
     };
     const adapter = fromAiSdkReranker(model);
-    const result = await adapter.rerank("query", [{ text: "hello" }]);
+    const result = await adapter.rerank({ query: "query", documents: [{ text: "hello" }] });
     expect(result[0]?.score).toBe(0.8);
   });
 });

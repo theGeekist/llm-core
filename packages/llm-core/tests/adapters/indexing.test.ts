@@ -49,7 +49,10 @@ describe("Adapter LangChain indexing", () => {
     const adapter = fromLangChainIndexing(recordManager, vectorStore.store);
     const { context, diagnostics } = captureDiagnostics();
 
-    const result = await adapter.index(undefined as unknown as { documents: [] }, context);
+    const result = await adapter.index({
+      ...(undefined as unknown as { documents: [] }),
+      context,
+    });
     expect(result.added).toBe(0);
     expect(diagnostics.map((entry) => entry.message)).toContain("indexing_input_missing");
   });

@@ -67,11 +67,12 @@ const readTool = (tools: Tool[] | null, name: string): Tool => {
 
 type ToolExecute = NonNullable<Tool["execute"]>;
 
-const requireToolExecute = (tool: Tool): ToolExecute => {
+const requireToolExecute = (tool: Tool) => {
   if (!tool.execute) {
     throw new Error(`Tool ${tool.name} is missing execute.`);
   }
-  return tool.execute;
+  return (input: unknown, context?: Parameters<ToolExecute>[0]["context"]) =>
+    tool.execute?.({ input, context });
 };
 
 const readErrorCode = (result: unknown): string | null => {

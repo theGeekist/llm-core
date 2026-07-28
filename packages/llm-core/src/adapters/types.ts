@@ -2,6 +2,7 @@ export type {
   AdapterCallContext,
   AdapterDiagnostic,
   AdapterMetadata,
+  AdapterRequest,
   AdapterRequirement,
   AdapterTraceEvent,
   EventStream,

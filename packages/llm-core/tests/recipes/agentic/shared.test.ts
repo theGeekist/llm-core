@@ -31,7 +31,7 @@ describe("Agent state helpers", () => {
     const tools: Tool[] = [
       {
         name: "echo",
-        execute: (input) => input,
+        execute: ({ input }) => input,
       },
     ];
     const calls = [

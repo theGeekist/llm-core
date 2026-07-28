@@ -267,7 +267,7 @@ describe("Workflow runtime", () => {
       plugins: [{ key: "adapter.retriever", adapters: { retriever } }],
       run: (options) => {
         const adapters = options.adapters as { retriever?: typeof retriever };
-        adapters.retriever?.retrieve(" ");
+        adapters.retriever?.retrieve({ query: " " });
         return { artefact: { ok: true } };
       },
     });
@@ -284,7 +284,7 @@ describe("Workflow runtime", () => {
       plugins: [{ key: "adapter.retriever", adapters: { retriever } }],
       run: (options) => {
         const adapters = options.adapters as { retriever?: typeof retriever };
-        adapters.retriever?.retrieve(" ");
+        adapters.retriever?.retrieve({ query: " " });
         const pauseSnapshot: PipelinePauseSnapshot<unknown> = {
           stageIndex: 0,
           state: { userState: {} },

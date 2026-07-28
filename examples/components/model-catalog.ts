@@ -397,7 +397,7 @@ const readRequestBody = async (req: Request): Promise<ModelCatalogRequest | null
   }
 };
 
-const withAuthHeader = (token: string, headers: HeadersInit) => ({
+const withAuthHeader = (token: string, headers: Record<string, string>) => ({
   ...headers,
   Authorization: `Bearer ${token}`,
 });

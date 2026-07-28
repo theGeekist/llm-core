@@ -55,7 +55,7 @@ const stepRetryEmbedder: StepApply = ({ context }) => {
   if (!retryEmbedder) {
     return null;
   }
-  return maybeMap(toNull, retryEmbedder.embed("hi"));
+  return maybeMap(toNull, retryEmbedder.embed({ text: "hi" }));
 };
 
 const stepRollbackBuilder: StepApply = ({ state }) => {

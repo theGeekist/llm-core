@@ -63,7 +63,10 @@ const buildPack = () =>
       if (!engine) {
         throw new Error("Missing queryEngine adapter.");
       }
-      return maybeMap(bindFirst(writeQueryResult, state), engine.query("Summarize the greeting."));
+      return maybeMap(
+        bindFirst(writeQueryResult, state),
+        engine.query({ query: "Summarize the greeting." }),
+      );
     }),
     summarize: step("summarize", ({ state, context }) => {
       const model = context.adapters?.model;

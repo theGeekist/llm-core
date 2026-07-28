@@ -16,9 +16,11 @@ describe("Adapter memory", () => {
     });
 
     const adapter = fromLangChainMemory(memory);
-    const loaded = await adapter.load?.({ input: "hi" });
+    const loaded = await adapter.load?.({ input: { input: "hi" } });
     expect(loaded).toEqual({ history: [] });
-    await expect(adapter.save?.({ input: "hi" }, { output: "ok" })).resolves.toBe(true);
+    await expect(
+      adapter.save?.({ input: { input: "hi" }, output: { output: "ok" } }),
+    ).resolves.toBe(true);
   });
 
   it("maps LlamaIndex memory", async () => {
@@ -34,14 +36,16 @@ describe("Adapter memory", () => {
     });
 
     const adapter = fromLlamaIndexMemory(memory);
-    const thread = await adapter.read?.("thread");
+    const thread = await adapter.read?.({ threadId: "thread" });
     expect(thread?.turns).toEqual([
       { role: "system", content: "note" },
       { role: "system", content: "memo" },
       { role: "user", content: "" },
     ]);
-    await expect(adapter.append?.("thread", { role: "user", content: "hi" })).resolves.toBe(true);
-    await expect(adapter.reset?.()).resolves.toBe(true);
+    await expect(
+      adapter.append?.({ threadId: "thread", turn: { role: "user", content: "hi" } }),
+    ).resolves.toBe(true);
+    await expect(adapter.reset?.({})).resolves.toBe(true);
   });
 
   it("warns when memory thread id is missing", async () => {
@@ -53,7 +57,7 @@ describe("Adapter memory", () => {
     const adapter = fromLlamaIndexMemory(memory);
     const { context, diagnostics } = captureDiagnostics();
 
-    const thread = await adapter.read?.("", context);
+    const thread = await adapter.read?.({ threadId: "", context });
     expect(thread).toBeNull();
     expect(diagnostics[0]?.message).toBe("memory_thread_missing");
   });
@@ -68,9 +72,9 @@ describe("Adapter memory", () => {
     const { context, diagnostics } = captureDiagnostics();
 
     const missingInput = undefined as never;
-    await adapter.load?.(missingInput, context);
-    await adapter.save?.(missingInput, { output: "ok" }, context);
-    await adapter.save?.({ input: "ok" }, undefined as never, context);
+    await adapter.load?.({ input: missingInput, context });
+    await adapter.save?.({ input: missingInput, output: { output: "ok" }, context });
+    await adapter.save?.({ input: { input: "ok" }, output: undefined as never, context });
 
     const messages = diagnostics.map((entry) => entry.message);
     expect(messages).toContain("memory_input_missing");
@@ -107,14 +111,17 @@ describe("Adapter memory", () => {
     });
 
     const adapter = fromAiSdkMemory(provider, { scope: "chat", userId: "user-1" });
-    const thread = await adapter.read?.("thread-1");
+    const thread = await adapter.read?.({ threadId: "thread-1" });
     expect(thread).toEqual({
       id: "thread-1",
       turns: [{ role: "user", content: "hello", timestamp: 1234 }],
     });
 
     await expect(
-      adapter.append?.("thread-1", { role: "assistant", content: "ok", timestamp: 999 }),
+      adapter.append?.({
+        threadId: "thread-1",
+        turn: { role: "assistant", content: "ok", timestamp: 999 },
+      }),
     ).resolves.toBe(true);
     expect(savedMessage).toEqual({
       chatId: "thread-1",
@@ -124,14 +131,17 @@ describe("Adapter memory", () => {
       timestamp: new Date(999),
     });
 
-    const loaded = await adapter.load?.({ threadId: "thread-1" });
+    const loaded = await adapter.load?.({ input: { threadId: "thread-1" } });
     expect(loaded).toEqual({
       workingMemory: "facts",
       workingMemoryUpdatedAt: new Date(555),
     });
 
     await expect(
-      adapter.save?.({ threadId: "thread-1" }, { workingMemory: "updated" }),
+      adapter.save?.({
+        input: { threadId: "thread-1" },
+        output: { workingMemory: "updated" },
+      }),
     ).resolves.toBe(true);
     expect(savedWorkingMemory).toEqual({
       chatId: "thread-1",
@@ -151,12 +161,12 @@ describe("Adapter memory", () => {
     const adapter = fromAiSdkMemory(provider);
     const { context, diagnostics } = captureDiagnostics();
 
-    const thread = await adapter.read?.("", context);
+    const thread = await adapter.read?.({ threadId: "", context });
     expect(thread).toBeNull();
 
-    await adapter.append?.("", { role: "user", content: "hi" }, context);
-    await adapter.load?.(undefined as never, context);
-    await adapter.save?.(undefined as never, undefined as never, context);
+    await adapter.append?.({ threadId: "", turn: { role: "user", content: "hi" }, context });
+    await adapter.load?.({ input: undefined as never, context });
+    await adapter.save?.({ input: undefined as never, output: undefined as never, context });
 
     expect(diagnostics.map((entry) => entry.message)).toContain("memory_thread_missing");
     expect(diagnostics.map((entry) => entry.message)).toContain("memory_input_missing");
@@ -168,10 +178,18 @@ describe("Adapter memory", () => {
     const adapter = fromAiSdkMemory(provider);
     const { context, diagnostics } = captureDiagnostics();
 
-    await adapter.read?.("thread-1", context);
-    await adapter.append?.("thread-1", { role: "user", content: "hi" }, context);
-    await adapter.load?.({ threadId: "thread-1" }, context);
-    await adapter.save?.({ threadId: "thread-1" }, { workingMemory: "" }, context);
+    await adapter.read?.({ threadId: "thread-1", context });
+    await adapter.append?.({
+      threadId: "thread-1",
+      turn: { role: "user", content: "hi" },
+      context,
+    });
+    await adapter.load?.({ input: { threadId: "thread-1" }, context });
+    await adapter.save?.({
+      input: { threadId: "thread-1" },
+      output: { workingMemory: "" },
+      context,
+    });
 
     const missing = diagnostics.filter((entry) => entry.message === "memory_provider_missing");
     expect(missing).toHaveLength(4);

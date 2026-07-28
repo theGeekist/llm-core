@@ -4,12 +4,9 @@ import type {
   AdapterBundle,
   AdapterCallContext,
   AdapterDiagnostic,
-  ImageCall,
   ModelCall,
   ModelStreamEvent,
   QueryStreamEvent,
-  SpeechCall,
-  TranscriptionCall,
 } from "#adapters";
 import type { RetryConfig } from "#adapters";
 
@@ -20,10 +17,9 @@ const makeReporter = (bucket: AdapterDiagnostic[]) => ({
 });
 
 const createEndStream =
-  <TInput>(onCall: () => void) =>
-  (_input: TInput, _context?: AdapterCallContext): AsyncIterable<QueryStreamEvent> => {
+  <TInput extends object>(onCall: () => void) =>
+  (_input: TInput): AsyncIterable<QueryStreamEvent> => {
     void _input;
-    void _context;
     onCall();
     return (async function* (): AsyncIterable<QueryStreamEvent> {
       yield { type: "end", timestamp: Date.now() };
@@ -45,176 +41,196 @@ describe("Workflow adapter context wrappers", () => {
     const { context, diagnostics } = createAdapterContext();
     const adapters: AdapterBundle = {
       embedder: {
-        embed: (_text, ctx) => {
-          ctx?.report?.({ level: "warn", message: "embed" });
+        embed: ({ context }) => {
+          context?.report?.({ level: "warn", message: "embed" });
           return [0.1];
         },
-        embedMany: (_texts, ctx) => {
-          ctx?.report?.({ level: "warn", message: "embedMany" });
+        embedMany: ({ context }) => {
+          context?.report?.({ level: "warn", message: "embedMany" });
           return [[0.1]];
         },
       },
       retriever: {
-        retrieve: (_query, ctx) => {
-          ctx?.report?.({ level: "warn", message: "retrieve" });
+        retrieve: ({ context }) => {
+          context?.report?.({ level: "warn", message: "retrieve" });
           return { documents: [] };
         },
       },
       image: {
-        generate: (_call: ImageCall, ctx?: AdapterCallContext) => {
-          ctx?.report?.({ level: "warn", message: "image" });
+        generate: ({ context }) => {
+          context?.report?.({ level: "warn", message: "image" });
           return { images: [] };
         },
       },
       reranker: {
-        rerank: (_query, _documents, ctx) => {
-          ctx?.report?.({ level: "warn", message: "rerank" });
+        rerank: ({ context }) => {
+          context?.report?.({ level: "warn", message: "rerank" });
           return [];
         },
       },
       textSplitter: {
-        split: (_text, ctx) => {
-          ctx?.report?.({ level: "warn", message: "split" });
+        split: ({ context }) => {
+          context?.report?.({ level: "warn", message: "split" });
           return [];
         },
-        splitBatch: (_texts, ctx) => {
-          ctx?.report?.({ level: "warn", message: "splitBatch" });
+        splitBatch: ({ context }) => {
+          context?.report?.({ level: "warn", message: "splitBatch" });
           return [];
         },
-        splitWithMetadata: (_input, ctx) => {
-          ctx?.report?.({ level: "warn", message: "splitWithMetadata" });
+        splitWithMetadata: ({ context }) => {
+          context?.report?.({ level: "warn", message: "splitWithMetadata" });
           return [{ text: "hi", metadata: {} }];
         },
       },
       transformer: {
-        transform: (_docs, ctx) => {
-          ctx?.report?.({ level: "warn", message: "transform" });
+        transform: ({ context }) => {
+          context?.report?.({ level: "warn", message: "transform" });
           return [];
         },
       },
+      indexing: {
+        index: ({ context }) => {
+          context?.report?.({ level: "warn", message: "index" });
+          return { added: 0, deleted: 0, updated: 0, skipped: 0 };
+        },
+      },
       storage: {
-        get: (_key, ctx) => {
-          ctx?.report?.({ level: "warn", message: "get" });
+        get: ({ context }) => {
+          context?.report?.({ level: "warn", message: "get" });
           return null;
         },
-        put: (_key, _value, ctx) => {
-          ctx?.report?.({ level: "warn", message: "put" });
+        put: ({ context }) => {
+          context?.report?.({ level: "warn", message: "put" });
           return null;
         },
-        delete: (_key, ctx) => {
-          ctx?.report?.({ level: "warn", message: "delete" });
+        delete: ({ context }) => {
+          context?.report?.({ level: "warn", message: "delete" });
           return null;
         },
-        list: (_prefix, ctx) => {
-          ctx?.report?.({ level: "warn", message: "list" });
+        list: ({ context }) => {
+          context?.report?.({ level: "warn", message: "list" });
           return [];
         },
       },
       kv: {
-        mget: (_keys, ctx) => {
-          ctx?.report?.({ level: "warn", message: "mget" });
+        mget: ({ context }) => {
+          context?.report?.({ level: "warn", message: "mget" });
           return [];
         },
-        mset: (_pairs, ctx) => {
-          ctx?.report?.({ level: "warn", message: "mset" });
+        mset: ({ context }) => {
+          context?.report?.({ level: "warn", message: "mset" });
           return null;
         },
-        mdelete: (_keys, ctx) => {
-          ctx?.report?.({ level: "warn", message: "mdelete" });
+        mdelete: ({ context }) => {
+          context?.report?.({ level: "warn", message: "mdelete" });
           return null;
         },
-        list: (_prefix, ctx) => {
-          ctx?.report?.({ level: "warn", message: "listKv" });
+        list: ({ context }) => {
+          context?.report?.({ level: "warn", message: "listKv" });
           return [];
         },
       },
       memory: {
-        append: (_threadId, _turn, ctx) => {
-          ctx?.report?.({ level: "warn", message: "append" });
+        append: ({ context }) => {
+          context?.report?.({ level: "warn", message: "append" });
           return null;
         },
-        read: (_threadId, ctx) => {
-          ctx?.report?.({ level: "warn", message: "read" });
+        read: ({ context }) => {
+          context?.report?.({ level: "warn", message: "read" });
           return null;
         },
-        summarize: (_threadId, ctx) => {
-          ctx?.report?.({ level: "warn", message: "summarize" });
+        summarize: ({ context }) => {
+          context?.report?.({ level: "warn", message: "summarize" });
           return "";
         },
-        load: (_input, ctx) => {
-          ctx?.report?.({ level: "warn", message: "load" });
+        load: ({ context }) => {
+          context?.report?.({ level: "warn", message: "load" });
           return {};
         },
-        save: (_input, _output, ctx) => {
-          ctx?.report?.({ level: "warn", message: "save" });
+        save: ({ context }) => {
+          context?.report?.({ level: "warn", message: "save" });
           return null;
         },
-        reset: (ctx) => {
-          ctx?.report?.({ level: "warn", message: "reset" });
+        reset: ({ context }) => {
+          context?.report?.({ level: "warn", message: "reset" });
           return null;
         },
       },
       speech: {
-        generate: (_call: SpeechCall, ctx?: AdapterCallContext) => {
-          ctx?.report?.({ level: "warn", message: "speech" });
+        generate: ({ context }) => {
+          context?.report?.({ level: "warn", message: "speech" });
           return { audio: { bytes: new Uint8Array() } };
         },
       },
       transcription: {
-        generate: (_call: TranscriptionCall, ctx?: AdapterCallContext) => {
-          ctx?.report?.({ level: "warn", message: "transcription" });
+        generate: ({ context }) => {
+          context?.report?.({ level: "warn", message: "transcription" });
           return { text: "" };
+        },
+      },
+      skills: {
+        load: ({ context }) => {
+          context?.report?.({ level: "warn", message: "skills" });
+          return { skills: [] };
         },
       },
       tools: [
         {
           name: "tool",
-          execute: (_input, ctx) => {
-            ctx?.report?.({ level: "warn", message: "tool" });
+          execute: ({ context }) => {
+            context?.report?.({ level: "warn", message: "tool" });
             return "ok";
           },
         },
       ],
       vectorStore: {
-        upsert: (_input, ctx) => {
-          ctx?.report?.({ level: "warn", message: "upsert" });
+        upsert: ({ context }) => {
+          context?.report?.({ level: "warn", message: "upsert" });
           return { ids: [] };
         },
-        delete: (_input, ctx) => {
-          ctx?.report?.({ level: "warn", message: "vectorDelete" });
+        delete: ({ context }) => {
+          context?.report?.({ level: "warn", message: "vectorDelete" });
           return null;
         },
       },
     };
 
-    const wrapped = attachAdapterContext(adapters, context);
+    const wrapped = attachAdapterContext({ adapters, context });
 
-    await wrapped.embedder?.embed("hi");
-    await wrapped.embedder?.embedMany?.(["hi"]);
-    await wrapped.retriever?.retrieve("hi");
+    await wrapped.embedder?.embed({ text: "hi" });
+    await wrapped.embedder?.embedMany?.({ texts: ["hi"] });
+    await wrapped.retriever?.retrieve({ query: "hi" });
     await wrapped.image?.generate({ prompt: "hi" });
-    await wrapped.reranker?.rerank("hi", []);
-    await wrapped.textSplitter?.split("hi");
-    await wrapped.textSplitter?.splitBatch?.(["hi"]);
-    await wrapped.textSplitter?.splitWithMetadata?.("hi");
-    await wrapped.transformer?.transform([]);
-    await wrapped.storage?.get("key");
-    await wrapped.storage?.put("key", { bytes: new Uint8Array() });
-    await wrapped.storage?.delete("key");
-    await wrapped.storage?.list("");
-    await wrapped.kv?.mget(["key"]);
-    await wrapped.kv?.mset([["key", { ok: true }]]);
-    await wrapped.kv?.mdelete(["key"]);
-    await wrapped.kv?.list("");
-    await wrapped.memory?.append?.("thread", { role: "user", content: "hi" });
-    await wrapped.memory?.read?.("thread");
-    await wrapped.memory?.summarize?.("thread");
-    await wrapped.memory?.load?.({ input: "hi" });
-    await wrapped.memory?.save?.({ input: "hi" }, { output: "ok" });
-    await wrapped.memory?.reset?.();
+    await wrapped.reranker?.rerank({ query: "hi", documents: [] });
+    await wrapped.textSplitter?.split({ text: "hi" });
+    await wrapped.textSplitter?.splitBatch?.({ texts: ["hi"] });
+    await wrapped.textSplitter?.splitWithMetadata?.({ text: "hi" });
+    await wrapped.transformer?.transform({ documents: [] });
+    await wrapped.indexing?.index({ documents: [] });
+    await wrapped.storage?.get({ key: "key" });
+    await wrapped.storage?.put({ key: "key", blob: { bytes: new Uint8Array() } });
+    await wrapped.storage?.delete({ key: "key" });
+    await wrapped.storage?.list({ prefix: "" });
+    await wrapped.kv?.mget({ keys: ["key"] });
+    await wrapped.kv?.mset({ pairs: [["key", { ok: true }]] });
+    await wrapped.kv?.mdelete({ keys: ["key"] });
+    await wrapped.kv?.list({ prefix: "" });
+    await wrapped.memory?.append?.({
+      threadId: "thread",
+      turn: { role: "user", content: "hi" },
+    });
+    await wrapped.memory?.read?.({ threadId: "thread" });
+    await wrapped.memory?.summarize?.({ threadId: "thread" });
+    await wrapped.memory?.load?.({ input: { input: "hi" } });
+    await wrapped.memory?.save?.({
+      input: { input: "hi" },
+      output: { output: "ok" },
+    });
+    await wrapped.memory?.reset?.({});
     await wrapped.speech?.generate({ text: "hi" });
     await wrapped.transcription?.generate({ audio: { bytes: new Uint8Array() } });
-    await wrapped.tools?.[0]?.execute?.({ ok: true });
+    await wrapped.skills?.load({});
+    await wrapped.tools?.[0]?.execute?.({ input: { ok: true } });
     await wrapped.vectorStore?.upsert({ documents: [] });
     await wrapped.vectorStore?.delete({ ids: [] });
 
@@ -227,64 +243,65 @@ describe("Workflow adapter context wrappers", () => {
     const overrideContext: AdapterCallContext = makeReporter(overrideDiagnostics);
     const adapters: AdapterBundle = {
       embedder: {
-        embed: (_text, ctx) => {
-          ctx?.report?.({ level: "warn", message: "embed" });
+        embed: ({ context: requestContext }) => {
+          requestContext?.report?.({ level: "warn", message: "embed" });
           return [0.2];
         },
       },
     };
 
-    const wrapped = attachAdapterContext(adapters, context);
-    await wrapped.embedder?.embed("hi", overrideContext);
+    const wrapped = attachAdapterContext({ adapters, context });
+    await wrapped.embedder?.embed({ text: "hi", context: overrideContext });
 
     expect(diagnostics).toHaveLength(0);
     expect(overrideDiagnostics[0]?.message).toBe("embed");
   });
 
-  it("places default context after the real Memory.save and reset domain arguments", async () => {
+  it("adds default context to Memory.save and reset requests", async () => {
     const { context } = createAdapterContext();
     const received: AdapterCallContext[] = [];
-    const wrapped = attachAdapterContext(
-      {
+    const wrapped = attachAdapterContext({
+      adapters: {
         memory: {
-          save: (_input, _output, ctx) => {
-            if (ctx) {
-              received.push(ctx);
+          save: ({ context: requestContext }) => {
+            if (requestContext) {
+              received.push(requestContext);
             }
             return true;
           },
-          reset: (ctx) => {
-            if (ctx) {
-              received.push(ctx);
+          reset: ({ context: requestContext }) => {
+            if (requestContext) {
+              received.push(requestContext);
             }
             return true;
           },
         },
       },
       context,
-    );
+    });
 
-    await wrapped.memory?.save?.({ input: "hi" }, { output: "ok" });
-    await wrapped.memory?.reset?.();
+    await wrapped.memory?.save?.({
+      input: { input: "hi" },
+      output: { output: "ok" },
+    });
+    await wrapped.memory?.reset?.({});
 
     expect(received).toEqual([context, context]);
   });
 
-  it("pads optional domain arguments before injecting context", async () => {
+  it("preserves absent optional fields while injecting context", async () => {
     const { context } = createAdapterContext();
     let cacheTtl: number | undefined = 42;
     let cacheContext: AdapterCallContext | undefined;
     let listPrefix: string | undefined = "unexpected";
     let listContext: AdapterCallContext | undefined;
-    const wrapped = attachAdapterContext(
-      {
+    const wrapped = attachAdapterContext({
+      adapters: {
         cache: {
           get: () => null,
-          set: (...args) => {
-            const ttlMs = args[2];
-            const ctx = args[3];
+          set: ({ ttlMs, context: requestContext }) => {
             cacheTtl = ttlMs;
-            cacheContext = ctx;
+            cacheContext = requestContext;
             return true;
           },
           delete: () => true,
@@ -293,18 +310,18 @@ describe("Workflow adapter context wrappers", () => {
           get: () => null,
           put: () => true,
           delete: () => true,
-          list: (prefix, ctx) => {
+          list: ({ prefix, context: requestContext }) => {
             listPrefix = prefix;
-            listContext = ctx;
+            listContext = requestContext;
             return [];
           },
         },
       },
       context,
-    );
+    });
 
-    await wrapped.cache?.set("key", { bytes: new Uint8Array() });
-    await wrapped.storage?.list();
+    await wrapped.cache?.set({ key: "key", value: { bytes: new Uint8Array() } });
+    await wrapped.storage?.list({});
 
     expect(cacheTtl).toBeUndefined();
     expect(cacheContext).toBe(context);
@@ -329,8 +346,8 @@ describe("Workflow adapter context wrappers", () => {
     const retry: RetryConfig = {
       embedder: { maxAttempts: 3, backoffMs: 0 },
     };
-    const wrapped = attachAdapterContext(adapters, context, { retry, trace: [] });
-    const result = await wrapped.embedder?.embed("hi");
+    const wrapped = attachAdapterContext({ adapters, context, retry, trace: [] });
+    const result = await wrapped.embedder?.embed({ text: "hi" });
 
     expect(result).toEqual([0.42]);
     expect(attempts).toBe(3);
@@ -353,8 +370,8 @@ describe("Workflow adapter context wrappers", () => {
         },
       },
     };
-    const wrapped = attachAdapterContext(adapters, context);
-    const result = await wrapped.embedder?.embed("hi");
+    const wrapped = attachAdapterContext({ adapters, context });
+    const result = await wrapped.embedder?.embed({ text: "hi" });
 
     expect(result).toEqual([0.7]);
     expect(attempts).toBe(2);
@@ -380,8 +397,14 @@ describe("Workflow adapter context wrappers", () => {
     const retry: RetryConfig = {
       embedder: { maxAttempts: 3, backoffMs: 0 },
     };
-    const wrapped = attachAdapterContext(adapters, context, { retryDefaults, retry, trace: [] });
-    const result = await wrapped.embedder?.embed("hi");
+    const wrapped = attachAdapterContext({
+      adapters,
+      context,
+      retryDefaults,
+      retry,
+      trace: [],
+    });
+    const result = await wrapped.embedder?.embed({ text: "hi" });
 
     expect(result).toEqual([0.9]);
     expect(attempts).toBe(3);
@@ -398,7 +421,9 @@ describe("Workflow adapter context wrappers", () => {
       },
     };
 
-    const wrapped = attachAdapterContext(adapters, context, {
+    const wrapped = attachAdapterContext({
+      adapters,
+      context,
       retry: { model: { maxAttempts: 2, backoffMs: 0 } },
       trace: [],
     });
@@ -420,7 +445,9 @@ describe("Workflow adapter context wrappers", () => {
       },
     };
 
-    const wrapped = attachAdapterContext(adapters, context, {
+    const wrapped = attachAdapterContext({
+      adapters,
+      context,
       retry: { model: { maxAttempts: 2, backoffMs: 0 } },
       trace: [],
     });
@@ -435,13 +462,13 @@ describe("Workflow adapter context wrappers", () => {
     const formatInstructions = () => "format";
     const adapters: AdapterBundle = {
       outputParser: {
-        parse: (input) => ({ input }),
+        parse: ({ text }) => ({ input: text }),
         formatInstructions,
       },
     };
 
-    const wrapped = attachAdapterContext(adapters, context, { trace: [] });
-    const result = await wrapped.outputParser?.parse("hi");
+    const wrapped = attachAdapterContext({ adapters, context, trace: [] });
+    const result = await wrapped.outputParser?.parse({ text: "hi" });
 
     expect(result).toEqual({ input: "hi" });
     expect(wrapped.outputParser?.formatInstructions).toBe(formatInstructions);
@@ -461,13 +488,15 @@ describe("Workflow adapter context wrappers", () => {
       },
     };
 
-    const wrapped = attachAdapterContext(adapters, context, {
+    const wrapped = attachAdapterContext({
+      adapters,
+      context,
       retry: { queryEngine: { maxAttempts: 2, backoffMs: 0 } },
       trace: [],
     });
 
     expect(wrapped.queryEngine?.stream).not.toBe(stream);
-    await wrapped.queryEngine?.stream?.("q");
+    await wrapped.queryEngine?.stream?.({ query: "q" });
     expect(streamed).toBe(true);
   });
 
@@ -485,7 +514,9 @@ describe("Workflow adapter context wrappers", () => {
       },
     };
 
-    const wrapped = attachAdapterContext(adapters, context, {
+    const wrapped = attachAdapterContext({
+      adapters,
+      context,
       retry: { responseSynthesizer: { maxAttempts: 2, backoffMs: 0 } },
       trace: [],
     });

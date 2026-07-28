@@ -65,15 +65,15 @@ export const createMockSessionStore = () => {
 };
 
 export const createMockSplitter = (withMetadata = false): TextSplitter => ({
-  split: (text) => [text],
+  split: ({ text }) => [text],
   splitWithMetadata: withMetadata
-    ? (text) => [{ text, metadata: { source: "test-meta" } }]
+    ? ({ text }) => [{ text, metadata: { source: "test-meta" } }]
     : undefined,
 });
 
 export const createMockEmbedder = (values = [0.1, 0.2, 0.3], withEmbedMany = false): Embedder => ({
   embed: () => values,
-  embedMany: withEmbedMany ? (texts) => texts.map(() => values) : undefined,
+  embedMany: withEmbedMany ? ({ texts }) => texts.map(() => values) : undefined,
 });
 
 type UpsertInput = { documents?: unknown; vectors?: unknown };
@@ -97,7 +97,7 @@ export const createMockVectorStore = () => {
 export const createMockRetriever = (
   documents = [{ text: "doc-one" }, { text: "doc-two" }],
 ): Retriever => ({
-  retrieve: (query) => ({
+  retrieve: ({ query }) => ({
     query,
     documents,
   }),

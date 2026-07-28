@@ -1,13 +1,7 @@
 import type { RecordManagerInterface } from "@langchain/core/indexing";
 import { index as runIndex } from "@langchain/core/indexing";
 import type { VectorStore as LangChainVectorStore } from "@langchain/core/vectorstores";
-import type {
-  AdapterCallContext,
-  Document,
-  Indexing,
-  IndexingInput,
-  IndexingResult,
-} from "../types";
+import type { AdapterRequest, Document, Indexing, IndexingInput, IndexingResult } from "../types";
 import { bindFirst } from "#shared/fp";
 import { maybeChain, maybeMap } from "#shared/maybe";
 import { reportDiagnostics, validateIndexingInput } from "../input-validation";
@@ -41,12 +35,12 @@ function mapIndexingResult(result: {
   };
 }
 
-function readDocuments(input: IndexingInput) {
-  if (input.documents) {
-    return input.documents;
+function readDocuments(request: AdapterRequest<IndexingInput>) {
+  if (request.documents) {
+    return request.documents;
   }
-  if (input.loader) {
-    return input.loader.load();
+  if (request.loader) {
+    return request.loader.load({ context: request.context });
   }
   return [];
 }
@@ -83,15 +77,15 @@ export function fromLangChainIndexing(
   return { index: bindFirst(indexWithDeps, deps) };
 }
 
-function indexWithDeps(deps: IndexingDeps, input: IndexingInput, context?: AdapterCallContext) {
-  const diagnostics = validateIndexingInput(input);
+function indexWithDeps(deps: IndexingDeps, request: AdapterRequest<IndexingInput>) {
+  const diagnostics = validateIndexingInput(request);
   if (diagnostics.length > 0) {
-    reportDiagnostics(context, diagnostics);
+    reportDiagnostics(request.context, diagnostics);
     return emptyResult();
   }
   const withOptions: IndexingDeps = {
     ...deps,
-    options: input.options,
+    options: request.options,
   };
-  return maybeChain(bindFirst(runSchemaThenIndex, withOptions), readDocuments(input));
+  return maybeChain(bindFirst(runSchemaThenIndex, withOptions), readDocuments(request));
 }

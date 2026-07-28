@@ -1,12 +1,5 @@
 import { describe, expect, it } from "bun:test";
-import type {
-  EventStream,
-  EventStreamEvent,
-  Message,
-  Retriever,
-  RetrievalResult,
-  RetrievalQuery,
-} from "#adapters";
+import type { EventStream, EventStreamEvent, Message, Retriever, RetrievalResult } from "#adapters";
 import {
   runInteractionRequest,
   resolveInteractionRecipeId,
@@ -87,10 +80,7 @@ const readInteractionMeta = (event: EventStreamEvent | null) => {
 };
 
 const createDiagnosticRetriever = (): Retriever => ({
-  retrieve: (
-    query: RetrievalQuery | undefined,
-    context?: { report?: (entry: unknown) => void },
-  ) => {
+  retrieve: ({ query, context }) => {
     context?.report?.({ level: "warn", message: "test diag" });
     const result: RetrievalResult = { query, documents: [] };
     return result;

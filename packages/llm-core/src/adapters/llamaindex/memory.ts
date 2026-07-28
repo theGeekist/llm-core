@@ -1,6 +1,6 @@
 import type { Memory as LlamaIndexMemory } from "@llamaindex/core/memory";
 import type { ChatMessage, MessageType } from "@llamaindex/core/llms";
-import type { AdapterCallContext, Memory, Turn } from "../types";
+import type { AdapterRequest, Memory, Turn } from "../types";
 import { toTrue } from "#shared/fp";
 import { maybeMap } from "#shared/maybe";
 import { reportDiagnostics, validateMemoryTurn, validateThreadId } from "../input-validation";
@@ -27,7 +27,7 @@ const toThreadFromMessages = (messages: ChatMessage[]) => ({
 });
 
 export function fromLlamaIndexMemory(memory: LlamaIndexMemory): Memory {
-  function read(threadId: string, context?: AdapterCallContext) {
+  function read({ threadId, context }: AdapterRequest<{ threadId: string }>) {
     const diagnostics = validateThreadId(threadId, "read");
     if (diagnostics.length > 0) {
       reportDiagnostics(context, diagnostics);
@@ -36,7 +36,7 @@ export function fromLlamaIndexMemory(memory: LlamaIndexMemory): Memory {
     return maybeMap(toThreadFromMessages, memory.getLLM());
   }
 
-  function append(threadId: string, turn: Turn, context?: AdapterCallContext) {
+  function append({ threadId, turn, context }: AdapterRequest<{ threadId: string; turn: Turn }>) {
     const diagnostics = validateThreadId(threadId, "append").concat(validateMemoryTurn(turn));
     if (diagnostics.length > 0) {
       reportDiagnostics(context, diagnostics);
@@ -45,8 +45,7 @@ export function fromLlamaIndexMemory(memory: LlamaIndexMemory): Memory {
     return maybeMap(toTrue, memory.add({ role: turn.role, content: turn.content }));
   }
 
-  function reset(context?: AdapterCallContext) {
-    void context;
+  function reset(_request: AdapterRequest) {
     return maybeMap(toTrue, memory.clear());
   }
 

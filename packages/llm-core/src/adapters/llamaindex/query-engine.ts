@@ -1,5 +1,5 @@
 import type { BaseQueryEngine } from "@llamaindex/core/query-engine";
-import type { AdapterCallContext, QueryEngine, QueryResult, RetrievalQuery } from "../types";
+import type { AdapterRequest, QueryEngine, QueryResult, RetrievalQuery } from "../types";
 import { bindFirst } from "#shared/fp";
 import { maybeMap } from "#shared/maybe";
 import { reportDiagnostics, validateQueryEngineInput } from "../input-validation";
@@ -37,29 +37,31 @@ export function fromLlamaIndexQueryEngine(engine: BaseQueryEngine): QueryEngine 
   };
 }
 
-function queryWithDeps(deps: QueryEngineDeps, input: RetrievalQuery, context?: AdapterCallContext) {
-  const diagnostics = validateQueryEngineInput(input);
+function queryWithDeps(
+  deps: QueryEngineDeps,
+  { query, context }: AdapterRequest<{ query: RetrievalQuery }>,
+) {
+  const diagnostics = validateQueryEngineInput(query);
   if (diagnostics.length > 0) {
     reportDiagnostics(context, diagnostics);
-    return emptyResult(input, diagnostics);
+    return emptyResult(query, diagnostics);
   }
-  const queryType = toLlamaIndexQueryType(input);
-  return maybeMap(bindFirst(mapQueryResponse, input), deps.engine.query({ query: queryType }));
+  const queryType = toLlamaIndexQueryType(query);
+  return maybeMap(bindFirst(mapQueryResponse, query), deps.engine.query({ query: queryType }));
 }
 
 function streamWithDeps(
   deps: QueryEngineDeps,
-  input: RetrievalQuery,
-  context?: AdapterCallContext,
+  { query, context }: AdapterRequest<{ query: RetrievalQuery }>,
 ) {
-  const diagnostics = validateQueryEngineInput(input);
+  const diagnostics = validateQueryEngineInput(query);
   if (diagnostics.length > 0) {
     reportDiagnostics(context, diagnostics);
     return toQueryDiagnosticStreamEvents(diagnostics, undefined);
   }
-  const queryType = toLlamaIndexQueryType(input);
+  const queryType = toLlamaIndexQueryType(query);
   return maybeMap(
-    bindFirst(mapQueryStream, input),
+    bindFirst(mapQueryStream, query),
     deps.engine.query({ query: queryType, stream: true }),
   );
 }

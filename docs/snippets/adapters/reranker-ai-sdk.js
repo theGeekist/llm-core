@@ -18,6 +18,9 @@ const userQuery = "query";
 const retrievedDocs = [];
 
 // In a custom recipe step:
-const refinedDocs = await reranker.rerank(userQuery, retrievedDocs);
+const refinedDocs = await reranker.rerank({
+  query: userQuery,
+  documents: retrievedDocs,
+});
 
 void refinedDocs;

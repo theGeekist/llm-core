@@ -7,19 +7,19 @@ import { toNull } from "../../src/shared/fp";
 import { maybeAll, maybeMap } from "../../src/shared/maybe";
 
 const toAdapterKVFromLangChain = (store: BaseStore<string, unknown>): KVStore => ({
-  mget: (keys) => store.mget(keys),
-  mset: (pairs) => maybeMap(toNull, store.mset(pairs)),
-  mdelete: (keys) => maybeMap(toNull, store.mdelete(keys)),
-  list: (prefix) => collectAsyncKeys(store, prefix),
+  mget: ({ keys }) => store.mget(keys),
+  mset: ({ pairs }) => maybeMap(toNull, store.mset(pairs)),
+  mdelete: ({ keys }) => maybeMap(toNull, store.mdelete(keys)),
+  list: ({ prefix }) => collectAsyncKeys(store, prefix),
 });
 
 const toAdapterKVFromLlamaDocStore = (store: BaseDocumentStore): KVStore => ({
-  mget: (keys) =>
+  mget: ({ keys }) =>
     maybeMap(
       (docs) => docs.map((doc) => (doc ? doc.toJSON() : undefined)),
       Promise.all(keys.map((key) => store.getDocument(key, false))),
     ),
-  mset: (pairs) => {
+  mset: ({ pairs }) => {
     const docs = pairs
       .filter(
         (pair): pair is [string, Record<string, unknown>] =>
@@ -34,7 +34,7 @@ const toAdapterKVFromLlamaDocStore = (store: BaseDocumentStore): KVStore => ({
       });
     return maybeMap(toNull, store.addDocuments(docs as never, true));
   },
-  mdelete: (keys) =>
+  mdelete: ({ keys }) =>
     maybeMap(toNull, maybeAll(keys.map((key) => store.deleteDocument(key, false)))),
   list: () => maybeMap((docs) => Object.keys(docs), store.docs()),
 });

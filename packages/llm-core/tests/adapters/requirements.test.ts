@@ -5,7 +5,7 @@ import { readAdapterRequirements, validateAdapterRequirements } from "#adapters"
 describe("Adapter requirements", () => {
   it("reports missing construct requirements", () => {
     const retriever: Retriever = {
-      retrieve: (query) => ({ query, documents: [] }),
+      retrieve: ({ query }) => ({ query, documents: [] }),
       metadata: { requires: [{ kind: "construct", name: "model" }] },
     };
     const adapters: AdapterBundle = { retriever };
@@ -16,7 +16,7 @@ describe("Adapter requirements", () => {
 
   it("skips construct diagnostics when requirements are met", () => {
     const retriever: Retriever = {
-      retrieve: (query) => ({ query, documents: [] }),
+      retrieve: ({ query }) => ({ query, documents: [] }),
       metadata: { requires: [{ kind: "construct", name: "model" }] },
     };
     const adapters: AdapterBundle = {
@@ -30,7 +30,7 @@ describe("Adapter requirements", () => {
 
   it("reports missing capability requirements", () => {
     const retriever: Retriever = {
-      retrieve: (query) => ({ query, documents: [] }),
+      retrieve: ({ query }) => ({ query, documents: [] }),
       metadata: { requires: [{ kind: "capability", name: "tools" }] },
     };
     const adapters: AdapterBundle = { retriever, tools: [] };

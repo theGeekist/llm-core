@@ -5,7 +5,7 @@ import * as LlamaIndexLLM from "@llamaindex/core/llms";
 import type { OutputParser } from "#adapters";
 
 const toOutputParserFromLangChain = (parser: StringOutputParser): OutputParser => ({
-  parse: (text) => parser.parse(text),
+  parse: ({ text }) => parser.parse(text),
   formatInstructions: () => parser.getFormatInstructions(),
 });
 
@@ -13,7 +13,7 @@ describe("Interop output parser", () => {
   it("maps LangChain output parser to OutputParser", async () => {
     const parser = new StringOutputParser();
     const adapted = toOutputParserFromLangChain(parser);
-    const result = await adapted.parse("hello");
+    const result = await adapted.parse({ text: "hello" });
     expect(result).toBe("hello");
     expect(typeof adapted.formatInstructions?.()).toBe("string");
   });

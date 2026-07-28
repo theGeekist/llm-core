@@ -94,7 +94,7 @@ describe("Adapter LlamaIndex response synthesizer", () => {
     const adapter = fromLlamaIndexResponseSynthesizer(synthesizer);
     const { context, diagnostics } = captureDiagnostics();
 
-    const result = await adapter.synthesize({ query: " ", documents: [] }, context);
+    const result = await adapter.synthesize({ query: " ", documents: [], context });
 
     expect(result.text).toBe("");
     expect(result.diagnostics?.map((entry) => entry.message)).toContain(

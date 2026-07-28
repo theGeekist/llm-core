@@ -1,9 +1,4 @@
-import type {
-  AdapterCallContext,
-  AdapterDiagnostic,
-  AdapterMetadata,
-  AdapterTraceEvent,
-} from "./core";
+import type { AdapterDiagnostic, AdapterMetadata, AdapterRequest, AdapterTraceEvent } from "./core";
 import type { ModelMeta, ModelTelemetry, ModelUsage } from "./model";
 import type { Blob } from "./storage";
 import type { MaybePromise } from "#shared/maybe";
@@ -39,7 +34,7 @@ export type ImageResult = MediaResultBase & {
 };
 
 export type ImageModel = {
-  generate(call: ImageCall, context?: AdapterCallContext): MaybePromise<ImageResult>;
+  generate(request: AdapterRequest<ImageCall>): MaybePromise<ImageResult>;
   metadata?: AdapterMetadata | null;
 };
 
@@ -57,7 +52,7 @@ export type SpeechResult = MediaResultBase & {
 };
 
 export type SpeechModel = {
-  generate(call: SpeechCall, context?: AdapterCallContext): MaybePromise<SpeechResult>;
+  generate(request: AdapterRequest<SpeechCall>): MaybePromise<SpeechResult>;
   metadata?: AdapterMetadata | null;
 };
 
@@ -79,9 +74,6 @@ export type TranscriptionResult = MediaResultBase & {
 };
 
 export type TranscriptionModel = {
-  generate(
-    call: TranscriptionCall,
-    context?: AdapterCallContext,
-  ): MaybePromise<TranscriptionResult>;
+  generate(request: AdapterRequest<TranscriptionCall>): MaybePromise<TranscriptionResult>;
   metadata?: AdapterMetadata | null;
 };

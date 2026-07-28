@@ -1,6 +1,6 @@
 import type { ImageModelV3, ImageModelV3Usage, JSONValue } from "@ai-sdk/provider";
 import type {
-  AdapterCallContext,
+  AdapterRequest,
   ImageCall,
   ImageModel,
   ImageResult,
@@ -71,8 +71,7 @@ const mapImageResult = (
 ): ImageResult => toImageResult(result, diagnostics);
 
 export function fromAiSdkImageModel(model: ImageModelV3): ImageModel {
-  function generate(call: ImageCall, _context?: AdapterCallContext) {
-    void _context;
+  function generate(call: AdapterRequest<ImageCall>) {
     const diagnostics = validateImageInput(call.prompt);
     return maybeMap(
       bindFirst(mapImageResult, diagnostics),

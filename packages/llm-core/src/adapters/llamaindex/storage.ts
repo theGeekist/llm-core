@@ -1,5 +1,5 @@
 import type { BaseDocumentStore } from "@llamaindex/core/storage/doc-store";
-import type { AdapterCallContext, KVStore } from "../types";
+import type { KVStore } from "../types";
 import { toTrue } from "#shared/fp";
 import { maybeAll, maybeMap, type MaybePromise } from "#shared/maybe";
 import { reportDiagnostics, validateKvKeys, validateKvPairs } from "../input-validation";
@@ -17,7 +17,7 @@ const asDocument = (value: Record<string, unknown>, key: string) => {
 
 export function fromLlamaIndexDocumentStore(store: BaseDocumentStore): KVStore {
   return {
-    mget: (keys, context?: AdapterCallContext) => {
+    mget: ({ keys, context }) => {
       const diagnostics = validateKvKeys(keys, "mget");
       if (diagnostics.length > 0) {
         reportDiagnostics(context, diagnostics);
@@ -31,7 +31,7 @@ export function fromLlamaIndexDocumentStore(store: BaseDocumentStore): KVStore {
         maybeAll<DocumentResult>(results),
       );
     },
-    mset: (pairs, context?: AdapterCallContext) => {
+    mset: ({ pairs, context }) => {
       const diagnostics = validateKvPairs(pairs);
       if (diagnostics.length > 0) {
         reportDiagnostics(context, diagnostics);
@@ -45,7 +45,7 @@ export function fromLlamaIndexDocumentStore(store: BaseDocumentStore): KVStore {
         .map(([key, value]) => asDocument(value, key));
       return maybeMap(toTrue, store.addDocuments(docs as never, true));
     },
-    mdelete: (keys, context?: AdapterCallContext) => {
+    mdelete: ({ keys, context }) => {
       const diagnostics = validateKvKeys(keys, "mdelete");
       if (diagnostics.length > 0) {
         reportDiagnostics(context, diagnostics);
@@ -53,6 +53,6 @@ export function fromLlamaIndexDocumentStore(store: BaseDocumentStore): KVStore {
       }
       return maybeMap(toTrue, maybeAll(keys.map((key) => store.deleteDocument(key, false))));
     },
-    list: () => maybeMap((docs) => Object.keys(docs), store.docs()),
+    list: (_request) => maybeMap((docs) => Object.keys(docs), store.docs()),
   };
 }

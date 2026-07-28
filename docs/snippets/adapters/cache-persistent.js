@@ -5,17 +5,17 @@ import { createCacheFromKVStore } from "#adapters";
 /** @type {Map<string, import("@geekist/llm-core/adapters").Blob>} */
 const entries = new Map();
 
-/** @param {string[]} keys */
-const listValues = (keys) => keys.map((key) => entries.get(key) ?? null);
+/** @param {{ keys: string[] }} request */
+const listValues = ({ keys }) => keys.map((key) => entries.get(key) ?? null);
 
-/** @param {Array<[string, import("@geekist/llm-core/adapters").Blob]>} pairs */
-const setValues = (pairs) => {
+/** @param {{ pairs: Array<[string, import("@geekist/llm-core/adapters").Blob]> }} request */
+const setValues = ({ pairs }) => {
   pairs.forEach(([key, value]) => entries.set(key, value));
   return true;
 };
 
-/** @param {string[]} keys */
-const deleteValues = (keys) => {
+/** @param {{ keys: string[] }} request */
+const deleteValues = ({ keys }) => {
   keys.forEach((key) => entries.delete(key));
   return true;
 };

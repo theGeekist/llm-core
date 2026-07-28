@@ -17,7 +17,7 @@ describe("Integration embeddings (AI SDK/OpenAI)", () => {
       const model = openai.embedding(modelId);
       const adapter = fromAiSdkEmbeddings(model);
 
-      const vector = await adapter.embed("hello world");
+      const vector = await adapter.embed({ text: "hello world" });
       expect(vector.length).toBeGreaterThan(0);
     },
     OPENAI_TIMEOUT_MS,
@@ -34,7 +34,7 @@ describe("Integration embeddings (AI SDK/Ollama)", () => {
       const model = provider.embedding(modelId);
       const adapter = fromAiSdkEmbeddings(model);
 
-      const vector = await adapter.embed("hello world");
+      const vector = await adapter.embed({ text: "hello world" });
       expect(vector.length).toBeGreaterThan(0);
     },
     OLLAMA_TIMEOUT_MS,

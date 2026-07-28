@@ -9,7 +9,7 @@ describe("Adapter retrievers", () => {
     const retriever = asLangChainRetriever(() => [new LangChainDocument({ pageContent: "hello" })]);
 
     const adapter = fromLangChainRetriever(retriever);
-    const result = await adapter.retrieve("query");
+    const result = await adapter.retrieve({ query: "query" });
     expect(result.documents[0]?.text).toBe("hello");
   });
 
@@ -19,7 +19,7 @@ describe("Adapter retrievers", () => {
     );
 
     const adapter = fromLangChainRetriever(retriever);
-    const result = await adapter.retrieve("query");
+    const result = await adapter.retrieve({ query: "query" });
     expect(result.documents[0]?.text).toBe("hello");
   });
 
@@ -29,7 +29,7 @@ describe("Adapter retrievers", () => {
     const retriever = asLlamaIndexRetriever(() => Promise.resolve(nodes));
 
     const adapter = fromLlamaIndexRetriever(retriever);
-    const result = await adapter.retrieve("query");
+    const result = await adapter.retrieve({ query: "query" });
     expect(result.documents[0]?.text).toBe("hello");
   });
 
@@ -38,7 +38,7 @@ describe("Adapter retrievers", () => {
     const adapter = fromLangChainRetriever(retriever);
     const { context, diagnostics } = captureDiagnostics();
 
-    const result = await adapter.retrieve("   ", context);
+    const result = await adapter.retrieve({ query: "   ", context });
     expect(result.documents).toBeArrayOfSize(0);
     expect(diagnostics[0]?.message).toBe("retriever_query_missing");
   });
@@ -48,7 +48,7 @@ describe("Adapter retrievers", () => {
     const adapter = fromLlamaIndexRetriever(retriever);
     const { context, diagnostics } = captureDiagnostics();
 
-    const result = await adapter.retrieve(" ", context);
+    const result = await adapter.retrieve({ query: " ", context });
     expect(result.documents).toBeArrayOfSize(0);
     expect(diagnostics[0]?.message).toBe("retriever_query_missing");
   });

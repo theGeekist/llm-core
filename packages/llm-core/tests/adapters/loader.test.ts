@@ -11,7 +11,7 @@ describe("Adapter document loaders", () => {
     });
 
     const adapter = fromLangChainLoader(loader);
-    const docs = await adapter.load();
+    const docs = await adapter.load({});
     expect(docs[0]?.text).toBe("hello");
   });
 
@@ -21,7 +21,7 @@ describe("Adapter document loaders", () => {
     });
 
     const adapter = fromLangChainLoader(loader);
-    const docs = await adapter.load();
+    const docs = await adapter.load({});
     expect(docs[0]?.text).toBe("hello");
   });
 
@@ -31,7 +31,7 @@ describe("Adapter document loaders", () => {
     });
 
     const adapter = fromLlamaIndexLoader(reader);
-    const docs = await adapter.load();
+    const docs = await adapter.load({});
     expect(docs[0]?.text).toBe("hello");
   });
 });

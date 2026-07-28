@@ -130,7 +130,7 @@ const runToolExecute = (input: { tool: Tool | undefined; call: ToolCall }) => {
   }
   return maybeMap(
     bindFirst(createToolResult, input.call),
-    input.tool.execute(input.call.arguments),
+    input.tool.execute({ input: input.call.arguments }),
   );
 };
 

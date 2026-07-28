@@ -22,17 +22,17 @@ export const createAgentModel = (): Model => ({
 
 export const createEchoTool = (): Tool => ({
   name: "echo",
-  execute: (input) => input,
+  execute: ({ input }) => input,
 });
 
 export const createMemoryTracker = () => {
   const calls: Array<{ type: "load" | "save"; payload: unknown }> = [];
   const memory: Memory = {
-    load: (input) => {
+    load: ({ input }) => {
       calls.push({ type: "load", payload: input });
       return { loaded: true };
     },
-    save: (input, output) => {
+    save: ({ input, output }) => {
       calls.push({ type: "save", payload: { input, output } });
       return null;
     },

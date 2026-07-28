@@ -1,5 +1,5 @@
 import type { TextSplitter as LlamaindexTextSplitter } from "@llamaindex/core/node-parser";
-import type { AdapterCallContext, TextSplitter } from "../types";
+import type { AdapterRequest, TextSplitter } from "../types";
 import {
   reportDiagnostics,
   validateTextSplitterBatchInput,
@@ -11,7 +11,7 @@ function toWithMetadata(chunks: string[]) {
 }
 
 export function fromLlamaIndexTextSplitter(splitter: LlamaindexTextSplitter): TextSplitter {
-  function split(text: string, context?: AdapterCallContext) {
+  function split({ text, context }: AdapterRequest<{ text: string }>) {
     const diagnostics = validateTextSplitterInput(text);
     if (diagnostics.length > 0) {
       reportDiagnostics(context, diagnostics);
@@ -20,7 +20,7 @@ export function fromLlamaIndexTextSplitter(splitter: LlamaindexTextSplitter): Te
     return splitter.splitText(text);
   }
 
-  function splitBatch(texts: string[], context?: AdapterCallContext) {
+  function splitBatch({ texts, context }: AdapterRequest<{ texts: string[] }>) {
     const diagnostics = validateTextSplitterBatchInput(texts);
     if (diagnostics.length > 0) {
       reportDiagnostics(context, diagnostics);
@@ -29,7 +29,7 @@ export function fromLlamaIndexTextSplitter(splitter: LlamaindexTextSplitter): Te
     return texts.map((text) => splitter.splitText(text));
   }
 
-  function splitWithMetadata(text: string, context?: AdapterCallContext) {
+  function splitWithMetadata({ text, context }: AdapterRequest<{ text: string }>) {
     const diagnostics = validateTextSplitterInput(text);
     if (diagnostics.length > 0) {
       reportDiagnostics(context, diagnostics);

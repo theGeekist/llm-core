@@ -1,6 +1,6 @@
 import type { BaseNodePostprocessor } from "@llamaindex/core/postprocessor";
 import { MetadataMode, type BaseNode } from "@llamaindex/core/schema";
-import type { AdapterCallContext, Document, Reranker, RetrievalQuery } from "../types";
+import type { AdapterRequest, Document, Reranker, RetrievalQuery } from "../types";
 import { maybeMapArray } from "#shared/maybe";
 import { toQueryText } from "../retrieval-query";
 import { toLlamaIndexDocument } from "./documents";
@@ -14,7 +14,11 @@ const getNodeText = (node: BaseNode) => {
 };
 
 export function fromLlamaIndexReranker(reranker: BaseNodePostprocessor): Reranker {
-  function rerank(query: RetrievalQuery, documents: Document[], context?: AdapterCallContext) {
+  function rerank({
+    query,
+    documents,
+    context,
+  }: AdapterRequest<{ query: RetrievalQuery; documents: Document[] }>) {
     const diagnostics = validateRerankerInput(query, documents);
     if (diagnostics.length > 0) {
       reportDiagnostics(context, diagnostics);

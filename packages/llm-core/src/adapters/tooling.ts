@@ -1,6 +1,5 @@
-import type { AdapterCallContext, Tool, ToolParam } from "./types";
+import type { Tool, ToolParam } from "./types";
 import { reportDiagnostics, validateToolInput } from "./input-validation";
-import type { MaybePromise } from "#shared/maybe";
 
 export type ToolCreateInput = {
   name: string;
@@ -8,7 +7,7 @@ export type ToolCreateInput = {
   params?: ToolParam[] | null;
   inputSchema?: Tool["inputSchema"];
   outputSchema?: Tool["outputSchema"];
-  execute?: ((input: unknown, context?: AdapterCallContext) => MaybePromise<unknown>) | null;
+  execute?: Tool["execute"];
 };
 
 export const Tooling = {
@@ -26,7 +25,7 @@ export const Tooling = {
   },
   create(input: ToolCreateInput): Tool {
     const execute = input.execute
-      ? (value: unknown, context?: AdapterCallContext) => {
+      ? ({ input: value, context }: Parameters<NonNullable<Tool["execute"]>>[0]) => {
           const diagnostics = validateToolInput(
             {
               name: input.name,
@@ -40,7 +39,7 @@ export const Tooling = {
             reportDiagnostics(context, diagnostics);
             return null;
           }
-          return input.execute?.(value, context);
+          return input.execute?.({ input: value, context });
         }
       : null;
     return {

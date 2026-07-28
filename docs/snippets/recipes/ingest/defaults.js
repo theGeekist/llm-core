@@ -11,7 +11,7 @@ const splitText = async (text) => [text];
 
 /** @type {import("@geekist/llm-core/adapters").TextSplitter} */
 const textSplitter = {
-  split: splitText,
+  split: ({ text }) => splitText(text),
 };
 
 /** @type {import("@geekist/llm-core/adapters").Embedder} */

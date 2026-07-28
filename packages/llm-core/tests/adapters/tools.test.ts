@@ -30,7 +30,7 @@ describe("Adapter tools", () => {
     expect(adapter.name).toBe(TOOL_NAME);
     expect(adapter.description).toBe(`${TOOL_NAME} tool`);
     expect(adapter.inputSchema?.kind).toBe("zod");
-    const result = await adapter.execute?.({ query: "hi" });
+    const result = await adapter.execute?.({ input: { query: "hi" } });
     expect(result).toBe("ok:hi");
   });
 
@@ -38,11 +38,11 @@ describe("Adapter tools", () => {
     const Tool = ToolHelper.create({
       name: TOOL_NAME,
       params: [{ name: "query", type: "string", required: true }],
-      execute: (input) => input,
+      execute: ({ input }) => input,
     });
     const { context, diagnostics } = captureDiagnostics();
 
-    const result = await Tool.execute?.(undefined, context);
+    const result = await Tool.execute?.({ input: undefined, context });
     expect(result).toBeNull();
     expect(diagnostics[0]?.message).toBe("tool_input_missing");
   });
@@ -61,7 +61,7 @@ describe("Adapter tools", () => {
     expect(adapter.name).toBe(TOOL_LOOKUP);
     expect(adapter.description).toBe(`${TOOL_LOOKUP} tool`);
     expect(adapter.inputSchema?.kind).toBe(JSON_SCHEMA_KIND);
-    const result = await adapter.execute?.({ query: "hi" });
+    const result = await adapter.execute?.({ input: { query: "hi" } });
     expect(result).toBe("ok:hi");
   });
 
@@ -135,7 +135,7 @@ describe("Adapter tools", () => {
   it("preserves adapter tool execution for AI SDK tools", async () => {
     const Tool = ToolHelper.create({
       name: TOOL_NAME,
-      execute: (input) => `ok:${JSON.stringify(input)}`,
+      execute: ({ input }) => `ok:${JSON.stringify(input)}`,
     });
 
     const built = toAiSdkTool(Tool);
@@ -164,7 +164,7 @@ describe("Adapter tools", () => {
     const Tool = ToolHelper.create({
       name: TOOL_NAME,
       params: [{ name: "query", type: "string", required: true }],
-      execute: (input) => input,
+      execute: ({ input }) => input,
     });
 
     const built = toLangChainTool(Tool);
@@ -194,7 +194,7 @@ describe("Adapter tools", () => {
       name: TOOL_NAME,
       description: `${TOOL_NAME} tool`,
       params: [{ name: "query", type: "string" }],
-      execute: (input) => input,
+      execute: ({ input }) => input,
     });
 
     const built = toLlamaIndexTool(Tool);

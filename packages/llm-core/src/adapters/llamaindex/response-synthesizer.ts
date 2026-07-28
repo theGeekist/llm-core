@@ -1,10 +1,5 @@
 import type { BaseSynthesizer } from "@llamaindex/core/response-synthesizers";
-import type {
-  AdapterCallContext,
-  QueryResult,
-  ResponseSynthesizer,
-  SynthesisInput,
-} from "../types";
+import type { AdapterRequest, QueryResult, ResponseSynthesizer, SynthesisInput } from "../types";
 import { bindFirst } from "#shared/fp";
 import { maybeMap } from "#shared/maybe";
 import { reportDiagnostics, validateResponseSynthesizerInput } from "../input-validation";
@@ -48,11 +43,8 @@ export function fromLlamaIndexResponseSynthesizer(
   };
 }
 
-function synthesizeWithDeps(
-  deps: SynthesizerDeps,
-  input: SynthesisInput,
-  context?: AdapterCallContext,
-) {
+function synthesizeWithDeps(deps: SynthesizerDeps, input: AdapterRequest<SynthesisInput>) {
+  const { context } = input;
   const diagnostics = validateResponseSynthesizerInput(input.query, input.documents);
   if (diagnostics.length > 0) {
     reportDiagnostics(context, diagnostics);
@@ -66,11 +58,8 @@ function synthesizeWithDeps(
   );
 }
 
-function streamWithDeps(
-  deps: SynthesizerDeps,
-  input: SynthesisInput,
-  context?: AdapterCallContext,
-) {
+function streamWithDeps(deps: SynthesizerDeps, input: AdapterRequest<SynthesisInput>) {
+  const { context } = input;
   const diagnostics = validateResponseSynthesizerInput(input.query, input.documents);
   if (diagnostics.length > 0) {
     reportDiagnostics(context, diagnostics);

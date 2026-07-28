@@ -6,7 +6,7 @@ describe("Adapter output parser", () => {
   it("maps LangChain output parser parse and format instructions", async () => {
     const parser = new StringOutputParser();
     const adapted = fromLangChainOutputParser(parser);
-    const result = await adapted.parse("hello");
+    const result = await adapted.parse({ text: "hello" });
     expect(result).toBe("hello");
     expect(typeof adapted.formatInstructions?.()).toBe("string");
   });

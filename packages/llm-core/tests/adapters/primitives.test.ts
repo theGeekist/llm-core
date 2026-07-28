@@ -50,7 +50,7 @@ describe("Adapter primitives", () => {
       { id: "b", text: "Other content" },
     ]);
 
-    const result = assertSyncValue(retriever.retrieve("hello"));
+    const result = assertSyncValue(retriever.retrieve({ query: "hello" }));
     expect(result.documents[0]?.id).toBe("a");
     expect(result.citations?.[0]?.source).toBe("docs");
   });
@@ -59,7 +59,7 @@ describe("Adapter primitives", () => {
     const retriever = createBuiltinRetriever([{ text: "Hello world" }]);
     const { context, diagnostics } = captureDiagnostics();
 
-    const result = assertSyncValue(retriever.retrieve("  ", context));
+    const result = assertSyncValue(retriever.retrieve({ query: "  ", context }));
     expect(result.documents).toEqual([]);
     expect(diagnostics[0]?.message).toBe("retriever_query_missing");
   });

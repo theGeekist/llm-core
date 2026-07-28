@@ -82,7 +82,7 @@ describe("Integration model calls (AI SDK/Ollama)", () => {
           name: "echo",
           description: "Echo back the provided text",
           inputSchema: toSchema(z.object({ text: z.string() })),
-          execute: (input) => {
+          execute: ({ input }) => {
             const typed = input as { text?: string };
             return { echoed: typed.text ?? "" };
           },

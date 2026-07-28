@@ -1,4 +1,4 @@
-import type { AdapterCallContext, AdapterMetadata } from "./core";
+import type { AdapterMetadata, AdapterRequest } from "./core";
 import type { Document } from "./documents";
 import type { MessageContent } from "./messages";
 import type { MaybePromise } from "#shared/maybe";
@@ -12,42 +12,42 @@ export type RetrievalResult = {
 };
 
 export type TextSplitter = {
-  split(text: string, context?: AdapterCallContext): MaybePromise<string[]>;
-  splitBatch?(texts: string[], context?: AdapterCallContext): MaybePromise<string[][]>;
+  split(request: AdapterRequest<{ text: string }>): MaybePromise<string[]>;
+  splitBatch?(request: AdapterRequest<{ texts: string[] }>): MaybePromise<string[][]>;
   splitWithMetadata?(
-    text: string,
-    context?: AdapterCallContext,
+    request: AdapterRequest<{ text: string }>,
   ): MaybePromise<Array<{ text: string; metadata?: AdapterMetadata }>>;
   metadata?: AdapterMetadata;
 };
 
 export type Embedder = {
-  embed(text: string, context?: AdapterCallContext): MaybePromise<number[]>;
-  embedMany?(texts: string[], context?: AdapterCallContext): MaybePromise<number[][]>;
+  embed(request: AdapterRequest<{ text: string }>): MaybePromise<number[]>;
+  embedMany?(request: AdapterRequest<{ texts: string[] }>): MaybePromise<number[][]>;
   metadata?: AdapterMetadata;
 };
 
 export type Retriever = {
-  retrieve(query: RetrievalQuery, context?: AdapterCallContext): MaybePromise<RetrievalResult>;
+  retrieve(request: AdapterRequest<{ query: RetrievalQuery }>): MaybePromise<RetrievalResult>;
   metadata?: AdapterMetadata;
 };
 
 export type Reranker = {
   rerank(
-    query: RetrievalQuery,
-    documents: Document[],
-    context?: AdapterCallContext,
+    request: AdapterRequest<{
+      query: RetrievalQuery;
+      documents: Document[];
+    }>,
   ): MaybePromise<Document[]>;
   metadata?: AdapterMetadata;
 };
 
 export type DocumentLoader = {
-  load(context?: AdapterCallContext): MaybePromise<Document[]>;
+  load(request: AdapterRequest): MaybePromise<Document[]>;
   metadata?: AdapterMetadata;
 };
 
 export type DocumentTransformer = {
-  transform(documents: Document[], context?: AdapterCallContext): MaybePromise<Document[]>;
+  transform(request: AdapterRequest<{ documents: Document[] }>): MaybePromise<Document[]>;
   metadata?: AdapterMetadata;
 };
 

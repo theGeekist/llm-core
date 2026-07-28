@@ -1,5 +1,5 @@
 import type { SpeechModelV3 } from "@ai-sdk/provider";
-import type { AdapterCallContext, SpeechCall, SpeechModel, SpeechResult, Blob } from "../types";
+import type { AdapterRequest, SpeechCall, SpeechModel, SpeechResult, Blob } from "../types";
 import { bindFirst } from "#shared/fp";
 import { maybeMap } from "#shared/maybe";
 import type { MaybePromise } from "#shared/maybe";
@@ -48,8 +48,7 @@ const mapSpeechResult = (
   });
 
 export function fromAiSdkSpeechModel(model: SpeechModelV3): SpeechModel {
-  function generate(call: SpeechCall, _context?: AdapterCallContext) {
-    void _context;
+  function generate(call: AdapterRequest<SpeechCall>) {
     const diagnostics = validateSpeechInput(call.text);
     const contentType = toAudioType(call.outputFormat) ?? undefined;
     const resultContext: SpeechResultContext = { diagnostics, contentType };

@@ -15,7 +15,7 @@ describe("Integration embeddings (LangChain/Ollama)", () => {
       const embeddings = new OllamaEmbeddings({ baseUrl, model });
       const adapter = fromLangChainEmbeddings(embeddings);
 
-      const vector = await adapter.embed("hello world");
+      const vector = await adapter.embed({ text: "hello world" });
       expect(vector.length).toBeGreaterThan(0);
     },
     OLLAMA_TIMEOUT_MS,

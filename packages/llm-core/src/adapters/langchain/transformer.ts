@@ -1,5 +1,5 @@
 import type { BaseDocumentTransformer } from "@langchain/core/documents";
-import type { AdapterCallContext, Document, DocumentTransformer } from "../types";
+import type { AdapterRequest, Document, DocumentTransformer } from "../types";
 import { maybeMapArray } from "#shared/maybe";
 import { toLangChainDocument } from "./documents";
 import { reportDiagnostics, validateTransformerInput } from "../input-validation";
@@ -7,7 +7,7 @@ import { reportDiagnostics, validateTransformerInput } from "../input-validation
 export function fromLangChainTransformer(
   transformer: BaseDocumentTransformer,
 ): DocumentTransformer {
-  function transform(documents: Document[], context?: AdapterCallContext) {
+  function transform({ documents, context }: AdapterRequest<{ documents: Document[] }>) {
     const diagnostics = validateTransformerInput(documents);
     if (diagnostics.length > 0) {
       reportDiagnostics(context, diagnostics);

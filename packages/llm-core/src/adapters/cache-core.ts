@@ -47,7 +47,7 @@ export const createCacheAdapter = <TRead, TStored>(
   const normalizeSet = policy.normalizeSetResult ?? toTrue;
   const normalizeDelete = policy.normalizeDeleteResult ?? normalizeTriState;
 
-  const get = (key: string, context?: AdapterCallContext) => {
+  const get = ({ key, context }: Parameters<Cache["get"]>[0]) => {
     if (shouldValidate && !validateKey(key, "cache.get", context)) {
       return null;
     }
@@ -66,10 +66,7 @@ export const createCacheAdapter = <TRead, TStored>(
     return maybeChain(read, policy.backend.read(key, context));
   };
 
-  const set = (
-    ...args: [key: string, value: Blob, ttlMs?: number, context?: AdapterCallContext]
-  ) => {
-    const [key, value, ttlMs, context] = args;
+  const set = ({ key, value, ttlMs, context }: Parameters<Cache["set"]>[0]) => {
     if (shouldValidate && !validateKey(key, "cache.set", context)) {
       return false;
     }
@@ -81,7 +78,7 @@ export const createCacheAdapter = <TRead, TStored>(
     );
   };
 
-  const del = (key: string, context?: AdapterCallContext) => {
+  const del = ({ key, context }: Parameters<Cache["delete"]>[0]) => {
     if (shouldValidate && !validateKey(key, "cache.delete", context)) {
       return false;
     }

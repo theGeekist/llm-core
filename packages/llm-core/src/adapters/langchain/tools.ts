@@ -1,5 +1,5 @@
 import { tool as defineTool } from "@langchain/core/tools";
-import type { AdapterCallContext, Tool } from "../types";
+import type { AdapterRequest, Tool } from "../types";
 import type { MaybePromise } from "#shared/maybe";
 import { reportDiagnostics, validateToolInput } from "../input-validation";
 import {
@@ -25,7 +25,7 @@ export function fromLangChainTool<TInput, TOutput>(tool: LangChainToolLike<TInpu
     description: tool.description,
     inputSchema,
   };
-  function execute(input: unknown, context?: AdapterCallContext) {
+  function execute({ input, context }: AdapterRequest<{ input: unknown }>) {
     const diagnostics = validateToolInput(adapterShape, input);
     if (diagnostics.length > 0) {
       reportDiagnostics(context, diagnostics);
@@ -54,7 +54,7 @@ export function toLangChainTool(adapterTool: Tool) {
       : adapterParamsToJsonSchema()
   ) as LangChainToolSchema;
   const execute = adapterTool.execute
-    ? (input: unknown) => adapterTool.execute?.(input)
+    ? (input: unknown) => adapterTool.execute?.({ input })
     : (input: unknown) => input;
   return defineTool(execute, {
     name: adapterTool.name,

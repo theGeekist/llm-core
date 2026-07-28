@@ -1,7 +1,7 @@
 import { Document as LangChainDocument } from "@langchain/core/documents";
 import type { VectorStoreInterface } from "@langchain/core/vectorstores";
 import type {
-  AdapterCallContext,
+  AdapterRequest,
   VectorRecord,
   VectorStore,
   VectorStoreDeleteInput,
@@ -81,7 +81,8 @@ const toDeletePayload = (input: VectorStoreDeleteInput): VectorDeletePayload => 
 };
 
 export function fromLangChainVectorStore(store: VectorStoreInterface): VectorStore {
-  const upsert = (input: VectorStoreUpsertInput, context?: AdapterCallContext) => {
+  const upsert = (input: AdapterRequest<VectorStoreUpsertInput>) => {
+    const { context } = input;
     const diagnostics = validateVectorStoreUpsertInput(input);
     reportDiagnostics(context, diagnostics);
     const payload = toUpsertPayload(input);
@@ -94,7 +95,8 @@ export function fromLangChainVectorStore(store: VectorStoreInterface): VectorSto
     );
   };
 
-  const remove = (input: VectorStoreDeleteInput, context?: AdapterCallContext) => {
+  const remove = (input: AdapterRequest<VectorStoreDeleteInput>) => {
+    const { context } = input;
     const diagnostics = validateVectorStoreDeleteInput(input);
     reportDiagnostics(context, diagnostics);
     if (diagnostics.length > 0) {

@@ -83,7 +83,7 @@ const runRerank = (reranker: Reranker | null | undefined, query: string, documen
   if (!reranker) {
     return documents;
   }
-  return reranker.rerank(toQueryText(query), documents);
+  return reranker.rerank({ query: toQueryText(query), documents });
 };
 
 type RetrieveContext = {
@@ -121,7 +121,7 @@ const runRetrieve = (input: RunRetrieveInput) => {
   }
   return maybeChain(
     bindFirst(handleRetrieved, createRetrieveContext(input.rag, input.query, input.reranker)),
-    input.retriever.retrieve(toQueryText(input.query)),
+    input.retriever.retrieve({ query: toQueryText(input.query) }),
   );
 };
 

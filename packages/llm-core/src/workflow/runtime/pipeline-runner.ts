@@ -60,7 +60,9 @@ export const executePipelineResolution = <TOutcome>(
 ): MaybePromise<TOutcome> => {
   const adapters = input.selectAdapters(input.resolution);
   const adapterContext = createAdapterContext();
-  const adaptersWithContext = attachAdapterContext(adapters, adapterContext.context, {
+  const adaptersWithContext = attachAdapterContext({
+    adapters,
+    context: adapterContext.context,
     retryDefaults: input.runtime?.retryDefaults,
     retry: input.runtime?.retry,
     trace: input.trace,

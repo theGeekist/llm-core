@@ -1,6 +1,6 @@
 import type { TranscriptionModelV3 } from "@ai-sdk/provider";
 import type {
-  AdapterCallContext,
+  AdapterRequest,
   TranscriptionCall,
   TranscriptionModel,
   TranscriptionResult,
@@ -27,8 +27,7 @@ const mapTranscriptionResult = (
   });
 
 export function fromAiSdkTranscriptionModel(model: TranscriptionModelV3): TranscriptionModel {
-  function generate(call: TranscriptionCall, _context?: AdapterCallContext) {
-    void _context;
+  function generate(call: AdapterRequest<TranscriptionCall>) {
     const diagnostics = validateTranscriptionInput({
       ...call.audio,
       contentType: call.audio.contentType ?? undefined,

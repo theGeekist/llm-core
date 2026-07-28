@@ -1,4 +1,4 @@
-import type { AdapterCallContext, Document, Retriever, RetrievalResult } from "../types";
+import type { Document, Retriever, RetrievalResult } from "../types";
 import { toQueryText } from "../retrieval-query";
 import { reportDiagnostics, validateRetrieverInput } from "../input-validation";
 
@@ -14,7 +14,7 @@ const scoreDocument = (text: string, query: string) => {
 const toSnippet = (text: string) => text.slice(0, 160);
 
 export const createBuiltinRetriever = (documents: Document[] = []): Retriever => ({
-  retrieve(query, context?: AdapterCallContext) {
+  retrieve({ query, context }) {
     const diagnostics = validateRetrieverInput(query);
     if (diagnostics.length > 0) {
       reportDiagnostics(context, diagnostics);

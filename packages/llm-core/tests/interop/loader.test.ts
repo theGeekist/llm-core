@@ -38,7 +38,7 @@ describe("Interop loader", () => {
     } as BaseDocumentLoader;
 
     const adapted = toAdapterLoaderFromLangChain(loader);
-    const result = await adapted.load();
+    const result = await adapted.load({});
     expect(result[0]?.text).toBe("hello");
   });
 
@@ -48,7 +48,7 @@ describe("Interop loader", () => {
     } as BaseReader;
 
     const adapted = toAdapterLoaderFromLlama(reader);
-    const result = await adapted.load();
+    const result = await adapted.load({});
     expect(result[0]?.text).toBe("hello");
   });
 

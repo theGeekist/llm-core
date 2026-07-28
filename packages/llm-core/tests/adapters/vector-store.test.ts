@@ -68,7 +68,7 @@ describe("Adapter vector store", () => {
     expect(deleteCalls).toEqual(["node-1"]);
 
     const { context, diagnostics } = captureDiagnostics();
-    await adapter.delete({ filter: { tag: "x" } }, context);
+    await adapter.delete({ filter: { tag: "x" }, context });
     expect(diagnostics.map((entry) => entry.message)).toContain(
       "vector_store_delete_filter_unsupported",
     );

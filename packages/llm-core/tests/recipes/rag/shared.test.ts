@@ -31,7 +31,7 @@ describe("RAG state helpers", () => {
       retrieve: () => ({ documents: [{ text: "doc-a" }, { text: "doc-b" }] }),
     };
     const reranker: Reranker = {
-      rerank: (_query, documents) => [documents[0]!],
+      rerank: ({ documents }) => [documents[0]!],
     };
     const result = RagStateHelpers.runRetrieve({
       retriever,
