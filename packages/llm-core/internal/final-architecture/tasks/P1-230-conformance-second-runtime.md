@@ -92,13 +92,18 @@ bun run typecheck:packages
   Python peer now mints a fresh RFC 9562 UUIDv7 for every run and event, the
   TypeScript boundary requires UUIDv7, and identical-start collision coverage
   passes in both runtime matrices.
+- 2026-07-30 — Text projection review finding remediated at
+  `454a6f5033ee03a359e8eeb597b1183df27eae09`: the Python Agent now receives
+  the literal prompt and the exact-runtime fixture verifies its serialized
+  `UserPromptPart`.
 
 ## Handoff
 
 - Implementation commit:
   `3c1913a2eefcb29d75520aac32bd1d29f8500244`, with exact-runtime review
   remediation at `b55e2a35b9ac420f9745b18ec7953fb9d85558e9` and UUIDv7
-  remediation at `c321545d33ea9c40e40ae94dfb2448f91bebb23b`.
+  remediation at `c321545d33ea9c40e40ae94dfb2448f91bebb23b`; final text
+  projection remediation is `454a6f5033ee03a359e8eeb597b1183df27eae09`.
 - Changed files:
   - `packages/llm-core/src/adapters/runtimes/fake-remote.ts`
   - `packages/llm-core/src/adapters/runtimes/index.ts`
