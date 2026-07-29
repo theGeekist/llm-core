@@ -2,7 +2,7 @@
 id: P0-100
 title: Implement narrow-waist contracts
 phase: P0.1
-status: claimed
+status: complete
 priority: P0
 preferred_owner_kind: codex
 owner: codex-root
@@ -69,5 +69,73 @@ bun run typecheck:packages
 
 - 2026-07-29T16:04:54+08:00 — Claimed by `codex-root` from
   `4640a1fd7351c54bf965513cdfdfde53edce1825`.
+- 2026-07-29T16:06:00+08:00 — Began implementation in the dedicated task
+  worktree. Child work is partitioned by disjoint contract/test paths.
+- 2026-07-29T16:45:06+08:00 — Completed implementation and coordinator review.
+  Three independent review slices checked schema/package topology,
+  invocation/capability safety, and identity/versioning/public-front behavior.
+  Review findings were resolved before final verification: reverse-DNS keys
+  are enforced in generated schemas, invocation limits are constrained,
+  InvocationContext has no raw-secret extension escape hatch, capability claims
+  are evidence-backed discriminated unions, all portable identities are schema
+  roots, runtime guards reject non-plain/extra-property values, and generated
+  Draft 7 contracts are compiled and tested independently with Ajv.
 
 ## Handoff
+
+Status: complete; ready for integration from `task/P0-100-codex`.
+
+### Contract front
+
+- `src/contracts/public.ts` is the only feature-facing front and is available
+  internally as `#contracts`.
+- Portable identities are branded JSON strings. Existing core IDs accept
+  canonical RFC 9562 UUIDs; new core IDs require UUIDv7.
+- `InvocationContext` carries execution identity, authority, trace, deadline,
+  budgets and opaque `SecretRef` values. It deliberately has no generic
+  extensions field, preventing raw credentials or live native values from
+  entering through an escape hatch.
+- `PortableContent`, `ResourceRef` and `EvidenceRef` follow ADR-003 exactly and
+  contain no physical storage locators.
+- Capability claims are closed discriminated unions. A supported claim requires
+  passing conformance evidence; conformance evidence contains an integrity-
+  bearing, storage-neutral `EvidenceRef`; bindings require at least one claim.
+- Unknown native extensions round-trip unchanged and both runtime guards and
+  generated schemas require lowercase reverse-DNS namespaces.
+
+### Schema authority
+
+- Exact-pinned `ts-json-schema-generator@2.9.0` emits a deterministic Draft 7
+  bundle from constrained TypeScript through `tsconfig.contracts.json`.
+- Generated schema and exact-byte SHA-256 sidecar are checked in under
+  `src/contracts/generated/`.
+- Schema digest:
+  `b7524be07a5f7d6c0a1f66b44d8039e490c425de4d5fd202fc5d9618b6303d45`.
+- `typecheck:packages` and package `release:check` both run the schema freshness
+  check, so the existing CI typecheck path detects generated drift.
+
+### Verification
+
+- `bun test packages/llm-core/tests/contracts` — 33 pass, 0 fail.
+- `bun run typecheck:packages` — pass, including schema freshness.
+- `bun run --cwd packages/llm-core release:check` — lint, typecheck, schema
+  freshness and full package tests pass: 1,023 pass, 35 integration tests
+  skipped for unavailable external services, 0 fail.
+- `bun run build` — pass.
+- `bun install --frozen-lockfile` — pass with no changes.
+- `git diff --check` — pass.
+
+### Integration notes
+
+- Root/public npm exports remain intentionally unchanged; P0-150 owns public
+  subpath convergence.
+- P0-120 should import contracts through `#contracts`, pass
+  `InvocationContext` separately from `ModelRequest`, and keep model resolution
+  policy constraints separate from invocation context.
+- Per ADR-004, `DeploymentRef` contains no credential. Credential resolution
+  remains a composition/adapter concern; portable contracts expose only opaque
+  `SecretRef` values.
+- The optional `test:package` smoke command expects a pre-existing ignored
+  `dist/` tree and therefore cannot run in a fresh isolated worktree after the
+  current type-only build. Packaging/module-format cleanup remains assigned to
+  P0-155/P0-150 and is not a P0-100 acceptance gate.

@@ -1,0 +1,1223 @@
+{
+  "$id": "https://llm-core.geekist.co/schemas/contracts",
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "allOf": [
+    {
+      "$ref": "#/definitions/ContractSchemaRoots"
+    }
+  ],
+  "definitions": {
+    "Base64Data": {
+      "description": "RFC 4648 base64 data.",
+      "pattern": "^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$",
+      "type": "string"
+    },
+    "BinaryContent": {
+      "additionalProperties": false,
+      "description": "Portable inline binary content.",
+      "properties": {
+        "byteLength": {
+          "$ref": "#/definitions/ByteLength"
+        },
+        "data": {
+          "$ref": "#/definitions/Base64Data"
+        },
+        "digest": {
+          "$ref": "#/definitions/Digest"
+        },
+        "encoding": {
+          "const": "base64",
+          "type": "string"
+        },
+        "kind": {
+          "const": "binary",
+          "type": "string"
+        },
+        "mediaType": {
+          "$ref": "#/definitions/MediaType"
+        }
+      },
+      "required": [
+        "kind",
+        "mediaType",
+        "encoding",
+        "data",
+        "byteLength",
+        "digest"
+      ],
+      "type": "object"
+    },
+    "ByteLength": {
+      "description": "A non-negative byte count.",
+      "minimum": 0,
+      "type": "integer"
+    },
+    "CapabilityBinding": {
+      "additionalProperties": false,
+      "description": "Identifies one configured implementation eligible to satisfy requirements.",
+      "properties": {
+        "bindingId": {
+          "$ref": "#/definitions/PortableImplementationId"
+        },
+        "claims": {
+          "items": {
+            "$ref": "#/definitions/CapabilityClaim"
+          },
+          "minItems": 1,
+          "type": "array"
+        },
+        "extensions": {
+          "$ref": "#/definitions/NativeExtensions"
+        }
+      },
+      "required": [
+        "bindingId",
+        "claims"
+      ],
+      "type": "object"
+    },
+    "CapabilityClaim": {
+      "anyOf": [
+        {
+          "$ref": "#/definitions/SupportedCapabilityClaim"
+        },
+        {
+          "$ref": "#/definitions/ConditionalCapabilityClaim"
+        },
+        {
+          "$ref": "#/definitions/UnsupportedCapabilityClaim"
+        }
+      ]
+    },
+    "CapabilityConstraint": {
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "value": {
+          "$ref": "#/definitions/JsonValue"
+        }
+      },
+      "required": [
+        "name",
+        "value"
+      ],
+      "type": "object"
+    },
+    "CapabilityId": {
+      "description": "Stable, namespaced capability identifier such as `llm-core.model.streaming`.",
+      "pattern": "^(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\\.)+[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$",
+      "type": "string"
+    },
+    "CapabilityRequirement": {
+      "additionalProperties": false,
+      "description": "A behavior required by an application or another capability.",
+      "properties": {
+        "capabilityId": {
+          "$ref": "#/definitions/CapabilityId"
+        },
+        "constraints": {
+          "items": {
+            "$ref": "#/definitions/CapabilityConstraint"
+          },
+          "type": "array"
+        },
+        "extensions": {
+          "$ref": "#/definitions/NativeExtensions"
+        },
+        "required": {
+          "type": "boolean"
+        },
+        "versionRange": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "capabilityId"
+      ],
+      "type": "object"
+    },
+    "ConditionalCapabilityClaim": {
+      "additionalProperties": false,
+      "properties": {
+        "additionalEvidence": {
+          "items": {
+            "$ref": "#/definitions/ConformanceEvidence"
+          },
+          "type": "array"
+        },
+        "capabilityId": {
+          "$ref": "#/definitions/CapabilityId"
+        },
+        "conditions": {
+          "items": {
+            "$ref": "#/definitions/CapabilityConstraint"
+          },
+          "minItems": 1,
+          "type": "array"
+        },
+        "evidence": {
+          "anyOf": [
+            {
+              "$ref": "#/definitions/PassingConformanceEvidence"
+            },
+            {
+              "$ref": "#/definitions/PartialConformanceEvidence"
+            }
+          ]
+        },
+        "extensions": {
+          "$ref": "#/definitions/NativeExtensions"
+        },
+        "status": {
+          "const": "conditional",
+          "type": "string"
+        },
+        "version": {
+          "$ref": "#/definitions/ContractVersion"
+        }
+      },
+      "required": [
+        "capabilityId",
+        "conditions",
+        "evidence",
+        "status",
+        "version"
+      ],
+      "type": "object"
+    },
+    "ConformanceEvidence": {
+      "anyOf": [
+        {
+          "$ref": "#/definitions/PassingConformanceEvidence"
+        },
+        {
+          "$ref": "#/definitions/PartialConformanceEvidence"
+        },
+        {
+          "$ref": "#/definitions/FailedConformanceEvidence"
+        }
+      ]
+    },
+    "ContractSchemaRoots": {
+      "additionalProperties": false,
+      "description": "Type-only schema-generation root.\n\nEach property names a portable wire root. The generator follows only these types, so runtime validators and factories exported by sibling modules are excluded while `--functions fail` remains enabled.",
+      "properties": {
+        "capabilityBinding": {
+          "$ref": "#/definitions/CapabilityBinding"
+        },
+        "capabilityClaim": {
+          "$ref": "#/definitions/CapabilityClaim"
+        },
+        "capabilityRequirement": {
+          "$ref": "#/definitions/CapabilityRequirement"
+        },
+        "conformanceEvidence": {
+          "$ref": "#/definitions/ConformanceEvidence"
+        },
+        "conversationId": {
+          "$ref": "#/definitions/ConversationId"
+        },
+        "correlationId": {
+          "$ref": "#/definitions/CorrelationId"
+        },
+        "durableJobId": {
+          "$ref": "#/definitions/DurableJobId"
+        },
+        "eventId": {
+          "$ref": "#/definitions/EventId"
+        },
+        "evidenceId": {
+          "$ref": "#/definitions/EvidenceId"
+        },
+        "evidenceRef": {
+          "$ref": "#/definitions/EvidenceRef"
+        },
+        "extensionNamespace": {
+          "$ref": "#/definitions/ExtensionNamespace"
+        },
+        "invocationContext": {
+          "$ref": "#/definitions/InvocationContext"
+        },
+        "invocationId": {
+          "$ref": "#/definitions/InvocationId"
+        },
+        "portableContent": {
+          "$ref": "#/definitions/PortableContent"
+        },
+        "principalId": {
+          "$ref": "#/definitions/PrincipalId"
+        },
+        "providerSessionId": {
+          "$ref": "#/definitions/ProviderSessionId"
+        },
+        "resourceId": {
+          "$ref": "#/definitions/ResourceId"
+        },
+        "resourceRef": {
+          "$ref": "#/definitions/ResourceRef"
+        },
+        "runId": {
+          "$ref": "#/definitions/RunId"
+        },
+        "schemaRef": {
+          "$ref": "#/definitions/SchemaRef"
+        },
+        "secretId": {
+          "$ref": "#/definitions/SecretId"
+        },
+        "spanId": {
+          "$ref": "#/definitions/SpanId"
+        },
+        "stepId": {
+          "$ref": "#/definitions/StepId"
+        },
+        "tenantId": {
+          "$ref": "#/definitions/TenantId"
+        },
+        "toolCallId": {
+          "$ref": "#/definitions/ToolCallId"
+        },
+        "traceFlags": {
+          "$ref": "#/definitions/TraceFlags"
+        },
+        "traceId": {
+          "$ref": "#/definitions/TraceId"
+        }
+      },
+      "required": [
+        "capabilityBinding",
+        "capabilityClaim",
+        "capabilityRequirement",
+        "conformanceEvidence",
+        "evidenceRef",
+        "invocationContext",
+        "portableContent",
+        "resourceRef",
+        "schemaRef",
+        "correlationId",
+        "conversationId",
+        "durableJobId",
+        "eventId",
+        "evidenceId",
+        "extensionNamespace",
+        "invocationId",
+        "principalId",
+        "providerSessionId",
+        "resourceId",
+        "runId",
+        "secretId",
+        "spanId",
+        "stepId",
+        "tenantId",
+        "toolCallId",
+        "traceFlags",
+        "traceId"
+      ],
+      "type": "object"
+    },
+    "ContractVersion": {
+      "pattern": "^(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)(?:-((?:0|[1-9][0-9]*|[0-9]*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9][0-9]*|[0-9]*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$",
+      "type": "string"
+    },
+    "ConversationId": {
+      "allOf": [
+        {
+          "$ref": "#/definitions/OpaqueId%3C%22conversation%22%3E"
+        }
+      ],
+      "format": "uuid",
+      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+      "type": "string"
+    },
+    "CorrelationId": {
+      "allOf": [
+        {
+          "$ref": "#/definitions/OpaqueId%3C%22correlation%22%3E"
+        }
+      ],
+      "maxLength": 255,
+      "minLength": 1,
+      "pattern": "^[!-~]+$",
+      "type": "string"
+    },
+    "CurrencyCode": {
+      "pattern": "^[A-Z]{3}$",
+      "type": "string"
+    },
+    "DeadlineTimestamp": {
+      "format": "date-time",
+      "type": "string"
+    },
+    "Digest": {
+      "additionalProperties": false,
+      "properties": {
+        "algorithm": {
+          "$ref": "#/definitions/DigestAlgorithm"
+        },
+        "value": {
+          "$ref": "#/definitions/Sha256Hex"
+        }
+      },
+      "required": [
+        "algorithm",
+        "value"
+      ],
+      "type": "object"
+    },
+    "DigestAlgorithm": {
+      "const": "sha-256",
+      "type": "string"
+    },
+    "DurableJobId": {
+      "allOf": [
+        {
+          "$ref": "#/definitions/OpaqueId%3C%22durable-job%22%3E"
+        }
+      ],
+      "format": "uuid",
+      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+      "type": "string"
+    },
+    "EventId": {
+      "allOf": [
+        {
+          "$ref": "#/definitions/OpaqueId%3C%22event%22%3E"
+        }
+      ],
+      "format": "uuid",
+      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+      "type": "string"
+    },
+    "EvidenceId": {
+      "allOf": [
+        {
+          "$ref": "#/definitions/OpaqueId%3C%22evidence%22%3E"
+        }
+      ],
+      "format": "uuid",
+      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+      "type": "string"
+    },
+    "EvidenceKind": {
+      "description": "Closed classification for storage-neutral evidence references.",
+      "enum": [
+        "artifact",
+        "checkpoint",
+        "evaluation",
+        "event-payload",
+        "execution-receipt",
+        "other",
+        "tool-arguments",
+        "tool-result"
+      ],
+      "type": "string"
+    },
+    "EvidenceRef": {
+      "additionalProperties": false,
+      "description": "Authorized storage-neutral reference to evidence content.\n\nThe reference carries no physical locator and does not imply disclosure permission.",
+      "properties": {
+        "content": {
+          "$ref": "#/definitions/ResourceRef"
+        },
+        "evidenceId": {
+          "$ref": "#/definitions/EvidenceId"
+        },
+        "kind": {
+          "$ref": "#/definitions/EvidenceKind"
+        },
+        "schema": {
+          "$ref": "#/definitions/SchemaRef"
+        }
+      },
+      "required": [
+        "evidenceId",
+        "kind",
+        "content"
+      ],
+      "type": "object"
+    },
+    "ExtensionNamespace": {
+      "pattern": "^(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\\.)+[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$",
+      "type": "string"
+    },
+    "FailedConformanceEvidence": {
+      "additionalProperties": false,
+      "properties": {
+        "contractSchema": {
+          "$ref": "#/definitions/SchemaRef"
+        },
+        "extensions": {
+          "$ref": "#/definitions/NativeExtensions"
+        },
+        "failures": {
+          "items": {
+            "$ref": "#/definitions/CapabilityConstraint"
+          },
+          "minItems": 1,
+          "type": "array"
+        },
+        "implementationId": {
+          "$ref": "#/definitions/PortableImplementationId"
+        },
+        "implementationVersion": {
+          "type": "string"
+        },
+        "observedAt": {
+          "$ref": "#/definitions/ObservationTimestamp"
+        },
+        "providerId": {
+          "$ref": "#/definitions/PortableImplementationId"
+        },
+        "providerVersion": {
+          "type": "string"
+        },
+        "report": {
+          "$ref": "#/definitions/EvidenceRef"
+        },
+        "result": {
+          "const": "fail",
+          "type": "string"
+        },
+        "suiteId": {
+          "$ref": "#/definitions/CapabilityId"
+        },
+        "suiteVersion": {
+          "$ref": "#/definitions/ContractVersion"
+        }
+      },
+      "required": [
+        "failures",
+        "implementationId",
+        "implementationVersion",
+        "observedAt",
+        "report",
+        "result",
+        "suiteId",
+        "suiteVersion"
+      ],
+      "type": "object"
+    },
+    "InvocationBudget": {
+      "additionalProperties": false,
+      "description": "Portable, guarantee-bearing limits for one invocation.\n\nMonetary limits use integer minor units encoded as decimal strings so the wire contract does not lose precision across runtimes.",
+      "properties": {
+        "maxCost": {
+          "$ref": "#/definitions/InvocationCostLimit"
+        },
+        "maxDurationMs": {
+          "$ref": "#/definitions/InvocationLimit"
+        },
+        "maxInputTokens": {
+          "$ref": "#/definitions/InvocationLimit"
+        },
+        "maxModelCalls": {
+          "$ref": "#/definitions/InvocationLimit"
+        },
+        "maxOutputTokens": {
+          "$ref": "#/definitions/InvocationLimit"
+        },
+        "maxToolCalls": {
+          "$ref": "#/definitions/InvocationLimit"
+        },
+        "maxTotalTokens": {
+          "$ref": "#/definitions/InvocationLimit"
+        }
+      },
+      "type": "object"
+    },
+    "InvocationContext": {
+      "additionalProperties": false,
+      "description": "Stable execution identity and authority propagated through capability ports.\n\nThe context is portable JSON. It contains secret references, never secret values, and has no generic extension escape hatch through which credentials or live framework values could enter. Provider-native metadata belongs on the request/response contracts that own it.",
+      "properties": {
+        "budget": {
+          "$ref": "#/definitions/InvocationBudget"
+        },
+        "conversationId": {
+          "$ref": "#/definitions/ConversationId"
+        },
+        "correlationId": {
+          "$ref": "#/definitions/CorrelationId"
+        },
+        "deadlineAt": {
+          "$ref": "#/definitions/DeadlineTimestamp"
+        },
+        "delegationChain": {
+          "items": {
+            "$ref": "#/definitions/PrincipalRef"
+          },
+          "type": "array"
+        },
+        "invocationId": {
+          "$ref": "#/definitions/InvocationId"
+        },
+        "principal": {
+          "$ref": "#/definitions/PrincipalRef"
+        },
+        "runId": {
+          "$ref": "#/definitions/RunId"
+        },
+        "secretRefs": {
+          "items": {
+            "$ref": "#/definitions/SecretRef"
+          },
+          "type": "array"
+        },
+        "stepId": {
+          "$ref": "#/definitions/StepId"
+        },
+        "tenant": {
+          "$ref": "#/definitions/TenantRef"
+        },
+        "toolCallId": {
+          "$ref": "#/definitions/ToolCallId"
+        },
+        "trace": {
+          "$ref": "#/definitions/TraceContext"
+        }
+      },
+      "required": [
+        "invocationId"
+      ],
+      "type": "object"
+    },
+    "InvocationCostLimit": {
+      "additionalProperties": false,
+      "properties": {
+        "currency": {
+          "$ref": "#/definitions/CurrencyCode"
+        },
+        "minorUnits": {
+          "$ref": "#/definitions/MinorUnits"
+        }
+      },
+      "required": [
+        "currency",
+        "minorUnits"
+      ],
+      "type": "object"
+    },
+    "InvocationId": {
+      "allOf": [
+        {
+          "$ref": "#/definitions/OpaqueId%3C%22invocation%22%3E"
+        }
+      ],
+      "format": "uuid",
+      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+      "type": "string"
+    },
+    "InvocationLimit": {
+      "description": "A portable non-negative integer limit.",
+      "minimum": 0,
+      "type": "integer"
+    },
+    "JsonArray": {
+      "items": {
+        "$ref": "#/definitions/JsonValue"
+      },
+      "type": "array"
+    },
+    "JsonContent": {
+      "additionalProperties": false,
+      "description": "Portable JSON content with an optional schema identity.",
+      "properties": {
+        "kind": {
+          "const": "json",
+          "type": "string"
+        },
+        "schema": {
+          "$ref": "#/definitions/SchemaRef"
+        },
+        "value": {
+          "$ref": "#/definitions/JsonValue"
+        }
+      },
+      "required": [
+        "kind",
+        "value"
+      ],
+      "type": "object"
+    },
+    "JsonObject": {
+      "additionalProperties": {
+        "$ref": "#/definitions/JsonValue"
+      },
+      "type": "object"
+    },
+    "JsonPrimitive": {
+      "type": [
+        "boolean",
+        "null",
+        "number",
+        "string"
+      ]
+    },
+    "JsonValue": {
+      "anyOf": [
+        {
+          "$ref": "#/definitions/JsonArray"
+        },
+        {
+          "$ref": "#/definitions/JsonObject"
+        },
+        {
+          "$ref": "#/definitions/JsonPrimitive"
+        }
+      ]
+    },
+    "MediaRefContent": {
+      "additionalProperties": false,
+      "description": "Portable reference to media held behind an authorized resource resolver.",
+      "properties": {
+        "altText": {
+          "type": "string"
+        },
+        "kind": {
+          "const": "media-ref",
+          "type": "string"
+        },
+        "mediaType": {
+          "$ref": "#/definitions/MediaType"
+        },
+        "resource": {
+          "$ref": "#/definitions/ResourceRef"
+        }
+      },
+      "required": [
+        "kind",
+        "mediaType",
+        "resource"
+      ],
+      "type": "object"
+    },
+    "MediaType": {
+      "description": "An IANA media type.",
+      "pattern": "^[A-Za-z0-9!#$&^_.+-]+/[A-Za-z0-9!#$&^_.+-]+(?:\\s*;\\s*[A-Za-z0-9!#$&^_.+-]+=(?:[A-Za-z0-9!#$&^_.+-]+|\"[^\"]*\"))*$",
+      "type": "string"
+    },
+    "MinorUnits": {
+      "pattern": "^(?:0|[1-9][0-9]*)$",
+      "type": "string"
+    },
+    "NativeExtensions": {
+      "additionalProperties": {
+        "$ref": "#/definitions/JsonValue"
+      },
+      "propertyNames": {
+        "pattern": "^(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\\.)+[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$"
+      },
+      "type": "object"
+    },
+    "ObservationTimestamp": {
+      "format": "date-time",
+      "type": "string"
+    },
+    "OpaqueId<\"conversation\">": {
+      "description": "Compile-time identity overlay. The brand is erased to a JSON string in wire schemas and never adds a field to serialized values.",
+      "type": "string"
+    },
+    "OpaqueId<\"correlation\">": {
+      "description": "Compile-time identity overlay. The brand is erased to a JSON string in wire schemas and never adds a field to serialized values.",
+      "type": "string"
+    },
+    "OpaqueId<\"durable-job\">": {
+      "description": "Compile-time identity overlay. The brand is erased to a JSON string in wire schemas and never adds a field to serialized values.",
+      "type": "string"
+    },
+    "OpaqueId<\"event\">": {
+      "description": "Compile-time identity overlay. The brand is erased to a JSON string in wire schemas and never adds a field to serialized values.",
+      "type": "string"
+    },
+    "OpaqueId<\"evidence\">": {
+      "description": "Compile-time identity overlay. The brand is erased to a JSON string in wire schemas and never adds a field to serialized values.",
+      "type": "string"
+    },
+    "OpaqueId<\"invocation\">": {
+      "description": "Compile-time identity overlay. The brand is erased to a JSON string in wire schemas and never adds a field to serialized values.",
+      "type": "string"
+    },
+    "OpaqueId<\"principal\">": {
+      "description": "Compile-time identity overlay. The brand is erased to a JSON string in wire schemas and never adds a field to serialized values.",
+      "type": "string"
+    },
+    "OpaqueId<\"provider-session\">": {
+      "description": "Compile-time identity overlay. The brand is erased to a JSON string in wire schemas and never adds a field to serialized values.",
+      "type": "string"
+    },
+    "OpaqueId<\"resource\">": {
+      "description": "Compile-time identity overlay. The brand is erased to a JSON string in wire schemas and never adds a field to serialized values.",
+      "type": "string"
+    },
+    "OpaqueId<\"run\">": {
+      "description": "Compile-time identity overlay. The brand is erased to a JSON string in wire schemas and never adds a field to serialized values.",
+      "type": "string"
+    },
+    "OpaqueId<\"secret\">": {
+      "description": "Compile-time identity overlay. The brand is erased to a JSON string in wire schemas and never adds a field to serialized values.",
+      "type": "string"
+    },
+    "OpaqueId<\"span\">": {
+      "description": "Compile-time identity overlay. The brand is erased to a JSON string in wire schemas and never adds a field to serialized values.",
+      "type": "string"
+    },
+    "OpaqueId<\"step\">": {
+      "description": "Compile-time identity overlay. The brand is erased to a JSON string in wire schemas and never adds a field to serialized values.",
+      "type": "string"
+    },
+    "OpaqueId<\"tenant\">": {
+      "description": "Compile-time identity overlay. The brand is erased to a JSON string in wire schemas and never adds a field to serialized values.",
+      "type": "string"
+    },
+    "OpaqueId<\"tool-call\">": {
+      "description": "Compile-time identity overlay. The brand is erased to a JSON string in wire schemas and never adds a field to serialized values.",
+      "type": "string"
+    },
+    "OpaqueId<\"trace\">": {
+      "description": "Compile-time identity overlay. The brand is erased to a JSON string in wire schemas and never adds a field to serialized values.",
+      "type": "string"
+    },
+    "OpaqueId<\"trace-flags\">": {
+      "description": "Compile-time identity overlay. The brand is erased to a JSON string in wire schemas and never adds a field to serialized values.",
+      "type": "string"
+    },
+    "PartialConformanceEvidence": {
+      "additionalProperties": false,
+      "properties": {
+        "contractSchema": {
+          "$ref": "#/definitions/SchemaRef"
+        },
+        "extensions": {
+          "$ref": "#/definitions/NativeExtensions"
+        },
+        "implementationId": {
+          "$ref": "#/definitions/PortableImplementationId"
+        },
+        "implementationVersion": {
+          "type": "string"
+        },
+        "limitations": {
+          "items": {
+            "$ref": "#/definitions/CapabilityConstraint"
+          },
+          "minItems": 1,
+          "type": "array"
+        },
+        "observedAt": {
+          "$ref": "#/definitions/ObservationTimestamp"
+        },
+        "providerId": {
+          "$ref": "#/definitions/PortableImplementationId"
+        },
+        "providerVersion": {
+          "type": "string"
+        },
+        "report": {
+          "$ref": "#/definitions/EvidenceRef"
+        },
+        "result": {
+          "const": "partial",
+          "type": "string"
+        },
+        "suiteId": {
+          "$ref": "#/definitions/CapabilityId"
+        },
+        "suiteVersion": {
+          "$ref": "#/definitions/ContractVersion"
+        }
+      },
+      "required": [
+        "implementationId",
+        "implementationVersion",
+        "limitations",
+        "observedAt",
+        "report",
+        "result",
+        "suiteId",
+        "suiteVersion"
+      ],
+      "type": "object"
+    },
+    "PassingConformanceEvidence": {
+      "additionalProperties": false,
+      "properties": {
+        "contractSchema": {
+          "$ref": "#/definitions/SchemaRef"
+        },
+        "extensions": {
+          "$ref": "#/definitions/NativeExtensions"
+        },
+        "implementationId": {
+          "$ref": "#/definitions/PortableImplementationId"
+        },
+        "implementationVersion": {
+          "type": "string"
+        },
+        "observedAt": {
+          "$ref": "#/definitions/ObservationTimestamp"
+        },
+        "providerId": {
+          "$ref": "#/definitions/PortableImplementationId"
+        },
+        "providerVersion": {
+          "type": "string"
+        },
+        "report": {
+          "$ref": "#/definitions/EvidenceRef"
+        },
+        "result": {
+          "const": "pass",
+          "type": "string"
+        },
+        "suiteId": {
+          "$ref": "#/definitions/CapabilityId"
+        },
+        "suiteVersion": {
+          "$ref": "#/definitions/ContractVersion"
+        }
+      },
+      "required": [
+        "implementationId",
+        "implementationVersion",
+        "observedAt",
+        "report",
+        "result",
+        "suiteId",
+        "suiteVersion"
+      ],
+      "type": "object"
+    },
+    "PortableContent": {
+      "anyOf": [
+        {
+          "$ref": "#/definitions/TextContent"
+        },
+        {
+          "$ref": "#/definitions/JsonContent"
+        },
+        {
+          "$ref": "#/definitions/BinaryContent"
+        },
+        {
+          "$ref": "#/definitions/MediaRefContent"
+        }
+      ],
+      "description": "Mandatory closed portable content union."
+    },
+    "PortableImplementationId": {
+      "description": "A portable implementation or binding identifier.",
+      "maxLength": 255,
+      "minLength": 1,
+      "pattern": "^[!-~]+$",
+      "type": "string"
+    },
+    "PrincipalId": {
+      "allOf": [
+        {
+          "$ref": "#/definitions/OpaqueId%3C%22principal%22%3E"
+        }
+      ],
+      "maxLength": 255,
+      "minLength": 1,
+      "pattern": "^[!-~]+$",
+      "type": "string"
+    },
+    "PrincipalRef": {
+      "additionalProperties": false,
+      "description": "The authenticated principal on whose authority an invocation executes.\n\nAuthentication material is deliberately absent. Hosts resolve the opaque identifier at their trust boundary.",
+      "properties": {
+        "principalId": {
+          "$ref": "#/definitions/PrincipalId"
+        }
+      },
+      "required": [
+        "principalId"
+      ],
+      "type": "object"
+    },
+    "ProviderSessionId": {
+      "allOf": [
+        {
+          "$ref": "#/definitions/OpaqueId%3C%22provider-session%22%3E"
+        }
+      ],
+      "maxLength": 255,
+      "minLength": 1,
+      "pattern": "^[!-~]+$",
+      "type": "string"
+    },
+    "ResourceId": {
+      "allOf": [
+        {
+          "$ref": "#/definitions/OpaqueId%3C%22resource%22%3E"
+        }
+      ],
+      "format": "uuid",
+      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+      "type": "string"
+    },
+    "ResourceRef": {
+      "additionalProperties": false,
+      "description": "Storage-neutral identity and integrity metadata for binary content.",
+      "properties": {
+        "byteLength": {
+          "$ref": "#/definitions/ByteLength"
+        },
+        "digest": {
+          "$ref": "#/definitions/Digest"
+        },
+        "mediaType": {
+          "$ref": "#/definitions/MediaType"
+        },
+        "resourceId": {
+          "$ref": "#/definitions/ResourceId"
+        }
+      },
+      "required": [
+        "resourceId",
+        "mediaType",
+        "byteLength",
+        "digest"
+      ],
+      "type": "object"
+    },
+    "RunId": {
+      "allOf": [
+        {
+          "$ref": "#/definitions/OpaqueId%3C%22run%22%3E"
+        }
+      ],
+      "format": "uuid",
+      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+      "type": "string"
+    },
+    "SchemaId": {
+      "format": "uri",
+      "type": "string"
+    },
+    "SchemaRef": {
+      "additionalProperties": false,
+      "properties": {
+        "digest": {
+          "$ref": "#/definitions/Digest"
+        },
+        "schemaId": {
+          "$ref": "#/definitions/SchemaId"
+        },
+        "version": {
+          "$ref": "#/definitions/ContractVersion"
+        }
+      },
+      "required": [
+        "schemaId",
+        "version",
+        "digest"
+      ],
+      "type": "object"
+    },
+    "SecretId": {
+      "allOf": [
+        {
+          "$ref": "#/definitions/OpaqueId%3C%22secret%22%3E"
+        }
+      ],
+      "maxLength": 255,
+      "minLength": 1,
+      "pattern": "^[!-~]+$",
+      "type": "string"
+    },
+    "SecretRef": {
+      "additionalProperties": false,
+      "properties": {
+        "secretId": {
+          "$ref": "#/definitions/SecretId"
+        }
+      },
+      "required": [
+        "secretId"
+      ],
+      "type": "object"
+    },
+    "Sha256Hex": {
+      "pattern": "^[0-9a-f]{64}$",
+      "type": "string"
+    },
+    "SpanId": {
+      "allOf": [
+        {
+          "$ref": "#/definitions/OpaqueId%3C%22span%22%3E"
+        }
+      ],
+      "pattern": "^(?!0{16}$)[0-9a-f]{16}$",
+      "type": "string"
+    },
+    "StepId": {
+      "allOf": [
+        {
+          "$ref": "#/definitions/OpaqueId%3C%22step%22%3E"
+        }
+      ],
+      "format": "uuid",
+      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+      "type": "string"
+    },
+    "SupportedCapabilityClaim": {
+      "additionalProperties": false,
+      "properties": {
+        "additionalEvidence": {
+          "items": {
+            "$ref": "#/definitions/ConformanceEvidence"
+          },
+          "type": "array"
+        },
+        "capabilityId": {
+          "$ref": "#/definitions/CapabilityId"
+        },
+        "evidence": {
+          "$ref": "#/definitions/PassingConformanceEvidence"
+        },
+        "extensions": {
+          "$ref": "#/definitions/NativeExtensions"
+        },
+        "status": {
+          "const": "supported",
+          "type": "string"
+        },
+        "version": {
+          "$ref": "#/definitions/ContractVersion"
+        }
+      },
+      "required": [
+        "capabilityId",
+        "evidence",
+        "status",
+        "version"
+      ],
+      "type": "object"
+    },
+    "TenantId": {
+      "allOf": [
+        {
+          "$ref": "#/definitions/OpaqueId%3C%22tenant%22%3E"
+        }
+      ],
+      "maxLength": 255,
+      "minLength": 1,
+      "pattern": "^[!-~]+$",
+      "type": "string"
+    },
+    "TenantRef": {
+      "additionalProperties": false,
+      "description": "The tenant/security domain that owns an invocation.",
+      "properties": {
+        "tenantId": {
+          "$ref": "#/definitions/TenantId"
+        }
+      },
+      "required": [
+        "tenantId"
+      ],
+      "type": "object"
+    },
+    "TextContent": {
+      "additionalProperties": false,
+      "description": "Portable UTF-8 text content.",
+      "properties": {
+        "kind": {
+          "const": "text",
+          "type": "string"
+        },
+        "text": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "kind",
+        "text"
+      ],
+      "type": "object"
+    },
+    "ToolCallId": {
+      "allOf": [
+        {
+          "$ref": "#/definitions/OpaqueId%3C%22tool-call%22%3E"
+        }
+      ],
+      "format": "uuid",
+      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+      "type": "string"
+    },
+    "TraceContext": {
+      "additionalProperties": false,
+      "properties": {
+        "spanId": {
+          "$ref": "#/definitions/SpanId"
+        },
+        "traceFlags": {
+          "$ref": "#/definitions/TraceFlags"
+        },
+        "traceId": {
+          "$ref": "#/definitions/TraceId"
+        }
+      },
+      "required": [
+        "traceId",
+        "spanId"
+      ],
+      "type": "object"
+    },
+    "TraceFlags": {
+      "allOf": [
+        {
+          "$ref": "#/definitions/OpaqueId%3C%22trace-flags%22%3E"
+        }
+      ],
+      "pattern": "^[0-9a-f]{2}$",
+      "type": "string"
+    },
+    "TraceId": {
+      "allOf": [
+        {
+          "$ref": "#/definitions/OpaqueId%3C%22trace%22%3E"
+        }
+      ],
+      "pattern": "^(?!0{32}$)[0-9a-f]{32}$",
+      "type": "string"
+    },
+    "UnsupportedCapabilityClaim": {
+      "additionalProperties": false,
+      "properties": {
+        "additionalEvidence": {
+          "items": {
+            "$ref": "#/definitions/ConformanceEvidence"
+          },
+          "type": "array"
+        },
+        "capabilityId": {
+          "$ref": "#/definitions/CapabilityId"
+        },
+        "evidence": {
+          "$ref": "#/definitions/FailedConformanceEvidence"
+        },
+        "extensions": {
+          "$ref": "#/definitions/NativeExtensions"
+        },
+        "status": {
+          "const": "unsupported",
+          "type": "string"
+        },
+        "version": {
+          "$ref": "#/definitions/ContractVersion"
+        }
+      },
+      "required": [
+        "capabilityId",
+        "evidence",
+        "status",
+        "version"
+      ],
+      "type": "object"
+    }
+  }
+}
