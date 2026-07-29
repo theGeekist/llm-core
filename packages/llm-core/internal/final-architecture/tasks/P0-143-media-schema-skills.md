@@ -3,7 +3,7 @@ architecture_version: 2
 id: P0-143
 title: Implement media, schema resolution and skill fronts
 phase: P0.3
-status: review
+status: complete
 priority: P0
 preferred_owner_kind: codex
 owner: codex-root
@@ -44,7 +44,7 @@ write_scope:
   - packages/llm-core/tests/agent/skills.test.ts
   - packages/llm-core/internal/final-architecture/tasks/P0-143-media-schema-skills.md
 review_owner: coordinator
-updated_at: 2026-07-29
+updated_at: 2026-07-30
 ---
 
 # P0-143 — Media, Schema Resolution and Skills
@@ -96,6 +96,10 @@ bun run typecheck:packages
 - 2026-07-30 — Closed follow-up review gaps by changing normalized sensitive
   and locator key policies to containment matching, with installed LangChain
   and LlamaIndex prompt regressions plus recursive AgentSpec locator cases.
+- 2026-07-30 — Independently approved at exact SHA
+  `2f3d9e9406df19672288b3b45dcb26b04eb003fd`, integrated into `main`, and
+  completed after the receiving suite passed with 1,312 tests, 35
+  credential-gated skips and no failures.
 
 ## Handoff
 
