@@ -19,7 +19,7 @@ Swarm claiming and integration follow [`COORDINATION.md`](COORDINATION.md).
 | P0-141 | P0.3  | complete | Codex         | codex-root               | P0-100, P0-120, P0-160         |
 | P0-142 | P0.3  | complete | Codex         | codex-root               | P0-100, P0-120, P0-130, P0-160 |
 | P0-143 | P0.3  | complete | Codex         | codex-root               | P0-100, P0-120, P0-140, P0-160 |
-| P0-149 | P0.4  | proposed | Codex         | —                        | P0-141, P0-142, P0-143         |
+| P0-149 | P0.4  | claimed  | Codex         | codex-root               | P0-141, P0-142, P0-143         |
 | P0-155 | P0.4  | complete | Codex         | codex-root               | P0-110, P0-120                 |
 | P0-160 | P0.4  | complete | Codex         | codex-root               | P0-110, P0-120, P0-155         |
 | P0-170 | P0.4  | complete | Codex         | codex-root               | P0-130, P0-140, P0-160         |
@@ -30,4 +30,4 @@ Swarm claiming and integration follow [`COORDINATION.md`](COORDINATION.md).
 
 ## Next action
 
-Claim and implement P0-149. Integrate or freeze docs-v2 before P0-150.
+Implement and review P0-149. Integrate or freeze docs-v2 before P0-150.
