@@ -16,8 +16,8 @@ Swarm claiming and integration follow [`COORDINATION.md`](COORDINATION.md).
 | P0-120 | P0.2  | complete | historical    | Claude Code              | P0-100                         |
 | P0-130 | P0.3  | claimed  | Codex         | codex-root               | P0-110                         |
 | P0-140 | P0.3  | proposed | Codex         | —                        | P0-110, P0-120, P0-130         |
-| P0-155 | P0.4  | claimed  | Codex         | codex-root               | P0-110, P0-120                 |
-| P0-160 | P0.4  | proposed | Codex         | —                        | P0-110, P0-120, P0-155         |
+| P0-155 | P0.4  | complete | Codex         | codex-root               | P0-110, P0-120                 |
+| P0-160 | P0.4  | claimed  | Codex         | codex-root               | P0-110, P0-120, P0-155         |
 | P0-170 | P0.4  | proposed | Codex         | —                        | P0-130, P0-140, P0-160         |
 | P0-150 | P0.5  | proposed | coordinator   | —                        | I0-010, P0-140, P0-160, P0-170 |
 | P1-210 | P1.1  | proposed | Codex         | —                        | P0-150                         |
@@ -26,5 +26,5 @@ Swarm claiming and integration follow [`COORDINATION.md`](COORDINATION.md).
 
 ## Next action
 
-Run `P0-130` and `P0-155` in parallel through Codex subagents. Claim `P0-140`
-only after P0-130 integrates; claim P0-160 after P0-155 integrates.
+Run `P0-130` and `P0-160` in parallel through Codex subagents. Claim `P0-140`
+only after P0-130 integrates; P0-170 follows P0-140 and P0-160.

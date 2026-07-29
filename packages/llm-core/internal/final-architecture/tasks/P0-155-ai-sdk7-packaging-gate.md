@@ -3,13 +3,13 @@ architecture_version: 2
 id: P0-155
 title: Resolve AI SDK 7 dependency and module-format gate
 phase: P0.4
-status: review
+status: complete
 priority: P0
 preferred_owner_kind: coordinator
 owner: codex-root
 owner_kind: codex
 lease_started_at: 2026-07-29T19:15:00+08:00
-lease_expires_at: 2026-07-30T19:15:00+08:00
+lease_expires_at: null
 base_sha: 6b9838c
 branch: task/P0-155-codex
 worktree: /Users/jasonnathan/Repos/@theGeekist/llm-core/.worktrees/P0-155-codex
@@ -113,10 +113,13 @@ bun run typecheck:packages
   dependency/alias checks, seeds both nested and root stale `.cjs` artifacts,
   runs the real package build, and imports every unique ESM runtime target.
   Moved to `review` after all required verification passed.
+- 2026-07-29T19:27:00+08:00 — Integrated on main through `23f88ee`.
+  Coordinator receiving verification passed frozen install, build, package
+  smoke, lint, package typecheck and schema checks. Task marked complete.
 
 ## Handoff
 
-Status: review.
+Status: complete.
 
 ### Commits
 
