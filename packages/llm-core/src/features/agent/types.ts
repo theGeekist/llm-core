@@ -1,10 +1,4 @@
-import type {
-  ContractVersion,
-  EventId,
-  InvocationContext,
-  JsonValue,
-  RunId,
-} from "#contracts";
+import type { ContractVersion, EventId, InvocationContext, JsonValue, RunId } from "#contracts";
 import type { MaybePromise } from "#shared/maybe";
 import type {
   DurableExecutionHandle,
@@ -14,6 +8,7 @@ import type {
   RegisteredResumableCheckpoint,
   ResumeCompatibility,
 } from "../state/public";
+import type { AgentSkillRef } from "./skills";
 
 declare const preparedAgentSpecBrand: unique symbol;
 
@@ -25,6 +20,7 @@ export interface AgentSpec {
   readonly instructions: string;
   readonly effectRequirement: AgentEffectRequirement;
   readonly metadata?: Readonly<Record<string, JsonValue>>;
+  readonly skills?: readonly AgentSkillRef[];
 }
 
 export interface PreparedAgentSpec extends AgentSpec {

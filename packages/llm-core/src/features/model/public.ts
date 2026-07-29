@@ -12,3 +12,7 @@ export * from "./profile";
 export * from "./resolver";
 export * from "./model";
 export * from "./builtin";
+export * from "./schema-resolution";
+export * from "./prompting";
+// ADR-008 publishes media capability contracts through the curated ./model front.
+export * from "../media/public";

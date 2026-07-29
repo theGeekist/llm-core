@@ -1,4 +1,13 @@
 export { isPreparedAgentSpec, prepareAgentSpec } from "./spec";
+export { loadAgentSkills, registerAgentSkill } from "./skills";
+export type {
+  AgentSkillRef,
+  LocalSkillCandidate,
+  LocalSkillLoader,
+  LocalSkillLoadRequest,
+  SkillId,
+  SkillScope,
+} from "./skills";
 export type {
   AgentCancellationAcknowledgement,
   AgentCancellationRequest,
