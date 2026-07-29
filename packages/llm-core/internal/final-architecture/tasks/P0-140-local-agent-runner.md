@@ -3,16 +3,16 @@ architecture_version: 2
 id: P0-140
 title: Implement AgentRunner and local runner
 phase: P0.3
-status: proposed
+status: claimed
 priority: P0
 preferred_owner_kind: codex
-owner: null
-owner_kind: null
-lease_started_at: null
-lease_expires_at: null
-base_sha: null
-branch: null
-worktree: null
+owner: codex-root
+owner_kind: codex
+lease_started_at: 2026-07-29T22:35:00+08:00
+lease_expires_at: 2026-07-30T22:35:00+08:00
+base_sha: e13eff0
+branch: task/P0-140-codex
+worktree: /Users/jasonnathan/Repos/@theGeekist/llm-core/.worktrees/P0-140-codex
 depends_on:
   - P0-110
   - P0-120
@@ -62,5 +62,8 @@ bun run typecheck:packages
 ```
 
 ## Work log
+
+- 2026-07-29T22:35:00+08:00 — Claimed by the Codex coordinator after P0-130
+  integrated and passed receiving verification.
 
 ## Handoff
