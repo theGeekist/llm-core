@@ -14,11 +14,11 @@ import {
 
 describe("shared model/tool/control/event/state/continuation conformance", () => {
   test("local TypeScript runner", async () => {
-    await assertPortableRunnerConformance(localTarget);
+    await assertPortableRunnerConformance(localTarget, true);
   });
 
   test("deterministic fake-remote runner", async () => {
-    await assertPortableRunnerConformance(fakeRemoteTarget);
+    await assertPortableRunnerConformance(fakeRemoteTarget, true);
   });
 
   test("real Python stdlib process transport (not PydanticAI runtime conformance)", async () => {

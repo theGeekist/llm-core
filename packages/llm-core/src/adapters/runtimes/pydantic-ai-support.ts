@@ -15,9 +15,15 @@ export interface RuntimeSupportDeclaration {
 export const PYDANTIC_AI_SEMANTICS: readonly RuntimeSupportDeclaration[] = Object.freeze([
   {
     area: "model",
-    semantic: "text-messages-and-python-output-type",
+    semantic: "text-messages",
     disposition: "supported",
-    detail: "Text messages and validated Python output_type values retain their meaning.",
+    detail: "Text prompts and responses retain their meaning.",
+  },
+  {
+    area: "model",
+    semantic: "python-output-type",
+    disposition: "projected",
+    detail: "Typed Python output has no direct cross-language type identity.",
   },
   {
     area: "model",
@@ -94,7 +100,7 @@ export interface RuntimeCompatibilityReport {
   readonly assessedCommit: "ed0f40c0e5061722f7d9f579ed7efff1b74e3ea5";
   readonly supportedReleaseRange: "==2.19.0";
   readonly pythonVersions: ">=3.10 <3.15";
-  readonly conformanceEvidence: "documentary-projection-only";
+  readonly conformanceEvidence: "local-executable-report";
   readonly semantics: readonly RuntimeSupportDeclaration[];
 }
 
@@ -105,6 +111,6 @@ export const PYDANTIC_AI_COMPATIBILITY_REPORT: RuntimeCompatibilityReport = Obje
   assessedCommit: "ed0f40c0e5061722f7d9f579ed7efff1b74e3ea5",
   supportedReleaseRange: "==2.19.0",
   pythonVersions: ">=3.10 <3.15",
-  conformanceEvidence: "documentary-projection-only",
+  conformanceEvidence: "local-executable-report",
   semantics: PYDANTIC_AI_SEMANTICS,
 });

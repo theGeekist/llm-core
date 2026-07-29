@@ -73,6 +73,14 @@ const sameDeclaration = (
   expected: readonly RuntimeSupportDeclaration[],
 ): boolean => JSON.stringify(actual) === JSON.stringify(expected);
 
+const supportedPythonVersion = (value: string): boolean => {
+  const match = /^(\d+)\.(\d+)\.(\d+)(?:[+-].*)?$/.exec(value);
+  if (!match) return false;
+  const major = Number(match[1]);
+  const minor = Number(match[2]);
+  return major === 3 && minor >= 10 && minor < 15;
+};
+
 export const assertPydanticAiBridgeCompatible = (handshake: PydanticAiBridgeHandshake): void => {
   if (handshake.protocol !== PYDANTIC_AI_BRIDGE_PROTOCOL) {
     throw new PydanticAiCompatibilityError(
@@ -84,6 +92,12 @@ export const assertPydanticAiBridgeCompatible = (handshake: PydanticAiBridgeHand
     throw new PydanticAiCompatibilityError(
       "pydantic-ai-unavailable",
       "The Python process is reachable, but PydanticAI is not installed.",
+    );
+  }
+  if (!supportedPythonVersion(handshake.pythonVersion)) {
+    throw new PydanticAiCompatibilityError(
+      "unsupported-python-version",
+      `Python ${handshake.pythonVersion} is outside >=3.10 <3.15.`,
     );
   }
   const version = parseVersion(handshake.pydanticAiVersion);
@@ -341,6 +355,7 @@ const createBridgeRunner = (
         assertPydanticAiBridgeCompatible(handshake);
       } else if (
         handshake.protocol !== PYDANTIC_AI_BRIDGE_PROTOCOL ||
+        !supportedPythonVersion(handshake.pythonVersion) ||
         !sameDeclaration(handshake.semantics, PYDANTIC_AI_SEMANTICS)
       ) {
         throw new PydanticAiCompatibilityError(
@@ -388,17 +403,21 @@ const createBridgeRunner = (
       }),
       result: async () => validateResult(await exchange("result", { runId }), runId),
       cancel: async (
-        request: AgentCancellationRequest,
-      ): Promise<AgentCancellationAcknowledgement> =>
-        clonePortable(
-          await exchange("cancel", { runId, request: request as unknown as JsonValue }),
-        ) as unknown as AgentCancellationAcknowledgement,
+        _request: AgentCancellationRequest,
+      ): Promise<AgentCancellationAcknowledgement> => {
+        throw new PydanticAiCompatibilityError(
+          "cancellation-unsupported",
+          "The bounded PydanticAI bridge has no live in-flight cancellation channel.",
+        );
+      },
       intervene: async (
-        decision: InterventionDecision,
-      ): Promise<AgentInterventionAcknowledgement> =>
-        clonePortable(
-          await exchange("intervene", { runId, decision: decision as unknown as JsonValue }),
-        ) as unknown as AgentInterventionAcknowledgement,
+        _decision: InterventionDecision,
+      ): Promise<AgentInterventionAcknowledgement> => {
+        throw new PydanticAiCompatibilityError(
+          "interventions-unsupported",
+          "PydanticAI deferred calls are not llm-core authenticated interventions.",
+        );
+      },
     });
 
   return Object.freeze({

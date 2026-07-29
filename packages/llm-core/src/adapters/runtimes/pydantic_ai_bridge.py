@@ -19,9 +19,15 @@ PROTOCOL = "llm-core.pydantic-ai.bridge/v1"
 SEMANTICS = [
     {
         "area": "model",
-        "semantic": "text-messages-and-python-output-type",
+        "semantic": "text-messages",
         "disposition": "supported",
-        "detail": "Text messages and validated Python output_type values retain their meaning.",
+        "detail": "Text prompts and responses retain their meaning.",
+    },
+    {
+        "area": "model",
+        "semantic": "python-output-type",
+        "disposition": "projected",
+        "detail": "Typed Python output has no direct cross-language type identity.",
     },
     {
         "area": "model",
@@ -112,9 +118,21 @@ def execute_pydantic_ai(prompt: str, instructions: str) -> dict[str, Any]:
         if parameters is not None
         else []
     )
+    messages = json.loads(result.all_messages_json())
+    tool_call: dict[str, Any] | None = None
+    tool_return: dict[str, Any] | None = None
+    for message in messages:
+        for part in message.get("parts", []):
+            if part.get("part_kind") == "tool-call":
+                tool_call = part
+            elif part.get("part_kind") == "tool-return":
+                tool_return = part
     return {
         "output": str(result.output),
         "toolNames": tool_names,
+        "messages": messages,
+        "toolCall": tool_call,
+        "toolReturn": tool_return,
     }
 
 
@@ -213,26 +231,26 @@ def handle(request: dict[str, Any]) -> dict[str, Any]:
             if available
             else None
         )
-        output = {
-            "runtime": "pydantic-ai" if available else "python-transport",
-            "input": payload.get("input"),
-            "model": {
-                "kind": "text",
-                "text": runtime_result["output"] if runtime_result else "deterministic",
-            },
-            "tool": {
-                "name": "echo",
-                "registered": (
-                    "echo" in runtime_result["toolNames"]
-                    if runtime_result
-                    else True
-                ),
-                "result": payload.get("input"),
-            },
-            "control": {"effect": "read-only", "status": "allowed"},
-            "state": {"kind": "snapshot", "resumable": False},
-            "continuation": {"status": "unsupported"},
-        }
+        if runtime_result:
+            tool_call = runtime_result["toolCall"] or {}
+            tool_return = runtime_result["toolReturn"] or {}
+            output = {
+                "runtime": "pydantic-ai",
+                "model": {"kind": "text", "text": runtime_result["output"]},
+                "tool": {
+                    "name": tool_call.get("tool_name"),
+                    "toolCallId": tool_call.get("tool_call_id"),
+                    "arguments": tool_call.get("args"),
+                    "result": tool_return.get("content"),
+                    "registered": "echo" in runtime_result["toolNames"],
+                },
+                "messageHistory": runtime_result["messages"],
+            }
+        else:
+            output = {
+                "runtime": "python-transport",
+                "model": {"kind": "text", "text": "deterministic"},
+            }
         runs[run_id] = {
             "events": [
                 event(

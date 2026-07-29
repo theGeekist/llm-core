@@ -80,6 +80,11 @@ bun run typecheck:packages
   conformance claim was minted from the transport-only result.
 - 2026-07-30 — Moved to review at implementation commit
   `3c1913a2eefcb29d75520aac32bd1d29f8500244`.
+- 2026-07-30 — Review remediation added an isolated CPython 3.14.6 environment
+  pinned to `pydantic-ai-slim==2.19.0`. The positive matrix now executes the
+  real Agent/TestModel tool loop and preserves its tool call ID, arguments,
+  return and serialized message history. Missing-package behavior is covered
+  independently and deterministically.
 
 ## Handoff
 
@@ -97,8 +102,11 @@ bun run typecheck:packages
   - `packages/llm-core/tests/conformance/runner-fixtures.ts`
   - this task file
 - Verification after `bun install --frozen-lockfile`:
-  - `bun test packages/llm-core/tests/conformance` — exit 0, 13 pass,
-    0 fail, including the real CPython process boundary.
+  - default `bun test packages/llm-core/tests/conformance` — exit 0, 13 pass,
+    1 optional exact-runtime skip, 0 fail.
+  - with `LLM_CORE_PYDANTIC_AI_PYTHON` set to an isolated CPython 3.14.6
+    environment containing exact `pydantic-ai-slim==2.19.0` — exit 0,
+    14 pass, 0 fail.
   - `bun run typecheck:packages` — exit 0; package typecheck and generated
     contract schema check passed.
   - `bun run typecheck:tests` — exit 0.
@@ -112,17 +120,18 @@ bun run typecheck:packages
   - assessed source: PydanticAI v2.19.0,
     `ed0f40c0e5061722f7d9f579ed7efff1b74e3ea5`, Python 3.10–3.14;
   - executable support target: exact `pydantic-ai-slim==2.19.0`;
-  - supported: literal text prompts, Python `output_type`, and allowlisted
-    process-local read-only function tools;
-  - projected/lossy: cross-language JSON output, normalized lifecycle events,
-    and caller-managed message history;
+  - supported: literal text prompts and allowlisted process-local read-only
+    function tools, including real call identity, arguments and results;
+  - projected/lossy: Python `output_type`, cross-language JSON output,
+    normalized lifecycle events, and caller-managed message history;
   - unsupported/fail-closed: controlled effects and approval authority,
     skills, arbitrary metadata/templates/input, binary/media/reasoning/native
     values, cancellation, interventions, checkpoint resume, provider sessions,
     durable/live continuation, and recorded-effect semantics.
 - Risks:
-  - CPython transport conformance passed, but PydanticAI runtime conformance
-    did not run in this worktree because the optional package is absent.
+  - The default environment intentionally lacks PydanticAI; exact-runtime
+    conformance depends on the isolated interpreter supplied through
+    `LLM_CORE_PYDANTIC_AI_PYTHON`.
   - The Python source asset is not copied by the current TypeScript-only build.
   - The qualified runtime front is internal and is not part of ADR-008's
     sixteen package exports.

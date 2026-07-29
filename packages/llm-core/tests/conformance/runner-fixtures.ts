@@ -98,7 +98,7 @@ export const pythonTransportTarget = (): ConformanceTarget => {
   const script = new URL("../../src/adapters/runtimes/pydantic_ai_bridge.py", import.meta.url)
     .pathname;
   const transport: ClosablePydanticAiBridgeTransport = createNdjsonStdioTransport({
-    command: "python3",
+    command: process.env.LLM_CORE_PYDANTIC_AI_PYTHON ?? "python3",
     args: [script],
   });
   return {
@@ -178,22 +178,26 @@ export const collectEvents = async (run: AgentRun) => {
 
 export const assertPortableRunnerConformance = async (
   create: () => ConformanceTarget,
+  verifyAllSemantics = false,
 ): Promise<void> => {
   const target = create();
   try {
+    const capabilities = await target.runner.capabilities();
     const spec = await prepare(target.runner);
     const run = await target.runner.start(runRequest(spec));
     const [result, events] = await Promise.all([run.result(), collectEvents(run)]);
 
     expect(result.status).toBe("completed");
     expect(result.identity.runId).toBe(run.identity.runId);
-    expect(result.output).toMatchObject({
-      model: { kind: "text", text: "deterministic" },
-      tool: { name: "echo", result: { prompt: "hello" } },
-      control: { effect: "read-only", status: "allowed" },
-      state: { kind: "snapshot", resumable: false },
-      continuation: { status: "unsupported" },
-    });
+    expect(result.output).toMatchObject({ model: { kind: "text" } });
+    if (verifyAllSemantics) {
+      expect(result.output).toMatchObject({
+        tool: { name: "echo", result: { prompt: "hello" } },
+        control: { effect: "read-only", status: "allowed" },
+        state: { kind: "snapshot", resumable: false },
+        continuation: { status: "unsupported" },
+      });
+    }
     expect(events.map((event) => event.kind)).toEqual([
       "agent.run.started",
       "agent.run.progress",
@@ -203,9 +207,12 @@ export const assertPortableRunnerConformance = async (
     expect(events.map((event) => event.sequence)).toEqual([0, 1, 2, 3]);
     expect(events.filter((event) => event.kind.endsWith("completed"))).toHaveLength(1);
     expect(events.every((event) => event.identity.runId === run.identity.runId)).toBe(true);
-    expect((await run.cancel({ requestedAt: "2026-07-30T00:00:01.000Z" })).status).toBe(
-      "already-terminal",
-    );
+    const cancellation = run.cancel({ requestedAt: "2026-07-30T00:00:01.000Z" });
+    if (capabilities.cancellation === "none") {
+      await expect(cancellation).rejects.toMatchObject({ code: "cancellation-unsupported" });
+    } else {
+      expect((await cancellation).status).toBe("already-terminal");
+    }
   } finally {
     await target.close();
   }

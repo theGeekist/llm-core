@@ -10,7 +10,16 @@ import {
   type PydanticAiBridgeHandshake,
   type PydanticAiBridgeTransport,
 } from "../../src/adapters/runtimes";
-import { contractVersion, newCoreId, type InvocationId } from "#contracts";
+import {
+  contractVersion,
+  externalId,
+  newCoreId,
+  type InvocationId,
+  type ProviderSessionId,
+} from "#contracts";
+import { collectEvents, prepare, runRequest } from "./runner-fixtures";
+
+const exactPython = process.env.LLM_CORE_PYDANTIC_AI_PYTHON;
 
 const handshake = (
   overrides: Partial<PydanticAiBridgeHandshake> = {},
@@ -29,7 +38,7 @@ describe("PydanticAI compatibility declaration", () => {
       assessedRelease: "2.19.0",
       assessedCommit: "ed0f40c0e5061722f7d9f579ed7efff1b74e3ea5",
       supportedReleaseRange: "==2.19.0",
-      conformanceEvidence: "documentary-projection-only",
+      conformanceEvidence: "local-executable-report",
     });
     expect(PYDANTIC_AI_COMPATIBILITY_REPORT.semantics).toEqual(
       expect.arrayContaining([
@@ -63,23 +72,71 @@ describe("PydanticAI compatibility declaration", () => {
     expect(() => assertPydanticAiBridgeCompatible(handshake({ semantics: [] }))).toThrow(
       "semantic declaration",
     );
+    expect(() => assertPydanticAiBridgeCompatible(handshake({ pythonVersion: "3.15.0" }))).toThrow(
+      "outside >=3.10 <3.15",
+    );
   });
 
-  test("the real Python bridge reports missing PydanticAI and the adapter fails closed", async () => {
-    const script = new URL("../../src/adapters/runtimes/pydantic_ai_bridge.py", import.meta.url)
-      .pathname;
-    const transport = createNdjsonStdioTransport({ command: "python3", args: [script] });
-    try {
-      const runner = createPydanticAiBridgeRunner(transport);
-      await expect(runner.capabilities()).rejects.toEqual(
-        expect.objectContaining({
-          code: "pydantic-ai-unavailable",
-        }),
-      );
-    } finally {
-      await transport.close();
-    }
+  test("missing PydanticAI fails closed deterministically", async () => {
+    const transport: PydanticAiBridgeTransport = {
+      async exchange(request) {
+        return {
+          protocol: PYDANTIC_AI_BRIDGE_PROTOCOL,
+          operation: request.operation,
+          ok: true,
+          payload: handshake({ pydanticAiAvailable: false }) as unknown as never,
+        };
+      },
+    };
+    await expect(createPydanticAiBridgeRunner(transport).capabilities()).rejects.toMatchObject({
+      code: "pydantic-ai-unavailable",
+    });
   });
+
+  test.skipIf(!exactPython)(
+    "executes exact PydanticAI 2.19.0 and preserves real tool/message facts",
+    async () => {
+      const script = new URL("../../src/adapters/runtimes/pydantic_ai_bridge.py", import.meta.url)
+        .pathname;
+      const transport = createNdjsonStdioTransport({ command: exactPython!, args: [script] });
+      try {
+        const runner = createPydanticAiBridgeRunner(transport);
+        expect((await runner.capabilities()).cancellation).toBe("none");
+        const run = await runner.start(runRequest(await prepare(runner)));
+        const result = await run.result();
+        expect(result.output).toMatchObject({
+          runtime: "pydantic-ai",
+          tool: { name: "echo", registered: true },
+        });
+        const output = result.output as Record<string, unknown>;
+        const tool = output.tool as Record<string, unknown>;
+        expect(typeof tool.toolCallId).toBe("string");
+        expect(tool.arguments).toEqual({ value: "a" });
+        expect(tool.result).toBe("a");
+        expect(Array.isArray(output.messageHistory)).toBe(true);
+        expect((await collectEvents(run)).at(-1)?.kind).toBe("agent.run.completed");
+        expect(runner.resume).toBeUndefined();
+        await expect(run.cancel({ requestedAt: "2026-07-30T00:00:01.000Z" })).rejects.toMatchObject(
+          { code: "cancellation-unsupported" },
+        );
+        await expect(run.intervene({} as never)).rejects.toMatchObject({
+          code: "interventions-unsupported",
+        });
+        await expect(
+          runner.start({
+            ...runRequest(await prepare(runner)),
+            providerSession: {
+              kind: "provider-session-ref",
+              providerId: "test",
+              sessionId: externalId<ProviderSessionId>("session:unsupported"),
+            },
+          }),
+        ).rejects.toMatchObject({ code: "provider-session-unsupported" });
+      } finally {
+        await transport.close();
+      }
+    },
+  );
 
   test("rejects malformed and unknown handshake variants", async () => {
     const transport: PydanticAiBridgeTransport = {
