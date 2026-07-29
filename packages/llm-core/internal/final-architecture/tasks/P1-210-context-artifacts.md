@@ -3,16 +3,16 @@ architecture_version: 2
 id: P1-210
 title: Context manifest and artifact domains
 phase: P1.1
-status: proposed
+status: claimed
 priority: P1
 preferred_owner_kind: codex
-owner: null
-owner_kind: null
-lease_started_at: null
-lease_expires_at: null
-base_sha: null
-branch: null
-worktree: null
+owner: codex-context-artifacts
+owner_kind: codex
+lease_started_at: 2026-07-30T03:44:18+08:00
+lease_expires_at: 2026-08-01T03:44:18+08:00
+base_sha: e72d312e3f9d966acc2b96548c42b122498b3315
+branch: task/P1-210-context-artifacts
+worktree: /Users/jasonnathan/Repos/@theGeekist/llm-core/.worktrees/P1-210-context-artifacts
 depends_on:
   - P0-150
 decision_dependencies:
@@ -62,7 +62,9 @@ bun run typecheck:packages
 
 ## Work log
 
-- Not started.
+- 2026-07-30T03:44:18+08:00 — Claimed by the Codex context/artifacts worker
+  after P0-150 completed and merged at
+  `e72d312e3f9d966acc2b96548c42b122498b3315`.
 
 ## Handoff
 

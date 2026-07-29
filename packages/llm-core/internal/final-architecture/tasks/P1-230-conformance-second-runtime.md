@@ -3,16 +3,16 @@ architecture_version: 2
 id: P1-230
 title: Conformance suite and second runtime
 phase: P1.2
-status: proposed
+status: claimed
 priority: P1
 preferred_owner_kind: codex
-owner: null
-owner_kind: null
-lease_started_at: null
-lease_expires_at: null
-base_sha: null
-branch: null
-worktree: null
+owner: codex-conformance-runtime
+owner_kind: codex
+lease_started_at: 2026-07-30T03:44:18+08:00
+lease_expires_at: 2026-08-01T03:44:18+08:00
+base_sha: e72d312e3f9d966acc2b96548c42b122498b3315
+branch: task/P1-230-conformance
+worktree: /Users/jasonnathan/Repos/@theGeekist/llm-core/.worktrees/P1-230-conformance
 depends_on:
   - P0-150
   - P0-160
@@ -61,7 +61,14 @@ bun run typecheck:packages
 
 ## Work log
 
-- Not started.
+- 2026-07-30T03:44:18+08:00 — Claimed by the Codex conformance/runtime
+  worker after P0-150 completed and merged at
+  `e72d312e3f9d966acc2b96548c42b122498b3315`.
+- 2026-07-30 — The architecture coordinator selected PydanticAI as the first
+  bounded Python reference runtime. The research assessment identifies it as
+  the default typed, provider-neutral Python substrate and the closest direct
+  precedent for llm-core agent specifications and model profiles. The adapter
+  must still declare versioned support and explicit semantic loss.
 
 ## Handoff
 
