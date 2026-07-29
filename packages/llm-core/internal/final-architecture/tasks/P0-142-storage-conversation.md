@@ -71,11 +71,19 @@ bun run typecheck:packages
   parity evidence.
 - 2026-07-29T23:45:00+08:00 — Implementation and verification completed; task
   moved to review for coordinator integration.
+- 2026-07-30T00:14:00+08:00 — Closed independent-review findings at
+  `61671e3ba0e88403174e838420d6ef3ad943bfad`: installed LlamaIndex stores now
+  have concrete conformance, portable JSON is recursively guarded, cache TTL
+  and aliasing semantics fail closed, false AI SDK claims were removed and
+  multipart projection is atomic.
 
 ## Handoff
 
-- Commit: task branch HEAD; exact SHA is reported to the coordinator after the
-  handoff commit is created.
+- Initial implementation: `36d81d0087fd93cf0f362cac4481e512759150b0`.
+- Review-fix implementation:
+  `61671e3ba0e88403174e838420d6ef3ad943bfad`.
+- Final handoff commit: task branch HEAD; exact SHA is reported to the
+  coordinator after this handoff commit is created.
 - Worktree: clean at the reported commit.
 - Changed files:
   - new storage feature front under `packages/llm-core/src/features/storage/`
@@ -85,8 +93,8 @@ bun run typecheck:packages
   - this task file
 - Verification:
   - `bun test packages/llm-core/tests/storage packages/llm-core/tests/memory` —
-    exit 0; 18 passed, 0 failed.
-  - `bun test packages/llm-core/tests` — exit 0; 1,236 passed, 35 skipped, 0
+    exit 0; 25 passed, 0 failed, 111 assertions.
+  - `bun test packages/llm-core/tests` — exit 0; 1,243 passed, 35 skipped, 0
     failed.
   - `bun run typecheck:packages` — exit 0; package typecheck and schema
     freshness passed.
@@ -96,12 +104,23 @@ bun run typecheck:packages
 - ADRs applied: ADR-001, ADR-002, ADR-003, ADR-006, ADR-007 and ADR-008; no
   deviations.
 - Projection behavior: only native strings or wholly text/reasoning multipart
-  arrays become portable turns. Mixed or binary-only native content is omitted
-  and emits an index-only projection issue; provider metadata is never copied.
-- Remaining risks: portable conversation records intentionally lose
-  provider-only metadata and unsupported multipart turns. Their revision tracks
-  the native message count, so it may exceed the projected portable turn count.
-  Live resource bytes require host-provided `ResourceStore` implementations.
+  arrays become portable turns. Any unsupported turn makes the whole read
+  return `null`; best-effort issue callbacks cannot turn failure into a partial
+  record or replace the safe outcome when they throw. Provider metadata is
+  never copied.
+- Installed conformance: LlamaIndex uses its public `BaseKVStore`,
+  `BaseDocumentStore`, `SimpleKVStore`, `KVDocumentStore`, `Memory` and
+  `ChatMessage` contracts. Storage values round-trip through a closed v2
+  envelope, and document-store writes use real `Document` nodes.
+- Ecosystem naming: installed AI SDK 7 exposes no public cache or conversation
+  memory provider contract. The structural adapters in its migration directory
+  are therefore named `HostCacheBackend`/`createHostBackedCacheStore` and
+  `HostConversationProvider`/`createHostConversationStores`; they make no AI
+  SDK conformance claim.
+- Remaining risks: live resource bytes still require a host-provided
+  `ResourceStore`. The host-backed structural adapters remain physically in the
+  AI SDK migration directory until P0-150 selects final adapter placement and
+  exports.
 - Shared-file requests:
   - P0-149 should bind the new storage and memory public fronts.
   - P0-150 should export the selected public fronts and remove legacy
