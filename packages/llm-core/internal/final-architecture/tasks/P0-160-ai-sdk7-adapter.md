@@ -3,13 +3,13 @@ architecture_version: 2
 id: P0-160
 title: Convert AI SDK adapter to version 7
 phase: P0.4
-status: review
+status: complete
 priority: P0
 preferred_owner_kind: codex
 owner: codex-root
 owner_kind: codex
 lease_started_at: 2026-07-29T19:27:00+08:00
-lease_expires_at: 2026-07-30T19:27:00+08:00
+lease_expires_at: null
 base_sha: 23f88ee
 branch: task/P0-160-codex
 worktree: /Users/jasonnathan/Repos/@theGeekist/llm-core/.worktrees/P0-160-codex
@@ -112,10 +112,15 @@ bun run typecheck:packages
   generated and unknown ID failures, dynamic non-JSON input, approval denial,
   actual stream aborts, multipart output and async AI SDK UI conversion; all
   receiving gates passed.
+- 2026-07-29T22:50:00+08:00 — Integrated on main through `bbff9a1`.
+  Coordinator receiving verification passed 32 focused tests, 1,197 full
+  package tests with 35 credential-gated skips, build, ESM package smoke,
+  package/test typechecks, schema check, lint and diff check. Task marked
+  complete.
 
 ## Handoff
 
-Status: review.
+Status: complete.
 
 ### Commits
 
