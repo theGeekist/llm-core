@@ -70,6 +70,9 @@ bun run typecheck:packages
 - 2026-07-29T23:28:00+08:00 — Verified 12 focused tests, package and test
   typechecks, deterministic contract schema, scoped lint and diff hygiene;
   moved to review.
+- 2026-07-29T23:38:00+08:00 — Expanded the qualified-adapter parity matrix
+  across every migrated adapter family, including sync/async behavior,
+  cardinality/order, stream order, delete tri-state and redaction.
 
 ## Handoff
 
@@ -89,7 +92,7 @@ bun run typecheck:packages
   LlamaIndex knowledge families without importing legacy adapter contracts.
 - Focused verification:
   `bun test packages/llm-core/tests/retrieval packages/llm-core/tests/indexing`
-  — 12 pass, 0 fail, 28 assertions.
+  — 17 pass, 0 fail, 66 assertions.
 - Static verification: `bun run typecheck:packages`,
   `bun run --cwd packages/llm-core typecheck:tests`,
   `bun run contracts:schema:check`, scoped ESLint and `git diff --check` all
