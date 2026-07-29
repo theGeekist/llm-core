@@ -4,6 +4,17 @@ import type { ChatMessage } from "@llamaindex/core/llms";
 import type { Prompt } from "ai";
 import type { ModelCall } from "#adapters";
 
+const toSystemText = (instructions: Prompt["instructions"]): string | undefined => {
+  if (typeof instructions === "string") {
+    return instructions;
+  }
+  if (!instructions) {
+    return undefined;
+  }
+  const messages = Array.isArray(instructions) ? instructions : [instructions];
+  return messages.map((message) => message.content).join("\n");
+};
+
 const toModelCallFromLangChain = (
   messages: Array<HumanMessage | AIMessage | SystemMessage>,
 ): ModelCall => ({
@@ -40,12 +51,12 @@ const toModelCallFromAiSdk = (prompt: Prompt): ModelCall => {
         role: message.role === "tool" ? "tool" : message.role,
         content: typeof message.content === "string" ? message.content : "",
       })),
-      system: prompt.system,
+      system: toSystemText(prompt.instructions ?? prompt.system),
     };
   }
   return {
     prompt: typeof prompt.prompt === "string" ? prompt.prompt : "",
-    system: prompt.system,
+    system: toSystemText(prompt.instructions ?? prompt.system),
   };
 };
 

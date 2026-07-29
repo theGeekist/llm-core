@@ -4,7 +4,7 @@ import { fromLlamaIndexModel, toAdapterTrace } from "#adapters";
 import { makeUsage, asLlamaIndexModel } from "./helpers";
 
 describe("Adapter telemetry trace", () => {
-  it("prefers totalUsage when both usage and totalUsage are present", async () => {
+  it("uses AI SDK 7 aggregate usage instead of the deprecated totalUsage alias", async () => {
     mock.module("ai", () => ({
       generateText: () => ({
         text: "ok",
@@ -17,7 +17,7 @@ describe("Adapter telemetry trace", () => {
     const adapter = fromAiSdkModel({} as never);
     const result = await adapter.generate({ prompt: "hi" });
 
-    expect(result.usage).toEqual({ inputTokens: 10, outputTokens: 20, totalTokens: 30 });
+    expect(result.usage).toEqual({ inputTokens: 1, outputTokens: 2, totalTokens: 3 });
     mock.restore();
   });
 

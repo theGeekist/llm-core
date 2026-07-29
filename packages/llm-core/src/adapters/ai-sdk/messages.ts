@@ -15,6 +15,7 @@ type ToolContent = Extract<ModelMessage, { role: "tool" }>["content"];
 type UserPart = Exclude<UserContent, string>[number];
 type AssistantPart = Exclude<AssistantContent, string>[number];
 type ToolPart = Exclude<ToolContent, string>[number];
+type AiSdkToolResultPart = Extract<ToolPart, { type: "tool-result" }>;
 
 const toFilePart = (data: string, mediaType?: string) => ({
   type: "file" as const,
@@ -46,7 +47,8 @@ const readToolMetadata = (content: ModelMessage["content"]) => {
     return null;
   }
   const result = content.find(
-    (part): part is ToolPart => typeof part === "object" && part?.type === TOOL_RESULT_TYPE,
+    (part): part is AiSdkToolResultPart =>
+      typeof part === "object" && part?.type === TOOL_RESULT_TYPE,
   );
   if (!result) {
     return null;
@@ -151,7 +153,7 @@ const toAiSdkToolContent = (message: Message): ToolContent => {
   }
   const toolParts = content.parts
     .map(toAssistantPart)
-    .filter((part): part is ToolPart => part?.type === TOOL_RESULT_TYPE);
+    .filter((part): part is AiSdkToolResultPart => part?.type === TOOL_RESULT_TYPE);
   if (toolParts.length) {
     return toolParts.map((part) => ({
       ...part,
@@ -193,8 +195,8 @@ export function fromAiSdkMessage(message: ModelMessage): Message {
   return { role: "tool", content: "" };
 }
 
-export const fromAiSdkMessages = (messages: UIMessage[]): Message[] =>
-  convertToModelMessages(messages).map(fromAiSdkMessage);
+export const fromAiSdkMessages = async (messages: UIMessage[]): Promise<Message[]> =>
+  (await convertToModelMessages(messages)).map(fromAiSdkMessage);
 
 export function toAiSdkMessage(message: Message): ModelMessage {
   if (message.role === "system") {

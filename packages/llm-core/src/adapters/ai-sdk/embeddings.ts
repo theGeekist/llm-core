@@ -18,7 +18,7 @@ function pickEmbeddings(result: EmbedManyResult) {
   return result.embeddings;
 }
 
-export function fromAiSdkEmbeddings(model: EmbeddingModel<string>): Embedder {
+export function fromAiSdkEmbeddings(model: EmbeddingModel): Embedder {
   function embedOne({ text, context }: AdapterRequest<{ text: string }>) {
     const diagnostics = validateEmbedderInput(text);
     if (reportDiagnostics(context, diagnostics)) {

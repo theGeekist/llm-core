@@ -1,12 +1,10 @@
 import {
-  generateObject,
   generateText,
   jsonSchema,
+  Output,
   streamText,
   zodSchema,
   type LanguageModel,
-  type StreamTextResult,
-  type ToolSet,
 } from "ai";
 import type {
   AdapterDiagnostic,
@@ -168,7 +166,7 @@ export function fromAiSdkModel(model: LanguageModel): Model {
   });
 
   const toSchemaResult = (
-    result: Awaited<ReturnType<typeof generateObject>>,
+    result: Awaited<ReturnType<typeof generateText>>,
     state: RunState,
   ): ModelResult => {
     const usage = toModelUsage(result.usage);
@@ -182,8 +180,8 @@ export function fromAiSdkModel(model: LanguageModel): Model {
       providerMetadata: result.providerMetadata as Record<string, unknown> | undefined,
     });
     return {
-      text: typeof result.object === "string" ? result.object : JSON.stringify(result.object),
-      output: result.object,
+      text: typeof result.output === "string" ? result.output : JSON.stringify(result.output),
+      output: result.output,
       reasoning: result.reasoning,
       diagnostics,
       telemetry,
@@ -199,15 +197,13 @@ export function fromAiSdkModel(model: LanguageModel): Model {
     state: RunState,
   ): ModelResult => {
     const usage = toModelUsage(result.usage);
-    const totalUsage = toModelUsage(result.totalUsage);
-    const collapsedUsage = totalUsage ?? usage;
+    const collapsedUsage = usage;
     const diagnostics = state.diagnostics.concat(toDiagnostics(result.warnings));
     ModelUsageHelper.warnIfMissing(diagnostics, collapsedUsage, "ai-sdk");
     const telemetry = toTelemetry({
       request: result.request,
       response: result.response,
       usage: usage ?? undefined,
-      totalUsage: totalUsage ?? undefined,
       warnings: result.warnings,
       providerMetadata: result.providerMetadata as Record<string, unknown> | undefined,
     });
@@ -243,15 +239,15 @@ export function fromAiSdkModel(model: LanguageModel): Model {
   });
 
   const toStreamEvents = async function* (
-    result: StreamTextResult<ToolSet, unknown>,
+    result: ReturnType<typeof streamText>,
     state: RunState,
   ): AsyncIterable<ModelStreamEvent> {
     // Note: Abort vs resume semantics should be documented for transport resume bridges.
-    for await (const event of toModelStreamEvents(result.fullStream)) {
+    for await (const event of toModelStreamEvents(result.stream)) {
       yield event;
     }
 
-    const usage = toModelUsage(await result.totalUsage);
+    const usage = toModelUsage(await result.usage);
     ModelUsageHelper.warnIfMissing(state.diagnostics, usage, "ai-sdk");
     const usageEvent = toUsageEvent(usage);
     if (usageEvent) {
@@ -274,11 +270,13 @@ export function fromAiSdkModel(model: LanguageModel): Model {
     if (call.responseSchema) {
       return maybeMap(
         (result) => toSchemaResult(result, state),
-        generateObject({
+        generateText({
           model,
-          system: call.system ?? undefined,
+          instructions: call.system ?? undefined,
           ...state.promptOptions,
-          schema: toAiSdkSchema(call.responseSchema, state.normalizedSchema),
+          output: Output.object({
+            schema: toAiSdkSchema(call.responseSchema, state.normalizedSchema),
+          }),
           temperature: call.temperature ?? undefined,
           topP: call.topP ?? undefined,
           maxOutputTokens: call.maxTokens ?? undefined,
@@ -290,7 +288,7 @@ export function fromAiSdkModel(model: LanguageModel): Model {
       (result) => toTextResult(result, state),
       generateText({
         model,
-        system: call.system ?? undefined,
+        instructions: call.system ?? undefined,
         ...state.promptOptions,
         tools: state.tools || undefined,
         toolChoice: state.toolChoice || undefined,
@@ -311,7 +309,7 @@ export function fromAiSdkModel(model: LanguageModel): Model {
       (result) => toStreamEvents(result, state),
       streamText({
         model,
-        system: call.system ?? undefined,
+        instructions: call.system ?? undefined,
         ...state.promptOptions,
         tools: state.tools || undefined,
         toolChoice: state.toolChoice || undefined,

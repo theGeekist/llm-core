@@ -19,7 +19,7 @@ export type AiSdkToolInput = {
 export function fromAiSdkTool({ name, tool }: AiSdkToolInput): Tool {
   return {
     name,
-    description: tool.description,
+    description: typeof tool.description === "string" ? tool.description : undefined,
     inputSchema: toSchema(tool.inputSchema),
     outputSchema: toSchema(tool.outputSchema),
   };

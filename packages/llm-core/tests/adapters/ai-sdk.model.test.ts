@@ -13,8 +13,8 @@ const asAsyncIterable = <T>(values: T[]): AsyncIterable<T> => ({
 });
 
 const makeStreamResult = (parts: Array<ReturnType<typeof asAiSdkStreamPart>>, usage?: object) => ({
-  fullStream: asAsyncIterable(parts),
-  totalUsage: Promise.resolve(usage),
+  stream: asAsyncIterable(parts),
+  usage: Promise.resolve(usage),
   finishReason: Promise.resolve("stop"),
 });
 
@@ -22,6 +22,7 @@ const makeAiStreamModule = (result: ReturnType<typeof makeStreamResult>) => ({
   streamText: () => result,
   jsonSchema: (schema: unknown) => schema,
   zodSchema: (schema: unknown) => schema,
+  Output: { object: ({ schema }: { schema: unknown }) => schema },
 });
 
 describe("Adapter AI SDK model", () => {
@@ -95,12 +96,13 @@ describe("Adapter AI SDK model", () => {
     let captured: Record<string, unknown> | undefined;
 
     mock.module("ai", () => ({
-      generateObject: (options: Record<string, unknown>) => {
+      generateText: (options: Record<string, unknown>) => {
         captured = options;
-        return { object: { ok: true } };
+        return { output: { ok: true } };
       },
       jsonSchema: () => ({ kind: "json" }),
       zodSchema: () => ({ kind: "zod" }),
+      Output: { object: ({ schema }: { schema: unknown }) => schema },
     }));
 
     const { fromAiSdkModel } = await import("../../src/adapters/ai-sdk/model.ts");
@@ -110,7 +112,7 @@ describe("Adapter AI SDK model", () => {
       responseSchema: toSchema(z.object({ ok: z.boolean() })),
     });
 
-    expect(captured?.schema).toEqual({ kind: "zod" });
+    expect(captured?.output).toEqual({ kind: "zod" });
     mock.restore();
   });
 
@@ -118,12 +120,13 @@ describe("Adapter AI SDK model", () => {
     let captured: Record<string, unknown> | undefined;
 
     mock.module("ai", () => ({
-      generateObject: (options: Record<string, unknown>) => {
+      generateText: (options: Record<string, unknown>) => {
         captured = options;
-        return { object: { ok: true } };
+        return { output: { ok: true } };
       },
       jsonSchema: () => ({ kind: "json" }),
       zodSchema: () => ({ kind: "zod" }),
+      Output: { object: ({ schema }: { schema: unknown }) => schema },
     }));
 
     const { fromAiSdkModel } = await import("../../src/adapters/ai-sdk/model.ts");
@@ -133,16 +136,15 @@ describe("Adapter AI SDK model", () => {
       responseSchema: toSchema({ type: "object", properties: {} }),
     });
 
-    expect(captured?.schema).toEqual({ kind: "json" });
+    expect(captured?.output).toEqual({ kind: "json" });
     mock.restore();
   });
 
-  it("collapses total usage and maps tool calls/results", async () => {
+  it("maps aggregate AI SDK 7 usage and tool calls/results", async () => {
     mock.module("ai", () => ({
       generateText: () => ({
         text: "ok",
-        usage: { inputTokens: 1, outputTokens: 1, totalTokens: 2 },
-        totalUsage: { inputTokens: 2, outputTokens: 2, totalTokens: 4 },
+        usage: { inputTokens: 2, outputTokens: 2, totalTokens: 4 },
         toolCalls: [{ toolCallId: "c1", toolName: "lookup", input: { q: "hi" } }],
         toolResults: [{ toolCallId: "c1", toolName: "lookup", output: { ok: true } }],
       }),

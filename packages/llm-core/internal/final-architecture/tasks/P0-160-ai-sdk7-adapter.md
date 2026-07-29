@@ -3,7 +3,7 @@ architecture_version: 2
 id: P0-160
 title: Convert AI SDK adapter to version 7
 phase: P0.4
-status: claimed
+status: in_progress
 priority: P0
 preferred_owner_kind: codex
 owner: codex-root
@@ -89,5 +89,7 @@ bun run typecheck:packages
 
 - 2026-07-29T19:27:00+08:00 — Claimed by the Codex coordinator after P0-155
   integrated and passed receiving verification.
+- 2026-07-29 — Worker moved the task to `in_progress` and began the atomic
+  manifest, provider-adapter and AI SDK UI compatibility conversion.
 
 ## Handoff

@@ -139,7 +139,10 @@ describe("Adapter tools", () => {
     });
 
     const built = toAiSdkTool(Tool);
-    const result = await built.execute?.({ query: "hi" }, { toolCallId: "call-1", messages: [] });
+    const result = await built.execute?.(
+      { query: "hi" },
+      { toolCallId: "call-1", messages: [], context: undefined },
+    );
     expect(result).toBe('ok:{"query":"hi"}');
   });
 

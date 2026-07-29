@@ -49,7 +49,6 @@ const DEFAULT_MESSAGE_ID = "interaction";
 const FINISH_REASONS: FinishReason[] = [
   "other",
   "length",
-  "unknown",
   "error",
   "stop",
   "content-filter",
@@ -61,12 +60,12 @@ const isKnownFinishReason = (value: string): value is FinishReason =>
 
 const toFinishReason = (value?: string | null): FinishReason => {
   if (!value) {
-    return "unknown";
+    return "other";
   }
   if (isKnownFinishReason(value)) {
     return value;
   }
-  return "unknown";
+  return "other";
 };
 
 const toErrorText = (error: unknown): string => {

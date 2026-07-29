@@ -15,7 +15,7 @@ const toEmbedderFromLlama = (embedding: BaseEmbedding): Embedder => ({
   embedMany: ({ texts }) => embedding.getTextEmbeddings(texts),
 });
 
-const toEmbedderFromAiSdk = (model: EmbeddingModel<string>): Embedder => ({
+const toEmbedderFromAiSdk = (model: EmbeddingModel): Embedder => ({
   embed: ({ text }) => maybeMap((result) => result.embedding, embed({ model, value: text })),
   embedMany: ({ texts }) =>
     maybeMap((result) => result.embeddings, embedMany({ model, values: texts })),

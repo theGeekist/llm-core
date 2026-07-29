@@ -17,7 +17,7 @@ const toToolFromLlama = (llamaTool: BaseTool): Tool => ({
 
 const toToolFromAiSdk = (sdkTool: AiTool): Tool => ({
   name: "ai.tool",
-  description: sdkTool.description,
+  description: typeof sdkTool.description === "string" ? sdkTool.description : undefined,
   inputSchema: { jsonSchema: sdkTool.inputSchema },
 });
 
