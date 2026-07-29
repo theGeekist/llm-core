@@ -3,7 +3,7 @@ architecture_version: 2
 id: P0-155
 title: Resolve AI SDK 7 dependency and module-format gate
 phase: P0.4
-status: in_progress
+status: review
 priority: P0
 preferred_owner_kind: coordinator
 owner: codex-root
@@ -104,5 +104,63 @@ bun run typecheck:packages
   subagent execution after P0-120 integrated.
 - 2026-07-29 — Worker moved the task to `in_progress` and began the scoped
   Node.js 22 / ESM-only packaging conversion.
+- 2026-07-29 — Implemented and verified the packaging gate at `09382ad`.
+  Workspace and package engines now require Node.js 22, all six CI/docs/release
+  jobs select Node.js 22, and package output is ESM-only with deterministic
+  stale-output cleanup.
+- 2026-07-29 — Package smoke now recursively validates export targets, rejects
+  CommonJS conditions/scripts/artifacts, checks the live Node baseline, retains
+  dependency/alias checks, seeds both nested and root stale `.cjs` artifacts,
+  runs the real package build, and imports every unique ESM runtime target.
+  Moved to `review` after all required verification passed.
 
 ## Handoff
+
+Status: review.
+
+### Commits
+
+- Implementation: `09382ad` (`build: enforce Node 22 ESM packaging`)
+- The task branch is clean at that implementation commit before this
+  handoff-only status update.
+
+### Changed files
+
+- `.github/workflows/ci.yml`
+- `.github/workflows/docs.yml`
+- `.github/workflows/release.yml`
+- `package.json`
+- `packages/llm-core/package.json`
+- `packages/llm-core/scripts/build.ts`
+- `packages/llm-core/scripts/smoke-package.mjs`
+- `packages/llm-core/internal/final-architecture/tasks/P0-155-ai-sdk7-packaging-gate.md`
+
+### Verification
+
+- `bun run build` — exit 0.
+- `bun run test:package` — exit 0; loaded 15 unique ESM runtime targets from
+  15 exports and proved both seeded CommonJS artifacts were removed.
+- `bun run lint` — exit 0.
+- `bun run typecheck:packages` — exit 0 after installing the unchanged frozen
+  dependency graph; package typecheck and contract-schema freshness passed.
+- Targeted manifest/workflow assertion — exit 0; root and package engines are
+  `>=22`, all 6 workflow jobs select Node.js 22, and no CommonJS manifest
+  surface remains.
+- Targeted build/dist assertion — exit 0; no CommonJS build branch or built
+  artifact remains.
+- `git diff --check` — exit 0.
+
+### Decision and dependency posture
+
+- Applied ADR-007 without deviation: Node.js `>=22`, ESM-only publication, and
+  no speculative CommonJS compatibility.
+- Did not change `bun.lock` or any active AI SDK dependency. P0-160 retains the
+  atomic upgrade to the recorded AI SDK 7 provider/UI matrix.
+- No shared-file changes are requested.
+
+### Remaining risks and known semantic loss
+
+- This is an intentional major-release compatibility break for CommonJS and
+  Node.js versions below 22; P0-150 must retain it as a publication gate.
+- The AI SDK 7 matrix is recorded but deliberately not exercised until P0-160,
+  avoiding a knowingly red intermediate dependency state.
