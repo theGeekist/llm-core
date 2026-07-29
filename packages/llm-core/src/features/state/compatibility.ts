@@ -66,4 +66,3 @@ export const checkResumeCompatibility = (
   }
   return { compatible: true };
 };
-

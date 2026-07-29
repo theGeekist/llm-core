@@ -73,4 +73,3 @@ describe("state lifetime boundaries", () => {
     ).toThrow("valid, closed");
   });
 });
-
