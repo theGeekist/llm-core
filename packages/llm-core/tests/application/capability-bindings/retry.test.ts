@@ -248,4 +248,44 @@ describe("qualified capability retry", () => {
     await expect(result).rejects.toThrow("delivery failed");
     expect(emissions).toBe(1);
   });
+
+  test("does not replay a mixed-effect store write labeled read-only after start", () => {
+    let writes = 0;
+    const binding = registerRuntimeCapabilityBinding(
+      runtimeBinding(
+        "cache-store",
+        "cache:mixed",
+        {
+          get: () => null,
+          set: () => {
+            writes += 1;
+            throw new Error("unknown write disposition");
+          },
+          delete: () => true,
+        },
+        [passingClaim(RETRY_GUARANTEE_CAPABILITIES["read-only"], "cache:mixed")],
+      ),
+      verificationDependencies(),
+    );
+    expect(() =>
+      executeWithQualifiedRetry({
+        binding,
+        effect: "read-only",
+        phase: "after-start",
+        policy: {
+          maxAttempts: 2,
+          delayMs: 0,
+          retryOn: ["network"],
+          guarantee: "read-only",
+        },
+        classifyFailure: () => "network",
+        call: () =>
+          binding.port.set({} as never, {
+            key: "key",
+            value: { kind: "json", value: "value" },
+          }),
+      }),
+    ).toThrow("idempotency or reconciliation");
+    expect(writes).toBe(0);
+  });
 });

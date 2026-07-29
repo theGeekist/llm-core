@@ -1,9 +1,15 @@
 import { describe, expect, test } from "bun:test";
-import { contractVersion, type CapabilityBinding, type CapabilityClaim } from "#contracts";
+import {
+  contractVersion,
+  nativeExtensions,
+  type CapabilityBinding,
+  type CapabilityClaim,
+} from "#contracts";
 import {
   capabilityIdForPort,
   registerRuntimeCapabilityBinding,
   resolveCapabilityBindings,
+  type CapabilityPortMap,
   type RuntimeCapabilityBinding,
 } from "../../../src/application/capability-bindings/public";
 import { createCapabilityBindingCatalog } from "../../../src/composition/capability-bindings/public";
@@ -23,7 +29,7 @@ const cache: CacheStore = {
 };
 
 describe("runtime capability binding registration", () => {
-  test("clones and freezes portable descriptors without freezing live ports", () => {
+  test("clones descriptors and binds an immutable callable facade without freezing the source", () => {
     const source = runtimeBinding("retriever", "retriever:a", retriever);
     const registered = registerRuntimeCapabilityBinding(source, verificationDependencies());
     source.descriptor.claims[0]!.version = contractVersion("2.0.0");
@@ -32,10 +38,10 @@ describe("runtime capability binding registration", () => {
     expect(registered.descriptor.claims[0]?.version).toBe(contractVersion("1.0.0"));
     expect(Object.isFrozen(registered)).toBe(true);
     expect(Object.isFrozen(registered.descriptor)).toBe(true);
-    expect(Object.isFrozen(registered.port)).toBe(false);
+    expect(Object.isFrozen(retriever)).toBe(false);
+    expect(Object.isFrozen(registered.port)).toBe(true);
     expect(registered.port.retrieve({ query: { content: [] } }, {} as never)).toEqual({
       documents: [],
-      citations: [],
     });
   });
 
@@ -48,12 +54,33 @@ describe("runtime capability binding registration", () => {
         expect(Object.isFrozen(input)).toBe(true);
         expect(Object.isFrozen(input.evidence)).toBe(true);
         expect(input.bindingId).toBe(input.evidence.implementationId);
+        expect(input.kind).toBe("retriever");
+        expect(input.implementationToken).toBe(retriever);
         return true;
       }),
     );
 
     expect(registered.kind).toBe("retriever");
     expect(verified).toBe(1);
+  });
+
+  test("binds kind and implementation identity and prevents callable drift", () => {
+    const modelLike = { generate: () => ({ content: [] }) };
+    expect(() =>
+      registerRuntimeCapabilityBinding(
+        runtimeBinding("image-generation", "image:wrong", modelLike as never),
+        verificationDependencies((proof) => proof.kind === "model"),
+      ),
+    ).toThrow("verification failed");
+
+    const source = runtimeBinding("image-generation", "image:fixed", modelLike as never);
+    const registered = registerRuntimeCapabilityBinding(source, verificationDependencies());
+    modelLike.generate = () => {
+      throw new Error("mutated");
+    };
+    expect(registered.port.generate({} as never, {} as never) as unknown).toEqual({
+      content: [],
+    });
   });
 
   test("rejects forged, leaking and semantically mismatched descriptors", () => {
@@ -128,7 +155,47 @@ describe("runtime capability binding registration", () => {
       ]),
       verificationDependencies(),
     );
-    expect(registered.port.stream).toBe(queryEngine.stream);
+    expect(registered.port.stream).not.toBe(queryEngine.stream);
+  });
+
+  test("rejects contradictory additional evidence", () => {
+    const claim = passingClaim(capabilityIdForPort("retriever"), "retriever:contradictory");
+    const failed = structuredClone(claim.evidence) as unknown as Record<string, unknown>;
+    failed.result = "fail";
+    failed.failures = [{ name: "behavior", value: "failed" }];
+    claim.additionalEvidence = [failed as never];
+    expect(() =>
+      registerRuntimeCapabilityBinding(
+        {
+          kind: "retriever",
+          descriptor: { bindingId: "retriever:contradictory", claims: [claim] },
+          port: retriever,
+        },
+        verificationDependencies(),
+      ),
+    ).toThrow();
+  });
+
+  test("preserves safe extensions and rejects unsafe extension data", () => {
+    const source = runtimeBinding("retriever", "retriever:extensions", retriever);
+    source.descriptor.extensions = nativeExtensions({ "dev.llm-core.test": { mode: "safe" } });
+    source.descriptor.claims[0]!.extensions = nativeExtensions({
+      "dev.llm-core.claim": { tier: 1 },
+    });
+    source.descriptor.claims[0]!.evidence.extensions = nativeExtensions({
+      "dev.llm-core.evidence": true,
+    });
+    const registered = registerRuntimeCapabilityBinding(source, verificationDependencies());
+    expect(registered.descriptor.extensions).toEqual({
+      "dev.llm-core.test": { mode: "safe" },
+    });
+    expect(Object.isFrozen(registered.descriptor.extensions)).toBe(true);
+
+    const unsafe = runtimeBinding("retriever", "retriever:unsafe-extension", retriever);
+    unsafe.descriptor.extensions = {
+      "dev.llm-core.test": { apiKey: "sk-raw-placeholder" },
+    };
+    expect(() => registerRuntimeCapabilityBinding(unsafe, verificationDependencies())).toThrow();
   });
 
   test("does not expose generic construct, factory, provider or native slots", () => {
@@ -139,9 +206,21 @@ describe("runtime capability binding registration", () => {
       ? true
       : false;
     type HasNative = "native" extends keyof RuntimeCapabilityBinding<"retriever"> ? true : false;
+    type HasToolingPorts =
+      | "action-digest"
+      | "tool-schema-digest"
+      | "tool-argument-validation" extends keyof CapabilityPortMap
+      ? true
+      : false;
 
-    const proof: [HasConstructs, HasFactory, HasProvider, HasNative] = [false, false, false, false];
-    expect(proof).toEqual([false, false, false, false]);
+    const proof: [HasConstructs, HasFactory, HasProvider, HasNative, HasToolingPorts] = [
+      false,
+      false,
+      false,
+      false,
+      true,
+    ];
+    expect(proof).toEqual([false, false, false, false, true]);
   });
 });
 
@@ -253,6 +332,34 @@ describe("deterministic capability resolution", () => {
         evaluateCondition: () => "yes" as unknown as boolean,
       }).kind,
     ).toBe("unresolved");
+  });
+
+  test("fails closed on wildcard multi-version claims independent of descriptor order", () => {
+    const capabilityId = "llm-core.retrieval.region";
+    const claims = [
+      passingClaim(capabilityId, "retriever:versions", contractVersion("1.0.0")),
+      passingClaim(capabilityId, "retriever:versions", contractVersion("2.0.0")),
+    ];
+    for (const ordered of [claims, claims.toReversed()]) {
+      const binding = registeredRetriever("retriever:versions", ordered);
+      expect(
+        resolveCapabilityBindings({
+          requirements: [{ kind: "retriever", capabilities: [{ capabilityId }] }],
+          bindings: [binding],
+        }).kind,
+      ).toBe("unresolved");
+      expect(
+        resolveCapabilityBindings({
+          requirements: [
+            {
+              kind: "retriever",
+              capabilities: [{ capabilityId, versionRange: "2.0.0" }],
+            },
+          ],
+          bindings: [binding],
+        }).kind,
+      ).toBe("resolved");
+    }
   });
 
   test("does not resolve a conditional primary port claim without trusted proof", () => {

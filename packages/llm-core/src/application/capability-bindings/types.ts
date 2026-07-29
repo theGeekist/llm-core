@@ -36,7 +36,12 @@ import type {
   TextSplitter,
 } from "../../features/retrieval/public";
 import type { CacheStore, KeyValueStore, ResourceStore } from "../../features/storage/public";
-import type { ToolBinding } from "../../features/tooling/public";
+import type {
+  ActionDigestPort,
+  ToolArgumentValidationPort,
+  ToolBinding,
+  ToolSchemaDigestPort,
+} from "../../features/tooling/public";
 
 /**
  * The closed set of live feature ports assembled by composition.
@@ -50,6 +55,9 @@ export interface CapabilityPortMap {
   "model-output-parser": ModelOutputParser;
   "schema-document-resolver": SchemaDocumentResolver;
   tool: ToolBinding;
+  "action-digest": ActionDigestPort;
+  "tool-schema-digest": ToolSchemaDigestPort;
+  "tool-argument-validation": ToolArgumentValidationPort;
   "policy-evaluation": PolicyEvaluationPort;
   "approval-authentication": ApprovalAuthenticationPort;
   concurrency: ConcurrencyGate;
@@ -105,6 +113,9 @@ export type AnyRegisteredRuntimeCapabilityBinding = {
 
 export interface CapabilityEvidenceVerificationInput {
   readonly bindingId: PortableImplementationId;
+  readonly kind: CapabilityPortKind;
+  /** Exact live implementation identity supplied by composition. */
+  readonly implementationToken: object;
   readonly claim: CapabilityClaim;
   readonly evidence: ConformanceEvidence;
 }

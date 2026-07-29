@@ -77,6 +77,15 @@ bun run typecheck:packages
 - 2026-07-30 — Verification passed: 24 focused tests; package and test
   typechecks; schema freshness; scoped ESLint; `git diff --check`; and the full
   package suite with 1,336 passing, 35 credential-gated skips, and zero failures.
+- 2026-07-30 — Remediated independent review findings: mixed-effect after-start
+  retry cannot rely on a caller-declared read-only label; registration now
+  publishes an immutable bound facade and verifies kind plus implementation
+  identity; contradictory and multi-match evidence fails closed; tooling digest
+  and validation ports are complete; safe contract extensions are preserved.
+- 2026-07-30 — Remediation verification passed: 29 focused tests; package and
+  test typechecks; schema freshness; scoped ESLint; `git diff --check`; and the
+  full package suite with 1,341 passing, 35 credential-gated skips, and zero
+  failures.
 
 ## Handoff
 

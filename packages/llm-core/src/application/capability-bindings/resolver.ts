@@ -1,6 +1,7 @@
 import {
   isContractVersion,
   isExternalId,
+  isNativeExtensions,
   type CapabilityClaim,
   type CapabilityConstraint,
   type CapabilityRequirement,
@@ -50,6 +51,9 @@ const frozenClone = <T>(value: T): T => deepFreeze(structuredClone(value));
 const isSafeExternalId = (value: unknown): value is string =>
   isExternalId(value) && !isSensitivePortableString(value);
 
+const isCapabilityExtensions = (value: unknown): boolean =>
+  isNativeExtensions(value) && isPortableJsonValue(value);
+
 const isConstraint = (value: unknown): value is CapabilityConstraint =>
   isRecord(value) &&
   hasOnlyKeys(value, ["name", "value"]) &&
@@ -59,11 +63,12 @@ const isConstraint = (value: unknown): value is CapabilityConstraint =>
 
 const isRequirement = (value: unknown): value is CapabilityRequirement =>
   isRecord(value) &&
-  hasOnlyKeys(value, ["capabilityId", "versionRange", "required", "constraints"]) &&
+  hasOnlyKeys(value, ["capabilityId", "versionRange", "required", "constraints", "extensions"]) &&
   typeof value.capabilityId === "string" &&
   CAPABILITY_ID.test(value.capabilityId) &&
   (value.versionRange === undefined || typeof value.versionRange === "string") &&
   (value.required === undefined || typeof value.required === "boolean") &&
+  (value.extensions === undefined || isCapabilityExtensions(value.extensions)) &&
   (value.constraints === undefined ||
     (Array.isArray(value.constraints) && value.constraints.every(isConstraint)));
 
@@ -151,6 +156,7 @@ const matchingClaim = (
   const claims = binding.descriptor.claims.filter(
     (claim) => claim.capabilityId === requirement.capabilityId && claim.status !== "unsupported",
   );
+  const matches: CapabilityClaim[] = [];
   for (const claim of claims) {
     const range = evaluateRange(requirement.versionRange, claim.version);
     if (range === "unsupported") {
@@ -165,10 +171,10 @@ const matchingClaim = (
       return null;
     }
     if (range === "match") {
-      return claim;
+      matches.push(claim);
     }
   }
-  return null;
+  return matches.length === 1 ? matches[0]! : null;
 };
 
 // The evaluator receives the complete immutable proof tuple.

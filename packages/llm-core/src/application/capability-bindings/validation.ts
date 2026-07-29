@@ -1,14 +1,17 @@
+/* eslint-disable max-params -- Registration proof tuples keep kind, implementation identity, descriptor identity, claim, and trusted dependencies explicit. */
 import {
   isCanonicalUuid,
   isContractVersion,
   isDigest,
   isExternalId,
+  isNativeExtensions,
   isSchemaRef,
   type CapabilityBinding,
   type CapabilityClaim,
   type CapabilityConstraint,
   type ConformanceEvidence,
   type EvidenceRef,
+  type NativeExtensions,
 } from "#contracts";
 import { isSensitivePortableString, isPortableJsonValue } from "../../features/storage/public";
 import { CAPABILITY_PORT_DEFINITIONS, type CapabilityPortDefinition } from "./ports";
@@ -16,6 +19,7 @@ import type {
   AnyRegisteredRuntimeCapabilityBinding,
   CapabilityBindingDependencies,
   CapabilityPortKind,
+  CapabilityPortMap,
   RegisteredRuntimeCapabilityBinding,
   RuntimeCapabilityBinding,
 } from "./types";
@@ -73,6 +77,9 @@ const frozenClone = <T>(value: T): T => deepFreeze(structuredClone(value));
 const isSafeExternalId = (value: unknown): value is string =>
   isExternalId(value) && !isSensitivePortableString(value);
 
+const isCapabilityExtensions = (value: unknown): value is NativeExtensions =>
+  isNativeExtensions(value) && isPortableJsonValue(value);
+
 const isCapabilityId = (value: unknown): value is string =>
   typeof value === "string" && CAPABILITY_ID.test(value);
 
@@ -118,7 +125,12 @@ const EVIDENCE_REQUIRED_KEYS = [
   "implementationVersion",
   "result",
 ] as const;
-const EVIDENCE_OPTIONAL_KEYS = ["providerId", "providerVersion", "contractSchema"] as const;
+const EVIDENCE_OPTIONAL_KEYS = [
+  "providerId",
+  "providerVersion",
+  "contractSchema",
+  "extensions",
+] as const;
 
 const isEvidenceBase = (value: Record<string, unknown>, bindingId: string): boolean =>
   isEvidenceRef(value.report) &&
@@ -135,7 +147,8 @@ const isEvidenceBase = (value: Record<string, unknown>, bindingId: string): bool
     (typeof value.providerVersion === "string" &&
       value.providerVersion.length > 0 &&
       !isSensitivePortableString(value.providerVersion))) &&
-  (value.contractSchema === undefined || isSchemaRef(value.contractSchema));
+  (value.contractSchema === undefined || isSchemaRef(value.contractSchema)) &&
+  (value.extensions === undefined || isCapabilityExtensions(value.extensions));
 
 const isEvidence = (value: unknown, bindingId: string): value is ConformanceEvidence => {
   if (!isRecord(value) || !isEvidenceBase(value, bindingId)) {
@@ -158,7 +171,7 @@ const isEvidence = (value: unknown, bindingId: string): value is ConformanceEvid
 };
 
 const CLAIM_REQUIRED_KEYS = ["capabilityId", "version", "status", "evidence"] as const;
-const CLAIM_OPTIONAL_KEYS = ["additionalEvidence"] as const;
+const CLAIM_OPTIONAL_KEYS = ["additionalEvidence", "extensions"] as const;
 
 const evidenceForClaim = (claim: CapabilityClaim): readonly ConformanceEvidence[] => [
   claim.evidence,
@@ -170,6 +183,7 @@ const isClaim = (value: unknown, bindingId: string): value is CapabilityClaim =>
     !isRecord(value) ||
     !isCapabilityId(value.capabilityId) ||
     !isContractVersion(value.version) ||
+    (value.extensions !== undefined && !isCapabilityExtensions(value.extensions)) ||
     !isEvidence(value.evidence, bindingId) ||
     (value.additionalEvidence !== undefined &&
       (!Array.isArray(value.additionalEvidence) ||
@@ -180,24 +194,35 @@ const isClaim = (value: unknown, bindingId: string): value is CapabilityClaim =>
   if (value.status === "supported") {
     return (
       hasOnlyKeys(value, CLAIM_REQUIRED_KEYS, CLAIM_OPTIONAL_KEYS) &&
-      value.evidence.result === "pass"
+      value.evidence.result === "pass" &&
+      evidenceForClaim(value as unknown as CapabilityClaim).every(
+        (evidence) => evidence.result === "pass",
+      )
     );
   }
   if (value.status === "conditional") {
     return (
       hasOnlyKeys(value, [...CLAIM_REQUIRED_KEYS, "conditions"], CLAIM_OPTIONAL_KEYS) &&
       (value.evidence.result === "pass" || value.evidence.result === "partial") &&
+      evidenceForClaim(value as unknown as CapabilityClaim).every(
+        (evidence) => evidence.result === "pass" || evidence.result === "partial",
+      ) &&
       isConstraintList(value.conditions, 1)
     );
   }
   return (
     value.status === "unsupported" &&
     hasOnlyKeys(value, CLAIM_REQUIRED_KEYS, CLAIM_OPTIONAL_KEYS) &&
-    value.evidence.result === "fail"
+    value.evidence.result === "fail" &&
+    evidenceForClaim(value as unknown as CapabilityClaim).every(
+      (evidence) => evidence.result === "fail",
+    )
   );
 };
 
 const verifyClaimEvidence = (
+  kind: CapabilityPortKind,
+  implementationToken: object,
   bindingId: string,
   claim: CapabilityClaim,
   dependencies: CapabilityBindingDependencies,
@@ -206,8 +231,10 @@ const verifyClaimEvidence = (
     try {
       return (
         dependencies.verifyEvidence(
-          frozenClone({
+          Object.freeze({
             bindingId,
+            kind,
+            implementationToken,
             claim,
             evidence,
           }),
@@ -220,9 +247,15 @@ const verifyClaimEvidence = (
 
 const registerDescriptor = (
   value: unknown,
+  kind: CapabilityPortKind,
+  implementationToken: object,
   dependencies: CapabilityBindingDependencies,
 ): CapabilityBinding => {
-  if (!isRecord(value) || !hasOnlyKeys(value, ["bindingId", "claims"])) {
+  if (
+    !isRecord(value) ||
+    !hasOnlyKeys(value, ["bindingId", "claims"], ["extensions"]) ||
+    (value.extensions !== undefined && !isCapabilityExtensions(value.extensions))
+  ) {
     throw new TypeError(
       "Capability descriptors must be closed, portable and implementation-bound.",
     );
@@ -247,7 +280,7 @@ const registerDescriptor = (
   const descriptor = frozenClone(value) as unknown as CapabilityBinding;
   if (
     !descriptor.claims.every((claim) =>
-      verifyClaimEvidence(descriptor.bindingId, claim, dependencies),
+      verifyClaimEvidence(kind, implementationToken, descriptor.bindingId, claim, dependencies),
     )
   ) {
     throw new TypeError("Capability evidence verification failed.");
@@ -293,6 +326,31 @@ const validatePort = (
   }
 };
 
+const bindPortSurface = <TKind extends CapabilityPortKind>(
+  kind: TKind,
+  port: CapabilityPortMap[TKind],
+): CapabilityPortMap[TKind] => {
+  const definition: CapabilityPortDefinition = CAPABILITY_PORT_DEFINITIONS[kind];
+  const source = port as unknown as Record<string, unknown>;
+  const facade: Record<string, unknown> = {};
+  for (const method of [
+    ...definition.requiredMethods,
+    ...Object.keys(definition.optionalMethods ?? {}),
+  ]) {
+    if (typeof source[method] === "function") {
+      facade[method] = (source[method] as (...args: never[]) => unknown).bind(port);
+    }
+  }
+  for (const property of definition.requiredProperties ?? []) {
+    try {
+      facade[property] = deepFreeze(structuredClone(source[property]));
+    } catch {
+      throw new TypeError("Live capability port properties must be portable snapshots.");
+    }
+  }
+  return Object.freeze(facade) as unknown as CapabilityPortMap[TKind];
+};
+
 export const registerRuntimeCapabilityBinding = <TKind extends CapabilityPortKind>(
   value: RuntimeCapabilityBinding<TKind>,
   dependencies: CapabilityBindingDependencies,
@@ -309,12 +367,13 @@ export const registerRuntimeCapabilityBinding = <TKind extends CapabilityPortKin
     throw new TypeError("Runtime capability bindings must use the closed typed binding union.");
   }
   const kind = candidate.kind as CapabilityPortKind;
-  const descriptor = registerDescriptor(candidate.descriptor, dependencies);
-  validatePort(kind, descriptor, candidate.port as object);
+  const descriptor = registerDescriptor(candidate.descriptor, kind, candidate.port, dependencies);
+  const port = bindPortSurface(kind as TKind, candidate.port as CapabilityPortMap[TKind]);
+  validatePort(kind, descriptor, port as object);
   const registered = Object.freeze({
     kind,
     descriptor,
-    port: candidate.port,
+    port,
   }) as RegisteredRuntimeCapabilityBinding<TKind>;
   registeredBindings.add(registered);
   return registered;

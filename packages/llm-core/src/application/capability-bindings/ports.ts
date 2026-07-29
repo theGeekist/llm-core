@@ -35,6 +35,18 @@ export const CAPABILITY_PORT_DEFINITIONS = {
     requiredMethods: ["validate", "execute"],
     requiredProperties: ["spec"],
   },
+  "action-digest": {
+    capabilityId: "llm-core.tool.action.digest",
+    requiredMethods: ["create", "verify"],
+  },
+  "tool-schema-digest": {
+    capabilityId: "llm-core.tool.schema.digest",
+    requiredMethods: ["digest"],
+  },
+  "tool-argument-validation": {
+    capabilityId: "llm-core.tool.arguments.validate",
+    requiredMethods: ["validate"],
+  },
   "policy-evaluation": {
     capabilityId: "llm-core.control.policy.evaluate",
     requiredMethods: ["evaluate"],
