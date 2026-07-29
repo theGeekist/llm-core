@@ -18,7 +18,7 @@ Swarm claiming and integration follow [`COORDINATION.md`](COORDINATION.md).
 | P0-140 | P0.3  | proposed    | Codex         | —                        | P0-110, P0-120, P0-130         |
 | P0-155 | P0.4  | proposed    | coordinator   | —                        | P0-110, P0-120                 |
 | P0-160 | P0.4  | proposed    | Claude Code   | —                        | P0-110, P0-120, P0-155         |
-| P0-170 | P0.4  | proposed    | Claude Code   | —                        | P0-130, P0-140                 |
+| P0-170 | P0.4  | proposed    | Claude Code   | —                        | P0-130, P0-140, P0-160         |
 | P0-150 | P0.5  | proposed    | coordinator   | —                        | I0-010, P0-140, P0-160, P0-170 |
 | P1-210 | P1.1  | proposed    | Claude Code   | —                        | P0-150                         |
 | P1-220 | P1.1  | proposed    | Claude Code   | —                        | P0-150, P1-210                 |

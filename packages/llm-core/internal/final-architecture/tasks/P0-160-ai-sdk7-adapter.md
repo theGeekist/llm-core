@@ -23,15 +23,19 @@ decision_dependencies:
   - ADR-007
 conflicts_with: []
 write_scope:
+  - bun.lock
+  - packages/llm-core/package.json
+  - packages/llm-core/src/adapters/ai-sdk/**
+  - packages/llm-core/src/adapters/ai-sdk-ui/**
+  - packages/llm-core/src/adapters/model-selection.ts
   - packages/llm-core/src/adapters/providers/ai-sdk/**
+  - packages/llm-core/tests/adapters/**
   - packages/llm-core/tests/adapters/ai-sdk7/**
+  - packages/llm-core/tests/integration/**
+  - packages/llm-core/tests/interop/**
   - packages/llm-core/internal/final-architecture/tasks/P0-160-ai-sdk7-adapter.md
 read_scope:
-  - packages/llm-core/package.json
-  - bun.lock
   - packages/llm-core/src/features/**
-  - packages/llm-core/src/adapters/ai-sdk/**
-  - packages/llm-core/tests/adapters/ai-sdk*
 review_owner: coordinator
 updated_at: 2026-07-29
 ---
@@ -45,16 +49,18 @@ contracts without widening the portable API.
 
 ## In scope
 
-Current provider contract, multipart streams, structured output, tool approval,
-cancellation, warnings, usage and native metadata. Development and verification
-use the exact AI SDK 7 matrix recorded by P0-155.
+The active manifest/lock upgrade; current and target AI SDK provider adapters;
+AI SDK UI compatibility; direct AI SDK adapter, integration and interoperability
+tests; multipart streams; structured output; tool approval; cancellation;
+warnings; usage; and native metadata. Development and verification use the
+exact AI SDK 7 matrix recorded by P0-155.
 
 ## Out of scope
 
-Worker-owned package metadata, UI projections, root exports and old adapter
-deletion. The architecture coordinator applies the exact manifest and lockfile
-upgrade recorded by P0-155 during integration so the dependency change and
-adapter conversion land atomically.
+Neutral interaction/session orchestration, non-AI-SDK UI projections, root
+exports and final legacy-directory deletion. P0-170 owns the architectural UI
+projection migration after this task establishes a green AI SDK 7 compatibility
+baseline; P0-150 owns final convergence and deletion.
 
 ## Acceptance criteria
 
@@ -62,13 +68,20 @@ adapter conversion land atomically.
 - Native data survives under extensions.
 - Tool approval and cancellation map without bypassing core control.
 - Known semantic loss and supported AI SDK version are recorded.
-- The coordinator-owned manifest/lock change and adapter conversion pass
-  together; no red AI SDK 7 dependency-only state is integrated.
+- Manifest placement is explicit for every direct AI SDK package; the direct
+  AI 5/React 2 overrides are removed without a global AI SDK 7 override.
+- Qualified integrations may retain isolated transitive AI SDK 4/5/6
+  generations; tests assert the direct adapter uses the recorded v7 matrix.
+- The manifest/lock change, provider conversion and AI SDK UI compatibility
+  conversion pass together; no red dependency-only state is integrated.
 
 ## Verification
 
 ```sh
+bun install --frozen-lockfile
 bun test packages/llm-core/tests/adapters/ai-sdk7
+bun run build
+bun run test:package
 bun run typecheck:packages
 ```
 

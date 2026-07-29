@@ -16,6 +16,7 @@ worktree: null
 depends_on:
   - P0-130
   - P0-140
+  - P0-160
 decision_dependencies:
   - ADR-002
   - ADR-005
@@ -41,13 +42,14 @@ runner, event and state contracts.
 ## In scope
 
 Conversation identity, session persistence, live continuation handling,
-interaction reducer/projection, AI SDK UI, assistant-ui, ChatKit and NLUX
-projections.
+interaction reducer/projection, assistant-ui, ChatKit and NLUX projections, and
+the architectural projection layer above the AI SDK UI compatibility baseline
+established by P0-160.
 
 ## Out of scope
 
-Durable job scheduling, provider adapter conversion, package exports and
-legacy-directory deletion.
+Durable job scheduling, AI SDK dependency/provider compatibility, package
+exports and legacy-directory deletion.
 
 ## Acceptance criteria
 

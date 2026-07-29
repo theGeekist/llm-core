@@ -31,8 +31,9 @@ responsible for scope, evidence, and the final task commit.
 4. Wave 3: Claude's `P0-130` and the coordinator's `P0-155` may run
    concurrently after their gates;
    `P0-140` follows `P0-130` and the model slice.
-5. Wave 4: `P0-160` runs after the packaging gate; `P0-170` runs after the
-   state and runner slices.
+5. Wave 4: `P0-160` runs after the packaging gate and establishes one green
+   AI SDK 7 provider/UI compatibility baseline; `P0-170` then runs after the
+   state, runner and AI SDK compatibility slices.
 6. Wave 5: `P0-150` integrates P0 in the deterministic order below.
 7. Wave 6: only after `P0-150` is done, Claude's `P1-210` and Codex's
    `P1-230` may begin concurrently. `P1-220` follows `P1-210`.
