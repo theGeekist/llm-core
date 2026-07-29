@@ -1,42 +1,29 @@
-# Architecture v2 — Codex and Claude Code coordination
+# Architecture v2 — Codex swarm coordination
 
-This file defines how the two agentic swarms execute the Architecture v2
-program without relying on shared conversation state.
+This file defines how the Codex coordinator and delegated subagents execute the
+Architecture v2 program without relying on shared conversation state.
 
-## Fixed allocation
+## Allocation
 
-The initial allocation is balanced at seven tasks per swarm. Reassignment
-requires a coordinator entry in both affected task work logs.
-
-| Codex/coordinator swarm             | Claude Code swarm                    |
-| ----------------------------------- | ------------------------------------ |
-| `A0-001` architecture decisions     | `I0-010` public API characterization |
-| `P0-100` narrow-waist contracts     | `P0-120` model/profile slice         |
-| `P0-110` tool/control/event kernel  | `P0-130` state/intervention slice    |
-| `P0-140` local AgentRunner          | `P0-160` AI SDK 7 adapter            |
-| `P0-155` packaging gate             | `P0-170` interaction/session/UI      |
-| `P0-150` convergence/integration    | `P1-210` context/artifacts           |
-| `P1-230` conformance/Python runtime | `P1-220` evaluation                  |
-
-Task count is a scheduling balance, not a claim that every task has identical
-cost. The coordinator may use child agents inside its seven tasks; Claude Code
-may use its own child agents. The parent holding the task lease remains
-responsible for scope, evidence, and the final task commit.
+Claude Code's completed I0-010 and P0-120 contributions remain historical.
+After P0-120, every remaining task is allocated to the Codex/coordinator swarm.
+The coordinator delegates disjoint subtasks to child agents while retaining the
+task lease, review responsibility and integration authority.
 
 ## Dependency-safe execution waves
 
 1. Wave 0: `A0-001` and `I0-010` may run concurrently.
 2. Wave 1: `P0-100` runs after A0.
 3. Wave 2: `P0-110` and `P0-120` run concurrently.
-4. Wave 3: Claude's `P0-130` and the coordinator's `P0-155` may run
-   concurrently after their gates;
+4. Wave 3: Codex-owned `P0-130` and `P0-155` may run concurrently after their
+   gates;
    `P0-140` follows `P0-130` and the model slice.
 5. Wave 4: `P0-160` runs after the packaging gate and establishes one green
    AI SDK 7 provider/UI compatibility baseline; `P0-170` then runs after the
    state, runner and AI SDK compatibility slices.
 6. Wave 5: `P0-150` integrates P0 in the deterministic order below.
-7. Wave 6: only after `P0-150` is done, Claude's `P1-210` and Codex's
-   `P1-230` may begin concurrently. `P1-220` follows `P1-210`.
+7. Wave 6: only after `P0-150` is done, `P1-210` and `P1-230` may begin
+   concurrently through separate Codex agents. `P1-220` follows `P1-210`.
 
 ## Claim protocol
 

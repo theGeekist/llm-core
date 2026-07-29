@@ -3,13 +3,13 @@ architecture_version: 2
 id: P0-120
 title: Implement model and profile vertical slice
 phase: P0.2
-status: review
+status: complete
 priority: P0
 preferred_owner_kind: claude-code
 owner: Claude Code
 owner_kind: claude-code
 lease_started_at: 2026-07-29T16:48:00+08:00
-lease_expires_at: 2026-07-30T16:48:00+08:00
+lease_expires_at: null
 base_sha: 6e8e6a5
 branch: task/P0-120-claude
 worktree: /Users/jasonnathan/Repos/@theGeekist/llm-core/.worktrees/P0-120-claude
@@ -109,6 +109,9 @@ bun run typecheck:packages
   evidence, non-namespaced capabilityId, and non-JSON / invalid-namespace
   extensions. `architecture_version: 2` preserved. Re-verified green (37 model
   tests, 1091 full).
+- 2026-07-29T19:14:00+08:00 — Final closed-object amendment integrated through
+  `6b9838c`; coordinator verification passed (39 model tests, package typecheck,
+  contract schema check and focused lint). Task marked complete.
 
 - 2026-07-29 — Coordinator re-review round 4: resolved the closed-object P1.
   Profile validation now rejects undeclared keys (ADR-003 closed objects) at the
@@ -126,6 +129,7 @@ Status: ready for coordinator review (rounds 1–4 findings resolved).
 ### Files added (write scope only)
 
 `src/features/model/`:
+
 - `references.ts` — `ModelRef`/`ProviderRef`/`DeploymentRef`/`ModelProfileId`
   branded on the contracts' `OpaqueId`; constructors validate printable-ASCII
   ids. `DeploymentRef` carries no credential.

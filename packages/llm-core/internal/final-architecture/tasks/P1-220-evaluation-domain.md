@@ -5,7 +5,7 @@ title: Evaluation domain
 phase: P1.1
 status: proposed
 priority: P1
-preferred_owner_kind: claude-code
+preferred_owner_kind: codex
 owner: null
 owner_kind: null
 lease_started_at: null

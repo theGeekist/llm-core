@@ -3,16 +3,16 @@ architecture_version: 2
 id: P0-130
 title: Implement state and intervention vertical slice
 phase: P0.3
-status: proposed
+status: claimed
 priority: P0
-preferred_owner_kind: claude-code
-owner: null
-owner_kind: null
-lease_started_at: null
-lease_expires_at: null
-base_sha: null
-branch: null
-worktree: null
+preferred_owner_kind: codex
+owner: codex-root
+owner_kind: codex
+lease_started_at: 2026-07-29T19:15:00+08:00
+lease_expires_at: 2026-07-30T19:15:00+08:00
+base_sha: 6b9838c
+branch: task/P0-130-codex
+worktree: /Users/jasonnathan/Repos/@theGeekist/llm-core/.worktrees/P0-130-codex
 depends_on:
   - P0-110
 decision_dependencies:
@@ -62,5 +62,8 @@ bun run typecheck:packages
 ```
 
 ## Work log
+
+- 2026-07-29T19:15:00+08:00 — Reassigned from the retired Claude allocation
+  and claimed by the Codex coordinator for delegated subagent execution.
 
 ## Handoff

@@ -3,16 +3,16 @@ architecture_version: 2
 id: P0-155
 title: Resolve AI SDK 7 dependency and module-format gate
 phase: P0.4
-status: proposed
+status: claimed
 priority: P0
 preferred_owner_kind: coordinator
-owner: null
-owner_kind: null
-lease_started_at: null
-lease_expires_at: null
-base_sha: null
-branch: null
-worktree: null
+owner: codex-root
+owner_kind: codex
+lease_started_at: 2026-07-29T19:15:00+08:00
+lease_expires_at: 2026-07-30T19:15:00+08:00
+base_sha: 6b9838c
+branch: task/P0-155-codex
+worktree: /Users/jasonnathan/Repos/@theGeekist/llm-core/.worktrees/P0-155-codex
 depends_on:
   - P0-110
   - P0-120
@@ -100,5 +100,7 @@ bun run typecheck:packages
   framework integrations may coexist in the lock. P0-160 asserts the direct
   adapter baseline, removes the current direct AI 5/React 2 overrides, and does
   not apply a global AI SDK 7 override.
+- 2026-07-29T19:15:00+08:00 — Claimed by the Codex coordinator for delegated
+  subagent execution after P0-120 integrated.
 
 ## Handoff

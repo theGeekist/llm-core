@@ -240,7 +240,7 @@ Parallel work is permitted only when:
 - workers do not edit root exports, `package.json`, shared fixtures or canonical
   docs;
 - one later convergence task owns shared barrels and deletion;
-- independent Codex/Claude Code processes use separate worktrees; and
+- independent Codex subagents use separate worktrees; and
 - the coordinator alone integrates or rebases task outputs.
 
 Serialization points:
@@ -256,22 +256,10 @@ The task claim is advisory, not a distributed lock. See the task template.
 
 ## Swarm allocation
 
-The program is initially balanced at seven tasks for the Codex/coordinator
-swarm and seven for the Claude Code swarm. The authoritative allocation and
-integration protocol are in [`COORDINATION.md`](COORDINATION.md).
-
-Claude Code owns, after decision and dependency gates clear:
-
-- `I0-010` — characterize the current public API;
-- `P0-120` — model/profile vertical slice;
-- `P0-130` — state and intervention vertical slice;
-- `P0-160` — AI SDK 7 adapter conversion;
-- `P0-170` — session and UI projections;
-- `P1-210` — context and artifact slices;
-- `P1-220` — evaluation domain and recipe executor.
-
-The Codex/coordinator swarm owns the complementary seven tasks, including
-`P1-230` and selection of its first Python runtime.
+Claude Code's completed I0-010 and P0-120 contributions remain historical.
+Every remaining Architecture v2 task is owned by the Codex/coordinator swarm.
+The coordinator uses parallel child agents with disjoint write scopes and
+retains task leases, review responsibility and deterministic integration.
 
 These are planned allocations, not active claims. A task becomes assigned only
 when `owner`, worktree, base SHA, branch, and lease fields are populated.
@@ -328,7 +316,7 @@ handoff. “Tests passed” without commands is not evidence.
 
 - This plan is coordinator-owned.
 - Each task file is the authoritative status for that task.
-- Accepted ADRs are immutable; changes require a superseding ADR.
+- Accepted ADRs are authoritative unless superseded; changes require a superseding ADR.
 - [`STATUS.md`](STATUS.md) is a coordinator-maintained projection.
 - Agent conversations, hidden memory and local todo lists are never required to
   resume work.

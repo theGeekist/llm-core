@@ -5,7 +5,7 @@ title: Convert interaction sessions and UI projections
 phase: P0.4
 status: proposed
 priority: P0
-preferred_owner_kind: claude-code
+preferred_owner_kind: codex
 owner: null
 owner_kind: null
 lease_started_at: null
