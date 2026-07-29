@@ -1,4 +1,4 @@
-import { contractVersion, isCanonicalUuid, type ContractVersion, type JsonValue } from "#contracts";
+import { contractVersion, isUuidV7, type ContractVersion, type JsonValue } from "#contracts";
 import { prepareAgentSpec } from "../../features/agent/public";
 import type {
   AgentCancellationAcknowledgement,
@@ -212,7 +212,7 @@ const validateEvent = (
   const record = payloadRecord(value, "events");
   const kind = record.kind as AgentRunEvent["kind"];
   if (
-    !isCanonicalUuid(record.eventId) ||
+    !isUuidV7(record.eventId) ||
     !EVENT_KINDS.has(kind) ||
     record.sequence !== expectedSequence ||
     typeof record.occurredAt !== "string" ||
@@ -462,10 +462,10 @@ const createBridgeRunner = (
         "start",
       );
       const runId = stringField(payload.runId, "runId", "start");
-      if (!isCanonicalUuid(runId)) {
+      if (!isUuidV7(runId)) {
         throw new PydanticAiCompatibilityError(
           "malformed-run-id",
-          "PydanticAI start returned a non-canonical run ID.",
+          "PydanticAI start returned a run ID that is not UUIDv7.",
         );
       }
       return runHandle(runId);

@@ -1,6 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import { createDeterministicFakeRemoteRunner } from "../../src/adapters/runtimes";
 import { registerResumableCheckpoint } from "../../src/features/state/public";
+import { isUuidV7 } from "#contracts";
 import {
   assertPortableRunnerConformance,
   collectEvents,
@@ -122,4 +123,29 @@ describe("state and continuation safety parity", () => {
       });
     });
   }
+});
+
+describe("Python bridge core identities", () => {
+  test("identical starts mint distinct UUIDv7 run and event identities", async () => {
+    const target = pythonTransportTarget();
+    try {
+      const agent = await prepare(target.runner);
+      const request = runRequest(agent);
+      const first = await target.runner.start(request);
+      const second = await target.runner.start(request);
+      const [firstEvents, secondEvents] = await Promise.all([
+        collectEvents(first),
+        collectEvents(second),
+      ]);
+
+      expect(isUuidV7(first.identity.runId)).toBe(true);
+      expect(isUuidV7(second.identity.runId)).toBe(true);
+      expect(first.identity.runId).not.toBe(second.identity.runId);
+      const eventIds = [...firstEvents, ...secondEvents].map((event) => event.eventId);
+      expect(eventIds.every(isUuidV7)).toBe(true);
+      expect(new Set(eventIds).size).toBe(eventIds.length);
+    } finally {
+      await target.close();
+    }
+  });
 });

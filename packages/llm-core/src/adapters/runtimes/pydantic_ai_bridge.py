@@ -11,7 +11,9 @@ from __future__ import annotations
 
 import importlib
 import json
+import secrets
 import sys
+import time
 import uuid
 from typing import Any
 
@@ -89,6 +91,19 @@ prepared: dict[str, dict[str, Any]] = {}
 runs: dict[str, dict[str, Any]] = {}
 
 
+def uuid7() -> str:
+    """Create a fresh RFC 9562 UUIDv7 on every supported Python version."""
+    timestamp_ms = time.time_ns() // 1_000_000
+    value = (
+        (timestamp_ms & ((1 << 48) - 1)) << 80
+        | (0x7 << 76)
+        | (secrets.randbits(12) << 64)
+        | (0b10 << 62)
+        | secrets.randbits(62)
+    )
+    return str(uuid.UUID(int=value))
+
+
 def pydantic_ai_version() -> tuple[bool, str]:
     try:
         module = importlib.import_module("pydantic_ai")
@@ -151,7 +166,7 @@ def response(operation: str, payload: Any = None, error: Any = None) -> dict[str
 
 def event(run_id: str, sequence: int, kind: str, facts: dict[str, Any]) -> dict[str, Any]:
     return {
-        "eventId": str(uuid.uuid5(uuid.NAMESPACE_URL, f"{run_id}:{sequence}")),
+        "eventId": uuid7(),
         "kind": kind,
         "occurredAt": NOW,
         "sequence": sequence,
@@ -221,7 +236,7 @@ def handle(request: dict[str, Any]) -> dict[str, Any]:
                     "message": "Only a non-empty prompt string is supported.",
                 },
             )
-        run_id = str(uuid.uuid5(uuid.NAMESPACE_URL, json.dumps(payload, sort_keys=True)))
+        run_id = uuid7()
         available, _version = pydantic_ai_version()
         runtime_result = (
             execute_pydantic_ai(
