@@ -15,12 +15,12 @@ export interface HostCacheBackend<T> {
   get(key: string): MaybePromise<T | undefined>;
   set(key: string, entry: T): MaybePromise<void>;
   delete(key: string): MaybePromise<boolean>;
-  getDefaultTTL?(): number | undefined;
+  getDefaultTTL?(): unknown;
 }
 
 export interface CreateHostBackedCacheStoreInput {
   readonly store: HostCacheBackend<CacheRecord>;
-  readonly defaultTtlMs?: number;
+  readonly defaultTtlMs?: unknown;
 }
 
 export const createHostBackedCacheStore = ({
@@ -35,5 +35,13 @@ export const createHostBackedCacheStore = ({
     },
     decode: (entry) => (isCacheRecord(entry) ? entry : null),
     encode: (_key, value, ttlMs) => createCacheRecord(value, ttlMs),
-    resolveTtl: (ttlMs) => ttlMs ?? defaultTtlMs ?? store.getDefaultTTL?.(),
+    resolveTtl: (ttlMs) => {
+      if (ttlMs !== undefined) {
+        return ttlMs;
+      }
+      if (defaultTtlMs !== undefined) {
+        return defaultTtlMs;
+      }
+      return store.getDefaultTTL ? store.getDefaultTTL() : undefined;
+    },
   });

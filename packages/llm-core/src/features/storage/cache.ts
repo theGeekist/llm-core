@@ -23,7 +23,7 @@ export interface CacheAdapterPolicy<TRead, TStored> {
   readonly decode: (value: TRead | null | undefined) => CacheRecord | null;
   readonly encode: (key: string, value: StorageValue, ttlMs?: number) => TStored;
   readonly now?: () => number;
-  readonly resolveTtl?: (ttlMs?: number) => number | undefined;
+  readonly resolveTtl?: (ttlMs?: number) => unknown;
   readonly normalizeSetResult?: (value: unknown) => StorageMutationResult;
   readonly normalizeDeleteResult?: (value: unknown) => StorageMutationResult;
 }
@@ -32,11 +32,15 @@ const trueResult = () => true;
 const nullValue = () => null;
 const MAX_DATE_TIMESTAMP = 8_640_000_000_000_000;
 
-const assertCacheTtl = (ttlMs: number | undefined, now: number): void => {
+function assertCacheTtl(
+  ttlMs: unknown,
+  now: number,
+): asserts ttlMs is number | undefined {
   if (ttlMs === undefined) {
     return;
   }
   if (
+    typeof ttlMs !== "number" ||
     !Number.isSafeInteger(ttlMs) ||
     ttlMs < 0 ||
     !Number.isFinite(now) ||
@@ -48,7 +52,7 @@ const assertCacheTtl = (ttlMs: number | undefined, now: number): void => {
       "Cache TTL values must be non-negative safe integers within the portable date range.",
     );
   }
-};
+}
 
 export const createCacheRecord = (
   value: StorageValue,
@@ -95,7 +99,7 @@ export const createCacheStoreAdapter = <TRead, TStored>(
     assertStorageKey(key);
     const currentTime = now();
     assertCacheTtl(ttlMs, currentTime);
-    const resolvedTtl = policy.resolveTtl?.(ttlMs) ?? ttlMs;
+    const resolvedTtl = policy.resolveTtl ? policy.resolveTtl(ttlMs) : ttlMs;
     assertCacheTtl(resolvedTtl, currentTime);
     const registeredValue = registerStorageValue(value);
     const encoded = policy.encode(key, registeredValue, resolvedTtl);

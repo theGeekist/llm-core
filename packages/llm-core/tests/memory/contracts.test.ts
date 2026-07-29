@@ -93,20 +93,25 @@ describe("conversation contracts", () => {
   test("rejects sensitive JSON content, tool arguments and tool results recursively", () => {
     const toolCallId = coreId<ToolCallId>("0190bd0c-0000-4000-8000-000000000104");
     for (const content of [
-      [{ kind: "json", value: { nested: { credential: "raw" } } }],
+      [{ kind: "json", value: { nested: [{ Authorization: "placeholder" }] } }],
       [
         {
           kind: "tool-call",
           toolCallId,
           name: "unsafe",
-          arguments: { nested: { apiKey: "raw" } },
+          arguments: { nested: [{ client_secret_value: "placeholder" }] },
         },
       ],
       [
         {
           kind: "tool-result",
           toolCallId,
-          result: [{ kind: "json", value: { nested: { signedUrl: "https://secret" } } }],
+          result: [
+            {
+              kind: "json",
+              value: { nested: [{ PRIVATE_KEY_PEM: "placeholder" }] },
+            },
+          ],
         },
       ],
     ]) {

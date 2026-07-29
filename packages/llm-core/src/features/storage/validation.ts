@@ -46,13 +46,26 @@ const deepFreeze = <T>(value: T): T => {
 
 const frozenClone = <T>(value: T): T => deepFreeze(structuredClone(value));
 
-const SENSITIVE_KEY_NAMES = new Set([
+const SENSITIVE_KEY_STEMS = [
+  "apikey",
+  "authorization",
+  "clientsecret",
+  "cookie",
   "credential",
+  "password",
   "path",
+  "privatekey",
   "providermetadata",
+  "secret",
   "signedurl",
   "token",
+] as const;
+const COMPOUND_SENSITIVE_KEY_STEMS = new Set([
   "apikey",
+  "clientsecret",
+  "privatekey",
+  "providermetadata",
+  "signedurl",
 ]);
 const CREDENTIAL_VALUE_PATTERN =
   /^(?:bearer\s+|basic\s+|sk-[a-z0-9]|ghp_|github_pat_|xox[baprs]-|AKIA[0-9a-z]{12}|-----BEGIN [a-z ]*PRIVATE KEY-----)/i;
@@ -64,15 +77,15 @@ const normalizedKey = (key: string): string => key.replace(/[^A-Za-z0-9]/g, "").
 
 export const isSensitivePortableKey = (key: string): boolean => {
   const normalized = normalizedKey(key);
-  return (
-    SENSITIVE_KEY_NAMES.has(normalized) ||
-    normalized.endsWith("credential") ||
-    normalized.endsWith("providermetadata") ||
-    normalized.endsWith("signedurl") ||
-    normalized.endsWith("apikey") ||
-    normalized.endsWith("token") ||
-    normalized.endsWith("path")
-  );
+  return SENSITIVE_KEY_STEMS.some((stem) => {
+    if (COMPOUND_SENSITIVE_KEY_STEMS.has(stem)) {
+      return normalized.includes(stem);
+    }
+    if (stem === "path") {
+      return normalized === stem || normalized.endsWith(stem);
+    }
+    return normalized === stem || normalized.startsWith(stem) || normalized.endsWith(stem);
+  });
 };
 
 export const isSensitivePortableString = (value: string): boolean =>

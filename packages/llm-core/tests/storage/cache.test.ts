@@ -92,13 +92,26 @@ describe("cache store policy", () => {
       },
     });
     expect(() => cache.get(context, "")).toThrow();
-    for (const ttlMs of [-1, 0.5, Number.MAX_SAFE_INTEGER]) {
+    const invalidRuntimeTtls: unknown[] = [
+      null,
+      Number.NaN,
+      Number.POSITIVE_INFINITY,
+      "1000",
+      0.5,
+      -1,
+      Number.MAX_SAFE_INTEGER,
+    ];
+    for (const ttlMs of invalidRuntimeTtls) {
       expect(() =>
-        cache.set(context, { key: "key", value: jsonStorageValue(null), ttlMs }),
+        cache.set(context, {
+          key: "key",
+          value: jsonStorageValue(null),
+          ttlMs: ttlMs as never,
+        }),
       ).toThrow();
     }
 
-    for (const resolvedTtl of [-1, 0.5, Number.MAX_SAFE_INTEGER]) {
+    for (const resolvedTtl of invalidRuntimeTtls) {
       const resolved = createCacheStoreAdapter<CacheRecord, CacheRecord>({
         backend: {
           read: () => null,

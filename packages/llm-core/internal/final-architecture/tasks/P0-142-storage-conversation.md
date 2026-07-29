@@ -76,6 +76,11 @@ bun run typecheck:packages
   have concrete conformance, portable JSON is recursively guarded, cache TTL
   and aliasing semantics fail closed, false AI SDK claims were removed and
   multipart projection is atomic.
+- 2026-07-30T00:35:00+08:00 — Closed the second independent-review findings:
+  normalized sensitive-key variants now fail closed at every portable JSON
+  boundary while exact opaque references remain supported, and runtime cache
+  TTL resolution preserves invalid values for validation before encoding or
+  backend writes.
 
 ## Handoff
 
@@ -93,7 +98,7 @@ bun run typecheck:packages
   - this task file
 - Verification:
   - `bun test packages/llm-core/tests/storage packages/llm-core/tests/memory` —
-    exit 0; 25 passed, 0 failed, 111 assertions.
+    exit 0; 25 passed, 0 failed, 138 assertions.
   - `bun test packages/llm-core/tests` — exit 0; 1,243 passed, 35 skipped, 0
     failed.
   - `bun run typecheck:packages` — exit 0; package typecheck and schema
@@ -108,6 +113,13 @@ bun run typecheck:packages
   return `null`; best-effort issue callbacks cannot turn failure into a partial
   record or replace the safe outcome when they throw. Provider metadata is
   never copied.
+- Portable JSON behavior: normalized authorization, password, secret, cookie,
+  client-secret and private-key key variants fail closed recursively, including
+  in conversation JSON and tool arguments/results. Exact `SecretRef` and
+  `ResourceRef` shapes remain opaque portable references.
+- Cache TTL behavior: explicit, policy-resolved and backend/default TTL values
+  distinguish absent `undefined` from invalid `null` or non-integer values.
+  Invalid runtime values fail before encoding and backend writes.
 - Installed conformance: LlamaIndex uses its public `BaseKVStore`,
   `BaseDocumentStore`, `SimpleKVStore`, `KVDocumentStore`, `Memory` and
   `ChatMessage` contracts. Storage values round-trip through a closed v2

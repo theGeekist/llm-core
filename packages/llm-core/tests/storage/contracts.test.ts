@@ -42,31 +42,44 @@ describe("storage contracts", () => {
   });
 
   test("rejects recursive sensitive keys and values while preserving opaque references", () => {
-    const unsafe: JsonValue[] = [
-      { nested: { credential: "raw" } },
-      { nested: { path: "/private/data" } },
-      { nested: { signedUrl: "https://storage.invalid/file" } },
-      { nested: { providerMetadata: { model: "native" } } },
-      { nested: { apiKey: "raw" } },
-      { nested: { accessToken: "raw" } },
+    const unsafeKeys: JsonValue[] = [
+      { nested: { credential: "placeholder" } },
+      { nested: { path: "placeholder" } },
+      { nested: { signedUrl: "placeholder" } },
+      { nested: { providerMetadata: "placeholder" } },
+      { nested: { apiKey: "placeholder" } },
+      { nested: { accessToken: "placeholder" } },
+      { nested: [{ Authorization: "placeholder" }] },
+      // eslint-disable-next-line sonarjs/no-hardcoded-passwords -- benign rejection fixture
+      { nested: [{ user_password: "placeholder" }] },
+      { nested: [{ client_secret_value: "placeholder" }] },
+      { nested: [{ sessionCookie: "placeholder" }] },
+      { nested: [{ PRIVATE_KEY_PEM: "placeholder" }] },
+      { nested: [{ secretMaterial: "placeholder" }] },
+    ];
+    const unsafeValues: JsonValue[] = [
       { safeKey: "/private/data" },
       { safeKey: "https://storage.invalid/file?token=secret" },
       { safeKey: "Bearer raw-secret" },
     ];
-    for (const value of unsafe) {
+    for (const value of [...unsafeKeys, ...unsafeValues]) {
       expect(() => jsonStorageValue(value)).toThrow();
     }
 
     expect(
       jsonStorageValue({
-        authorization: secretRef("sk-reference-not-material"),
-        resource,
+        opaqueReferences: [
+          secretRef("sk-reference-not-material"),
+          resource,
+        ],
       }),
     ).toEqual({
       kind: "json",
       value: {
-        authorization: { secretId: "sk-reference-not-material" },
-        resource,
+        opaqueReferences: [
+          { secretId: "sk-reference-not-material" },
+          resource,
+        ],
       },
     });
   });

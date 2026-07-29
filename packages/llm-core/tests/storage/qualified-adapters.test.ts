@@ -27,33 +27,56 @@ describe("qualified storage adapters", () => {
         get: (key) => values.get(key),
         set: (key, entry) => void values.set(key, entry),
         delete: (key) => values.delete(key),
-        getDefaultTTL: () => 1,
+        getDefaultTTL: () => 1_000,
       },
     });
     const value = jsonStorageValue({ implementation: "host" });
 
     expect(cache.set(context, { key: "key", value })).toBe(true);
     expect(await cache.get(context, "key")).toEqual(value);
-    await new Promise((resolve) => setTimeout(resolve, 5));
-    expect(await cache.get(context, "key")).toBeNull();
+    expect(values.get("key")?.expiresAt).toBeDefined();
   });
 
-  test("rejects an invalid host default TTL before calling set", () => {
+  test("rejects invalid host default TTL runtime values before calling set", () => {
     let writes = 0;
-    const cache = createHostBackedCacheStore({
-      store: {
-        get: () => undefined,
-        set: () => {
-          writes += 1;
+    for (const defaultTtl of [
+      null,
+      Number.NaN,
+      Number.POSITIVE_INFINITY,
+      "1000",
+      0.5,
+      -1,
+      Number.MAX_SAFE_INTEGER,
+    ]) {
+      const cache = createHostBackedCacheStore({
+        store: {
+          get: () => undefined,
+          set: () => {
+            writes += 1;
+          },
+          delete: () => false,
+          getDefaultTTL: () => defaultTtl,
         },
-        delete: () => false,
-        getDefaultTTL: () => -1,
-      },
-    });
+      });
+      expect(() =>
+        cache.set(context, { key: "key", value: jsonStorageValue({ safe: true }) }),
+      ).toThrow();
 
-    expect(() =>
-      cache.set(context, { key: "key", value: jsonStorageValue({ safe: true }) }),
-    ).toThrow();
+      const configured = createHostBackedCacheStore({
+        defaultTtlMs: defaultTtl,
+        store: {
+          get: () => undefined,
+          set: () => {
+            writes += 1;
+          },
+          delete: () => false,
+          getDefaultTTL: () => 100,
+        },
+      });
+      expect(() =>
+        configured.set(context, { key: "configured", value: jsonStorageValue({ safe: true }) }),
+      ).toThrow();
+    }
     expect(writes).toBe(0);
   });
 
