@@ -3,7 +3,7 @@ architecture_version: 2
 id: P1-220
 title: Evaluation domain
 phase: P1.1
-status: proposed
+status: ready
 priority: P1
 preferred_owner_kind: codex
 owner: null
@@ -31,7 +31,7 @@ read_scope:
   - packages/llm-core/src/features/context/**
   - packages/llm-core/src/features/artifacts/**
 review_owner: coordinator
-updated_at: 2026-07-29
+updated_at: 2026-07-30
 ---
 
 # P1-220 — Evaluation domain
@@ -63,7 +63,8 @@ bun run typecheck:packages
 
 ## Work log
 
-- Not started.
+- 2026-07-30 — Promoted to ready by the coordinator after P1-210 completed,
+  passed independent review and integrated into `main`.
 
 ## Handoff
 

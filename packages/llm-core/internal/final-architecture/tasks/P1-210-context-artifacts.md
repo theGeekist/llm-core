@@ -83,6 +83,9 @@ bun run typecheck:packages
 - 2026-07-30 — Independently approved at exact SHA `8060c74`. Final
   verification passed with 18 focused tests, package and test typechecks,
   schema freshness, lint, 12 architecture tests, formatting and diff hygiene.
+- 2026-07-30 — Integrated into `main` with dedicated `./context` and
+  `./artifacts` fronts, internal aliases and build entry points. All 18 public
+  runtime and declaration fronts passed the isolated packed-consumer gate.
 
 ## Handoff
 
@@ -142,20 +145,18 @@ Implementation and review-remediation commits:
 - Context identity is sequence-sensitive by design because entry order is
   execution-significant. JSON object key order is canonicalized.
 
-### Integration-owner requests
+### Integration result
 
-- Add `#context` and `#artifacts` aliases in
+- Added `#context` and `#artifacts` aliases in
   `packages/llm-core/package.json`, targeting the two feature `public.ts`
   files.
-- Publish `./context` and `./artifacts` in
-  `packages/llm-core/package.json` if P1 extends ADR-008's P0 sixteen-subpath
-  surface; otherwise aggregate the fronts through an explicitly selected
-  existing subpath.
-- Add both public fronts to `PUBLIC_ENTRY_POINTS` in
+- Published `./context` and `./artifacts` as the P1 extension of ADR-008's P0
+  sixteen-subpath surface.
+- Added both public fronts to `PUBLIC_ENTRY_POINTS` in
   `packages/llm-core/scripts/build.ts`.
-- Update
+- Updated
   `packages/llm-core/tests/architecture/public-surface.characterization.test.ts`
-  and package smoke expectations for the selected public-subpath decision.
-- Do not add these feature contracts to the cross-language schema roots:
+  and package smoke expectations for the selected public subpaths.
+- Did not add these feature contracts to the cross-language schema roots:
   ADR-001 keeps feature contracts outside the `src/contracts` ABI authority
   unless a later accepted decision promotes them.

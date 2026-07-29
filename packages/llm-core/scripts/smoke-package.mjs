@@ -25,6 +25,8 @@ const expectedSubpaths = [
   "./control",
   "./evidence",
   "./state",
+  "./context",
+  "./artifacts",
   "./agent",
   "./workflow",
   "./interaction",
@@ -214,6 +216,10 @@ try {
       'import type { ExecuteControlledToolInput, ControlledToolExecutionOutcome } from "@geekist/llm-core/control";',
       'import type { ConversationSessionStore, InteractionSession, InteractionSessionIdentityPort } from "@geekist/llm-core/interaction";',
       'import type { ResumeInterventionWorkflowInput, WorkflowResumeOutcome } from "@geekist/llm-core/workflow";',
+      'import { createContextEntry, createContextManifest } from "@geekist/llm-core/context";',
+      'import type { ContextEntry, ContextManifest } from "@geekist/llm-core/context";',
+      'import { createArtifact, createArtifactRef } from "@geekist/llm-core/artifacts";',
+      'import type { Artifact, ArtifactRef } from "@geekist/llm-core/artifacts";',
       'import type { AiSdkUiProjectionChunk } from "@geekist/llm-core/adapters/ai-sdk-ui";',
       'import type { AssistantUiProjectionCommand, AssistantUiProjectionOptions } from "@geekist/llm-core/adapters/assistant-ui";',
       'import type { ChatKitProjectionEvent } from "@geekist/llm-core/adapters/openai-chatkit";',
@@ -226,6 +232,8 @@ try {
       "void createLocalAgentRunner; void prepareAgentSpec;",
       "void createCapabilityBindingCatalog; void capabilityIdForPort; void conversationId; void jsonStorageValue; void textDocument; void textRetrievalQuery;",
       "void executeControlledTool;",
+      "void createContextEntry; void createContextManifest;",
+      "void createArtifact; void createArtifactRef;",
       "type RootTypes = [AgentSpec, PreparedAgentSpec, AgentRunner, AgentRunnerCapabilities, AgentRun, AgentRunRequest, AgentRunEvent, RunResult, MaybePromise<unknown>, MaybeAsyncIterable<unknown>];",
       "declare const rootTypes: RootTypes; void rootTypes;",
       'type AgentCompositionTypes = [CapabilityBindingCatalog, CapabilityBindingResolutionRequest, CapabilityBindingResolutionOutcome, RuntimeCapabilityBinding<"retriever">, RegisteredRuntimeCapabilityBinding<"retriever">, Retriever, Indexer, CacheStore, ConversationStore];',
@@ -236,6 +244,8 @@ try {
       "declare const interactionTypes: InteractionTypes; void interactionTypes;",
       "type WorkflowTypes = [ResumeInterventionWorkflowInput, WorkflowResumeOutcome];",
       "declare const workflowTypes: WorkflowTypes; void workflowTypes;",
+      "type ContextArtifactTypes = [ContextEntry, ContextManifest, Artifact, ArtifactRef];",
+      "declare const contextArtifactTypes: ContextArtifactTypes; void contextArtifactTypes;",
       "type UiTypes = [AiSdkUiProjectionChunk, AssistantUiProjectionCommand, AssistantUiProjectionOptions, ChatKitProjectionEvent, NluxInteractionAdapterOptions, NluxProjectionSignal];",
       "declare const uiTypes: UiTypes; void uiTypes;",
       ...specifiers.slice(1).map((_, index) => `void surface${index};`),
@@ -269,5 +279,5 @@ try {
 }
 
 console.log(
-  "Verified 16 ESM-only v2 exports from an isolated packed runtime and declaration consumer.",
+  "Verified 18 ESM-only v2 exports from an isolated packed runtime and declaration consumer.",
 );
