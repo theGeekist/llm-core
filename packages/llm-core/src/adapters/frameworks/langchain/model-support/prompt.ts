@@ -1,6 +1,9 @@
 import type { PromptTemplate as LangChainPromptTemplate } from "@langchain/core/prompts";
-import { preparePromptTemplate, type PromptTemplate } from "../../../../features/model/public";
-import { closedMetadata } from "./sanitize";
+import {
+  preparePromptTemplate,
+  sanitizeNativeMetadata,
+  type PromptTemplate,
+} from "../../../../features/model/public";
 
 export interface LangChainPromptInput {
   readonly prompt: LangChainPromptTemplate;
@@ -26,7 +29,7 @@ export const fromLangChainPromptTemplate = ({
       ? {}
       : {
           metadata: {
-            "dev.langchain": closedMetadata(prompt.metadata),
+            "dev.langchain": sanitizeNativeMetadata(prompt.metadata),
           },
         }),
   });

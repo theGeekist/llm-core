@@ -60,23 +60,28 @@ export const registerAgentSkill = (value: unknown): AgentSkillRef => {
   return deepFreeze(structuredClone(candidate)) as AgentSkillRef;
 };
 
-const stripLocalPaths = (candidates: readonly LocalSkillCandidate[]): readonly AgentSkillRef[] => {
-  const registered = candidates.map((candidate) => {
-    if (
-      typeof candidate !== "object" ||
-      candidate === null ||
-      Object.keys(candidate).sort().join(",") !== "digest,localPath,scope,skillId" ||
-      typeof candidate.localPath !== "string" ||
-      candidate.localPath.trim().length === 0
-    ) {
-      throw new TypeError("Local skills require a closed candidate and nonblank path.");
-    }
-    return registerAgentSkill({
-      skillId: candidate.skillId,
-      scope: candidate.scope,
-      digest: candidate.digest,
-    });
-  });
+const stripLocalPaths = (
+  candidates: readonly LocalSkillCandidate[],
+  disabledSkillIds: ReadonlySet<string>,
+): readonly AgentSkillRef[] => {
+  const registered = candidates
+    .map((candidate) => {
+      if (
+        typeof candidate !== "object" ||
+        candidate === null ||
+        Object.keys(candidate).sort().join(",") !== "digest,localPath,scope,skillId" ||
+        typeof candidate.localPath !== "string" ||
+        candidate.localPath.trim().length === 0
+      ) {
+        throw new TypeError("Local skills require a closed candidate and nonblank path.");
+      }
+      return registerAgentSkill({
+        skillId: candidate.skillId,
+        scope: candidate.scope,
+        digest: candidate.digest,
+      });
+    })
+    .filter((skill) => !disabledSkillIds.has(skill.skillId));
   const identities = new Set<string>();
   for (const skill of registered) {
     const identity = `${skill.scope}:${skill.skillId}`;
@@ -110,5 +115,9 @@ export const loadAgentSkills = (
   ) {
     throw new TypeError("Local skill loading requires explicit host directories.");
   }
-  return maybeMap(stripLocalPaths, loader.load(structuredClone(request), structuredClone(context)));
+  const disabledSkillIds = new Set<string>(request.disabledSkillIds ?? []);
+  return maybeMap(
+    (candidates) => stripLocalPaths(candidates, disabledSkillIds),
+    loader.load(structuredClone(request), structuredClone(context)),
+  );
 };

@@ -2,7 +2,7 @@ import { createHash } from "node:crypto";
 import { describe, expect, test } from "bun:test";
 import { StringOutputParser } from "@langchain/core/output_parsers";
 import { PromptTemplate as LangChainPrompt } from "@langchain/core/prompts";
-import type { PromptTemplate as LlamaIndexPrompt } from "@llamaindex/core/prompts";
+import { PromptTemplate as LlamaIndexPrompt } from "@llamaindex/core/prompts";
 import { contractVersion, digest, newCoreId, schemaRef, type InvocationId } from "#contracts";
 import {
   fromLangChainOutputParser,
@@ -12,7 +12,8 @@ import { fromLlamaIndexPromptTemplate } from "../../src/adapters/frameworks/llam
 import { isRegisteredSchemaDocument, resolveSchemaDocument } from "../../src/features/model/public";
 
 const DOCUMENT = { type: "object", additionalProperties: false };
-const DIGEST = digest(createHash("sha256").update(JSON.stringify(DOCUMENT)).digest("hex"));
+const DOCUMENT_BYTES = new TextEncoder().encode(JSON.stringify(DOCUMENT));
+const DIGEST = digest(createHash("sha256").update(DOCUMENT_BYTES).digest("hex"));
 const REF = schemaRef({
   schemaId: "https://schemas.example.test/output.json",
   version: contractVersion("2.0.0"),
@@ -24,43 +25,64 @@ const CONTEXT = {
 
 describe("trusted schema resolution", () => {
   test("registers matching strict JSON with mutation isolation", async () => {
-    const native = structuredClone(DOCUMENT);
+    const native = DOCUMENT_BYTES.slice();
     let receivedContext: typeof CONTEXT | undefined;
     const resolved = await resolveSchemaDocument(REF, CONTEXT, {
       resolve: (_schema, context) => {
         receivedContext = context;
-        return { schema: REF, document: native, verifiedDigest: DIGEST };
+        return { schema: REF, bytes: native };
       },
     });
-    native.type = "array";
+    native[0] = 0;
     expect(resolved.document).toEqual(DOCUMENT);
+    expect(Object.keys(resolved).sort()).toEqual(["document", "schema", "verifiedDigest"]);
     expect(isRegisteredSchemaDocument(resolved)).toBe(true);
     expect(receivedContext).toEqual(CONTEXT);
     expect(Object.isFrozen(resolved.document)).toBe(true);
   });
 
-  test("rejects missing, mismatched and non-JSON native schemas", async () => {
+  test("independently rejects mismatched, malformed and cyclic resolver values", async () => {
     expect(() => resolveSchemaDocument(REF, CONTEXT, { resolve: () => null })).toThrow(
-      "trusted schema identity",
+      "exact bytes",
     );
     expect(() =>
       resolveSchemaDocument(REF, CONTEXT, {
         resolve: () => ({
           schema: REF,
-          document: DOCUMENT,
-          verifiedDigest: digest("0".repeat(64)),
+          bytes: new TextEncoder().encode('{"different":true}'),
         }),
       }),
-    ).toThrow("trusted schema identity");
+    ).toThrow("SHA-256");
+    const malformedUtf8 = new Uint8Array([0xff]);
+    const malformedUtf8Ref = schemaRef({
+      ...REF,
+      digest: digest(createHash("sha256").update(malformedUtf8).digest("hex")),
+    });
     expect(() =>
-      resolveSchemaDocument(REF, CONTEXT, {
+      resolveSchemaDocument(malformedUtf8Ref, CONTEXT, {
         resolve: () => ({
-          schema: REF,
-          document: { value: Symbol("non-json") } as never,
-          verifiedDigest: DIGEST,
+          schema: malformedUtf8Ref,
+          bytes: malformedUtf8,
         }),
       }),
-    ).toThrow("strict JSON");
+    ).toThrow("strict UTF-8 JSON");
+
+    const malformedBytes = new TextEncoder().encode("{");
+    const malformedRef = schemaRef({
+      ...REF,
+      digest: digest(createHash("sha256").update(malformedBytes).digest("hex")),
+    });
+    expect(() =>
+      resolveSchemaDocument(malformedRef, CONTEXT, {
+        resolve: () => ({ schema: malformedRef, bytes: malformedBytes }),
+      }),
+    ).toThrow("strict UTF-8 JSON");
+
+    const cyclic: Record<string, unknown> = { schema: REF, bytes: DOCUMENT_BYTES };
+    cyclic.self = cyclic;
+    expect(() => resolveSchemaDocument(REF, CONTEXT, { resolve: () => cyclic as never })).toThrow(
+      "exact bytes",
+    );
   });
 });
 
@@ -114,19 +136,23 @@ describe("prompt and output parser adapters", () => {
   });
 
   test("maps the installed LlamaIndex prompt contract without path or URL leakage", () => {
-    const native = {
+    const native = new LlamaIndexPrompt({
       template: "Hello {name}",
-      vars: () => ["name"],
-      promptType: "llama.prompt",
+      templateVars: ["name"],
+      promptType: "custom",
       metadata: {
-        skillPath: "/Users/example/private",
-        signedUrl: "https://signed.example.test",
+        skillPath: "/workspace/private",
+        authorization: "placeholder-authorization",
+        cookie: "placeholder-cookie",
+        signedUrl: "https://placeholder.invalid/resource",
       },
-    } as unknown as LlamaIndexPrompt;
+    });
     const prompt = fromLlamaIndexPromptTemplate({ prompt: native });
-    expect(prompt.name).toBe("llama.prompt");
+    expect(prompt.name).toBe("custom");
     expect(prompt.inputs[0]?.name).toBe("name");
-    expect(JSON.stringify(prompt)).not.toContain("signed.example");
-    expect(JSON.stringify(prompt)).not.toContain("/Users/example");
+    expect(JSON.stringify(prompt)).not.toContain("placeholder-authorization");
+    expect(JSON.stringify(prompt)).not.toContain("placeholder-cookie");
+    expect(JSON.stringify(prompt)).not.toContain("placeholder.invalid");
+    expect(JSON.stringify(prompt)).not.toContain("/workspace/private");
   });
 });

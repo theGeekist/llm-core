@@ -16,6 +16,46 @@ const deepFreeze = <T>(value: T): T => {
   return value;
 };
 
+const SENSITIVE_METADATA_KEYS = new Set([
+  "credential",
+  "filepath",
+  "localpath",
+  "locator",
+  "path",
+  "signedurl",
+  "url",
+  "uri",
+]);
+const LOCATOR_VALUE = /^(?:[a-z][a-z\d+.-]*:\/\/|\/|~\/|\.{1,2}\/|[a-z]:[\\/]|\\\\|file:)/i;
+const normalizedKey = (key: string): string => key.replace(/[^A-Za-z0-9]/g, "").toLowerCase();
+const isSensitiveMetadataKey = (key: string): boolean => {
+  const normalized = normalizedKey(key);
+  return [...SENSITIVE_METADATA_KEYS].some(
+    (sensitive) =>
+      normalized === sensitive ||
+      normalized.startsWith(sensitive) ||
+      normalized.endsWith(sensitive),
+  );
+};
+
+const isSafeMetadata = (value: unknown): boolean => {
+  if (typeof value === "string") {
+    return !LOCATOR_VALUE.test(value);
+  }
+  if (value === null || typeof value === "boolean" || typeof value === "number") {
+    return true;
+  }
+  if (Array.isArray(value)) {
+    return value.every(isSafeMetadata);
+  }
+  return (
+    typeof value === "object" &&
+    Object.entries(value).every(
+      ([key, child]) => !isSensitiveMetadataKey(key) && isSafeMetadata(child),
+    )
+  );
+};
+
 export const prepareAgentSpec = (spec: AgentSpec): PreparedAgentSpec => {
   if (
     Object.keys(spec).every((key) =>
@@ -28,15 +68,23 @@ export const prepareAgentSpec = (spec: AgentSpec): PreparedAgentSpec => {
     typeof spec.instructions !== "string" ||
     spec.instructions.length === 0 ||
     (spec.effectRequirement !== "read-only" && spec.effectRequirement !== "controlled") ||
-    (spec.metadata !== undefined && !isJsonValue(spec.metadata)) ||
+    (spec.metadata !== undefined &&
+      (!isJsonValue(spec.metadata) || !isSafeMetadata(spec.metadata))) ||
     (spec.skills !== undefined && !Array.isArray(spec.skills))
   ) {
     throw new TypeError("AgentSpec must be portable and use explicit execution requirements.");
   }
+  const skills = spec.skills?.map(registerAgentSkill);
+  if (
+    skills !== undefined &&
+    new Set(skills.map((skill) => `${skill.scope}:${skill.skillId}`)).size !== skills.length
+  ) {
+    throw new TypeError("AgentSpec skills must use unique scope and skill identities.");
+  }
   const prepared = deepFreeze(
     clone({
       ...spec,
-      ...(spec.skills === undefined ? {} : { skills: spec.skills.map(registerAgentSkill) }),
+      ...(skills === undefined ? {} : { skills }),
     }),
   ) as PreparedAgentSpec;
   preparedAgentSpecs.add(prepared);

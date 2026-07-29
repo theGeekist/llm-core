@@ -86,11 +86,20 @@ bun run typecheck:packages
   local skill ambiguity and mutation isolation.
 - 2026-07-29 — Moved to `review` after focused and parity suites, package/test
   typechecks, schema freshness, scoped lint and diff checks passed.
+- 2026-07-30 — Closed exact-tip review findings with core-owned SHA-256
+  verification for schema and media bytes, exact nested resource
+  reconstruction, source-bound media projection, portable AgentSpec/skill
+  enforcement and a single redacting native-metadata projection policy.
+- 2026-07-30 — Re-ran focused and relevant parity suites plus package/test
+  typechecks, schema freshness, scoped lint and diff checks; task remains in
+  `review` for coordinator integration.
 
 ## Handoff
 
 - Review candidate: task branch HEAD; the exact clean SHA is reported to the
   coordinator after this handoff is committed.
+- Review-fix candidate: follow-up task branch HEAD; its exact clean SHA is
+  reported to the coordinator after the remediation handoff is committed.
 - Changed files are confined to the declared P0-143 write scope.
 - Verification:
   - focused media/schema/skills suite — 14 passed, 0 failed, 47 assertions;
@@ -99,6 +108,9 @@ bun run typecheck:packages
   - `bun run typecheck:packages` — exit 0, including schema freshness;
   - `bun run --cwd packages/llm-core typecheck:tests` — exit 0;
   - scoped ESLint and `git diff --check` — exit 0.
+  - remediation-focused suite — 18 passed, 0 failed, 67 assertions;
+  - remediation parity suite — 60 passed, 3 environment-gated integrations
+    skipped, 0 failed, 125 assertions.
 - ADRs applied: ADR-001 through ADR-008 as applicable; no deviations.
 - Security and semantic posture:
   - provider options, headers, abort signals, raw native values, errors and
@@ -113,6 +125,20 @@ bun run typecheck:packages
   - parser results are a closed content/JSON discriminant; and
   - portable skill identity is scope + opaque ID + SHA-256 digest, while local
     paths are validated and stripped before preparation.
+- Review remediation:
+  - `SchemaDocumentResolver` returns exact published/canonical UTF-8 bytes and
+    schema identity; core computes SHA-256, decodes strict JSON and brands only
+    after byte digest and identity agreement;
+  - media resource and binary integrity is recomputed from bytes, nested
+    resource references are reconstructed with exact keys and projector output
+    must preserve source media type, byte length and SHA-256 digest;
+  - AgentSpec metadata rejects physical-locator shapes, skill identities are
+    unique and disabled IDs are filtered even when a loader ignores them; and
+  - LangChain, installed LlamaIndex prompt templates and safe AI SDK scalar
+    extensions use the same redacting metadata policy.
+- Runtime note: core-side SHA-256 uses `node:crypto` under ADR-007's Node 22
+  baseline to preserve synchronous `MaybePromise` behavior. This implementation
+  does not claim browser or Edge-runtime neutrality.
 - Remaining risks: `MediaOutputProjector`, `MediaResourceResolver` and
   `SchemaDocumentResolver` are trusted host boundaries. Hosts must authorize
   the supplied invocation context and make their digest/integrity claims

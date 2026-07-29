@@ -1,5 +1,6 @@
+import { createHash } from "node:crypto";
 import {
-  isDigest,
+  digest,
   isJsonValue,
   isSchemaRef,
   type Digest,
@@ -13,15 +14,18 @@ declare const registeredSchemaDocumentBrand: unique symbol;
 
 export interface SchemaResolution {
   readonly schema: SchemaRef;
-  readonly document: JsonValue;
-  readonly verifiedDigest: Digest;
+  /** Exact canonical or published UTF-8 bytes identified by `schema.digest`. */
+  readonly bytes: Uint8Array;
 }
 
 export interface SchemaDocumentResolver {
   resolve(schema: SchemaRef, context: InvocationContext): MaybePromise<SchemaResolution | null>;
 }
 
-export interface RegisteredSchemaDocument extends SchemaResolution {
+export interface RegisteredSchemaDocument {
+  readonly schema: SchemaRef;
+  readonly document: JsonValue;
+  readonly verifiedDigest: Digest;
   readonly [registeredSchemaDocumentBrand]: true;
 }
 
@@ -51,20 +55,38 @@ const registerResolution = (
 ): RegisteredSchemaDocument => {
   if (
     resolution === null ||
-    Object.keys(resolution).sort().join(",") !== "document,schema,verifiedDigest" ||
+    Object.keys(resolution).sort().join(",") !== "bytes,schema" ||
     !isSchemaRef(resolution.schema) ||
     !sameSchema(expected, resolution.schema) ||
-    !isDigest(resolution.verifiedDigest) ||
-    !sameDigest(expected.digest, resolution.verifiedDigest) ||
-    !isJsonValue(resolution.document)
+    !(resolution.bytes instanceof Uint8Array)
   ) {
-    throw new TypeError(
-      "Schema resolution must preserve trusted schema identity, digest and strict JSON.",
-    );
+    throw new TypeError("Schema resolution must return exact bytes for the requested identity.");
   }
-  const registered = deepFreeze(structuredClone(resolution)) as RegisteredSchemaDocument;
+  const bytes = resolution.bytes.slice();
+  // ADR-007 establishes Node 22 as the package baseline; hash the published
+  // bytes synchronously so a synchronous resolver remains synchronous.
+  const verifiedDigest = digest(createHash("sha256").update(bytes).digest("hex"));
+  if (!sameDigest(expected.digest, verifiedDigest)) {
+    throw new TypeError("Schema resolution bytes do not match the requested SHA-256 digest.");
+  }
+  let document: unknown;
+  try {
+    document = JSON.parse(new TextDecoder("utf-8", { fatal: true }).decode(bytes));
+  } catch {
+    throw new TypeError("Schema resolution bytes must contain strict UTF-8 JSON.");
+  }
+  if (!isJsonValue(document)) {
+    throw new TypeError("Schema resolution bytes must contain strict JSON.");
+  }
+  const registered = deepFreeze(
+    structuredClone({
+      schema: resolution.schema,
+      document,
+      verifiedDigest,
+    }),
+  ) satisfies Omit<RegisteredSchemaDocument, typeof registeredSchemaDocumentBrand>;
   registeredDocuments.add(registered);
-  return registered;
+  return registered as RegisteredSchemaDocument;
 };
 
 export const resolveSchemaDocument = (

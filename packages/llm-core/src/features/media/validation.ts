@@ -1,4 +1,13 @@
-import { isCanonicalUuid, isDigest, isNativeExtensions, type PortableContent } from "#contracts";
+import { createHash } from "node:crypto";
+import {
+  digest,
+  isCanonicalUuid,
+  isDigest,
+  isNativeExtensions,
+  type Digest,
+  type PortableContent,
+  type ResourceRef,
+} from "#contracts";
 import type {
   ImageGenerationRequest,
   ImageGenerationResult,
@@ -9,7 +18,9 @@ import type {
   TranscriptionResult,
 } from "./types";
 
-const MEDIA_TYPE = /^[A-Za-z0-9!#$&^_.+-]+\/[A-Za-z0-9!#$&^_.+-]+/;
+const MEDIA_TYPE =
+  // eslint-disable-next-line sonarjs/regex-complexity -- mirrors the canonical contract media type syntax
+  /^[A-Za-z0-9!#$&^_.+-]+\/[A-Za-z0-9!#$&^_.+-]+(?:\s*;\s*[A-Za-z0-9!#$&^_.+-]+=(?:[A-Za-z0-9!#$&^_.+-]+|"[^"]*"))*$/;
 const BASE64 = /^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/;
 
 const deepFreeze = <T>(value: T): T => {
@@ -28,6 +39,48 @@ const exactKeys = (value: object, allowed: readonly string[]): boolean =>
 const validCount = (value: unknown): value is number =>
   Number.isSafeInteger(value) && Number(value) > 0;
 
+const validByteLength = (value: unknown): value is number =>
+  Number.isSafeInteger(value) && Number(value) >= 0;
+
+const sameDigest = (left: Digest, right: Digest): boolean =>
+  left.algorithm === right.algorithm && left.value === right.value;
+
+export const mediaBytesDigest = (bytes: Uint8Array): Digest =>
+  digest(createHash("sha256").update(bytes).digest("hex"));
+
+export const registerMediaResourceRef = (value: unknown): ResourceRef => {
+  if (
+    typeof value !== "object" ||
+    value === null ||
+    Array.isArray(value) ||
+    !exactKeys(value, ["resourceId", "mediaType", "byteLength", "digest"])
+  ) {
+    throw new TypeError("Media resources must use a closed portable reference.");
+  }
+  const resource = value as Partial<ResourceRef>;
+  if (
+    !isCanonicalUuid(resource.resourceId) ||
+    typeof resource.mediaType !== "string" ||
+    !MEDIA_TYPE.test(resource.mediaType) ||
+    !validByteLength(resource.byteLength) ||
+    !isDigest(resource.digest)
+  ) {
+    throw new TypeError("Media resources require valid identity, type, length and SHA-256 digest.");
+  }
+  return deepFreeze(structuredClone(resource)) as ResourceRef;
+};
+
+const decodeBase64 = (value: string): Uint8Array | null => {
+  if (!BASE64.test(value)) {
+    return null;
+  }
+  try {
+    return Uint8Array.from(atob(value), (character) => character.charCodeAt(0));
+  } catch {
+    return null;
+  }
+};
+
 export const isLiveMediaInput = (value: unknown): value is LiveMediaInput => {
   if (typeof value !== "object" || value === null || Array.isArray(value)) {
     return false;
@@ -42,17 +95,15 @@ export const isLiveMediaInput = (value: unknown): value is LiveMediaInput => {
       input.bytes.byteLength > 0
     );
   }
-  return (
-    input.kind === "resource" &&
-    exactKeys(value, ["kind", "resource"]) &&
-    typeof input.resource === "object" &&
-    input.resource !== null &&
-    isCanonicalUuid(input.resource.resourceId) &&
-    typeof input.resource.mediaType === "string" &&
-    MEDIA_TYPE.test(input.resource.mediaType) &&
-    validCount(input.resource.byteLength) &&
-    isDigest(input.resource.digest)
-  );
+  if (input.kind !== "resource" || !exactKeys(value, ["kind", "resource"])) {
+    return false;
+  }
+  try {
+    registerMediaResourceRef(input.resource);
+    return true;
+  } catch {
+    return false;
+  }
 };
 
 export const isPortableMediaContent = (
@@ -63,13 +114,13 @@ export const isPortableMediaContent = (
   }
   const content = value as Record<string, unknown>;
   if (content.kind === "binary") {
+    const bytes = typeof content.data === "string" ? decodeBase64(content.data) : null;
     if (
       !exactKeys(content, ["kind", "mediaType", "encoding", "data", "byteLength", "digest"]) ||
       typeof content.mediaType !== "string" ||
       !MEDIA_TYPE.test(content.mediaType) ||
       content.encoding !== "base64" ||
-      typeof content.data !== "string" ||
-      !BASE64.test(content.data) ||
+      bytes === null ||
       !Number.isSafeInteger(content.byteLength) ||
       Number(content.byteLength) < 0 ||
       !isDigest(content.digest)
@@ -77,25 +128,43 @@ export const isPortableMediaContent = (
       return false;
     }
     return (
-      Math.floor((content.data.length * 3) / 4) -
-        (content.data.endsWith("==") ? 2 : content.data.endsWith("=") ? 1 : 0) ===
-      content.byteLength
+      bytes.byteLength === content.byteLength && sameDigest(mediaBytesDigest(bytes), content.digest)
     );
   }
-  const resource = content.resource as Record<string, unknown> | undefined;
-  return (
-    content.kind === "media-ref" &&
-    exactKeys(content, ["kind", "mediaType", "resource", "altText"]) &&
-    typeof content.mediaType === "string" &&
-    MEDIA_TYPE.test(content.mediaType) &&
-    resource !== undefined &&
-    isCanonicalUuid(resource.resourceId) &&
-    resource.mediaType === content.mediaType &&
-    Number.isSafeInteger(resource.byteLength) &&
-    Number(resource.byteLength) >= 0 &&
-    isDigest(resource.digest) &&
-    (content.altText === undefined || typeof content.altText === "string")
-  );
+  if (
+    content.kind !== "media-ref" ||
+    !exactKeys(content, ["kind", "mediaType", "resource", "altText"]) ||
+    typeof content.mediaType !== "string" ||
+    !MEDIA_TYPE.test(content.mediaType) ||
+    (content.altText !== undefined && typeof content.altText !== "string")
+  ) {
+    return false;
+  }
+  try {
+    return registerMediaResourceRef(content.resource).mediaType === content.mediaType;
+  } catch {
+    return false;
+  }
+};
+
+export const registerProjectedMediaContent = (
+  value: unknown,
+  source: { readonly mediaType: string; readonly bytes: Uint8Array },
+): PortableMediaContent => {
+  if (!isPortableMediaContent(value)) {
+    throw new TypeError("Projected media must be closed portable content with verified integrity.");
+  }
+  const expectedDigest = mediaBytesDigest(source.bytes);
+  const identity = value.kind === "binary" ? value : value.resource;
+  if (
+    value.mediaType !== source.mediaType ||
+    identity.mediaType !== source.mediaType ||
+    identity.byteLength !== source.bytes.byteLength ||
+    !sameDigest(identity.digest, expectedDigest)
+  ) {
+    throw new TypeError("Projected media must identify the exact source bytes and media type.");
+  }
+  return deepFreeze(structuredClone(value));
 };
 
 export const validateImageGenerationRequest = (

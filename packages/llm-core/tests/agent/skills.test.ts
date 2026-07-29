@@ -79,6 +79,32 @@ describe("portable agent skills", () => {
         ] as never,
       }),
     ).toThrow("SHA-256");
+
+    expect(() =>
+      prepareAgentSpec({
+        agentId: "agent:skills",
+        version: contractVersion("2.0.0"),
+        instructions: "Use unique skills.",
+        effectRequirement: "read-only",
+        skills: [SKILL, SKILL],
+      }),
+    ).toThrow("unique");
+
+    for (const metadata of [
+      { nested: { localPath: "/workspace/private" } },
+      { nested: { locator: "https://placeholder.invalid/resource" } },
+      { nested: { value: "/workspace/private" } },
+    ]) {
+      expect(() =>
+        prepareAgentSpec({
+          agentId: "agent:skills",
+          version: contractVersion("2.0.0"),
+          instructions: "Reject physical locators.",
+          effectRequirement: "read-only",
+          metadata: metadata as never,
+        }),
+      ).toThrow("portable");
+    }
   });
 
   test("rejects duplicate loader identities", async () => {
@@ -107,5 +133,28 @@ describe("portable agent skills", () => {
         load: () => [{ ...SKILL, localPath: "/skills/a", credential: "secret" }] as never,
       }),
     ).toThrow("closed candidate");
+  });
+
+  test("enforces disabled skill IDs when the loader ignores them", async () => {
+    const enabled = registerAgentSkill({
+      skillId: "skill:enabled",
+      scope: "repo",
+      digest: digest("b".repeat(64)),
+    });
+    expect(
+      await loadAgentSkills(
+        {
+          directories: ["/workspace/skills"],
+          disabledSkillIds: [SKILL.skillId],
+        },
+        CONTEXT,
+        {
+          load: () => [
+            { ...SKILL, localPath: "/workspace/skills/disabled" },
+            { ...enabled, localPath: "/workspace/skills/enabled" },
+          ],
+        },
+      ),
+    ).toEqual([enabled]);
   });
 });

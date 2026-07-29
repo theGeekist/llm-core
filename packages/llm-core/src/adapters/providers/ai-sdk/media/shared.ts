@@ -1,11 +1,15 @@
 import type { ImageModelV3File } from "@ai-sdk/provider";
 import type { InvocationContext } from "#contracts";
-import type {
-  LiveMediaInput,
-  MediaOutputProjector,
-  MediaResourceResolver,
-  PortableMediaContent,
+import {
+  isLiveMediaInput,
+  mediaBytesDigest,
+  registerProjectedMediaContent,
+  type LiveMediaInput,
+  type MediaOutputProjector,
+  type MediaResourceResolver,
+  type PortableMediaContent,
 } from "../../../../features/media/public";
+import { safeNativeScalar } from "../../../../features/model/public";
 
 export interface AiSdkMediaAdapterOptions {
   readonly output: MediaOutputProjector;
@@ -29,6 +33,9 @@ export const resolveLiveMedia = async (
   context: InvocationContext,
   resources?: MediaResourceResolver,
 ): Promise<{ mediaType: string; bytes: Uint8Array }> => {
+  if (!isLiveMediaInput(input)) {
+    throw new TypeError("Live media inputs must use a closed valid shape.");
+  }
   if (input.kind === "bytes") {
     return { mediaType: input.mediaType, bytes: input.bytes.slice() };
   }
@@ -36,8 +43,12 @@ export const resolveLiveMedia = async (
     throw new TypeError("Referenced media requires an authorized resource resolver.");
   }
   const bytes = await resources.resolve(structuredClone(input.resource), structuredClone(context));
-  if (!(bytes instanceof Uint8Array) || bytes.byteLength !== input.resource.byteLength) {
-    throw new TypeError("Resolved media does not match its declared resource length.");
+  if (
+    !(bytes instanceof Uint8Array) ||
+    bytes.byteLength !== input.resource.byteLength ||
+    mediaBytesDigest(bytes).value !== input.resource.digest.value
+  ) {
+    throw new TypeError("Resolved media does not match its declared resource integrity.");
   }
   return { mediaType: input.resource.mediaType, bytes: bytes.slice() };
 };
@@ -56,11 +67,15 @@ export const projectNativeBytes = async (input: {
   readonly mediaType: string;
   readonly context: InvocationContext;
   readonly output: MediaOutputProjector;
-}): Promise<PortableMediaContent> =>
-  input.output.project(
-    { mediaType: input.mediaType, bytes: decodeNativeBytes(input.value) },
+}): Promise<PortableMediaContent> => {
+  const bytes = decodeNativeBytes(input.value);
+  const source = { mediaType: input.mediaType, bytes: bytes.slice() };
+  const projected = await input.output.project(
+    { mediaType: source.mediaType, bytes: source.bytes.slice() },
     structuredClone(input.context),
   );
+  return registerProjectedMediaContent(projected, source);
+};
 
 export const safeAiSdkExtensions = (
   provider: string,
@@ -68,8 +83,8 @@ export const safeAiSdkExtensions = (
   warnings: readonly unknown[],
 ) => ({
   "dev.vercel.ai-sdk": {
-    provider,
-    modelId,
+    provider: safeNativeScalar(provider),
+    modelId: safeNativeScalar(modelId),
     warningCount: warnings.length,
   },
 });

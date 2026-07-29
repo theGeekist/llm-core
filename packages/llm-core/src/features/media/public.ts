@@ -17,6 +17,9 @@ export type {
 export {
   isLiveMediaInput,
   isPortableMediaContent,
+  mediaBytesDigest,
+  registerMediaResourceRef,
+  registerProjectedMediaContent,
   registerImageGenerationResult,
   registerSpeechGenerationResult,
   registerTranscriptionResult,

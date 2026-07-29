@@ -3,6 +3,10 @@ import { describe, expect, test } from "bun:test";
 import type { ImageModelV3, SpeechModelV3, TranscriptionModelV3 } from "@ai-sdk/provider";
 import { digest, newCoreId, type InvocationId, type ResourceId } from "#contracts";
 import {
+  isPortableMediaContent,
+  registerImageGenerationResult,
+} from "../../src/features/media/public";
+import {
   fromAiSdkImageModel,
   fromAiSdkSpeechModel,
   fromAiSdkTranscriptionModel,
@@ -185,5 +189,135 @@ describe("AI SDK v3 media adapters", () => {
       ),
     ).rejects.toThrow("AI SDK transcription failed");
     expect(audio).toEqual(new Uint8Array([7, 8, 9]));
+  });
+
+  test("verifies binary and nested resource integrity with exact keys", () => {
+    expect(
+      isPortableMediaContent({
+        kind: "binary",
+        mediaType: "image/png",
+        encoding: "base64",
+        data: "AQID",
+        byteLength: 3,
+        digest: digest("0".repeat(64)),
+      }),
+    ).toBe(false);
+    expect(() =>
+      registerImageGenerationResult({
+        images: [
+          {
+            kind: "media-ref",
+            mediaType: "image/png",
+            resource: {
+              ...resource,
+              digest: bytesDigest(new Uint8Array([7, 8, 9])),
+              localPath: "/workspace/private",
+            },
+          } as never,
+        ],
+      }),
+    ).toThrow("malformed");
+  });
+
+  test("rejects resource digest mismatches and undeclared nested fields before provider use", async () => {
+    let calls = 0;
+    const model = {
+      specificationVersion: "v3",
+      provider: "test",
+      modelId: "image",
+      maxImagesPerCall: 1,
+      doGenerate: () => {
+        calls += 1;
+        return Promise.resolve({
+          images: [new Uint8Array([1])],
+          warnings: [],
+          response: { timestamp: new Date(), modelId: "image", headers: undefined },
+        });
+      },
+    } as ImageModelV3;
+    const wrongResources: MediaResourceResolver = {
+      resolve: () => new Uint8Array([7, 8, 8]),
+    };
+    await expect(
+      fromAiSdkImageModel(model, {
+        generatedMediaType: "image/png",
+        output,
+        resources: wrongResources,
+      }).generate(
+        {
+          count: 1,
+          sourceImages: [{ kind: "resource", resource }],
+        },
+        CONTEXT,
+      ),
+    ).rejects.toThrow("failed");
+    expect(calls).toBe(0);
+
+    await expect(
+      fromAiSdkImageModel(model, {
+        generatedMediaType: "image/png",
+        output,
+        resources,
+      }).generate(
+        {
+          count: 1,
+          sourceImages: [
+            {
+              kind: "resource",
+              resource: { ...resource, localPath: "/workspace/private" },
+            } as never,
+          ],
+        },
+        CONTEXT,
+      ),
+    ).rejects.toThrow("closed valid");
+    expect(calls).toBe(0);
+  });
+
+  test("rejects projector byte substitution and safely projects provider identifiers", async () => {
+    const model = {
+      specificationVersion: "v3",
+      provider: "https://placeholder.invalid/provider",
+      modelId: "speech",
+      doGenerate: () =>
+        Promise.resolve({
+          audio: new Uint8Array([1, 2]),
+          warnings: [],
+          response: { timestamp: new Date(), modelId: "/workspace/private-model" },
+        }),
+    } as SpeechModelV3;
+    const substitutingOutput: MediaOutputProjector = {
+      project: ({ mediaType }) => {
+        const replacement = new Uint8Array([9, 9]);
+        return {
+          kind: "binary",
+          mediaType,
+          encoding: "base64",
+          data: Buffer.from(replacement).toString("base64"),
+          byteLength: replacement.byteLength,
+          digest: bytesDigest(replacement),
+        };
+      },
+    };
+    await expect(
+      fromAiSdkSpeechModel(model, { output: substitutingOutput }).generate(
+        { text: "hello", outputFormat: "wav" },
+        CONTEXT,
+      ),
+    ).rejects.toThrow("failed");
+
+    const result = await fromAiSdkSpeechModel(model, { output }).generate(
+      { text: "hello", outputFormat: "wav" },
+      CONTEXT,
+    );
+    expect(result.extensions).toEqual({
+      "dev.vercel.ai-sdk": {
+        provider: "[redacted]",
+        modelId: "[redacted]",
+        warningCount: 0,
+      },
+    });
+    expect(JSON.stringify(result)).not.toContain("placeholder.invalid");
+    expect(JSON.stringify(result)).not.toContain("/workspace/private-model");
   });
 });
