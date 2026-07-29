@@ -1,16 +1,12 @@
-import { existsSync, readdirSync } from "node:fs";
+import { existsSync, readdirSync, rmSync } from "node:fs";
 import { resolve } from "node:path";
 import type { BunPlugin } from "bun";
 
-type BuildFormat = "esm" | "cjs";
-
 type BuildOptions = {
-  format: BuildFormat;
   outdir: string;
   root: string;
   target: "browser" | "node";
   splitting?: boolean;
-  naming?: { entry?: string; chunk?: string; asset?: string };
 };
 
 const EXTERNALS = [
@@ -198,11 +194,10 @@ const runBuildEntry = async (entry: string, options: BuildOptions) => {
     outdir: options.outdir,
     root: options.root,
     target: options.target,
-    format: options.format,
+    format: "esm",
     splitting: options.splitting ?? false,
     sourcemap: "external",
     external: EXTERNALS,
-    naming: options.naming,
     plugins: [forceExternalPlugin],
   });
 
@@ -210,51 +205,31 @@ const runBuildEntry = async (entry: string, options: BuildOptions) => {
   return result.success;
 };
 
-const readFormats = (): BuildFormat[] => {
-  const args = new Set(process.argv.slice(2));
-  if (args.has("--esm")) {
-    return ["esm"];
-  }
-  if (args.has("--cjs")) {
-    return ["cjs"];
-  }
-  return ["esm", "cjs"];
-};
-
 const run = async () => {
   const rootDir = process.cwd();
-  const formats = readFormats();
+  const distDir = resolve(rootDir, "dist");
+  const outdir = resolve(distDir, "esm");
   let ok = true;
 
-  for (const format of formats) {
-    const isEsm = format === "esm";
-    const outdir = resolve(rootDir, "dist", format);
-    const baseOptions: BuildOptions = {
-      format,
-      outdir,
-      root: rootDir,
-      target: "node",
-      splitting: isEsm,
-      naming: isEsm
-        ? undefined
-        : {
-            entry: "[dir]/[name].cjs",
-            chunk: "[name]-[hash].cjs",
-            asset: "[name]-[hash].[ext]",
-          },
-    };
+  rmSync(distDir, { recursive: true, force: true });
 
-    ok = (await runBuildEntry(resolve(rootDir, "index.ts"), baseOptions)) && ok;
-    ok = (await runBuildEntry(resolve(rootDir, "src/functional/index.ts"), baseOptions)) && ok;
-    ok = (await runBuildEntry(resolve(rootDir, "src/recipes/index.ts"), baseOptions)) && ok;
-    ok = (await runBuildEntry(resolve(rootDir, "src/interaction/index.ts"), baseOptions)) && ok;
-    ok = (await runBuildEntry(resolve(rootDir, "src/shared/diagnostics.ts"), baseOptions)) && ok;
-    ok = (await runBuildEntry(resolve(rootDir, "src/adapters/index.ts"), baseOptions)) && ok;
-    for (const entry of readAdapterEntryPoints(rootDir)) {
-      ok = (await runBuildEntry(entry, baseOptions)) && ok;
-    }
-    ok = (await runBuildEntry(resolve(rootDir, "src/workflow/index.ts"), baseOptions)) && ok;
+  const baseOptions: BuildOptions = {
+    outdir,
+    root: rootDir,
+    target: "node",
+    splitting: true,
+  };
+
+  ok = (await runBuildEntry(resolve(rootDir, "index.ts"), baseOptions)) && ok;
+  ok = (await runBuildEntry(resolve(rootDir, "src/functional/index.ts"), baseOptions)) && ok;
+  ok = (await runBuildEntry(resolve(rootDir, "src/recipes/index.ts"), baseOptions)) && ok;
+  ok = (await runBuildEntry(resolve(rootDir, "src/interaction/index.ts"), baseOptions)) && ok;
+  ok = (await runBuildEntry(resolve(rootDir, "src/shared/diagnostics.ts"), baseOptions)) && ok;
+  ok = (await runBuildEntry(resolve(rootDir, "src/adapters/index.ts"), baseOptions)) && ok;
+  for (const entry of readAdapterEntryPoints(rootDir)) {
+    ok = (await runBuildEntry(entry, baseOptions)) && ok;
   }
+  ok = (await runBuildEntry(resolve(rootDir, "src/workflow/index.ts"), baseOptions)) && ok;
 
   if (!ok) {
     process.exit(1);

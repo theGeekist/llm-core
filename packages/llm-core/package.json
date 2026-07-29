@@ -36,18 +36,19 @@
   "publishConfig": {
     "access": "public"
   },
+  "engines": {
+    "node": ">=22"
+  },
   "dependencies": {
     "@wpkernel/pipeline": "1.1.0"
   },
-  "main": "./dist/cjs/index.cjs",
+  "main": "./dist/esm/index.js",
   "module": "./dist/esm/index.js",
   "types": "./dist/types/index.d.ts",
   "type": "module",
   "private": false,
   "scripts": {
     "build": "bun run scripts/build.ts && bun run build:types",
-    "build:esm": "bun run scripts/build.ts --esm",
-    "build:cjs": "bun run scripts/build.ts --cjs",
     "build:types": "tsc -p tsconfig.build.json --emitDeclarationOnly",
     "contracts:schema": "bun run scripts/generate-contract-schemas.ts",
     "contracts:schema:check": "bun run scripts/generate-contract-schemas.ts --check",
@@ -166,105 +167,90 @@
       "types": "./dist/types/index.d.ts",
       "browser": "./dist/esm/index.js",
       "import": "./dist/esm/index.js",
-      "require": "./dist/cjs/index.cjs",
       "default": "./dist/esm/index.js"
     },
     "./workflow": {
       "types": "./dist/types/src/workflow/index.d.ts",
       "browser": "./dist/esm/src/workflow/index.js",
       "import": "./dist/esm/src/workflow/index.js",
-      "require": "./dist/cjs/src/workflow/index.cjs",
       "default": "./dist/esm/src/workflow/index.js"
     },
     "./functional": {
       "types": "./dist/types/src/functional/index.d.ts",
       "browser": "./dist/esm/src/functional/index.js",
       "import": "./dist/esm/src/functional/index.js",
-      "require": "./dist/cjs/src/functional/index.cjs",
       "default": "./dist/esm/src/functional/index.js"
     },
     "./adapters": {
       "types": "./dist/types/src/adapters/index.d.ts",
       "browser": "./dist/esm/src/adapters/index.js",
       "import": "./dist/esm/src/adapters/index.js",
-      "require": "./dist/cjs/src/adapters/index.cjs",
       "default": "./dist/esm/src/adapters/index.js"
     },
     "./adapters/ai-sdk": {
       "types": "./dist/types/src/adapters/ai-sdk/index.d.ts",
       "browser": "./dist/esm/src/adapters/ai-sdk/index.js",
       "import": "./dist/esm/src/adapters/ai-sdk/index.js",
-      "require": "./dist/cjs/src/adapters/ai-sdk/index.cjs",
       "default": "./dist/esm/src/adapters/ai-sdk/index.js"
     },
     "./adapters/ai-sdk-ui": {
       "types": "./dist/types/src/adapters/ai-sdk-ui/index.d.ts",
       "browser": "./dist/esm/src/adapters/ai-sdk-ui/index.js",
       "import": "./dist/esm/src/adapters/ai-sdk-ui/index.js",
-      "require": "./dist/cjs/src/adapters/ai-sdk-ui/index.cjs",
       "default": "./dist/esm/src/adapters/ai-sdk-ui/index.js"
     },
     "./adapters/assistant-ui": {
       "types": "./dist/types/src/adapters/assistant-ui/index.d.ts",
       "browser": "./dist/esm/src/adapters/assistant-ui/index.js",
       "import": "./dist/esm/src/adapters/assistant-ui/index.js",
-      "require": "./dist/cjs/src/adapters/assistant-ui/index.cjs",
       "default": "./dist/esm/src/adapters/assistant-ui/index.js"
     },
     "./adapters/openai-chatkit": {
       "types": "./dist/types/src/adapters/openai-chatkit/index.d.ts",
       "browser": "./dist/esm/src/adapters/openai-chatkit/index.js",
       "import": "./dist/esm/src/adapters/openai-chatkit/index.js",
-      "require": "./dist/cjs/src/adapters/openai-chatkit/index.cjs",
       "default": "./dist/esm/src/adapters/openai-chatkit/index.js"
     },
     "./adapters/nlux-ui": {
       "types": "./dist/types/src/adapters/nlux-ui/index.d.ts",
       "browser": "./dist/esm/src/adapters/nlux-ui/index.js",
       "import": "./dist/esm/src/adapters/nlux-ui/index.js",
-      "require": "./dist/cjs/src/adapters/nlux-ui/index.cjs",
       "default": "./dist/esm/src/adapters/nlux-ui/index.js"
     },
     "./adapters/langchain": {
       "types": "./dist/types/src/adapters/langchain/index.d.ts",
       "browser": "./dist/esm/src/adapters/langchain/index.js",
       "import": "./dist/esm/src/adapters/langchain/index.js",
-      "require": "./dist/cjs/src/adapters/langchain/index.cjs",
       "default": "./dist/esm/src/adapters/langchain/index.js"
     },
     "./adapters/llamaindex": {
       "types": "./dist/types/src/adapters/llamaindex/index.d.ts",
       "browser": "./dist/esm/src/adapters/llamaindex/index.js",
       "import": "./dist/esm/src/adapters/llamaindex/index.js",
-      "require": "./dist/cjs/src/adapters/llamaindex/index.cjs",
       "default": "./dist/esm/src/adapters/llamaindex/index.js"
     },
     "./adapters/primitives": {
       "types": "./dist/types/src/adapters/primitives/index.d.ts",
       "browser": "./dist/esm/src/adapters/primitives/index.js",
       "import": "./dist/esm/src/adapters/primitives/index.js",
-      "require": "./dist/cjs/src/adapters/primitives/index.cjs",
       "default": "./dist/esm/src/adapters/primitives/index.js"
     },
     "./recipes": {
       "types": "./dist/types/src/recipes/index.d.ts",
       "browser": "./dist/esm/src/recipes/index.js",
       "import": "./dist/esm/src/recipes/index.js",
-      "require": "./dist/cjs/src/recipes/index.cjs",
       "default": "./dist/esm/src/recipes/index.js"
     },
     "./interaction": {
       "types": "./dist/types/src/interaction/index.d.ts",
       "browser": "./dist/esm/src/interaction/index.js",
       "import": "./dist/esm/src/interaction/index.js",
-      "require": "./dist/cjs/src/interaction/index.cjs",
       "default": "./dist/esm/src/interaction/index.js"
     },
     "./diagnostics": {
       "types": "./dist/types/src/shared/diagnostics.d.ts",
       "browser": "./dist/esm/src/shared/diagnostics.js",
       "import": "./dist/esm/src/shared/diagnostics.js",
-      "require": "./dist/cjs/src/shared/diagnostics.cjs",
       "default": "./dist/esm/src/shared/diagnostics.js"
     }
   },

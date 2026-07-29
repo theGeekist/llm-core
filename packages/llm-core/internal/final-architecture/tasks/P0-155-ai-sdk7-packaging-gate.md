@@ -3,7 +3,7 @@ architecture_version: 2
 id: P0-155
 title: Resolve AI SDK 7 dependency and module-format gate
 phase: P0.4
-status: claimed
+status: in_progress
 priority: P0
 preferred_owner_kind: coordinator
 owner: codex-root
@@ -102,5 +102,7 @@ bun run typecheck:packages
   not apply a global AI SDK 7 override.
 - 2026-07-29T19:15:00+08:00 — Claimed by the Codex coordinator for delegated
   subagent execution after P0-120 integrated.
+- 2026-07-29 — Worker moved the task to `in_progress` and began the scoped
+  Node.js 22 / ESM-only packaging conversion.
 
 ## Handoff
