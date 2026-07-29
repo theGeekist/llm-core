@@ -3,6 +3,7 @@ import ReactDOM from "react-dom/client";
 import type { AiSdkUiProjectionChunk } from "@geekist/llm-core/adapters/ai-sdk-ui";
 import "./styles.css";
 
+// Shape-only compile fixture. See docs/interaction for the canonical session lifecycle.
 const exampleChunk: AiSdkUiProjectionChunk = {
   type: "text-start",
   id: "example:text",

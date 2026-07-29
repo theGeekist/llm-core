@@ -11,10 +11,10 @@ only on public contracts.
 | `/control`     | Policy, approval, cancellation, and concurrency                    |
 | `/evidence`    | Redacted events, usage, and receipts                               |
 | `/state`       | Live, snapshot, resumable, provider-session, and durable lifetimes |
-| `/agent`       | Agent specifications, runners, runs, and skills                    |
+| `/agent`       | Agent lifecycle, composition, bindings, knowledge, and memory      |
 | `/workflow`    | Explicit workflow orchestration                                    |
 | `/interaction` | Sessions, canonical projections, and reconnect state               |
 
-Storage and retrieval ports are used through typed capability bindings and
-their owning fronts. They do not expose hosted databases or framework-native
-engines.
+Storage, memory, retrieval, and indexing ports are imported from `/agent` and
+selected through typed capability bindings. They do not expose hosted
+databases or framework-native engines.

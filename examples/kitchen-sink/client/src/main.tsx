@@ -3,6 +3,7 @@ import ReactDOM from "react-dom/client";
 import type { AssistantUiProjectionCommand } from "@geekist/llm-core/adapters/assistant-ui";
 import "./styles.css";
 
+// Shape-only compile fixture. See docs/interaction for the canonical session lifecycle.
 const command: AssistantUiProjectionCommand = {
   type: "add-message",
   message: { role: "assistant", parts: [{ type: "text", text: "Ready." }] },

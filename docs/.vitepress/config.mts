@@ -26,6 +26,7 @@ export default defineConfig({
     nav: [
       { text: "Guide", link: "/guide/hello-world" },
       { text: "Capabilities", link: "/capabilities/" },
+      { text: "Adapters", link: "/adapters/" },
       { text: "Interaction", link: "/interaction/" },
       { text: "Reference", link: "/reference/vocabulary" },
     ],
@@ -37,6 +38,8 @@ export default defineConfig({
           items: [
             { text: "Get started", link: "/guide/hello-world" },
             { text: "Core concepts", link: "/guide/core-concepts" },
+            { text: "Run an agent", link: "/guide/agent" },
+            { text: "Resume a workflow", link: "/guide/workflow" },
             { text: "Why llm-core?", link: "/guide/philosophy" },
           ],
         },
@@ -46,10 +49,22 @@ export default defineConfig({
           text: "Capabilities",
           items: [
             { text: "Overview", link: "/capabilities/" },
+            { text: "Bindings and composition", link: "/capabilities/bindings" },
             { text: "Models", link: "/capabilities/model" },
+            { text: "Storage and memory", link: "/capabilities/storage-memory" },
+            {
+              text: "Retrieval and indexing",
+              link: "/capabilities/retrieval-indexing",
+            },
             { text: "Tools and control", link: "/capabilities/tools-control" },
             { text: "Evidence and state", link: "/capabilities/evidence-state" },
           ],
+        },
+      ],
+      "/adapters/": [
+        {
+          text: "Adapters",
+          items: [{ text: "Qualified adapters", link: "/adapters/" }],
         },
       ],
       "/interaction/": [
