@@ -3,7 +3,7 @@ architecture_version: 2
 id: P0-149
 title: Implement capability bindings and invocation bridge
 phase: P0.4
-status: review
+status: complete
 priority: P0
 preferred_owner_kind: codex
 owner: codex-root
@@ -95,6 +95,10 @@ bun run typecheck:packages
   and test typechecks; schema freshness; scoped ESLint; `git diff --check`; and
   the full package suite with 1,343 passing, 35 credential-gated skips, and zero
   failures.
+- 2026-07-30 — Independently approved at exact SHA
+  `785215224787acd215857a309ea3b5fc3a3b30ce`, integrated into `main`, and
+  completed after the receiving suite repeated all 31 focused and 1,343 full
+  package tests without failure.
 
 ## Handoff
 
