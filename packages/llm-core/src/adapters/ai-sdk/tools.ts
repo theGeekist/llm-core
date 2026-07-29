@@ -38,16 +38,12 @@ export function toAiSdkTool(adapterTool: Tool): AiTool {
     adapterTool.inputSchema ??
     toSchema(adapterTool.params ? adapterParamsToJsonSchema(adapterTool.params) : undefined);
   const outputSchema = adapterTool.outputSchema;
-  const execute = adapterTool.execute
-    ? (input: unknown) => adapterTool.execute?.({ input })
-    : undefined;
   const toolDefinition: AiTool = {
     description: adapterTool.description ?? undefined,
     inputSchema: inputSchema
       ? toAiSdkFlexibleSchema(inputSchema)
       : jsonSchema(adapterParamsToJsonSchema() as AiJsonSchemaInput),
     outputSchema: outputSchema ? toAiSdkFlexibleSchema(outputSchema) : undefined,
-    execute,
   };
   return defineTool(toolDefinition);
 }

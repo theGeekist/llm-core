@@ -132,18 +132,14 @@ describe("Adapter tools", () => {
     expect(toAiSdkTools([])).toBeNull();
   });
 
-  it("preserves adapter tool execution for AI SDK tools", async () => {
+  it("does not expose legacy adapter tool execution to AI SDK", () => {
     const Tool = ToolHelper.create({
       name: TOOL_NAME,
       execute: ({ input }) => `ok:${JSON.stringify(input)}`,
     });
 
     const built = toAiSdkTool(Tool);
-    const result = await built.execute?.(
-      { query: "hi" },
-      { toolCallId: "call-1", messages: [], context: undefined },
-    );
-    expect(result).toBe('ok:{"query":"hi"}');
+    expect(built.execute).toBeUndefined();
   });
 
   it("preserves zod schemas when building LangChain tools", () => {
