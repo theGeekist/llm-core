@@ -85,11 +85,14 @@ bun run typecheck:packages
   real Agent/TestModel tool loop and preserves its tool call ID, arguments,
   return and serialized message history. Missing-package behavior is covered
   independently and deterministically.
+- 2026-07-30 — Review findings remediated at
+  `b55e2a35b9ac420f9745b18ec7953fb9d85558e9`.
 
 ## Handoff
 
 - Implementation commit:
-  `3c1913a2eefcb29d75520aac32bd1d29f8500244`.
+  `3c1913a2eefcb29d75520aac32bd1d29f8500244`, with exact-runtime review
+  remediation at `b55e2a35b9ac420f9745b18ec7953fb9d85558e9`.
 - Changed files:
   - `packages/llm-core/src/adapters/runtimes/fake-remote.ts`
   - `packages/llm-core/src/adapters/runtimes/index.ts`
