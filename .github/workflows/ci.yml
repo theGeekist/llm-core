@@ -54,6 +54,36 @@ jobs:
           flags: unit
           fail_ci_if_error: false
 
+  pydantic-ai-conformance:
+    name: PydanticAI conformance
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: "1.2.21"
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.14"
+
+      - name: Install JavaScript dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Install exact PydanticAI runtime
+        run: |
+          python -m venv .venv-pydantic-ai
+          .venv-pydantic-ai/bin/python -m pip install "pydantic-ai-slim==2.19.0"
+
+      - name: Run exact-runtime conformance
+        run: bun test packages/llm-core/tests/conformance
+        env:
+          LLM_CORE_PYDANTIC_AI_PYTHON: ${{ github.workspace }}/.venv-pydantic-ai/bin/python
+
   sonarqube:
     name: SonarQube
     runs-on: ubuntu-latest

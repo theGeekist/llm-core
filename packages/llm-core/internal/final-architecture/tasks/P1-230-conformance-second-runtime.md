@@ -101,6 +101,10 @@ bun run typecheck:packages
   isolated CPython 3.14.6 plus exact `pydantic-ai-slim==2.19.0` matrix passed
   15/15. Typechecks, schema, architecture, identity, lint, formatting and diff
   checks passed.
+- 2026-07-30 — Integrated into `main`. CI now provisions Python 3.14 and exact
+  `pydantic-ai-slim==2.19.0` in an isolated environment and runs the same
+  conformance suite with the positive availability gate. The runtime front
+  remains internal, so no Python asset or additional package export is shipped.
 
 ## Handoff
 
@@ -154,13 +158,9 @@ bun run typecheck:packages
   - The Python source asset is not copied by the current TypeScript-only build.
   - The qualified runtime front is internal and is not part of the public
     package export surface.
-- Coordinator-owned integration requests:
-  - `.github/workflows/ci.yml`: add an isolated Python job pinned to
-    `pydantic-ai-slim==2.19.0` and run the same conformance fixtures with the
-    PydanticAI availability gate satisfied.
-  - `packages/llm-core/scripts/build.ts`: copy
-    `src/adapters/runtimes/pydantic_ai_bridge.py` only if the runtime bridge is
-    approved as a shipped asset.
-  - Do not add another runtime `packages/llm-core/package.json` export without
-    an ADR-008 follow-up; prefer an optional runtime package if public shipment
-    is approved.
+- Coordinator integration result:
+  - `.github/workflows/ci.yml` runs the exact PydanticAI availability matrix.
+  - `packages/llm-core/scripts/build.ts` does not copy the Python source because
+    this conformance/reference front is not a shipped public runtime adapter.
+  - No additional `packages/llm-core/package.json` runtime export was added.
+    Prefer an optional runtime package if public shipment is later approved.
