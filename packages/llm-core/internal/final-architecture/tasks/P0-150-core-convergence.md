@@ -16,6 +16,10 @@ worktree: null
 depends_on:
   - I0-010
   - P0-140
+  - P0-141
+  - P0-142
+  - P0-143
+  - P0-149
   - P0-160
   - P0-170
 decision_dependencies:
@@ -26,10 +30,16 @@ decision_dependencies:
   - ADR-005
   - ADR-006
   - ADR-007
+  - ADR-008
 conflicts_with: []
 write_scope:
+  - README.md
+  - bun.lock
   - packages/llm-core/index.ts
   - packages/llm-core/package.json
+  - packages/llm-core/README.md
+  - packages/llm-core/scripts/build.ts
+  - packages/llm-core/scripts/smoke-package.mjs
   - packages/llm-core/src/**
   - packages/llm-core/tests/**
   - docs/**
@@ -62,6 +72,10 @@ P1 context/artifact/evaluation and external framework integrations.
 - No portable domain contract remains adapter-owned.
 - Deep-import and dependency-direction checks pass.
 - Every new subpath is covered by package smoke tests.
+- Root and subpath exports match ADR-008 exactly.
+- Published version and lockfile are `2.0.0`.
+- Every runtime and declaration target resolves from an isolated packed
+  consumer; emitted declarations contain no source-only aliases.
 - Full repository verification passes.
 
 ## Verification
@@ -76,6 +90,8 @@ bun run test
 bun run typecheck:examples
 bun run docs:snippets:typecheck
 bun run docs:build
+bun run --cwd packages/llm-core check:examples-deps
+git diff --check
 ```
 
 ## Work log
