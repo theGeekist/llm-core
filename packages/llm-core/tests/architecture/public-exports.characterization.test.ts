@@ -74,6 +74,8 @@ describe("ADR-008 curated exports", () => {
       "AI_SDK_EXTENSION_NAMESPACE",
       "AI_SDK_SUPPORTED_VERSION",
       "createAiSdk7Model",
+      "createAiSdkEmbedder",
+      "createAiSdkReranker",
       "fromAiSdkImageModel",
       "fromAiSdkSpeechModel",
       "fromAiSdkTranscriptionModel",
@@ -81,8 +83,14 @@ describe("ADR-008 curated exports", () => {
   });
 
   test("publishes qualified canonical UI projection fronts", () => {
-    expect(Object.keys(aiSdkUi)).toEqual(["createAiSdkUiProjectionMapper"]);
-    expect(Object.keys(assistantUi)).toEqual(["createAssistantUiProjectionMapper"]);
+    expect(Object.keys(aiSdkUi).sort()).toEqual([
+      "createAiSdkUiProjectionMapper",
+      "createAiSdkUiWebSocketTransport",
+    ]);
+    expect(Object.keys(assistantUi).sort()).toEqual([
+      "createAssistantUiProjectionMapper",
+      "parseAssistantUiInboundEvents",
+    ]);
     expect(Object.keys(openaiChatkit)).toEqual(["createChatKitProjectionMapper"]);
     expect(Object.keys(nluxUi).sort()).toEqual([
       "createNluxChatAdapter",

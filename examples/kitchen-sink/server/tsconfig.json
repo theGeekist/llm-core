@@ -7,7 +7,7 @@
     "ignoreDeprecations": "5.0",
     "strict": true,
     "jsx": "react-jsx",
-    "types": ["bun-types", "node"],
+    "types": ["bun", "node"],
     "typeRoots": ["../../../node_modules/@types"],
     "skipLibCheck": true,
     "baseUrl": ".",

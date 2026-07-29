@@ -12,9 +12,7 @@ const walkTypeScript = (directory: string): string[] =>
   });
 
 const legacyRoots = [
-  "src/interaction",
   "src/recipes",
-  "src/workflow",
   "src/adapters/types",
   "src/adapters/langchain",
   "src/adapters/llamaindex",
