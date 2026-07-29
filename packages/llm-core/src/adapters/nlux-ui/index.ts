@@ -1,2 +1,6 @@
-export type { NluxChatAdapterOptions } from "./interaction";
-export { createNluxChatAdapter } from "./interaction";
+export {
+  createNluxChatAdapter,
+  createNluxProjectionMapper,
+  type NluxInteractionAdapterOptions,
+  type NluxProjectionSignal,
+} from "../ui/nlux";
