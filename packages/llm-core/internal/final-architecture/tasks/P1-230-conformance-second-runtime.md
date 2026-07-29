@@ -3,7 +3,7 @@ architecture_version: 2
 id: P1-230
 title: Conformance suite and second runtime
 phase: P1.2
-status: in_progress
+status: review
 priority: P1
 preferred_owner_kind: codex
 owner: codex-conformance-runtime
@@ -70,10 +70,69 @@ bun run typecheck:packages
   precedent for llm-core agent specifications and model profiles. The adapter
   must still declare versioned support and explicit semantic loss.
 - 2026-07-30T03:47:00+08:00 — Implementation started. The bridge is bounded to
-  the assessed PydanticAI v2 line and remains transport-neutral; shared
+  the assessed PydanticAI v2.19.0 release and remains transport-neutral; shared
   conformance fixtures exercise the local runner and a deterministic
   fake-remote runner separately from the Python runtime declaration.
+- 2026-07-30 — Shared fixtures passed against the local runner, the
+  deterministic fake-remote runner, and a real CPython 3.14.6 NDJSON process.
+  PydanticAI is not installed in this worktree, so the PydanticAI runner
+  correctly failed its availability handshake; no PydanticAI runtime
+  conformance claim was minted from the transport-only result.
+- 2026-07-30 — Moved to review at implementation commit
+  `3c1913a2eefcb29d75520aac32bd1d29f8500244`.
 
 ## Handoff
 
-- None.
+- Implementation commit:
+  `3c1913a2eefcb29d75520aac32bd1d29f8500244`.
+- Changed files:
+  - `packages/llm-core/src/adapters/runtimes/fake-remote.ts`
+  - `packages/llm-core/src/adapters/runtimes/index.ts`
+  - `packages/llm-core/src/adapters/runtimes/pydantic-ai-support.ts`
+  - `packages/llm-core/src/adapters/runtimes/pydantic-ai.ts`
+  - `packages/llm-core/src/adapters/runtimes/pydantic_ai_bridge.py`
+  - `packages/llm-core/src/adapters/runtimes/stdio.ts`
+  - `packages/llm-core/tests/conformance/pydantic-ai-compatibility.test.ts`
+  - `packages/llm-core/tests/conformance/runner-conformance.test.ts`
+  - `packages/llm-core/tests/conformance/runner-fixtures.ts`
+  - this task file
+- Verification after `bun install --frozen-lockfile`:
+  - `bun test packages/llm-core/tests/conformance` — exit 0, 13 pass,
+    0 fail, including the real CPython process boundary.
+  - `bun run typecheck:packages` — exit 0; package typecheck and generated
+    contract schema check passed.
+  - `bun run typecheck:tests` — exit 0.
+  - focused ESLint and Prettier checks for runtime/conformance paths — exit 0.
+  - source and v2 package boundary architecture tests — exit 0, 5 pass.
+  - `git diff --check` — exit 0.
+- ADR-007 is applied without deviation: local plus Python references remain
+  distinct, versions and semantic loss are explicit, and transport/provider
+  details remain under `src/adapters/runtimes`.
+- Compatibility report:
+  - assessed source: PydanticAI v2.19.0,
+    `ed0f40c0e5061722f7d9f579ed7efff1b74e3ea5`, Python 3.10–3.14;
+  - executable support target: exact `pydantic-ai-slim==2.19.0`;
+  - supported: literal text prompts, Python `output_type`, and allowlisted
+    process-local read-only function tools;
+  - projected/lossy: cross-language JSON output, normalized lifecycle events,
+    and caller-managed message history;
+  - unsupported/fail-closed: controlled effects and approval authority,
+    skills, arbitrary metadata/templates/input, binary/media/reasoning/native
+    values, cancellation, interventions, checkpoint resume, provider sessions,
+    durable/live continuation, and recorded-effect semantics.
+- Risks:
+  - CPython transport conformance passed, but PydanticAI runtime conformance
+    did not run in this worktree because the optional package is absent.
+  - The Python source asset is not copied by the current TypeScript-only build.
+  - The qualified runtime front is internal and is not part of ADR-008's
+    sixteen package exports.
+- Coordinator-owned integration requests:
+  - `.github/workflows/ci.yml`: add an isolated Python job pinned to
+    `pydantic-ai-slim==2.19.0` and run the same conformance fixtures with the
+    PydanticAI availability gate satisfied.
+  - `packages/llm-core/scripts/build.ts`: copy
+    `src/adapters/runtimes/pydantic_ai_bridge.py` only if the runtime bridge is
+    approved as a shipped asset.
+  - Do not add a seventeenth `packages/llm-core/package.json` export without an
+    ADR-008 follow-up; prefer an optional runtime package if public shipment is
+    approved.
