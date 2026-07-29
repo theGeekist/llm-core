@@ -4,6 +4,7 @@ import {
   isExternalId,
   isJsonValue,
   type EventId,
+  type JsonValue,
   type RunId,
 } from "#contracts";
 import type {
@@ -24,6 +25,20 @@ const REDACTION_CATEGORIES = [
   "result",
 ] as const satisfies readonly RedactionCategory[];
 const SAFE_CODE = /^[a-z0-9]+(?:[._-][a-z0-9]+)*$/;
+const SENSITIVE_PROJECTION_KEYS = new Set([
+  "accesstoken",
+  "apikey",
+  "authorization",
+  "cookie",
+  "credential",
+  "credentials",
+  "password",
+  "refreshtoken",
+  "secret",
+  "secretref",
+  "secretrefs",
+  "signedurl",
+]);
 const registeredContentEvents = new WeakSet<object>();
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
@@ -41,6 +56,32 @@ const externalString = (value: unknown, field: string): string => {
 
 export const isSafeInteractionCode = (value: unknown): value is string =>
   typeof value === "string" && value.length <= 128 && SAFE_CODE.test(value);
+
+export const isCanonicalInteractionTimestamp = (
+  value: unknown,
+): value is string =>
+  typeof value === "string" &&
+  Number.isFinite(Date.parse(value)) &&
+  new Date(value).toISOString() === value;
+
+const hasSensitiveProjectionKey = (value: unknown): boolean => {
+  if (Array.isArray(value)) {
+    return value.some(hasSensitiveProjectionKey);
+  }
+  if (!isRecord(value)) {
+    return false;
+  }
+  return Object.entries(value).some(
+    ([key, child]) =>
+      SENSITIVE_PROJECTION_KEYS.has(key.replaceAll(/[^a-z]/gi, "").toLowerCase()) ||
+      hasSensitiveProjectionKey(child),
+  );
+};
+
+export const isSafeInteractionProjectionJson = (
+  value: unknown,
+): value is JsonValue =>
+  isJsonValue(value) && !hasSensitiveProjectionKey(value);
 
 const safeCode = (value: unknown): string => {
   if (!isSafeInteractionCode(value)) {
@@ -109,7 +150,7 @@ const facts = (
           "toolName",
           "projectedInput",
         ]) &&
-        isJsonValue(value.projectedInput)
+        isSafeInteractionProjectionJson(value.projectedInput)
       ) {
         return {
           messageId: externalString(value.messageId, "messageId"),
@@ -128,7 +169,7 @@ const facts = (
           "projectedResult",
           "isError",
         ]) &&
-        isJsonValue(value.projectedResult) &&
+        isSafeInteractionProjectionJson(value.projectedResult) &&
         typeof value.isError === "boolean"
       ) {
         return {
@@ -181,8 +222,7 @@ export const registerInteractionContentEvent = (
     typeof input.kind !== "string" ||
     !Number.isSafeInteger(input.sequence) ||
     (input.sequence as number) < 0 ||
-    typeof input.occurredAt !== "string" ||
-    new Date(input.occurredAt).toISOString() !== input.occurredAt
+    !isCanonicalInteractionTimestamp(input.occurredAt)
   ) {
     throw new TypeError("Interaction content events require canonical identity and ordering.");
   }

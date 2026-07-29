@@ -284,5 +284,18 @@ describe("interaction event projection", () => {
         facts: { messageId: "message:raw", reasonCode: "secret value" },
       }),
     ).toThrow("closed canonical shape");
+    expect(() =>
+      registerInteractionContentEvent({
+        ...raw,
+        eventId: eventId("f21"),
+        kind: "interaction.message.tool.call",
+        facts: {
+          messageId: "message:raw",
+          toolCallId: "tool-call:raw",
+          toolName: "lookup",
+          projectedInput: { credential: "sk-must-not-project" },
+        },
+      }),
+    ).toThrow("closed canonical shape");
   });
 });

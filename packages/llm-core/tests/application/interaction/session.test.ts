@@ -1,3 +1,4 @@
+/* eslint-disable max-lines -- adversarial session lifecycle cases share one in-memory store fixture */
 import { describe, expect, test } from "bun:test";
 import { isLiveContinuation } from "../../../src/features/state/public";
 import {
@@ -23,6 +24,7 @@ import {
   agentEvent,
   completedRun,
   contentEvent,
+  eventId,
 } from "./helpers";
 
 const memoryStore = () => {
@@ -297,6 +299,63 @@ describe("interaction session orchestration", () => {
     expect(() =>
       registerConversationSessionSnapshot(poisonedIndex, CONVERSATION_ID),
     ).toThrow("terminal indexes");
+    const unsafeReason = structuredClone(memory.read()) as unknown as {
+      value: {
+        turns: Array<Record<string, unknown>>;
+        projection: { events: Array<Record<string, unknown>> };
+      };
+    };
+    unsafeReason.value.projection.events[2]!.reasonCode =
+      "credential=sk-must-not-project";
+    expect(() =>
+      registerConversationSessionSnapshot(unsafeReason, CONVERSATION_ID),
+    ).toThrow("safe code");
+    unsafeReason.value.projection.events[2]!.reasonCode = "terminal-safe";
+    unsafeReason.value.turns[0]!.reasonCode = "secret token text";
+    expect(() =>
+      registerConversationSessionSnapshot(unsafeReason, CONVERSATION_ID),
+    ).toThrow("safe code");
+
+    const unsafeIdentity = structuredClone(memory.read()) as unknown as {
+      value: { projection: { events: Array<Record<string, unknown>> } };
+    };
+    unsafeIdentity.value.projection.events[0]!.agentId = "agent id with spaces";
+    expect(() =>
+      registerConversationSessionSnapshot(unsafeIdentity, CONVERSATION_ID),
+    ).toThrow("external ID");
+
+    const unsafeIntervention = structuredClone(memory.read()) as unknown as {
+      value: { projection: { events: Array<Record<string, unknown>> } };
+    };
+    unsafeIntervention.value.projection.events[1] = {
+      kind: "intervention-requested",
+      eventId: eventId("e01"),
+      runId: unsafeIntervention.value.projection.events[0]!.runId,
+      interventionId: eventId("e77"),
+      allowed: ["approve", "steal"],
+      expiresAt: NOW,
+    };
+    expect(() =>
+      registerConversationSessionSnapshot(unsafeIntervention, CONVERSATION_ID),
+    ).toThrow("decisions");
+    unsafeIntervention.value.projection.events[1]!.allowed = ["approve"];
+    unsafeIntervention.value.projection.events[1]!.expiresAt = "not-a-timestamp";
+    expect(() =>
+      registerConversationSessionSnapshot(unsafeIntervention, CONVERSATION_ID),
+    ).toThrow("timestamp");
+    unsafeIntervention.value.projection.events[1] = {
+      kind: "tool-call",
+      eventId: eventId("e01"),
+      runId: unsafeIntervention.value.projection.events[0]!.runId,
+      messageId: "message:tainted",
+      toolCallId: "tool-call:tainted",
+      toolName: "lookup",
+      projectedInput: { credential: "sk-must-not-project" },
+    };
+    expect(() =>
+      registerConversationSessionSnapshot(unsafeIntervention, CONVERSATION_ID),
+    ).toThrow("closed safe shape");
+
     const tainted = structuredClone(memory.read()) as unknown as {
       value: {
         turns: Array<Record<string, unknown>>;

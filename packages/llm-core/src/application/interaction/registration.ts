@@ -9,14 +9,18 @@ import {
   type RunId,
 } from "#contracts";
 import { createSnapshot } from "../../features/state/public";
+import {
+  isCanonicalInteractionTimestamp,
+  isSafeInteractionCode,
+} from "./content-registration";
 import { registerInteractionProviderSession } from "./provider-session-registration";
+import { registerInteractionUiEvent } from "./ui-event-registration";
 import type {
   ConversationSessionSnapshot,
   ConversationSessionValue,
   ConversationTurn,
   InteractionProjection,
   InteractionRunStatus,
-  InteractionUiEvent,
 } from "./types";
 
 const TERMINAL_STATUSES = ["completed", "failed", "denied", "cancelled"] as const;
@@ -27,34 +31,15 @@ const RUN_STATUSES = [
   "cancellation-requested",
   ...TERMINAL_STATUSES,
 ] as const;
-const RECEIPT_STATES = [
-  "reserved",
-  "awaiting_policy",
-  "awaiting_approval",
-  "ready",
-  "started",
-  "denied",
-  "expired",
-  "cancelled_before_start",
-  "succeeded",
-  "failed_after_start",
-  "indeterminate",
-  "reconciliation_required",
-  "compensation_required",
-  "compensating",
-  "compensated",
-  "compensation_failed",
-] as const;
-
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === "object" && value !== null && !Array.isArray(value);
 
 const hasOnlyKeys = (value: Record<string, unknown>, keys: readonly string[]): boolean =>
   Object.keys(value).every((key) => keys.includes(key));
 
-const requiredString = (value: unknown, field: string): string => {
-  if (typeof value !== "string" || value.length === 0) {
-    throw new TypeError(`Conversation snapshot ${field} must be a non-empty string.`);
+const requiredSafeCode = (value: unknown, field: string): string => {
+  if (!isSafeInteractionCode(value)) {
+    throw new TypeError(`Conversation snapshot ${field} must be a safe code.`);
   }
   return value;
 };
@@ -77,186 +62,7 @@ const optionalReason = (value: unknown): string | null => {
   if (value === undefined) {
     return null;
   }
-  return requiredString(value, "reasonCode");
-};
-
-// eslint-disable-next-line sonarjs/cognitive-complexity -- exhaustive closed-union registration is intentionally centralized
-const normalizeUiEvent = (value: unknown): InteractionUiEvent => {
-  if (!isRecord(value)) {
-    throw new TypeError("Conversation projection events must be closed objects.");
-  }
-  const kind = requiredString(value.kind, "event kind");
-  const common = { eventId: eventId(value.eventId), runId: runId(value.runId) };
-  switch (kind) {
-    case "run-started":
-      if (!hasOnlyKeys(value, ["kind", "eventId", "runId", "agentId"])) {
-        break;
-      }
-      return {
-        kind,
-        ...common,
-        agentId: requiredString(value.agentId, "agentId"),
-      };
-    case "run-progress":
-      if (!hasOnlyKeys(value, ["kind", "eventId", "runId", "code"])) {
-        break;
-      }
-      return { kind, ...common, code: requiredString(value.code, "progress code") };
-    case "intervention-requested":
-      if (
-        !hasOnlyKeys(value, [
-          "kind",
-          "eventId",
-          "runId",
-          "interventionId",
-          "allowed",
-          "expiresAt",
-        ]) ||
-        !Array.isArray(value.allowed) ||
-        !value.allowed.every((item) => typeof item === "string")
-      ) {
-        break;
-      }
-      return {
-        kind,
-        ...common,
-        interventionId: requiredString(value.interventionId, "interventionId"),
-        allowed: [...value.allowed],
-        expiresAt: requiredString(value.expiresAt, "expiresAt"),
-      };
-    case "cancellation-requested":
-      if (!hasOnlyKeys(value, ["kind", "eventId", "runId"])) {
-        break;
-      }
-      return { kind, ...common };
-    case "tool-status": {
-      if (
-        !hasOnlyKeys(value, [
-          "kind",
-          "eventId",
-          "runId",
-          "toolCallId",
-          "receiptState",
-          "reasonCode",
-        ]) ||
-        !RECEIPT_STATES.includes(value.receiptState as (typeof RECEIPT_STATES)[number])
-      ) {
-        break;
-      }
-      const reasonCode = optionalReason(value.reasonCode);
-      return {
-        kind,
-        ...common,
-        toolCallId: requiredString(value.toolCallId, "toolCallId"),
-        receiptState: value.receiptState as (typeof RECEIPT_STATES)[number],
-        ...(reasonCode ? { reasonCode } : {}),
-      };
-    }
-    case "run-finished": {
-      if (
-        !hasOnlyKeys(value, ["kind", "eventId", "runId", "status", "reasonCode"]) ||
-        !TERMINAL_STATUSES.includes(value.status as (typeof TERMINAL_STATUSES)[number])
-      ) {
-        break;
-      }
-      const reasonCode = optionalReason(value.reasonCode);
-      return {
-        kind,
-        ...common,
-        status: value.status as (typeof TERMINAL_STATUSES)[number],
-        ...(reasonCode ? { reasonCode } : {}),
-      };
-    }
-    case "message-started":
-    case "message-finished":
-      if (!hasOnlyKeys(value, ["kind", "eventId", "runId", "messageId"])) {
-        break;
-      }
-      return {
-        kind,
-        ...common,
-        messageId: requiredString(value.messageId, "messageId"),
-      };
-    case "text-delta":
-    case "reasoning-delta":
-      if (!hasOnlyKeys(value, ["kind", "eventId", "runId", "messageId", "text"])) {
-        break;
-      }
-      return {
-        kind,
-        ...common,
-        messageId: requiredString(value.messageId, "messageId"),
-        text: requiredString(value.text, "projected text"),
-      };
-    case "tool-call":
-      if (
-        !hasOnlyKeys(value, [
-          "kind",
-          "eventId",
-          "runId",
-          "messageId",
-          "toolCallId",
-          "toolName",
-          "projectedInput",
-        ]) ||
-        !isJsonValue(value.projectedInput)
-      ) {
-        break;
-      }
-      return {
-        kind,
-        ...common,
-        messageId: requiredString(value.messageId, "messageId"),
-        toolCallId: requiredString(value.toolCallId, "toolCallId"),
-        toolName: requiredString(value.toolName, "toolName"),
-        projectedInput: structuredClone(value.projectedInput),
-      };
-    case "tool-result":
-      if (
-        !hasOnlyKeys(value, [
-          "kind",
-          "eventId",
-          "runId",
-          "messageId",
-          "toolCallId",
-          "toolName",
-          "projectedResult",
-          "isError",
-        ]) ||
-        !isJsonValue(value.projectedResult) ||
-        typeof value.isError !== "boolean"
-      ) {
-        break;
-      }
-      return {
-        kind,
-        ...common,
-        messageId: requiredString(value.messageId, "messageId"),
-        toolCallId: requiredString(value.toolCallId, "toolCallId"),
-        toolName: requiredString(value.toolName, "toolName"),
-        projectedResult: structuredClone(value.projectedResult),
-        isError: value.isError,
-      };
-    case "message-failed":
-      if (
-        !hasOnlyKeys(value, [
-          "kind",
-          "eventId",
-          "runId",
-          "messageId",
-          "reasonCode",
-        ])
-      ) {
-        break;
-      }
-      return {
-        kind,
-        ...common,
-        messageId: requiredString(value.messageId, "messageId"),
-        reasonCode: requiredString(value.reasonCode, "reasonCode"),
-      };
-  }
-  throw new TypeError("Conversation projection events must use a closed safe shape.");
+  return requiredSafeCode(value, "reasonCode");
 };
 
 const normalizeProjection = (
@@ -293,7 +99,7 @@ const normalizeProjection = (
     throw new TypeError("Conversation snapshots require a closed interaction projection.");
   }
   const ids = value.eventIds.map(eventId);
-  const events = value.events.map(normalizeUiEvent);
+  const events = value.events.map(registerInteractionUiEvent);
   const projectedIds = events.map((event) => event.eventId);
   if (
     Object.keys(value.eventFingerprints).length > 0 ||
@@ -484,7 +290,7 @@ export const registerConversationSessionSnapshot = (
     !hasOnlyKeys(input, ["kind", "snapshotId", "createdAt", "schema", "value"]) ||
     input.kind !== "snapshot" ||
     !isExternalId(input.snapshotId) ||
-    typeof input.createdAt !== "string"
+    !isCanonicalInteractionTimestamp(input.createdAt)
   ) {
     throw new TypeError("Conversation stores must return a closed snapshot.");
   }

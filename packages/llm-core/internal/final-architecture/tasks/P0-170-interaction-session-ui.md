@@ -80,6 +80,9 @@ bun run typecheck:packages
   reconstruction, release cleanup, safe reason codes, registered content,
   reconstructable projection indexes, event-ID collisions, message/tool
   ordering and open-message terminal delivery.
+- 2026-07-29 — Reused live leaf validators at snapshot load for safe codes,
+  canonical identities/timestamps, closed intervention decisions and
+  credential-free projected JSON.
 - 2026-07-29 — Moved to `review` after focused and legacy retention suites,
   package/test typechecks, schema freshness, focused lint and diff checks
   passed.
