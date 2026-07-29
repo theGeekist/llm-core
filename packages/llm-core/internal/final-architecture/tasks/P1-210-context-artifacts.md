@@ -71,6 +71,11 @@ bun run typecheck:packages
   feature fronts at `b3a2471e767bb8cd2138ab13a5ec4718c57dd820`.
   Focused tests, package/test typechecks, contract schema check, lint,
   architecture tests, and diff hygiene pass; moved to review.
+- 2026-07-30 — Independent review requested stricter inline binary integrity,
+  UUID-authoritative derived-source uniqueness, and descriptor-safe nested
+  contract validation. Remediated all three with adversarial coverage; focused
+  tests now pass 15/15 alongside package/test typechecks, lint, architecture,
+  schema, and diff-hygiene gates. Status remains review pending re-review.
 
 ## Handoff
 

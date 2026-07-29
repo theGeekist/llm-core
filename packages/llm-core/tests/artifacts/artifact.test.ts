@@ -102,7 +102,33 @@ describe("Artifact", () => {
           digest: digest("c".repeat(64)),
         } as never,
       }),
-    ).toThrow("ResourceRef");
+    ).toThrow("SchemaRef");
+  });
+
+  test("rejects accessor-backed and hidden nested contract fields without invoking them", () => {
+    let reads = 0;
+    const accessorDigest = { algorithm: "sha-256" } as Record<string, unknown>;
+    Object.defineProperty(accessorDigest, "value", {
+      enumerable: true,
+      get: () => {
+        reads += 1;
+        return "a".repeat(64);
+      },
+    });
+
+    expect(() => createArtifactRef({ ...resource, digest: accessorDigest } as never)).toThrow(
+      "ResourceRef",
+    );
+    expect(reads).toBe(0);
+
+    const hiddenDigest = { ...resource.digest };
+    Object.defineProperty(hiddenDigest, "secret", {
+      enumerable: false,
+      value: "must-not-be-silently-dropped",
+    });
+    expect(() => createArtifactRef({ ...resource, digest: hiddenDigest } as never)).toThrow(
+      "ResourceRef",
+    );
   });
 
   test("requires coherent generated and derived provenance", () => {
@@ -124,6 +150,20 @@ describe("Artifact", () => {
       createArtifact({
         content: resource,
         provenance: { kind: "derived", operation: "merge", sources: [source, source] },
+      }),
+    ).toThrow("duplicate");
+    const conflictingClaim = createArtifactRef({
+      ...resource,
+      digest: digest("b".repeat(64)),
+    });
+    expect(() =>
+      createArtifact({
+        content: resource,
+        provenance: {
+          kind: "derived",
+          operation: "merge",
+          sources: [source, conflictingClaim],
+        },
       }),
     ).toThrow("duplicate");
     expect(

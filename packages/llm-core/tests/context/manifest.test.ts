@@ -152,6 +152,37 @@ describe("ContextManifest", () => {
     ).toThrow("portable content");
   });
 
+  test("verifies inline binary integrity against the decoded bytes", () => {
+    const validDigest = digest("ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb");
+    const binary = {
+      kind: "binary" as const,
+      mediaType: "application/octet-stream",
+      encoding: "base64" as const,
+      data: "YQ==",
+      byteLength: 1,
+      digest: validDigest,
+    };
+
+    expect(
+      createContextEntry({
+        source: { kind: "content", content: [binary] },
+        provenance: { kind: "supplied", source: "user" },
+        priority: "required",
+      }).cost.bytes,
+    ).toBe(1);
+
+    expect(() =>
+      createContextEntry({
+        source: {
+          kind: "content",
+          content: [{ ...binary, digest: digest("0".repeat(64)) }],
+        },
+        provenance: { kind: "supplied", source: "user" },
+        priority: "required",
+      }),
+    ).toThrow("portable content");
+  });
+
   test("rejects spoofed derived provenance and malformed scopes", () => {
     const spoofed = input();
     spoofed.entries[0]!.provenance = {

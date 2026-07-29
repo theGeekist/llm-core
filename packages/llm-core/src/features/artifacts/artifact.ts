@@ -62,6 +62,17 @@ const hasClosedJsonShape = (value: unknown): boolean => {
   );
 };
 
+const isClosedDigest = (value: unknown): boolean =>
+  isPlainRecord(value) &&
+  hasExactKeys(value, ["algorithm", "value"]) &&
+  isDigest(value);
+
+const isClosedSchemaRef = (value: unknown): boolean =>
+  isPlainRecord(value) &&
+  hasExactKeys(value, ["schemaId", "version", "digest"]) &&
+  isClosedDigest(value.digest) &&
+  isSchemaRef(value);
+
 const isResourceRef = (value: unknown): value is ResourceRef =>
   isPlainRecord(value) &&
   hasExactKeys(value, ["resourceId", "mediaType", "byteLength", "digest"]) &&
@@ -70,7 +81,7 @@ const isResourceRef = (value: unknown): value is ResourceRef =>
   MEDIA_TYPE.test(value.mediaType) &&
   Number.isSafeInteger(value.byteLength) &&
   Number(value.byteLength) >= 0 &&
-  isDigest(value.digest);
+  isClosedDigest(value.digest);
 
 const isEvidenceRef = (value: unknown): value is EvidenceRef =>
   isPlainRecord(value) &&
@@ -87,7 +98,7 @@ const isEvidenceRef = (value: unknown): value is EvidenceRef =>
     "tool-result",
   ].includes(String(value.kind)) &&
   isResourceRef(value.content) &&
-  (value.schema === undefined || isSchemaRef(value.schema));
+  (value.schema === undefined || isClosedSchemaRef(value.schema));
 
 function assertRef(value: unknown): asserts value is ArtifactRef {
   if (
@@ -95,7 +106,7 @@ function assertRef(value: unknown): asserts value is ArtifactRef {
     !hasExactKeys(value, ["kind", "resource"], ["schema"]) ||
     value.kind !== "artifact" ||
     !isResourceRef(value.resource) ||
-    (value.schema !== undefined && !isSchemaRef(value.schema))
+    (value.schema !== undefined && !isClosedSchemaRef(value.schema))
   ) {
     throw new TypeError(
       "Artifact references must be closed and use their ResourceRef identity and integrity.",
@@ -140,10 +151,7 @@ function assertProvenance(value: unknown): asserts value is ArtifactProvenance {
     for (const source of value.sources) assertRef(source);
     if (
       new Set(
-        value.sources.map(
-          (source) =>
-            `${source.resource.resourceId}:${source.resource.digest.algorithm}:${source.resource.digest.value}`,
-        ),
+        value.sources.map((source) => source.resource.resourceId),
       ).size !== value.sources.length
     ) {
       throw new TypeError("Derived artifact provenance cannot contain duplicate sources.");
@@ -166,6 +174,13 @@ export const createArtifactRef = (
   content: ResourceRef,
   options: { schema?: ArtifactRef["schema"] } = {},
 ): ArtifactRef => {
+  if (
+    !isPlainRecord(options) ||
+    !hasExactKeys(options, [], ["schema"]) ||
+    (options.schema !== undefined && !isClosedSchemaRef(options.schema))
+  ) {
+    throw new TypeError("Artifact reference options must be a closed optional SchemaRef.");
+  }
   const ref = {
     kind: "artifact" as const,
     resource: content,
@@ -180,7 +195,7 @@ export const createArtifact = (input: ArtifactInput): Artifact => {
     !isPlainRecord(input) ||
     !hasExactKeys(input, ["content", "provenance"], ["schema", "metadata"]) ||
     !isResourceRef(input.content) ||
-    (input.schema !== undefined && !isSchemaRef(input.schema)) ||
+    (input.schema !== undefined && !isClosedSchemaRef(input.schema)) ||
     (input.metadata !== undefined &&
       (!isPlainRecord(input.metadata) ||
         !isJsonValue(input.metadata) ||

@@ -75,6 +75,17 @@ export const isNonNegativeInteger = (value: unknown): value is number =>
 export const isPositiveInteger = (value: unknown): value is number =>
   Number.isSafeInteger(value) && Number(value) > 0;
 
+const isClosedDigest = (value: unknown): value is Digest =>
+  isPlainRecord(value) &&
+  hasExactKeys(value, ["algorithm", "value"]) &&
+  isDigest(value);
+
+const isClosedSchemaRef = (value: unknown): boolean =>
+  isPlainRecord(value) &&
+  hasExactKeys(value, ["schemaId", "version", "digest"]) &&
+  isClosedDigest(value.digest) &&
+  isSchemaRef(value);
+
 export const isResourceRef = (value: unknown): value is ResourceRef =>
   isPlainRecord(value) &&
   hasExactKeys(value, ["resourceId", "mediaType", "byteLength", "digest"]) &&
@@ -82,7 +93,7 @@ export const isResourceRef = (value: unknown): value is ResourceRef =>
   typeof value.mediaType === "string" &&
   MEDIA_TYPE.test(value.mediaType) &&
   isNonNegativeInteger(value.byteLength) &&
-  isDigest(value.digest);
+  isClosedDigest(value.digest);
 
 export const isEvidenceRef = (value: unknown): value is EvidenceRef =>
   isPlainRecord(value) &&
@@ -99,7 +110,7 @@ export const isEvidenceRef = (value: unknown): value is EvidenceRef =>
     "tool-result",
   ].includes(String(value.kind)) &&
   isResourceRef(value.content) &&
-  (value.schema === undefined || isSchemaRef(value.schema));
+  (value.schema === undefined || isClosedSchemaRef(value.schema));
 
 const isPortableContent = (value: unknown): value is PortableContent => {
   if (!isPlainRecord(value) || typeof value.kind !== "string") return false;
@@ -111,7 +122,7 @@ const isPortableContent = (value: unknown): value is PortableContent => {
       hasExactKeys(value, ["kind", "value"], ["schema"]) &&
       isJsonValue(value.value) &&
       hasClosedJsonShape(value.value) &&
-      (value.schema === undefined || isSchemaRef(value.schema))
+      (value.schema === undefined || isClosedSchemaRef(value.schema))
     );
   }
   if (value.kind === "binary") {
@@ -127,7 +138,11 @@ const isPortableContent = (value: unknown): value is PortableContent => {
     ) {
       return false;
     }
-    return Buffer.from(value.data, "base64").byteLength === value.byteLength;
+    const bytes = Buffer.from(value.data, "base64");
+    return (
+      bytes.byteLength === value.byteLength &&
+      createHash("sha256").update(bytes).digest("hex") === value.digest.value
+    );
   }
   return (
     value.kind === "media-ref" &&
