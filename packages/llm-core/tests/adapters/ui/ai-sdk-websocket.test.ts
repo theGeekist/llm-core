@@ -162,4 +162,116 @@ describe("AI SDK UI WebSocket transport", () => {
     await expect(reader.read()).rejects.toThrow("aborted");
     expect(socket.readyState).toBe(WebSocket.CLOSED);
   });
+
+  test("sends or processes nothing when aborted before the socket opens", async () => {
+    const socket = new FakeSocket();
+    const abort = new AbortController();
+    const events: AiSdkUiWebSocketEvent[] = [];
+    const transport = createAiSdkUiWebSocketTransport({
+      url: "wss://example.test/chat",
+      socketFactory: () => socket as unknown as WebSocket,
+      newRequestId: () => "request-aborted",
+      readAuth: () => [{ providerId: "provider", token: "secret-token" }],
+      onEvent: (event) => events.push(event),
+    });
+    const reader = (await transport.sendMessages(sendOptions(abort.signal))).getReader();
+
+    abort.abort();
+    socket.open();
+    socket.message({
+      type: "ui.chunk",
+      requestId: "request-aborted",
+      chunk: { type: "text-delta", id: "text", delta: "late" },
+    });
+
+    await expect(reader.read()).rejects.toThrow("aborted");
+    expect(socket.sent).toEqual([]);
+    expect(events).toEqual([]);
+  });
+
+  test("sends or processes nothing when cancelled before the socket opens", async () => {
+    const socket = new FakeSocket();
+    const events: AiSdkUiWebSocketEvent[] = [];
+    const transport = createAiSdkUiWebSocketTransport({
+      url: "wss://example.test/chat",
+      socketFactory: () => socket as unknown as WebSocket,
+      newRequestId: () => "request-cancelled",
+      readAuth: () => [{ providerId: "provider", token: "secret-token" }],
+      onEvent: (event) => events.push(event),
+    });
+    const stream = await transport.sendMessages(sendOptions());
+
+    await stream.cancel();
+    socket.open();
+    socket.message({
+      type: "ui.chunk",
+      requestId: "request-cancelled",
+      chunk: { type: "text-delta", id: "text", delta: "late" },
+    });
+
+    expect(socket.sent).toEqual([]);
+    expect(events).toEqual([]);
+  });
+
+  test("does not send when open callbacks abort re-entrantly", async () => {
+    for (const callback of ["readAuth", "readData", "onEvent"] as const) {
+      const socket = new FakeSocket();
+      const abort = new AbortController();
+      const events: AiSdkUiWebSocketEvent[] = [];
+      const transport = createAiSdkUiWebSocketTransport({
+        url: "wss://example.test/chat",
+        socketFactory: () => socket as unknown as WebSocket,
+        newRequestId: () => `request-${callback}`,
+        readAuth: () => {
+          if (callback === "readAuth") abort.abort();
+          return [{ providerId: "provider", token: "secret-token" }];
+        },
+        readData: () => {
+          if (callback === "readData") abort.abort();
+          return null;
+        },
+        onEvent: (event) => {
+          events.push(event);
+          if (callback === "onEvent") abort.abort();
+        },
+      });
+      const reader = (await transport.sendMessages(sendOptions(abort.signal))).getReader();
+
+      socket.open();
+
+      await expect(reader.read()).rejects.toThrow("aborted");
+      const sentTypes = socket.sent.map(
+        (message) => (JSON.parse(message) as { type: string }).type,
+      );
+      expect(sentTypes).toEqual(callback === "readData" ? ["auth.set"] : []);
+      expect(sentTypes).not.toContain("chat.send");
+      expect(JSON.stringify(events)).not.toContain("secret-token");
+    }
+  });
+
+  test("does not enqueue when an incoming observer aborts re-entrantly", async () => {
+    const socket = new FakeSocket();
+    const abort = new AbortController();
+    const events: AiSdkUiWebSocketEvent[] = [];
+    const transport = createAiSdkUiWebSocketTransport({
+      url: "wss://example.test/chat",
+      socketFactory: () => socket as unknown as WebSocket,
+      newRequestId: () => "request-incoming-abort",
+      onEvent: (event) => {
+        events.push(event);
+        if (event.direction === "incoming") abort.abort();
+      },
+    });
+    const reader = (await transport.sendMessages(sendOptions(abort.signal))).getReader();
+    socket.open();
+
+    socket.message({
+      type: "ui.chunk",
+      requestId: "request-incoming-abort",
+      chunk: { type: "text-delta", id: "text", delta: "must-not-enqueue" },
+    });
+
+    await expect(reader.read()).rejects.toThrow("aborted");
+    expect(events.filter((event) => event.direction === "incoming")).toHaveLength(1);
+  });
 });

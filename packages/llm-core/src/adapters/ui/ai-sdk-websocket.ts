@@ -180,22 +180,30 @@ const observableClientMessage = (
 ): ClientMessage & { readonly token?: "[redacted]" } =>
   message.type === "auth.set" ? { ...message, token: "[redacted]" } : message;
 
-const finalize = (state: StreamState, error?: Error): void => {
+const finalize = (
+  state: StreamState,
+  error?: Error,
+  settleController = true,
+): void => {
   if (state.finalized) return;
   state.finalized = true;
   if (state.abort && state.sendOptions.abortSignal) {
     state.sendOptions.abortSignal.removeEventListener("abort", state.abort);
   }
   try {
-    if (error) state.controller?.error(error);
-    else state.controller?.close();
+    if (settleController) {
+      if (error) state.controller?.error(error);
+      else state.controller?.close();
+    }
   } finally {
     if (state.socket && state.socket.readyState !== WebSocket.CLOSED) state.socket.close();
   }
 };
 
 const send = (state: StreamState, message: ClientMessage): void => {
+  if (state.finalized) return;
   state.options.onEvent?.({ direction: "outgoing", message: observableClientMessage(message) });
+  if (state.finalized) return;
   state.socket?.send(JSON.stringify(message));
 };
 
@@ -211,6 +219,7 @@ const start = (
   const socket = (state.options.socketFactory ?? ((url) => new WebSocket(url)))(state.options.url);
   state.socket = socket;
   socket.addEventListener("open", () => {
+    if (state.finalized) return;
     for (const auth of state.options.readAuth?.() ?? []) {
       send(state, { type: "auth.set", providerId: auth.providerId, token: auth.token });
     }
@@ -223,9 +232,11 @@ const start = (
     });
   });
   socket.addEventListener("message", (event) => {
+    if (state.finalized) return;
     const message = parseServerMessage(event.data);
     if (!message || message.requestId !== state.requestId) return;
     state.options.onEvent?.({ direction: "incoming", message });
+    if (state.finalized) return;
     if (message.type === "ui.chunk") {
       controller.enqueue(message.chunk);
     } else if (message.type === "ui.error") {
@@ -257,7 +268,7 @@ class AiSdkUiWebSocketTransport implements ChatTransport<UIMessage> {
     };
     return new ReadableStream({
       start: (controller) => start(state, controller),
-      cancel: () => finalize(state),
+      cancel: () => finalize(state, undefined, false),
     });
   }
 

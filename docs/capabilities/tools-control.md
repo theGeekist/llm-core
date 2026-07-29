@@ -13,8 +13,8 @@ Meaningful effects follow a controlled sequence:
 6. Acquire the separate concurrency lease.
 7. Durably append `started`.
 8. Invoke the executable binding once.
-9. Persist the resulting disposition, release the lease, then project
-   redacted events.
+9. Persist the resulting disposition and project redacted events; release the
+   lease during cleanup.
 
 Retry after an effect starts requires verified idempotency or reconciliation.
 Caller labels alone do not establish that guarantee.
