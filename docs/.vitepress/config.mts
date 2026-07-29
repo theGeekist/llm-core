@@ -129,7 +129,10 @@ export default defineConfig({
       "/reference/": [
         {
           text: "Foundations",
-          items: [{ text: "Vocabulary", link: "/reference/vocabulary" }],
+          items: [
+            { text: "Vocabulary", link: "/reference/vocabulary" },
+            { text: "Contracts and portability", link: "/reference/contracts" },
+          ],
         },
         {
           text: "Core API",
