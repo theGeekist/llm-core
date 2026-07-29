@@ -3,7 +3,7 @@ architecture_version: 2
 id: P1-220
 title: Evaluation domain
 phase: P1.1
-status: claimed
+status: complete
 priority: P1
 preferred_owner_kind: codex
 owner: codex-evaluation-domain
@@ -68,7 +68,29 @@ bun run typecheck:packages
 - 2026-07-30T04:15:41+08:00 — Claimed by the Codex evaluation worker from
   integrated context/artifact base
   `2693e91e22c8429d5067509a72a88d879d3cb9c4`.
+- 2026-07-30T04:21:23+08:00 — Implemented provider-neutral evaluation cases,
+  deterministic versioned evaluator composition, normalized scores/statuses,
+  explanations, and strict linkage to recorded `EvidenceRef` values.
+- 2026-07-30T04:21:23+08:00 — Focused evaluation and architecture tests,
+  package/test typechecks, contract schema check, lint, targeted formatting,
+  and diff validation passed. The repository-wide formatting check remains
+  red only for 45 pre-existing files outside this task's write scope.
+- 2026-07-30T04:29:23+08:00 — Remediated independent review findings by
+  rejecting explicitly present undefined optional evidence schemas at both
+  case and result boundaries and normalizing all closed case, evaluator,
+  judgement, score, and evidence records from data-property descriptors.
+  Adversarial proxy coverage confirms zero ordinary property reads. Focused
+  evaluation tests, the 451-test package suite, package/test typechecks,
+  architecture tests, contract schema check, lint, and diff validation pass.
+- 2026-07-30 — Independently approved at exact SHA `e885f36`. Final review
+  confirmed evidence-only inputs, exact evidence linkage, immutable
+  deterministic evaluator identity/version order, sync-preserving
+  `MaybePromise` composition, explicit-undefined rejection and zero-read
+  descriptor snapshots.
 
 ## Handoff
 
-- None.
+- Integration owner should publish `src/features/evaluation/public.ts` as the
+  `./evaluation` subpath and add the matching TypeScript/package import aliases,
+  build entry, and exact public-surface characterization.
+- No root export is proposed. No provider or runner adapter changes are needed.
