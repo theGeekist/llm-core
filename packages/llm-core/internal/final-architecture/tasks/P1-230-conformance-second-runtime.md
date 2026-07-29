@@ -3,7 +3,7 @@ architecture_version: 2
 id: P1-230
 title: Conformance suite and second runtime
 phase: P1.2
-status: review
+status: complete
 priority: P1
 preferred_owner_kind: codex
 owner: codex-conformance-runtime
@@ -96,6 +96,11 @@ bun run typecheck:packages
   `454a6f5033ee03a359e8eeb597b1183df27eae09`: the Python Agent now receives
   the literal prompt and the exact-runtime fixture verifies its serialized
   `UserPromptPart`.
+- 2026-07-30 — Independently approved at exact SHA `d36301b`. Default
+  conformance passed 14 tests with one intentional exact-runtime skip; the
+  isolated CPython 3.14.6 plus exact `pydantic-ai-slim==2.19.0` matrix passed
+  15/15. Typechecks, schema, architecture, identity, lint, formatting and diff
+  checks passed.
 
 ## Handoff
 
@@ -147,8 +152,8 @@ bun run typecheck:packages
     conformance depends on the isolated interpreter supplied through
     `LLM_CORE_PYDANTIC_AI_PYTHON`.
   - The Python source asset is not copied by the current TypeScript-only build.
-  - The qualified runtime front is internal and is not part of ADR-008's
-    sixteen package exports.
+  - The qualified runtime front is internal and is not part of the public
+    package export surface.
 - Coordinator-owned integration requests:
   - `.github/workflows/ci.yml`: add an isolated Python job pinned to
     `pydantic-ai-slim==2.19.0` and run the same conformance fixtures with the
@@ -156,6 +161,6 @@ bun run typecheck:packages
   - `packages/llm-core/scripts/build.ts`: copy
     `src/adapters/runtimes/pydantic_ai_bridge.py` only if the runtime bridge is
     approved as a shipped asset.
-  - Do not add a seventeenth `packages/llm-core/package.json` export without an
-    ADR-008 follow-up; prefer an optional runtime package if public shipment is
-    approved.
+  - Do not add another runtime `packages/llm-core/package.json` export without
+    an ADR-008 follow-up; prefer an optional runtime package if public shipment
+    is approved.
