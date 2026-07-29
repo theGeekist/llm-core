@@ -73,11 +73,21 @@ bun run typecheck:packages
   `InvocationContext` is passed separately to model operations (not embedded in
   `ModelRequest`); resolution policy-constraints are a separate resolver input.
   Building `src/features/model/**` against the frozen contracts.
-- 2026-07-29 — Implementation complete; moved to `review`.
+- 2026-07-29 — Implementation complete; moved to `review` (commit cd37c52).
+- 2026-07-29 — Coordinator review round 1: resolved 3 P1 + 2 P2 findings.
+  (1) Resolver now honors `CapabilityRequirement.constraints` and fails closed
+  for unproven required constraints, with an optional caller-supplied
+  `ConstraintEvaluator`; (2) resolver rejects a binding whose
+  model/provider/deployment do not exactly match its profile before trusting its
+  claims; (3) `ModelProfile` is now `readonly` and the builtin profile is
+  deep-frozen (profile/claims/evidence). P2s: builtin claim now carries
+  `providerId`/`providerVersion`; unsupported `versionRange` syntax is reported
+  explicitly (`unsupported-version-range`) instead of being silently treated as
+  exact. Re-verified green.
 
 ## Handoff
 
-Status: ready for coordinator review.
+Status: ready for coordinator review (round 1 findings resolved).
 
 ### Files added (write scope only)
 
@@ -112,8 +122,8 @@ Status: ready for coordinator review.
 
 ### Verification (from packages/llm-core)
 
-- `bun test tests/model` → 18 pass, 0 fail, 41 expect().
-- `bun test` (full package) → 1072 pass, 35 skip, 0 fail.
+- `bun test tests/model` → 25 pass, 0 fail, 62 expect().
+- `bun test` (full package) → 1079 pass, 35 skip, 0 fail.
 - `bun run typecheck` (`tsc --noEmit`) → exit 0.
 - `bunx eslint src/features/model tests/model` → exit 0.
 - `git status` limited to `src/features/model/**`, `tests/model/**`, this task

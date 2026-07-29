@@ -7,12 +7,12 @@ import type { DeploymentRef, ModelProfileId, ModelRef, ProviderRef } from "./ref
  * every asserted behavior cites versioned conformance provenance.
  */
 export interface ModelProfile {
-  profileId: ModelProfileId;
-  version: ContractVersion;
-  model: ModelRef;
-  provider: ProviderRef;
-  deployment: DeploymentRef;
-  claims: CapabilityClaim[];
-  schema?: SchemaRef;
-  extensions?: NativeExtensions;
+  readonly profileId: ModelProfileId;
+  readonly version: ContractVersion;
+  readonly model: ModelRef;
+  readonly provider: ProviderRef;
+  readonly deployment: DeploymentRef;
+  readonly claims: readonly CapabilityClaim[];
+  readonly schema?: SchemaRef;
+  readonly extensions?: NativeExtensions;
 }

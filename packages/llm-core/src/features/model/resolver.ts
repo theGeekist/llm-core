@@ -1,4 +1,10 @@
-import type { CapabilityRequirement, PortableImplementationId } from "#contracts";
+import { isContractVersion } from "#contracts";
+import type {
+  CapabilityClaim,
+  CapabilityConstraint,
+  CapabilityRequirement,
+  PortableImplementationId,
+} from "#contracts";
 import type { ModelProfile } from "./profile";
 import type { DeploymentRef, ModelRef, ProviderRef } from "./references";
 
@@ -9,31 +15,46 @@ import type { DeploymentRef, ModelRef, ProviderRef } from "./references";
  * bindings and policy constraints, and returns the selected binding with resolved
  * references, the profile/evidence, and diagnostics. It never reads environment
  * credentials, never silently downgrades a capability, and never falls back to a
- * first-list default: an unresolved tie fails as ambiguous and zero eligible
- * bindings fails explicitly.
+ * first-list default: an unresolved tie fails as ambiguous, zero eligible
+ * bindings fails explicitly, and every unproven requirement fails closed.
  */
 
 /** One configured implementation eligible to satisfy a selection. */
 export interface ModelBinding {
-  bindingId: PortableImplementationId;
-  model: ModelRef;
-  provider: ProviderRef;
-  deployment: DeploymentRef;
-  profile: ModelProfile;
+  readonly bindingId: PortableImplementationId;
+  readonly model: ModelRef;
+  readonly provider: ProviderRef;
+  readonly deployment: DeploymentRef;
+  readonly profile: ModelProfile;
   /** Policy aliases that also select this binding. Exact model match wins. */
-  aliases?: ModelRef[];
+  readonly aliases?: readonly ModelRef[];
 }
+
+/**
+ * Proves that a binding's supported claim satisfies a required constraint.
+ *
+ * The resolver cannot infer arbitrary constraint semantics, so proving them is
+ * the caller/composition's responsibility. Absent an evaluator, required
+ * constraints fail closed.
+ */
+export type ConstraintEvaluator = (input: {
+  readonly binding: ModelBinding;
+  readonly claim: CapabilityClaim;
+  readonly requirement: CapabilityRequirement;
+  readonly constraint: CapabilityConstraint;
+}) => boolean;
 
 /** Composition-owned policy. The default model is honored only when named. */
 export interface ModelResolutionPolicy {
-  defaultModel?: ModelRef;
+  readonly defaultModel?: ModelRef;
 }
 
 export interface ModelResolutionRequest {
-  selection?: ModelRef;
-  requiredCapabilities?: CapabilityRequirement[];
-  bindings: ModelBinding[];
-  policy?: ModelResolutionPolicy;
+  readonly selection?: ModelRef;
+  readonly requiredCapabilities?: readonly CapabilityRequirement[];
+  readonly bindings: readonly ModelBinding[];
+  readonly policy?: ModelResolutionPolicy;
+  readonly constraintEvaluator?: ConstraintEvaluator;
 }
 
 export type ResolutionMatch = "exact" | "alias" | "default";
@@ -43,6 +64,9 @@ export type ResolutionDiagnosticCode =
   | "selected-alias"
   | "selected-default"
   | "excluded-capability"
+  | "binding-profile-mismatch"
+  | "unsupported-version-range"
+  | "unproven-constraint"
   | "no-eligible-binding"
   | "ambiguous-selection"
   | "unknown-selection";
@@ -73,30 +97,113 @@ export interface ModelResolver {
   resolve(request: ModelResolutionRequest): ModelResolutionOutcome;
 }
 
-const versionSatisfied = (range: string | undefined, version: string): boolean => {
+type RangeResult = "any" | "exact-match" | "exact-mismatch" | "unsupported";
+
+// P0 supports an absent/`*` range or an exact SemVer only. A range operator
+// (`^`, `~`, ranges) is reported as unsupported rather than silently treated as
+// an exact match, so resolution never downgrades on an unproven range.
+const evaluateRange = (range: string | undefined, version: string): RangeResult => {
   if (range === undefined || range === "" || range === "*") {
+    return "any";
+  }
+  if (!isContractVersion(range)) {
+    return "unsupported";
+  }
+  return range === version ? "exact-match" : "exact-mismatch";
+};
+
+const profileMatchesBinding = (binding: ModelBinding): boolean =>
+  binding.model === binding.profile.model &&
+  binding.provider === binding.profile.provider &&
+  binding.deployment === binding.profile.deployment;
+
+/** Per-binding evaluation state, bundled to keep helper arity within limits. */
+interface BindingEvalContext {
+  binding: ModelBinding;
+  evaluator?: ConstraintEvaluator;
+  diagnostics: ResolutionDiagnostic[];
+}
+
+const findSupportedClaim = (
+  context: BindingEvalContext,
+  requirement: CapabilityRequirement,
+): CapabilityClaim | undefined => {
+  let found: CapabilityClaim | undefined;
+  let sawUnsupportedRange = false;
+  for (const claim of context.binding.profile.claims) {
+    if (claim.status !== "supported" || claim.capabilityId !== requirement.capabilityId) {
+      continue;
+    }
+    const range = evaluateRange(requirement.versionRange, claim.version);
+    if (range === "unsupported") {
+      sawUnsupportedRange = true;
+      continue;
+    }
+    if (range === "any" || range === "exact-match") {
+      found = claim;
+      break;
+    }
+  }
+  if (!found && sawUnsupportedRange) {
+    context.diagnostics.push({
+      code: "unsupported-version-range",
+      message: `requirement ${requirement.capabilityId} uses an unsupported version range "${requirement.versionRange}"`,
+      bindingId: context.binding.bindingId,
+    });
+  }
+  return found;
+};
+
+const constraintsProven = (
+  context: BindingEvalContext,
+  requirement: CapabilityRequirement,
+  claim: CapabilityClaim,
+): boolean => {
+  const constraints = requirement.constraints ?? [];
+  if (constraints.length === 0) {
     return true;
   }
-  // P0 supports exact-version matching only; richer range semantics are deferred.
-  return range === version;
+  const { binding, evaluator, diagnostics } = context;
+  if (!evaluator) {
+    diagnostics.push({
+      code: "unproven-constraint",
+      message: `requirement ${requirement.capabilityId} carries constraints but no evaluator was provided`,
+      bindingId: binding.bindingId,
+    });
+    return false;
+  }
+  const proven = constraints.every((constraint) =>
+    evaluator({ binding, claim, requirement, constraint }),
+  );
+  if (!proven) {
+    diagnostics.push({
+      code: "unproven-constraint",
+      message: `binding ${binding.bindingId} does not satisfy constraints for ${requirement.capabilityId}`,
+      bindingId: binding.bindingId,
+    });
+  }
+  return proven;
 };
 
 const bindingSatisfies = (
-  binding: ModelBinding,
-  requirements: CapabilityRequirement[],
-  diagnostics: ResolutionDiagnostic[],
+  context: BindingEvalContext,
+  requirements: readonly CapabilityRequirement[],
 ): boolean => {
+  const { binding, diagnostics } = context;
+  if (!profileMatchesBinding(binding)) {
+    diagnostics.push({
+      code: "binding-profile-mismatch",
+      message: `binding ${binding.bindingId} references a profile whose model/provider/deployment differ from the binding`,
+      bindingId: binding.bindingId,
+    });
+    return false;
+  }
   for (const requirement of requirements) {
     if (requirement.required === false) {
       continue;
     }
-    const met = binding.profile.claims.some(
-      (claim) =>
-        claim.status === "supported" &&
-        claim.capabilityId === requirement.capabilityId &&
-        versionSatisfied(requirement.versionRange, claim.version),
-    );
-    if (!met) {
+    const claim = findSupportedClaim(context, requirement);
+    if (!claim) {
       diagnostics.push({
         code: "excluded-capability",
         message: `binding lacks a supported claim for ${requirement.capabilityId}`,
@@ -104,12 +211,15 @@ const bindingSatisfies = (
       });
       return false;
     }
+    if (!constraintsProven(context, requirement, claim)) {
+      return false;
+    }
   }
   return true;
 };
 
 const selectTier = (
-  bindings: ModelBinding[],
+  bindings: readonly ModelBinding[],
   target: ModelRef,
 ): { matches: ModelBinding[]; via: "exact" | "alias" } => {
   const exact = bindings.filter((binding) => binding.model === target);
@@ -145,7 +255,10 @@ export const createModelResolver = (): ModelResolver => ({
     }
 
     const eligible = tier.matches.filter((binding) =>
-      bindingSatisfies(binding, requirements, diagnostics),
+      bindingSatisfies(
+        { binding, evaluator: request.constraintEvaluator, diagnostics },
+        requirements,
+      ),
     );
     const [binding, ...rest] = eligible;
     if (!binding) {

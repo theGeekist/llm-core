@@ -7,7 +7,6 @@ import {
   BUILTIN_TEXT_CAPABILITY,
   createBuiltinModelProfile,
   createModelResolver,
-  deploymentRef,
   modelProfileId,
   modelRef,
   providerRef,
@@ -24,8 +23,8 @@ const bareProfile = (model = M1): ModelProfile => ({
   profileId: modelProfileId("bare"),
   version: contractVersion("1.0.0"),
   model,
-  provider: providerRef("bare.provider"),
-  deployment: deploymentRef("bare.deployment"),
+  provider: BUILTIN_PROVIDER,
+  deployment: BUILTIN_DEPLOYMENT,
   claims: [],
 });
 
@@ -128,5 +127,88 @@ describe("model resolver", () => {
     if (original === undefined) delete process.env.OPENAI_API_KEY;
     else process.env.OPENAI_API_KEY = original;
     expect(withEnv).toEqual(baseline);
+  });
+
+  test("rejects a binding whose profile does not match its references", () => {
+    const mismatched: ModelBinding = {
+      bindingId: "mismatch",
+      model: M1,
+      provider: providerRef("wrong.provider"),
+      deployment: BUILTIN_DEPLOYMENT,
+      profile: withModel(createBuiltinModelProfile(), M1),
+    };
+    const outcome = createModelResolver().resolve({ selection: M1, bindings: [mismatched] });
+    expect(outcome.kind).toBe("unresolved");
+    if (outcome.kind !== "unresolved") return;
+    expect(outcome.reason).toBe("no-eligible-binding");
+    expect(outcome.diagnostics.some((d) => d.code === "binding-profile-mismatch")).toBe(true);
+  });
+
+  const CONSTRAINED: CapabilityRequirement[] = [
+    {
+      capabilityId: BUILTIN_TEXT_CAPABILITY,
+      constraints: [{ name: "maxOutputTokens", value: 4096 }],
+    },
+  ];
+
+  test("fails closed when a required constraint has no evaluator", () => {
+    const outcome = createModelResolver().resolve({
+      selection: M1,
+      requiredCapabilities: CONSTRAINED,
+      bindings: [binding("a", M1)],
+    });
+    expect(outcome.kind).toBe("unresolved");
+    if (outcome.kind !== "unresolved") return;
+    expect(outcome.reason).toBe("no-eligible-binding");
+    expect(outcome.diagnostics.some((d) => d.code === "unproven-constraint")).toBe(true);
+  });
+
+  test("resolves when the evaluator proves the constraint", () => {
+    const outcome = createModelResolver().resolve({
+      selection: M1,
+      requiredCapabilities: CONSTRAINED,
+      bindings: [binding("a", M1)],
+      constraintEvaluator: () => true,
+    });
+    expect(outcome.kind).toBe("resolved");
+  });
+
+  test("excludes when the evaluator rejects the constraint", () => {
+    const outcome = createModelResolver().resolve({
+      selection: M1,
+      requiredCapabilities: CONSTRAINED,
+      bindings: [binding("a", M1)],
+      constraintEvaluator: () => false,
+    });
+    expect(outcome.kind).toBe("unresolved");
+    if (outcome.kind !== "unresolved") return;
+    expect(outcome.reason).toBe("no-eligible-binding");
+  });
+
+  test("reports an unsupported version range instead of silently matching", () => {
+    const outcome = createModelResolver().resolve({
+      selection: M1,
+      requiredCapabilities: [{ capabilityId: BUILTIN_TEXT_CAPABILITY, versionRange: "^1.0.0" }],
+      bindings: [binding("a", M1)],
+    });
+    expect(outcome.kind).toBe("unresolved");
+    if (outcome.kind !== "unresolved") return;
+    expect(outcome.diagnostics.some((d) => d.code === "unsupported-version-range")).toBe(true);
+  });
+
+  test("matches an exact version range and rejects a mismatch", () => {
+    const resolver = createModelResolver();
+    const match = resolver.resolve({
+      selection: M1,
+      requiredCapabilities: [{ capabilityId: BUILTIN_TEXT_CAPABILITY, versionRange: "1.0.0" }],
+      bindings: [binding("a", M1)],
+    });
+    expect(match.kind).toBe("resolved");
+    const mismatch = resolver.resolve({
+      selection: M1,
+      requiredCapabilities: [{ capabilityId: BUILTIN_TEXT_CAPABILITY, versionRange: "2.0.0" }],
+      bindings: [binding("a", M1)],
+    });
+    expect(mismatch.kind).toBe("unresolved");
   });
 });

@@ -47,17 +47,31 @@ const builtinTextClaim = (): SupportedCapabilityClaim => ({
     observedAt: "2026-07-29T00:00:00.000Z",
     implementationId: "llm-core.builtin.echo",
     implementationVersion: "1.0.0",
+    providerId: "llm-core.builtin",
+    providerVersion: "1.0.0",
   },
 });
 
-export const createBuiltinModelProfile = (): ModelProfile => ({
-  profileId: modelProfileId("llm-core.builtin.echo"),
-  version: contractVersion("1.0.0"),
-  model: BUILTIN_MODEL,
-  provider: BUILTIN_PROVIDER,
-  deployment: BUILTIN_DEPLOYMENT,
-  claims: [builtinTextClaim()],
-});
+/** Recursively freeze an object graph so resolution evidence cannot mutate. */
+const deepFreeze = <T>(value: T): T => {
+  if (value !== null && typeof value === "object") {
+    for (const key of Object.keys(value as Record<string, unknown>)) {
+      deepFreeze((value as Record<string, unknown>)[key]);
+    }
+    Object.freeze(value);
+  }
+  return value;
+};
+
+export const createBuiltinModelProfile = (): ModelProfile =>
+  deepFreeze({
+    profileId: modelProfileId("llm-core.builtin.echo"),
+    version: contractVersion("1.0.0"),
+    model: BUILTIN_MODEL,
+    provider: BUILTIN_PROVIDER,
+    deployment: BUILTIN_DEPLOYMENT,
+    claims: [builtinTextClaim()],
+  });
 
 const lastUserText = (messages: ModelMessage[]): string => {
   for (let index = messages.length - 1; index >= 0; index -= 1) {
