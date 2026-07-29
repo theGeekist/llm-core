@@ -1,4 +1,5 @@
 ---
+architecture_version: 2
 id: P0-100
 title: Implement narrow-waist contracts
 phase: P0.1

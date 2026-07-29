@@ -1,12 +1,13 @@
-# Final Architecture Implementation Plan
+# llm-core Architecture v2 Implementation Plan
 
+Architecture version: v2
 Status: active
 Coordinator: architecture/integration owner
 Started: 29 July 2026
 
 ## Purpose
 
-Implement the final `llm-core` posture established by the framework research:
+Implement the Architecture v2 `llm-core` posture established by the framework research:
 a small, typed TypeScript interoperability and control kernel with explicit
 capability boundaries, one orchestration surface and qualified framework
 adapters.
@@ -179,7 +180,7 @@ Qualify `Context`, `State`, `Memory`, `Task`, `Runtime`, `Profile`, `Result` and
    interaction/provider streams.
 9. Trace correlation is not an evidence ledger.
 10. Live continuation, snapshot, checkpoint and durable execution handle are not
-   interchangeable.
+    interchangeable.
 11. `AgentRunner` is the port; the local recipe runtime is one implementation.
 12. `application/` is the only cross-capability orchestration layer.
 13. Optional framework dependencies appear only under adapter entrypoints.
@@ -201,18 +202,18 @@ See [`decisions/README.md`](decisions/README.md).
 
 ## Implementation waves
 
-| Wave | Purpose | Entry gate | Exit gate |
-|---|---|---|---|
-| A0 | Freeze decisions and ownership | Research assessment complete | ADR-001 through ADR-007 accepted |
-| I0 | Characterize the current public surface | None | Compile fixtures and blast-radius evidence stored |
-| P0.1 | Build narrow-waist contracts | A0 | Identity, invocation, version and extension contracts pass |
-| P0.2 | Parallel model and tool/control/event slices | P0.1 | Both vertical slices pass focused tests |
-| P0.3 | State/intervention and agent runner | P0.2 | Local runner uses the new lifecycle contracts |
-| P0.4 | Packaging gate, then parallel AI SDK and interaction conversions | P0.3 contracts frozen | Dependency gate, adapter and session/UI suites pass |
-| P0.5 | Converge and delete old contracts | All P0 spokes in review | No old public names/call sites; full CI passes |
-| P1.1 | Context, artifacts and evaluation | P0 converged | Provenance and real evaluation path pass |
-| P1.2 | Conformance and second runtime | P0 converged | Non-AI-SDK runner proves neutrality |
-| X1 | External framework integrations | Conformance levels stable | Versioned support declarations exist |
+| Wave | Purpose                                                          | Entry gate                   | Exit gate                                                  |
+| ---- | ---------------------------------------------------------------- | ---------------------------- | ---------------------------------------------------------- |
+| A0   | Freeze decisions and ownership                                   | Research assessment complete | ADR-001 through ADR-007 accepted                           |
+| I0   | Characterize the current public surface                          | None                         | Compile fixtures and blast-radius evidence stored          |
+| P0.1 | Build narrow-waist contracts                                     | A0                           | Identity, invocation, version and extension contracts pass |
+| P0.2 | Parallel model and tool/control/event slices                     | P0.1                         | Both vertical slices pass focused tests                    |
+| P0.3 | State/intervention and agent runner                              | P0.2                         | Local runner uses the new lifecycle contracts              |
+| P0.4 | Packaging gate, then parallel AI SDK and interaction conversions | P0.3 contracts frozen        | Dependency gate, adapter and session/UI suites pass        |
+| P0.5 | Converge and delete old contracts                                | All P0 spokes in review      | No old public names/call sites; full CI passes             |
+| P1.1 | Context, artifacts and evaluation                                | P0 converged                 | Provenance and real evaluation path pass                   |
+| P1.2 | Conformance and second runtime                                   | P0 converged                 | Non-AI-SDK runner proves neutrality                        |
+| X1   | External framework integrations                                  | Conformance levels stable    | Versioned support declarations exist                       |
 
 ## Dependency graph
 
@@ -308,20 +309,20 @@ handoff. “Tests passed” without commands is not evidence.
 
 ## Ownership
 
-| Area | Owner role |
-|---|---|
-| ADRs, vocabulary, IDs, versioning | architecture/contracts steward |
-| Model contracts, profiles, resolver | model owner |
-| Tool schemas, effects, receipts | tooling owner |
-| Policy and intervention | control owner |
-| Events, usage and evidence | evidence owner |
-| Continuation/checkpoint/durability | state owner |
-| Bindings, workflow, recipes, execution | application owner |
-| Local runner, skills and delegation | local-runtime owner |
-| Sessions, reducers and UI projections | interaction owner |
-| Ecosystem translation | per-adapter owner |
-| Conformance levels and fixtures | conformance owner |
-| Root exports, package metadata, deletion | integration owner |
+| Area                                     | Owner role                     |
+| ---------------------------------------- | ------------------------------ |
+| ADRs, vocabulary, IDs, versioning        | architecture/contracts steward |
+| Model contracts, profiles, resolver      | model owner                    |
+| Tool schemas, effects, receipts          | tooling owner                  |
+| Policy and intervention                  | control owner                  |
+| Events, usage and evidence               | evidence owner                 |
+| Continuation/checkpoint/durability       | state owner                    |
+| Bindings, workflow, recipes, execution   | application owner              |
+| Local runner, skills and delegation      | local-runtime owner            |
+| Sessions, reducers and UI projections    | interaction owner              |
+| Ecosystem translation                    | per-adapter owner              |
+| Conformance levels and fixtures          | conformance owner              |
+| Root exports, package metadata, deletion | integration owner              |
 
 ## Progress authority
 

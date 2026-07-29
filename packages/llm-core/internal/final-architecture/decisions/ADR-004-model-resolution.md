@@ -1,5 +1,6 @@
 # ADR-004 — Model, Provider, Profile and Credential Boundary
 
+Architecture version: v2
 Status: accepted
 Date: 2026-07-29
 Owners: architecture coordinator

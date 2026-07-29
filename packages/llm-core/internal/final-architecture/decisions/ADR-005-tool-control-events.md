@@ -1,5 +1,6 @@
 # ADR-005 — Tool Effects, Policy, Approval and Events
 
+Architecture version: v2
 Status: accepted
 Date: 2026-07-29
 Owners: architecture coordinator

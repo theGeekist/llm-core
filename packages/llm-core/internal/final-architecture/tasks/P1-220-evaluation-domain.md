@@ -1,4 +1,5 @@
 ---
+architecture_version: 2
 id: P1-220
 title: Evaluation domain
 phase: P1.1

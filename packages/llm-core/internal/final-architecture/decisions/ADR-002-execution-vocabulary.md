@@ -1,5 +1,6 @@
 # ADR-002 — Execution Vocabulary and Direct Replacements
 
+Architecture version: v2
 Status: accepted
 Date: 2026-07-29
 Owners: architecture coordinator

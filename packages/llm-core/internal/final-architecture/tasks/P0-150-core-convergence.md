@@ -1,4 +1,5 @@
 ---
+architecture_version: 2
 id: P0-150
 title: Converge P0 and delete old contracts
 phase: P0.5

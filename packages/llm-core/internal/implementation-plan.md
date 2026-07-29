@@ -1,6 +1,6 @@
 # Implementation Plan (Workflow Runtime)
 
-> Historical stage plan. The canonical final-architecture program, live status,
+> Historical stage plan. The canonical Architecture v2 programme, live status,
 > decision gates, and assignable briefs now live in
 > [final-architecture/PLAN.md](final-architecture/PLAN.md).
 

@@ -1,4 +1,5 @@
 ---
+architecture_version: 2
 id: TASK-ID
 title: Task title
 phase: PHASE

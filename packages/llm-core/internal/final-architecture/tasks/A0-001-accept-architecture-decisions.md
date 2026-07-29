@@ -1,6 +1,7 @@
 ---
+architecture_version: 2
 id: A0-001
-title: Accept final architecture decisions
+title: Accept Architecture v2 decisions
 phase: A0
 status: done
 priority: P0
@@ -23,7 +24,7 @@ review_owner: human
 updated_at: 2026-07-29
 ---
 
-# A0-001 — Accept Final Architecture Decisions
+# A0-001 — Accept Architecture v2 Decisions
 
 ## Objective
 

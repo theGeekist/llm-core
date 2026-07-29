@@ -1,4 +1,5 @@
 ---
+architecture_version: 2
 id: P0-170
 title: Convert interaction sessions and UI projections
 phase: P0.4

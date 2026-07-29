@@ -1,4 +1,5 @@
 ---
+architecture_version: 2
 id: P0-110
 title: Implement tool control and execution-event kernel
 phase: P0.2

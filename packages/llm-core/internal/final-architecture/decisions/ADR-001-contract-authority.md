@@ -1,5 +1,6 @@
 # ADR-001 — Contract Authority and Source Topology
 
+Architecture version: v2
 Status: accepted
 Date: 2026-07-29
 Owners: architecture coordinator
@@ -34,7 +35,7 @@ own the kernel vocabulary and permits cross-layer cycles.
 - `src/shared` contains domain-neutral pure utilities and depends on no higher
   layer.
 - Allowed direction is `shared <- contracts <- feature public fronts <-
-  application <- composition/delivery`. Adapters depend inward on contracts
+application <- composition/delivery`. Adapters depend inward on contracts
   and feature fronts and are injected through composition.
 - Initial public fronts are `/contracts`, `/model`, `/tools`, `/control`,
   `/evidence`, `/state`, `/agent`, `/workflow`, `/interaction`, and

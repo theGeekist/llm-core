@@ -1,4 +1,5 @@
 ---
+architecture_version: 2
 id: P0-160
 title: Convert AI SDK adapter to version 7
 phase: P0.4

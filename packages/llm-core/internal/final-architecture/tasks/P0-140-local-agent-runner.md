@@ -1,4 +1,5 @@
 ---
+architecture_version: 2
 id: P0-140
 title: Implement AgentRunner and local runner
 phase: P0.3

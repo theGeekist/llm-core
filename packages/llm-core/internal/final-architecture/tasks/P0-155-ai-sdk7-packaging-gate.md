@@ -1,4 +1,5 @@
 ---
+architecture_version: 2
 id: P0-155
 title: Resolve AI SDK 7 dependency and module-format gate
 phase: P0.4

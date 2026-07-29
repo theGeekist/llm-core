@@ -14,7 +14,7 @@ project skill before inspecting or editing code. Treat the repository-local
 skills under `.claude/skills/` as the shared architecture standard for this
 project.
 
-The final-architecture implementation is coordinated through
+The Architecture v2 implementation is coordinated through
 [`packages/llm-core/internal/final-architecture/PLAN.md`](packages/llm-core/internal/final-architecture/PLAN.md).
 Cross-swarm claiming, isolation, handoff, and integration follow
 [`packages/llm-core/internal/final-architecture/COORDINATION.md`](packages/llm-core/internal/final-architecture/COORDINATION.md).

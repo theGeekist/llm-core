@@ -1,5 +1,6 @@
 # ADR-003 — Schema Authority, Identity and Native Extensions
 
+Architecture version: v2
 Status: accepted
 Date: 2026-07-29
 Owners: architecture coordinator

@@ -1,4 +1,5 @@
 ---
+architecture_version: 2
 id: P0-120
 title: Implement model and profile vertical slice
 phase: P0.2

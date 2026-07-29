@@ -1,4 +1,5 @@
 ---
+architecture_version: 2
 id: P1-210
 title: Context manifest and artifact domains
 phase: P1.1

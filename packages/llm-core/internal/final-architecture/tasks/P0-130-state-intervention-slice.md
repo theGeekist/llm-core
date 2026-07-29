@@ -1,4 +1,5 @@
 ---
+architecture_version: 2
 id: P0-130
 title: Implement state and intervention vertical slice
 phase: P0.3

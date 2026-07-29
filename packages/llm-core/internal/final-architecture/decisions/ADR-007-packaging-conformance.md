@@ -1,5 +1,6 @@
 # ADR-007 — AI SDK 7 Packaging, Conformance and Second Runtime
 
+Architecture version: v2
 Status: accepted
 Date: 2026-07-29
 Owners: architecture coordinator

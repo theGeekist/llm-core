@@ -1,5 +1,6 @@
 # ADR-006 — State Lifetimes and Agent Runner Lifecycle
 
+Architecture version: v2
 Status: accepted
 Date: 2026-07-29
 Owners: architecture coordinator

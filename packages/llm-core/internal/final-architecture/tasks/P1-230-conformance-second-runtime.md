@@ -1,4 +1,5 @@
 ---
+architecture_version: 2
 id: P1-230
 title: Conformance suite and second runtime
 phase: P1.2

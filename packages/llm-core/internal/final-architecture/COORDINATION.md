@@ -1,6 +1,6 @@
-# Codex and Claude Code coordination
+# Architecture v2 — Codex and Claude Code coordination
 
-This file defines how the two agentic swarms execute the final-architecture
+This file defines how the two agentic swarms execute the Architecture v2
 program without relying on shared conversation state.
 
 ## Fixed allocation
@@ -8,15 +8,15 @@ program without relying on shared conversation state.
 The initial allocation is balanced at seven tasks per swarm. Reassignment
 requires a coordinator entry in both affected task work logs.
 
-| Codex/coordinator swarm | Claude Code swarm |
-|---|---|
-| `A0-001` architecture decisions | `I0-010` public API characterization |
-| `P0-100` narrow-waist contracts | `P0-120` model/profile slice |
-| `P0-110` tool/control/event kernel | `P0-130` state/intervention slice |
-| `P0-140` local AgentRunner | `P0-160` AI SDK 7 adapter |
-| `P0-155` packaging gate | `P0-170` interaction/session/UI |
-| `P0-150` convergence/integration | `P1-210` context/artifacts |
-| `P1-230` conformance/Python runtime | `P1-220` evaluation |
+| Codex/coordinator swarm             | Claude Code swarm                    |
+| ----------------------------------- | ------------------------------------ |
+| `A0-001` architecture decisions     | `I0-010` public API characterization |
+| `P0-100` narrow-waist contracts     | `P0-120` model/profile slice         |
+| `P0-110` tool/control/event kernel  | `P0-130` state/intervention slice    |
+| `P0-140` local AgentRunner          | `P0-160` AI SDK 7 adapter            |
+| `P0-155` packaging gate             | `P0-170` interaction/session/UI      |
+| `P0-150` convergence/integration    | `P1-210` context/artifacts           |
+| `P1-230` conformance/Python runtime | `P1-220` evaluation                  |
 
 Task count is a scheduling balance, not a claim that every task has identical
 cost. The coordinator may use child agents inside its seven tasks; Claude Code

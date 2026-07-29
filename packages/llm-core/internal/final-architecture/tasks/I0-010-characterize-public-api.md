@@ -1,4 +1,5 @@
 ---
+architecture_version: 2
 id: I0-010
 title: Characterize current public API and migration blast radius
 phase: I0

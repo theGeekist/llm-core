@@ -1,4 +1,4 @@
-# Implementation task briefs
+# Architecture v2 implementation task briefs
 
 Each file in this directory is the durable source of truth for one bounded implementation task.
 

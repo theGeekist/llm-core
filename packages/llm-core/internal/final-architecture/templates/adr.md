@@ -1,5 +1,6 @@
 # ADR-NNN — Title
 
+Architecture version: v2
 Status: proposed
 Date: YYYY-MM-DD
 Owners: architecture coordinator
