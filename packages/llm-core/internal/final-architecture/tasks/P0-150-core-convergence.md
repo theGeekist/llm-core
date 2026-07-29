@@ -3,16 +3,16 @@ architecture_version: 2
 id: P0-150
 title: Converge P0 and delete old contracts
 phase: P0.5
-status: proposed
+status: claimed
 priority: P0
 preferred_owner_kind: coordinator
-owner: null
-owner_kind: null
-lease_started_at: null
-lease_expires_at: null
-base_sha: null
-branch: null
-worktree: null
+owner: codex-root
+owner_kind: coordinator
+lease_started_at: 2026-07-30T01:30:00+08:00
+lease_expires_at: 2026-08-01T01:30:00+08:00
+base_sha: 6f57ac7
+branch: task/P0-150-convergence
+worktree: /Users/jasonnathan/Repos/@theGeekist/llm-core/.worktrees/P0-150-convergence
 depends_on:
   - I0-010
   - P0-140
@@ -47,7 +47,7 @@ write_scope:
   - apps/**
   - packages/llm-core/internal/final-architecture/tasks/P0-150-core-convergence.md
 review_owner: human
-updated_at: 2026-07-29
+updated_at: 2026-07-30
 ---
 
 # P0-150 — Converge P0 and Delete Old Contracts
@@ -95,5 +95,10 @@ git diff --check
 ```
 
 ## Work log
+
+- 2026-07-30T01:30:00+08:00 — Claimed by the Codex coordinator after all P0
+  dependencies completed. The clean `docs-v2` branch was explicitly frozen
+  after rebasing at `7a24d4307e27ce192638b2f124da66e8a9d54477`; stale runtime
+  and task-status prose was not merged into `main`.
 
 ## Handoff
