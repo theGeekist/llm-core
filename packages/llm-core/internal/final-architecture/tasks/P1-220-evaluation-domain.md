@@ -3,7 +3,7 @@ architecture_version: 2
 id: P1-220
 title: Evaluation domain
 phase: P1.1
-status: review
+status: complete
 priority: P1
 preferred_owner_kind: codex
 owner: codex-evaluation-domain
@@ -82,6 +82,11 @@ bun run typecheck:packages
   Adversarial proxy coverage confirms zero ordinary property reads. Focused
   evaluation tests, the 451-test package suite, package/test typechecks,
   architecture tests, contract schema check, lint, and diff validation pass.
+- 2026-07-30 — Independently approved at exact SHA `e885f36`. Final review
+  confirmed evidence-only inputs, exact evidence linkage, immutable
+  deterministic evaluator identity/version order, sync-preserving
+  `MaybePromise` composition, explicit-undefined rejection and zero-read
+  descriptor snapshots.
 
 ## Handoff
 
