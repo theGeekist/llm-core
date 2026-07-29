@@ -93,6 +93,9 @@ bun run typecheck:packages
 - 2026-07-30 — Re-ran focused and relevant parity suites plus package/test
   typechecks, schema freshness, scoped lint and diff checks; task remains in
   `review` for coordinator integration.
+- 2026-07-30 — Closed follow-up review gaps by changing normalized sensitive
+  and locator key policies to containment matching, with installed LangChain
+  and LlamaIndex prompt regressions plus recursive AgentSpec locator cases.
 
 ## Handoff
 
@@ -111,6 +114,8 @@ bun run typecheck:packages
   - remediation-focused suite — 18 passed, 0 failed, 67 assertions;
   - remediation parity suite — 60 passed, 3 environment-gated integrations
     skipped, 0 failed, 125 assertions.
+  - containment follow-up suite — 18 passed, 0 failed, 70 assertions; package
+    and test typechecks, schema freshness, scoped lint and diff checks passed.
 - ADRs applied: ADR-001 through ADR-008 as applicable; no deviations.
 - Security and semantic posture:
   - provider options, headers, abort signals, raw native values, errors and

@@ -75,12 +75,7 @@ const normalizedKey = (key: string): string => key.replace(/[^A-Za-z0-9]/g, "").
 
 const isSensitiveMetadataKey = (key: string): boolean => {
   const normalized = normalizedKey(key);
-  return (
-    SENSITIVE_METADATA_KEYS.has(normalized) ||
-    [...SENSITIVE_METADATA_KEYS].some(
-      (sensitive) => normalized.startsWith(sensitive) || normalized.endsWith(sensitive),
-    )
-  );
+  return [...SENSITIVE_METADATA_KEYS].some((sensitive) => normalized.includes(sensitive));
 };
 
 export const safeNativeScalar = (value: unknown): string => {

@@ -30,12 +30,7 @@ const LOCATOR_VALUE = /^(?:[a-z][a-z\d+.-]*:\/\/|\/|~\/|\.{1,2}\/|[a-z]:[\\/]|\\
 const normalizedKey = (key: string): string => key.replace(/[^A-Za-z0-9]/g, "").toLowerCase();
 const isSensitiveMetadataKey = (key: string): boolean => {
   const normalized = normalizedKey(key);
-  return [...SENSITIVE_METADATA_KEYS].some(
-    (sensitive) =>
-      normalized === sensitive ||
-      normalized.startsWith(sensitive) ||
-      normalized.endsWith(sensitive),
-  );
+  return [...SENSITIVE_METADATA_KEYS].some((sensitive) => normalized.includes(sensitive));
 };
 
 const isSafeMetadata = (value: unknown): boolean => {

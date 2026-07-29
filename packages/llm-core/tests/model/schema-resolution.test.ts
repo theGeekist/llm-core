@@ -94,13 +94,22 @@ describe("prompt and output parser adapters", () => {
     });
     (native as unknown as { metadata: unknown }).metadata = {
       nested: {
-        credential: "sk-secret",
+        myApiKeyValue: "placeholder",
+        applicationSecretValue: "placeholder",
+        userAuthorizationValue: "placeholder",
         callback: "https://signed.example.test/path",
       },
     };
     const prompt = fromLangChainPromptTemplate({ prompt: native });
     expect(prompt.inputs).toEqual([{ name: "name", type: "string", required: true }]);
-    expect(JSON.stringify(prompt)).not.toContain("sk-secret");
+    expect(prompt.metadata?.["dev.langchain"]).toEqual({
+      nested: {
+        myApiKeyValue: "[redacted]",
+        applicationSecretValue: "[redacted]",
+        userAuthorizationValue: "[redacted]",
+        callback: "[redacted]",
+      },
+    });
     expect(JSON.stringify(prompt)).not.toContain("signed.example");
     expect(Object.isFrozen(prompt.metadata)).toBe(true);
   });
@@ -141,18 +150,26 @@ describe("prompt and output parser adapters", () => {
       templateVars: ["name"],
       promptType: "custom",
       metadata: {
-        skillPath: "/workspace/private",
-        authorization: "placeholder-authorization",
-        cookie: "placeholder-cookie",
-        signedUrl: "https://placeholder.invalid/resource",
+        nested: {
+          myApiKeyValue: "placeholder",
+          applicationSecretValue: "placeholder",
+          userAuthorizationValue: "placeholder",
+          skillPath: "/workspace/private",
+          signedUrl: "https://placeholder.invalid/resource",
+        },
       },
     });
     const prompt = fromLlamaIndexPromptTemplate({ prompt: native });
     expect(prompt.name).toBe("custom");
     expect(prompt.inputs[0]?.name).toBe("name");
-    expect(JSON.stringify(prompt)).not.toContain("placeholder-authorization");
-    expect(JSON.stringify(prompt)).not.toContain("placeholder-cookie");
-    expect(JSON.stringify(prompt)).not.toContain("placeholder.invalid");
-    expect(JSON.stringify(prompt)).not.toContain("/workspace/private");
+    expect(prompt.metadata?.["org.llamaindex"]).toEqual({
+      nested: {
+        myApiKeyValue: "[redacted]",
+        applicationSecretValue: "[redacted]",
+        userAuthorizationValue: "[redacted]",
+        skillPath: "[redacted]",
+        signedUrl: "[redacted]",
+      },
+    });
   });
 });

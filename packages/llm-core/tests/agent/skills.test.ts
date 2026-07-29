@@ -94,6 +94,12 @@ describe("portable agent skills", () => {
       { nested: { localPath: "/workspace/private" } },
       { nested: { locator: "https://placeholder.invalid/resource" } },
       { nested: { value: "/workspace/private" } },
+      { nested: { myLocalPathValue: "placeholder" } },
+      { nested: { resourceLocatorValue: "placeholder" } },
+      { nested: { callbackUrlValue: "placeholder" } },
+      { nested: { "my_LOCAL-path_Value": "placeholder" } },
+      { nested: { "resource-LOCATOR_value": "placeholder" } },
+      { nested: { callback_URL_value: "placeholder" } },
     ]) {
       expect(() =>
         prepareAgentSpec({
