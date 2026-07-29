@@ -125,4 +125,20 @@ describe("model profile registration", () => {
       }),
     ).toThrow();
   });
+
+  test("rejects an undeclared root key such as a stray credential", () => {
+    expect(() =>
+      registerModelProfile({ ...baseProfile(), credential: "raw-secret" } as never),
+    ).toThrow();
+  });
+
+  test("rejects a physical locator smuggled into evidence", () => {
+    const [good] = baseProfile().claims;
+    if (!good || good.status !== "supported") throw new Error("expected a supported builtin claim");
+    const leaky = {
+      ...good,
+      evidence: { ...good.evidence, signedUrl: "https://example.com/token" },
+    } as unknown as CapabilityClaim;
+    expect(() => registerModelProfile({ ...baseProfile(), claims: [leaky] })).toThrow();
+  });
 });

@@ -110,9 +110,18 @@ bun run typecheck:packages
   extensions. `architecture_version: 2` preserved. Re-verified green (37 model
   tests, 1091 full).
 
+- 2026-07-29 — Coordinator re-review round 4: resolved the closed-object P1.
+  Profile validation now rejects undeclared keys (ADR-003 closed objects) at the
+  profile, every claim variant, every evidence variant/base, `EvidenceRef`,
+  `ResourceRef`, and constraints; only the declared `extensions` maps stay open
+  (strict JSON + reverse-DNS). A stray root `credential` or a physical evidence
+  locator (`signedUrl`) is now rejected. Added rejection tests for both. Digest
+  and SchemaRef are already closed via the contracts' guards. Re-verified green
+  (39 model tests, 1093 full).
+
 ## Handoff
 
-Status: ready for coordinator review (rounds 1–3 findings resolved).
+Status: ready for coordinator review (rounds 1–4 findings resolved).
 
 ### Files added (write scope only)
 
