@@ -117,12 +117,11 @@ const validatePolicy = <TResult>(input: ExecuteWithQualifiedRetryInput<TResult>)
   const operationProvenReadOnly =
     input.binding.kind === "tool" && input.binding.port.spec.effect.class === "read-only";
   if (
-    input.phase === "after-start" &&
     !operationProvenReadOnly &&
     policy.guarantee !== "idempotent" &&
     policy.guarantee !== "reconciled"
   ) {
-    throw new TypeError("Unproven after-start effects require idempotency or reconciliation.");
+    throw new TypeError("Unproven operations require idempotency or reconciliation.");
   }
   if (typeof input.classifyFailure !== "function") {
     throw new TypeError("Retries require a trusted closed failure classifier.");

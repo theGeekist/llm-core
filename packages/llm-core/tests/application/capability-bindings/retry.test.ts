@@ -62,14 +62,14 @@ describe("qualified capability retry", () => {
   test("rejects unbounded or open retry policy before invocation", () => {
     let attempts = 0;
     const binding = retrieverBinding([
-      passingClaim(RETRY_GUARANTEE_CAPABILITIES["read-only"], "retriever:retry"),
+      passingClaim(RETRY_GUARANTEE_CAPABILITIES.idempotent, "retriever:retry"),
     ]);
     for (const policy of [
       {
         maxAttempts: 11,
         delayMs: 0,
         retryOn: ["network"],
-        guarantee: "read-only",
+        guarantee: "idempotent",
       },
       {
         maxAttempts: 2,
@@ -99,7 +99,7 @@ describe("qualified capability retry", () => {
   test("retries synchronously only under an exact supported guarantee", () => {
     let attempts = 0;
     const binding = retrieverBinding([
-      passingClaim(RETRY_GUARANTEE_CAPABILITIES["read-only"], "retriever:retry"),
+      passingClaim(RETRY_GUARANTEE_CAPABILITIES.idempotent, "retriever:retry"),
     ]);
     const result = executeWithQualifiedRetry({
       binding,
@@ -109,7 +109,7 @@ describe("qualified capability retry", () => {
         maxAttempts: 2,
         delayMs: 0,
         retryOn: ["network"],
-        guarantee: "read-only",
+        guarantee: "idempotent",
       },
       classifyFailure: () => "network",
       call: () => {
@@ -196,7 +196,7 @@ describe("qualified capability retry", () => {
     let attempts = 0;
     const delays: number[] = [];
     const binding = retrieverBinding([
-      passingClaim(RETRY_GUARANTEE_CAPABILITIES["read-only"], "retriever:retry"),
+      passingClaim(RETRY_GUARANTEE_CAPABILITIES.idempotent, "retriever:retry"),
     ]);
     const result = executeWithQualifiedRetry({
       binding,
@@ -206,7 +206,7 @@ describe("qualified capability retry", () => {
         maxAttempts: 2,
         delayMs: 5,
         retryOn: ["rate-limit"],
-        guarantee: "read-only",
+        guarantee: "idempotent",
       },
       classifyFailure: () => "rate-limit",
       scheduler: {
@@ -272,6 +272,46 @@ describe("qualified capability retry", () => {
         binding,
         effect: "read-only",
         phase: "after-start",
+        policy: {
+          maxAttempts: 2,
+          delayMs: 0,
+          retryOn: ["network"],
+          guarantee: "read-only",
+        },
+        classifyFailure: () => "network",
+        call: () =>
+          binding.port.set({} as never, {
+            key: "key",
+            value: { kind: "json", value: "value" },
+          }),
+      }),
+    ).toThrow("idempotency or reconciliation");
+    expect(writes).toBe(0);
+  });
+
+  test("rejects a before-start mislabeled non-tool write before invocation", () => {
+    let writes = 0;
+    const binding = registerRuntimeCapabilityBinding(
+      runtimeBinding(
+        "cache-store",
+        "cache:before-start",
+        {
+          get: () => null,
+          set: () => {
+            writes += 1;
+            throw new Error("write happened");
+          },
+          delete: () => true,
+        },
+        [passingClaim(RETRY_GUARANTEE_CAPABILITIES["read-only"], "cache:before-start")],
+      ),
+      verificationDependencies(),
+    );
+    expect(() =>
+      executeWithQualifiedRetry({
+        binding,
+        effect: "read-only",
+        phase: "before-start",
         policy: {
           maxAttempts: 2,
           delayMs: 0,

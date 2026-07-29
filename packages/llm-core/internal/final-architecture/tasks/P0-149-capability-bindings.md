@@ -86,6 +86,15 @@ bun run typecheck:packages
   test typechecks; schema freshness; scoped ESLint; `git diff --check`; and the
   full package suite with 1,341 passing, 35 credential-gated skips, and zero
   failures.
+- 2026-07-30 — Closed final executable review blockers: every retryable
+  non-tool closure now requires idempotency or reconciliation regardless of
+  caller phase/effect labels, and registration captures data-only outer,
+  portable, property and callable boundaries once before the verifier attests
+  the exact immutable facade that is published.
+- 2026-07-30 — Final remediation verification passed: 31 focused tests; package
+  and test typechecks; schema freshness; scoped ESLint; `git diff --check`; and
+  the full package suite with 1,343 passing, 35 credential-gated skips, and zero
+  failures.
 
 ## Handoff
 

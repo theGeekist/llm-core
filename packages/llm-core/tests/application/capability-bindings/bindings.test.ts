@@ -47,6 +47,7 @@ describe("runtime capability binding registration", () => {
 
   test("verifies frozen, implementation-bound conformance evidence", () => {
     let verified = 0;
+    let attestedToken: object | undefined;
     const registered = registerRuntimeCapabilityBinding(
       runtimeBinding("retriever", "retriever:a", retriever),
       verificationDependencies((input) => {
@@ -55,13 +56,53 @@ describe("runtime capability binding registration", () => {
         expect(Object.isFrozen(input.evidence)).toBe(true);
         expect(input.bindingId).toBe(input.evidence.implementationId);
         expect(input.kind).toBe("retriever");
-        expect(input.implementationToken).toBe(retriever);
+        attestedToken = input.implementationToken;
         return true;
       }),
     );
 
     expect(registered.kind).toBe("retriever");
+    expect(attestedToken).toBe(registered.port);
     expect(verified).toBe(1);
+  });
+
+  test("rejects accessor substitution at binding, method and nested descriptor boundaries", () => {
+    const source = runtimeBinding("retriever", "retriever:accessor", retriever);
+    let portReads = 0;
+    const outer = {
+      kind: source.kind,
+      descriptor: source.descriptor,
+      get port() {
+        portReads += 1;
+        return portReads === 1 ? retriever : { retrieve: () => ({ documents: [{ id: "b" }] }) };
+      },
+    };
+    expect(() =>
+      registerRuntimeCapabilityBinding(outer as never, verificationDependencies()),
+    ).toThrow(TypeError);
+    expect(portReads).toBe(0);
+
+    const methodAccessor = Object.defineProperty({}, "retrieve", {
+      enumerable: true,
+      get: () => retriever.retrieve,
+    });
+    expect(() =>
+      registerRuntimeCapabilityBinding(
+        runtimeBinding("retriever", "retriever:method-accessor", methodAccessor as never),
+        verificationDependencies(),
+      ),
+    ).toThrow(TypeError);
+
+    const nestedAccessor = runtimeBinding("retriever", "retriever:nested-accessor", retriever);
+    nestedAccessor.descriptor.extensions = {
+      "dev.llm-core.test": Object.defineProperty({}, "mode", {
+        enumerable: true,
+        get: () => "safe",
+      }) as never,
+    };
+    expect(() =>
+      registerRuntimeCapabilityBinding(nestedAccessor, verificationDependencies()),
+    ).toThrow(TypeError);
   });
 
   test("binds kind and implementation identity and prevents callable drift", () => {
