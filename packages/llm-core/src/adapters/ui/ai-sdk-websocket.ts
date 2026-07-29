@@ -1,5 +1,6 @@
 /// <reference lib="dom" />
 import type { ChatTransport, UIMessage, UIMessageChunk } from "ai";
+import { isSafeInteractionProjectionJson } from "../../application/interaction/public";
 
 export interface AiSdkUiWebSocketData {
   readonly providerId?: string;
@@ -52,13 +53,117 @@ interface StreamState {
   finalized: boolean;
 }
 
+const FINISH_REASONS = new Set([
+  "stop",
+  "length",
+  "content-filter",
+  "tool-calls",
+  "error",
+  "other",
+]);
+
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === "object" && value !== null && !Array.isArray(value);
+
+const hasExactKeys = (
+  value: Record<string, unknown>,
+  required: readonly string[],
+  optional: readonly string[] = [],
+): boolean => {
+  const allowed = new Set([...required, ...optional]);
+  return (
+    required.every((key) => key in value) && Object.keys(value).every((key) => allowed.has(key))
+  );
+};
+
+const isString = (value: unknown): value is string => typeof value === "string";
+
+// AI SDK's public chunk type deliberately permits provider metadata and arbitrary
+// data chunks. This transport accepts only an exact portable subset so native or
+// sensitive server payloads cannot cross the adapter boundary.
+// eslint-disable-next-line sonarjs/cognitive-complexity -- closed union validation is intentionally centralized
+const parseUiMessageChunk = (value: unknown): UIMessageChunk | null => {
+  if (!isRecord(value) || !isString(value.type)) return null;
+  switch (value.type) {
+    case "text-start":
+    case "text-end":
+    case "reasoning-start":
+    case "reasoning-end":
+      return hasExactKeys(value, ["type", "id"]) && isString(value.id)
+        ? (value as UIMessageChunk)
+        : null;
+    case "text-delta":
+    case "reasoning-delta":
+      return hasExactKeys(value, ["type", "id", "delta"]) &&
+        isString(value.id) &&
+        isString(value.delta)
+        ? (value as UIMessageChunk)
+        : null;
+    case "error":
+      return hasExactKeys(value, ["type", "errorText"]) && isString(value.errorText)
+        ? (value as UIMessageChunk)
+        : null;
+    case "tool-input-start":
+      return hasExactKeys(value, ["type", "toolCallId", "toolName"]) &&
+        isString(value.toolCallId) &&
+        isString(value.toolName)
+        ? (value as UIMessageChunk)
+        : null;
+    case "tool-input-available":
+      return hasExactKeys(value, ["type", "toolCallId", "toolName", "input"]) &&
+        isString(value.toolCallId) &&
+        isString(value.toolName) &&
+        isSafeInteractionProjectionJson(value.input)
+        ? (value as UIMessageChunk)
+        : null;
+    case "tool-output-available":
+      return hasExactKeys(value, ["type", "toolCallId", "output"]) &&
+        isString(value.toolCallId) &&
+        isSafeInteractionProjectionJson(value.output)
+        ? (value as UIMessageChunk)
+        : null;
+    case "tool-output-error":
+      return hasExactKeys(value, ["type", "toolCallId", "errorText"]) &&
+        isString(value.toolCallId) &&
+        isString(value.errorText)
+        ? (value as UIMessageChunk)
+        : null;
+    case "tool-output-denied":
+      return hasExactKeys(value, ["type", "toolCallId"]) && isString(value.toolCallId)
+        ? (value as UIMessageChunk)
+        : null;
+    case "start-step":
+    case "finish-step":
+      return hasExactKeys(value, ["type"]) ? (value as UIMessageChunk) : null;
+    case "start":
+      return hasExactKeys(value, ["type"], ["messageId"]) &&
+        (value.messageId === undefined || isString(value.messageId))
+        ? (value as UIMessageChunk)
+        : null;
+    case "finish":
+      return hasExactKeys(value, ["type"], ["finishReason"]) &&
+        (value.finishReason === undefined ||
+          (isString(value.finishReason) && FINISH_REASONS.has(value.finishReason)))
+        ? (value as UIMessageChunk)
+        : null;
+    case "abort":
+      return hasExactKeys(value, ["type"], ["reason"]) &&
+        (value.reason === undefined || isString(value.reason))
+        ? (value as UIMessageChunk)
+        : null;
+    default:
+      return null;
+  }
+};
+
 const parseServerMessage = (value: unknown): ServerMessage | null => {
   if (typeof value !== "string") return null;
   try {
     const parsed = JSON.parse(value) as Record<string, unknown>;
     if (typeof parsed.requestId !== "string") return null;
-    if (parsed.type === "ui.chunk" && parsed.chunk && typeof parsed.chunk === "object") {
-      return parsed as unknown as ServerMessage;
+    if (parsed.type === "ui.chunk") {
+      const chunk = parseUiMessageChunk(parsed.chunk);
+      return chunk ? { type: "ui.chunk", requestId: parsed.requestId, chunk } : null;
     }
     if (parsed.type === "ui.done") return { type: "ui.done", requestId: parsed.requestId };
     if (parsed.type === "ui.error" && typeof parsed.error === "string") {

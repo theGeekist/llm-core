@@ -73,6 +73,18 @@ describe("Assistant UI canonical inbound validation", () => {
     ).toBeNull();
   });
 
+  test("rejects framework-native data instead of silently dropping it", () => {
+    expect(
+      parseAssistantUiInboundEvents(
+        {
+          commands: [],
+          data: { apiKey: "secret" },
+        },
+        context(),
+      ),
+    ).toBeNull();
+  });
+
   test("rejects sensitive projected tool data and unprojected artifacts", () => {
     expect(
       parseAssistantUiInboundEvents(

@@ -97,6 +97,57 @@ describe("AI SDK UI WebSocket transport", () => {
     expect(await reader.read()).toEqual({ done: true, value: undefined });
   });
 
+  test("rejects native, sensitive, and structurally open chunks before observation", async () => {
+    const socket = new FakeSocket();
+    const events: AiSdkUiWebSocketEvent[] = [];
+    const transport = createAiSdkUiWebSocketTransport({
+      url: "wss://example.test/chat",
+      socketFactory: () => socket as unknown as WebSocket,
+      newRequestId: () => "request-safe",
+      onEvent: (event) => events.push(event),
+    });
+    const reader = (await transport.sendMessages(sendOptions())).getReader();
+    socket.open();
+
+    socket.message({
+      type: "ui.chunk",
+      requestId: "request-safe",
+      chunk: { type: "data-provider", data: { apiKey: "secret" } },
+    });
+    socket.message({
+      type: "ui.chunk",
+      requestId: "request-safe",
+      chunk: {
+        type: "tool-output-available",
+        toolCallId: "call-1",
+        output: { accessToken: "secret" },
+      },
+    });
+    socket.message({
+      type: "ui.chunk",
+      requestId: "request-safe",
+      chunk: {
+        type: "text-delta",
+        id: "text",
+        delta: "looks safe",
+        providerMetadata: { provider: { native: true } },
+      },
+    });
+    socket.message({
+      type: "ui.chunk",
+      requestId: "request-safe",
+      chunk: { type: "text-delta", id: "text", delta: "accepted" },
+    });
+
+    expect(await reader.read()).toEqual({
+      done: false,
+      value: { type: "text-delta", id: "text", delta: "accepted" },
+    });
+    expect(JSON.stringify(events)).not.toContain("secret");
+    expect(events.filter((event) => event.direction === "incoming")).toHaveLength(1);
+    socket.message({ type: "ui.done", requestId: "request-safe" });
+  });
+
   test("closes the live socket when the caller aborts", async () => {
     const socket = new FakeSocket();
     const abort = new AbortController();

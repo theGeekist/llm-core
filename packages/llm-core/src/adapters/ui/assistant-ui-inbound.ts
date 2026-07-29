@@ -65,7 +65,7 @@ export const parseAssistantUiInboundEvents = (
 ): readonly RegisteredInteractionContentEvent[] | null => {
   if (
     !isRecord(value) ||
-    !hasOnlyKeys(value, ["commands", "data"]) ||
+    !hasOnlyKeys(value, ["commands"]) ||
     !Array.isArray(value.commands) ||
     !isCanonicalUuid(context.runId) ||
     (context.initialSequence !== undefined &&

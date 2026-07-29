@@ -1,6 +1,11 @@
 import type { JsonValue, ToolCallId } from "#contracts";
 import { isPromiseLike, maybeChain, maybeReduce, type MaybePromise } from "#shared/maybe";
-import type { ConversationStore, ConversationTurn } from "../../features/memory/public";
+import {
+  registerConversationRecord,
+  registerConversationTurn,
+  type ConversationStore,
+  type ConversationTurn,
+} from "../../features/memory/public";
 import type {
   Model,
   ModelContentPart,
@@ -98,15 +103,15 @@ const appendConversation = (
   state: LoopState,
   message: ModelMessage,
 ): MaybePromise<void> => {
-  const conversationId = state.context.request.invocationContext.conversationId;
-  if (!store || !conversationId) return undefined;
   if (message.content.some((part) => part.kind === "binary")) {
     throw new TypeError("Conversation persistence cannot silently discard inline binary content.");
   }
-  const turn: ConversationTurn = {
+  const turn = registerConversationTurn({
     role: message.role,
     content: message.content as ConversationTurn["content"],
-  };
+  });
+  const conversationId = state.context.request.invocationContext.conversationId;
+  if (!store || !conversationId) return undefined;
   // `undefined` is the intentional synchronous MaybePromise branch.
   // eslint-disable-next-line consistent-return
   return maybeChain(
@@ -202,6 +207,7 @@ export const createModelToolAgentProgram = (
 
   // The loop deliberately keeps the model response, tool fan-out and portable
   // persistence transition together so each iteration has one state boundary.
+  /* eslint-disable sonarjs/no-nested-functions -- MaybePromise composition preserves synchronous execution */
   // eslint-disable-next-line sonarjs/no-nested-functions
   const loop = (state: LoopState): MaybePromise<LocalAgentExecutionResult> => {
     if (state.context.cancellation.isCancellationRequested()) {
@@ -240,25 +246,29 @@ export const createModelToolAgentProgram = (
         }
         state.toolCalls += calls.length;
         return maybeChain(
-          (parts) => {
-            const toolMessage: ModelMessage = { role: "tool", content: parts };
-            state.messages.push(toolMessage);
-            return maybeChain(
-              // eslint-disable-next-line sonarjs/no-nested-functions
-              () => loop(state),
-              appendConversation(options.conversation, state, toolMessage),
-            );
-          },
-          maybeReduce(
-            (parts, call) =>
-              maybeChain(
-                // eslint-disable-next-line sonarjs/no-nested-functions
-                (part) => [...parts, part],
-                runTool(state, call),
+          () =>
+            maybeChain(
+              (parts) => {
+                const toolMessage: ModelMessage = { role: "tool", content: parts };
+                state.messages.push(toolMessage);
+                return maybeChain(
+                  // eslint-disable-next-line sonarjs/no-nested-functions
+                  () => loop(state),
+                  appendConversation(options.conversation, state, toolMessage),
+                );
+              },
+              maybeReduce(
+                (parts, call) =>
+                  maybeChain(
+                    // eslint-disable-next-line sonarjs/no-nested-functions
+                    (part) => [...parts, part],
+                    runTool(state, call),
+                  ),
+                [] as ModelContentPart[],
+                calls,
               ),
-            [] as ModelContentPart[],
-            calls,
-          ),
+            ),
+          appendConversation(options.conversation, state, assistant),
         );
       },
       options.model.generate(
@@ -270,6 +280,7 @@ export const createModelToolAgentProgram = (
       ),
     );
   };
+  /* eslint-enable sonarjs/no-nested-functions */
 
   const execute = (
     context: LocalAgentExecutionContext,
@@ -280,7 +291,11 @@ export const createModelToolAgentProgram = (
         ? options.conversation.read(context.request.invocationContext, conversationId)
         : null;
     const start = (record: Awaited<typeof loaded>) => {
-      const messages = initialMessages(context, record?.turns ?? []);
+      const registered = record === null ? null : registerConversationRecord(record);
+      if (registered && registered.conversationId !== conversationId) {
+        throw new TypeError("Conversation stores cannot substitute conversation identity.");
+      }
+      const messages = initialMessages(context, registered?.turns ?? []);
       const state: LoopState = { context, messages, modelCalls: 0, toolCalls: 0 };
       const user = messages[messages.length - 1]!;
       return maybeChain(() => loop(state), appendConversation(options.conversation, state, user));

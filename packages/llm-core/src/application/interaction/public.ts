@@ -14,6 +14,7 @@ export {
 export { createInteractionSession } from "./session";
 export { registerConversationSessionSnapshot } from "./registration";
 export {
+  isSafeInteractionProjectionJson,
   isRegisteredInteractionContentEvent,
   registerInteractionContentEvent,
 } from "./content-registration";
