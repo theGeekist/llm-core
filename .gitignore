@@ -7,6 +7,7 @@ node_modules/
 .agent/*
 !.agent/rules/
 !.agent/rules/**
+.worktrees/
 coverage/
 # llm-core/
 pipeline

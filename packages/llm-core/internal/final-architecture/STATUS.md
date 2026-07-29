@@ -8,9 +8,9 @@ Swarm claiming and integration follow [`COORDINATION.md`](COORDINATION.md).
 
 | ID | Phase | Status | Planned swarm | Owner | Depends on |
 |---|---|---|---|---|---|
-| A0-001 | A0 | in_progress | coordinator | architecture-coordinator | — |
-| I0-010 | I0 | ready | Claude Code | — | — |
-| P0-100 | P0.1 | proposed | Codex | — | A0-001 |
+| A0-001 | A0 | done | coordinator | architecture-coordinator | — |
+| I0-010 | I0 | in_progress | Claude Code | Claude Code | — |
+| P0-100 | P0.1 | ready | Codex | — | A0-001 |
 | P0-110 | P0.2 | proposed | Codex | — | P0-100 |
 | P0-120 | P0.2 | proposed | Claude Code | — | P0-100 |
 | P0-130 | P0.3 | proposed | Claude Code | — | P0-110 |
@@ -25,9 +25,5 @@ Swarm claiming and integration follow [`COORDINATION.md`](COORDINATION.md).
 
 ## Next action
 
-Run `A0-001` as a sequential architecture pass. `I0-010` may run in parallel
-because it only characterizes the existing surface and owns isolated fixture
-paths.
-
-Do not start implementation spokes until their ADR and dependency gates are
-accepted.
+Claim and begin `P0-100` while Claude Code completes `I0-010`. Do not start
+P0.2 spokes until the narrow-waist contracts are integrated.

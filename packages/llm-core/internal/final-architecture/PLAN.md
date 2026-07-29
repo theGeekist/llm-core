@@ -1,6 +1,6 @@
 # Final Architecture Implementation Plan
 
-Status: proposed
+Status: active
 Coordinator: architecture/integration owner
 Started: 29 July 2026
 

@@ -2,7 +2,7 @@
 id: P0-100
 title: Implement narrow-waist contracts
 phase: P0.1
-status: proposed
+status: ready
 priority: P0
 preferred_owner_kind: codex
 owner: null
@@ -20,6 +20,11 @@ decision_dependencies:
   - ADR-003
 conflicts_with: []
 write_scope:
+  - package.json
+  - bun.lock
+  - packages/llm-core/package.json
+  - packages/llm-core/tsconfig.contracts.json
+  - packages/llm-core/scripts/generate-contract-schemas.ts
   - packages/llm-core/src/contracts/**
   - packages/llm-core/tests/contracts/**
   - packages/llm-core/internal/final-architecture/tasks/P0-100-narrow-waist-contracts.md

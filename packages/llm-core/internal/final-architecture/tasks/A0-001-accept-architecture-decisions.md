@@ -2,7 +2,7 @@
 id: A0-001
 title: Accept final architecture decisions
 phase: A0
-status: in_progress
+status: done
 priority: P0
 preferred_owner_kind: coordinator
 owner: architecture-coordinator
@@ -66,13 +66,25 @@ Success means the command returns no proposed decision files.
   P0 convergence.
 - Accepted ADR-002 and ADR-007.
 - Updated ADR-003 and ADR-005 with confirmed security and evidence constraints.
+- 2026-07-29: three independent architecture reviews resolved schema/identity,
+  tool-control/receipt recovery, topology, model resolution, and runner
+  lifecycle details. Accepted ADR-001, ADR-003, ADR-004, ADR-005, and ADR-006.
+- Verified every ADR has a terminal status and the decision index agrees.
 
 ## Blocker
 
-- ADR-003 still requires the schema generator, ID wire representation, content
-  variants, and evidence-reference wire shape.
-- ADR-005 still requires the canonical digest/normalization algorithm and
-  receipt-port recovery semantics after an effect starts.
-- ADR-001, ADR-004, and ADR-006 still require explicit acceptance.
+- None.
 
 ## Handoff
+
+### Result
+
+All seven foundational ADRs are accepted. P0-100 may begin.
+
+### Verification evidence
+
+```sh
+rg -n "^Status: proposed" packages/llm-core/internal/final-architecture/decisions
+```
+
+Expected result: no matches.
