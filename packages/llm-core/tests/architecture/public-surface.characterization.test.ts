@@ -5,7 +5,7 @@ import * as functional from "../../src/functional/index";
 import * as contracts from "../../src/contracts/public";
 import * as model from "../../src/features/model/public";
 import * as tools from "../../src/features/tooling/public";
-import * as control from "../../src/features/control/public";
+import * as control from "../../src/control/index";
 import * as evidence from "../../src/features/evidence/public";
 import * as state from "../../src/features/state/public";
 import * as agent from "../../src/agent/index";

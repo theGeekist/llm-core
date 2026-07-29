@@ -195,9 +195,9 @@
       "default": "./dist/esm/src/features/tooling/public.js"
     },
     "./control": {
-      "types": "./dist/types/src/features/control/public.d.ts",
-      "import": "./dist/esm/src/features/control/public.js",
-      "default": "./dist/esm/src/features/control/public.js"
+      "types": "./dist/types/src/control/index.d.ts",
+      "import": "./dist/esm/src/control/index.js",
+      "default": "./dist/esm/src/control/index.js"
     },
     "./evidence": {
       "types": "./dist/types/src/features/evidence/public.d.ts",
@@ -254,22 +254,28 @@
     "@langchain/core": "1.1.8"
   },
   "peerDependencies": {
-    "@ai-sdk/anthropic": "^4.0.21",
-    "@ai-sdk/openai": "^4.0.20",
     "@ai-sdk/provider": "^4.0.3",
-    "@ai-sdk/provider-utils": "^5.0.12",
-    "@ai-sdk/react": "^4.0.40",
-    "@langchain/core": "1.1.8",
-    "@langchain/ollama": "^1.1.0",
-    "@langchain/openai": "^1.2.0",
-    "@llamaindex/core": "^0.6.22",
-    "@llamaindex/openai": "^0.4.22",
-    "@llamaindex/workflow-core": "^1.3.3",
-    "ai": "^7.0.37",
-    "assistant-stream": "^0.2.46",
-    "ollama-ai-provider-v2": "^1.5.5",
-    "typescript": "^5.9.3",
-    "zod-to-json-schema": "^3.25.0"
+    "@assistant-ui/react": "^0.11.53",
+    "@nlux/core": "^2.17.1",
+    "@openai/chatkit": "^1.2.0",
+    "ai": "^7.0.37"
+  },
+  "peerDependenciesMeta": {
+    "@ai-sdk/provider": {
+      "optional": true
+    },
+    "@assistant-ui/react": {
+      "optional": true
+    },
+    "@nlux/core": {
+      "optional": true
+    },
+    "@openai/chatkit": {
+      "optional": true
+    },
+    "ai": {
+      "optional": true
+    }
   },
   "files": [
     "dist",

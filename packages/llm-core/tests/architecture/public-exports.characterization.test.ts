@@ -6,6 +6,23 @@ import * as aiSdkUi from "../../src/adapters/ai-sdk-ui/index";
 import * as assistantUi from "../../src/adapters/assistant-ui/index";
 import * as openaiChatkit from "../../src/adapters/openai-chatkit/index";
 import * as nluxUi from "../../src/adapters/nlux-ui/index";
+import * as agent from "../../src/agent/index";
+import * as control from "../../src/control/index";
+import type {
+  CapabilityBindingCatalog,
+  CapabilityBindingResolutionOutcome,
+  CapabilityBindingResolutionRequest,
+  CacheStore,
+  ConversationStore,
+  Indexer,
+  RegisteredRuntimeCapabilityBinding,
+  Retriever,
+  RuntimeCapabilityBinding,
+} from "../../src/agent/index";
+import type {
+  ControlledToolExecutionOutcome,
+  ExecuteControlledToolInput,
+} from "../../src/control/index";
 import type {
   AgentRun,
   AgentRunEvent,
@@ -30,6 +47,20 @@ type _CuratedRootTypes = [
   RunResult,
   MaybePromise<unknown>,
   MaybeAsyncIterable<unknown>,
+];
+
+type _CompositionSurfaceTypes = [
+  CapabilityBindingCatalog,
+  CapabilityBindingResolutionRequest,
+  CapabilityBindingResolutionOutcome,
+  RuntimeCapabilityBinding<"retriever">,
+  RegisteredRuntimeCapabilityBinding<"retriever">,
+  Retriever,
+  Indexer,
+  CacheStore,
+  ConversationStore,
+  ExecuteControlledToolInput,
+  ControlledToolExecutionOutcome,
 ];
 
 describe("ADR-008 curated exports", () => {
@@ -57,5 +88,22 @@ describe("ADR-008 curated exports", () => {
       "createNluxChatAdapter",
       "createNluxProjectionMapper",
     ]);
+  });
+
+  test("publishes runner composition through the agent front", () => {
+    for (const name of [
+      "createCapabilityBindingCatalog",
+      "capabilityIdForPort",
+      "conversationId",
+      "jsonStorageValue",
+      "textDocument",
+      "textRetrievalQuery",
+    ]) {
+      expect(agent).toHaveProperty(name);
+    }
+  });
+
+  test("publishes controlled effects through the control front", () => {
+    expect(control).toHaveProperty("executeControlledTool");
   });
 });

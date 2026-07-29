@@ -1,7 +1,6 @@
-import type { AssistantTransportCommand } from "@assistant-ui/react";
 export { parseAssistantUiInboundEvents } from "./assistant-ui-inbound";
 export type { AssistantUiInboundContext } from "./assistant-ui-inbound";
-import type { ReadonlyJSONValue } from "assistant-stream/utils";
+import type { JsonValue } from "#contracts";
 import {
   projectInteractionEvent,
   type InteractionEvent,
@@ -9,7 +8,24 @@ import {
 } from "../../application/interaction/public";
 import type { UiProjectionMapper } from "./types";
 
-export type AssistantUiProjectionCommand = AssistantTransportCommand;
+export type AssistantUiProjectionCommand =
+  | {
+      readonly type: "add-message";
+      readonly message: {
+        readonly role: "assistant";
+        readonly parts: readonly {
+          readonly type: "text";
+          readonly text: string;
+        }[];
+      };
+    }
+  | {
+      readonly type: "add-tool-result";
+      readonly toolCallId: string;
+      readonly toolName: string;
+      readonly result: JsonValue;
+      readonly isError: boolean;
+    };
 
 export interface AssistantUiProjectionOptions {
   readonly includeReasoning?: boolean;
@@ -22,7 +38,7 @@ interface MessageBuffer {
   reasoning: string;
 }
 
-const messageCommand = (texts: readonly string[]): AssistantTransportCommand => ({
+const messageCommand = (texts: readonly string[]): AssistantUiProjectionCommand => ({
   type: "add-message",
   message: {
     role: "assistant",
@@ -32,7 +48,7 @@ const messageCommand = (texts: readonly string[]): AssistantTransportCommand => 
 
 export const createAssistantUiProjectionMapper = (
   options: AssistantUiProjectionOptions = {},
-): UiProjectionMapper<AssistantTransportCommand> => {
+): UiProjectionMapper<AssistantUiProjectionCommand> => {
   const buffers = new Map<string, MessageBuffer>();
 
   const bufferFor = (messageId: string): MessageBuffer => {
@@ -45,7 +61,7 @@ export const createAssistantUiProjectionMapper = (
     return created;
   };
 
-  const mapProjection = (event: InteractionUiEvent): readonly AssistantTransportCommand[] => {
+  const mapProjection = (event: InteractionUiEvent): readonly AssistantUiProjectionCommand[] => {
     switch (event.kind) {
       case "message-started":
         buffers.set(event.messageId, { text: "", reasoning: "" });
@@ -62,7 +78,7 @@ export const createAssistantUiProjectionMapper = (
             type: "add-tool-result",
             toolCallId: event.toolCallId,
             toolName: event.toolName,
-            result: event.projectedResult as ReadonlyJSONValue,
+            result: event.projectedResult,
             isError: event.isError,
           },
         ];

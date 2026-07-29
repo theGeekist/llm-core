@@ -9,7 +9,7 @@
       "@geekist/llm-core/contracts": ["./src/contracts/public.ts"],
       "@geekist/llm-core/model": ["./src/features/model/public.ts"],
       "@geekist/llm-core/tools": ["./src/features/tooling/public.ts"],
-      "@geekist/llm-core/control": ["./src/features/control/public.ts"],
+      "@geekist/llm-core/control": ["./src/control/index.ts"],
       "@geekist/llm-core/evidence": ["./src/features/evidence/public.ts"],
       "@geekist/llm-core/state": ["./src/features/state/public.ts"],
       "@geekist/llm-core/agent": ["./src/agent/index.ts"],

@@ -8,6 +8,7 @@ import {
   rmSync,
   writeFileSync,
 } from "node:fs";
+import { tmpdir } from "node:os";
 import { dirname, join, relative, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -33,6 +34,17 @@ const expectedSubpaths = [
   "./adapters/openai-chatkit",
   "./adapters/nlux-ui",
 ];
+const expectedPeerDependencies = {
+  "@ai-sdk/provider": "^4.0.3",
+  "@assistant-ui/react": "^0.11.53",
+  "@nlux/core": "^2.17.1",
+  "@openai/chatkit": "^1.2.0",
+  ai: "^7.0.37",
+};
+const externalConsumerTypeDependencies = {
+  "@types/json-schema": "^7.0.15",
+  "@types/node": "^22.13.5",
+};
 
 const fail = (message) => {
   throw new Error(message);
@@ -73,6 +85,17 @@ if (
 }
 if (JSON.stringify(Object.keys(packageJson.exports)) !== JSON.stringify(expectedSubpaths)) {
   fail("Package exports must match the exact ordered ADR-008 surface.");
+}
+if (
+  JSON.stringify(packageJson.peerDependencies) !== JSON.stringify(expectedPeerDependencies) ||
+  Object.keys(expectedPeerDependencies).some(
+    (name) => packageJson.peerDependenciesMeta?.[name]?.optional !== true,
+  ) ||
+  Object.keys(packageJson.peerDependenciesMeta ?? {}).some(
+    (name) => !Object.hasOwn(expectedPeerDependencies, name),
+  )
+) {
+  fail("Package peers must match the optional qualified-adapter dependency surface.");
 }
 
 const runtimeTargets = new Set();
@@ -136,7 +159,7 @@ for (const file of walkFiles(join(root, "dist"))) {
   }
 }
 
-const smokeRoot = mkdtempSync(join(workspaceRoot, ".package-smoke-"));
+const smokeRoot = mkdtempSync(join(tmpdir(), "llm-core-package-smoke-"));
 try {
   const packedOutput = run("npm", ["pack", "--json", "--pack-destination", smokeRoot], {
     cwd: root,
@@ -145,9 +168,31 @@ try {
   const packed = JSON.parse(packedOutput);
   const tarball = join(smokeRoot, packed[0].filename);
   const consumer = join(smokeRoot, "consumer");
-  const installed = join(consumer, "node_modules", "@geekist", "llm-core");
-  mkdirSync(installed, { recursive: true });
-  run("tar", ["-xzf", tarball, "-C", installed, "--strip-components=1"]);
+  mkdirSync(consumer, { recursive: true });
+  const peerDependencies = Object.fromEntries(
+    Object.entries(packageJson.peerDependencies ?? {}).map(([name, range]) => [name, range]),
+  );
+  writeFileSync(
+    join(consumer, "package.json"),
+    JSON.stringify(
+      {
+        name: "llm-core-packed-consumer",
+        private: true,
+        type: "module",
+        dependencies: {
+          "@geekist/llm-core": `file:${tarball}`,
+          ...peerDependencies,
+        },
+        devDependencies: externalConsumerTypeDependencies,
+      },
+      null,
+      2,
+    ),
+  );
+  run("npm", ["install", "--ignore-scripts", "--no-audit", "--no-fund", "--no-package-lock"], {
+    cwd: consumer,
+    env: { ...process.env, npm_config_cache: join(smokeRoot, "npm-cache") },
+  });
 
   const specifiers = expectedSubpaths.map((subpath) =>
     subpath === "." ? "@geekist/llm-core" : `@geekist/llm-core/${subpath.slice(2)}`,
@@ -163,14 +208,36 @@ try {
     [
       'import { createLocalAgentRunner, prepareAgentSpec } from "@geekist/llm-core";',
       'import type { AgentSpec, PreparedAgentSpec, AgentRunner, AgentRunnerCapabilities, AgentRun, AgentRunRequest, AgentRunEvent, RunResult, MaybePromise, MaybeAsyncIterable } from "@geekist/llm-core";',
+      'import { createCapabilityBindingCatalog, capabilityIdForPort, conversationId, jsonStorageValue, textDocument, textRetrievalQuery } from "@geekist/llm-core/agent";',
+      'import type { CapabilityBindingCatalog, CapabilityBindingResolutionRequest, CapabilityBindingResolutionOutcome, RuntimeCapabilityBinding, RegisteredRuntimeCapabilityBinding, Retriever, Indexer, CacheStore, ConversationStore } from "@geekist/llm-core/agent";',
+      'import { executeControlledTool } from "@geekist/llm-core/control";',
+      'import type { ExecuteControlledToolInput, ControlledToolExecutionOutcome } from "@geekist/llm-core/control";',
+      'import type { ConversationSessionStore, InteractionSession, InteractionSessionIdentityPort } from "@geekist/llm-core/interaction";',
+      'import type { ResumeInterventionWorkflowInput, WorkflowResumeOutcome } from "@geekist/llm-core/workflow";',
+      'import type { AiSdkUiProjectionChunk } from "@geekist/llm-core/adapters/ai-sdk-ui";',
+      'import type { AssistantUiProjectionCommand, AssistantUiProjectionOptions } from "@geekist/llm-core/adapters/assistant-ui";',
+      'import type { ChatKitProjectionEvent } from "@geekist/llm-core/adapters/openai-chatkit";',
+      'import type { NluxInteractionAdapterOptions, NluxProjectionSignal } from "@geekist/llm-core/adapters/nlux-ui";',
       ...specifiers
         .slice(1)
         .map(
           (specifier, index) => `import * as surface${index} from ${JSON.stringify(specifier)};`,
         ),
       "void createLocalAgentRunner; void prepareAgentSpec;",
+      "void createCapabilityBindingCatalog; void capabilityIdForPort; void conversationId; void jsonStorageValue; void textDocument; void textRetrievalQuery;",
+      "void executeControlledTool;",
       "type RootTypes = [AgentSpec, PreparedAgentSpec, AgentRunner, AgentRunnerCapabilities, AgentRun, AgentRunRequest, AgentRunEvent, RunResult, MaybePromise<unknown>, MaybeAsyncIterable<unknown>];",
       "declare const rootTypes: RootTypes; void rootTypes;",
+      'type AgentCompositionTypes = [CapabilityBindingCatalog, CapabilityBindingResolutionRequest, CapabilityBindingResolutionOutcome, RuntimeCapabilityBinding<"retriever">, RegisteredRuntimeCapabilityBinding<"retriever">, Retriever, Indexer, CacheStore, ConversationStore];',
+      "declare const agentCompositionTypes: AgentCompositionTypes; void agentCompositionTypes;",
+      "type ControlTypes = [ExecuteControlledToolInput, ControlledToolExecutionOutcome];",
+      "declare const controlTypes: ControlTypes; void controlTypes;",
+      "type InteractionTypes = [ConversationSessionStore, InteractionSession, InteractionSessionIdentityPort];",
+      "declare const interactionTypes: InteractionTypes; void interactionTypes;",
+      "type WorkflowTypes = [ResumeInterventionWorkflowInput, WorkflowResumeOutcome];",
+      "declare const workflowTypes: WorkflowTypes; void workflowTypes;",
+      "type UiTypes = [AiSdkUiProjectionChunk, AssistantUiProjectionCommand, AssistantUiProjectionOptions, ChatKitProjectionEvent, NluxInteractionAdapterOptions, NluxProjectionSignal];",
+      "declare const uiTypes: UiTypes; void uiTypes;",
       ...specifiers.slice(1).map((_, index) => `void surface${index};`),
       "",
     ].join("\n"),
@@ -185,8 +252,8 @@ try {
           target: "ESNext",
           module: "ESNext",
           moduleResolution: "Bundler",
-          skipLibCheck: true,
-          types: [],
+          skipLibCheck: false,
+          types: ["node"],
         },
         include: ["consumer.ts"],
       },
