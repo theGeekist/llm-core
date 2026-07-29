@@ -38,6 +38,11 @@ export interface WorkflowRetryPolicy {
 
 export interface ExecutableWorkflowStep<TState, TPause, TResumeInput = unknown> {
   readonly key: string;
+  /**
+   * The general workflow runtime is passive-only. Meaningful effects require
+   * the durable `resumeInterventionWorkflow` path.
+   */
+  readonly effect: "none";
   readonly retry?: WorkflowRetryPolicy;
   execute(
     context: WorkflowStepContext<TState, TResumeInput>,
@@ -52,6 +57,9 @@ export interface WorkflowDefinition<TState, TPause, TResumeInput = unknown> {
 }
 
 export interface WorkflowPauseSnapshot<TState, TPause> {
+  readonly kind: "workflow-pause-snapshot";
+  readonly durability: "ephemeral";
+  readonly checkpoint: false;
   readonly workflowId: string;
   readonly workflowVersion: string;
   readonly nextStepIndex: number;

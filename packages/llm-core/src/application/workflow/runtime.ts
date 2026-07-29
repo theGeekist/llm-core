@@ -120,6 +120,22 @@ const completeOutcome = <TState, TPause>(
   completedStepKeys: Object.freeze(completed.map(({ step }) => step.key)),
 });
 
+const nonPassiveStep = <TState, TPause, TResumeInput>(
+  definition: WorkflowDefinition<TState, TPause, TResumeInput>,
+): ExecutableWorkflowStep<TState, TPause, TResumeInput> | undefined =>
+  definition.steps.find((step) => (step as { readonly effect?: unknown }).effect !== "none");
+
+const passiveOnlyFailure = <TState, TPause>(
+  step: ExecutableWorkflowStep<TState, TPause, unknown>,
+): WorkflowExecutionOutcome<TState, TPause> =>
+  failedOutcome({
+    error: new TypeError(
+      `General workflow step "${step.key}" must declare effect "none"; meaningful effects require the durable intervention workflow.`,
+    ),
+    rollbackFailures: [],
+    stepKey: step.key,
+  });
+
 type ExecutionCursor<TState, TPause, TResumeInput> = {
   readonly definition: WorkflowDefinition<TState, TPause, TResumeInput>;
   readonly state: TState;
@@ -169,6 +185,9 @@ const executeFrom = <TState, TPause, TResumeInput>(
             return {
               status: "paused",
               snapshot: {
+                kind: "workflow-pause-snapshot",
+                durability: "ephemeral",
+                checkpoint: false,
                 workflowId: cursor.definition.workflowId,
                 workflowVersion: cursor.definition.version,
                 nextStepIndex: cursor.stepIndex,
@@ -192,6 +211,9 @@ const executeFrom = <TState, TPause, TResumeInput>(
               return {
                 status: "paused",
                 snapshot: {
+                  kind: "workflow-pause-snapshot",
+                  durability: "ephemeral",
+                  checkpoint: false,
                   workflowId: cursor.definition.workflowId,
                   workflowVersion: cursor.definition.version,
                   nextStepIndex: 0,
@@ -232,8 +254,12 @@ export const runWorkflow = <TState, TPause, TResumeInput = unknown>(
   definition: WorkflowDefinition<TState, TPause, TResumeInput>,
   initialState: TState,
   options: WorkflowRuntimeOptions = {},
-): MaybePromise<WorkflowExecutionOutcome<TState, TPause>> =>
-  executeFrom(
+): MaybePromise<WorkflowExecutionOutcome<TState, TPause>> => {
+  const unsafe = nonPassiveStep(definition);
+  if (unsafe) {
+    return passiveOnlyFailure(unsafe as ExecutableWorkflowStep<TState, TPause, unknown>);
+  }
+  return executeFrom(
     {
       definition,
       state: initialState,
@@ -243,6 +269,7 @@ export const runWorkflow = <TState, TPause, TResumeInput = unknown>(
     },
     options,
   );
+};
 
 export const resumeWorkflow = <TState, TPause, TResumeInput>(
   definition: WorkflowDefinition<TState, TPause, TResumeInput>,
@@ -252,12 +279,21 @@ export const resumeWorkflow = <TState, TPause, TResumeInput>(
   },
   options: WorkflowRuntimeOptions = {},
 ): MaybePromise<WorkflowExecutionOutcome<TState, TPause>> => {
+  const unsafe = nonPassiveStep(definition);
+  if (unsafe) {
+    return passiveOnlyFailure(unsafe as ExecutableWorkflowStep<TState, TPause, unknown>);
+  }
   if (
+    input.snapshot.kind !== "workflow-pause-snapshot" ||
+    input.snapshot.durability !== "ephemeral" ||
+    input.snapshot.checkpoint !== false ||
     input.snapshot.workflowId !== definition.workflowId ||
     input.snapshot.workflowVersion !== definition.version
   ) {
     return failedOutcome({
-      error: new TypeError("Workflow pause snapshot belongs to another definition."),
+      error: new TypeError(
+        "Workflow pause snapshot is not an ephemeral snapshot for this definition.",
+      ),
       rollbackFailures: [],
     });
   }
