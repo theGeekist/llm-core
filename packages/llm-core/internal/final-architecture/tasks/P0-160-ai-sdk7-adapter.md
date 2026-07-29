@@ -104,6 +104,14 @@ bun run typecheck:packages
   a redacted JSON projection.
 - 2026-07-29 — Moved to `review` after frozen install, contract tests, the full
   package suite, build, package smoke, typecheck and relevant lint passed.
+- 2026-07-29 — Amended the review candidate to require strict JSON tool-call
+  input, scope provider/core tool-call correlation per invocation, detect
+  collisions in both directions, preserve representable multipart tool
+  results, and reject unresolved media references.
+- 2026-07-29 — Added regression coverage for concurrent invocation identity,
+  generated and unknown ID failures, dynamic non-JSON input, approval denial,
+  actual stream aborts, multipart output and async AI SDK UI conversion; all
+  receiving gates passed.
 
 ## Handoff
 
@@ -118,7 +126,9 @@ Status: review.
 - `832b5f0` / `7098877` — net-zero boundary probe: a qualified-front export
   required the integration-owned public-export characterization update, so the
   worker removed it and deferred that convergence change to P0-150.
-- The implementation worktree was clean at `7098877` before this handoff-only
+- `c3f2825` — review amendments hardening tool input, result projection,
+  approval denial and invocation-scoped correlation boundaries.
+- The implementation worktree was clean at `c3f2825` before this handoff-only
   task update.
 
 ### Changed files
@@ -138,7 +148,9 @@ Status: review.
 - `packages/llm-core/src/adapters/providers/ai-sdk/tools.ts`
 - `packages/llm-core/src/adapters/providers/ai-sdk/types.ts`
 - `packages/llm-core/tests/adapters/ai-sdk.model.test.ts`
+- `packages/llm-core/tests/adapters/ai-sdk.messages.test.ts`
 - `packages/llm-core/tests/adapters/ai-sdk7/model.test.ts`
+- `packages/llm-core/tests/adapters/ai-sdk7/tool-boundary.test.ts`
 - `packages/llm-core/tests/adapters/ai-sdk7/versions.test.ts`
 - `packages/llm-core/tests/adapters/telemetry.test.ts`
 - `packages/llm-core/tests/adapters/tools.test.ts`
@@ -151,10 +163,10 @@ Status: review.
 
 - `bun install --frozen-lockfile` — exit 0; 1,394 installs across 1,236
   packages checked with no changes.
-- `bun test packages/llm-core/tests/adapters/ai-sdk7` — exit 0; 8 pass.
+- Focused AI SDK 7 and message conversion suite — exit 0; 32 pass.
 - Focused AI SDK 7, compatibility, UI and interop suite — exit 0; 110 pass.
 - Post-hardening AI SDK 7/model/tool suite — exit 0; 33 pass.
-- `bun test packages/llm-core/tests` — exit 0; 1,157 pass, 35 credential-gated
+- `bun test packages/llm-core/tests` — exit 0; 1,167 pass, 35 credential-gated
   integration tests skipped, 0 fail.
 - `bun run build` — exit 0.
 - `bun run test:package` — exit 0; 15 ESM runtime targets loaded and stale
@@ -191,7 +203,11 @@ Status: review.
 
 - A `SchemaRef` carries identity, not a schema document; the v2 adapter uses
   AI SDK 7 unstructured JSON output until a trusted schema resolver exists.
-- `media-ref` input must be resolved by composition before invocation.
+- `media-ref` input and tool-result output must be resolved by composition
+  before invocation.
+- Multipart JSON tool-result parts use `application/json` file parts because AI
+  SDK 7 content output has no JSON part; the JSON value remains losslessly
+  serialized but changes representation at that boundary.
 - Provider warning text is replaced with a stable redacted warning. Native
   metadata is omitted unless an injected redactor supplies safe JSON.
 - The frozen stream contract has no field for provider-native or approval
