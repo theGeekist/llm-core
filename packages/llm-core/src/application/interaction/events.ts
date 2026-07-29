@@ -1,7 +1,15 @@
-import type { ConversationId, EventId, RunId } from "#contracts";
+import {
+  isJsonValue,
+  type ConversationId,
+  type EventId,
+  type RunId,
+} from "#contracts";
 import type { AgentRunEvent } from "../../features/agent/public";
 import type { ExecutionEvent } from "../../features/evidence/public";
-import type { InteractionEvent } from "./types";
+import type {
+  InteractionContentEvent,
+  InteractionEvent,
+} from "./types";
 
 const freezePortable = <T>(value: T): T => {
   const cloned = structuredClone(value);
@@ -134,7 +142,81 @@ export const interactionExecutionEvent = (
   return freezePortable({ kind: "tool-execution", conversationId, event });
 };
 
+const contentFacts = (
+  event: InteractionContentEvent,
+): InteractionContentEvent["facts"] => {
+  switch (event.kind) {
+    case "interaction.message.started":
+    case "interaction.message.completed":
+      return { messageId: event.facts.messageId };
+    case "interaction.message.text.delta":
+    case "interaction.message.reasoning.delta":
+      return { messageId: event.facts.messageId, text: event.facts.text };
+    case "interaction.message.tool.call":
+      if (!isJsonValue(event.facts.projectedInput)) {
+        throw new TypeError("Projected tool input must be strict redacted JSON.");
+      }
+      return {
+        messageId: event.facts.messageId,
+        toolCallId: event.facts.toolCallId,
+        toolName: event.facts.toolName,
+        projectedInput: event.facts.projectedInput,
+      };
+    case "interaction.message.tool.result":
+      if (!isJsonValue(event.facts.projectedResult)) {
+        throw new TypeError("Projected tool result must be strict redacted JSON.");
+      }
+      return {
+        messageId: event.facts.messageId,
+        toolCallId: event.facts.toolCallId,
+        toolName: event.facts.toolName,
+        projectedResult: event.facts.projectedResult,
+        isError: event.facts.isError,
+      };
+    case "interaction.message.failed":
+      return {
+        messageId: event.facts.messageId,
+        reasonCode: event.facts.reasonCode,
+      };
+    default:
+      throw new TypeError("Unknown interaction content event kind.");
+  }
+};
+
+export const interactionContentEvent = (
+  conversationId: ConversationId,
+  source: InteractionContentEvent,
+): InteractionEvent => {
+  const event = {
+    eventId: source.eventId,
+    kind: source.kind,
+    occurredAt: source.occurredAt,
+    sequence: source.sequence,
+    runId: source.runId,
+    facts: contentFacts(source),
+    redaction:
+      source.redaction.kind === "not-required"
+        ? { kind: "not-required" }
+        : {
+            kind: source.redaction.kind,
+            categories: [...source.redaction.categories],
+          },
+  } as InteractionContentEvent;
+  return freezePortable({ kind: "content", conversationId, event });
+};
+
 export const interactionEventId = (event: InteractionEvent): EventId => event.event.eventId;
 
 export const interactionRunId = (event: InteractionEvent): RunId =>
   event.kind === "agent-run" ? event.event.identity.runId : event.event.runId;
+
+export const interactionSequenceKey = (event: InteractionEvent): string => {
+  const runId = interactionRunId(event);
+  if (event.kind === "tool-execution") {
+    return `tool:${runId}:${event.event.toolCallId}`;
+  }
+  if (event.kind === "content") {
+    return `content:${runId}:${event.event.facts.messageId}`;
+  }
+  return `agent:${runId}`;
+};

@@ -1,53 +1,94 @@
-import type {
-  InteractionEvent,
-  InteractionUiEvent,
+import type { AssistantTransportCommand } from "@assistant-ui/react";
+import type { ReadonlyJSONValue } from "assistant-stream/utils";
+import {
+  projectInteractionEvent,
+  type InteractionEvent,
+  type InteractionUiEvent,
 } from "../../application/interaction/public";
-import { statusText, withProjection } from "./shared";
 import type { UiProjectionMapper } from "./types";
 
-export interface AssistantUiTextPart {
-  readonly type: "text";
-  readonly text: string;
-}
-
-export interface AssistantUiProjectionCommand {
-  readonly type: "add-message";
-  readonly message: {
-    readonly role: "assistant";
-    readonly parts: readonly AssistantUiTextPart[];
-  };
-}
+export type AssistantUiProjectionCommand = AssistantTransportCommand;
 
 export interface AssistantUiProjectionOptions {
-  readonly includeProgress?: boolean;
-  readonly prefix?: string;
+  readonly includeReasoning?: boolean;
+  readonly reasoningPrefix?: string;
+  readonly errorPrefix?: string;
 }
 
-const mapProjection = (
-  options: AssistantUiProjectionOptions,
-  event: InteractionUiEvent,
-): readonly AssistantUiProjectionCommand[] => {
-  if (event.kind === "run-progress" && options.includeProgress !== true) {
-    return [];
-  }
-  return [
-    {
-      type: "add-message",
-      message: {
-        role: "assistant",
-        parts: [
-          {
-            type: "text",
-            text: `${options.prefix ?? ""}${statusText(event)}`,
-          },
-        ],
-      },
-    },
-  ];
-};
+interface MessageBuffer {
+  text: string;
+  reasoning: string;
+}
+
+const messageCommand = (texts: readonly string[]): AssistantTransportCommand => ({
+  type: "add-message",
+  message: {
+    role: "assistant",
+    parts: texts.map((text) => ({ type: "text", text })),
+  },
+});
 
 export const createAssistantUiProjectionMapper = (
   options: AssistantUiProjectionOptions = {},
-): UiProjectionMapper<AssistantUiProjectionCommand> =>
-  (event: InteractionEvent) =>
-    withProjection((projection) => mapProjection(options, projection), event);
+): UiProjectionMapper<AssistantTransportCommand> => {
+  const buffers = new Map<string, MessageBuffer>();
+
+  const bufferFor = (messageId: string): MessageBuffer => {
+    const existing = buffers.get(messageId);
+    if (existing) {
+      return existing;
+    }
+    const created = { text: "", reasoning: "" };
+    buffers.set(messageId, created);
+    return created;
+  };
+
+  const mapProjection = (event: InteractionUiEvent): readonly AssistantTransportCommand[] => {
+    switch (event.kind) {
+      case "message-started":
+        buffers.set(event.messageId, { text: "", reasoning: "" });
+        return [];
+      case "text-delta":
+        bufferFor(event.messageId).text += event.text;
+        return [];
+      case "reasoning-delta":
+        bufferFor(event.messageId).reasoning += event.text;
+        return [];
+      case "tool-result":
+        return [
+          {
+            type: "add-tool-result",
+            toolCallId: event.toolCallId,
+            toolName: event.toolName,
+            result: event.projectedResult as ReadonlyJSONValue,
+            isError: event.isError,
+          },
+        ];
+      case "message-finished": {
+        const buffer = bufferFor(event.messageId);
+        buffers.delete(event.messageId);
+        const texts = [
+          ...(buffer.text ? [buffer.text] : []),
+          ...(options.includeReasoning && buffer.reasoning
+            ? [`${options.reasoningPrefix ?? "Reasoning: "}${buffer.reasoning}`]
+            : []),
+        ];
+        return texts.length > 0 ? [messageCommand(texts)] : [];
+      }
+      case "message-failed":
+        buffers.delete(event.messageId);
+        return [
+          messageCommand([
+            `${options.errorPrefix ?? "Error: "}${event.reasonCode}`,
+          ]),
+        ];
+      default:
+        return [];
+    }
+  };
+
+  return (event: InteractionEvent) => {
+    const projected = projectInteractionEvent(event);
+    return projected ? mapProjection(projected) : [];
+  };
+};

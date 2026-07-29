@@ -5,7 +5,11 @@ import type {
   InteractionRunStatus,
   InteractionUiEvent,
 } from "./types";
-import { interactionEventId, interactionRunId } from "./events";
+import {
+  interactionEventId,
+  interactionRunId,
+  interactionSequenceKey,
+} from "./events";
 
 const terminalStatus = (event: InteractionEvent): InteractionRunStatus | null => {
   if (event.kind !== "agent-run") {
@@ -33,11 +37,74 @@ export const createInteractionProjection = (
     status: "idle",
     eventIds: Object.freeze([]),
     events: Object.freeze([]),
+    lastSequences: Object.freeze({}),
+    terminalRunIds: Object.freeze([]),
   });
 
 export const projectInteractionEvent = (event: InteractionEvent): InteractionUiEvent | null => {
   const eventId = interactionEventId(event);
   const runId = interactionRunId(event);
+  if (event.kind === "content") {
+    switch (event.event.kind) {
+      case "interaction.message.started":
+        return Object.freeze({
+          kind: "message-started",
+          eventId,
+          runId,
+          messageId: event.event.facts.messageId,
+        });
+      case "interaction.message.text.delta":
+      case "interaction.message.reasoning.delta":
+        return Object.freeze({
+          kind:
+            event.event.kind === "interaction.message.text.delta"
+              ? "text-delta"
+              : "reasoning-delta",
+          eventId,
+          runId,
+          messageId: event.event.facts.messageId,
+          text: event.event.facts.text,
+        });
+      case "interaction.message.tool.call":
+        return Object.freeze({
+          kind: "tool-call",
+          eventId,
+          runId,
+          messageId: event.event.facts.messageId,
+          toolCallId: event.event.facts.toolCallId,
+          toolName: event.event.facts.toolName,
+          projectedInput: event.event.facts.projectedInput,
+        });
+      case "interaction.message.tool.result":
+        return Object.freeze({
+          kind: "tool-result",
+          eventId,
+          runId,
+          messageId: event.event.facts.messageId,
+          toolCallId: event.event.facts.toolCallId,
+          toolName: event.event.facts.toolName,
+          projectedResult: event.event.facts.projectedResult,
+          isError: event.event.facts.isError,
+        });
+      case "interaction.message.completed":
+        return Object.freeze({
+          kind: "message-finished",
+          eventId,
+          runId,
+          messageId: event.event.facts.messageId,
+        });
+      case "interaction.message.failed":
+        return Object.freeze({
+          kind: "message-failed",
+          eventId,
+          runId,
+          messageId: event.event.facts.messageId,
+          reasonCode: event.event.facts.reasonCode,
+        });
+      default:
+        throw new TypeError("Unknown interaction content event kind.");
+    }
+  }
   if (event.kind === "tool-execution") {
     return Object.freeze({
       kind: "tool-status",
@@ -108,6 +175,15 @@ export const reduceInteractionProjection = (
   if (state.eventIds.includes(eventId)) {
     return state;
   }
+  const runId = interactionRunId(event);
+  if (state.terminalRunIds.includes(runId)) {
+    throw new TypeError("Interaction events cannot follow a terminal run event.");
+  }
+  const sequenceKey = interactionSequenceKey(event);
+  const lastSequence = state.lastSequences[sequenceKey];
+  if (lastSequence !== undefined && event.event.sequence <= lastSequence) {
+    throw new TypeError("Interaction event sequences must increase monotonically.");
+  }
   const projected = projectInteractionEvent(event);
   let status: InteractionRunStatus = terminalStatus(event) ?? state.status;
   if (event.kind === "agent-run") {
@@ -124,8 +200,16 @@ export const reduceInteractionProjection = (
   return Object.freeze({
     conversationId: state.conversationId,
     status,
-    runId: interactionRunId(event),
+    runId,
     eventIds: Object.freeze([...state.eventIds, eventId]),
     events: projected ? Object.freeze([...state.events, projected]) : state.events,
+    lastSequences: Object.freeze({
+      ...state.lastSequences,
+      [sequenceKey]: event.event.sequence,
+    }),
+    terminalRunIds:
+      terminalStatus(event) === null
+        ? state.terminalRunIds
+        : Object.freeze([...state.terminalRunIds, runId]),
   });
 };

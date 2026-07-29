@@ -77,4 +77,39 @@ describe("interaction event projection", () => {
     });
     expect(Object.isFrozen(projected)).toBe(true);
   });
+
+  test("rejects sequence regression and every event after terminal closure", () => {
+    const initial = createInteractionProjection(CONVERSATION_ID);
+    const started = interactionAgentEvent(
+      CONVERSATION_ID,
+      agentEvent("agent.run.started", 1, {
+        agentId: AGENT.agentId,
+        agentVersion: AGENT.version,
+      }),
+    );
+    const running = reduceInteractionProjection(initial, started);
+    const regressed = interactionAgentEvent(
+      CONVERSATION_ID,
+      agentEvent("agent.run.progress", 0, { code: "late" }),
+    );
+    expect(() => reduceInteractionProjection(running, regressed)).toThrow(
+      "monotonically",
+    );
+
+    const terminal = interactionAgentEvent(
+      CONVERSATION_ID,
+      agentEvent("agent.run.completed", 2, { status: "completed" }),
+    );
+    const completed = reduceInteractionProjection(running, terminal);
+    const reopened = interactionAgentEvent(
+      CONVERSATION_ID,
+      agentEvent("agent.run.started", 3, {
+        agentId: AGENT.agentId,
+        agentVersion: AGENT.version,
+      }),
+    );
+    expect(() => reduceInteractionProjection(completed, reopened)).toThrow(
+      "cannot follow a terminal",
+    );
+  });
 });

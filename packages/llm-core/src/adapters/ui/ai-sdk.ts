@@ -1,82 +1,107 @@
+import type { UIMessageChunk } from "ai";
 import type { JsonValue } from "#contracts";
-import type {
-  InteractionEvent,
-  InteractionUiEvent,
+import {
+  projectInteractionEvent,
+  type InteractionEvent,
+  type InteractionUiEvent,
 } from "../../application/interaction/public";
-import { withProjection } from "./shared";
 import type { UiProjectionMapper } from "./types";
 
-/**
- * Structural AI SDK UI chunks. The adapter boundary deliberately does not
- * export AI SDK types into the portable interaction application contract.
- */
-export type AiSdkUiProjectionChunk =
-  | { readonly type: "start"; readonly messageId: string }
-  | { readonly type: "data-llm-core-status"; readonly data: JsonValue }
-  | {
-      readonly type: "finish";
-      readonly finishReason: "stop" | "error" | "other";
-    };
-
-const statusData = (event: InteractionUiEvent): JsonValue => {
-  switch (event.kind) {
-    case "run-started":
-      return { kind: event.kind, runId: event.runId, agentId: event.agentId };
-    case "run-progress":
-      return { kind: event.kind, runId: event.runId, code: event.code };
-    case "intervention-requested":
-      return {
-        kind: event.kind,
-        runId: event.runId,
-        interventionId: event.interventionId,
-        allowed: [...event.allowed],
-        expiresAt: event.expiresAt,
-      };
-    case "cancellation-requested":
-      return { kind: event.kind, runId: event.runId };
-    case "tool-status":
-      return {
-        kind: event.kind,
-        runId: event.runId,
-        toolCallId: event.toolCallId,
-        receiptState: event.receiptState,
-        ...(event.reasonCode ? { reasonCode: event.reasonCode } : {}),
-      };
-    case "run-finished":
-      return {
-        kind: event.kind,
-        runId: event.runId,
-        status: event.status,
-        ...(event.reasonCode ? { reasonCode: event.reasonCode } : {}),
-      };
-    default:
-      throw new TypeError("Unknown interaction UI event.");
-  }
+type LlmCoreUiData = {
+  readonly "llm-core-status": JsonValue;
 };
 
-const mapProjection = (event: InteractionUiEvent): readonly AiSdkUiProjectionChunk[] => {
-  if (event.kind === "run-started") {
-    return [
-      { type: "start", messageId: event.runId },
-      { type: "data-llm-core-status", data: statusData(event) },
-    ];
-  }
-  if (event.kind === "run-finished") {
-    return [
-      { type: "data-llm-core-status", data: statusData(event) },
-      {
-        type: "finish",
-        finishReason:
-          event.status === "completed"
-            ? "stop"
-            : event.status === "failed"
-              ? "error"
-              : "other",
-      },
-    ];
-  }
-  return [{ type: "data-llm-core-status", data: statusData(event) }];
-};
+export type AiSdkUiProjectionChunk = UIMessageChunk<unknown, LlmCoreUiData>;
 
-export const createAiSdkUiProjectionMapper = (): UiProjectionMapper<AiSdkUiProjectionChunk> =>
-  (event: InteractionEvent) => withProjection(mapProjection, event);
+const statusData = (event: InteractionUiEvent): JsonValue => ({
+  kind: event.kind,
+  runId: event.runId,
+});
+
+export const createAiSdkUiProjectionMapper = (): UiProjectionMapper<AiSdkUiProjectionChunk> => {
+  const textParts = new Set<string>();
+  const reasoningParts = new Set<string>();
+
+  const closeParts = (messageId: string): AiSdkUiProjectionChunk[] => {
+    const chunks: AiSdkUiProjectionChunk[] = [];
+    if (textParts.delete(messageId)) {
+      chunks.push({ type: "text-end", id: `${messageId}:text` });
+    }
+    if (reasoningParts.delete(messageId)) {
+      chunks.push({ type: "reasoning-end", id: `${messageId}:reasoning` });
+    }
+    return chunks;
+  };
+
+  const mapProjection = (event: InteractionUiEvent): AiSdkUiProjectionChunk[] => {
+    switch (event.kind) {
+      case "message-started":
+        return [{ type: "start", messageId: event.messageId }];
+      case "text-delta": {
+        const id = `${event.messageId}:text`;
+        const chunks: AiSdkUiProjectionChunk[] = [];
+        if (!textParts.has(event.messageId)) {
+          textParts.add(event.messageId);
+          chunks.push({ type: "text-start", id });
+        }
+        chunks.push({ type: "text-delta", id, delta: event.text });
+        return chunks;
+      }
+      case "reasoning-delta": {
+        const id = `${event.messageId}:reasoning`;
+        const chunks: AiSdkUiProjectionChunk[] = [];
+        if (!reasoningParts.has(event.messageId)) {
+          reasoningParts.add(event.messageId);
+          chunks.push({ type: "reasoning-start", id });
+        }
+        chunks.push({ type: "reasoning-delta", id, delta: event.text });
+        return chunks;
+      }
+      case "tool-call":
+        return [
+          {
+            type: "tool-input-available",
+            toolCallId: event.toolCallId,
+            toolName: event.toolName,
+            input: event.projectedInput,
+          },
+        ];
+      case "tool-result":
+        return event.isError
+          ? [
+              {
+                type: "tool-output-error",
+                toolCallId: event.toolCallId,
+                errorText: "Tool execution failed.",
+              },
+            ]
+          : [
+              {
+                type: "tool-output-available",
+                toolCallId: event.toolCallId,
+                output: event.projectedResult,
+              },
+            ];
+      case "message-finished":
+        return [...closeParts(event.messageId), { type: "finish", finishReason: "stop" }];
+      case "message-failed":
+        return [
+          ...closeParts(event.messageId),
+          { type: "error", errorText: event.reasonCode },
+          { type: "finish", finishReason: "error" },
+        ];
+      default:
+        return [
+          {
+            type: "data-llm-core-status",
+            data: statusData(event),
+          },
+        ];
+    }
+  };
+
+  return (event: InteractionEvent) => {
+    const projected = projectInteractionEvent(event);
+    return projected ? mapProjection(projected) : [];
+  };
+};

@@ -16,6 +16,7 @@ import type {
 import type {
   EventSink,
   ExecutionEvent,
+  RedactionMetadata,
   ToolReceiptState,
 } from "../../features/evidence/public";
 import type {
@@ -23,6 +24,57 @@ import type {
   ProviderSessionRef,
   Snapshot,
 } from "../../features/state/public";
+
+export interface InteractionContentEventFactsByKind {
+  readonly "interaction.message.started": {
+    readonly messageId: string;
+  };
+  readonly "interaction.message.text.delta": {
+    readonly messageId: string;
+    readonly text: string;
+  };
+  readonly "interaction.message.reasoning.delta": {
+    readonly messageId: string;
+    readonly text: string;
+  };
+  readonly "interaction.message.tool.call": {
+    readonly messageId: string;
+    readonly toolCallId: string;
+    readonly toolName: string;
+    readonly projectedInput: JsonValue;
+  };
+  readonly "interaction.message.tool.result": {
+    readonly messageId: string;
+    readonly toolCallId: string;
+    readonly toolName: string;
+    readonly projectedResult: JsonValue;
+    readonly isError: boolean;
+  };
+  readonly "interaction.message.completed": {
+    readonly messageId: string;
+  };
+  readonly "interaction.message.failed": {
+    readonly messageId: string;
+    readonly reasonCode: string;
+  };
+}
+
+export type InteractionContentEventKind = keyof InteractionContentEventFactsByKind;
+
+interface InteractionContentEventBase {
+  readonly eventId: EventId;
+  readonly occurredAt: string;
+  readonly sequence: number;
+  readonly runId: RunId;
+  readonly redaction: RedactionMetadata;
+}
+
+export type InteractionContentEvent = {
+  readonly [TKind in InteractionContentEventKind]: InteractionContentEventBase & {
+    readonly kind: TKind;
+    readonly facts: Readonly<InteractionContentEventFactsByKind[TKind]>;
+  };
+}[InteractionContentEventKind];
 
 export type InteractionEvent =
   | {
@@ -34,6 +86,11 @@ export type InteractionEvent =
       readonly kind: "tool-execution";
       readonly conversationId: ConversationId;
       readonly event: ExecutionEvent;
+    }
+  | {
+      readonly kind: "content";
+      readonly conversationId: ConversationId;
+      readonly event: InteractionContentEvent;
     };
 
 export type InteractionRunStatus =
@@ -83,6 +140,51 @@ export type InteractionUiEvent =
       readonly runId: RunId;
       readonly status: RunResult["status"];
       readonly reasonCode?: string;
+    }
+  | {
+      readonly kind: "message-started";
+      readonly eventId: EventId;
+      readonly runId: RunId;
+      readonly messageId: string;
+    }
+  | {
+      readonly kind: "text-delta" | "reasoning-delta";
+      readonly eventId: EventId;
+      readonly runId: RunId;
+      readonly messageId: string;
+      readonly text: string;
+    }
+  | {
+      readonly kind: "tool-call";
+      readonly eventId: EventId;
+      readonly runId: RunId;
+      readonly messageId: string;
+      readonly toolCallId: string;
+      readonly toolName: string;
+      readonly projectedInput: JsonValue;
+    }
+  | {
+      readonly kind: "tool-result";
+      readonly eventId: EventId;
+      readonly runId: RunId;
+      readonly messageId: string;
+      readonly toolCallId: string;
+      readonly toolName: string;
+      readonly projectedResult: JsonValue;
+      readonly isError: boolean;
+    }
+  | {
+      readonly kind: "message-finished";
+      readonly eventId: EventId;
+      readonly runId: RunId;
+      readonly messageId: string;
+    }
+  | {
+      readonly kind: "message-failed";
+      readonly eventId: EventId;
+      readonly runId: RunId;
+      readonly messageId: string;
+      readonly reasonCode: string;
     };
 
 export interface InteractionProjection {
@@ -91,6 +193,8 @@ export interface InteractionProjection {
   readonly runId?: RunId;
   readonly eventIds: readonly EventId[];
   readonly events: readonly InteractionUiEvent[];
+  readonly lastSequences: Readonly<Record<string, number>>;
+  readonly terminalRunIds: readonly RunId[];
 }
 
 export interface ConversationTurn {
@@ -120,14 +224,45 @@ export interface ConversationSessionLoadRequest {
 export interface ConversationSessionSaveRequest {
   readonly conversationId: ConversationId;
   readonly expectedRevision: number;
+  readonly reservationId: string;
   readonly snapshot: ConversationSessionSnapshot;
+}
+
+export interface ConversationSessionReservationRequest {
+  readonly conversationId: ConversationId;
+  readonly expectedRevision: number;
+  readonly reservationId: string;
+}
+
+export interface ConversationSessionReservation {
+  readonly conversationId: ConversationId;
+  readonly expectedRevision: number;
+  readonly reservationId: string;
 }
 
 export interface ConversationSessionStore {
   load(
     request: ConversationSessionLoadRequest,
   ): MaybePromise<ConversationSessionSnapshot | null>;
+  /**
+   * Atomically acquires exclusive ownership of `expectedRevision`.
+   *
+   * At most one reservation may be returned for a conversation revision. The
+   * reservation remains exclusive until `save` consumes it or `release` is
+   * called; implementations must not emulate this with a post-execution CAS.
+   */
+  reserve(
+    request: ConversationSessionReservationRequest,
+  ): MaybePromise<ConversationSessionReservation | null>;
+  /**
+   * Commits the next snapshot only for the still-held reservation.
+   *
+   * `conflict` means the reservation was lost or invalid and is never a normal
+   * optimistic race after runner execution.
+   */
   save(request: ConversationSessionSaveRequest): MaybePromise<"saved" | "conflict">;
+  /** Idempotently releases an uncommitted or consumed reservation. */
+  release(reservation: ConversationSessionReservation): MaybePromise<void>;
 }
 
 export interface InteractionSendRequest {
@@ -156,6 +291,7 @@ export interface InteractionRun extends InteractionLiveConnection {
 export interface InteractionSession {
   readonly conversationId: ConversationId;
   readonly executionEventSink: EventSink;
+  emitContent(event: InteractionContentEvent): Promise<void>;
   load(): Promise<ConversationSessionSnapshot>;
   send(request: InteractionSendRequest): Promise<InteractionRun>;
   reconnect(
@@ -166,6 +302,7 @@ export interface InteractionSession {
 export interface InteractionSessionIdentityPort {
   now(): string;
   newSnapshotId(): string;
+  newReservationId(): string;
 }
 
 export interface CreateInteractionSessionOptions {

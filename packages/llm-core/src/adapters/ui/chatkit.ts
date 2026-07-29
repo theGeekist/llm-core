@@ -1,59 +1,52 @@
-import type { JsonValue } from "#contracts";
-import type {
-  InteractionEvent,
-  InteractionUiEvent,
+import type { ChatKitEvents } from "@openai/chatkit";
+import {
+  projectInteractionEvent,
+  type InteractionEvent,
+  type InteractionUiEvent,
 } from "../../application/interaction/public";
-import { withProjection } from "./shared";
 import type { UiProjectionMapper } from "./types";
 
 export type ChatKitProjectionEvent =
-  | { readonly type: "chatkit.response.start" }
-  | { readonly type: "chatkit.response.end" }
-  | {
-      readonly type: "chatkit.error";
-      readonly detail: { readonly code: string };
-    }
-  | {
-      readonly type: "chatkit.log";
-      readonly detail: {
-        readonly name: string;
-        readonly data: JsonValue;
-      };
-    };
+  | ChatKitEvents["chatkit.response.start"]
+  | ChatKitEvents["chatkit.response.end"]
+  | ChatKitEvents["chatkit.error"]
+  | ChatKitEvents["chatkit.effect"];
 
-const logEvent = (event: InteractionUiEvent): ChatKitProjectionEvent => ({
-  type: "chatkit.log",
-  detail: {
-    name: `llm-core.${event.kind}`,
-    data:
-      event.kind === "tool-status"
-        ? {
-            runId: event.runId,
-            toolCallId: event.toolCallId,
-            receiptState: event.receiptState,
-          }
-        : { runId: event.runId },
-  },
-});
+const chatKitEvent = <K extends keyof ChatKitEvents>(
+  type: K,
+  detail: ChatKitEvents[K]["detail"],
+): ChatKitEvents[K] => new CustomEvent(type, { detail }) as ChatKitEvents[K];
 
 const mapProjection = (event: InteractionUiEvent): readonly ChatKitProjectionEvent[] => {
-  if (event.kind === "run-started") {
-    return [{ type: "chatkit.response.start" }];
-  }
-  if (event.kind === "run-finished") {
-    if (event.status === "failed") {
+  switch (event.kind) {
+    case "message-started":
+      return [chatKitEvent("chatkit.response.start", undefined)];
+    case "message-finished":
+      return [chatKitEvent("chatkit.response.end", undefined)];
+    case "message-failed":
       return [
-        {
-          type: "chatkit.error",
-          detail: { code: event.reasonCode ?? "agent-run-failed" },
-        },
-        { type: "chatkit.response.end" },
+        chatKitEvent("chatkit.error", { error: new Error(event.reasonCode) }),
+        chatKitEvent("chatkit.response.end", undefined),
       ];
-    }
-    return [{ type: "chatkit.response.end" }];
+    case "tool-call":
+    case "tool-result":
+      return [
+        chatKitEvent("chatkit.effect", {
+          name: `llm-core.${event.kind}`,
+          data: {
+            runId: event.runId,
+            toolCallId: event.toolCallId,
+            toolName: event.toolName,
+          },
+        }),
+      ];
+    default:
+      return [];
   }
-  return [logEvent(event)];
 };
 
 export const createChatKitProjectionMapper = (): UiProjectionMapper<ChatKitProjectionEvent> =>
-  (event: InteractionEvent) => withProjection(mapProjection, event);
+  (event: InteractionEvent) => {
+    const projected = projectInteractionEvent(event);
+    return projected ? mapProjection(projected) : [];
+  };
