@@ -1,7 +1,7 @@
 # Final Architecture Status
 
 Updated: 29 July 2026
-Active tasks: 1
+Active tasks: 2
 
 This is a projection. Task files under [`tasks/`](tasks/) are authoritative.
 Swarm claiming and integration follow [`COORDINATION.md`](COORDINATION.md).
@@ -10,7 +10,7 @@ Swarm claiming and integration follow [`COORDINATION.md`](COORDINATION.md).
 |---|---|---|---|---|---|
 | A0-001 | A0 | done | coordinator | architecture-coordinator | — |
 | I0-010 | I0 | in_progress | Claude Code | Claude Code | — |
-| P0-100 | P0.1 | ready | Codex | — | A0-001 |
+| P0-100 | P0.1 | claimed | Codex | codex-root | A0-001 |
 | P0-110 | P0.2 | proposed | Codex | — | P0-100 |
 | P0-120 | P0.2 | proposed | Claude Code | — | P0-100 |
 | P0-130 | P0.3 | proposed | Claude Code | — | P0-110 |

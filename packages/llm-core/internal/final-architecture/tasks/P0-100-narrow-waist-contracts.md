@@ -2,16 +2,16 @@
 id: P0-100
 title: Implement narrow-waist contracts
 phase: P0.1
-status: ready
+status: claimed
 priority: P0
 preferred_owner_kind: codex
-owner: null
-owner_kind: null
-lease_started_at: null
-lease_expires_at: null
-base_sha: null
-branch: null
-worktree: null
+owner: codex-root
+owner_kind: codex
+lease_started_at: 2026-07-29T16:04:54+08:00
+lease_expires_at: 2026-07-30T16:04:54+08:00
+base_sha: 4640a1fd7351c54bf965513cdfdfde53edce1825
+branch: task/P0-100-codex
+worktree: /Users/jasonnathan/Repos/@theGeekist/llm-core/.worktrees/P0-100-codex
 depends_on:
   - A0-001
 decision_dependencies:
@@ -66,5 +66,8 @@ bun run typecheck:packages
 ```
 
 ## Work log
+
+- 2026-07-29T16:04:54+08:00 — Claimed by `codex-root` from
+  `4640a1fd7351c54bf965513cdfdfde53edce1825`.
 
 ## Handoff
