@@ -2,16 +2,16 @@
 id: P0-120
 title: Implement model and profile vertical slice
 phase: P0.2
-status: proposed
+status: claimed
 priority: P0
 preferred_owner_kind: claude-code
-owner: null
-owner_kind: null
-lease_started_at: null
-lease_expires_at: null
-base_sha: null
-branch: null
-worktree: null
+owner: Claude Code
+owner_kind: claude-code
+lease_started_at: 2026-07-29T16:48:00+08:00
+lease_expires_at: 2026-07-30T16:48:00+08:00
+base_sha: 6e8e6a5
+branch: task/P0-120-claude
+worktree: /Users/jasonnathan/Repos/@theGeekist/llm-core/.worktrees/P0-120-claude
 depends_on:
   - P0-100
 decision_dependencies:
@@ -61,5 +61,8 @@ bun run typecheck:packages
 ```
 
 ## Work log
+
+- 2026-07-29T16:48:00+08:00 — Claimed for Claude Code by the architecture
+  coordinator after P0-100 completed and was integrated at `6e8e6a5`.
 
 ## Handoff
