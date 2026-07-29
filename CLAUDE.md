@@ -2,6 +2,18 @@
 
 Read and follow [`AGENTS.md`](AGENTS.md) first.
 
+## Project architecture skills
+
+Before reviewing, designing, or changing backend architecture, load and follow
+`/backend-slice-architecture`. Before reviewing, designing, or changing
+frontend architecture, load and follow `/frontend-slice-architecture`. Load
+both when a task crosses that boundary.
+
+Any Claude subagent delegated architecture work must load the applicable
+project skill before inspecting or editing code. Treat the repository-local
+skills under `.claude/skills/` as the shared architecture standard for this
+project.
+
 The final-architecture implementation is coordinated through
 [`packages/llm-core/internal/final-architecture/PLAN.md`](packages/llm-core/internal/final-architecture/PLAN.md).
 Cross-swarm claiming, isolation, handoff, and integration follow
