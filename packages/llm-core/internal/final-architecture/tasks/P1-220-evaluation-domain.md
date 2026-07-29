@@ -3,16 +3,16 @@ architecture_version: 2
 id: P1-220
 title: Evaluation domain
 phase: P1.1
-status: ready
+status: claimed
 priority: P1
 preferred_owner_kind: codex
-owner: null
-owner_kind: null
-lease_started_at: null
-lease_expires_at: null
-base_sha: null
-branch: null
-worktree: null
+owner: codex-evaluation-domain
+owner_kind: codex
+lease_started_at: 2026-07-30T04:15:41+08:00
+lease_expires_at: 2026-08-01T04:15:41+08:00
+base_sha: 2693e91e22c8429d5067509a72a88d879d3cb9c4
+branch: task/P1-220-evaluation
+worktree: /Users/jasonnathan/Repos/@theGeekist/llm-core/.worktrees/P1-220-evaluation
 depends_on:
   - P0-150
   - P1-210
@@ -65,6 +65,9 @@ bun run typecheck:packages
 
 - 2026-07-30 — Promoted to ready by the coordinator after P1-210 completed,
   passed independent review and integrated into `main`.
+- 2026-07-30T04:15:41+08:00 — Claimed by the Codex evaluation worker from
+  integrated context/artifact base
+  `2693e91e22c8429d5067509a72a88d879d3cb9c4`.
 
 ## Handoff
 
