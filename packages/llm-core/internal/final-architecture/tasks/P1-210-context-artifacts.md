@@ -3,7 +3,7 @@ architecture_version: 2
 id: P1-210
 title: Context manifest and artifact domains
 phase: P1.1
-status: claimed
+status: review
 priority: P1
 preferred_owner_kind: codex
 owner: codex-context-artifacts
@@ -65,7 +65,84 @@ bun run typecheck:packages
 - 2026-07-30T03:44:18+08:00 — Claimed by the Codex context/artifacts worker
   after P0-150 completed and merged at
   `e72d312e3f9d966acc2b96548c42b122498b3315`.
+- 2026-07-30 — Implementation started. Applying ADR-001, ADR-003, and
+  ADR-005 within the context and artifact feature write scope.
+- 2026-07-30 — Implemented provider-neutral context manifest and artifact
+  feature fronts at `b3a2471e767bb8cd2138ab13a5ec4718c57dd820`.
+  Focused tests, package/test typechecks, contract schema check, lint,
+  architecture tests, and diff hygiene pass; moved to review.
 
 ## Handoff
 
-- None.
+### Result
+
+- `ContextManifest` construction computes deterministic SHA-256 identities
+  from strict canonical JSON, preserves entry order, rejects duplicate entry
+  identities, and returns a cloned/deep-frozen value.
+- `ContextScope`, `ContextProvenance`, and `ContextBudget` are closed,
+  qualified portable contracts. Byte usage is deterministic: UTF-8 text,
+  canonical JSON bytes, decoded binary length, or referenced resource length.
+  Token usage is always explicit caller metadata; a token limit fails closed
+  unless every entry supplies a token cost.
+- `Artifact` and `ArtifactRef` use the canonical spelling. Artifact identity is
+  the existing `ResourceRef.resourceId` UUID with its media type, byte length,
+  and SHA-256 digest; no content-hash ID or physical locator was introduced.
+- Both public fronts depend only on `#contracts` and feature-local internals.
+  They expose no provider SDK, native handle, credential, path, URL, bucket,
+  or storage-engine type.
+
+### Commit and changed files
+
+Implementation commit:
+`b3a2471e767bb8cd2138ab13a5ec4718c57dd820`.
+
+- `packages/llm-core/src/features/artifacts/artifact.ts`
+- `packages/llm-core/src/features/artifacts/public.ts`
+- `packages/llm-core/src/features/artifacts/types.ts`
+- `packages/llm-core/src/features/context/canonical.ts`
+- `packages/llm-core/src/features/context/manifest.ts`
+- `packages/llm-core/src/features/context/public.ts`
+- `packages/llm-core/src/features/context/types.ts`
+- `packages/llm-core/tests/artifacts/artifact.test.ts`
+- `packages/llm-core/tests/context/manifest.test.ts`
+
+### Verification
+
+- `bun test packages/llm-core/tests/context packages/llm-core/tests/artifacts`
+  — exit 0; 13 pass, 0 fail, 45 assertions.
+- `bun run typecheck:packages` — exit 0, including deterministic contract
+  schema check.
+- `bun run typecheck:tests` — exit 0.
+- `bun run lint` — exit 0.
+- `bun test packages/llm-core/tests/architecture` — exit 0; 12 pass, 0 fail.
+- `git diff --check` — exit 0.
+
+### ADRs and risks
+
+- Applied ADR-001 feature isolation and explicit `public.ts` fronts, ADR-003
+  UUID/resource/digest identity and storage-neutral references, and ADR-005
+  strict closed canonical inputs and fail-closed disclosure posture.
+- No ADR deviations.
+- Resource byte length and digest are reference claims; exact-byte
+  verification remains the responsibility of an authorized resource resolver.
+  No resolver or persistence implementation is added by this task.
+- Context identity is sequence-sensitive by design because entry order is
+  execution-significant. JSON object key order is canonicalized.
+
+### Integration-owner requests
+
+- Add `#context` and `#artifacts` aliases in
+  `packages/llm-core/package.json`, targeting the two feature `public.ts`
+  files.
+- Publish `./context` and `./artifacts` in
+  `packages/llm-core/package.json` if P1 extends ADR-008's P0 sixteen-subpath
+  surface; otherwise aggregate the fronts through an explicitly selected
+  existing subpath.
+- Add both public fronts to `PUBLIC_ENTRY_POINTS` in
+  `packages/llm-core/scripts/build.ts`.
+- Update
+  `packages/llm-core/tests/architecture/public-surface.characterization.test.ts`
+  and package smoke expectations for the selected public-subpath decision.
+- Do not add these feature contracts to the cross-language schema roots:
+  ADR-001 keeps feature contracts outside the `src/contracts` ABI authority
+  unless a later accepted decision promotes them.
