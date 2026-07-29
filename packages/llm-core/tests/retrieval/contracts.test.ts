@@ -58,6 +58,35 @@ describe("retrieval feature front", () => {
     expect(retrievalQueryText(query)).toBe('find {"topic":"ports"}diagram');
   });
 
+  test("fails closed when a text-only projection would discard portable content", () => {
+    const resource = {
+      resourceId: "0190bd0c-0000-7000-8000-000000001411" as never,
+      mediaType: "image/png",
+      byteLength: 1,
+      digest: { algorithm: "sha-256" as const, value: "0".repeat(64) as never },
+    };
+
+    expect(() =>
+      documentText({
+        content: [{ kind: "media-ref", mediaType: "image/png", resource }],
+      }),
+    ).toThrow("without semantic loss");
+    expect(() =>
+      retrievalQueryText({
+        content: [
+          {
+            kind: "binary",
+            mediaType: "application/octet-stream",
+            encoding: "base64",
+            data: "AA==" as never,
+            byteLength: 1,
+            digest: { algorithm: "sha-256", value: "0".repeat(64) as never },
+          },
+        ],
+      }),
+    ).toThrow("without semantic loss");
+  });
+
   test("passes InvocationContext separately through sync and async ports", async () => {
     const seen: InvocationContext[] = [];
     const loader: DocumentLoader = {

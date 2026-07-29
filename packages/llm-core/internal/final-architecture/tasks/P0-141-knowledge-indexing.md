@@ -73,6 +73,9 @@ bun run typecheck:packages
 - 2026-07-29T23:38:00+08:00 — Expanded the qualified-adapter parity matrix
   across every migrated adapter family, including sync/async behavior,
   cardinality/order, stream order, delete tri-state and redaction.
+- 2026-07-29T23:55:00+08:00 — Coordinator review made text-only projections
+  fail closed on semantic loss, rejected unsupported structured filters, and
+  redacted native streaming failures.
 
 ## Handoff
 
@@ -92,7 +95,7 @@ bun run typecheck:packages
   LlamaIndex knowledge families without importing legacy adapter contracts.
 - Focused verification:
   `bun test packages/llm-core/tests/retrieval packages/llm-core/tests/indexing`
-  — 17 pass, 0 fail, 66 assertions.
+  — 20 pass, 0 fail, 72 assertions.
 - Static verification: `bun run typecheck:packages`,
   `bun run --cwd packages/llm-core typecheck:tests`,
   `bun run contracts:schema:check`, scoped ESLint and `git diff --check` all

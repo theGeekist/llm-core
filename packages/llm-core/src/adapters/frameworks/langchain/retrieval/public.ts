@@ -157,10 +157,13 @@ export function createLangChainReranker(compressor: BaseDocumentCompressor): Rer
   };
 }
 
-const structuredValue = (value: unknown): StructuredQueryValue =>
-  typeof value === "string" || typeof value === "number" || typeof value === "boolean" ? value : "";
+const structuredValue = (value: unknown): StructuredQueryValue => {
+  if (typeof value === "string" || typeof value === "boolean") return value;
+  if (typeof value === "number" && Number.isFinite(value)) return value;
+  throw new TypeError("LangChain structured-query values must be portable scalar values.");
+};
 
-function filterDirective(directive: FilterDirective): StructuredQueryFilter | null {
+function filterDirective(directive: FilterDirective): StructuredQueryFilter {
   if (directive instanceof Comparison) {
     return {
       kind: "comparison",
@@ -173,16 +176,14 @@ function filterDirective(directive: FilterDirective): StructuredQueryFilter | nu
     return {
       kind: "operation",
       operator: directive.operator,
-      filters: (directive.args ?? [])
-        .map(filterDirective)
-        .filter((item): item is StructuredQueryFilter => item !== null),
+      filters: (directive.args ?? []).map(filterDirective),
     };
   }
-  return null;
+  throw new TypeError("Unsupported LangChain structured-query directive.");
 }
 
 export const fromLangChainStructuredQuery = (query: LangChainStructuredQuery): StructuredQuery => {
-  const filter = query.filter ? filterDirective(query.filter) : null;
+  const filter = query.filter ? filterDirective(query.filter) : undefined;
   return { query: query.query, ...(filter ? { filter } : {}) };
 };
 

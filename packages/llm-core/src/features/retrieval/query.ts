@@ -14,7 +14,10 @@ export const retrievalQueryText = (query: RetrievalQuery): string =>
     .map((part) => {
       if (part.kind === "text") return part.text;
       if (part.kind === "json") return JSON.stringify(part.value);
-      return part.kind === "media-ref" ? (part.altText ?? "") : "";
+      if (part.kind === "media-ref" && part.altText !== undefined) return part.altText;
+      throw new TypeError(
+        `Text-only retrieval adapters cannot project ${part.kind} content without semantic loss.`,
+      );
     })
     .join("");
 

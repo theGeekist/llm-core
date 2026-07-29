@@ -255,6 +255,13 @@ const nativeExtensions = (raw: unknown) => {
   return value ? { "org.llamaindex.response": value } : undefined;
 };
 
+const redactedStreamDiagnostic = (error: unknown): QueryDiagnostic => ({
+  severity: "error",
+  code: "llamaindex-stream-error",
+  message: "LlamaIndex stream failed.",
+  data: { cause: error instanceof Error ? "native-error" : "native-throw" },
+});
+
 const queryResult = (
   query: RetrievalQuery,
   response: EngineResponse,
@@ -286,12 +293,7 @@ const streamEvents = async function* (
       extensions = nativeExtensions(response.raw) ?? extensions;
     }
   } catch (error) {
-    const diagnostic: QueryDiagnostic = {
-      severity: "error",
-      code: "llamaindex-stream-error",
-      message: error instanceof Error ? error.message : "LlamaIndex stream failed.",
-    };
-    yield { kind: "error", error: diagnostic };
+    yield { kind: "error", error: redactedStreamDiagnostic(error) };
     return;
   }
   yield {

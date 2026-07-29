@@ -62,6 +62,23 @@ describe("qualified retrieval adapters", () => {
     });
   });
 
+  test("fails closed instead of weakening unsupported LangChain filters", () => {
+    const unsupportedValue = new LangChainStructuredQuery(
+      "articles",
+      new Comparison("eq", "publishedAt", new Date("2026-01-01")) as never,
+    );
+    expect(() => fromLangChainStructuredQuery(unsupportedValue)).toThrow("portable scalar");
+
+    const unsupportedDirective = new LangChainStructuredQuery("articles", {
+      comparator: "eq",
+      attribute: "status",
+      value: "published",
+    } as never);
+    expect(() => fromLangChainStructuredQuery(unsupportedDirective)).toThrow(
+      "Unsupported LangChain",
+    );
+  });
+
   test("round-trips LlamaIndex documents without retaining a native handle", () => {
     const native = new LlamaDocument({
       id_: "li-1",

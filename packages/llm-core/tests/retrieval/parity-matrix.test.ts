@@ -55,6 +55,14 @@ const collect = async (value: MaybeAsyncIterable<QueryStreamEvent>) => {
   return isPromiseLike(items) ? await items : items;
 };
 
+const rejectingStream = (message: string): AsyncIterable<EngineResponse> => ({
+  [Symbol.asyncIterator]() {
+    return {
+      next: () => Promise.reject(new Error(message)),
+    };
+  },
+});
+
 describe("qualified adapter parity matrix", () => {
   test("AI SDK preserves embedding cardinality and ranking order", async () => {
     const embeddingModel = {
@@ -324,5 +332,29 @@ describe("qualified adapter parity matrix", () => {
     expect(await store.delete({ ids: ["v-1"] }, CONTEXT)).toBe(true);
     expect(await store.delete({ filter: { stale: true } }, CONTEXT)).toBeNull();
     expect(deleted).toEqual(["v-1"]);
+  });
+
+  test("redacts native LlamaIndex stream failures", async () => {
+    const engine = {
+      query: async () => rejectingStream("credential=sk-sensitive"),
+    } as unknown as BaseQueryEngine;
+    const events = await collect(
+      createLlamaIndexQueryEngine(engine).stream?.({ query: textRetrievalQuery("q") }, CONTEXT) ??
+        [],
+    );
+
+    expect(events).toEqual([
+      { kind: "start" },
+      {
+        kind: "error",
+        error: {
+          severity: "error",
+          code: "llamaindex-stream-error",
+          message: "LlamaIndex stream failed.",
+          data: { cause: "native-error" },
+        },
+      },
+    ]);
+    expect(JSON.stringify(events)).not.toContain("sk-sensitive");
   });
 });
