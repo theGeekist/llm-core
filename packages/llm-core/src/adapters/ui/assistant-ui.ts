@@ -1,4 +1,6 @@
 import type { AssistantTransportCommand } from "@assistant-ui/react";
+export { parseAssistantUiInboundEvents } from "./assistant-ui-inbound";
+export type { AssistantUiInboundContext } from "./assistant-ui-inbound";
 import type { ReadonlyJSONValue } from "assistant-stream/utils";
 import {
   projectInteractionEvent,
@@ -77,11 +79,7 @@ export const createAssistantUiProjectionMapper = (
       }
       case "message-failed":
         buffers.delete(event.messageId);
-        return [
-          messageCommand([
-            `${options.errorPrefix ?? "Error: "}${event.reasonCode}`,
-          ]),
-        ];
+        return [messageCommand([`${options.errorPrefix ?? "Error: "}${event.reasonCode}`])];
       default:
         return [];
     }
