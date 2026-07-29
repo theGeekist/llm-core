@@ -3,41 +3,57 @@ layout: home
 
 hero:
   name: llm-core
-  text: Turn prompt spaghetti into real AI products
-  tagline: A deterministic, composable core for AI workflows, UI interactions, and provider adapters.
+  text: Orchestrate LLM logic instead of gluing it
+  tagline: Describe an agent as data, execute it on a typed runner, and read every step back as a traceable event stream.
   image:
     src: /logo.png
     alt: llm-core logo
   actions:
     - theme: brand
-      text: Get Started
+      text: Get started
       link: /guide/hello-world
     - theme: alt
-      text: Core Concepts
-      link: /guide/core-concepts
+      text: Why llm-core?
+      link: /guide/philosophy
 
 features:
-  - title: Recipes are Assets
-    details: Define flows as named, versioned recipes and share them across teams like npm packages.
-  - title: Packs are Logic
-    details: Internal step groups that power recipes; most users only touch recipe handles.
-  - title: Adapters are Plugs
-    details: Swap OpenAI for Anthropic or LangChain for LlamaIndex while keeping your recipe unchanged.
-  - title: Interactions are Projections
-    details: Turn model or query streams into UI-ready state while the full workflow runtime stays behind the scenes.
-  - title: Execution is Deterministic
-    details: The engine runs your recipe as a DAG. Every step is traced, resumable, and explainable.
+  - title: Describe an agent as a spec
+    details: An AgentSpec captures a probabilistic agent as data (its model, tools, and policy). Hand it to a runner and the same spec can run on compatible runner implementations.
+  - title: Capabilities are ports, adapters plug in
+    details: A capability defines a port with a stable contract; a provider or framework is the appliance that plugs into it. Change provider or region and the rest of your logic stays put.
+  - title: Runs read back as events
+    details: Every tool call, policy decision, and result arrives as a redacted ExecutionEvent. You debug state at each step instead of scanning a long prompt.
+  - title: Pause and resume are first class
+    details: A run can wait on a person or a tool through an InterventionRequest; when the runner supports checkpoint resume it hands you a ResumableCheckpoint to store and continue later. Waiting stays structured.
+  - title: Effects travel one controlled path
+    details: Policy, approval, and execution are separate steps, and each side-effecting tool leaves a ToolExecutionReceipt. Non-read-only effects fail closed.
 ---
 
-## Stop debugging prompts. Start orchestrating logic.
+## What it is
 
-`llm-core` connects your business logic to AI models and avoids fragile scripts.
-Use **Recipes** for long-running workflows, **Interactions** for single-turn UI state, and **Adapters**
-to swap providers safely.
+When people build AI features today, they tend to glue or to orchestrate. With
+gluing, you start with a script: you call the provider, parse some JSON, add a
+retry loop, later swap models and rework the prompt, and over time the script
+becomes a web only one person understands.
+
+`llm-core` sits in the second camp. You describe an agent as an
+[`AgentSpec`](/reference/vocabulary#agents) and hand it to an
+[`AgentRunner`](/reference/vocabulary#agents). The runner executes it and emits
+each tool call, [policy decision](/reference/vocabulary#control), and result as a
+redacted [`ExecutionEvent`](/reference/vocabulary#evidence). Provider types stay
+behind the [adapter boundary](/adapters/), so a model swap stays local to one
+adapter while the rest of your logic holds still.
+
+What changed from v1 is that the vocabulary got sharper, not that the ideas
+changed. `Recipe`, `Workflow`, and the `Outcome` union all stay, with cleaner
+edges: a `Recipe` packages a `Workflow`, a `Workflow` orchestrates `Step`s, and
+an agent is described by an `AgentSpec` and executed by an `AgentRunner`. The
+[core concepts](/guide/core-concepts) page walks the model, and the
+[Vocabulary](/reference/vocabulary) defines each noun.
 
 ## Install
 
-Runtime-agnostic core that works in Node, Bun, Edge, and browsers.
+A runtime-agnostic core that runs in Node, Bun, Edge, and browsers.
 
 ::: tabs
 == bun
@@ -72,57 +88,22 @@ deno add npm:@geekist/llm-core
 
 :::
 
-Workers: install via npm, pnpm, or yarn and deploy to your worker runtime such as Cloudflare Workers or Vercel Edge.
+## How a run reads
 
-## Why llm-core is different
+A run is a sequence you can watch:
 
-- **Deterministic by design**: every run is traceable, resumable, and explainable.
-- **Agnostic at the edges**: swap models, retrievers, or UI SDKs while your recipes stay intact.
-- **Two runtimes, one mental model**: workflows for depth, interactions for UI speed.
+1. **You describe the work.** An `AgentSpec` for an agent, or a `Recipe` and
+   `Workflow` for orchestrated steps.
+2. **A runner executes it,** with providers plugged in behind adapter ports.
+3. **Each step emits a redacted `ExecutionEvent`,** and an agent run ends in one
+   terminal `RunResult`.
 
-## Quick start (workflows)
+[Core concepts](/guide/core-concepts) shows the shape and the
+[Vocabulary](/reference/vocabulary) defines every noun.
 
-Define a flow, plug in your adapters, and run it.
+## Where to go next
 
-```js
-import { recipes } from "@geekist/llm-core/recipes";
-import { fromAiSdkModel } from "@geekist/llm-core/adapters";
-import { openai } from "@ai-sdk/openai";
-
-// 1. Define your recipe (or load a standard one)
-const agent = recipes.agent();
-
-// 2. Plug in your adapters
-const model = fromAiSdkModel(openai("gpt-4o"));
-const workflow = agent.defaults({ adapters: { model } }).build();
-
-// 3. Run it
-const result = await workflow.run({ input: "Build me a React app" });
-
-if (result.status === "ok") {
-  console.log(result.artefact);
-}
-```
-
-## Quick start (interactions)
-
-Use the interaction core when you want UI-ready state for a single turn.
-
-<<< @/snippets/interaction/quick-start.js#docs
-
-## Interaction stack (what’s new)
-
-- **Interaction Core**: deterministic event to state projection for chat UIs.
-- **Sessions**: storage and policy orchestration that keeps runtime defaults out of your UI.
-- **UI SDK adapters**: AI SDK, assistant-ui, ChatKit.
-- **Host transport**: Node SSE and Edge or Worker stream patterns.
-
-## Build paths
-
-Pick a path and grow from there. Each one uses the same primitives: recipes, interactions, adapters.
-
-- **Production chat UI**: single turn to sessions to UI adapters in one flow. Start at [Single-Turn Interaction](/guide/interaction-single-turn).
-- **RAG assistant**: retrieval and citations with a standard pack. Start at [RAG Recipe](/recipes/rag).
-- **Human-in-the-loop workflows**: pause and resume gates for safe actions. Start at [HITL Recipe](/recipes/hitl).
-- **Batch ingestion**: structured pipelines for indexing and enrichment. Start at [Ingest Recipe](/recipes/ingest).
-- **Provider-agnostic model lab**: swap models and retrievers while the pipeline stays stable. Start at [Adapters](/adapters/).
+- **New here:** [Get started](/guide/hello-world) builds one run end to end.
+- **Weighing it up:** [Why llm-core?](/guide/philosophy) makes the case for
+  orchestrating over gluing.
+- **Coming from 1.x:** the migration guide maps each renamed import and noun.

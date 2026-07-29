@@ -22,6 +22,8 @@ export default defineConfig({
   description: "Composable workflow + adapter core for the JS/TS LLM ecosystem.",
   base: "/",
   appearance: "dark",
+  // Keep internal authoring/process docs out of the published site.
+  srcExclude: ["**/.internal/**"],
   head: [
     ["link", { rel: "icon", href: "/favicon.ico" }],
     ["link", { rel: "icon", type: "image/png", sizes: "32x32", href: "/favicon-32.png" }],
@@ -125,6 +127,10 @@ export default defineConfig({
         },
       ],
       "/reference/": [
+        {
+          text: "Foundations",
+          items: [{ text: "Vocabulary", link: "/reference/vocabulary" }],
+        },
         {
           text: "Core API",
           items: [

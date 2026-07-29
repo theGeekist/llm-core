@@ -4,11 +4,11 @@ When people build AI features today, they tend to follow one of two paths: **glu
 
 With **gluing**, you start with a script. You call `openai.chat.completions.create`, you parse a bit of JSON, and you push results into a database. After that you add a retry loop. Later you swap to Anthropic and rework the prompt schema. At some point you add RAG and thread a retrieval call into the middle of that loop. Over time the script turns into a web of conditionals, partials, and helpers that only one person understands.
 
-With **orchestrating**, you describe what should happen and let a runtime do the lifting. You describe steps, state, and outcomes. The runtime tracks those steps, controls state flow, and exposes a clear trace.
+With **orchestrating**, you describe what should happen and let a runtime do the lifting. You describe steps, state, and results. The runtime tracks those steps, controls state flow, and emits each one as an `ExecutionEvent` you can read back.
 
 `llm-core` sits firmly in the second camp. It is an **orchestration framework** that stays runtime-agnostic and adapter-driven.
 
-- **Recipes** (`recipes.*()`) describe what the system should do.
+- **Recipes** describe reusable, preconfigured workflows; an agent is described separately as an `AgentSpec`.
 - The **workflow runtime** executes those recipes in a predictable way.
 - **Interactions** map model or query streams into UI-ready state for a single turn.
 - **Sessions** hold multi-turn state in a way that does not depend on a specific host.
@@ -16,7 +16,7 @@ With **orchestrating**, you describe what should happen and let a runtime do the
 
 This structure gives you a graph of steps instead of a ball of glue code, which opens the door to testing, tracing, and reuse that ad-hoc wiring never reaches.
 
-## The unleashed workflow
+## The orchestrated workflow
 
 Once you adopt `llm-core`, you start to treat prompts, flows, and policies as portable assets instead of one-off experiments.
 
@@ -42,7 +42,7 @@ With `llm-core`, those changes live at the **adapter** and **config** level. You
 
 Large prompts make debugging painful. When an agent fails you often end up scanning through a long prompt or a diff that mixes instructions, examples, and formatting.
 
-`llm-core` records state at each step. The trace shows which step ran, which state it received, and which state it produced. That trace turns incidents into concrete questions: which step mis-interpreted its input, which adapter failed, which configuration changed.
+`llm-core` records state at each step. Every step emits an [`ExecutionEvent`](/reference/vocabulary), redacted and ready to store or project, so the trace shows which step ran, which state it received, and which state it produced. That trace turns incidents into concrete questions: which step mis-interpreted its input, which adapter failed, which configuration changed.
 
 ### 5. Experiments as infrastructure
 
@@ -57,7 +57,7 @@ Frontend development once relied on direct DOM manipulation with jQuery. Over ti
 `llm-core` aims for a similar shift in AI applications. It encourages:
 
 - Explicit inputs and outputs
-- Typed outcomes
+- Typed workflow `Outcome`s and terminal agent `RunResult`s
 - Clearly defined steps and transitions
 
 The framework asks for that structure so that your system remains predictable, inspectable, and robust as it grows.
@@ -66,10 +66,10 @@ The framework asks for that structure so that your system remains predictable, i
 
 `llm-core` keeps its main concepts small and composable so that you can adopt them in stages.
 
-- **Adapters** align providers and ecosystems while keeping access to raw responses when you need them.
 - **Interactions** handle single turns: they take streams of model or tool events and turn them into deterministic UI state.
 - **Sessions** handle multi-turn flows: they load state, run a turn, apply your policy, and save state again.
-- **Workflows** link many steps together: recipes, internal packs, and pause / resume flows.
+- **Workflows** link many steps together: recipes, their compositions, and pause / resume flows.
+- **Adapters** align providers and ecosystems while keeping access to raw responses when you need them.
 
 Every layer uses `MaybePromise`, which means you can write sync code where that feels natural and async code when you call external services. The types remain honest in both cases.
 
