@@ -148,6 +148,26 @@ describe("Artifact", () => {
     expect(reads).toBe(0);
   });
 
+  test("rejects accessor-backed artifact discriminants without invoking them", () => {
+    let reads = 0;
+    const provenance = { source: "application" } as Record<string, unknown>;
+    Object.defineProperty(provenance, "kind", {
+      enumerable: true,
+      get: () => {
+        reads += 1;
+        return "supplied";
+      },
+    });
+
+    expect(() =>
+      createArtifact({
+        content: resource,
+        provenance,
+      } as never),
+    ).toThrow("provenance");
+    expect(reads).toBe(0);
+  });
+
   test("requires coherent generated and derived provenance", () => {
     expect(() =>
       createArtifact({

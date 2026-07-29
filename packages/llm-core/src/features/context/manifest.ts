@@ -9,6 +9,7 @@ import {
   isNonNegativeInteger,
   isPlainRecord,
   isPositiveInteger,
+  ownDataValue,
   portableContentBytes,
 } from "./canonical";
 import type {
@@ -32,37 +33,46 @@ const deepFreeze = <T>(value: T): T => {
 };
 
 function assertScope(value: unknown): asserts value is ContextScope {
-  if (!isPlainRecord(value) || typeof value.kind !== "string") {
+  if (!isPlainRecord(value)) {
     throw new TypeError("Context scope must be a closed invocation, run, or step scope.");
   }
-  const invocation = isCanonicalUuid(value.invocationId);
+  const kind = ownDataValue(value, "kind");
+  if (typeof kind !== "string") {
+    throw new TypeError("Context scope must be a closed invocation, run, or step scope.");
+  }
   const valid =
-    (value.kind === "invocation" && hasExactKeys(value, ["kind", "invocationId"]) && invocation) ||
-    (value.kind === "run" &&
+    (kind === "invocation" &&
+      hasExactKeys(value, ["kind", "invocationId"]) &&
+      isCanonicalUuid(value.invocationId)) ||
+    (kind === "run" &&
       hasExactKeys(value, ["kind", "invocationId", "runId"]) &&
-      invocation &&
+      isCanonicalUuid(value.invocationId) &&
       isCanonicalUuid(value.runId)) ||
-    (value.kind === "step" &&
+    (kind === "step" &&
       hasExactKeys(value, ["kind", "invocationId", "runId", "stepId"]) &&
-      invocation &&
+      isCanonicalUuid(value.invocationId) &&
       isCanonicalUuid(value.runId) &&
       isCanonicalUuid(value.stepId));
   if (!valid) throw new TypeError("Context scope must carry exactly its canonical core IDs.");
 }
 
 function assertProvenance(value: unknown): asserts value is ContextProvenance {
-  if (!isPlainRecord(value) || typeof value.kind !== "string") {
+  if (!isPlainRecord(value)) {
+    throw new TypeError("Context provenance must be a closed portable record.");
+  }
+  const kind = ownDataValue(value, "kind");
+  if (typeof kind !== "string") {
     throw new TypeError("Context provenance must be a closed portable record.");
   }
   if (
-    value.kind === "supplied" &&
+    kind === "supplied" &&
     hasExactKeys(value, ["kind", "source"]) &&
     ["application", "system", "user"].includes(String(value.source))
   ) {
     return;
   }
   if (
-    value.kind === "derived" &&
+    kind === "derived" &&
     hasExactKeys(value, ["kind", "operation", "sources"]) &&
     typeof value.operation === "string" &&
     value.operation.length > 0 &&
@@ -75,7 +85,7 @@ function assertProvenance(value: unknown): asserts value is ContextProvenance {
   ) {
     return;
   }
-  if (value.kind === "retrieved" && hasExactKeys(value, ["kind", "source"], ["evidence"])) {
+  if (kind === "retrieved" && hasExactKeys(value, ["kind", "source"], ["evidence"])) {
     assertResourceRef(value.source, "Retrieved provenance source");
     if (value.evidence !== undefined) {
       assertEvidenceRef(value.evidence, "Retrieved provenance evidence");
@@ -86,11 +96,15 @@ function assertProvenance(value: unknown): asserts value is ContextProvenance {
 }
 
 function assertSource(value: unknown): asserts value is ContextEntrySource {
-  if (!isPlainRecord(value) || typeof value.kind !== "string") {
+  if (!isPlainRecord(value)) {
+    throw new TypeError("Context entry source must be a closed portable record.");
+  }
+  const kind = ownDataValue(value, "kind");
+  if (typeof kind !== "string") {
     throw new TypeError("Context entry source must be a closed portable record.");
   }
   if (
-    value.kind === "content" &&
+    kind === "content" &&
     hasExactKeys(value, ["kind", "content"]) &&
     Array.isArray(value.content) &&
     value.content.length > 0
@@ -98,11 +112,11 @@ function assertSource(value: unknown): asserts value is ContextEntrySource {
     portableContentBytes(value.content);
     return;
   }
-  if (value.kind === "resource" && hasExactKeys(value, ["kind", "resource"])) {
+  if (kind === "resource" && hasExactKeys(value, ["kind", "resource"])) {
     assertResourceRef(value.resource, "Context resource source");
     return;
   }
-  if (value.kind === "evidence" && hasExactKeys(value, ["kind", "evidence"])) {
+  if (kind === "evidence" && hasExactKeys(value, ["kind", "evidence"])) {
     assertEvidenceRef(value.evidence, "Context evidence source");
     return;
   }

@@ -248,6 +248,59 @@ describe("ContextManifest", () => {
     expect(reads).toBe(0);
   });
 
+  test("rejects accessor-backed context discriminants without invoking them", () => {
+    let reads = 0;
+    const withAccessorKind = (
+      properties: Record<string, unknown>,
+      kind: string,
+    ): Record<string, unknown> => {
+      const value = { ...properties };
+      Object.defineProperty(value, "kind", {
+        enumerable: true,
+        get: () => {
+          reads += 1;
+          return kind;
+        },
+      });
+      return value;
+    };
+
+    expect(() =>
+      createContextEntry({
+        source: {
+          kind: "content",
+          content: [withAccessorKind({ text: "must-not-be-read" }, "text")],
+        } as never,
+        provenance: { kind: "supplied", source: "user" },
+        priority: "required",
+      }),
+    ).toThrow("portable content");
+    expect(reads).toBe(0);
+
+    expect(() =>
+      createContextEntry({
+        source: withAccessorKind({ content: [{ kind: "text", text: "safe" }] }, "content") as never,
+        provenance: { kind: "supplied", source: "user" },
+        priority: "required",
+      }),
+    ).toThrow("entry source");
+    expect(reads).toBe(0);
+
+    expect(() =>
+      createContextEntry({
+        source: { kind: "content", content: [{ kind: "text", text: "safe" }] },
+        provenance: withAccessorKind({ source: "user" }, "supplied") as never,
+        priority: "required",
+      }),
+    ).toThrow("provenance");
+    expect(reads).toBe(0);
+
+    const manifest = input();
+    manifest.scope = withAccessorKind({ invocationId }, "invocation") as never;
+    expect(() => createContextManifest(manifest)).toThrow("scope");
+    expect(reads).toBe(0);
+  });
+
   test("rejects spoofed derived provenance and malformed scopes", () => {
     const spoofed = input();
     spoofed.entries[0]!.provenance = {

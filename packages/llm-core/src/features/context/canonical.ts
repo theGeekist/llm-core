@@ -42,6 +42,11 @@ export const hasExactKeys = (
   );
 };
 
+export const ownDataValue = (value: Record<string, unknown>, key: string): unknown => {
+  const descriptor = Object.getOwnPropertyDescriptor(value, key);
+  return descriptor?.enumerable === true && "value" in descriptor ? descriptor.value : undefined;
+};
+
 export const isDenseArray = (value: readonly unknown[]): boolean => {
   const keys = Reflect.ownKeys(value);
   const indices = keys.filter((key) => key !== "length");
@@ -117,11 +122,13 @@ export const isEvidenceRef = (value: unknown): value is EvidenceRef =>
   (value.schema === undefined || isClosedSchemaRef(value.schema));
 
 const isPortableContent = (value: unknown): value is PortableContent => {
-  if (!isPlainRecord(value) || typeof value.kind !== "string") return false;
-  if (value.kind === "text") {
+  if (!isPlainRecord(value)) return false;
+  const kind = ownDataValue(value, "kind");
+  if (typeof kind !== "string") return false;
+  if (kind === "text") {
     return hasExactKeys(value, ["kind", "text"]) && typeof value.text === "string";
   }
-  if (value.kind === "json") {
+  if (kind === "json") {
     return (
       hasExactKeys(value, ["kind", "value"], ["schema"]) &&
       hasClosedJsonShape(value.value) &&
@@ -129,7 +136,7 @@ const isPortableContent = (value: unknown): value is PortableContent => {
       (value.schema === undefined || isClosedSchemaRef(value.schema))
     );
   }
-  if (value.kind === "binary") {
+  if (kind === "binary") {
     if (
       !hasExactKeys(value, ["kind", "mediaType", "encoding", "data", "byteLength", "digest"]) ||
       typeof value.mediaType !== "string" ||
@@ -149,7 +156,7 @@ const isPortableContent = (value: unknown): value is PortableContent => {
     );
   }
   return (
-    value.kind === "media-ref" &&
+    kind === "media-ref" &&
     hasExactKeys(value, ["kind", "mediaType", "resource"], ["altText"]) &&
     typeof value.mediaType === "string" &&
     MEDIA_TYPE.test(value.mediaType) &&

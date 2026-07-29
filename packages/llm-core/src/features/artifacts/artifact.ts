@@ -35,6 +35,11 @@ const hasExactKeys = (
   );
 };
 
+const ownDataValue = (value: Record<string, unknown>, key: string): unknown => {
+  const descriptor = Object.getOwnPropertyDescriptor(value, key);
+  return descriptor?.enumerable === true && "value" in descriptor ? descriptor.value : undefined;
+};
+
 const isDenseArray = (value: readonly unknown[]): boolean => {
   const keys = Reflect.ownKeys(value);
   const indices = keys.filter((key) => key !== "length");
@@ -125,15 +130,19 @@ const assertEvidence = (value: unknown): void => {
 };
 
 function assertProvenance(value: unknown): asserts value is ArtifactProvenance {
-  if (!isPlainRecord(value) || typeof value.kind !== "string") {
+  if (!isPlainRecord(value)) {
     throw new TypeError("Artifact provenance must be a closed portable record.");
   }
-  if (value.kind === "supplied" && hasExactKeys(value, ["kind"], ["evidence"])) {
+  const kind = ownDataValue(value, "kind");
+  if (typeof kind !== "string") {
+    throw new TypeError("Artifact provenance must be a closed portable record.");
+  }
+  if (kind === "supplied" && hasExactKeys(value, ["kind"], ["evidence"])) {
     assertEvidence(value.evidence);
     return;
   }
   if (
-    value.kind === "generated" &&
+    kind === "generated" &&
     hasExactKeys(value, ["kind", "invocationId"], ["runId", "stepId", "evidence"]) &&
     isCanonicalUuid(value.invocationId) &&
     (value.runId === undefined || isCanonicalUuid(value.runId)) &&
@@ -144,7 +153,7 @@ function assertProvenance(value: unknown): asserts value is ArtifactProvenance {
     return;
   }
   if (
-    value.kind === "derived" &&
+    kind === "derived" &&
     hasExactKeys(value, ["kind", "sources", "operation"], ["evidence"]) &&
     Array.isArray(value.sources) &&
     value.sources.length > 0 &&
