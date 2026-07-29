@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import { contractVersion } from "#contracts";
-import type { ContractVersion } from "#contracts";
+import type { CapabilityClaim, ContractVersion } from "#contracts";
 import {
   createBuiltinModelProfile,
   deploymentRef,
@@ -10,6 +10,18 @@ import {
   registerModelProfile,
   type ModelProfile,
 } from "../../src/features/model/public";
+
+const baseProfile = (): ModelProfile => {
+  const builtin = createBuiltinModelProfile();
+  return {
+    profileId: builtin.profileId,
+    version: builtin.version,
+    model: builtin.model,
+    provider: builtin.provider,
+    deployment: builtin.deployment,
+    claims: [...builtin.claims],
+  };
+};
 
 describe("builtin model profile provenance", () => {
   test("capability claims cite versioned conformance evidence", () => {
@@ -75,6 +87,41 @@ describe("model profile registration", () => {
         provider: providerRef("pr"),
         deployment: deploymentRef("d"),
         claims: [],
+      }),
+    ).toThrow();
+  });
+
+  test("rejects a supported claim with malformed (empty) evidence", () => {
+    const malformed = {
+      capabilityId: "llm-core.model.text-generation",
+      version: contractVersion("1.0.0"),
+      status: "supported",
+      evidence: {},
+    } as unknown as CapabilityClaim;
+    expect(() => registerModelProfile({ ...baseProfile(), claims: [malformed] })).toThrow();
+  });
+
+  test("rejects a claim with a non-namespaced capability id", () => {
+    const [good] = baseProfile().claims;
+    if (!good) throw new Error("expected a builtin claim");
+    const badId = { ...good, capabilityId: "InvalidID" } as unknown as CapabilityClaim;
+    expect(() => registerModelProfile({ ...baseProfile(), claims: [badId] })).toThrow();
+  });
+
+  test("rejects extensions containing a non-JSON value", () => {
+    expect(() =>
+      registerModelProfile({
+        ...baseProfile(),
+        extensions: { "com.example.vendor": { when: new Date() } } as never,
+      }),
+    ).toThrow();
+  });
+
+  test("rejects extensions with an invalid namespace key", () => {
+    expect(() =>
+      registerModelProfile({
+        ...baseProfile(),
+        extensions: { NotReverseDNS: { a: 1 } } as never,
       }),
     ).toThrow();
   });

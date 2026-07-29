@@ -97,9 +97,22 @@ bun run typecheck:packages
   evaluator, applied before selection/ambiguity. Re-verified green (33 model
   tests, 1087 full).
 
+- 2026-07-29 — Coordinator re-review round 3: resolved the final trust-boundary
+  P1. `registerModelProfile` now clones first, then fully validates the clone
+  before branding/freezing (getter-divergence safe; non-cloneable sources
+  rejected). New `profile-validation.ts` deep-validates every CapabilityClaim
+  branch and its ConformanceEvidence variant, EvidenceRef/ResourceRef/Digest,
+  reverse-DNS capabilityId, provenance, date-time, optional schema, and
+  extensions (strict JSON + reverse-DNS) using the contracts' own guards
+  (`isSchemaRef`/`isNativeExtensions`/`isJsonValue`/`isContractVersion`/
+  `isDigest`/`isCanonicalUuid`/`isExternalId`). Added rejection tests for empty
+  evidence, non-namespaced capabilityId, and non-JSON / invalid-namespace
+  extensions. `architecture_version: 2` preserved. Re-verified green (37 model
+  tests, 1091 full).
+
 ## Handoff
 
-Status: ready for coordinator review (rounds 1 and 2 findings resolved).
+Status: ready for coordinator review (rounds 1–3 findings resolved).
 
 ### Files added (write scope only)
 

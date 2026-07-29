@@ -1,7 +1,6 @@
-import { isContractVersion } from "#contracts";
 import type { CapabilityClaim, ContractVersion, NativeExtensions, SchemaRef } from "#contracts";
 import { deepFreeze } from "./freeze";
-import { isPortableId } from "./references";
+import { validateModelProfileValue } from "./profile-validation";
 import type { DeploymentRef, ModelProfileId, ModelRef, ProviderRef } from "./references";
 
 /**
@@ -23,50 +22,29 @@ export interface ModelProfile {
 declare const registeredModelProfileBrand: unique symbol;
 
 /**
- * A profile that has passed {@link registerModelProfile}: validated, defensively
- * deep-cloned, and deep-frozen. Only registered profiles may back a binding, so
- * resolution evidence cannot be mutated through a caller-retained reference.
+ * A profile that has passed {@link registerModelProfile}: fully validated,
+ * defensively deep-cloned, and deep-frozen. Only registered profiles may back a
+ * binding, so resolution evidence cannot be forged or mutated through a
+ * caller-retained reference.
  */
 export type RegisteredModelProfile = ModelProfile & {
   readonly [registeredModelProfileBrand]: "RegisteredModelProfile";
 };
 
-const CLAIM_STATUSES: ReadonlySet<string> = new Set(["supported", "conditional", "unsupported"]);
-
-const validateProfile = (profile: ModelProfile): void => {
-  if (
-    !isPortableId(profile.profileId) ||
-    !isPortableId(profile.model) ||
-    !isPortableId(profile.provider) ||
-    !isPortableId(profile.deployment)
-  ) {
-    throw new TypeError("ModelProfile references must be printable-ASCII identifiers.");
-  }
-  if (!isContractVersion(profile.version)) {
-    throw new TypeError("ModelProfile.version must be a SemVer contract version.");
-  }
-  if (!Array.isArray(profile.claims)) {
-    throw new TypeError("ModelProfile.claims must be an array.");
-  }
-  for (const claim of profile.claims) {
-    if (
-      typeof claim.capabilityId !== "string" ||
-      !CLAIM_STATUSES.has(claim.status) ||
-      !isContractVersion(claim.version) ||
-      claim.evidence === undefined
-    ) {
-      throw new TypeError("ModelProfile.claims contains an invalid capability claim.");
-    }
-  }
-};
-
 /**
- * Validate, defensively deep-clone, and deep-freeze a profile so a binding can
- * trust it as immutable evidence. Mutating the source afterward cannot affect
- * the registered value.
+ * Deep-clone, then fully validate the clone, then deep-freeze and brand it.
+ *
+ * Cloning first guarantees the validated value is exactly the branded value —
+ * a getter on the source cannot return one shape to the validator and another
+ * to callers. A non-cloneable source (functions, etc.) is rejected outright.
  */
 export const registerModelProfile = (profile: ModelProfile): RegisteredModelProfile => {
-  validateProfile(profile);
-  const copy = structuredClone(profile) as ModelProfile;
+  let copy: ModelProfile;
+  try {
+    copy = structuredClone(profile);
+  } catch {
+    throw new TypeError("ModelProfile must be structured-cloneable portable data.");
+  }
+  validateModelProfileValue(copy);
   return deepFreeze(copy) as RegisteredModelProfile;
 };
