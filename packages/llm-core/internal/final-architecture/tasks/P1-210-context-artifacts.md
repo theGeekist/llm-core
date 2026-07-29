@@ -3,7 +3,7 @@ architecture_version: 2
 id: P1-210
 title: Context manifest and artifact domains
 phase: P1.1
-status: review
+status: complete
 priority: P1
 preferred_owner_kind: codex
 owner: codex-context-artifacts
@@ -30,7 +30,7 @@ read_scope:
   - packages/llm-core/src/contracts/**
   - packages/llm-core/src/features/evidence/**
 review_owner: coordinator
-updated_at: 2026-07-29
+updated_at: 2026-07-30
 ---
 
 # P1-210 — Context manifest and artifact domains
@@ -76,6 +76,13 @@ bun run typecheck:packages
   contract validation. Remediated all three with adversarial coverage; focused
   tests now pass 15/15 alongside package/test typechecks, lint, architecture,
   schema, and diff-hygiene gates. Status remains review pending re-review.
+- 2026-07-30 — Re-review found remaining accessor execution in nested JSON,
+  digest and discriminant paths. Commits `48e92c7` and `8060c74` moved every
+  affected boundary to descriptor-first validation and added zero-read
+  adversarial tests.
+- 2026-07-30 — Independently approved at exact SHA `8060c74`. Final
+  verification passed with 18 focused tests, package and test typechecks,
+  schema freshness, lint, 12 architecture tests, formatting and diff hygiene.
 
 ## Handoff
 
@@ -98,8 +105,9 @@ bun run typecheck:packages
 
 ### Commit and changed files
 
-Implementation commit:
-`b3a2471e767bb8cd2138ab13a5ec4718c57dd820`.
+Implementation and review-remediation commits:
+`b3a2471e767bb8cd2138ab13a5ec4718c57dd820`, `b3bb1cf`, `48e92c7`, and
+`8060c74`.
 
 - `packages/llm-core/src/features/artifacts/artifact.ts`
 - `packages/llm-core/src/features/artifacts/public.ts`
@@ -114,7 +122,7 @@ Implementation commit:
 ### Verification
 
 - `bun test packages/llm-core/tests/context packages/llm-core/tests/artifacts`
-  — exit 0; 13 pass, 0 fail, 45 assertions.
+  — exit 0; 18 pass, 0 fail, 69 assertions.
 - `bun run typecheck:packages` — exit 0, including deterministic contract
   schema check.
 - `bun run typecheck:tests` — exit 0.
