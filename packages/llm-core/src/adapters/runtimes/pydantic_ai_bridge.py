@@ -240,7 +240,7 @@ def handle(request: dict[str, Any]) -> dict[str, Any]:
         available, _version = pydantic_ai_version()
         runtime_result = (
             execute_pydantic_ai(
-                json.dumps(payload.get("input"), sort_keys=True),
+                run_input["prompt"],
                 str(prepared[token]["instructions"]),
             )
             if available

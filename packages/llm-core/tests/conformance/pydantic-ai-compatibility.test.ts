@@ -114,6 +114,13 @@ describe("PydanticAI compatibility declaration", () => {
         expect(tool.arguments).toEqual({ value: "a" });
         expect(tool.result).toBe("a");
         expect(Array.isArray(output.messageHistory)).toBe(true);
+        const messageHistory = output.messageHistory as Array<{
+          parts?: Array<{ part_kind?: string; content?: unknown }>;
+        }>;
+        const userPrompt = messageHistory
+          .flatMap((message) => message.parts ?? [])
+          .find((part) => part.part_kind === "user-prompt");
+        expect(userPrompt?.content).toBe("hello");
         expect((await collectEvents(run)).at(-1)?.kind).toBe("agent.run.completed");
         expect(runner.resume).toBeUndefined();
         await expect(run.cancel({ requestedAt: "2026-07-30T00:00:01.000Z" })).rejects.toMatchObject(
