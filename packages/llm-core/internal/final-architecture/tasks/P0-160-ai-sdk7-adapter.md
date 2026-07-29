@@ -27,6 +27,8 @@ write_scope:
   - packages/llm-core/tests/adapters/ai-sdk7/**
   - packages/llm-core/internal/final-architecture/tasks/P0-160-ai-sdk7-adapter.md
 read_scope:
+  - packages/llm-core/package.json
+  - bun.lock
   - packages/llm-core/src/features/**
   - packages/llm-core/src/adapters/ai-sdk/**
   - packages/llm-core/tests/adapters/ai-sdk*
@@ -44,11 +46,15 @@ contracts without widening the portable API.
 ## In scope
 
 Current provider contract, multipart streams, structured output, tool approval,
-cancellation, warnings, usage and native metadata.
+cancellation, warnings, usage and native metadata. Development and verification
+use the exact AI SDK 7 matrix recorded by P0-155.
 
 ## Out of scope
 
-Package metadata, UI projections, root exports and old adapter deletion.
+Worker-owned package metadata, UI projections, root exports and old adapter
+deletion. The architecture coordinator applies the exact manifest and lockfile
+upgrade recorded by P0-155 during integration so the dependency change and
+adapter conversion land atomically.
 
 ## Acceptance criteria
 
@@ -56,6 +62,8 @@ Package metadata, UI projections, root exports and old adapter deletion.
 - Native data survives under extensions.
 - Tool approval and cancellation map without bypassing core control.
 - Known semantic loss and supported AI SDK version are recorded.
+- The coordinator-owned manifest/lock change and adapter conversion pass
+  together; no red AI SDK 7 dependency-only state is integrated.
 
 ## Verification
 
