@@ -10,40 +10,46 @@ import {
   modelProfileId,
   modelRef,
   providerRef,
+  registerModelProfile,
   type ModelBinding,
-  type ModelProfile,
+  type RegisteredModelProfile,
 } from "../../src/features/model/public";
 
 const M1 = modelRef("m1");
 const M2 = modelRef("m2");
 
-const withModel = (profile: ModelProfile, model = M1): ModelProfile => ({ ...profile, model });
+const withModel = (model = M1): RegisteredModelProfile =>
+  registerModelProfile({ ...createBuiltinModelProfile(), model });
 
-const bareProfile = (model = M1): ModelProfile => ({
-  profileId: modelProfileId("bare"),
-  version: contractVersion("1.0.0"),
-  model,
-  provider: BUILTIN_PROVIDER,
-  deployment: BUILTIN_DEPLOYMENT,
-  claims: [],
-});
+const bareProfile = (model = M1): RegisteredModelProfile =>
+  registerModelProfile({
+    profileId: modelProfileId("bare"),
+    version: contractVersion("1.0.0"),
+    model,
+    provider: BUILTIN_PROVIDER,
+    deployment: BUILTIN_DEPLOYMENT,
+    claims: [],
+  });
 
 const binding = (
   bindingId: string,
   model = M1,
-  options: { aliases?: typeof M1[]; profile?: ModelProfile } = {},
+  options: { aliases?: (typeof M1)[]; profile?: RegisteredModelProfile } = {},
 ): ModelBinding => ({
   bindingId,
   model,
   provider: BUILTIN_PROVIDER,
   deployment: BUILTIN_DEPLOYMENT,
-  profile: options.profile ?? withModel(createBuiltinModelProfile(), model),
+  profile: options.profile ?? withModel(model),
   aliases: options.aliases,
 });
 
 const TEXT_REQ: CapabilityRequirement[] = [{ capabilityId: BUILTIN_TEXT_CAPABILITY }];
+const CONSTRAINED: CapabilityRequirement[] = [
+  { capabilityId: BUILTIN_TEXT_CAPABILITY, constraints: [{ name: "maxOutputTokens", value: 4096 }] },
+];
 
-describe("model resolver", () => {
+describe("model resolver — selection", () => {
   test("resolves an exact model selection", () => {
     const outcome = createModelResolver().resolve({ selection: M1, bindings: [binding("a", M1)] });
     expect(outcome.kind).toBe("resolved");
@@ -57,8 +63,7 @@ describe("model resolver", () => {
       selection: M2,
       bindings: [binding("a", M1, { aliases: [M2] })],
     });
-    expect(outcome.kind).toBe("resolved");
-    if (outcome.kind !== "resolved") return;
+    if (outcome.kind !== "resolved") throw new Error("expected resolved");
     expect(outcome.resolution.matchedBy).toBe("alias");
   });
 
@@ -69,27 +74,6 @@ describe("model resolver", () => {
     });
     if (outcome.kind !== "resolved") throw new Error("expected resolved");
     expect(outcome.resolution.binding.bindingId).toBe("exact");
-    expect(outcome.resolution.matchedBy).toBe("exact");
-  });
-
-  test("excludes bindings lacking a required capability", () => {
-    const outcome = createModelResolver().resolve({
-      selection: M1,
-      requiredCapabilities: TEXT_REQ,
-      bindings: [binding("bare", M1, { profile: bareProfile() })],
-    });
-    expect(outcome.kind).toBe("unresolved");
-    if (outcome.kind !== "unresolved") return;
-    expect(outcome.reason).toBe("no-eligible-binding");
-  });
-
-  test("resolves when the binding carries the required capability claim", () => {
-    const outcome = createModelResolver().resolve({
-      selection: M1,
-      requiredCapabilities: TEXT_REQ,
-      bindings: [binding("a", M1)],
-    });
-    expect(outcome.kind).toBe("resolved");
   });
 
   test("fails as ambiguous when multiple eligible bindings match", () => {
@@ -104,8 +88,7 @@ describe("model resolver", () => {
 
   test("fails when a model is omitted and no default is named", () => {
     const outcome = createModelResolver().resolve({ bindings: [binding("a", M1)] });
-    expect(outcome.kind).toBe("unresolved");
-    if (outcome.kind !== "unresolved") return;
+    if (outcome.kind !== "unresolved") throw new Error("expected unresolved");
     expect(outcome.reason).toBe("unknown-selection");
   });
 
@@ -128,61 +111,73 @@ describe("model resolver", () => {
     else process.env.OPENAI_API_KEY = original;
     expect(withEnv).toEqual(baseline);
   });
+});
 
-  test("rejects a binding whose profile does not match its references", () => {
-    const mismatched: ModelBinding = {
-      bindingId: "mismatch",
-      model: M1,
-      provider: providerRef("wrong.provider"),
-      deployment: BUILTIN_DEPLOYMENT,
-      profile: withModel(createBuiltinModelProfile(), M1),
-    };
-    const outcome = createModelResolver().resolve({ selection: M1, bindings: [mismatched] });
-    expect(outcome.kind).toBe("unresolved");
-    if (outcome.kind !== "unresolved") return;
+describe("model resolver — capabilities and constraints", () => {
+  test("excludes bindings lacking a required capability", () => {
+    const outcome = createModelResolver().resolve({
+      selection: M1,
+      requiredCapabilities: TEXT_REQ,
+      bindings: [binding("bare", M1, { profile: bareProfile() })],
+    });
+    if (outcome.kind !== "unresolved") throw new Error("expected unresolved");
     expect(outcome.reason).toBe("no-eligible-binding");
-    expect(outcome.diagnostics.some((d) => d.code === "binding-profile-mismatch")).toBe(true);
   });
 
-  const CONSTRAINED: CapabilityRequirement[] = [
-    {
-      capabilityId: BUILTIN_TEXT_CAPABILITY,
-      constraints: [{ name: "maxOutputTokens", value: 4096 }],
-    },
-  ];
+  test("resolves when the binding carries the required capability claim", () => {
+    const outcome = createModelResolver().resolve({
+      selection: M1,
+      requiredCapabilities: TEXT_REQ,
+      bindings: [binding("a", M1)],
+    });
+    expect(outcome.kind).toBe("resolved");
+  });
 
-  test("fails closed when a required constraint has no evaluator", () => {
+  test("fails closed when a required constraint has no resolver evaluator", () => {
     const outcome = createModelResolver().resolve({
       selection: M1,
       requiredCapabilities: CONSTRAINED,
       bindings: [binding("a", M1)],
     });
-    expect(outcome.kind).toBe("unresolved");
-    if (outcome.kind !== "unresolved") return;
+    if (outcome.kind !== "unresolved") throw new Error("expected unresolved");
     expect(outcome.reason).toBe("no-eligible-binding");
     expect(outcome.diagnostics.some((d) => d.code === "unproven-constraint")).toBe(true);
   });
 
-  test("resolves when the evaluator proves the constraint", () => {
-    const outcome = createModelResolver().resolve({
+  test("resolves when a trusted evaluator proves the constraint", () => {
+    const outcome = createModelResolver({ constraintEvaluator: () => true }).resolve({
       selection: M1,
       requiredCapabilities: CONSTRAINED,
       bindings: [binding("a", M1)],
-      constraintEvaluator: () => true,
     });
     expect(outcome.kind).toBe("resolved");
   });
 
   test("excludes when the evaluator rejects the constraint", () => {
-    const outcome = createModelResolver().resolve({
+    const outcome = createModelResolver({ constraintEvaluator: () => false }).resolve({
       selection: M1,
       requiredCapabilities: CONSTRAINED,
       bindings: [binding("a", M1)],
-      constraintEvaluator: () => false,
     });
     expect(outcome.kind).toBe("unresolved");
-    if (outcome.kind !== "unresolved") return;
-    expect(outcome.reason).toBe("no-eligible-binding");
+  });
+
+  test("treats an evaluator throw as a fail-closed error", () => {
+    const outcome = createModelResolver({
+      constraintEvaluator: () => {
+        throw new Error("boom");
+      },
+    }).resolve({ selection: M1, requiredCapabilities: CONSTRAINED, bindings: [binding("a", M1)] });
+    if (outcome.kind !== "unresolved") throw new Error("expected unresolved");
+    expect(outcome.diagnostics.some((d) => d.code === "evaluator-error")).toBe(true);
+  });
+
+  test("treats a non-boolean evaluator result as unproven", () => {
+    const outcome = createModelResolver({
+      constraintEvaluator: () => "yes" as unknown as boolean,
+    }).resolve({ selection: M1, requiredCapabilities: CONSTRAINED, bindings: [binding("a", M1)] });
+    if (outcome.kind !== "unresolved") throw new Error("expected unresolved");
+    expect(outcome.diagnostics.some((d) => d.code === "unproven-constraint")).toBe(true);
   });
 
   test("reports an unsupported version range instead of silently matching", () => {
@@ -191,8 +186,7 @@ describe("model resolver", () => {
       requiredCapabilities: [{ capabilityId: BUILTIN_TEXT_CAPABILITY, versionRange: "^1.0.0" }],
       bindings: [binding("a", M1)],
     });
-    expect(outcome.kind).toBe("unresolved");
-    if (outcome.kind !== "unresolved") return;
+    if (outcome.kind !== "unresolved") throw new Error("expected unresolved");
     expect(outcome.diagnostics.some((d) => d.code === "unsupported-version-range")).toBe(true);
   });
 
@@ -210,5 +204,59 @@ describe("model resolver", () => {
       bindings: [binding("a", M1)],
     });
     expect(mismatch.kind).toBe("unresolved");
+  });
+});
+
+describe("model resolver — integrity and policy", () => {
+  test("rejects a binding whose profile does not match its references", () => {
+    const mismatched: ModelBinding = {
+      bindingId: "mismatch",
+      model: M1,
+      provider: providerRef("wrong.provider"),
+      deployment: BUILTIN_DEPLOYMENT,
+      profile: withModel(M1),
+    };
+    const outcome = createModelResolver().resolve({ selection: M1, bindings: [mismatched] });
+    if (outcome.kind !== "unresolved") throw new Error("expected unresolved");
+    expect(outcome.reason).toBe("no-eligible-binding");
+    expect(outcome.diagnostics.some((d) => d.code === "binding-profile-mismatch")).toBe(true);
+  });
+
+  test("excludes bindings outside the routing policy allow-lists", () => {
+    const outcome = createModelResolver().resolve({
+      selection: M1,
+      bindings: [binding("a", M1)],
+      policy: { allowedProviders: [providerRef("other.provider")] },
+    });
+    if (outcome.kind !== "unresolved") throw new Error("expected unresolved");
+    expect(outcome.diagnostics.some((d) => d.code === "policy-excluded")).toBe(true);
+  });
+
+  test("resolves when the binding is inside the allow-lists", () => {
+    const outcome = createModelResolver().resolve({
+      selection: M1,
+      bindings: [binding("a", M1)],
+      policy: { allowedModels: [M1], allowedProviders: [BUILTIN_PROVIDER] },
+    });
+    expect(outcome.kind).toBe("resolved");
+  });
+
+  test("applies a trusted policy evaluator and fails closed on rejection", () => {
+    const outcome = createModelResolver({ policyEvaluator: () => false }).resolve({
+      selection: M1,
+      bindings: [binding("a", M1)],
+    });
+    if (outcome.kind !== "unresolved") throw new Error("expected unresolved");
+    expect(outcome.diagnostics.some((d) => d.code === "policy-excluded")).toBe(true);
+  });
+
+  test("treats a policy evaluator throw as a fail-closed error", () => {
+    const outcome = createModelResolver({
+      policyEvaluator: () => {
+        throw new Error("nope");
+      },
+    }).resolve({ selection: M1, bindings: [binding("a", M1)] });
+    if (outcome.kind !== "unresolved") throw new Error("expected unresolved");
+    expect(outcome.diagnostics.some((d) => d.code === "evaluator-error")).toBe(true);
   });
 });

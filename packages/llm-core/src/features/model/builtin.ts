@@ -2,7 +2,8 @@ import { contractVersion, digest, newCoreId } from "#contracts";
 import type { EvidenceId, InvocationContext, ResourceId, SupportedCapabilityClaim } from "#contracts";
 import type { ModelContentPart, ModelMessage } from "./content";
 import type { Model } from "./model";
-import type { ModelProfile } from "./profile";
+import { registerModelProfile } from "./profile";
+import type { ModelProfile, RegisteredModelProfile } from "./profile";
 import { deploymentRef, modelProfileId, modelRef, providerRef } from "./references";
 import type { ModelRequest } from "./request";
 import type { ModelResponse, ModelUsage } from "./response";
@@ -52,19 +53,8 @@ const builtinTextClaim = (): SupportedCapabilityClaim => ({
   },
 });
 
-/** Recursively freeze an object graph so resolution evidence cannot mutate. */
-const deepFreeze = <T>(value: T): T => {
-  if (value !== null && typeof value === "object") {
-    for (const key of Object.keys(value as Record<string, unknown>)) {
-      deepFreeze((value as Record<string, unknown>)[key]);
-    }
-    Object.freeze(value);
-  }
-  return value;
-};
-
-export const createBuiltinModelProfile = (): ModelProfile =>
-  deepFreeze({
+export const createBuiltinModelProfile = (): RegisteredModelProfile =>
+  registerModelProfile({
     profileId: modelProfileId("llm-core.builtin.echo"),
     version: contractVersion("1.0.0"),
     model: BUILTIN_MODEL,

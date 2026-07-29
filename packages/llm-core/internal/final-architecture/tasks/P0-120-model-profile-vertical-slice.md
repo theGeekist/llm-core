@@ -85,9 +85,21 @@ bun run typecheck:packages
   explicitly (`unsupported-version-range`) instead of being silently treated as
   exact. Re-verified green.
 
+- 2026-07-29 — Coordinator re-review round 2: resolved 3 remaining P1s (commit
+  62cbe51). (1) Added `registerModelProfile`/`RegisteredModelProfile`: validates,
+  defensively deep-clones and deep-freezes any profile incl. nested
+  claims/evidence; `ModelBinding.profile` now requires a registered profile.
+  (2) Constraint and policy evaluation moved from per-request input to trusted
+  `createModelResolver` dependencies; evaluators receive frozen minimal
+  snapshots, must return exactly `true`, and any throw/non-boolean is a
+  fail-closed `evaluator-error`. (3) Added composition-owned routing policy —
+  allowed model/provider/deployment/binding lists plus an optional trusted policy
+  evaluator, applied before selection/ambiguity. Re-verified green (33 model
+  tests, 1087 full).
+
 ## Handoff
 
-Status: ready for coordinator review (round 1 findings resolved).
+Status: ready for coordinator review (rounds 1 and 2 findings resolved).
 
 ### Files added (write scope only)
 

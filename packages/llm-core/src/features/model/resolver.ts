@@ -2,21 +2,29 @@ import { isContractVersion } from "#contracts";
 import type {
   CapabilityClaim,
   CapabilityConstraint,
+  CapabilityId,
   CapabilityRequirement,
+  ContractVersion,
   PortableImplementationId,
 } from "#contracts";
-import type { ModelProfile } from "./profile";
+import { deepFreeze } from "./freeze";
+import type { RegisteredModelProfile } from "./profile";
 import type { DeploymentRef, ModelRef, ProviderRef } from "./references";
 
 /**
  * Deterministic model resolution (ADR-004).
  *
  * Resolution accepts selection intent, required capabilities, caller/composition
- * bindings and policy constraints, and returns the selected binding with resolved
+ * bindings and routing policy, and returns the selected binding with resolved
  * references, the profile/evidence, and diagnostics. It never reads environment
  * credentials, never silently downgrades a capability, and never falls back to a
  * first-list default: an unresolved tie fails as ambiguous, zero eligible
- * bindings fails explicitly, and every unproven requirement fails closed.
+ * bindings fails explicitly, and every unproven requirement or policy fails
+ * closed.
+ *
+ * Evaluators are trusted composition dependencies of the resolver, not
+ * per-request input. They receive frozen minimal snapshots, must return exactly
+ * `true`, and any throw or non-boolean result is a fail-closed diagnostic.
  */
 
 /** One configured implementation eligible to satisfy a selection. */
@@ -25,28 +33,48 @@ export interface ModelBinding {
   readonly model: ModelRef;
   readonly provider: ProviderRef;
   readonly deployment: DeploymentRef;
-  readonly profile: ModelProfile;
+  readonly profile: RegisteredModelProfile;
   /** Policy aliases that also select this binding. Exact model match wins. */
   readonly aliases?: readonly ModelRef[];
 }
 
-/**
- * Proves that a binding's supported claim satisfies a required constraint.
- *
- * The resolver cannot infer arbitrary constraint semantics, so proving them is
- * the caller/composition's responsibility. Absent an evaluator, required
- * constraints fail closed.
- */
+/** Frozen, minimal view of a binding handed to trusted evaluators. */
+export interface BindingSnapshot {
+  readonly bindingId: PortableImplementationId;
+  readonly model: ModelRef;
+  readonly provider: ProviderRef;
+  readonly deployment: DeploymentRef;
+}
+
+/** Frozen, minimal view of a supported claim handed to a constraint evaluator. */
+export interface ClaimSnapshot {
+  readonly capabilityId: CapabilityId;
+  readonly version: ContractVersion;
+  readonly status: CapabilityClaim["status"];
+}
+
 export type ConstraintEvaluator = (input: {
-  readonly binding: ModelBinding;
-  readonly claim: CapabilityClaim;
+  readonly binding: BindingSnapshot;
+  readonly claim: ClaimSnapshot;
   readonly requirement: CapabilityRequirement;
   readonly constraint: CapabilityConstraint;
 }) => boolean;
 
-/** Composition-owned policy. The default model is honored only when named. */
+export type PolicyEvaluator = (input: { readonly binding: BindingSnapshot }) => boolean;
+
+/** Trusted, composition-owned resolver dependencies. */
+export interface ModelResolverDependencies {
+  readonly constraintEvaluator?: ConstraintEvaluator;
+  readonly policyEvaluator?: PolicyEvaluator;
+}
+
+/** Composition-owned routing policy. Allow-lists and default are pure data. */
 export interface ModelResolutionPolicy {
   readonly defaultModel?: ModelRef;
+  readonly allowedModels?: readonly ModelRef[];
+  readonly allowedProviders?: readonly ProviderRef[];
+  readonly allowedDeployments?: readonly DeploymentRef[];
+  readonly allowedBindings?: readonly PortableImplementationId[];
 }
 
 export interface ModelResolutionRequest {
@@ -54,7 +82,6 @@ export interface ModelResolutionRequest {
   readonly requiredCapabilities?: readonly CapabilityRequirement[];
   readonly bindings: readonly ModelBinding[];
   readonly policy?: ModelResolutionPolicy;
-  readonly constraintEvaluator?: ConstraintEvaluator;
 }
 
 export type ResolutionMatch = "exact" | "alias" | "default";
@@ -67,6 +94,8 @@ export type ResolutionDiagnosticCode =
   | "binding-profile-mismatch"
   | "unsupported-version-range"
   | "unproven-constraint"
+  | "policy-excluded"
+  | "evaluator-error"
   | "no-eligible-binding"
   | "ambiguous-selection"
   | "unknown-selection";
@@ -82,7 +111,7 @@ export interface ModelResolution {
   model: ModelRef;
   provider: ProviderRef;
   deployment: DeploymentRef;
-  profile: ModelProfile;
+  profile: RegisteredModelProfile;
   matchedBy: ResolutionMatch;
   diagnostics: ResolutionDiagnostic[];
 }
@@ -95,6 +124,13 @@ export type ModelResolutionOutcome =
 
 export interface ModelResolver {
   resolve(request: ModelResolutionRequest): ModelResolutionOutcome;
+}
+
+/** Per-binding evaluation state, bundled to keep helper arity within limits. */
+interface EvalContext {
+  binding: ModelBinding;
+  deps: ModelResolverDependencies;
+  diagnostics: ResolutionDiagnostic[];
 }
 
 type RangeResult = "any" | "exact-match" | "exact-mismatch" | "unsupported";
@@ -117,15 +153,33 @@ const profileMatchesBinding = (binding: ModelBinding): boolean =>
   binding.provider === binding.profile.provider &&
   binding.deployment === binding.profile.deployment;
 
-/** Per-binding evaluation state, bundled to keep helper arity within limits. */
-interface BindingEvalContext {
-  binding: ModelBinding;
-  evaluator?: ConstraintEvaluator;
-  diagnostics: ResolutionDiagnostic[];
-}
+const snapshotBinding = (binding: ModelBinding): BindingSnapshot =>
+  deepFreeze({
+    bindingId: binding.bindingId,
+    model: binding.model,
+    provider: binding.provider,
+    deployment: binding.deployment,
+  });
+
+const snapshotClaim = (claim: CapabilityClaim): ClaimSnapshot =>
+  deepFreeze({ capabilityId: claim.capabilityId, version: claim.version, status: claim.status });
+
+// A trusted evaluator must return exactly `true`. A throw or any other value is
+// treated as an explicit, fail-closed rejection.
+type Verdict = "ok" | "rejected" | "errored";
+const guarded = (run: () => unknown): Verdict => {
+  try {
+    return run() === true ? "ok" : "rejected";
+  } catch {
+    return "errored";
+  }
+};
+
+const inList = <T>(list: readonly T[] | undefined, value: T): boolean =>
+  list === undefined || list.includes(value);
 
 const findSupportedClaim = (
-  context: BindingEvalContext,
+  context: EvalContext,
   requirement: CapabilityRequirement,
 ): CapabilityClaim | undefined => {
   let found: CapabilityClaim | undefined;
@@ -155,7 +209,7 @@ const findSupportedClaim = (
 };
 
 const constraintsProven = (
-  context: BindingEvalContext,
+  context: EvalContext,
   requirement: CapabilityRequirement,
   claim: CapabilityClaim,
 ): boolean => {
@@ -163,31 +217,82 @@ const constraintsProven = (
   if (constraints.length === 0) {
     return true;
   }
-  const { binding, evaluator, diagnostics } = context;
+  const { binding, deps, diagnostics } = context;
+  const evaluator = deps.constraintEvaluator;
   if (!evaluator) {
     diagnostics.push({
       code: "unproven-constraint",
-      message: `requirement ${requirement.capabilityId} carries constraints but no evaluator was provided`,
+      message: `requirement ${requirement.capabilityId} carries constraints but the resolver has no constraint evaluator`,
       bindingId: binding.bindingId,
     });
     return false;
   }
-  const proven = constraints.every((constraint) =>
-    evaluator({ binding, claim, requirement, constraint }),
-  );
-  if (!proven) {
-    diagnostics.push({
-      code: "unproven-constraint",
-      message: `binding ${binding.bindingId} does not satisfy constraints for ${requirement.capabilityId}`,
-      bindingId: binding.bindingId,
-    });
+  const bindingSnapshot = snapshotBinding(binding);
+  const claimSnapshot = snapshotClaim(claim);
+  const requirementSnapshot = deepFreeze(structuredClone(requirement));
+  for (const constraint of constraints) {
+    const constraintSnapshot = deepFreeze(structuredClone(constraint));
+    const verdict = guarded(() =>
+      evaluator({
+        binding: bindingSnapshot,
+        claim: claimSnapshot,
+        requirement: requirementSnapshot,
+        constraint: constraintSnapshot,
+      }),
+    );
+    if (verdict !== "ok") {
+      diagnostics.push({
+        code: verdict === "errored" ? "evaluator-error" : "unproven-constraint",
+        message:
+          verdict === "errored"
+            ? `constraint evaluator threw or returned a non-boolean for ${requirement.capabilityId}`
+            : `binding ${binding.bindingId} does not satisfy a constraint for ${requirement.capabilityId}`,
+        bindingId: binding.bindingId,
+      });
+      return false;
+    }
   }
-  return proven;
+  return true;
 };
 
-const bindingSatisfies = (
-  context: BindingEvalContext,
+const policyAllows = (context: EvalContext, policy: ModelResolutionPolicy | undefined): boolean => {
+  const { binding, deps, diagnostics } = context;
+  if (
+    policy &&
+    (!inList(policy.allowedModels, binding.model) ||
+      !inList(policy.allowedProviders, binding.provider) ||
+      !inList(policy.allowedDeployments, binding.deployment) ||
+      !inList(policy.allowedBindings, binding.bindingId))
+  ) {
+    diagnostics.push({
+      code: "policy-excluded",
+      message: `binding ${binding.bindingId} is excluded by routing policy allow-lists`,
+      bindingId: binding.bindingId,
+    });
+    return false;
+  }
+  const evaluator = deps.policyEvaluator;
+  if (evaluator) {
+    const verdict = guarded(() => evaluator({ binding: snapshotBinding(binding) }));
+    if (verdict !== "ok") {
+      diagnostics.push({
+        code: verdict === "errored" ? "evaluator-error" : "policy-excluded",
+        message:
+          verdict === "errored"
+            ? `policy evaluator threw or returned a non-boolean for ${binding.bindingId}`
+            : `binding ${binding.bindingId} was rejected by the policy evaluator`,
+        bindingId: binding.bindingId,
+      });
+      return false;
+    }
+  }
+  return true;
+};
+
+const bindingEligible = (
+  context: EvalContext,
   requirements: readonly CapabilityRequirement[],
+  policy: ModelResolutionPolicy | undefined,
 ): boolean => {
   const { binding, diagnostics } = context;
   if (!profileMatchesBinding(binding)) {
@@ -196,6 +301,9 @@ const bindingSatisfies = (
       message: `binding ${binding.bindingId} references a profile whose model/provider/deployment differ from the binding`,
       bindingId: binding.bindingId,
     });
+    return false;
+  }
+  if (!policyAllows(context, policy)) {
     return false;
   }
   for (const requirement of requirements) {
@@ -230,7 +338,9 @@ const selectTier = (
   return { matches: alias, via: "alias" };
 };
 
-export const createModelResolver = (): ModelResolver => ({
+export const createModelResolver = (
+  dependencies: ModelResolverDependencies = {},
+): ModelResolver => ({
   resolve(request) {
     const diagnostics: ResolutionDiagnostic[] = [];
     const requirements = request.requiredCapabilities ?? [];
@@ -255,16 +365,13 @@ export const createModelResolver = (): ModelResolver => ({
     }
 
     const eligible = tier.matches.filter((binding) =>
-      bindingSatisfies(
-        { binding, evaluator: request.constraintEvaluator, diagnostics },
-        requirements,
-      ),
+      bindingEligible({ binding, deps: dependencies, diagnostics }, requirements, request.policy),
     );
     const [binding, ...rest] = eligible;
     if (!binding) {
       diagnostics.push({
         code: "no-eligible-binding",
-        message: `all matches for ${target} were excluded by required capabilities`,
+        message: `all matches for ${target} were excluded by required capabilities or policy`,
       });
       return { kind: "unresolved", reason: "no-eligible-binding", diagnostics };
     }
