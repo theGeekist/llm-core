@@ -2,7 +2,7 @@
 id: P0-110
 title: Implement tool control and execution-event kernel
 phase: P0.2
-status: claimed
+status: complete
 priority: P0
 preferred_owner_kind: codex
 owner: codex-root
@@ -71,5 +71,49 @@ bun run typecheck:packages
 
 - 2026-07-29T16:49:00+08:00 — Claimed by `codex-root` after P0-100 completed
   and P0-120 was assigned to Claude Code in a disjoint worktree.
+- 2026-07-29T16:52:00+08:00 — Began implementation in the dedicated worktree.
+  Child work is partitioned into disjoint tooling, control, and evidence/event
+  slices; `codex-root` owns the application orchestrator and final integration.
+- 2026-07-29 — Implemented and reviewed the complete tool path. Two read-only
+  integration passes found lifecycle, replay, event-delivery, approval-window,
+  lease-validation, and cancellation races; all acceptance-blocking findings
+  were resolved before final verification.
+- 2026-07-29 — Moved to `complete` after the required focused suite,
+  package typecheck/schema check, lint, formatting, and diff checks passed.
 
 ## Handoff
+
+Status: complete; ready for integration from `task/P0-110-codex`.
+
+### Delivered
+
+- Strict registered-schema validation before action binding, policy, receipt
+  reservation, or execution.
+- JCS-canonical action documents and tenant/security-domain HMAC-SHA-256
+  `ActionDigest` values through an injected port.
+- Explicit tool spec/binding/call/result separation, effect classes,
+  execution semantics, and stable tool identity/version.
+- Fail-closed policy and authenticated approval bound to the same digest,
+  run, and tool-call identities. Approval windows and approver constraints are
+  durably recorded before external approval and rechecked before execution.
+- Storage-neutral authoritative receipt journaling with atomic idempotency
+  reservation, CAS transitions, recovery-safe replay, and full effect
+  disposition.
+- Shared/exclusive concurrency leases with interruptible queued cancellation
+  and fail-closed lease identity validation.
+- Durable before-start and post-start cancellation facts without treating a
+  request as proof that an effect stopped.
+- Canonical redacted execution events projected independently of the receipt
+  ledger; a failed or hanging sink cannot gate or replay an effect.
+
+### Deferred boundary
+
+Durable ownership fencing, staleness policy, and active reconciliation for a
+receipt left in `started` belong to the P0-140 runner/recovery slice. P0-110
+already refuses to re-execute `started` or `indeterminate` receipts blindly.
+
+### Verification
+
+- Focused tooling/control/evidence/application suite: 56 pass, 0 fail.
+- `bun run typecheck:packages`: pass, including contract-schema freshness.
+- Focused ESLint, Prettier check, and `git diff --check`: pass.
