@@ -1,5 +1,9 @@
 # Implementation Plan (Workflow Runtime)
 
+> Historical stage plan. The canonical final-architecture program, live status,
+> decision gates, and assignable briefs now live in
+> [final-architecture/PLAN.md](final-architecture/PLAN.md).
+
 Purpose: detailed, staged plan with pipeline API anchors and mandatory doc updates at each stage.
 Guardrails: return early, minimal nesting, each module/test under 500 SLOC, readable by default.
 

@@ -1,0 +1,69 @@
+---
+id: P1-220
+title: Evaluation domain
+phase: P1.1
+status: proposed
+priority: P1
+preferred_owner_kind: claude-code
+owner: null
+owner_kind: null
+lease_started_at: null
+lease_expires_at: null
+base_sha: null
+branch: null
+worktree: null
+depends_on:
+  - P0-150
+  - P1-210
+decision_dependencies:
+  - ADR-001
+  - ADR-003
+  - ADR-005
+conflicts_with: []
+write_scope:
+  - packages/llm-core/src/features/evaluation/**
+  - packages/llm-core/tests/evaluation/**
+  - packages/llm-core/internal/final-architecture/tasks/P1-220-evaluation-domain.md
+read_scope:
+  - packages/llm-core/src/contracts/**
+  - packages/llm-core/src/features/evidence/**
+  - packages/llm-core/src/features/context/**
+  - packages/llm-core/src/features/artifacts/**
+review_owner: coordinator
+updated_at: 2026-07-29
+---
+
+# P1-220 — Evaluation domain
+
+## Objective
+
+Add a first-class evaluation domain that consumes execution evidence without coupling evaluation to a provider or agent runner.
+
+## Deliverables
+
+- Contracts for evaluators, cases, results, scores, and evidence references.
+- Deterministic evaluator identity and version metadata.
+- A feature public surface with no provider-specific dependencies.
+- Focused tests for evaluator composition and evidence linkage.
+
+## Acceptance criteria
+
+- Evaluation consumes recorded evidence rather than runtime internals.
+- Results distinguish status, score, explanation, and referenced evidence.
+- Async boundaries preserve the package's `MaybePromise` composition style.
+- Shared export changes are left for the integration owner.
+
+## Verification
+
+```sh
+bun test packages/llm-core/tests/evaluation
+bun run typecheck:packages
+```
+
+## Work log
+
+- Not started.
+
+## Handoff
+
+- None.

@@ -1,0 +1,33 @@
+# Final Architecture Status
+
+Updated: 29 July 2026
+Active tasks: 1
+
+This is a projection. Task files under [`tasks/`](tasks/) are authoritative.
+Swarm claiming and integration follow [`COORDINATION.md`](COORDINATION.md).
+
+| ID | Phase | Status | Planned swarm | Owner | Depends on |
+|---|---|---|---|---|---|
+| A0-001 | A0 | in_progress | coordinator | architecture-coordinator | — |
+| I0-010 | I0 | ready | Claude Code | — | — |
+| P0-100 | P0.1 | proposed | Codex | — | A0-001 |
+| P0-110 | P0.2 | proposed | Codex | — | P0-100 |
+| P0-120 | P0.2 | proposed | Claude Code | — | P0-100 |
+| P0-130 | P0.3 | proposed | Claude Code | — | P0-110 |
+| P0-140 | P0.3 | proposed | Codex | — | P0-110, P0-120, P0-130 |
+| P0-155 | P0.4 | proposed | coordinator | — | P0-110, P0-120 |
+| P0-160 | P0.4 | proposed | Claude Code | — | P0-110, P0-120, P0-155 |
+| P0-170 | P0.4 | proposed | Claude Code | — | P0-130, P0-140 |
+| P0-150 | P0.5 | proposed | coordinator | — | I0-010, P0-140, P0-160, P0-170 |
+| P1-210 | P1.1 | proposed | Claude Code | — | P0-150 |
+| P1-220 | P1.1 | proposed | Claude Code | — | P0-150, P1-210 |
+| P1-230 | P1.2 | proposed | Codex | — | P0-150, P0-160, P0-170 |
+
+## Next action
+
+Run `A0-001` as a sequential architecture pass. `I0-010` may run in parallel
+because it only characterizes the existing surface and owns isolated fixture
+paths.
+
+Do not start implementation spokes until their ADR and dependency gates are
+accepted.
