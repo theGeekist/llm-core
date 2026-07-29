@@ -21,64 +21,89 @@ export const isPlainRecord = (value: unknown): value is Record<string, unknown> 
   return prototype === Object.prototype || prototype === null;
 };
 
-export const hasExactKeys = (
-  value: Record<string, unknown>,
+export const snapshotExactRecord = (
+  value: unknown,
   required: readonly string[],
   optional: readonly string[] = [],
-): boolean => {
+): Record<string, unknown> | null => {
+  if (!isPlainRecord(value)) return null;
   const keys = Reflect.ownKeys(value);
-  return (
-    keys.every(
-      (key) =>
-        typeof key === "string" &&
-        (required.includes(key) || optional.includes(key)) &&
-        Object.getOwnPropertyDescriptor(value, key)?.enumerable === true &&
-        "value" in (Object.getOwnPropertyDescriptor(value, key) ?? {}),
-    ) && required.every((key) => keys.includes(key))
-  );
+  if (
+    !keys.every(
+      (key) => typeof key === "string" && (required.includes(key) || optional.includes(key)),
+    ) ||
+    !required.every((key) => keys.includes(key))
+  ) {
+    return null;
+  }
+  const snapshot: Record<string, unknown> = Object.create(null);
+  for (const key of keys) {
+    if (typeof key !== "string") return null;
+    const descriptor = Object.getOwnPropertyDescriptor(value, key);
+    if (descriptor?.enumerable !== true || !("value" in descriptor)) return null;
+    snapshot[key] = descriptor.value;
+  }
+  return snapshot;
 };
 
-export const ownDataValue = (value: Record<string, unknown>, key: string): unknown => {
-  const descriptor = Object.getOwnPropertyDescriptor(value, key);
-  return descriptor?.enumerable === true && "value" in descriptor ? descriptor.value : undefined;
-};
-
-export const isDenseArray = (value: readonly unknown[]): boolean => {
+export const snapshotDenseArray = (value: unknown): readonly unknown[] | null => {
+  if (!Array.isArray(value)) return null;
   const keys = Reflect.ownKeys(value);
+  const lengthDescriptor = Object.getOwnPropertyDescriptor(value, "length");
+  if (
+    lengthDescriptor === undefined ||
+    !("value" in lengthDescriptor) ||
+    !Number.isSafeInteger(lengthDescriptor.value) ||
+    Number(lengthDescriptor.value) < 0
+  ) {
+    return null;
+  }
+  const length = Number(lengthDescriptor.value);
   const indices = keys.filter((key) => key !== "length");
-  return (
-    indices.length === value.length &&
-    indices.every((key) => {
-      const descriptor = Object.getOwnPropertyDescriptor(value, key);
-      return (
-        typeof key === "string" &&
-        /^(?:0|[1-9]\d*)$/.test(key) &&
-        Number(key) < value.length &&
-        descriptor?.enumerable === true &&
-        "value" in descriptor
-      );
-    })
-  );
+  if (indices.length !== length) return null;
+  const snapshot: unknown[] = [];
+  for (let index = 0; index < length; index += 1) {
+    const descriptor = Object.getOwnPropertyDescriptor(value, String(index));
+    if (descriptor?.enumerable !== true || !("value" in descriptor)) return null;
+    snapshot.push(descriptor.value);
+  }
+  return snapshot;
 };
 
-const isClosedDigest = (value: unknown): boolean =>
-  isPlainRecord(value) && hasExactKeys(value, ["algorithm", "value"]) && isDigest(value);
+const snapshotClosedDigest = (value: unknown) => {
+  const snapshot = snapshotExactRecord(value, ["algorithm", "value"]);
+  return snapshot !== null && isDigest(snapshot) ? snapshot : null;
+};
 
-const isClosedSchemaRef = (value: unknown): value is SchemaRef =>
-  isPlainRecord(value) &&
-  hasExactKeys(value, ["schemaId", "version", "digest"]) &&
-  isClosedDigest(value.digest) &&
-  isSchemaRef(value);
+const snapshotClosedSchemaRef = (value: unknown): SchemaRef | null => {
+  const snapshot = snapshotExactRecord(value, ["schemaId", "version", "digest"]);
+  if (snapshot === null) return null;
+  const digest = snapshotClosedDigest(snapshot.digest);
+  const candidate = { schemaId: snapshot.schemaId, version: snapshot.version, digest };
+  return digest !== null && isSchemaRef(candidate) ? (candidate as SchemaRef) : null;
+};
 
-const isResourceRef = (value: unknown): value is ResourceRef =>
-  isPlainRecord(value) &&
-  hasExactKeys(value, ["resourceId", "mediaType", "byteLength", "digest"]) &&
-  isCanonicalUuid(value.resourceId) &&
-  typeof value.mediaType === "string" &&
-  MEDIA_TYPE.test(value.mediaType) &&
-  Number.isSafeInteger(value.byteLength) &&
-  Number(value.byteLength) >= 0 &&
-  isClosedDigest(value.digest);
+const snapshotResourceRef = (value: unknown): ResourceRef | null => {
+  const snapshot = snapshotExactRecord(value, ["resourceId", "mediaType", "byteLength", "digest"]);
+  if (snapshot === null) return null;
+  const digest = snapshotClosedDigest(snapshot.digest);
+  if (
+    !isCanonicalUuid(snapshot.resourceId) ||
+    typeof snapshot.mediaType !== "string" ||
+    !MEDIA_TYPE.test(snapshot.mediaType) ||
+    !Number.isSafeInteger(snapshot.byteLength) ||
+    Number(snapshot.byteLength) < 0 ||
+    digest === null
+  ) {
+    return null;
+  }
+  return {
+    resourceId: snapshot.resourceId as ResourceRef["resourceId"],
+    mediaType: snapshot.mediaType,
+    byteLength: snapshot.byteLength as number,
+    digest,
+  };
+};
 
 const EVIDENCE_KINDS = new Set([
   "artifact",
@@ -91,25 +116,39 @@ const EVIDENCE_KINDS = new Set([
   "tool-result",
 ]);
 
-export const isEvidenceRef = (value: unknown): value is EvidenceRef =>
-  isPlainRecord(value) &&
-  hasExactKeys(value, ["evidenceId", "kind", "content"], ["schema"]) &&
-  isCanonicalUuid(value.evidenceId) &&
-  EVIDENCE_KINDS.has(String(value.kind)) &&
-  isResourceRef(value.content) &&
-  (value.schema === undefined || isClosedSchemaRef(value.schema));
+export const snapshotEvidenceRef = (value: unknown): EvidenceRef | null => {
+  const snapshot = snapshotExactRecord(value, ["evidenceId", "kind", "content"], ["schema"]);
+  if (snapshot === null) return null;
+  const content = snapshotResourceRef(snapshot.content);
+  const schemaPresent = Object.hasOwn(snapshot, "schema");
+  const schema = schemaPresent ? snapshotClosedSchemaRef(snapshot.schema) : null;
+  if (
+    !isCanonicalUuid(snapshot.evidenceId) ||
+    !EVIDENCE_KINDS.has(String(snapshot.kind)) ||
+    content === null ||
+    (schemaPresent && schema === null)
+  ) {
+    return null;
+  }
+  return {
+    evidenceId: snapshot.evidenceId as EvidenceRef["evidenceId"],
+    kind: snapshot.kind as EvidenceRef["kind"],
+    content,
+    ...(schema === null ? {} : { schema }),
+  };
+};
 
-export const isEvaluatorDescriptor = (
+export const snapshotEvaluatorDescriptor = (
   value: unknown,
-): value is {
-  evaluatorId: string;
-  version: string;
-} =>
-  isPlainRecord(value) &&
-  hasExactKeys(value, ["evaluatorId", "version"]) &&
-  typeof value.evaluatorId === "string" &&
-  QUALIFIED_EVALUATION_ID.test(value.evaluatorId) &&
-  isContractVersion(value.version);
+): { evaluatorId: string; version: string } | null => {
+  const snapshot = snapshotExactRecord(value, ["evaluatorId", "version"]);
+  return snapshot !== null &&
+    typeof snapshot.evaluatorId === "string" &&
+    QUALIFIED_EVALUATION_ID.test(snapshot.evaluatorId) &&
+    isContractVersion(snapshot.version)
+    ? { evaluatorId: snapshot.evaluatorId, version: snapshot.version }
+    : null;
+};
 
 export const deepFreeze = <T>(value: T): T => {
   if (value && typeof value === "object" && !Object.isFrozen(value)) {

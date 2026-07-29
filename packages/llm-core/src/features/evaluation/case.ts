@@ -1,11 +1,11 @@
+import type { EvidenceRef } from "#contracts";
 import {
   cloneFrozen,
-  hasExactKeys,
-  isDenseArray,
-  isEvidenceRef,
-  isPlainRecord,
   portableBoundary,
   QUALIFIED_EVALUATION_ID,
+  snapshotDenseArray,
+  snapshotEvidenceRef,
+  snapshotExactRecord,
 } from "./portable";
 import type {
   EvaluationCase,
@@ -37,55 +37,69 @@ export const evaluationEvaluatorId = (value: string): EvaluationEvaluatorId => {
   return value as EvaluationEvaluatorId;
 };
 
-function assertCriterion(value: unknown): asserts value is EvaluationCriterion {
+const snapshotCriterion = (value: unknown): EvaluationCriterion | null => {
+  const snapshot = snapshotExactRecord(value, ["criterionId", "description", "weight"]);
   if (
-    !isPlainRecord(value) ||
-    !hasExactKeys(value, ["criterionId", "description", "weight"]) ||
-    typeof value.criterionId !== "string" ||
-    !QUALIFIED_EVALUATION_ID.test(value.criterionId) ||
-    typeof value.description !== "string" ||
-    value.description.trim().length === 0 ||
-    typeof value.weight !== "number" ||
-    !Number.isFinite(value.weight) ||
-    value.weight <= 0 ||
-    value.weight > 1
+    snapshot === null ||
+    typeof snapshot.criterionId !== "string" ||
+    !QUALIFIED_EVALUATION_ID.test(snapshot.criterionId) ||
+    typeof snapshot.description !== "string" ||
+    snapshot.description.trim().length === 0 ||
+    typeof snapshot.weight !== "number" ||
+    !Number.isFinite(snapshot.weight) ||
+    snapshot.weight <= 0 ||
+    snapshot.weight > 1
   ) {
+    return null;
+  }
+  return {
+    criterionId: snapshot.criterionId as EvaluationCriterionId,
+    description: snapshot.description,
+    weight: snapshot.weight,
+  };
+};
+
+const createEvaluationCaseUnchecked = (input: EvaluationCaseInput): EvaluationCase => {
+  const snapshot = snapshotExactRecord(input, ["caseId", "criteria", "evidence"]);
+  const criteriaValues = snapshotDenseArray(snapshot?.criteria);
+  const evidenceValues = snapshotDenseArray(snapshot?.evidence);
+  if (
+    snapshot === null ||
+    typeof snapshot.caseId !== "string" ||
+    !QUALIFIED_EVALUATION_ID.test(snapshot.caseId) ||
+    criteriaValues === null ||
+    criteriaValues.length === 0 ||
+    evidenceValues === null ||
+    evidenceValues.length === 0
+  ) {
+    throw new TypeError("Evaluation cases must be closed and reference recorded evidence.");
+  }
+  const criteria = criteriaValues.map(snapshotCriterion);
+  if (criteria.some((criterion) => criterion === null)) {
     throw new TypeError(
       "Evaluation criteria require a qualified ID, non-empty description, and weight in (0, 1].",
     );
   }
-}
-
-const createEvaluationCaseUnchecked = (input: EvaluationCaseInput): EvaluationCase => {
-  if (
-    !isPlainRecord(input) ||
-    !hasExactKeys(input, ["caseId", "criteria", "evidence"]) ||
-    typeof input.caseId !== "string" ||
-    !QUALIFIED_EVALUATION_ID.test(input.caseId) ||
-    !Array.isArray(input.criteria) ||
-    !isDenseArray(input.criteria) ||
-    input.criteria.length === 0 ||
-    !Array.isArray(input.evidence) ||
-    !isDenseArray(input.evidence) ||
-    input.evidence.length === 0
-  ) {
-    throw new TypeError("Evaluation cases must be closed and reference recorded evidence.");
+  const evidence = evidenceValues.map(snapshotEvidenceRef);
+  if (evidence.some((item) => item === null)) {
+    throw new TypeError("Evaluation case evidence must contain closed EvidenceRef values.");
   }
-  for (const criterion of input.criteria) assertCriterion(criterion);
-  for (const evidence of input.evidence) {
-    if (!isEvidenceRef(evidence)) {
-      throw new TypeError("Evaluation case evidence must contain closed EvidenceRef values.");
-    }
-  }
-  if (
-    new Set(input.criteria.map(({ criterionId }) => criterionId)).size !== input.criteria.length
-  ) {
+  const normalizedCriteria = criteria as EvaluationCriterion[];
+  const normalizedEvidence = evidence as EvidenceRef[];
+  if (new Set(normalizedCriteria.map(({ criterionId }) => criterionId)).size !== criteria.length) {
     throw new TypeError("Evaluation cases cannot contain duplicate criterion IDs.");
   }
-  if (new Set(input.evidence.map(({ evidenceId }) => evidenceId)).size !== input.evidence.length) {
+  if (
+    new Set(normalizedEvidence.map(({ evidenceId }) => evidenceId)).size !==
+    normalizedEvidence.length
+  ) {
     throw new TypeError("Evaluation cases cannot contain duplicate evidence IDs.");
   }
-  return cloneFrozen(input);
+  return cloneFrozen({
+    caseId: snapshot.caseId as EvaluationCaseId,
+    criteria: normalizedCriteria,
+    evidence: normalizedEvidence,
+  });
 };
 
 export const createEvaluationCase = (input: EvaluationCaseInput): EvaluationCase =>

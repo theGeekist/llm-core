@@ -75,6 +75,13 @@ bun run typecheck:packages
   package/test typechecks, contract schema check, lint, targeted formatting,
   and diff validation passed. The repository-wide formatting check remains
   red only for 45 pre-existing files outside this task's write scope.
+- 2026-07-30T04:29:23+08:00 — Remediated independent review findings by
+  rejecting explicitly present undefined optional evidence schemas at both
+  case and result boundaries and normalizing all closed case, evaluator,
+  judgement, score, and evidence records from data-property descriptors.
+  Adversarial proxy coverage confirms zero ordinary property reads. Focused
+  evaluation tests, the 451-test package suite, package/test typechecks,
+  architecture tests, contract schema check, lint, and diff validation pass.
 
 ## Handoff
 

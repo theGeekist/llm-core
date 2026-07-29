@@ -215,6 +215,27 @@ describe("evaluation domain", () => {
     ).toThrow("evidence-linked");
   });
 
+  test("rejects explicitly undefined optional schema fields at every evidence boundary", () => {
+    const undefinedSchema = {
+      ...evidence[0]!,
+      schema: undefined,
+    } as unknown as EvidenceRef;
+
+    expect(() =>
+      createEvaluationCase({
+        caseId: evaluationCaseId("dev.llm-core.case.undefined-schema"),
+        criteria: [{ criterionId: correctness, description: "undefined", weight: 1 }],
+        evidence: [undefinedSchema],
+      }),
+    ).toThrow("closed, portable");
+
+    expect(() =>
+      createEvaluationComposition([
+        evaluator("dev.llm-core.evaluator.undefined-schema", () => pass(undefinedSchema)),
+      ]).evaluate(evaluationCase()),
+    ).toThrow("evidence-linked");
+  });
+
   test("rejects hostile descriptors and evidence without invoking accessors", () => {
     let reads = 0;
     const descriptor = { version: contractVersion("1.0.0") } as Record<string, unknown>;
@@ -276,5 +297,60 @@ describe("evaluation domain", () => {
         evidence: [cyclicEvidence as unknown as EvidenceRef],
       }),
     ).toThrow("closed, portable");
+  });
+
+  test("normalizes descriptor data without invoking proxy get traps", () => {
+    let reads = 0;
+    const descriptorOnly = <T extends object>(value: T): T =>
+      new Proxy(value, {
+        get: () => {
+          reads += 1;
+          throw new Error("ordinary property reads are forbidden");
+        },
+      });
+
+    const proxyEvidence = descriptorOnly({
+      ...evidence[0]!,
+      content: descriptorOnly({
+        ...evidence[0]!.content,
+        digest: descriptorOnly({ ...evidence[0]!.content.digest }),
+      }),
+    });
+    const proxyCase = descriptorOnly({
+      caseId: evaluationCaseId("dev.llm-core.case.descriptor-snapshot"),
+      criteria: descriptorOnly([
+        descriptorOnly({
+          criterionId: correctness,
+          description: "Descriptor snapshot.",
+          weight: 1,
+        }),
+      ]),
+      evidence: descriptorOnly([proxyEvidence]),
+    });
+    const created = createEvaluationCase(proxyCase);
+
+    const proxyJudgement = {
+      status: "pass" as const,
+      scores: descriptorOnly([
+        descriptorOnly({
+          criterionId: correctness,
+          value: 1,
+        }),
+      ]),
+      explanations: descriptorOnly(["Descriptor-safe."]),
+      evidence: descriptorOnly([proxyEvidence]),
+    };
+    const proxyEvaluator = descriptorOnly({
+      descriptor: descriptorOnly({
+        evaluatorId: evaluationEvaluatorId("dev.llm-core.evaluator.descriptor-snapshot"),
+        version: contractVersion("1.0.0"),
+      }),
+      evaluate: () => proxyJudgement,
+    });
+    const result = createEvaluationComposition([proxyEvaluator]).evaluate(created);
+
+    expect(isPromiseLike(result)).toBe(false);
+    expect(result).toMatchObject([{ status: "pass" }]);
+    expect(reads).toBe(0);
   });
 });

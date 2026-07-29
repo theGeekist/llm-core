@@ -3,14 +3,12 @@ import { createEvaluationCase } from "./case";
 import {
   cloneFrozen,
   evidenceRefsEqual,
-  hasExactKeys,
-  isDenseArray,
-  isEvidenceRef,
-  isEvaluatorDescriptor,
-  isPlainRecord,
-  ownDataValue,
   portableBoundary,
   QUALIFIED_EVALUATION_ID,
+  snapshotDenseArray,
+  snapshotEvaluatorDescriptor,
+  snapshotEvidenceRef,
+  snapshotExactRecord,
 } from "./portable";
 import type {
   EvaluationCase,
@@ -31,38 +29,40 @@ const descriptorKey = (descriptor: EvaluationEvaluatorDescriptor): string =>
   `${descriptor.evaluatorId}@${descriptor.version}`;
 
 const registerEvaluator = (value: EvaluationEvaluator): RegisteredEvaluator => {
-  if (!isPlainRecord(value) || !hasExactKeys(value, ["descriptor", "evaluate"])) {
+  const snapshot = snapshotExactRecord(value, ["descriptor", "evaluate"]);
+  if (snapshot === null) {
     throw new TypeError("Evaluators require a closed portable descriptor and callable evaluation.");
   }
-  const descriptor = ownDataValue(value, "descriptor");
-  const evaluate = ownDataValue(value, "evaluate");
-  if (!isEvaluatorDescriptor(descriptor) || typeof evaluate !== "function") {
+  const descriptor = snapshotEvaluatorDescriptor(snapshot.descriptor);
+  if (descriptor === null || typeof snapshot.evaluate !== "function") {
     throw new TypeError("Evaluators require a closed portable descriptor and callable evaluation.");
   }
+  const evaluate = snapshot.evaluate as EvaluationEvaluator["evaluate"];
   return {
     descriptor: cloneFrozen(descriptor as EvaluationEvaluatorDescriptor),
-    evaluate: evaluate.bind(value) as EvaluationEvaluator["evaluate"],
+    evaluate: (evaluationCase) => Reflect.apply(evaluate, value, [evaluationCase]),
   };
 };
 
-function assertScore(
-  value: unknown,
-  criteria: ReadonlySet<string>,
-): asserts value is EvaluationScore {
+const snapshotScore = (value: unknown, criteria: ReadonlySet<string>): EvaluationScore | null => {
+  const snapshot = snapshotExactRecord(value, ["criterionId", "value"]);
   if (
-    !isPlainRecord(value) ||
-    !hasExactKeys(value, ["criterionId", "value"]) ||
-    typeof value.criterionId !== "string" ||
-    !QUALIFIED_EVALUATION_ID.test(value.criterionId) ||
-    !criteria.has(value.criterionId) ||
-    typeof value.value !== "number" ||
-    !Number.isFinite(value.value) ||
-    value.value < 0 ||
-    value.value > 1
+    snapshot === null ||
+    typeof snapshot.criterionId !== "string" ||
+    !QUALIFIED_EVALUATION_ID.test(snapshot.criterionId) ||
+    !criteria.has(snapshot.criterionId) ||
+    typeof snapshot.value !== "number" ||
+    !Number.isFinite(snapshot.value) ||
+    snapshot.value < 0 ||
+    snapshot.value > 1
   ) {
-    throw new TypeError("Evaluation scores must reference a case criterion and be within [0, 1].");
+    return null;
   }
-}
+  return {
+    criterionId: snapshot.criterionId as EvaluationScore["criterionId"],
+    value: snapshot.value,
+  };
+};
 
 const judgementResult = (
   evaluationCase: EvaluationCase,
@@ -70,46 +70,58 @@ const judgementResult = (
   value: EvaluationJudgement,
 ): EvaluationResult =>
   portableBoundary("Evaluator judgements must be closed, portable, and evidence-linked.", () => {
+    const snapshot = snapshotExactRecord(value, ["status", "scores", "explanations", "evidence"]);
+    const scoreValues = snapshotDenseArray(snapshot?.scores);
+    const explanationValues = snapshotDenseArray(snapshot?.explanations);
+    const evidenceValues = snapshotDenseArray(snapshot?.evidence);
     if (
-      !isPlainRecord(value) ||
-      !hasExactKeys(value, ["status", "scores", "explanations", "evidence"]) ||
-      !["fail", "inconclusive", "pass"].includes(String(value.status)) ||
-      !Array.isArray(value.scores) ||
-      !isDenseArray(value.scores) ||
-      (value.status !== "inconclusive" && value.scores.length === 0) ||
-      !Array.isArray(value.explanations) ||
-      !isDenseArray(value.explanations) ||
-      value.explanations.length === 0 ||
-      !value.explanations.every(
+      snapshot === null ||
+      !["fail", "inconclusive", "pass"].includes(String(snapshot.status)) ||
+      scoreValues === null ||
+      (snapshot.status !== "inconclusive" && scoreValues.length === 0) ||
+      explanationValues === null ||
+      explanationValues.length === 0 ||
+      !explanationValues.every(
         (explanation) => typeof explanation === "string" && explanation.trim().length > 0,
       ) ||
-      !Array.isArray(value.evidence) ||
-      !isDenseArray(value.evidence) ||
-      value.evidence.length === 0
+      evidenceValues === null ||
+      evidenceValues.length === 0
     ) {
       throw new TypeError("Evaluator judgement shape is invalid.");
     }
 
     const criteria = new Set(evaluationCase.criteria.map(({ criterionId }) => criterionId));
-    for (const score of value.scores) assertScore(score, criteria);
-    if (new Set(value.scores.map(({ criterionId }) => criterionId)).size !== value.scores.length) {
+    const scores = scoreValues.map((score) => snapshotScore(score, criteria));
+    if (scores.some((score) => score === null)) {
+      throw new TypeError(
+        "Evaluation scores must reference a case criterion and be within [0, 1].",
+      );
+    }
+    const normalizedScores = scores as EvaluationScore[];
+    if (
+      new Set(normalizedScores.map(({ criterionId }) => criterionId)).size !==
+      normalizedScores.length
+    ) {
       throw new TypeError("Evaluator judgements cannot contain duplicate criterion scores.");
     }
 
     const recorded = new Map(
       evaluationCase.evidence.map((evidence) => [evidence.evidenceId, evidence] as const),
     );
-    for (const evidence of value.evidence) {
-      if (!isEvidenceRef(evidence)) {
-        throw new TypeError("Evaluator evidence must contain closed EvidenceRef values.");
-      }
-      const source = recorded.get(evidence.evidenceId);
-      if (source === undefined || !evidenceRefsEqual(source, evidence)) {
+    const evidence = evidenceValues.map(snapshotEvidenceRef);
+    if (evidence.some((item) => item === null)) {
+      throw new TypeError("Evaluator evidence must contain closed EvidenceRef values.");
+    }
+    const normalizedEvidence = evidence as EvaluationResult["evidence"];
+    for (const item of normalizedEvidence) {
+      const source = recorded.get(item.evidenceId);
+      if (source === undefined || !evidenceRefsEqual(source, item)) {
         throw new TypeError("Evaluator results may only reference evidence recorded on the case.");
       }
     }
     if (
-      new Set(value.evidence.map(({ evidenceId }) => evidenceId)).size !== value.evidence.length
+      new Set(normalizedEvidence.map(({ evidenceId }) => evidenceId)).size !==
+      normalizedEvidence.length
     ) {
       throw new TypeError("Evaluator judgements cannot contain duplicate evidence references.");
     }
@@ -117,10 +129,10 @@ const judgementResult = (
     return cloneFrozen({
       caseId: evaluationCase.caseId,
       evaluator: descriptor,
-      status: value.status,
-      scores: value.scores,
-      explanations: value.explanations,
-      evidence: value.evidence,
+      status: snapshot.status as EvaluationResult["status"],
+      scores: normalizedScores,
+      explanations: explanationValues as readonly string[],
+      evidence: normalizedEvidence,
     });
   });
 
@@ -153,14 +165,17 @@ export const createEvaluationComposition = (
   evaluators: readonly EvaluationEvaluator[],
 ): EvaluationComposition =>
   portableBoundary("Evaluation composition requires unique, descriptor-safe evaluators.", () => {
-    if (!Array.isArray(evaluators) || !isDenseArray(evaluators) || evaluators.length === 0) {
+    const evaluatorValues = snapshotDenseArray(evaluators);
+    if (evaluatorValues === null || evaluatorValues.length === 0) {
       throw new TypeError("Evaluation composition requires at least one evaluator.");
     }
-    const registered = evaluators.map(registerEvaluator).sort((left, right) => {
-      const leftKey = descriptorKey(left.descriptor);
-      const rightKey = descriptorKey(right.descriptor);
-      return leftKey < rightKey ? -1 : leftKey > rightKey ? 1 : 0;
-    });
+    const registered = evaluatorValues
+      .map((evaluator) => registerEvaluator(evaluator as EvaluationEvaluator))
+      .sort((left, right) => {
+        const leftKey = descriptorKey(left.descriptor);
+        const rightKey = descriptorKey(right.descriptor);
+        return leftKey < rightKey ? -1 : leftKey > rightKey ? 1 : 0;
+      });
     if (
       new Set(registered.map(({ descriptor }) => descriptorKey(descriptor))).size !==
       registered.length
