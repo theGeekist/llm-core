@@ -3,7 +3,7 @@ architecture_version: 2
 id: P0-130
 title: Implement state and intervention vertical slice
 phase: P0.3
-status: claimed
+status: in_progress
 priority: P0
 preferred_owner_kind: codex
 owner: codex-root
@@ -65,5 +65,6 @@ bun run typecheck:packages
 
 - 2026-07-29T19:15:00+08:00 — Reassigned from the retired Claude allocation
   and claimed by the Codex coordinator for delegated subagent execution.
+- 2026-07-29 — Implementation started in the assigned isolated worktree.
 
 ## Handoff
