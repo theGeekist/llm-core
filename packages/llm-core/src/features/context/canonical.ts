@@ -47,10 +47,16 @@ export const isDenseArray = (value: readonly unknown[]): boolean => {
   const indices = keys.filter((key) => key !== "length");
   return (
     indices.length === value.length &&
-    indices.every(
-      (key) =>
-        typeof key === "string" && /^(?:0|[1-9]\d*)$/.test(key) && Number(key) < value.length,
-    )
+    indices.every((key) => {
+      const descriptor = Object.getOwnPropertyDescriptor(value, key);
+      return (
+        typeof key === "string" &&
+        /^(?:0|[1-9]\d*)$/.test(key) &&
+        Number(key) < value.length &&
+        descriptor?.enumerable === true &&
+        "value" in descriptor
+      );
+    })
   );
 };
 
@@ -75,10 +81,8 @@ export const isNonNegativeInteger = (value: unknown): value is number =>
 export const isPositiveInteger = (value: unknown): value is number =>
   Number.isSafeInteger(value) && Number(value) > 0;
 
-const isClosedDigest = (value: unknown): value is Digest =>
-  isPlainRecord(value) &&
-  hasExactKeys(value, ["algorithm", "value"]) &&
-  isDigest(value);
+export const isClosedDigest = (value: unknown): value is Digest =>
+  isPlainRecord(value) && hasExactKeys(value, ["algorithm", "value"]) && isDigest(value);
 
 const isClosedSchemaRef = (value: unknown): boolean =>
   isPlainRecord(value) &&
@@ -120,8 +124,8 @@ const isPortableContent = (value: unknown): value is PortableContent => {
   if (value.kind === "json") {
     return (
       hasExactKeys(value, ["kind", "value"], ["schema"]) &&
-      isJsonValue(value.value) &&
       hasClosedJsonShape(value.value) &&
+      isJsonValue(value.value) &&
       (value.schema === undefined || isClosedSchemaRef(value.schema))
     );
   }
@@ -134,7 +138,7 @@ const isPortableContent = (value: unknown): value is PortableContent => {
       typeof value.data !== "string" ||
       !BASE64.test(value.data) ||
       !isNonNegativeInteger(value.byteLength) ||
-      !isDigest(value.digest)
+      !isClosedDigest(value.digest)
     ) {
       return false;
     }

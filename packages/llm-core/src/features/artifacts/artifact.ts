@@ -40,10 +40,16 @@ const isDenseArray = (value: readonly unknown[]): boolean => {
   const indices = keys.filter((key) => key !== "length");
   return (
     indices.length === value.length &&
-    indices.every(
-      (key) =>
-        typeof key === "string" && /^(?:0|[1-9]\d*)$/.test(key) && Number(key) < value.length,
-    )
+    indices.every((key) => {
+      const descriptor = Object.getOwnPropertyDescriptor(value, key);
+      return (
+        typeof key === "string" &&
+        /^(?:0|[1-9]\d*)$/.test(key) &&
+        Number(key) < value.length &&
+        descriptor?.enumerable === true &&
+        "value" in descriptor
+      );
+    })
   );
 };
 
@@ -63,9 +69,7 @@ const hasClosedJsonShape = (value: unknown): boolean => {
 };
 
 const isClosedDigest = (value: unknown): boolean =>
-  isPlainRecord(value) &&
-  hasExactKeys(value, ["algorithm", "value"]) &&
-  isDigest(value);
+  isPlainRecord(value) && hasExactKeys(value, ["algorithm", "value"]) && isDigest(value);
 
 const isClosedSchemaRef = (value: unknown): boolean =>
   isPlainRecord(value) &&
@@ -150,9 +154,8 @@ function assertProvenance(value: unknown): asserts value is ArtifactProvenance {
   ) {
     for (const source of value.sources) assertRef(source);
     if (
-      new Set(
-        value.sources.map((source) => source.resource.resourceId),
-      ).size !== value.sources.length
+      new Set(value.sources.map((source) => source.resource.resourceId)).size !==
+      value.sources.length
     ) {
       throw new TypeError("Derived artifact provenance cannot contain duplicate sources.");
     }
@@ -198,8 +201,8 @@ export const createArtifact = (input: ArtifactInput): Artifact => {
     (input.schema !== undefined && !isClosedSchemaRef(input.schema)) ||
     (input.metadata !== undefined &&
       (!isPlainRecord(input.metadata) ||
-        !isJsonValue(input.metadata) ||
-        !hasClosedJsonShape(input.metadata)))
+        !hasClosedJsonShape(input.metadata) ||
+        !isJsonValue(input.metadata)))
   ) {
     throw new TypeError("Artifacts require closed storage-neutral portable inputs.");
   }

@@ -129,6 +129,23 @@ describe("Artifact", () => {
     expect(() => createArtifactRef({ ...resource, digest: hiddenDigest } as never)).toThrow(
       "ResourceRef",
     );
+
+    const accessorMetadata: Record<string, unknown> = {};
+    Object.defineProperty(accessorMetadata, "credential", {
+      enumerable: true,
+      get: () => {
+        reads += 1;
+        return "must-not-be-read";
+      },
+    });
+    expect(() =>
+      createArtifact({
+        content: resource,
+        provenance: { kind: "supplied" },
+        metadata: accessorMetadata,
+      } as never),
+    ).toThrow("portable");
+    expect(reads).toBe(0);
   });
 
   test("requires coherent generated and derived provenance", () => {

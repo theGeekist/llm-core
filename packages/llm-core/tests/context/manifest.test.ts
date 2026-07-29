@@ -183,6 +183,71 @@ describe("ContextManifest", () => {
     ).toThrow("portable content");
   });
 
+  test("rejects hostile nested context values without invoking accessors", () => {
+    let reads = 0;
+    const accessorDigest = { algorithm: "sha-256" } as Record<string, unknown>;
+    Object.defineProperty(accessorDigest, "value", {
+      enumerable: true,
+      get: () => {
+        reads += 1;
+        return "ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb";
+      },
+    });
+    expect(() =>
+      createContextEntry({
+        source: {
+          kind: "content",
+          content: [
+            {
+              kind: "binary",
+              mediaType: "application/octet-stream",
+              encoding: "base64",
+              data: "YQ==",
+              byteLength: 1,
+              digest: accessorDigest,
+            },
+          ],
+        } as never,
+        provenance: { kind: "supplied", source: "user" },
+        priority: "required",
+      }),
+    ).toThrow("portable content");
+    expect(reads).toBe(0);
+
+    expect(() =>
+      createContextEntry({
+        source: { kind: "content", content: [{ kind: "text", text: "safe" }] },
+        provenance: {
+          kind: "derived",
+          operation: "summarize",
+          sources: [accessorDigest],
+        } as never,
+        priority: "required",
+      }),
+    ).toThrow("provenance");
+    expect(reads).toBe(0);
+
+    const accessorJson: Record<string, unknown> = {};
+    Object.defineProperty(accessorJson, "credential", {
+      enumerable: true,
+      get: () => {
+        reads += 1;
+        return "must-not-be-read";
+      },
+    });
+    expect(() =>
+      createContextEntry({
+        source: {
+          kind: "content",
+          content: [{ kind: "json", value: accessorJson }],
+        } as never,
+        provenance: { kind: "supplied", source: "user" },
+        priority: "required",
+      }),
+    ).toThrow("portable content");
+    expect(reads).toBe(0);
+  });
+
   test("rejects spoofed derived provenance and malformed scopes", () => {
     const spoofed = input();
     spoofed.entries[0]!.provenance = {

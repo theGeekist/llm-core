@@ -1,9 +1,10 @@
-import { isCanonicalUuid, isDigest, type Digest } from "#contracts";
+import { isCanonicalUuid, type Digest } from "#contracts";
 import {
   assertEvidenceRef,
   assertResourceRef,
   canonicalDigest,
   hasExactKeys,
+  isClosedDigest,
   isDenseArray,
   isNonNegativeInteger,
   isPlainRecord,
@@ -68,7 +69,7 @@ function assertProvenance(value: unknown): asserts value is ContextProvenance {
     Array.isArray(value.sources) &&
     isDenseArray(value.sources) &&
     value.sources.length > 0 &&
-    value.sources.every(isDigest) &&
+    value.sources.every(isClosedDigest) &&
     new Set(value.sources.map((source) => `${source.algorithm}:${source.value}`)).size ===
       value.sources.length
   ) {
