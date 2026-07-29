@@ -3,13 +3,13 @@ architecture_version: 2
 id: P0-140
 title: Implement AgentRunner and local runner
 phase: P0.3
-status: review
+status: complete
 priority: P0
 preferred_owner_kind: codex
 owner: codex-root
 owner_kind: codex
 lease_started_at: 2026-07-29T22:35:00+08:00
-lease_expires_at: 2026-07-30T22:35:00+08:00
+lease_expires_at: null
 base_sha: e13eff0
 branch: task/P0-140-codex
 worktree: /Users/jasonnathan/Repos/@theGeekist/llm-core/.worktrees/P0-140-codex
@@ -80,6 +80,9 @@ bun run typecheck:packages
 - 2026-07-29 — Completed the neutral intervention event contract with its
   safe action binding, checkpoint revision, decision window and allowed
   controls so remote/UI consumers can construct authenticated decisions.
+- 2026-07-29T22:55:00+08:00 — Integrated on main at `104e8a8`; receiving
+  verification passed 21 tests, package typecheck/schema, focused lint and diff
+  check. Task marked complete.
 
 ## Handoff
 
