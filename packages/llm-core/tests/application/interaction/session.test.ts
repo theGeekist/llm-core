@@ -136,5 +136,44 @@ describe("interaction session orchestration", () => {
         },
       }),
     ).rejects.toThrow("must match");
+
+    const valid = await session.send({
+      input: "valid",
+      invocationContext: { invocationId: INVOCATION_ID },
+    });
+    await valid.result();
+  });
+
+  test("serializes send startup before awaiting persistence or runner preparation", async () => {
+    const memory = memoryStore();
+    let releaseStart!: () => void;
+    const startGate = new Promise<void>((resolve) => {
+      releaseStart = resolve;
+    });
+    const session = createInteractionSession({
+      conversationId: CONVERSATION_ID,
+      agent: AGENT,
+      runner: runner(async (request) => {
+        await startGate;
+        return completedRun(request);
+      }),
+      store: memory.store,
+      identity: { now: () => NOW, newSnapshotId: () => "snapshot:serialized" },
+    });
+
+    const first = session.send({
+      input: "first",
+      invocationContext: { invocationId: INVOCATION_ID },
+    });
+    await expect(
+      session.send({
+        input: "second",
+        invocationContext: { invocationId: INVOCATION_ID },
+      }),
+    ).rejects.toThrow("cannot start concurrent runs");
+
+    releaseStart();
+    const interaction = await first;
+    await interaction.result();
   });
 });

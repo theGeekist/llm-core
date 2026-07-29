@@ -11,7 +11,11 @@ import {
   type LiveContinuation,
 } from "../../features/state/public";
 import type { ExecutionEvent } from "../../features/evidence/public";
-import { interactionAgentEvent, interactionExecutionEvent } from "./events";
+import {
+  interactionAgentEvent,
+  interactionExecutionEvent,
+  interactionRunId,
+} from "./events";
 import { createInteractionProjection, reduceInteractionProjection } from "./projection";
 import type {
   ConversationSessionSnapshot,
@@ -120,6 +124,8 @@ export const createInteractionSession = (
         projection: ConversationSessionValue["projection"];
       }
     | undefined;
+  let busy = false;
+  let startingEvents: InteractionEvent[] | undefined;
 
   const load = async (): Promise<ConversationSessionSnapshot> => {
     const loaded = await options.store.load({ conversationId: options.conversationId });
@@ -131,10 +137,14 @@ export const createInteractionSession = (
 
   const executionEventSink = Object.freeze({
     emit: async (source: ExecutionEvent) => {
+      const event = interactionExecutionEvent(options.conversationId, source);
+      if (!active && startingEvents) {
+        startingEvents.push(event);
+        return;
+      }
       if (!active || source.runId !== active.runId) {
         throw new TypeError("Execution events must bind to the active conversation run.");
       }
-      const event = interactionExecutionEvent(options.conversationId, source);
       active.projection = reduceInteractionProjection(active.projection, event);
       active.log.append(event);
     },
@@ -155,48 +165,74 @@ export const createInteractionSession = (
   const send = async (
     request: Parameters<InteractionSession["send"]>[0],
   ): Promise<InteractionRun> => {
-    if (active) {
+    if (busy) {
       throw new TypeError("A conversation session cannot start concurrent runs.");
     }
-    const loaded = await load();
-    if (
-      request.invocationContext.conversationId !== undefined &&
-      request.invocationContext.conversationId !== options.conversationId
-    ) {
-      throw new TypeError("Invocation and session conversation identities must match.");
+    busy = true;
+    startingEvents = [];
+    let loaded: ConversationSessionSnapshot;
+    let agentRun: InteractionRun["agentRun"];
+    let log: InteractionEventLog;
+    try {
+      loaded = await load();
+      if (
+        request.invocationContext.conversationId !== undefined &&
+        request.invocationContext.conversationId !== options.conversationId
+      ) {
+        throw new TypeError("Invocation and session conversation identities must match.");
+      }
+      const capabilities = await options.runner.capabilities();
+      if (loaded.value.providerSession && !capabilities.providerSessionContinuation) {
+        throw new TypeError(
+          "The selected runner cannot continue the stored provider session.",
+        );
+      }
+      agentRun = await options.runner.start({
+        agent: options.agent,
+        invocationContext: {
+          ...request.invocationContext,
+          conversationId: options.conversationId,
+        },
+        input: request.input,
+        ...(loaded.value.providerSession
+          ? { providerSession: loaded.value.providerSession }
+          : {}),
+      });
+      log = new InteractionEventLog();
+      active = {
+        runId: agentRun.identity.runId,
+        log,
+        projection: loaded.value.projection,
+      };
+      for (const event of startingEvents) {
+        if (interactionRunId(event) !== agentRun.identity.runId) {
+          throw new TypeError("Execution events must bind to the active conversation run.");
+        }
+        active.projection = reduceInteractionProjection(active.projection, event);
+        log.append(event);
+      }
+      startingEvents = undefined;
+    } catch (error) {
+      startingEvents = undefined;
+      active = undefined;
+      busy = false;
+      throw error;
     }
-    const capabilities = await options.runner.capabilities();
-    if (loaded.value.providerSession && !capabilities.providerSessionContinuation) {
-      throw new TypeError(
-        "The selected runner cannot continue the stored provider session.",
-      );
-    }
-    const agentRun = await options.runner.start({
-      agent: options.agent,
-      invocationContext: {
-        ...request.invocationContext,
-        conversationId: options.conversationId,
-      },
-      input: request.input,
-      ...(loaded.value.providerSession
-        ? { providerSession: loaded.value.providerSession }
-        : {}),
-    });
-    const log = new InteractionEventLog();
-    active = {
-      runId: agentRun.identity.runId,
-      log,
-      projection: loaded.value.projection,
-    };
 
     const resultPromise = (async (): Promise<InteractionRunResult> => {
       try {
         for await (const source of agentRun.events()) {
+          if (source.identity.runId !== agentRun.identity.runId) {
+            throw new TypeError("Agent events must bind to the active run.");
+          }
           const event = interactionAgentEvent(options.conversationId, source);
           active!.projection = reduceInteractionProjection(active!.projection, event);
           log.append(event);
         }
         const run = await agentRun.result();
+        if (run.identity.runId !== agentRun.identity.runId) {
+          throw new TypeError("Agent results must bind to the active run.");
+        }
         const value: ConversationSessionValue = {
           conversationId: options.conversationId,
           revision: loaded.value.revision + 1,
@@ -231,6 +267,7 @@ export const createInteractionSession = (
       } finally {
         log.close();
         active = undefined;
+        busy = false;
       }
     })();
 
