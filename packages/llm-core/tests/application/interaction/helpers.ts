@@ -16,7 +16,11 @@ import type {
   PreparedAgentSpec,
   RunResult,
 } from "../../../src/features/agent/public";
-import type { InteractionContentEvent } from "../../../src/application/interaction/public";
+import {
+  registerInteractionContentEvent,
+  type InteractionContentEvent,
+  type RegisteredInteractionContentEvent,
+} from "../../../src/application/interaction/public";
 import { prepareAgentSpec } from "../../../src/features/agent/public";
 
 export const CONVERSATION_ID = newCoreId<ConversationId>(
@@ -63,8 +67,8 @@ export const contentEvent = (
   kind: InteractionContentEvent["kind"],
   sequence: number,
   facts: InteractionContentEvent["facts"],
-): InteractionContentEvent =>
-  ({
+): RegisteredInteractionContentEvent =>
+  registerInteractionContentEvent({
     eventId: eventId(`f${String(sequence).padStart(2, "0")}`),
     kind,
     occurredAt: NOW,
@@ -72,7 +76,7 @@ export const contentEvent = (
     runId: RUN_ID,
     facts,
     redaction: { kind: "redacted", categories: ["personal-data"] },
-  }) as InteractionContentEvent;
+  } as InteractionContentEvent);
 
 export const completedRun = (
   request: AgentRunRequest,
@@ -88,7 +92,13 @@ export const completedRun = (
       agentEvent("agent.run.progress", 1, { code: "writing" }),
       agentEvent("agent.run.completed", 2, { status: "completed" }),
     ]
-  ).map((event) => ({ ...event, identity: { ...event.identity, runId } })) as AgentRunEvent[];
+  ).map((event) => ({
+    ...event,
+    ...(runId === RUN_ID
+      ? {}
+      : { eventId: eventId(`d${String(event.sequence).padStart(2, "0")}`) }),
+    identity: { ...event.identity, runId },
+  })) as AgentRunEvent[];
   const resultDraft: RunResult = {
     identity: { runId },
     status: "completed",

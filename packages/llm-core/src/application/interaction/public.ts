@@ -13,6 +13,10 @@ export {
 } from "./projection";
 export { createInteractionSession } from "./session";
 export { registerConversationSessionSnapshot } from "./registration";
+export {
+  isRegisteredInteractionContentEvent,
+  registerInteractionContentEvent,
+} from "./content-registration";
 export type {
   ConversationSessionLoadRequest,
   ConversationSessionSaveRequest,
@@ -27,6 +31,7 @@ export type {
   InteractionContentEvent,
   InteractionContentEventFactsByKind,
   InteractionContentEventKind,
+  RegisteredInteractionContentEvent,
   InteractionLiveConnection,
   InteractionProjection,
   InteractionRun,

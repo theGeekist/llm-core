@@ -76,6 +76,10 @@ bun run typecheck:packages
 - 2026-07-29 — Addressed adversarial review findings covering competing
   sessions, nested snapshot injection, run identity, terminal agreement and
   native AI SDK UI, assistant-ui, ChatKit and NLUX behavior.
+- 2026-07-29 — Closed the remaining review boundaries for provider-session
+  reconstruction, release cleanup, safe reason codes, registered content,
+  reconstructable projection indexes, event-ID collisions, message/tool
+  ordering and open-message terminal delivery.
 - 2026-07-29 — Moved to `review` after focused and legacy retention suites,
   package/test typechecks, schema freshness, focused lint and diff checks
   passed.
@@ -93,7 +97,7 @@ bun run typecheck:packages
   - this task file
 - Verification:
   - `bun test packages/llm-core/tests/application/interaction packages/llm-core/tests/adapters/ui`
-    — exit 0; 15 passed, 0 failed.
+    — exit 0; 23 passed, 0 failed.
   - Legacy session/reducer and AI SDK UI/assistant-ui/ChatKit/NLUX retention
     suite — exit 0; 72 passed, 0 failed.
   - `bun run typecheck:packages` — exit 0; package typecheck and generated

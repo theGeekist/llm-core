@@ -9,7 +9,9 @@ import type { ExecutionEvent } from "../../features/evidence/public";
 import type {
   InteractionContentEvent,
   InteractionEvent,
+  RegisteredInteractionContentEvent,
 } from "./types";
+import { isRegisteredInteractionContentEvent } from "./content-registration";
 
 const freezePortable = <T>(value: T): T => {
   const cloned = structuredClone(value);
@@ -185,8 +187,11 @@ const contentFacts = (
 
 export const interactionContentEvent = (
   conversationId: ConversationId,
-  source: InteractionContentEvent,
+  source: RegisteredInteractionContentEvent,
 ): InteractionEvent => {
+  if (!isRegisteredInteractionContentEvent(source)) {
+    throw new TypeError("Interaction content must cross the registered redaction boundary.");
+  }
   const event = {
     eventId: source.eventId,
     kind: source.kind,

@@ -1,19 +1,15 @@
 import {
   coreId,
-  externalId,
   isCanonicalUuid,
   isExternalId,
   isJsonValue,
   type ConversationId,
   type EventId,
   type JsonValue,
-  type ProviderSessionId,
   type RunId,
 } from "#contracts";
-import {
-  createProviderSessionRef,
-  createSnapshot,
-} from "../../features/state/public";
+import { createSnapshot } from "../../features/state/public";
+import { registerInteractionProviderSession } from "./provider-session-registration";
 import type {
   ConversationSessionSnapshot,
   ConversationSessionValue,
@@ -266,6 +262,7 @@ const normalizeUiEvent = (value: unknown): InteractionUiEvent => {
 const normalizeProjection = (
   value: unknown,
   conversationId: ConversationId,
+  // eslint-disable-next-line sonarjs/cognitive-complexity -- validates one closed, mutually dependent projection snapshot
 ): InteractionProjection => {
   if (
     !isRecord(value) ||
@@ -274,44 +271,152 @@ const normalizeProjection = (
       "status",
       "runId",
       "eventIds",
+      "eventFingerprints",
       "events",
       "lastSequences",
       "terminalRunIds",
+      "terminalMessageKeys",
+      "startedMessageKeys",
+      "seenToolCallKeys",
     ]) ||
     value.conversationId !== conversationId ||
     !RUN_STATUSES.includes(value.status as InteractionRunStatus) ||
     !Array.isArray(value.eventIds) ||
     !Array.isArray(value.events) ||
+    !isRecord(value.eventFingerprints) ||
     !isRecord(value.lastSequences) ||
-    !Array.isArray(value.terminalRunIds)
+    !Array.isArray(value.terminalRunIds) ||
+    !Array.isArray(value.terminalMessageKeys) ||
+    !Array.isArray(value.startedMessageKeys) ||
+    !Array.isArray(value.seenToolCallKeys)
   ) {
     throw new TypeError("Conversation snapshots require a closed interaction projection.");
   }
   const ids = value.eventIds.map(eventId);
   const events = value.events.map(normalizeUiEvent);
-  const lastSequences = Object.fromEntries(
-    Object.entries(value.lastSequences).map(([key, sequence]) => {
-      if (!Number.isSafeInteger(sequence) || (sequence as number) < 0) {
-        throw new TypeError("Conversation projection sequences must be non-negative integers.");
-      }
-      return [key, sequence as number];
-    }),
-  );
-  const terminalRunIds = value.terminalRunIds.map(runId);
+  const projectedIds = events.map((event) => event.eventId);
   if (
-    events.some((event) => !ids.includes(event.eventId)) ||
+    Object.keys(value.eventFingerprints).length > 0 ||
+    Object.keys(value.lastSequences).length > 0 ||
+    ids.length !== projectedIds.length ||
+    ids.some((id, index) => id !== projectedIds[index]) ||
     new Set(ids).size !== ids.length
   ) {
-    throw new TypeError("Conversation projection identity is inconsistent.");
+    throw new TypeError("Stored projection indexes must be canonical and reconstructable.");
+  }
+  const derivedTerminalRunIds = [
+    ...new Set(
+      events
+        .filter((event) => event.kind === "run-finished")
+        .map((event) => event.runId),
+    ),
+  ];
+  const derivedTerminalMessageKeys = [
+    ...new Set(
+      events
+        .filter(
+          (event) =>
+            event.kind === "message-finished" || event.kind === "message-failed",
+        )
+        .map((event) => `${event.runId}:${event.messageId}`),
+    ),
+  ];
+  const derivedStartedMessageKeys: string[] = [];
+  const derivedSeenToolCallKeys: string[] = [];
+  const closedMessageKeys = new Set<string>();
+  for (const event of events) {
+    if (
+      event.kind === "run-finished" &&
+      derivedStartedMessageKeys.some(
+        (key) =>
+          key.startsWith(`${event.runId}:`) && !closedMessageKeys.has(key),
+      )
+    ) {
+      throw new TypeError(
+        "Stored projections cannot terminate a run with an open content message.",
+      );
+    }
+    if (
+      event.kind !== "message-started" &&
+      event.kind !== "text-delta" &&
+      event.kind !== "reasoning-delta" &&
+      event.kind !== "tool-call" &&
+      event.kind !== "tool-result" &&
+      event.kind !== "message-finished" &&
+      event.kind !== "message-failed"
+    ) {
+      continue;
+    }
+    const messageKey = `${event.runId}:${event.messageId}`;
+    if (closedMessageKeys.has(messageKey)) {
+      throw new TypeError("Stored projection content follows a terminal message.");
+    }
+    if (event.kind === "message-started") {
+      if (derivedStartedMessageKeys.includes(messageKey)) {
+        throw new TypeError("Stored projection messages can start exactly once.");
+      }
+      derivedStartedMessageKeys.push(messageKey);
+      continue;
+    }
+    if (!derivedStartedMessageKeys.includes(messageKey)) {
+      throw new TypeError("Stored projection content requires a preceding message start.");
+    }
+    if (event.kind === "tool-call") {
+      const toolKey = `${event.runId}:${event.toolCallId}`;
+      if (derivedSeenToolCallKeys.includes(toolKey)) {
+        throw new TypeError("Stored projection tool calls must be unique.");
+      }
+      derivedSeenToolCallKeys.push(toolKey);
+    } else if (
+      event.kind === "tool-result" &&
+      !derivedSeenToolCallKeys.includes(`${event.runId}:${event.toolCallId}`)
+    ) {
+      throw new TypeError("Stored projection tool results require a preceding call.");
+    } else if (event.kind === "message-finished" || event.kind === "message-failed") {
+      closedMessageKeys.add(messageKey);
+    }
+  }
+  const terminalRunIds = value.terminalRunIds.map(runId);
+  if (
+    terminalRunIds.length !== derivedTerminalRunIds.length ||
+    terminalRunIds.some((id, index) => id !== derivedTerminalRunIds[index]) ||
+    value.terminalMessageKeys.length !== derivedTerminalMessageKeys.length ||
+    value.terminalMessageKeys.some(
+      (key, index) => key !== derivedTerminalMessageKeys[index],
+    ) ||
+    value.startedMessageKeys.length !== derivedStartedMessageKeys.length ||
+    value.startedMessageKeys.some(
+      (key, index) => key !== derivedStartedMessageKeys[index],
+    ) ||
+    value.seenToolCallKeys.length !== derivedSeenToolCallKeys.length ||
+    value.seenToolCallKeys.some(
+      (key, index) => key !== derivedSeenToolCallKeys[index],
+    )
+  ) {
+    throw new TypeError("Stored projection terminal indexes are inconsistent.");
+  }
+  const lastTerminal = events.findLast((event) => event.kind === "run-finished");
+  if (
+    (lastTerminal === undefined &&
+      (value.status !== "idle" || value.runId !== undefined)) ||
+    (lastTerminal !== undefined &&
+      (value.status !== lastTerminal.status ||
+        value.runId !== lastTerminal.runId))
+  ) {
+    throw new TypeError("Stored projection status must match its terminal event.");
   }
   return {
     conversationId,
     status: value.status as InteractionRunStatus,
     ...(value.runId === undefined ? {} : { runId: runId(value.runId) }),
     eventIds: ids,
+    eventFingerprints: {},
     events,
-    lastSequences,
+    lastSequences: {},
     terminalRunIds,
+    terminalMessageKeys: [...derivedTerminalMessageKeys],
+    startedMessageKeys: [...derivedStartedMessageKeys],
+    seenToolCallKeys: [...derivedSeenToolCallKeys],
   };
 };
 
@@ -359,20 +464,7 @@ const normalizeValue = (
   }
   let providerSession;
   if (value.providerSession !== undefined) {
-    if (
-      !isRecord(value.providerSession) ||
-      !hasOnlyKeys(value.providerSession, ["kind", "providerId", "sessionId"]) ||
-      value.providerSession.kind !== "provider-session-ref" ||
-      !isExternalId(value.providerSession.providerId) ||
-      !isExternalId(value.providerSession.sessionId)
-    ) {
-      throw new TypeError("Stored provider sessions must be closed opaque references.");
-    }
-    providerSession = createProviderSessionRef({
-      kind: "provider-session-ref",
-      providerId: value.providerSession.providerId,
-      sessionId: externalId<ProviderSessionId>(value.providerSession.sessionId),
-    });
+    providerSession = registerInteractionProviderSession(value.providerSession);
   }
   return {
     conversationId: expectedConversationId,

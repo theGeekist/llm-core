@@ -76,6 +76,12 @@ export type InteractionContentEvent = {
   };
 }[InteractionContentEventKind];
 
+declare const registeredInteractionContentEventBrand: unique symbol;
+
+export type RegisteredInteractionContentEvent = InteractionContentEvent & {
+  readonly [registeredInteractionContentEventBrand]: true;
+};
+
 export type InteractionEvent =
   | {
       readonly kind: "agent-run";
@@ -192,9 +198,13 @@ export interface InteractionProjection {
   readonly status: InteractionRunStatus;
   readonly runId?: RunId;
   readonly eventIds: readonly EventId[];
+  readonly eventFingerprints: Readonly<Record<string, string>>;
   readonly events: readonly InteractionUiEvent[];
   readonly lastSequences: Readonly<Record<string, number>>;
   readonly terminalRunIds: readonly RunId[];
+  readonly terminalMessageKeys: readonly string[];
+  readonly startedMessageKeys: readonly string[];
+  readonly seenToolCallKeys: readonly string[];
 }
 
 export interface ConversationTurn {
@@ -291,7 +301,7 @@ export interface InteractionRun extends InteractionLiveConnection {
 export interface InteractionSession {
   readonly conversationId: ConversationId;
   readonly executionEventSink: EventSink;
-  emitContent(event: InteractionContentEvent): Promise<void>;
+  emitContent(event: RegisteredInteractionContentEvent): Promise<void>;
   load(): Promise<ConversationSessionSnapshot>;
   send(request: InteractionSendRequest): Promise<InteractionRun>;
   reconnect(

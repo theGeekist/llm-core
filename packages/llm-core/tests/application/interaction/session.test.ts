@@ -2,11 +2,16 @@ import { describe, expect, test } from "bun:test";
 import { isLiveContinuation } from "../../../src/features/state/public";
 import {
   createInteractionSession,
+  registerConversationSessionSnapshot,
   type ConversationSessionSnapshot,
   type ConversationSessionStore,
   type InteractionSession,
 } from "../../../src/application/interaction/public";
-import type { AgentRunRequest } from "../../../src/features/agent/public";
+import type {
+  AgentRun,
+  AgentRunRequest,
+  RunResult,
+} from "../../../src/features/agent/public";
 import type { AgentRunner } from "../../../src/features/agent/public";
 import {
   AGENT,
@@ -15,6 +20,7 @@ import {
   NOW,
   OTHER_CONVERSATION_ID,
   SECOND_RUN_ID,
+  agentEvent,
   completedRun,
   contentEvent,
 } from "./helpers";
@@ -117,6 +123,7 @@ describe("interaction session orchestration", () => {
     expect(first.snapshot.kind).toBe("snapshot");
     expect(first.snapshot.value.turns).toHaveLength(1);
     expect(memory.read()?.value.turns).toHaveLength(2);
+    expect(memory.read()?.value.projection.runId).toBe(SECOND_RUN_ID);
     expect(requests[0]?.invocationContext.conversationId).toBe(CONVERSATION_ID);
     expect(requests[0]?.providerSession).toBeUndefined();
     expect(requests[1]?.providerSession?.kind).toBe("provider-session-ref");
@@ -283,6 +290,13 @@ describe("interaction session orchestration", () => {
       invocationContext: { invocationId: INVOCATION_ID },
     });
     await sourceRun.result();
+    const poisonedIndex = structuredClone(memory.read()) as unknown as {
+      value: { projection: { terminalRunIds: string[] } };
+    };
+    poisonedIndex.value.projection.terminalRunIds.push(SECOND_RUN_ID);
+    expect(() =>
+      registerConversationSessionSnapshot(poisonedIndex, CONVERSATION_ID),
+    ).toThrow("terminal indexes");
     const tainted = structuredClone(memory.read()) as unknown as {
       value: {
         turns: Array<Record<string, unknown>>;
@@ -358,5 +372,136 @@ describe("interaction session orchestration", () => {
       "content",
       "content",
     ]);
+  });
+
+  test("rejects undeclared provider-session data returned by a runner", async () => {
+    const memory = memoryStore();
+    const session = createInteractionSession({
+      conversationId: CONVERSATION_ID,
+      agent: AGENT,
+      runner: runner((request) => {
+        const base = completedRun(request);
+        return {
+          ...base,
+          result: async () => {
+            const result = await base.result();
+            return {
+              ...result,
+              providerSession: {
+                ...result.providerSession,
+                credential: "sk-must-not-persist",
+              },
+            } as unknown as RunResult;
+          },
+        } as AgentRun;
+      }),
+      store: memory.store,
+      identity: {
+        now: () => NOW,
+        newSnapshotId: () => "snapshot:provider-extra",
+        newReservationId: () => "reservation:provider-extra",
+      },
+    });
+
+    const interaction = await session.send({
+      input: "hello",
+      invocationContext: { invocationId: INVOCATION_ID },
+    });
+    await expect(interaction.result()).rejects.toThrow("closed opaque");
+    expect(memory.read()).toBeNull();
+  });
+
+  test("does not let release failures mask startup or committed results", async () => {
+    const memory = memoryStore();
+    let capabilityCalls = 0;
+    const baseRunner = runner((request) =>
+      completedRun(
+        request,
+        undefined,
+        capabilityCalls > 1 ? SECOND_RUN_ID : undefined,
+      ),
+    );
+    const flakyRunner: AgentRunner = {
+      ...baseRunner,
+      capabilities: () => {
+        capabilityCalls += 1;
+        if (capabilityCalls === 1) {
+          throw new Error("capabilities unavailable");
+        }
+        return baseRunner.capabilities();
+      },
+    };
+    const store: ConversationSessionStore = {
+      ...memory.store,
+      release: async (reservation) => {
+        await memory.store.release(reservation);
+        throw new Error("release acknowledgement unavailable");
+      },
+    };
+    const session = createInteractionSession({
+      conversationId: CONVERSATION_ID,
+      agent: AGENT,
+      runner: flakyRunner,
+      store,
+      identity: {
+        now: () => NOW,
+        newSnapshotId: () => `snapshot:release:${capabilityCalls}`,
+        newReservationId: () => `reservation:release:${capabilityCalls}`,
+      },
+    });
+
+    await expect(
+      session.send({
+        input: "startup failure",
+        invocationContext: { invocationId: INVOCATION_ID },
+      }),
+    ).rejects.toThrow("capabilities unavailable");
+
+    const committed = await session.send({
+      input: "committed",
+      invocationContext: { invocationId: INVOCATION_ID },
+    });
+    await expect(committed.result()).resolves.toMatchObject({
+      run: { status: "completed" },
+    });
+    expect(memory.read()?.value.revision).toBe(1);
+  });
+
+  test("requires safe reason-code agreement between terminal event and result", async () => {
+    const memory = memoryStore();
+    const session = createInteractionSession({
+      conversationId: CONVERSATION_ID,
+      agent: AGENT,
+      runner: runner((request) => {
+        const base = completedRun(request);
+        return {
+          ...base,
+          async *events() {
+            yield agentEvent("agent.run.failed", 0, {
+              status: "failed",
+              reasonCode: "provider-failed",
+            });
+          },
+          result: async () => ({
+            identity: base.identity,
+            status: "failed",
+            reasonCode: "Bearer sk-secret",
+          }),
+        } as AgentRun;
+      }),
+      store: memory.store,
+      identity: {
+        now: () => NOW,
+        newSnapshotId: () => "snapshot:reason",
+        newReservationId: () => "reservation:reason",
+      },
+    });
+
+    const interaction = await session.send({
+      input: "hello",
+      invocationContext: { invocationId: INVOCATION_ID },
+    });
+    await expect(interaction.result()).rejects.toThrow("safely agree");
+    expect(memory.read()).toBeNull();
   });
 });

@@ -36,9 +36,13 @@ export const createInteractionProjection = (
     conversationId,
     status: "idle",
     eventIds: Object.freeze([]),
+    eventFingerprints: Object.freeze({}),
     events: Object.freeze([]),
     lastSequences: Object.freeze({}),
     terminalRunIds: Object.freeze([]),
+    terminalMessageKeys: Object.freeze([]),
+    startedMessageKeys: Object.freeze([]),
+    seenToolCallKeys: Object.freeze([]),
   });
 
 export const projectInteractionEvent = (event: InteractionEvent): InteractionUiEvent | null => {
@@ -167,17 +171,72 @@ export const projectInteractionEvent = (event: InteractionEvent): InteractionUiE
 export const reduceInteractionProjection = (
   state: InteractionProjection,
   event: InteractionEvent,
+  // eslint-disable-next-line sonarjs/cognitive-complexity -- ordering and terminal guards form one reducer transition
 ): InteractionProjection => {
   if (event.conversationId !== state.conversationId) {
     throw new TypeError("Interaction events cannot cross conversation boundaries.");
   }
   const eventId = interactionEventId(event);
-  if (state.eventIds.includes(eventId)) {
-    return state;
+  const fingerprint = JSON.stringify(event);
+  const priorFingerprint = state.eventFingerprints[eventId];
+  if (priorFingerprint !== undefined) {
+    if (priorFingerprint === fingerprint) {
+      return state;
+    }
+    throw new TypeError("Interaction event IDs cannot identify conflicting facts.");
   }
   const runId = interactionRunId(event);
   if (state.terminalRunIds.includes(runId)) {
     throw new TypeError("Interaction events cannot follow a terminal run event.");
+  }
+  if (
+    terminalStatus(event) !== null &&
+    state.startedMessageKeys.some(
+      (key) =>
+        key.startsWith(`${runId}:`) && !state.terminalMessageKeys.includes(key),
+    )
+  ) {
+    throw new TypeError(
+      "Interaction runs cannot terminate while a content message remains open.",
+    );
+  }
+  const messageKey =
+    event.kind === "content"
+      ? `${runId}:${event.event.facts.messageId}`
+      : null;
+  if (messageKey && state.terminalMessageKeys.includes(messageKey)) {
+    throw new TypeError("Interaction content cannot follow a terminal message event.");
+  }
+  const startsMessage =
+    event.kind === "content" &&
+    event.event.kind === "interaction.message.started";
+  if (messageKey && startsMessage && state.startedMessageKeys.includes(messageKey)) {
+    throw new TypeError("Interaction messages can start exactly once.");
+  }
+  if (messageKey && !startsMessage && !state.startedMessageKeys.includes(messageKey)) {
+    throw new TypeError("Interaction message content requires a preceding start event.");
+  }
+  const toolCallKey =
+    event.kind === "content" &&
+    (event.event.kind === "interaction.message.tool.call" ||
+      event.event.kind === "interaction.message.tool.result")
+      ? `${runId}:${event.event.facts.toolCallId}`
+      : null;
+  if (
+    toolCallKey &&
+    event.kind === "content" &&
+    event.event.kind === "interaction.message.tool.call" &&
+    state.seenToolCallKeys.includes(toolCallKey)
+  ) {
+    throw new TypeError("Interaction tool calls can be projected exactly once.");
+  }
+  if (
+    toolCallKey &&
+    event.kind === "content" &&
+    event.event.kind === "interaction.message.tool.result" &&
+    !state.seenToolCallKeys.includes(toolCallKey)
+  ) {
+    throw new TypeError("Interaction tool results require a preceding tool call.");
   }
   const sequenceKey = interactionSequenceKey(event);
   const lastSequence = state.lastSequences[sequenceKey];
@@ -202,6 +261,10 @@ export const reduceInteractionProjection = (
     status,
     runId,
     eventIds: Object.freeze([...state.eventIds, eventId]),
+    eventFingerprints: Object.freeze({
+      ...state.eventFingerprints,
+      [eventId]: fingerprint,
+    }),
     events: projected ? Object.freeze([...state.events, projected]) : state.events,
     lastSequences: Object.freeze({
       ...state.lastSequences,
@@ -211,5 +274,22 @@ export const reduceInteractionProjection = (
       terminalStatus(event) === null
         ? state.terminalRunIds
         : Object.freeze([...state.terminalRunIds, runId]),
+    terminalMessageKeys:
+      messageKey &&
+      event.kind === "content" &&
+      (event.event.kind === "interaction.message.completed" ||
+        event.event.kind === "interaction.message.failed")
+        ? Object.freeze([...state.terminalMessageKeys, messageKey])
+        : state.terminalMessageKeys,
+    startedMessageKeys:
+      messageKey && startsMessage
+        ? Object.freeze([...state.startedMessageKeys, messageKey])
+        : state.startedMessageKeys,
+    seenToolCallKeys:
+      toolCallKey &&
+      event.kind === "content" &&
+      event.event.kind === "interaction.message.tool.call"
+        ? Object.freeze([...state.seenToolCallKeys, toolCallKey])
+        : state.seenToolCallKeys,
   });
 };

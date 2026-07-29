@@ -8,7 +8,6 @@ import {
 } from "#contracts";
 import {
   createLiveContinuation,
-  createProviderSessionRef,
   createSnapshot,
   isLiveContinuation,
   type LiveContinuation,
@@ -22,18 +21,20 @@ import {
 } from "./events";
 import { createInteractionProjection, reduceInteractionProjection } from "./projection";
 import { registerConversationSessionSnapshot } from "./registration";
+import { registerInteractionProviderSession } from "./provider-session-registration";
 import type {
   ConversationSessionReservation,
   ConversationSessionSnapshot,
   ConversationSessionValue,
   CreateInteractionSessionOptions,
   InteractionEvent,
-  InteractionContentEvent,
+  RegisteredInteractionContentEvent,
   InteractionLiveConnection,
   InteractionRun,
   InteractionRunResult,
   InteractionSession,
 } from "./types";
+import { isSafeInteractionCode } from "./content-registration";
 
 class InteractionEventLog {
   readonly #events: InteractionEvent[] = [];
@@ -93,12 +94,43 @@ const emptyValue = (conversationId: ConversationId): ConversationSessionValue =>
 const asSnapshot = (
   options: CreateInteractionSessionOptions,
   value: ConversationSessionValue,
-): ConversationSessionSnapshot =>
-  createSnapshot({
+): ConversationSessionSnapshot => {
+  const events = [...value.projection.events];
+  const terminalRunIds = events
+    .filter((event) => event.kind === "run-finished")
+    .map((event) => event.runId);
+  const terminalMessageKeys = events
+    .filter(
+      (event) =>
+        event.kind === "message-finished" || event.kind === "message-failed",
+    )
+    .map((event) => `${event.runId}:${event.messageId}`);
+  const startedMessageKeys = events
+    .filter((event) => event.kind === "message-started")
+    .map((event) => `${event.runId}:${event.messageId}`);
+  const seenToolCallKeys = events
+    .filter((event) => event.kind === "tool-call")
+    .map((event) => `${event.runId}:${event.toolCallId}`);
+  const persistedValue: ConversationSessionValue = {
+    ...value,
+    projection: {
+      ...value.projection,
+      eventIds: events.map((event) => event.eventId),
+      eventFingerprints: {},
+      events,
+      lastSequences: {},
+      terminalRunIds: [...new Set(terminalRunIds)],
+      terminalMessageKeys: [...new Set(terminalMessageKeys)],
+      startedMessageKeys: [...new Set(startedMessageKeys)],
+      seenToolCallKeys: [...new Set(seenToolCallKeys)],
+    },
+  };
+  return createSnapshot({
     snapshotId: options.identity.newSnapshotId(),
     createdAt: options.identity.now(),
-    value: value as unknown as JsonValue,
+    value: persistedValue as unknown as JsonValue,
   }) as unknown as ConversationSessionSnapshot;
+};
 
 export const createInteractionSession = (
   options: CreateInteractionSessionOptions,
@@ -116,6 +148,20 @@ export const createInteractionSession = (
     | undefined;
   let busy = false;
   let startingEvents: InteractionEvent[] | undefined;
+
+  const releaseReservation = async (
+    reservation: ConversationSessionReservation | undefined,
+  ): Promise<void> => {
+    if (!reservation) {
+      return;
+    }
+    try {
+      await options.store.release(reservation);
+    } catch {
+      // Release is cleanup, not commit authority. A conforming store makes it
+      // idempotent; recovery of an unreachable store is host-owned.
+    }
+  };
 
   const load = async (): Promise<ConversationSessionSnapshot> => {
     const loaded = await options.store.load({ conversationId: options.conversationId });
@@ -144,7 +190,7 @@ export const createInteractionSession = (
     },
   });
 
-  const emitContent = async (source: InteractionContentEvent): Promise<void> =>
+  const emitContent = async (source: RegisteredInteractionContentEvent): Promise<void> =>
     emitEvent(interactionContentEvent(options.conversationId, source));
 
   const reconnect = (
@@ -237,18 +283,17 @@ export const createInteractionSession = (
       }
       startingEvents = undefined;
     } catch (error) {
-      if (reservation) {
-        await options.store.release(reservation);
-      }
       startingEvents = undefined;
       active = undefined;
       busy = false;
+      await releaseReservation(reservation);
       throw error;
     }
 
     // eslint-disable-next-line sonarjs/cognitive-complexity -- terminal validation and persistence must settle in one guarded path
     const resultPromise = (async (): Promise<InteractionRunResult> => {
       let terminalStatus: InteractionRunResult["run"]["status"] | undefined;
+      let terminalReasonCode: string | undefined;
       try {
         for await (const source of agentRun.events()) {
           if (source.identity.runId !== agentRun.identity.runId) {
@@ -264,6 +309,13 @@ export const createInteractionSession = (
               throw new TypeError("Agent runs can emit exactly one terminal event.");
             }
             terminalStatus = source.facts.status;
+            terminalReasonCode = source.facts.reasonCode;
+            if (
+              terminalReasonCode !== undefined &&
+              !isSafeInteractionCode(terminalReasonCode)
+            ) {
+              throw new TypeError("Agent terminal events require a safe reason code.");
+            }
           }
           const event = interactionAgentEvent(options.conversationId, source);
           active!.projection = reduceInteractionProjection(active!.projection, event);
@@ -276,11 +328,19 @@ export const createInteractionSession = (
         if (terminalStatus !== run.status) {
           throw new TypeError("Agent result status must agree with its terminal event.");
         }
+        if (
+          run.reasonCode !== terminalReasonCode ||
+          (run.reasonCode !== undefined && !isSafeInteractionCode(run.reasonCode))
+        ) {
+          throw new TypeError(
+            "Agent result reason code must safely agree with its terminal event.",
+          );
+        }
         if (run.output !== undefined && !isJsonValue(run.output)) {
           throw new TypeError("Agent output must be strict portable JSON.");
         }
         const providerSession = run.providerSession
-          ? createProviderSessionRef(run.providerSession)
+          ? registerInteractionProviderSession(run.providerSession)
           : loaded.value.providerSession;
         const value: ConversationSessionValue = {
           conversationId: options.conversationId,
@@ -315,12 +375,10 @@ export const createInteractionSession = (
           snapshot,
         });
       } finally {
-        if (reservation) {
-          await options.store.release(reservation);
-        }
         log.close();
         active = undefined;
         busy = false;
+        await releaseReservation(reservation);
       }
     })();
 

@@ -1,13 +1,23 @@
 import { describe, expect, test } from "bun:test";
 import {
   interactionAgentEvent,
+  interactionContentEvent,
   interactionExecutionEvent,
   createInteractionProjection,
+  registerInteractionContentEvent,
   reduceInteractionProjection,
 } from "../../../src/application/interaction/public";
 import type { ExecutionEvent } from "../../../src/features/evidence/public";
 import { coreId, type EvidenceId, type ToolCallId } from "#contracts";
-import { AGENT, CONVERSATION_ID, NOW, RUN_ID, agentEvent, eventId } from "./helpers";
+import {
+  AGENT,
+  CONVERSATION_ID,
+  NOW,
+  RUN_ID,
+  agentEvent,
+  contentEvent,
+  eventId,
+} from "./helpers";
 
 describe("interaction event projection", () => {
   test("reduces canonical runner facts idempotently", () => {
@@ -34,6 +44,28 @@ describe("interaction event projection", () => {
       },
     ]);
     expect(duplicate).toBe(first);
+  });
+
+  test("rejects an event ID reused for different facts", () => {
+    const started = interactionAgentEvent(
+      CONVERSATION_ID,
+      agentEvent("agent.run.started", 0, {
+        agentId: "agent",
+        agentVersion: AGENT.version,
+      }),
+    );
+    const state = reduceInteractionProjection(
+      createInteractionProjection(CONVERSATION_ID),
+      started,
+    );
+    const collision = interactionAgentEvent(
+      CONVERSATION_ID,
+      agentEvent("agent.run.progress", 0, { code: "different-fact" }),
+    );
+
+    expect(() => reduceInteractionProjection(state, collision)).toThrow(
+      "conflicting facts",
+    );
   });
 
   test("whitelists redacted execution facts and drops undeclared sensitive fields", () => {
@@ -111,5 +143,146 @@ describe("interaction event projection", () => {
     expect(() => reduceInteractionProjection(completed, reopened)).toThrow(
       "cannot follow a terminal",
     );
+  });
+
+  test("closes completed and failed content messages against later deltas", () => {
+    for (const kind of [
+      "interaction.message.completed",
+      "interaction.message.failed",
+    ] as const) {
+      const initial = createInteractionProjection(CONVERSATION_ID);
+      const started = interactionContentEvent(
+        CONVERSATION_ID,
+        contentEvent("interaction.message.started", 0, {
+          messageId: `message:${kind}`,
+        }),
+      );
+      const terminal = interactionContentEvent(
+        CONVERSATION_ID,
+        contentEvent(
+          kind,
+          1,
+          kind === "interaction.message.completed"
+            ? { messageId: `message:${kind}` }
+            : { messageId: `message:${kind}`, reasonCode: "content-failed" },
+        ),
+      );
+      const running = reduceInteractionProjection(initial, started);
+      const closed = reduceInteractionProjection(running, terminal);
+      const late = interactionContentEvent(
+        CONVERSATION_ID,
+        contentEvent("interaction.message.text.delta", 2, {
+          messageId: `message:${kind}`,
+          text: "late",
+        }),
+      );
+
+      expect(() => reduceInteractionProjection(closed, late)).toThrow(
+        "terminal message",
+      );
+    }
+  });
+
+  test("enforces the canonical content message and tool-call state machine", () => {
+    const initial = createInteractionProjection(CONVERSATION_ID);
+    const started = interactionContentEvent(
+      CONVERSATION_ID,
+      contentEvent("interaction.message.started", 0, {
+        messageId: "message:state-machine",
+      }),
+    );
+    const delta = interactionContentEvent(
+      CONVERSATION_ID,
+      contentEvent("interaction.message.text.delta", 1, {
+        messageId: "message:state-machine",
+        text: "hello",
+      }),
+    );
+    const toolResult = interactionContentEvent(
+      CONVERSATION_ID,
+      contentEvent("interaction.message.tool.result", 2, {
+        messageId: "message:state-machine",
+        toolCallId: "tool-call:1",
+        toolName: "lookup",
+        projectedResult: { ok: true },
+        isError: false,
+      }),
+    );
+
+    expect(() => reduceInteractionProjection(initial, delta)).toThrow(
+      "preceding start",
+    );
+    const running = reduceInteractionProjection(initial, started);
+    const duplicateStart = interactionContentEvent(
+      CONVERSATION_ID,
+      contentEvent("interaction.message.started", 1, {
+        messageId: "message:state-machine",
+      }),
+    );
+    expect(() => reduceInteractionProjection(running, duplicateStart)).toThrow(
+      "start exactly once",
+    );
+    expect(() => reduceInteractionProjection(running, toolResult)).toThrow(
+      "preceding tool call",
+    );
+  });
+
+  test("rejects run termination while a projected content message is open", () => {
+    const started = interactionContentEvent(
+      CONVERSATION_ID,
+      contentEvent("interaction.message.started", 0, {
+        messageId: "message:open",
+      }),
+    );
+    const delta = interactionContentEvent(
+      CONVERSATION_ID,
+      contentEvent("interaction.message.text.delta", 1, {
+        messageId: "message:open",
+        text: "unfinished",
+      }),
+    );
+    const terminal = interactionAgentEvent(
+      CONVERSATION_ID,
+      agentEvent("agent.run.completed", 2, { status: "completed" }),
+    );
+    const running = reduceInteractionProjection(
+      reduceInteractionProjection(
+        createInteractionProjection(CONVERSATION_ID),
+        started,
+      ),
+      delta,
+    );
+
+    expect(() => reduceInteractionProjection(running, terminal)).toThrow(
+      "message remains open",
+    );
+  });
+
+  test("requires content events to pass the closed registration boundary", () => {
+    const raw = {
+      eventId: eventId("f20"),
+      kind: "interaction.message.started",
+      occurredAt: NOW,
+      sequence: 0,
+      runId: RUN_ID,
+      facts: { messageId: "message:raw" },
+      redaction: { kind: "not-required" },
+    };
+
+    expect(() =>
+      interactionContentEvent(CONVERSATION_ID, raw as never),
+    ).toThrow("registered");
+    expect(() =>
+      registerInteractionContentEvent({
+        ...raw,
+        credential: "sk-secret",
+      }),
+    ).toThrow("canonical identity");
+    expect(() =>
+      registerInteractionContentEvent({
+        ...raw,
+        facts: { messageId: "message:raw", reasonCode: "secret value" },
+      }),
+    ).toThrow("closed canonical shape");
   });
 });
