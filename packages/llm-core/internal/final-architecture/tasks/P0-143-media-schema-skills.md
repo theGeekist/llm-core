@@ -3,16 +3,16 @@ architecture_version: 2
 id: P0-143
 title: Implement media, schema resolution and skill fronts
 phase: P0.3
-status: proposed
+status: claimed
 priority: P0
 preferred_owner_kind: codex
-owner: null
-owner_kind: null
-lease_started_at: null
-lease_expires_at: null
-base_sha: null
-branch: null
-worktree: null
+owner: codex-root
+owner_kind: codex
+lease_started_at: 2026-07-29T23:56:00+08:00
+lease_expires_at: 2026-07-30T23:56:00+08:00
+base_sha: 16290df
+branch: task/P0-143-codex
+worktree: /Users/jasonnathan/Repos/@theGeekist/llm-core/.worktrees/P0-143-codex
 depends_on:
   - P0-100
   - P0-120
@@ -72,5 +72,8 @@ bun run typecheck:packages
 ```
 
 ## Work log
+
+- 2026-07-29T23:56:00+08:00 — Claimed by the Codex coordinator after P0-170
+  passed adversarial review and receiving verification.
 
 ## Handoff

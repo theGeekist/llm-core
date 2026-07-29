@@ -3,13 +3,13 @@ architecture_version: 2
 id: P0-170
 title: Convert interaction sessions and UI projections
 phase: P0.4
-status: review
+status: complete
 priority: P0
 preferred_owner_kind: codex
 owner: codex-root
 owner_kind: codex
 lease_started_at: 2026-07-29T22:55:00+08:00
-lease_expires_at: 2026-07-30T22:55:00+08:00
+lease_expires_at: null
 base_sha: 104e8a8
 branch: task/P0-170-codex
 worktree: /Users/jasonnathan/Repos/@theGeekist/llm-core/.worktrees/P0-170-codex
@@ -86,6 +86,9 @@ bun run typecheck:packages
 - 2026-07-29 — Moved to `review` after focused and legacy retention suites,
   package/test typechecks, schema freshness, focused lint and diff checks
   passed.
+- 2026-07-29 — Independently approved at
+  `19aed56d47f38a36cdf1274f00b9486db3bdc221`; integrated to `main` with
+  receiving verification and marked complete by the coordinator.
 
 ## Handoff
 
