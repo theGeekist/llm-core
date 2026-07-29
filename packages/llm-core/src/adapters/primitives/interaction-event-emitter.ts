@@ -2,8 +2,8 @@ import type { EventStream, EventStreamEvent } from "../types";
 import type { InteractionEvent } from "../../interaction/types";
 import { isRecord } from "#shared/guards";
 import { bindFirst } from "#shared/fp";
-import { maybeMap, maybeReduce, type MaybePromise } from "#shared/maybe";
-import { combineTriState } from "#shared/tri-state";
+import type { MaybePromise } from "#shared/maybe";
+import { maybeReduceTriState } from "#shared/tri-state";
 
 export type InteractionEventEmitter<TEvent> = {
   emit: (event: TEvent) => MaybePromise<boolean | null>;
@@ -68,22 +68,11 @@ export function createInteractionEventEmitterStream<TEvent>(
 }
 
 function emitMappedEvents<TEvent>(emitter: InteractionEventEmitter<TEvent>, events: TEvent[]) {
-  if (events.length === 0) {
-    return null;
-  }
-  return maybeReduce(bindFirst(emitNextEvent, emitter), null, events);
+  return maybeReduceTriState(bindFirst(emitEvent, emitter), events);
 }
 
 function emitEvent<TEvent>(emitter: InteractionEventEmitter<TEvent>, event: TEvent) {
   return emitter.emit(event);
-}
-
-function emitNextEvent<TEvent>(
-  emitter: InteractionEventEmitter<TEvent>,
-  previous: boolean | null,
-  event: TEvent,
-) {
-  return maybeMap(bindFirst(combineTriState, previous), emitEvent(emitter, event));
 }
 
 type MapInteractionEventsInput<TEvent> = {

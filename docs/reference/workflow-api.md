@@ -29,7 +29,7 @@ const outcome = await workflow.run({ input: "Do work." });
 The workflow instance is the engine. These methods are the advanced surface:
 
 - `.run(input, runtime?)` — execute and return an outcome.
-- `.resume(token, resumeInput?, runtime?)` — resume paused runs (only if supported).
+- `.resume({ token, resumeInput?, runtime? })` — resume paused runs (only if supported).
 - `.capabilities()` — resolved capabilities (override-aware).
 - `.declaredCapabilities()` — declared capabilities only (plugin-only).
 - `.adapters()` — resolved adapter bundle (defaults + overrides).

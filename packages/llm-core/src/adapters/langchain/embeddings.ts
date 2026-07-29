@@ -9,8 +9,7 @@ import {
 export function fromLangChainEmbeddings(embeddings: EmbeddingsInterface<number[]>): Embedder {
   function embed({ text, context }: AdapterRequest<{ text: string }>) {
     const diagnostics = validateEmbedderInput(text);
-    if (diagnostics.length > 0) {
-      reportDiagnostics(context, diagnostics);
+    if (reportDiagnostics(context, diagnostics)) {
       return [];
     }
     return embeddings.embedQuery(text);
@@ -18,8 +17,7 @@ export function fromLangChainEmbeddings(embeddings: EmbeddingsInterface<number[]
 
   function embedMany({ texts, context }: AdapterRequest<{ texts: string[] }>) {
     const diagnostics = validateEmbedderBatchInput(texts);
-    if (diagnostics.length > 0) {
-      reportDiagnostics(context, diagnostics);
+    if (reportDiagnostics(context, diagnostics)) {
       return [];
     }
     return embeddings.embedDocuments(texts);

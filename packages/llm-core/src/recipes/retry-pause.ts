@@ -2,7 +2,6 @@ import type { HelperApplyResult } from "@wpkernel/pipeline/core";
 import type { PipelineState } from "#workflow/types";
 import type { InterruptStrategy, PauseKind } from "#adapters/types";
 import type { RetryPausePayload } from "#workflow/runtime/retry";
-import { createInterruptStrategy } from "#adapters/primitives/interrupt";
 
 export type RetryPauseSpec = {
   name: string;
@@ -37,11 +36,14 @@ const buildRetryPauseSnapshot = (
   interrupt: buildRetryPauseInterrupt(payload),
 });
 
-const buildRetryPauseInterrupt = (payload: RetryPausePayload) =>
-  createInterruptStrategy("restart", "retry", {
+const buildRetryPauseInterrupt = (payload: RetryPausePayload) => ({
+  mode: "restart" as const,
+  reason: "retry",
+  metadata: {
     adapterKind: payload.adapterKind,
     method: payload.method,
-  });
+  },
+});
 
 type RetryPauseResultInput = {
   state: PipelineState;

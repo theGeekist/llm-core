@@ -87,5 +87,4 @@ export const createCompressPack = (config?: CompressConfig) =>
 
 const compress = defineSinglePackRecipe("agent", createCompressPack);
 export const createCompressRecipe = compress.createRecipe;
-export const compressRecipe = createCompressRecipe;
 export const CompressPack = compress.pack;

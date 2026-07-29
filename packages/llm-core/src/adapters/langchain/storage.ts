@@ -21,24 +21,21 @@ export function fromLangChainStore(store: BaseStore<string, unknown>): KVStore {
   return {
     mget: ({ keys, context }) => {
       const diagnostics = validateKvKeys(keys, "mget");
-      if (diagnostics.length > 0) {
-        reportDiagnostics(context, diagnostics);
+      if (reportDiagnostics(context, diagnostics)) {
         return [];
       }
       return store.mget(keys);
     },
     mset: ({ pairs, context }) => {
       const diagnostics = validateKvPairs(pairs);
-      if (diagnostics.length > 0) {
-        reportDiagnostics(context, diagnostics);
+      if (reportDiagnostics(context, diagnostics)) {
         return false;
       }
       return maybeMap(toTrue, store.mset(pairs));
     },
     mdelete: ({ keys, context }) => {
       const diagnostics = validateKvKeys(keys, "mdelete");
-      if (diagnostics.length > 0) {
-        reportDiagnostics(context, diagnostics);
+      if (reportDiagnostics(context, diagnostics)) {
         return false;
       }
       return maybeMap(toTrue, store.mdelete(keys));

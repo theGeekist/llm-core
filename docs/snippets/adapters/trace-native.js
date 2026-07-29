@@ -3,7 +3,7 @@ import { Adapter, createBuiltinTrace } from "#adapters";
 
 // 1. Create a sink (vanilla)
 const builtin = createBuiltinTrace();
-const tracePlugin = Adapter.trace("local.trace", builtin);
+const tracePlugin = Adapter.trace({ key: "local.trace", value: builtin });
 
 const input = "Why is the sky blue?";
 

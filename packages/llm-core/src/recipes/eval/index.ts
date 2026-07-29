@@ -201,4 +201,3 @@ export const createEvalPack = (config?: EvalConfig) =>
 const evaluation = defineSinglePackRecipe("eval", createEvalPack);
 export const createEvalRecipe = evaluation.createRecipe;
 export const EvalPack = evaluation.pack;
-export const evalRecipe = createEvalRecipe;

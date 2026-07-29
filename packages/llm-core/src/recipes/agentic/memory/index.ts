@@ -70,4 +70,3 @@ export const createAgentMemoryPack = (config?: AgentMemoryConfig) =>
 const memory = defineSinglePackRecipe("agent", createAgentMemoryPack);
 export const createAgentMemoryRecipe = memory.createRecipe;
 export const AgentMemoryPack = memory.pack;
-export const agentMemoryRecipe = createAgentMemoryRecipe();

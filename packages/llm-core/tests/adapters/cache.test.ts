@@ -16,7 +16,7 @@ import {
 } from "./helpers";
 
 type AiSdkCacheEntry =
-  Parameters<typeof fromAiSdkCacheStore>[0] extends AiSdkCacheStore<infer T> ? T : never;
+  Parameters<typeof fromAiSdkCacheStore>[0]["store"] extends AiSdkCacheStore<infer T> ? T : never;
 
 describe("MemoryCache", () => {
   const blob: Blob = { bytes: new Uint8Array([1, 2, 3]), contentType: "application/octet-stream" };
@@ -138,7 +138,7 @@ describe("Cache adapters", () => {
       keys: () => Array.from(entries.keys()),
     });
 
-    const cache = fromAiSdkCacheStore(store);
+    const cache = fromAiSdkCacheStore({ store });
     await cache.set({ key: "ai-key", value: blob, ttlMs: 5 });
     expect(await cache.get({ key: "ai-key" })).toEqual(blob);
 
@@ -161,7 +161,7 @@ describe("Cache adapters", () => {
       getDefaultTTL: () => 1,
     });
 
-    const cache = fromAiSdkCacheStore(store);
+    const cache = fromAiSdkCacheStore({ store });
     await cache.set({ key: "ai-default-ttl", value: blob });
     expect(await cache.get({ key: "ai-default-ttl" })).toEqual(blob);
 
@@ -183,7 +183,7 @@ describe("Cache adapters", () => {
       keys: () => Array.from(entries.keys()),
       getDefaultTTL: () => 10,
     });
-    const cache = fromAiSdkCacheStore(store, { defaultTtlMs: 20 });
+    const cache = fromAiSdkCacheStore({ store, defaultTtlMs: 20 });
 
     await cache.set({ key: "configured", value: blob });
     await cache.set({ key: "explicit", value: blob, ttlMs: 30 });
@@ -208,7 +208,7 @@ describe("Cache adapters", () => {
       size: () => 0,
       keys: () => [],
     });
-    const cache = fromAiSdkCacheStore(store);
+    const cache = fromAiSdkCacheStore({ store });
     const { context, diagnostics } = captureDiagnostics();
 
     await cache.get({ key: "", context });
@@ -229,7 +229,7 @@ describe("Cache adapters", () => {
       size: () => 0,
       keys: () => [],
     });
-    const cache = fromAiSdkCacheStore(store);
+    const cache = fromAiSdkCacheStore({ store });
     expect(await cache.get({ key: "missing" })).toBeNull();
   });
 
@@ -335,7 +335,7 @@ describe("Cache adapters", () => {
       delete: (key: string) => Promise.resolve(entries.delete(key)),
     });
 
-    const cache = fromLlamaIndexKVStoreCache(store);
+    const cache = fromLlamaIndexKVStoreCache({ store });
     await cache.set({ key: "li-key", value: blob });
     expect(await cache.get({ key: "li-key" })).toEqual(blob);
     await cache.delete({ key: "li-key" });
@@ -357,7 +357,7 @@ describe("Cache adapters", () => {
       delete: (key: string) => Promise.resolve(entries.delete(key)),
     });
 
-    const cache = fromLlamaIndexKVStoreCache(store);
+    const cache = fromLlamaIndexKVStoreCache({ store });
     await cache.set({ key: "li-ttl", value: blob, ttlMs: 5 });
     expect(await cache.get({ key: "li-ttl" })).toEqual(blob);
 
@@ -372,7 +372,7 @@ describe("Cache adapters", () => {
       delete: () => Promise.resolve(true),
     });
 
-    const cache = fromLlamaIndexKVStoreCache(store);
+    const cache = fromLlamaIndexKVStoreCache({ store });
     expect(await cache.get({ key: "key" })).toBeNull();
   });
 
@@ -383,7 +383,7 @@ describe("Cache adapters", () => {
       getAll: () => Promise.resolve({}),
       delete: () => Promise.resolve(true),
     });
-    const cache = fromLlamaIndexKVStoreCache(store);
+    const cache = fromLlamaIndexKVStoreCache({ store });
     const { context, diagnostics } = captureDiagnostics();
 
     await cache.get({ key: "", context });
@@ -408,7 +408,7 @@ describe("Cache adapters", () => {
       keys: () => Array.from(entries.keys()),
     });
 
-    const cache = fromAiSdkCacheStore(store);
+    const cache = fromAiSdkCacheStore({ store });
     cache.set({ key: "sync-key", value: blob });
     const value = assertSyncValue(cache.get({ key: "sync-key" }));
     expect(value).toEqual(blob);
@@ -466,6 +466,6 @@ describe("Cache adapters", () => {
       size: () => 0,
       keys: () => [],
     });
-    expect(await fromAiSdkCacheStore(aiStore).delete({ key: "missing" })).toBe(false);
+    expect(await fromAiSdkCacheStore({ store: aiStore }).delete({ key: "missing" })).toBe(false);
   });
 });

@@ -7,9 +7,9 @@ import { createAssistantStreamController } from "assistant-stream";
 import type { ReadonlyJSONObject } from "assistant-stream/utils";
 import type { EventStream, ModelStreamEvent } from "../types";
 import type { InteractionEvent, InteractionEventMeta } from "../../interaction/types";
-import { maybeChain, maybeMap, maybeReduce, maybeTry, type MaybePromise } from "#shared/maybe";
+import { maybeChain, maybeMap, maybeTry, type MaybePromise } from "#shared/maybe";
 import { bindFirst, toFalse, toTrue } from "#shared/fp";
-import { combineTriState } from "#shared/tri-state";
+import { maybeReduceTriState } from "#shared/tri-state";
 import { createInteractionEventDeliveryStream } from "../primitives/interaction-event-emitter";
 import { toAssistantUiJsonValue } from "./json";
 
@@ -182,24 +182,14 @@ const resetToolCalls = (state: AssistantUiStreamState) => {
   state.toolCalls.clear();
 };
 
-const applyNextAction = (
-  state: AssistantUiStreamState,
-  previous: boolean | null,
-  action: AssistantStreamAction,
-) =>
-  maybeMap(
-    bindFirst(combineTriState, previous),
-    maybeTry(toFalse, () => applyAction(state, action)),
-  );
+const applyActionSafely = (state: AssistantUiStreamState, action: AssistantStreamAction) =>
+  maybeTry(toFalse, () => applyAction(state, action));
 
 const runActionSequence = (
   state: AssistantUiStreamState,
   actions: AssistantStreamAction[],
 ): MaybePromise<boolean | null> => {
-  if (actions.length === 0) {
-    return null;
-  }
-  return maybeReduce(bindFirst(applyNextAction, state), null, actions);
+  return maybeReduceTriState(bindFirst(applyActionSafely, state), actions);
 };
 
 const applyAction = (

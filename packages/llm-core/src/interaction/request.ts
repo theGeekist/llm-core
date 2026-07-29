@@ -1,6 +1,6 @@
 import type { AdapterBundle, EventStream, Message, Model } from "#adapters/types";
 import type { DiagnosticEntry } from "#shared/reporting";
-import { maybeChain, type MaybePromise } from "#shared/maybe";
+import { maybeChain, maybeTap, type MaybePromise } from "#shared/maybe";
 import type { Outcome } from "#workflow/types";
 import { createStreamingModelForInteraction } from "#workflow/stream";
 import { inputs } from "#recipes/inputs";
@@ -9,8 +9,7 @@ import type { AnyRecipeHandle } from "#recipes/handle";
 import { emitInteractionEvent } from "./transport";
 import type { InteractionEvent, InteractionEventMeta } from "./types";
 import { bindFirst } from "#shared/fp";
-import { maybeMap, maybeReduce, maybeTap } from "#shared/maybe";
-import { combineTriState } from "#shared/tri-state";
+import { maybeReduceTriState } from "#shared/tri-state";
 
 const INTERACTION_RECIPE_IDS = ["agent", "rag", "hitl", "chat.simple", "chat.rag"] as const;
 
@@ -192,9 +191,8 @@ const toDiagnosticEvent = (input: {
   meta: input.meta,
 });
 
-const emitNextDiagnostic = (
+const emitDiagnostic = (
   input: Omit<DiagnosticEmitInput, "diagnostics">,
-  previous: boolean | null,
   entry: DiagnosticEntry,
 ) => {
   const meta = createDiagnosticMeta({
@@ -204,18 +202,11 @@ const emitNextDiagnostic = (
     sourceId: DIAGNOSTIC_SOURCE_ID,
   });
   const event = toDiagnosticEvent({ entry, meta });
-  return maybeMap(
-    bindFirst(combineTriState, previous),
-    emitInteractionEvent(input.eventStream, event),
-  );
+  return emitInteractionEvent(input.eventStream, event);
 };
 
-const emitDiagnosticEvents = (input: DiagnosticEmitInput) => {
-  if (input.diagnostics.length === 0) {
-    return null;
-  }
-  return maybeReduce(bindFirst(emitNextDiagnostic, input), null, input.diagnostics);
-};
+const emitDiagnosticEvents = (input: DiagnosticEmitInput) =>
+  maybeReduceTriState(bindFirst(emitDiagnostic, input), input.diagnostics);
 
 const emitDiagnosticsFromOutcome = (
   input: Omit<DiagnosticEmitInput, "diagnostics">,

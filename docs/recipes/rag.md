@@ -222,8 +222,14 @@ real, inspectable answer in diagnostics, trace, and citations.
 
 ## Chat-Optimized RAG
 
-If you are building a chat bot that needs RAG, use the `chat.rag` recipe. It wraps the standard RAG flow but pre-configures it to handle chat history, making it a drop-in replacement for `chat.simple` when you need retrieval.
+If you are building a chat bot that needs RAG, `chat.rag` runs the same retrieval and synthesis
+packs as the standard RAG recipe. Its configuration provides a shorthand system prompt; supply
+model and retriever adapters through normal recipe defaults.
 
 ```ts
-const chatRag = recipes["chat.rag"]();
+const chatRag = recipes["chat.rag"]({
+  system: "Answer from the retrieved context.",
+}).defaults({
+  adapters: { model, retriever },
+});
 ```

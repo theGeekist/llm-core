@@ -9,8 +9,7 @@ import {
 export function fromLlamaIndexEmbeddings(embedding: BaseEmbedding): Embedder {
   function embed({ text, context }: AdapterRequest<{ text: string }>) {
     const diagnostics = validateEmbedderInput(text);
-    if (diagnostics.length > 0) {
-      reportDiagnostics(context, diagnostics);
+    if (reportDiagnostics(context, diagnostics)) {
       return [];
     }
     return embedding.getTextEmbedding(text);
@@ -18,8 +17,7 @@ export function fromLlamaIndexEmbeddings(embedding: BaseEmbedding): Embedder {
 
   function embedMany({ texts, context }: AdapterRequest<{ texts: string[] }>) {
     const diagnostics = validateEmbedderBatchInput(texts);
-    if (diagnostics.length > 0) {
-      reportDiagnostics(context, diagnostics);
+    if (reportDiagnostics(context, diagnostics)) {
       return [];
     }
     return embedding.getTextEmbeddings(texts);

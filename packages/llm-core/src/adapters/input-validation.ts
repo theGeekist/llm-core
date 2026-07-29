@@ -16,12 +16,12 @@ export const reportDiagnostics = (
   context: AdapterCallContext | undefined,
   diagnostics: AdapterDiagnostic[],
 ) => {
-  if (!context?.report) {
-    return;
+  if (context?.report) {
+    for (const diagnostic of diagnostics) {
+      context.report(diagnostic);
+    }
   }
-  for (const diagnostic of diagnostics) {
-    context.report(diagnostic);
-  }
+  return diagnostics.length > 0;
 };
 
 export const validateRetrieverInput = (query: RetrievalQuery | undefined) => {

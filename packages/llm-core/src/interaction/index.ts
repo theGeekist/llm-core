@@ -15,11 +15,14 @@ export type {
   InteractionSessionPauseSnapshot,
   InteractionSessionPaused,
   InteractionSessionResume,
+  InteractionSessionResumeRequest,
   InteractionState,
   InteractionSubagentEvent,
   SessionId,
   SessionPolicy,
   SessionStore,
+  SessionStoreRequest,
+  SessionStoreSaveRequest,
 } from "./types";
 export type {
   InteractionHandle,

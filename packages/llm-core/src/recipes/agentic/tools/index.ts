@@ -43,7 +43,7 @@ const applyToolExecution: StepApply = ({ context, state }) => {
   }
   return maybeMap(
     bindFirst(applyToolResults, agent),
-    AgentStateHelpers.executeToolCalls(tools, calls),
+    AgentStateHelpers.executeToolCalls({ tools, calls }),
   );
 };
 
@@ -63,4 +63,3 @@ export const createAgentToolsPack = (config?: AgentToolsConfig) =>
 const tools = defineSinglePackRecipe("agent", createAgentToolsPack);
 export const createAgentToolsRecipe = tools.createRecipe;
 export const AgentToolsPack = tools.pack;
-export const agentToolsRecipe = createAgentToolsRecipe();

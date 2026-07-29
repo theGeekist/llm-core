@@ -14,7 +14,7 @@ const speechModel = {
   generate: generateSpeech,
 };
 
-const speech = Adapter.speech("custom.speech", speechModel);
+const speech = Adapter.speech({ key: "custom.speech", value: speechModel });
 // #endregion docs
 
 void speech;

@@ -10,11 +10,11 @@ type SseWriter = {
 class MemorySessionStore {
   private cache = new Map<string, InteractionState>();
 
-  load(sessionId: SessionId) {
+  load({ sessionId }: { sessionId: SessionId }) {
     return this.cache.get(toSessionKey(sessionId)) ?? null;
   }
 
-  save(sessionId: SessionId, state: InteractionState) {
+  save({ sessionId, state }: { sessionId: SessionId; state: InteractionState }) {
     this.cache.set(toSessionKey(sessionId), state);
     return true;
   }

@@ -1,58 +1,48 @@
 import { describe, expect, it } from "bun:test";
-import { createHelper } from "@wpkernel/pipeline";
+import type { ModelCall } from "#adapters";
 import { recipes } from "../../src/recipes";
 import { assertSyncOutcome } from "../workflow/helpers";
-
-const useHelper = (pipeline: unknown, helper: unknown) => {
-  (pipeline as { use: (value: unknown) => void }).use(helper);
-};
+import { createMockModel, createMockRetriever } from "../fixtures/factories";
 
 describe("RAG Chat Recipe", () => {
-  it("builds a workflow with default configuration", () => {
-    const workflow = recipes["chat.rag"]();
-    const runtime = workflow.build();
-    expect(runtime).toBeDefined();
-  });
-
-  it("configures providers", () => {
-    const workflow = recipes["chat.rag"]({
-      model: "test-model",
-      retriever: "test-retriever",
+  it("runs the standard retrieval and synthesis flow", () => {
+    const workflow = recipes["chat.rag"]().defaults({
+      adapters: {
+        retriever: createMockRetriever([{ text: "retrieved context" }]),
+        model: createMockModel("answer"),
+      },
     });
-    const runtime = workflow.build();
-    const explanation = runtime.explain();
-    expect(explanation).toBeDefined();
-  });
+    const stepIds = workflow.explain().steps.map((step) => step.id);
+    expect(stepIds).toHaveLength(3);
+    expect(stepIds).toEqual(
+      expect.arrayContaining([
+        "rag-retrieval.seed",
+        "rag-retrieval.retrieve",
+        "rag-synthesis.synthesize",
+      ]),
+    );
 
-  it("configures system prompt", () => {
-    const workflow = recipes["chat.rag"]({ system: "System prompt" });
-    const runtime = workflow.build();
-    const explanation = runtime.explain();
-    expect(explanation).toBeDefined();
+    const outcome = assertSyncOutcome(workflow.run({ input: "question", query: "question" }));
+    if (outcome.status !== "ok") {
+      throw new Error("Expected ok outcome.");
+    }
+    expect((outcome.artefact as { rag?: { response?: string } }).rag?.response).toBe("answer");
   });
 
   it("adds system config plugin when system prompt is set", () => {
     const workflow = recipes["chat.rag"]({ system: "Prefer concise answers." });
-    let seen: string | undefined;
-    const readerPlugin = {
-      key: "test.read.system",
-      helperKinds: ["test.system"],
-      register: (pipeline: unknown) => {
-        useHelper(
-          pipeline,
-          createHelper({
-            key: "test.read.system",
-            kind: "test.system",
-            apply: (options) => {
-              const ctx = options.context as { system?: string };
-              seen = ctx.system;
-            },
+    let seen: ModelCall | undefined;
+    const runtime = workflow
+      .defaults({
+        adapters: {
+          retriever: createMockRetriever([{ text: "retrieved context" }]),
+          model: createMockModel((call) => {
+            seen = call;
+            return { text: "answer" };
           }),
-        );
-      },
-    };
-    const workflowWithReader = workflow.defaults({ plugins: [readerPlugin] });
-    const runtime = workflowWithReader.build();
+        },
+      })
+      .build();
     const explanation = runtime.explain();
 
     expect(explanation.plugins).toContain("config.system");
@@ -60,6 +50,6 @@ describe("RAG Chat Recipe", () => {
     if (outcome.status !== "ok") {
       throw new Error("Expected ok outcome.");
     }
-    expect(seen).toBe("Prefer concise answers.");
+    expect(seen?.system).toBe("Prefer concise answers.");
   });
 });

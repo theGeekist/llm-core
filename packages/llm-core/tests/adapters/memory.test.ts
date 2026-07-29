@@ -110,7 +110,7 @@ describe("Adapter memory", () => {
       },
     });
 
-    const adapter = fromAiSdkMemory(provider, { scope: "chat", userId: "user-1" });
+    const adapter = fromAiSdkMemory({ provider, scope: "chat", userId: "user-1" });
     const thread = await adapter.read?.({ threadId: "thread-1" });
     expect(thread).toEqual({
       id: "thread-1",
@@ -158,7 +158,7 @@ describe("Adapter memory", () => {
       getWorkingMemory: () => Promise.resolve(null),
       updateWorkingMemory: () => Promise.resolve(),
     });
-    const adapter = fromAiSdkMemory(provider);
+    const adapter = fromAiSdkMemory({ provider });
     const { context, diagnostics } = captureDiagnostics();
 
     const thread = await adapter.read?.({ threadId: "", context });
@@ -175,7 +175,7 @@ describe("Adapter memory", () => {
 
   it("warns when AI SDK provider methods are missing", async () => {
     const provider = asAiSdkMemoryProvider({});
-    const adapter = fromAiSdkMemory(provider);
+    const adapter = fromAiSdkMemory({ provider });
     const { context, diagnostics } = captureDiagnostics();
 
     await adapter.read?.({ threadId: "thread-1", context });

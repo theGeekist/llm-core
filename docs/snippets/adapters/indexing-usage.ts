@@ -16,7 +16,10 @@ const langChainVectorStore = {} as unknown as VectorStore;
 const myDocs = [{ id: "doc-1", text: "Hello" }];
 
 // 1. Define the Indexing logic
-const indexing: Indexing = fromLangChainIndexing(recordManager, langChainVectorStore);
+const indexing: Indexing = fromLangChainIndexing({
+  recordManager,
+  vectorStore: langChainVectorStore,
+});
 
 // 2. Run the sync job
 const result: IndexingResult = await indexing.index({

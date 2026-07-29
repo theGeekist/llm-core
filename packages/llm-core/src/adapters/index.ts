@@ -95,7 +95,7 @@ export type {
 } from "./types";
 
 export type { AiSdkCacheStore } from "./ai-sdk/cache";
-export { type AdapterPlugin, type AdapterPluginOptions } from "./registration";
+export { type AdapterPlugin, type AdapterRegistration } from "./registration";
 
 export * from "#shared/guards";
 
@@ -166,7 +166,6 @@ export { createBuiltinTrace } from "./primitives/trace";
 export { createCacheFromKVStore } from "./primitives/cache";
 export { createMemoryCache } from "./primitives/cache";
 export { createEventStreamFanout, createEventStreamFromTraceSink } from "./primitives/event-stream";
-export { createInterruptStrategy } from "./primitives/interrupt";
 export {
   createInteractionEventDeliverySink,
   createInteractionEventDeliveryStream,
@@ -189,16 +188,16 @@ export const Tooling = ToolingImpl;
 export const Adapter = AdapterImpl;
 export const selectModel = selectModelImpl;
 
-export { fromAiSdkCacheStore } from "./ai-sdk";
+export { fromAiSdkCacheStore, type AiSdkCacheStoreInput } from "./ai-sdk";
 export { fromAiSdkEmbeddings } from "./ai-sdk";
 export { fromAiSdkImageModel } from "./ai-sdk";
-export { fromAiSdkMemory } from "./ai-sdk";
+export { fromAiSdkMemory, type AiSdkMemoryInput } from "./ai-sdk";
 export { fromAiSdkMessage, fromAiSdkMessages } from "./ai-sdk";
 export { fromAiSdkModel } from "./ai-sdk";
 export { fromAiSdkPrompt } from "./ai-sdk";
 export { fromAiSdkReranker } from "./ai-sdk";
 export { fromAiSdkSpeechModel } from "./ai-sdk";
-export { fromAiSdkTool } from "./ai-sdk";
+export { fromAiSdkTool, type AiSdkToolInput } from "./ai-sdk";
 export { fromAiSdkTranscriptionModel } from "./ai-sdk";
 export { toModelStreamEvents } from "./ai-sdk";
 export {
@@ -267,7 +266,7 @@ export { fromLangChainMemory } from "./langchain";
 export { fromLangChainMessage } from "./langchain";
 export { fromLangChainMessages } from "./langchain";
 export { fromLangChainModel } from "./langchain";
-export { fromLangChainPromptTemplate } from "./langchain";
+export { fromLangChainPromptTemplate, type LangChainPromptTemplateInput } from "./langchain";
 export { fromLangChainOutputParser } from "./langchain";
 export { fromLangChainStructuredQuery } from "./langchain";
 export { fromLangChainCallbackHandler } from "./langchain";
@@ -279,21 +278,21 @@ export { fromLangChainTextSplitter } from "./langchain";
 export { fromLangChainTool } from "./langchain";
 export { fromLangChainTransformer } from "./langchain";
 export { fromLangChainVectorStore } from "./langchain";
-export { fromLangChainIndexing } from "./langchain";
+export { fromLangChainIndexing, type LangChainIndexingInput } from "./langchain";
 export { toLangChainStreamEvents } from "./langchain";
 export { fromLangGraphInterrupt } from "./langchain";
 
 export { fromLlamaIndexDocument, fromLlamaIndexNode, toLlamaIndexDocument } from "./llamaindex";
 export { fromLlamaIndexDocumentStore } from "./llamaindex";
 export { fromLlamaIndexEmbeddings } from "./llamaindex";
-export { fromLlamaIndexKVStoreCache } from "./llamaindex";
+export { fromLlamaIndexKVStoreCache, type LlamaIndexKVStoreCacheInput } from "./llamaindex";
 export { fromLlamaIndexLoader } from "./llamaindex";
 export { fromLlamaIndexMemory } from "./llamaindex";
 export { fromLlamaIndexMessage } from "./llamaindex";
 export { fromLlamaIndexMessages } from "./llamaindex";
 export { fromLlamaIndexModel } from "./llamaindex";
 export { fromLlamaIndexNodes } from "./llamaindex";
-export { fromLlamaIndexPromptTemplate } from "./llamaindex";
+export { fromLlamaIndexPromptTemplate, type LlamaIndexPromptTemplateInput } from "./llamaindex";
 export { fromLlamaIndexQueryEngine } from "./llamaindex";
 export { fromLlamaIndexReranker } from "./llamaindex";
 export { fromLlamaIndexRetriever } from "./llamaindex";

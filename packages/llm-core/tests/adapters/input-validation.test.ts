@@ -27,8 +27,16 @@ import {
 } from "#adapters";
 
 describe("Adapter input validation", () => {
-  it("does nothing when report context is missing", () => {
-    expect(() => reportDiagnostics(undefined, [{ level: "warn", message: "x" }])).not.toThrow();
+  it("reports diagnostics and returns whether any are present", () => {
+    const reported: string[] = [];
+    const diagnostics = [{ level: "warn" as const, message: "x" }];
+
+    expect(
+      reportDiagnostics({ report: (diagnostic) => reported.push(diagnostic.message) }, diagnostics),
+    ).toBe(true);
+    expect(reported).toEqual(["x"]);
+    expect(reportDiagnostics(undefined, diagnostics)).toBe(true);
+    expect(reportDiagnostics(undefined, [])).toBe(false);
   });
 
   it("validates missing retriever and reranker inputs", () => {

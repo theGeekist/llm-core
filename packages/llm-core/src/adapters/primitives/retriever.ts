@@ -16,8 +16,7 @@ const toSnippet = (text: string) => text.slice(0, 160);
 export const createBuiltinRetriever = (documents: Document[] = []): Retriever => ({
   retrieve({ query, context }) {
     const diagnostics = validateRetrieverInput(query);
-    if (diagnostics.length > 0) {
-      reportDiagnostics(context, diagnostics);
+    if (reportDiagnostics(context, diagnostics)) {
       return { query, documents: [] };
     }
     const queryText = toQueryText(query ?? "");

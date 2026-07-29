@@ -88,7 +88,7 @@ Two DX anchors:
 - `.use(plugin)` -> compose
 - `.build()` -> runnable
 - `.run(input, runtime?)` -> outcome union
-- `.resume(token, resumeInput?)` -> outcome union (recipe-provided, only if needed; requires `runtime.resume`)
+- `.resume({ token, resumeInput? })` -> outcome union (recipe-provided, only if needed; requires `runtime.resume`)
 
 Override should be expressed either:
 
@@ -205,11 +205,7 @@ type Outcome<TArtefact> =
 type WorkflowRuntime<TRunInput, TArtefact> = {
   run: (input: TRunInput, runtime?: Runtime) => MaybePromise<Outcome<TArtefact>>;
   // illustrative: some recipes support resume with a typed human input
-  resume?: (
-    token: ResumeToken,
-    resumeInput?: unknown,
-    runtime?: Runtime,
-  ) => MaybePromise<Outcome<TArtefact>>;
+  resume?: (request: WorkflowResumeRequest) => MaybePromise<Outcome<TArtefact>>;
   capabilities: () => CapabilityMap;
   explain: () => { plugins: string[]; overrides: string[]; unused: string[] };
 };
@@ -220,9 +216,7 @@ type ResumableWorkflowRuntime<N extends RecipeName> = WorkflowRuntime<
   ArtefactOf<N>
 > & {
   resume: (
-    token: ResumeToken,
-    resumeInput: ResumeInputOf<N>,
-    runtime?: Runtime,
+    request: WorkflowResumeRequest<ResumeInputOf<N>>,
   ) => MaybePromise<Outcome<ArtefactOf<N>>>;
 };
 
@@ -328,7 +322,10 @@ const wf = Workflow.recipe("hitl-gate")
 
 const out = await wf.run({ input: "Approve $5000 spend?" });
 if (out.status === "paused") {
-  const resumed = await wf.resume(out.token, { decision: "deny" });
+  const resumed = await wf.resume({
+    token: out.token,
+    resumeInput: { decision: "deny" },
+  });
   // resume relies on runtime.resume to translate the token + human input
 }
 ```

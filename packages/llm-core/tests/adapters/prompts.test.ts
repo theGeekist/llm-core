@@ -18,7 +18,7 @@ describe("Adapter prompts", () => {
       inputVariables: [INPUT_NAME],
     });
 
-    const adapter = fromLangChainPromptTemplate(prompt);
+    const adapter = fromLangChainPromptTemplate({ prompt });
     expect(adapter.template).toBe(TEMPLATE);
     expect(adapter.schema?.inputs).toEqual([{ name: INPUT_NAME, type: "string", required: true }]);
   });
@@ -31,7 +31,7 @@ describe("Adapter prompts", () => {
       formatMessages: () => [],
     });
 
-    const adapter = fromLlamaIndexPromptTemplate(prompt);
+    const adapter = fromLlamaIndexPromptTemplate({ prompt });
     expect(adapter.template).toBe(TEMPLATE);
     expect(adapter.schema?.inputs).toEqual([{ name: INPUT_NAME, type: "string", required: true }]);
   });
@@ -41,7 +41,7 @@ describe("Adapter prompts", () => {
       template: TEMPLATE,
       inputVariables: [INPUT_NAME],
     });
-    const adapter = fromLangChainPromptTemplate(prompt);
+    const adapter = fromLangChainPromptTemplate({ prompt });
     const schema = toPromptInputSchema(adapter.schema!);
     expect(schema.kind).toBe("json-schema");
     const json = schema.jsonSchema as { properties?: Record<string, unknown> };
@@ -53,18 +53,18 @@ describe("Adapter prompts", () => {
       template: TEMPLATE,
       inputVariables: [INPUT_NAME],
     });
-    const adapter = fromLangChainPromptTemplate(prompt);
+    const adapter = fromLangChainPromptTemplate({ prompt });
     const diagnostics = validatePromptInputs(adapter.schema!, {});
     expect(diagnostics[0]?.message).toBe("prompt_input_missing");
   });
 
   it("flags invalid prompt input types", () => {
-    const prompt = fromLangChainPromptTemplate(
-      new LangChainPromptTemplate({
+    const prompt = fromLangChainPromptTemplate({
+      prompt: new LangChainPromptTemplate({
         template: TEMPLATE,
         inputVariables: [INPUT_NAME],
       }),
-    );
+    });
     prompt.schema = {
       name: "test",
       inputs: [

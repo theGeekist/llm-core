@@ -1,25 +1,16 @@
 import type { AdapterTraceEvent, EventStream } from "../types";
 import { bindFirst } from "#shared/fp";
-import { maybeAll, maybeMap, maybeReduce } from "#shared/maybe";
-import { combineTriState, combineTriStates, normalizeTriState } from "#shared/tri-state";
+import { maybeAll, maybeMap } from "#shared/maybe";
+import { combineTriStates, maybeReduceTriState, normalizeTriState } from "#shared/tri-state";
 
 const emitTraceEvent = (sink: EventStream, event: AdapterTraceEvent) =>
   maybeMap(normalizeTriState, sink.emit(event));
-
-const emitNextTraceEvent = (
-  sink: EventStream,
-  previous: boolean | null,
-  event: AdapterTraceEvent,
-) => maybeMap(bindFirst(combineTriState, previous), emitTraceEvent(sink, event));
 
 const emitTraceEvents = (sink: EventStream, events: AdapterTraceEvent[]) => {
   if (sink.emitMany) {
     return maybeMap(normalizeTriState, sink.emitMany(events));
   }
-  if (events.length === 0) {
-    return null;
-  }
-  return maybeReduce(bindFirst(emitNextTraceEvent, sink), null, events);
+  return maybeReduceTriState(bindFirst(emitTraceEvent, sink), events);
 };
 
 export const createEventStreamFromTraceSink = (sink: EventStream): EventStream => ({

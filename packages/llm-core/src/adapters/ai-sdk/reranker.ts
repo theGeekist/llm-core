@@ -24,8 +24,7 @@ export function fromAiSdkReranker(model: RerankingModelV3): Reranker {
     context,
   }: AdapterRequest<{ query: RetrievalQuery; documents: Document[] }>) {
     const diagnostics = validateRerankerInput(query, documents);
-    if (diagnostics.length > 0) {
-      reportDiagnostics(context, diagnostics);
+    if (reportDiagnostics(context, diagnostics)) {
       return [];
     }
     const textQuery = toQueryText(query);

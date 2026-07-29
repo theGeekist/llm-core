@@ -39,7 +39,10 @@ const langChainVectorStore = new MemoryVectorStore(new DummyEmbeddings());
 const myDocs = [{ id: "doc-1", text: "Hello" }];
 
 // 1. Define the Indexing logic
-const indexing = fromLangChainIndexing(recordManager, langChainVectorStore);
+const indexing = fromLangChainIndexing({
+  recordManager,
+  vectorStore: langChainVectorStore,
+});
 
 // 2. Run the sync job
 const result = await indexing.index({

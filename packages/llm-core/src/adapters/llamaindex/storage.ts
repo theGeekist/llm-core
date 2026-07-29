@@ -19,8 +19,7 @@ export function fromLlamaIndexDocumentStore(store: BaseDocumentStore): KVStore {
   return {
     mget: ({ keys, context }) => {
       const diagnostics = validateKvKeys(keys, "mget");
-      if (diagnostics.length > 0) {
-        reportDiagnostics(context, diagnostics);
+      if (reportDiagnostics(context, diagnostics)) {
         return [];
       }
       const results = keys.map(
@@ -33,8 +32,7 @@ export function fromLlamaIndexDocumentStore(store: BaseDocumentStore): KVStore {
     },
     mset: ({ pairs, context }) => {
       const diagnostics = validateKvPairs(pairs);
-      if (diagnostics.length > 0) {
-        reportDiagnostics(context, diagnostics);
+      if (reportDiagnostics(context, diagnostics)) {
         return false;
       }
       const docs = pairs
@@ -47,8 +45,7 @@ export function fromLlamaIndexDocumentStore(store: BaseDocumentStore): KVStore {
     },
     mdelete: ({ keys, context }) => {
       const diagnostics = validateKvKeys(keys, "mdelete");
-      if (diagnostics.length > 0) {
-        reportDiagnostics(context, diagnostics);
+      if (reportDiagnostics(context, diagnostics)) {
         return false;
       }
       return maybeMap(toTrue, maybeAll(keys.map((key) => store.deleteDocument(key, false))));

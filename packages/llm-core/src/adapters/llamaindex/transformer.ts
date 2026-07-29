@@ -7,8 +7,7 @@ import { reportDiagnostics, validateTransformerInput } from "../input-validation
 export function fromLlamaIndexTransformer(parser: NodeParser): DocumentTransformer {
   function transform({ documents, context }: AdapterRequest<{ documents: Document[] }>) {
     const diagnostics = validateTransformerInput(documents);
-    if (diagnostics.length > 0) {
-      reportDiagnostics(context, diagnostics);
+    if (reportDiagnostics(context, diagnostics)) {
       return [];
     }
     const nodes = parser.getNodesFromDocuments(documents.map(toLlamaIndexDocument));

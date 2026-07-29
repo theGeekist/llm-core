@@ -15,10 +15,15 @@ const toInputs = (variables: string[]): PromptSchema["inputs"] =>
     required: true,
   }));
 
-export function fromLlamaIndexPromptTemplate(
-  prompt: LlamaindexPromptTemplate,
-  name?: string,
-): PromptTemplate {
+export type LlamaIndexPromptTemplateInput = {
+  prompt: LlamaindexPromptTemplate;
+  name?: string;
+};
+
+export function fromLlamaIndexPromptTemplate({
+  prompt,
+  name,
+}: LlamaIndexPromptTemplateInput): PromptTemplate {
   const meta = prompt as PromptMeta;
   const resolvedName = name ?? meta.promptType ?? DEFAULT_NAME;
 

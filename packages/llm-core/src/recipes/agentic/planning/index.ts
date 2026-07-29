@@ -47,4 +47,3 @@ export const createAgentPlanningPack = (config?: AgentPlanningConfig) =>
 const planning = defineSinglePackRecipe("agent", createAgentPlanningPack);
 export const createAgentPlanningRecipe = planning.createRecipe;
 export const AgentPlanningPack = planning.pack;
-export const agentPlanningRecipe = createAgentPlanningRecipe();

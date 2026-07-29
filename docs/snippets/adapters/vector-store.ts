@@ -15,7 +15,7 @@ const store: VectorStore = {
   },
 };
 
-const vectorStore = Adapter.vectorStore("custom.vectorStore", store);
+const vectorStore = Adapter.vectorStore({ key: "custom.vectorStore", value: store });
 // #endregion docs
 
 void vectorStore;

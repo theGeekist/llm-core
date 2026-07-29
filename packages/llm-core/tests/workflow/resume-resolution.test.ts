@@ -80,8 +80,9 @@ describe("Workflow resume resolution", () => {
       }),
     });
 
-    const outcome = await handler(TOKEN, undefined, {
-      resume: { resolve: () => ({ input: "resume" }) },
+    const outcome = await handler({
+      token: TOKEN,
+      runtime: { resume: { resolve: () => ({ input: "resume" }) } },
     });
 
     expect(outcome.status).toBe("ok");
@@ -108,9 +109,12 @@ describe("Workflow resume resolution", () => {
       ],
     });
 
-    const outcome = await handler(TOKEN, undefined, {
-      diagnostics: "strict",
-      resume: { resolve: () => ({ input: "resume" }) },
+    const outcome = await handler({
+      token: TOKEN,
+      runtime: {
+        diagnostics: "strict",
+        resume: { resolve: () => ({ input: "resume" }) },
+      },
     });
 
     expect(outcome.status).toBe("error");
@@ -136,12 +140,15 @@ describe("Workflow resume resolution", () => {
       }),
     });
 
-    const outcome = await handler(TOKEN, undefined, {
-      resume: {
-        resolve: () => ({
-          input: "resume",
-          adapters: { constructs: { override: true } },
-        }),
+    const outcome = await handler({
+      token: TOKEN,
+      runtime: {
+        resume: {
+          resolve: () => ({
+            input: "resume",
+            adapters: { constructs: { override: true } },
+          }),
+        },
       },
     });
 
@@ -163,8 +170,9 @@ describe("Workflow resume resolution", () => {
     });
     const providers = { model: "alternate" };
 
-    const outcome = await handler(TOKEN, undefined, {
-      resume: { resolve: () => ({ input: "resume", providers }) },
+    const outcome = await handler({
+      token: TOKEN,
+      runtime: { resume: { resolve: () => ({ input: "resume", providers }) } },
     });
 
     expect(outcome.status).toBe("ok");

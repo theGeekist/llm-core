@@ -49,12 +49,20 @@ export const createMockSessionStore = () => {
     sessions,
     calls,
     store: {
-      load: (sessionId: SessionId, context?: unknown) => {
+      load: ({ sessionId, context }: { sessionId: SessionId; context?: unknown }) => {
         calls.load += 1;
         if (context) calls.contexts.push(context);
         return sessions.get(toSessionKey(sessionId)) ?? null;
       },
-      save: (sessionId: SessionId, state: InteractionState, context?: unknown) => {
+      save: ({
+        sessionId,
+        state,
+        context,
+      }: {
+        sessionId: SessionId;
+        state: InteractionState;
+        context?: unknown;
+      }) => {
         calls.save += 1;
         if (context) calls.contexts.push(context);
         sessions.set(toSessionKey(sessionId), state);

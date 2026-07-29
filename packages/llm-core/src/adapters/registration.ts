@@ -9,37 +9,23 @@ export type AdapterPlugin = {
   overrideKey?: string;
 };
 
-export type AdapterPluginOptions = {
-  capabilities?: Record<string, unknown>;
-  mode?: "extend" | "override";
-  overrideKey?: string;
-};
+type AdapterPluginOptions = Omit<AdapterPlugin, "key" | "adapters">;
 
-const makePlugin = (
-  key: string,
-  adapters: AdapterBundle,
-  options?: AdapterPluginOptions,
-): AdapterPlugin => ({
-  key,
-  adapters,
-  capabilities: options?.capabilities,
-  mode: options?.mode,
-  overrideKey: options?.overrideKey,
-});
+export type AdapterRegistration<TKey extends AdapterBundleKey> = AdapterPluginOptions & {
+  key: string;
+  value: NonNullable<AdapterBundle[TKey]>;
+};
 
 const registerBundleKey =
   <TKey extends AdapterBundleKey>(construct: TKey) =>
-  (
-    key: string,
-    value: NonNullable<AdapterBundle[TKey]>,
-    options?: AdapterPluginOptions,
-  ): AdapterPlugin =>
-    makePlugin(key, { [construct]: value } as AdapterBundle, options);
+  ({ key, value, ...options }: AdapterRegistration<TKey>): AdapterPlugin => ({
+    key,
+    adapters: { [construct]: value } as AdapterBundle,
+    ...options,
+  });
 
 export const Adapter = {
-  plugin(key: string, adapters: AdapterBundle, options?: AdapterPluginOptions): AdapterPlugin {
-    return makePlugin(key, adapters, options);
-  },
+  plugin: (plugin: AdapterPlugin): AdapterPlugin => plugin,
   model: registerBundleKey("model"),
   image: registerBundleKey("image"),
   tools: registerBundleKey("tools"),

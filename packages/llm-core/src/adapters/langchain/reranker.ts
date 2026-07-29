@@ -12,8 +12,7 @@ export function fromLangChainReranker(compressor: BaseDocumentCompressor): Reran
     context,
   }: AdapterRequest<{ query: RetrievalQuery; documents: Document[] }>) {
     const diagnostics = validateRerankerInput(query, documents);
-    if (diagnostics.length > 0) {
-      reportDiagnostics(context, diagnostics);
+    if (reportDiagnostics(context, diagnostics)) {
       return [];
     }
     const langchainDocs = documents.map(toLangChainDocument);

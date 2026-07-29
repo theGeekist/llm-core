@@ -84,8 +84,7 @@ export function fromLlamaIndexVectorStore(store: BaseVectorStore): VectorStore {
   const remove = (input: AdapterRequest<VectorStoreDeleteInput>) => {
     const { context } = input;
     const diagnostics = validateVectorStoreDeleteInput(input);
-    reportDiagnostics(context, diagnostics);
-    if (diagnostics.length > 0) {
+    if (reportDiagnostics(context, diagnostics)) {
       return false;
     }
     const payload = toDeletePayload(input);

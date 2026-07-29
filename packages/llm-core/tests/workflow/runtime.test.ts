@@ -1,5 +1,5 @@
 import { describe, expect, it } from "bun:test";
-import { createBuiltinRetriever, createInterruptStrategy } from "#adapters";
+import { createBuiltinRetriever } from "#adapters";
 import { createPipelineRollback, type PipelinePauseSnapshot } from "@wpkernel/pipeline/core";
 import { getRecipe, registerRecipe } from "#workflow/recipe-registry";
 import { assertSyncOutcome, diagnosticMessages, makeRuntime, makeWorkflow } from "./helpers";
@@ -129,7 +129,7 @@ describe("Workflow runtime", () => {
       plugins: [
         {
           key: "adapter.interrupt",
-          adapters: { interrupt: createInterruptStrategy("restart") },
+          adapters: { interrupt: { mode: "restart" } },
         },
       ],
       run: () => ({
@@ -182,10 +182,10 @@ describe("Workflow runtime", () => {
       throw new Error(ERROR_RESUME);
     }
 
-    const resumed = await runtime.resume(
-      TOKEN_PAUSED,
-      { decision: "approve" },
-      {
+    const resumed = await runtime.resume({
+      token: TOKEN_PAUSED,
+      resumeInput: { decision: "approve" },
+      runtime: {
         resume: {
           resolve: (request) => {
             capturedPauseKind = request.pauseKind;
@@ -193,7 +193,7 @@ describe("Workflow runtime", () => {
           },
         },
       },
-    );
+    });
 
     expect(capturedPauseKind).toBe("external");
     expect(resumed.status).toBe("ok");
@@ -228,15 +228,15 @@ describe("Workflow runtime", () => {
       throw new Error(ERROR_RESUME);
     }
 
-    const resumed = await runtime.resume(
+    const resumed = await runtime.resume({
       token,
-      { decision: "deny" },
-      {
+      resumeInput: { decision: "deny" },
+      runtime: {
         resume: {
           resolve: (request) => ({ input: request.resumeInput }),
         },
       },
-    );
+    });
 
     expect(resumed.status).toBe("ok");
     if (resumed.status !== "ok") {

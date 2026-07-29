@@ -1,5 +1,5 @@
 export { fromLlamaIndexEmbeddings } from "./embeddings";
-export { fromLlamaIndexKVStoreCache } from "./cache";
+export { fromLlamaIndexKVStoreCache, type LlamaIndexKVStoreCacheInput } from "./cache";
 export { fromLlamaIndexTextSplitter } from "./text-splitter";
 export { fromLlamaIndexRetriever } from "./retriever";
 export { fromLlamaIndexTool } from "./tools";
@@ -9,7 +9,7 @@ export { fromLlamaIndexReranker } from "./reranker";
 export { fromLlamaIndexMemory } from "./memory";
 export { fromLlamaIndexDocumentStore } from "./storage";
 export { fromLlamaIndexVectorStore } from "./vector-store";
-export { fromLlamaIndexPromptTemplate } from "./prompts";
+export { fromLlamaIndexPromptTemplate, type LlamaIndexPromptTemplateInput } from "./prompts";
 export { fromLlamaIndexDocument, fromLlamaIndexNode, toLlamaIndexDocument } from "./documents";
 export { fromLlamaIndexMessage, toLlamaIndexMessageContent } from "./messages";
 export { fromLlamaIndexMessages } from "./model-call";

@@ -1,8 +1,8 @@
 export { fromAiSdkEmbeddings } from "./embeddings";
-export { fromAiSdkCacheStore } from "./cache";
+export { fromAiSdkCacheStore, type AiSdkCacheStoreInput } from "./cache";
 export { fromAiSdkImageModel } from "./image";
-export { fromAiSdkMemory } from "./memory";
-export { fromAiSdkTool } from "./tools";
+export { fromAiSdkMemory, type AiSdkMemoryInput } from "./memory";
+export { fromAiSdkTool, type AiSdkToolInput } from "./tools";
 export { fromAiSdkMessage, fromAiSdkMessages } from "./messages";
 export { fromAiSdkPrompt } from "./model-call";
 export { fromAiSdkModel } from "./model";

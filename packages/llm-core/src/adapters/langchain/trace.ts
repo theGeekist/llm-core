@@ -3,9 +3,9 @@ import type { Serialized } from "@langchain/core/load/serializable";
 import type { LLMResult } from "@langchain/core/outputs";
 import type { AdapterTraceEvent, EventStream } from "../types";
 import { bindFirst } from "#shared/fp";
-import { maybeAll, maybeMap, maybeReduce } from "#shared/maybe";
+import { maybeAll, maybeMap } from "#shared/maybe";
 import { isRecord } from "#shared/guards";
-import { combineTriState, combineTriStates } from "#shared/tri-state";
+import { combineTriStates, maybeReduceTriState } from "#shared/tri-state";
 
 type LangChainTraceMetadata = {
   modelId?: string | null;
@@ -183,20 +183,8 @@ function emitTracePair(handler: BaseCallbackHandler, event: AdapterTraceEvent) {
   );
 }
 
-function emitNextTracePair(
-  handler: BaseCallbackHandler,
-  previous: boolean | null,
-  event: AdapterTraceEvent,
-) {
-  return maybeMap(bindFirst(combineTriState, previous), emitTracePair(handler, event));
-}
-
-function emitTraceEvents(handler: BaseCallbackHandler, events: AdapterTraceEvent[]) {
-  if (events.length === 0) {
-    return null;
-  }
-  return maybeReduce(bindFirst(emitNextTracePair, handler), null, events);
-}
+const emitTraceEvents = (handler: BaseCallbackHandler, events: AdapterTraceEvent[]) =>
+  maybeReduceTriState(bindFirst(emitTracePair, handler), events);
 
 export function fromLangChainCallbackHandler(handler: BaseCallbackHandler): EventStream {
   const emit = bindFirst(emitTracePair, handler);

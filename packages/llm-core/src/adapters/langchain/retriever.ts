@@ -8,8 +8,7 @@ import { reportDiagnostics, validateRetrieverInput } from "../input-validation";
 export function fromLangChainRetriever(retriever: BaseRetrieverInterface): Retriever {
   function retrieve({ query, context }: AdapterRequest<{ query: RetrievalQuery }>) {
     const diagnostics = validateRetrieverInput(query);
-    if (diagnostics.length > 0) {
-      reportDiagnostics(context, diagnostics);
+    if (reportDiagnostics(context, diagnostics)) {
       return { query, documents: [] };
     }
     const textQuery = toQueryText(query);

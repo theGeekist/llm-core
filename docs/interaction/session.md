@@ -76,7 +76,7 @@ When a workflow returns a paused outcome:
 
 1. The session skips the `policy` and `save` hooks. Storage waits until the workflow completes.
 2. The in-memory `state` still updates from the paused snapshot so your UI can render the paused state immediately.
-3. Call `session.resume(outcome.snapshot, resumeInput)` while the snapshot is still live. The session reloads the last persisted state as the policy baseline; a completed resume then runs the normal `merge` → `summarize` → `truncate` policy and save path.
+3. Call `session.resume({ snapshot: outcome.snapshot, resumeInput })` while the snapshot is still live. The session reloads the last persisted state as the policy baseline; a completed resume then runs the normal `merge` → `summarize` → `truncate` policy and save path.
 
 This pattern keeps persistence predictable: only fully completed runs update the store, while paused runs still give you a consistent view of the in-memory state.
 

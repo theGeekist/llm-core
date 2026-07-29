@@ -179,7 +179,7 @@ const redis: Cache = createCacheFromKVStore(myRedisKv);
 
 // 3. Reuse ecosystem stores
 const lc: Cache = fromLangChainStoreCache(langChainStore);
-const li: Cache = fromLlamaIndexKVStoreCache(llamaIndexKv);
+const li: Cache = fromLlamaIndexKVStoreCache({ store: llamaIndexKv });
 ```
 
 == JavaScript
@@ -200,7 +200,7 @@ const redis = createCacheFromKVStore(myRedisKv);
 
 // 3. Reuse ecosystem stores
 const lc = fromLangChainStoreCache(langChainStore);
-const li = fromLlamaIndexKVStoreCache(llamaIndexKv);
+const li = fromLlamaIndexKVStoreCache({ store: llamaIndexKv });
 ```
 
 :::
@@ -356,7 +356,7 @@ Workflow runtimes wrap adapters with `AdapterCallContext`, so these diagnostics 
 
 ## Adapter registration helpers (DX path)
 
-The simplest way to register adapters is via value-first helpers. These return a Workflow-compatible plugin.
+The simplest way to register adapters is via named registration objects. These return a Workflow-compatible plugin.
 
 ::: tabs
 == TypeScript
@@ -365,12 +365,13 @@ The simplest way to register adapters is via value-first helpers. These return a
 import { Adapter } from "@geekist/llm-core/adapters";
 import type { Tool } from "@geekist/llm-core/adapters";
 
-const retrieverPlugin = Adapter.retriever("custom.retriever", {
-  retrieve: () => ({ documents: [] }),
+const retrieverPlugin = Adapter.retriever({
+  key: "custom.retriever",
+  value: { retrieve: () => ({ documents: [] }) },
 });
 
 const tools = [{ name: "search" }] satisfies Tool[];
-const toolPlugin = Adapter.tools("custom.tools", tools);
+const toolPlugin = Adapter.tools({ key: "custom.tools", value: tools });
 ```
 
 == JavaScript
@@ -378,11 +379,12 @@ const toolPlugin = Adapter.tools("custom.tools", tools);
 ```js
 import { Adapter } from "@geekist/llm-core/adapters";
 
-const retrieverPlugin = Adapter.retriever("custom.retriever", {
-  retrieve: () => ({ documents: [] }),
+const retrieverPlugin = Adapter.retriever({
+  key: "custom.retriever",
+  value: { retrieve: () => ({ documents: [] }) },
 });
 
-const toolPlugin = Adapter.tools("custom.tools", [{ name: "search" }]);
+const toolPlugin = Adapter.tools({ key: "custom.tools", value: [{ name: "search" }] });
 ```
 
 :::
@@ -395,14 +397,20 @@ For custom constructs (e.g. `mcp`), use `Adapter.plugin`:
 ```ts
 import type { AdapterPlugin } from "@geekist/llm-core/adapters";
 
-const plugin = Adapter.plugin("custom.mcp", { constructs: { mcp: { client } } });
+const plugin = Adapter.plugin({
+  key: "custom.mcp",
+  adapters: { constructs: { mcp: { client } } },
+});
 plugin satisfies AdapterPlugin;
 ```
 
 == JavaScript
 
 ```js
-const plugin = Adapter.plugin("custom.mcp", { constructs: { mcp: { client } } });
+const plugin = Adapter.plugin({
+  key: "custom.mcp",
+  adapters: { constructs: { mcp: { client } } },
+});
 ```
 
 :::

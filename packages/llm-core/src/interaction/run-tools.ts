@@ -1,8 +1,9 @@
-import type { Tool, ToolCall, ToolResult } from "#adapters/types";
+import type { ToolCall, ToolResult } from "#adapters/types";
 import type { Message, MessagePart } from "#adapters/types/messages";
 import { bindFirst } from "#shared/fp";
 import { isRecord } from "#shared/guards";
-import { maybeAll, maybeChain, maybeMap, maybeTap, maybeTry } from "#shared/maybe";
+import { maybeChain, maybeMap, maybeTap } from "#shared/maybe";
+import { executeToolCalls } from "#shared/tool-execution";
 import type {
   InteractionContext,
   InteractionEvent,
@@ -89,15 +90,6 @@ const readToolCallsFromParts = (parts: MessagePart[] | null) => {
 const readToolCallsFromState = (state: InteractionState) =>
   readToolCallsFromParts(readMessageParts(readLastAssistantMessage(state.messages)));
 
-const findTool = (tools: Tool[], call: ToolCall) => tools.find((tool) => tool.name === call.name);
-
-const createMissingToolResult = (call: ToolCall): ToolResult => ({
-  name: call.name,
-  toolCallId: call.id,
-  isError: true,
-  result: { error: "tool_not_found" },
-});
-
 const toErrorText = (error: unknown) => {
   if (error instanceof Error) {
     return error.message;
@@ -117,31 +109,6 @@ const createToolErrorResult = (call: ToolCall, error: unknown): ToolResult => ({
   isError: true,
   result: { error: "tool_error", message: toErrorText(error) },
 });
-
-const createToolResult = (call: ToolCall, result: unknown): ToolResult => ({
-  name: call.name,
-  toolCallId: call.id,
-  result,
-});
-
-const runToolExecute = (input: { tool: Tool | undefined; call: ToolCall }) => {
-  if (!input.tool?.execute) {
-    return createMissingToolResult(input.call);
-  }
-  return maybeMap(
-    bindFirst(createToolResult, input.call),
-    input.tool.execute({ input: input.call.arguments }),
-  );
-};
-
-const executeToolCall = (tool: Tool | undefined, call: ToolCall) =>
-  maybeTry(bindFirst(createToolErrorResult, call), bindFirst(runToolExecute, { tool, call }));
-
-const executeToolCallWithTools = (tools: Tool[], call: ToolCall) =>
-  executeToolCall(findTool(tools, call), call);
-
-const executeToolCalls = (tools: Tool[], calls: ToolCall[]) =>
-  maybeAll(calls.map(bindFirst(executeToolCallWithTools, tools)));
 
 const buildToolResultEvents = (input: {
   state: InteractionState;
@@ -229,7 +196,11 @@ export const applyRunTools: InteractionStepApply = (options) => {
     return { output: options.output };
   }
   const tools = options.context.adapters?.tools ?? [];
-  const executed = executeToolCalls(tools, calls);
+  const executed = executeToolCalls({
+    tools,
+    calls,
+    onError: createToolErrorResult,
+  });
   return maybeMap(
     toInteractionOutput,
     maybeChain(

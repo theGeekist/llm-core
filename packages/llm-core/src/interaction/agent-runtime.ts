@@ -128,18 +128,13 @@ type AdapterOverrideInput = {
   tools?: Tool[] | null;
 };
 
-function mergeTools(base?: Tool[] | null, next?: Tool[] | null): Tool[] | null {
-  if (!base && !next) {
+function mergeTools(...groups: Array<Tool[] | null | undefined>): Tool[] | null {
+  if (groups.every((tools) => tools == null)) {
     return null;
   }
   const merged = new Map<string, Tool>();
-  if (base) {
-    for (const tool of base) {
-      merged.set(tool.name, tool);
-    }
-  }
-  if (next) {
-    for (const tool of next) {
+  for (const tools of groups) {
+    for (const tool of tools ?? []) {
       merged.set(tool.name, tool);
     }
   }
@@ -227,8 +222,7 @@ function resolveToolsForRun(input: {
   overrides?: Tool[] | null;
   subagentTools?: Tool[] | null;
 }) {
-  const merged = mergeTools(input.base ?? null, input.overrides ?? null);
-  return mergeTools(merged, input.subagentTools ?? null);
+  return mergeTools(input.base, input.overrides, input.subagentTools);
 }
 
 function resolveAdaptersForSkills(

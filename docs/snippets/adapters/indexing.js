@@ -36,7 +36,7 @@ const recordManager = {
 };
 const vectorStore = new MemoryVectorStore(new DummyEmbeddings());
 // Note: Requires a raw LangChain vector store instance
-const indexing = fromLangChainIndexing(recordManager, vectorStore);
+const indexing = fromLangChainIndexing({ recordManager, vectorStore });
 // #endregion docs
 
 void indexing;

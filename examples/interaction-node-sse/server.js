@@ -99,11 +99,11 @@ class MemorySessionStore {
     this.cache = new Map();
   }
 
-  load(sessionId) {
+  load({ sessionId }) {
     return this.cache.get(toSessionKey(sessionId)) ?? null;
   }
 
-  save(sessionId, state) {
+  save({ sessionId, state }) {
     this.cache.set(toSessionKey(sessionId), state);
     return true;
   }

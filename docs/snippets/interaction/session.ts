@@ -14,8 +14,8 @@ const toSessionKey = (sessionId: SessionId) => {
 };
 
 const store: SessionStore = {
-  load: (sessionId) => sessionCache.get(toSessionKey(sessionId)) ?? null,
-  save: (sessionId, state) => {
+  load: ({ sessionId }) => sessionCache.get(toSessionKey(sessionId)) ?? null,
+  save: ({ sessionId, state }) => {
     sessionCache.set(toSessionKey(sessionId), state);
     return true;
   },

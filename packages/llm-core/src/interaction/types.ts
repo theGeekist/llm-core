@@ -193,17 +193,19 @@ export type InteractionContext = ExecutionContextBase & {
 
 export type SessionId = string | { sessionId: string; userId?: string };
 
+export type SessionStoreRequest = {
+  sessionId: SessionId;
+  context?: AdapterCallContext;
+};
+
+export type SessionStoreSaveRequest = SessionStoreRequest & {
+  state: InteractionState;
+};
+
 export type SessionStore = {
-  load: (
-    sessionId: SessionId,
-    context?: AdapterCallContext,
-  ) => MaybePromise<InteractionState | null>;
-  save: (
-    sessionId: SessionId,
-    state: InteractionState,
-    context?: AdapterCallContext,
-  ) => MaybePromise<boolean | null>;
-  delete?: (sessionId: SessionId, context?: AdapterCallContext) => MaybePromise<boolean | null>;
+  load: (request: SessionStoreRequest) => MaybePromise<InteractionState | null>;
+  save: (request: SessionStoreSaveRequest) => MaybePromise<boolean | null>;
+  delete?: (request: SessionStoreRequest) => MaybePromise<boolean | null>;
 };
 
 export type SessionPolicy = {
@@ -215,9 +217,13 @@ export type SessionPolicy = {
   truncate?: (state: InteractionState) => MaybePromise<InteractionState>;
 };
 
+export type InteractionSessionResumeRequest = {
+  snapshot: InteractionSessionPauseSnapshot;
+  resumeInput?: unknown;
+};
+
 export type InteractionSessionResume = (
-  snapshot: InteractionSessionPauseSnapshot,
-  resumeInput?: unknown,
+  request: InteractionSessionResumeRequest,
 ) => MaybePromise<InteractionSessionOutcome>;
 
 export type InteractionSession = {

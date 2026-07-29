@@ -27,8 +27,7 @@ export function fromLangChainTool<TInput, TOutput>(tool: LangChainToolLike<TInpu
   };
   function execute({ input, context }: AdapterRequest<{ input: unknown }>) {
     const diagnostics = validateToolInput(adapterShape, input);
-    if (diagnostics.length > 0) {
-      reportDiagnostics(context, diagnostics);
+    if (reportDiagnostics(context, diagnostics)) {
       return null;
     }
     return tool.invoke(input as TInput);

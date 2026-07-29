@@ -13,10 +13,15 @@ const toInputs = (variables: string[]): PromptSchema["inputs"] =>
     required: true,
   }));
 
-export function fromLangChainPromptTemplate(
-  prompt: LangChainPromptTemplate,
-  name: string = DEFAULT_NAME,
-): PromptTemplate {
+export type LangChainPromptTemplateInput = {
+  prompt: LangChainPromptTemplate;
+  name?: string;
+};
+
+export function fromLangChainPromptTemplate({
+  prompt,
+  name = DEFAULT_NAME,
+}: LangChainPromptTemplateInput): PromptTemplate {
   return {
     name,
     template: toTemplateString(prompt.template),

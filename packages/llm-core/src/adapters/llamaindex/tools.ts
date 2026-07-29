@@ -24,8 +24,7 @@ export function fromLlamaIndexTool(tool: BaseTool): Tool {
   const execute = call
     ? ({ input, context }: AdapterRequest<{ input: unknown }>) => {
         const diagnostics = validateToolInput(adapterShape, input);
-        if (diagnostics.length > 0) {
-          reportDiagnostics(context, diagnostics);
+        if (reportDiagnostics(context, diagnostics)) {
           return null;
         }
         return call(input);

@@ -1,11 +1,4 @@
-import type {
-  ArtefactOf,
-  RecipeName,
-  ResumeInputOf,
-  RunInputOf,
-  Runtime,
-  WorkflowRuntime,
-} from "../types";
+import type { ArtefactOf, RecipeName, ResumeInputOf, RunInputOf, WorkflowRuntime } from "../types";
 import {
   addTrace,
   createTraceDiagnostics,
@@ -44,7 +37,7 @@ export const createResumeHandler = <N extends RecipeName>(deps: ResumeHandlerDep
   const inFlightPauseSessions = new Set<unknown>();
   const resume: NonNullable<
     WorkflowRuntime<RunInputOf<N>, ArtefactOf<N>, ResumeInputOf<N>>["resume"]
-  > = (token: unknown, resumeInput?: ResumeInputOf<N>, runtime?: Runtime) => {
+  > = ({ token, resumeInput, runtime }) => {
     const trace = createTraceDiagnostics().trace;
     addTrace({ trace }, "run.start", { recipe: deps.contractName, resume: true });
     const diagnosticsMode = runtime?.diagnostics ?? "default";

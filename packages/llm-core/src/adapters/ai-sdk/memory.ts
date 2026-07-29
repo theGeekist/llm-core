@@ -17,10 +17,13 @@ import {
 } from "../input-validation";
 import { readString } from "../utils";
 
-type AiSdkMemoryOptions = {
+export type AiSdkMemoryInput = {
+  provider: MemoryProvider;
   scope?: MemoryScope;
   userId?: string;
 };
+
+type AiSdkMemoryOptions = Omit<AiSdkMemoryInput, "provider">;
 
 type MemoryIdentifiers = {
   chatId?: string;
@@ -31,14 +34,14 @@ type MemoryIdentifiers = {
 const readChatId = (input: Record<string, unknown>) =>
   readString(input.chatId) ?? readString(input.threadId);
 
-const readUserId = (input: Record<string, unknown>, options?: AiSdkMemoryOptions) =>
-  readString(input.userId) ?? options?.userId;
+const readUserId = (input: Record<string, unknown>, options: AiSdkMemoryOptions) =>
+  readString(input.userId) ?? options.userId;
 
-const toScope = (options?: AiSdkMemoryOptions): MemoryScope => options?.scope ?? "chat";
+const toScope = (options: AiSdkMemoryOptions): MemoryScope => options.scope ?? "chat";
 
 const toIdentifiers = (
   input: Record<string, unknown>,
-  options?: AiSdkMemoryOptions,
+  options: AiSdkMemoryOptions,
 ): MemoryIdentifiers => ({
   chatId: readChatId(input) ?? undefined,
   userId: readUserId(input, options),
@@ -85,11 +88,10 @@ const reportProviderMissing = (
   reportDiagnostics(context, validateMemoryProvider(method, action));
 };
 
-export function fromAiSdkMemory(provider: MemoryProvider, options?: AiSdkMemoryOptions): Memory {
+export function fromAiSdkMemory({ provider, ...options }: AiSdkMemoryInput): Memory {
   function read({ threadId, context }: AdapterRequest<{ threadId: string }>) {
     const diagnostics = validateThreadId(threadId, "read");
-    if (diagnostics.length > 0) {
-      reportDiagnostics(context, diagnostics);
+    if (reportDiagnostics(context, diagnostics)) {
       return null;
     }
     if (!provider.getMessages) {
@@ -98,14 +100,13 @@ export function fromAiSdkMemory(provider: MemoryProvider, options?: AiSdkMemoryO
     }
     return maybeMap(
       (messages) => toThread(threadId, messages),
-      provider.getMessages({ chatId: threadId, userId: options?.userId }),
+      provider.getMessages({ chatId: threadId, userId: options.userId }),
     );
   }
 
   function append({ threadId, turn, context }: AdapterRequest<{ threadId: string; turn: Turn }>) {
     const diagnostics = validateThreadId(threadId, "append").concat(validateMemoryTurn(turn));
-    if (diagnostics.length > 0) {
-      reportDiagnostics(context, diagnostics);
+    if (reportDiagnostics(context, diagnostics)) {
       return false;
     }
     if (!provider.saveMessage) {
@@ -115,7 +116,7 @@ export function fromAiSdkMemory(provider: MemoryProvider, options?: AiSdkMemoryO
     const timestamp = new Date(turn.timestamp ?? Date.now());
     const message: ConversationMessage = {
       chatId: threadId,
-      userId: options?.userId,
+      userId: options.userId,
       role: toProviderRole(turn.role),
       content: turn.content,
       timestamp,
@@ -125,8 +126,7 @@ export function fromAiSdkMemory(provider: MemoryProvider, options?: AiSdkMemoryO
 
   function load({ input, context }: AdapterRequest<{ input: Record<string, unknown> }>) {
     const diagnostics = validateMemoryLoadInput(input);
-    if (diagnostics.length > 0) {
-      reportDiagnostics(context, diagnostics);
+    if (reportDiagnostics(context, diagnostics)) {
       return {};
     }
     if (!provider.getWorkingMemory) {
@@ -157,8 +157,7 @@ export function fromAiSdkMemory(provider: MemoryProvider, options?: AiSdkMemoryO
     output: Record<string, unknown>;
   }>) {
     const diagnostics = validateMemorySaveInput(input, output);
-    if (diagnostics.length > 0) {
-      reportDiagnostics(context, diagnostics);
+    if (reportDiagnostics(context, diagnostics)) {
       return false;
     }
     if (!provider.updateWorkingMemory) {

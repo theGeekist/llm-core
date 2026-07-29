@@ -35,8 +35,7 @@ export const Tooling = {
             },
             value,
           );
-          if (diagnostics.length > 0) {
-            reportDiagnostics(context, diagnostics);
+          if (reportDiagnostics(context, diagnostics)) {
             return null;
           }
           return input.execute?.({ input: value, context });

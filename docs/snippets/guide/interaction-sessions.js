@@ -46,18 +46,17 @@ function readSessionKey(id) {
 }
 
 /**
- * @param {import("#interaction").SessionId} id
+ * @param {import("#interaction").SessionStoreRequest} request
  */
-function loadSessionState(id) {
-  return sessionState.get(readSessionKey(id)) ?? null;
+function loadSessionState({ sessionId }) {
+  return sessionState.get(readSessionKey(sessionId)) ?? null;
 }
 
 /**
- * @param {import("#interaction").SessionId} id
- * @param {import("#interaction").InteractionState} state
+ * @param {import("#interaction").SessionStoreSaveRequest} request
  */
-function saveSessionState(id, state) {
-  sessionState.set(readSessionKey(id), state);
+function saveSessionState({ sessionId, state }) {
+  sessionState.set(readSessionKey(sessionId), state);
   return true;
 }
 

@@ -39,11 +39,11 @@ function readSessionKey(id: SessionId) {
   return typeof id === "string" ? id : id.sessionId;
 }
 
-function loadSessionState(id: SessionId) {
-  return sessionState.get(readSessionKey(id)) ?? null;
+function loadSessionState({ sessionId }: { sessionId: SessionId }) {
+  return sessionState.get(readSessionKey(sessionId)) ?? null;
 }
 
-function saveSessionState(id: SessionId, state: InteractionState) {
-  sessionState.set(readSessionKey(id), state);
+function saveSessionState({ sessionId, state }: { sessionId: SessionId; state: InteractionState }) {
+  sessionState.set(readSessionKey(sessionId), state);
   return true;
 }

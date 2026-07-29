@@ -22,7 +22,11 @@ const applySynthesis: StepApply = ({ context, state }) => {
   const rag = RagStateHelpers.readRagState(state);
   const model = RagStateHelpers.readModel(context);
   const prompt = RagStateHelpers.buildPrompt(rag);
-  const result = RagStateHelpers.runModel(model, prompt);
+  const system = RagStateHelpers.readSystem(context);
+  const result = RagStateHelpers.runModel({
+    model,
+    call: system ? { prompt, system } : { prompt },
+  });
   if (result === null) {
     return null;
   }
@@ -45,4 +49,3 @@ export const createRagSynthesisPack = (config?: RagSynthesisConfig) =>
 const synthesis = defineSinglePackRecipe("rag", createRagSynthesisPack);
 export const createRagSynthesisRecipe = synthesis.createRecipe;
 export const RagSynthesisPack = synthesis.pack;
-export const ragSynthesisRecipe = createRagSynthesisRecipe();

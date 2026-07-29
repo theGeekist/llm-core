@@ -236,5 +236,4 @@ export const createIngestPack = (config?: IngestConfig) =>
 // Full ingestion recipe: load -> split -> embed -> index.
 const ingest = defineSinglePackRecipe("ingest", createIngestPack);
 export const createIngestRecipe = ingest.createRecipe;
-export const ingestRecipe = createIngestRecipe;
 export const IngestPack = ingest.pack;

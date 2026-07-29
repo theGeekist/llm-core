@@ -55,4 +55,3 @@ export const createAgentFinalizePack = (config?: AgentFinalizeConfig) =>
 const finalize = defineSinglePackRecipe("agent", createAgentFinalizePack);
 export const createAgentFinalizeRecipe = finalize.createRecipe;
 export const AgentFinalizePack = finalize.pack;
-export const agentFinalizeRecipe = createAgentFinalizeRecipe();

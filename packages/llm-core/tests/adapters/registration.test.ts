@@ -5,84 +5,100 @@ describe("Adapter registration helpers", () => {
   const CUSTOM_PREFIX = "custom";
 
   it("builds a plugin with a single construct", () => {
-    const plugin = Adapter.retriever(`${CUSTOM_PREFIX}.retriever`, {
-      retrieve: () => ({ documents: [] }),
+    const plugin = Adapter.retriever({
+      key: `${CUSTOM_PREFIX}.retriever`,
+      value: { retrieve: () => ({ documents: [] }) },
     });
     expect(plugin.key).toBe(`${CUSTOM_PREFIX}.retriever`);
     expect(plugin.adapters.retriever).toBeDefined();
   });
 
   it("stores unknown constructs under constructs", () => {
-    const plugin = Adapter.plugin(`${CUSTOM_PREFIX}.thing`, {
-      constructs: { mcp: { client: "ok" } },
+    const plugin = Adapter.plugin({
+      key: `${CUSTOM_PREFIX}.thing`,
+      adapters: { constructs: { mcp: { client: "ok" } } },
     });
     expect(plugin.adapters.constructs).toEqual({ mcp: { client: "ok" } });
   });
 
   it("treats constructs as the full constructs map", () => {
-    const plugin = Adapter.plugin(`${CUSTOM_PREFIX}.constructs`, {
-      constructs: { mcp: { client: "ok" } },
+    const plugin = Adapter.plugin({
+      key: `${CUSTOM_PREFIX}.constructs`,
+      adapters: { constructs: { mcp: { client: "ok" } } },
     });
     expect(plugin.adapters.constructs).toEqual({ mcp: { client: "ok" } });
   });
 
   it("accepts explicit construct values", () => {
-    const plugin = Adapter.plugin(`${CUSTOM_PREFIX}.value`, {
-      constructs: { value: "plain" },
+    const plugin = Adapter.plugin({
+      key: `${CUSTOM_PREFIX}.value`,
+      adapters: { constructs: { value: "plain" } },
     });
     expect(plugin.adapters.constructs).toEqual({ value: "plain" });
   });
 
-  it("exposes value-first helpers", () => {
-    const plugin = Adapter.model(`${CUSTOM_PREFIX}.model`, { generate: () => ({ text: "ok" }) });
+  it("exposes named registration helpers", () => {
+    const plugin = Adapter.model({
+      key: `${CUSTOM_PREFIX}.model`,
+      value: { generate: () => ({ text: "ok" }) },
+    });
     expect(plugin.adapters.model).toBeDefined();
   });
 
   it("supports media, tools, retriever, vector store, memory, cache, trace, indexing, and orchestration helpers", () => {
-    const image = Adapter.image(`${CUSTOM_PREFIX}.image`, {
-      generate: () => ({ images: [] }),
+    const image = Adapter.image({
+      key: `${CUSTOM_PREFIX}.image`,
+      value: { generate: () => ({ images: [] }) },
     });
-    const speech = Adapter.speech(`${CUSTOM_PREFIX}.speech`, {
-      generate: () => ({ audio: { bytes: new Uint8Array() } }),
+    const speech = Adapter.speech({
+      key: `${CUSTOM_PREFIX}.speech`,
+      value: { generate: () => ({ audio: { bytes: new Uint8Array() } }) },
     });
-    const transcription = Adapter.transcription(`${CUSTOM_PREFIX}.transcription`, {
-      generate: () => ({ text: "" }),
+    const transcription = Adapter.transcription({
+      key: `${CUSTOM_PREFIX}.transcription`,
+      value: { generate: () => ({ text: "" }) },
     });
-    const tools = Adapter.tools(`${CUSTOM_PREFIX}.tools`, [{ name: "tool" }]);
-    const retriever = Adapter.retriever(`${CUSTOM_PREFIX}.retriever`, {
-      retrieve: () => ({ documents: [] }),
+    const tools = Adapter.tools({ key: `${CUSTOM_PREFIX}.tools`, value: [{ name: "tool" }] });
+    const retriever = Adapter.retriever({
+      key: `${CUSTOM_PREFIX}.retriever`,
+      value: { retrieve: () => ({ documents: [] }) },
     });
-    const vectorStore = Adapter.vectorStore(`${CUSTOM_PREFIX}.vectorStore`, {
-      upsert: () => ({ ids: [] }),
-      delete: () => null,
+    const vectorStore = Adapter.vectorStore({
+      key: `${CUSTOM_PREFIX}.vectorStore`,
+      value: { upsert: () => ({ ids: [] }), delete: () => null },
     });
-    const memory = Adapter.memory(`${CUSTOM_PREFIX}.memory`, {
-      append: () => null,
+    const memory = Adapter.memory({
+      key: `${CUSTOM_PREFIX}.memory`,
+      value: { append: () => null },
     });
-    const cache = Adapter.cache(`${CUSTOM_PREFIX}.cache`, {
-      get: () => null,
-      set: () => null,
-      delete: () => null,
+    const cache = Adapter.cache({
+      key: `${CUSTOM_PREFIX}.cache`,
+      value: { get: () => null, set: () => null, delete: () => null },
     });
-    const eventStream = Adapter.eventStream(`${CUSTOM_PREFIX}.eventStream`, {
-      emit: () => null,
+    const eventStream = Adapter.eventStream({
+      key: `${CUSTOM_PREFIX}.eventStream`,
+      value: { emit: () => null },
     });
-    const interrupt = Adapter.interrupt(`${CUSTOM_PREFIX}.interrupt`, {
-      mode: "continue",
+    const interrupt = Adapter.interrupt({
+      key: `${CUSTOM_PREFIX}.interrupt`,
+      value: { mode: "continue" },
     });
-    const trace = Adapter.trace(`${CUSTOM_PREFIX}.trace`, { emit: () => null });
-    const indexing = Adapter.indexing(`${CUSTOM_PREFIX}.indexing`, {
-      index: () => ({ added: 0, deleted: 0, updated: 0, skipped: 0 }),
+    const trace = Adapter.trace({
+      key: `${CUSTOM_PREFIX}.trace`,
+      value: { emit: () => null },
     });
-    const queryEngine = Adapter.queryEngine(`${CUSTOM_PREFIX}.queryEngine`, {
-      query: () => ({ text: "" }),
+    const indexing = Adapter.indexing({
+      key: `${CUSTOM_PREFIX}.indexing`,
+      value: { index: () => ({ added: 0, deleted: 0, updated: 0, skipped: 0 }) },
     });
-    const responseSynthesizer = Adapter.responseSynthesizer(
-      `${CUSTOM_PREFIX}.responseSynthesizer`,
-      {
-        synthesize: () => ({ text: "" }),
-      },
-    );
+    const queryEngine = Adapter.queryEngine({
+      key: `${CUSTOM_PREFIX}.queryEngine`,
+      value: { query: () => ({ text: "" }) },
+    });
+    const responseSynthesizer = Adapter.responseSynthesizer({
+      key: `${CUSTOM_PREFIX}.responseSynthesizer`,
+      value: { synthesize: () => ({ text: "" }) },
+    });
 
     expect(image.adapters.image).toBeDefined();
     expect(speech.adapters.speech).toBeDefined();
@@ -101,11 +117,12 @@ describe("Adapter registration helpers", () => {
   });
 
   it("passes through plugin options", () => {
-    const plugin = Adapter.plugin(
-      `${CUSTOM_PREFIX}.plugin`,
-      { tools: [{ name: "tool" }] },
-      { mode: "override", overrideKey: "override.key" },
-    );
+    const plugin = Adapter.plugin({
+      key: `${CUSTOM_PREFIX}.plugin`,
+      adapters: { tools: [{ name: "tool" }] },
+      mode: "override",
+      overrideKey: "override.key",
+    });
 
     expect(plugin.mode).toBe("override");
     expect(plugin.overrideKey).toBe("override.key");

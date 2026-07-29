@@ -15,12 +15,12 @@ const createMemorySessionStore = (): SessionStore => {
   const data = new Map<string, InteractionState>();
 
   return {
-    load: (sessionId) => {
+    load: ({ sessionId }) => {
       // Handle composite IDs if needed, but here simple string
       const key = typeof sessionId === "string" ? sessionId : sessionId.sessionId;
       return data.get(key) ?? null;
     },
-    save: (sessionId, state) => {
+    save: ({ sessionId, state }) => {
       const key = typeof sessionId === "string" ? sessionId : sessionId.sessionId;
       data.set(key, state);
       return true;

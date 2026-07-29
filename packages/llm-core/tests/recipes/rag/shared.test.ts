@@ -46,7 +46,7 @@ describe("RAG state helpers", () => {
 
   it("runs the model when available", () => {
     const model: Model = { generate: () => ({ text: "answer" }) };
-    const result = RagStateHelpers.runModel(model, "prompt");
+    const result = RagStateHelpers.runModel({ model, call: { prompt: "prompt" } });
 
     expect(result).toEqual({ text: "answer" });
   });

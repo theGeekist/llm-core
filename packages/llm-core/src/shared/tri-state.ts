@@ -1,3 +1,6 @@
+import { bindFirst } from "./fp";
+import { maybeMap, maybeReduce, type MaybePromise } from "./maybe";
+
 export type TriState = boolean | null;
 
 export const normalizeTriState = (value: unknown): TriState =>
@@ -20,3 +23,14 @@ export const combineTriStates = (values: TriState[]): TriState => {
   }
   return result;
 };
+
+const reduceTriStateEffect = <T>(
+  effect: (value: T) => MaybePromise<TriState>,
+  previous: TriState,
+  value: T,
+) => maybeMap(bindFirst(combineTriState, previous), effect(value));
+
+export const maybeReduceTriState = <T>(
+  effect: (value: T) => MaybePromise<TriState>,
+  values: readonly T[],
+): MaybePromise<TriState> => maybeReduce(bindFirst(reduceTriStateEffect, effect), null, values);

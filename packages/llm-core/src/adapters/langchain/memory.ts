@@ -11,8 +11,7 @@ import {
 export function fromLangChainMemory(memory: BaseMemory): Memory {
   function load({ input, context }: AdapterRequest<{ input: Record<string, unknown> }>) {
     const diagnostics = validateMemoryLoadInput(input);
-    if (diagnostics.length > 0) {
-      reportDiagnostics(context, diagnostics);
+    if (reportDiagnostics(context, diagnostics)) {
       return {};
     }
     return maybeMap(toRecord, memory.loadMemoryVariables(input));
@@ -27,8 +26,7 @@ export function fromLangChainMemory(memory: BaseMemory): Memory {
     output: Record<string, unknown>;
   }>) {
     const diagnostics = validateMemorySaveInput(input, output);
-    if (diagnostics.length > 0) {
-      reportDiagnostics(context, diagnostics);
+    if (reportDiagnostics(context, diagnostics)) {
       return false;
     }
     return maybeMap(toTrue, memory.saveContext(input, output));

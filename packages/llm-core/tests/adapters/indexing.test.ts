@@ -36,7 +36,7 @@ describe("Adapter LangChain indexing", () => {
   it("indexes documents via the LangChain index API", async () => {
     const recordManager = createRecordManager();
     const vectorStore = createVectorStore();
-    const adapter = fromLangChainIndexing(recordManager, vectorStore.store);
+    const adapter = fromLangChainIndexing({ recordManager, vectorStore: vectorStore.store });
 
     const result = await adapter.index({ documents: [{ text: "doc" }] });
     expect(result.added).toBe(1);
@@ -46,7 +46,7 @@ describe("Adapter LangChain indexing", () => {
   it("reports diagnostics when indexing input is missing", async () => {
     const recordManager = createRecordManager();
     const vectorStore = createVectorStore();
-    const adapter = fromLangChainIndexing(recordManager, vectorStore.store);
+    const adapter = fromLangChainIndexing({ recordManager, vectorStore: vectorStore.store });
     const { context, diagnostics } = captureDiagnostics();
 
     const result = await adapter.index({
@@ -63,7 +63,7 @@ describe("Adapter LangChain indexing", () => {
       createSchema: async () => undefined,
     };
     const vectorStore = createVectorStore();
-    const adapter = fromLangChainIndexing(recordManager, vectorStore.store);
+    const adapter = fromLangChainIndexing({ recordManager, vectorStore: vectorStore.store });
 
     const result = await adapter.index({
       loader: { load: async () => [{ text: "doc" }] },
@@ -79,7 +79,7 @@ describe("Adapter LangChain indexing", () => {
       createSchema: async () => undefined,
     };
     const vectorStore = createVectorStore();
-    const adapter = fromLangChainIndexing(recordManager, vectorStore.store);
+    const adapter = fromLangChainIndexing({ recordManager, vectorStore: vectorStore.store });
 
     const result = await adapter.index({
       loader: { load: async () => [{ text: "doc" }] },

@@ -4,7 +4,6 @@ export { createBuiltinTools } from "./tools";
 export { createBuiltinTrace } from "./trace";
 export { createCacheFromKVStore, createMemoryCache } from "./cache";
 export { createEventStreamFanout, createEventStreamFromTraceSink } from "./event-stream";
-export { createInterruptStrategy } from "./interrupt";
 export type {
   InteractionEventDelivery,
   InteractionEventDeliveryOptions,

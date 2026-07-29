@@ -40,4 +40,3 @@ export const createRagRetrievalPack = (config?: RagRetrievalConfig) =>
 const retrieval = defineSinglePackRecipe("rag", createRagRetrievalPack);
 export const createRagRetrievalRecipe = retrieval.createRecipe;
 export const RagRetrievalPack = retrieval.pack;
-export const ragRetrievalRecipe = createRagRetrievalRecipe();

@@ -4,7 +4,7 @@ Adapters bring external ecosystem constructs into a consistent shape so that wor
 
 Related docs: [Adapter Interfaces](/reference/adapters-api) and [Composition Model](/reference/composition-model).
 
-## Quick start: value-first helpers
+## Quick start
 
 You can register a retriever in a single place and let the registry handle the wiring.
 

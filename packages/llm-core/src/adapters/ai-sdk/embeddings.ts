@@ -21,8 +21,7 @@ function pickEmbeddings(result: EmbedManyResult) {
 export function fromAiSdkEmbeddings(model: EmbeddingModel<string>): Embedder {
   function embedOne({ text, context }: AdapterRequest<{ text: string }>) {
     const diagnostics = validateEmbedderInput(text);
-    if (diagnostics.length > 0) {
-      reportDiagnostics(context, diagnostics);
+    if (reportDiagnostics(context, diagnostics)) {
       return [];
     }
     return maybeMap(pickEmbedding, embed({ model, value: text }));
@@ -30,8 +29,7 @@ export function fromAiSdkEmbeddings(model: EmbeddingModel<string>): Embedder {
 
   function embedManyTexts({ texts, context }: AdapterRequest<{ texts: string[] }>) {
     const diagnostics = validateEmbedderBatchInput(texts);
-    if (diagnostics.length > 0) {
-      reportDiagnostics(context, diagnostics);
+    if (reportDiagnostics(context, diagnostics)) {
       return [];
     }
     return maybeMap(pickEmbeddings, embedMany({ model, values: texts }));

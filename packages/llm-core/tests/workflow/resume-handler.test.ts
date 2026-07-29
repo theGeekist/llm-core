@@ -96,7 +96,7 @@ describe("Workflow resume handler", () => {
       resume: () => ({ artefact: { ok: true } }),
     });
 
-    const outcome = await handler(token, undefined, runtime);
+    const outcome = await handler({ token, runtime });
 
     expect(outcome.status).toBe("ok");
     expect(pauseSessions.has(token)).toBe(false);
@@ -116,11 +116,11 @@ describe("Workflow resume handler", () => {
       },
     });
 
-    const first = await handler(token, undefined, runtime);
+    const first = await handler({ token, runtime });
     expect(first.status).toBe("error");
     expect(pauseSessions.has(token)).toBe(true);
 
-    const second = await handler(token, undefined, runtime);
+    const second = await handler({ token, runtime });
     expect(second.status).toBe("ok");
     expect(pauseSessions.has(token)).toBe(false);
   });
@@ -140,7 +140,7 @@ describe("Workflow resume handler", () => {
       },
     } satisfies Runtime;
 
-    const outcome = await handler(token, undefined, throwingRuntime);
+    const outcome = await handler({ token, runtime: throwingRuntime });
 
     expect(outcome.status).toBe("error");
     expect(diagnosticMessages(outcome.diagnostics)).toContain("resume error");
@@ -155,8 +155,8 @@ describe("Workflow resume handler", () => {
       resume: () => deferred.promise,
     });
 
-    const first = handler(token, undefined, runtime);
-    const concurrent = await handler(token, undefined, runtime);
+    const first = handler({ token, runtime });
+    const concurrent = await handler({ token, runtime });
     expect(concurrent.status).toBe("error");
     if (concurrent.status === "error") {
       expect(String(concurrent.error)).toContain("already in flight");

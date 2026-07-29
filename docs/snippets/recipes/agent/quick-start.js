@@ -10,15 +10,15 @@ const agent = recipes.agent().defaults({
   adapters: {
     model: fromAiSdkModel(openai("gpt-4o-mini")),
     tools: [
-      fromAiSdkTool(
-        "get_weather",
-        tool({
+      fromAiSdkTool({
+        name: "get_weather",
+        tool: tool({
           description: "Get weather by city",
           inputSchema: z.object({ city: z.string() }),
           /** @param {{ city: string }} input */
           execute: async (input) => ({ city: input.city, summary: "Sunny, 25C" }),
         }),
-      ),
+      }),
     ],
   },
 });

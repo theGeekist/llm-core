@@ -29,8 +29,7 @@ const toThreadFromMessages = (messages: ChatMessage[]) => ({
 export function fromLlamaIndexMemory(memory: LlamaIndexMemory): Memory {
   function read({ threadId, context }: AdapterRequest<{ threadId: string }>) {
     const diagnostics = validateThreadId(threadId, "read");
-    if (diagnostics.length > 0) {
-      reportDiagnostics(context, diagnostics);
+    if (reportDiagnostics(context, diagnostics)) {
       return null;
     }
     return maybeMap(toThreadFromMessages, memory.getLLM());
@@ -38,8 +37,7 @@ export function fromLlamaIndexMemory(memory: LlamaIndexMemory): Memory {
 
   function append({ threadId, turn, context }: AdapterRequest<{ threadId: string; turn: Turn }>) {
     const diagnostics = validateThreadId(threadId, "append").concat(validateMemoryTurn(turn));
-    if (diagnostics.length > 0) {
-      reportDiagnostics(context, diagnostics);
+    if (reportDiagnostics(context, diagnostics)) {
       return false;
     }
     return maybeMap(toTrue, memory.add({ role: turn.role, content: turn.content }));

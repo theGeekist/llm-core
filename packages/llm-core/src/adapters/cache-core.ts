@@ -33,8 +33,7 @@ const validateKey = (
   context: AdapterCallContext | undefined,
 ) => {
   const diagnostics = validateStorageKey(key, operation);
-  reportDiagnostics(context, diagnostics);
-  return diagnostics.length === 0;
+  return !reportDiagnostics(context, diagnostics);
 };
 
 const isExpired = (record: CacheRecord) =>

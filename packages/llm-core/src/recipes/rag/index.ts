@@ -20,8 +20,5 @@ const resolveRagRecipeDefinition = (config?: RagRecipeConfig) => ({
 // A full RAG flow: retrieval + synthesis, with per-pack overrides.
 export const createRagRecipe = defineRecipe("rag", resolveRagRecipeDefinition);
 
-// Default RAG recipe with standard packs.
-export const ragRecipe = createRagRecipe();
-
-export { createRagRetrievalRecipe, ragRetrievalRecipe } from "./retrieval";
-export { createRagSynthesisRecipe, ragSynthesisRecipe } from "./synthesis";
+export { createRagRetrievalRecipe } from "./retrieval";
+export { createRagSynthesisRecipe } from "./synthesis";

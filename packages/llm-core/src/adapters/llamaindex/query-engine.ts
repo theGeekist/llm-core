@@ -42,8 +42,7 @@ function queryWithDeps(
   { query, context }: AdapterRequest<{ query: RetrievalQuery }>,
 ) {
   const diagnostics = validateQueryEngineInput(query);
-  if (diagnostics.length > 0) {
-    reportDiagnostics(context, diagnostics);
+  if (reportDiagnostics(context, diagnostics)) {
     return emptyResult(query, diagnostics);
   }
   const queryType = toLlamaIndexQueryType(query);
@@ -55,8 +54,7 @@ function streamWithDeps(
   { query, context }: AdapterRequest<{ query: RetrievalQuery }>,
 ) {
   const diagnostics = validateQueryEngineInput(query);
-  if (diagnostics.length > 0) {
-    reportDiagnostics(context, diagnostics);
+  if (reportDiagnostics(context, diagnostics)) {
     return toQueryDiagnosticStreamEvents(diagnostics, undefined);
   }
   const queryType = toLlamaIndexQueryType(query);

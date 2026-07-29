@@ -119,7 +119,10 @@ describe("Integration indexing (AI SDK/OpenAI)", () => {
     "runs LangChain indexing with an AI SDK model",
     async () => {
       const modelId = process.env.OPENAI_MODEL ?? DEFAULT_OPENAI_MODEL;
-      const indexing = fromLangChainIndexing(createRecordManager(), createVectorStore());
+      const indexing = fromLangChainIndexing({
+        recordManager: createRecordManager(),
+        vectorStore: createVectorStore(),
+      });
       const model = fromAiSdkModel(openai(modelId));
       const workflow = buildWorkflow(model, indexing);
 
@@ -135,7 +138,10 @@ describe("Integration indexing (LangChain/OpenAI)", () => {
     "runs LangChain indexing with a LangChain model",
     async () => {
       const modelId = process.env.OPENAI_MODEL ?? DEFAULT_OPENAI_MODEL;
-      const indexing = fromLangChainIndexing(createRecordManager(), createVectorStore());
+      const indexing = fromLangChainIndexing({
+        recordManager: createRecordManager(),
+        vectorStore: createVectorStore(),
+      });
       const model = fromLangChainModel(new ChatOpenAI({ model: modelId }));
       const workflow = buildWorkflow(model, indexing);
 
@@ -151,7 +157,10 @@ describe("Integration indexing (LlamaIndex/OpenAI)", () => {
     "runs LangChain indexing with a LlamaIndex model",
     async () => {
       const modelId = process.env.OPENAI_MODEL ?? DEFAULT_OPENAI_MODEL;
-      const indexing = fromLangChainIndexing(createRecordManager(), createVectorStore());
+      const indexing = fromLangChainIndexing({
+        recordManager: createRecordManager(),
+        vectorStore: createVectorStore(),
+      });
       const model = fromLlamaIndexModel(new LlamaOpenAI({ model: modelId }));
       const workflow = buildWorkflow(model, indexing);
 

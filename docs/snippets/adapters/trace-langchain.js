@@ -4,7 +4,7 @@ import { RunCollectorCallbackHandler } from "@langchain/core/tracers/run_collect
 
 const handler = new RunCollectorCallbackHandler();
 const sink = fromLangChainCallbackHandler(handler);
-const tracePlugin = Adapter.trace("custom.trace", sink);
+const tracePlugin = Adapter.trace({ key: "custom.trace", value: sink });
 // #endregion docs
 
 void tracePlugin;

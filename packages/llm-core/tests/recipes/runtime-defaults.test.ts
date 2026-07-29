@@ -12,7 +12,7 @@ const createRuntime = () => {
       runtimes.push(runtimeInput);
       return { status: "ok", artefact: {}, trace: [], diagnostics: [] };
     },
-    resume: (_token: unknown, _resumeInput?: unknown, runtimeInput?: Runtime) => {
+    resume: ({ runtime: runtimeInput }) => {
       runtimes.push(runtimeInput);
       return { status: "ok", artefact: {}, trace: [], diagnostics: [] };
     },
@@ -69,8 +69,11 @@ describe("Recipe runtime defaults", () => {
       retryDefaults: { embedder: { maxAttempts: 2, backoffMs: 5 } },
     };
     const wrapped = wrapRuntimeWithDefaults(runtime, defaults);
-    wrapped.resume?.("token", undefined, {
-      retryDefaults: { embedder: { maxAttempts: 4, backoffMs: 0 } },
+    wrapped.resume?.({
+      token: "token",
+      runtime: {
+        retryDefaults: { embedder: { maxAttempts: 4, backoffMs: 0 } },
+      },
     });
 
     const applied = runtimes[0];

@@ -95,4 +95,3 @@ export const createHitlPack = (config?: HitlConfig) =>
 const hitl = defineSinglePackRecipe("hitl-gate", createHitlPack);
 export const createHitlRecipe = hitl.createRecipe;
 export const HitlPack = hitl.pack;
-export const hitlRecipe = createHitlRecipe;

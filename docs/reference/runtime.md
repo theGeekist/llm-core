@@ -216,7 +216,7 @@ if (out.status === "paused") {
 
 :::
 
-If a recipe supports it, `resume(token, resumeInput?, runtime?)` is exposed; it uses
+If a recipe supports it, `resume({ token, resumeInput?, runtime? })` is exposed; it uses
 `runtime.resume.resolve(...)` when provided and returns an error outcome when missing (including a
 `resume.invalidToken` diagnostic when the token is unknown). Pause tokens and their pipeline
 snapshots are process-local. Resume them on the same live runtime; an unknown token cannot be

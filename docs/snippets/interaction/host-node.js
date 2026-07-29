@@ -15,17 +15,16 @@ class MemorySessionStore {
     this.cache = new Map();
   }
 
-  /** @param {import("#interaction").SessionId} sessionId */
-  load(sessionId) {
+  /** @param {import("#interaction").SessionStoreRequest} request */
+  load({ sessionId }) {
     const key = toSessionKey(sessionId);
     return this.cache.get(key) ?? null;
   }
 
   /**
-   * @param {import("#interaction").SessionId} sessionId
-   * @param {import("#interaction").InteractionState} state
+   * @param {import("#interaction").SessionStoreSaveRequest} request
    */
-  save(sessionId, state) {
+  save({ sessionId, state }) {
     const key = toSessionKey(sessionId);
     this.cache.set(key, state);
     return true;

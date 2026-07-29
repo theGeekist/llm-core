@@ -143,8 +143,8 @@ const tracePlugin = {
 In most cases you don’t construct plugins by hand. Instead, higher-level helpers create them for you:
 **Adapter helpers (low-level):**
 
-- Adapter.model("openai", ...)
-- Adapter.retriever("qdrant", ...)
+- Adapter.model({ key: "openai", value: ... })
+- Adapter.retriever({ key: "qdrant", value: ... })
 - These produce plugins that install adapters and their helperKinds.
 - Workflow helpers (higher-level):
 - recipes.agent().defaults({ plugins: [{ key: "model.openai", ... }] })

@@ -13,8 +13,7 @@ function toWithMetadata(chunks: string[]) {
 export function fromLlamaIndexTextSplitter(splitter: LlamaindexTextSplitter): TextSplitter {
   function split({ text, context }: AdapterRequest<{ text: string }>) {
     const diagnostics = validateTextSplitterInput(text);
-    if (diagnostics.length > 0) {
-      reportDiagnostics(context, diagnostics);
+    if (reportDiagnostics(context, diagnostics)) {
       return [];
     }
     return splitter.splitText(text);
@@ -22,8 +21,7 @@ export function fromLlamaIndexTextSplitter(splitter: LlamaindexTextSplitter): Te
 
   function splitBatch({ texts, context }: AdapterRequest<{ texts: string[] }>) {
     const diagnostics = validateTextSplitterBatchInput(texts);
-    if (diagnostics.length > 0) {
-      reportDiagnostics(context, diagnostics);
+    if (reportDiagnostics(context, diagnostics)) {
       return [];
     }
     return texts.map((text) => splitter.splitText(text));
@@ -31,8 +29,7 @@ export function fromLlamaIndexTextSplitter(splitter: LlamaindexTextSplitter): Te
 
   function splitWithMetadata({ text, context }: AdapterRequest<{ text: string }>) {
     const diagnostics = validateTextSplitterInput(text);
-    if (diagnostics.length > 0) {
-      reportDiagnostics(context, diagnostics);
+    if (reportDiagnostics(context, diagnostics)) {
       return [];
     }
     return toWithMetadata(splitter.splitText(text));

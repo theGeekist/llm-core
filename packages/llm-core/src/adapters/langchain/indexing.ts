@@ -69,18 +69,22 @@ function runSchemaThenIndex(deps: IndexingDeps, documents: Document[]) {
   return maybeChain(withDocuments, deps.recordManager.createSchema());
 }
 
-export function fromLangChainIndexing(
-  recordManager: RecordManagerInterface,
-  vectorStore: LangChainVectorStore,
-): Indexing {
+export type LangChainIndexingInput = {
+  recordManager: RecordManagerInterface;
+  vectorStore: LangChainVectorStore;
+};
+
+export function fromLangChainIndexing({
+  recordManager,
+  vectorStore,
+}: LangChainIndexingInput): Indexing {
   const deps: IndexingDeps = { recordManager, vectorStore, options: undefined };
   return { index: bindFirst(indexWithDeps, deps) };
 }
 
 function indexWithDeps(deps: IndexingDeps, request: AdapterRequest<IndexingInput>) {
   const diagnostics = validateIndexingInput(request);
-  if (diagnostics.length > 0) {
-    reportDiagnostics(request.context, diagnostics);
+  if (reportDiagnostics(request.context, diagnostics)) {
     return emptyResult();
   }
   const withOptions: IndexingDeps = {

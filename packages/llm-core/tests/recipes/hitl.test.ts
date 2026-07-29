@@ -1,7 +1,7 @@
 import { describe, expect, it } from "bun:test";
 import { assertSyncOutcome } from "../workflow/helpers";
 import { HitlPack } from "../../src/recipes/hitl";
-import { createHitlRecipe, hitlRecipe } from "../../src/recipes/hitl";
+import { createHitlRecipe } from "../../src/recipes/hitl";
 import { createDefaultReporter } from "../../src/workflow/extensions";
 import { recipes } from "../../src/recipes";
 import type { HitlGateInput } from "../../src/workflow/types";
@@ -89,11 +89,6 @@ describe("HITL recipe", () => {
 
   it("exposes a hitl recipe helper", () => {
     const plan = recipes.hitl().explain();
-    expect(plan.steps.length).toBe(1);
-  });
-
-  it("exposes a hitl recipe factory", () => {
-    const plan = hitlRecipe().explain();
     expect(plan.steps.length).toBe(1);
   });
 });

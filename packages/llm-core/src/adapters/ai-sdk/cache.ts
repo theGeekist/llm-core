@@ -28,10 +28,11 @@ export type AiSdkCacheOptions = {
   defaultTtlMs?: number;
 };
 
-export function fromAiSdkCacheStore(
-  store: AiSdkCacheStore<CacheEntry>,
-  options?: AiSdkCacheOptions,
-): Cache {
+export type AiSdkCacheStoreInput = AiSdkCacheOptions & {
+  store: AiSdkCacheStore<CacheEntry>;
+};
+
+export function fromAiSdkCacheStore({ store, defaultTtlMs }: AiSdkCacheStoreInput): Cache {
   return createCacheAdapter<CacheEntry, CacheEntry>({
     backend: {
       read: (key) => store.get(key),
@@ -40,6 +41,6 @@ export function fromAiSdkCacheStore(
     },
     decode: (entry) => entry?.result ?? null,
     encode: toEntry,
-    resolveTtl: (ttlMs) => ttlMs ?? options?.defaultTtlMs ?? store.getDefaultTTL?.(),
+    resolveTtl: (ttlMs) => ttlMs ?? defaultTtlMs ?? store.getDefaultTTL?.(),
   });
 }

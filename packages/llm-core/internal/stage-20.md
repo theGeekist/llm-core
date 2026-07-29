@@ -64,16 +64,9 @@ Core never derives IDs or enforces semantics (thread, user, tenant). Host code s
 
 ```ts
 export type SessionStore = {
-  load: (
-    sessionId: SessionId,
-    context?: AdapterCallContext,
-  ) => MaybePromise<InteractionState | null>;
-  save: (
-    sessionId: SessionId,
-    state: InteractionState,
-    context?: AdapterCallContext,
-  ) => MaybePromise<boolean | null>;
-  delete?: (sessionId: SessionId, context?: AdapterCallContext) => MaybePromise<boolean | null>;
+  load: (request: SessionStoreRequest) => MaybePromise<InteractionState | null>;
+  save: (request: SessionStoreSaveRequest) => MaybePromise<boolean | null>;
+  delete?: (request: SessionStoreRequest) => MaybePromise<boolean | null>;
 };
 ```
 
@@ -116,10 +109,10 @@ export function createInteractionSession(options: {
 
 Behavior:
 
-- Load initial state from `store.load(sessionId)`; if missing, start empty.
+- Load initial state from `store.load({ sessionId })`; if missing, start empty.
 - Run interaction pipeline with `{ input: { message, state } }`.
 - Apply policy hooks in order: `merge` → `summarize` → `truncate` (all optional).
-- Persist via `store.save`.
+- Persist via `store.save({ sessionId, state })`.
 - Keep `MaybePromise` end-to-end.
 - `send()` returns the run outcome and updates the artefact for non-paused outcomes with the
   post-policy state.

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "bun:test";
-import { createBuiltinTrace, createInterruptStrategy } from "#adapters";
+import { createBuiltinTrace } from "#adapters";
 import { createPipelineRollback, type PipelinePauseSnapshot } from "@wpkernel/pipeline/core";
 import { assertSyncOutcome, diagnosticMessages, makeRuntime, makeWorkflow } from "./helpers";
 
@@ -67,7 +67,9 @@ describe("Workflow runtime resume", () => {
     }
 
     expect(assertSyncOutcome(runtime.run({ input: "gate" })).status).toBe("paused");
-    const outcome = assertSyncOutcome(runtime.resume(TOKEN, { answer: "yes" }));
+    const outcome = assertSyncOutcome(
+      runtime.resume({ token: TOKEN, resumeInput: { answer: "yes" } }),
+    );
 
     expect(outcome.status).toBe("error");
     if (outcome.status === "error") {
@@ -81,7 +83,7 @@ describe("Workflow runtime resume", () => {
       throw new Error(ERROR_RESUME);
     }
 
-    const outcome = assertSyncOutcome(runtime.resume("missing-token"));
+    const outcome = assertSyncOutcome(runtime.resume({ token: "missing-token" }));
 
     expect(outcome.status).toBe("error");
     expect(diagnosticMessages(outcome.diagnostics)).toContain(
@@ -98,7 +100,7 @@ describe("Workflow runtime resume", () => {
           key: "adapter.tools",
           adapters: {
             tools: [{ name: "search" }],
-            interrupt: createInterruptStrategy("restart", "test"),
+            interrupt: { mode: "restart", reason: "test" },
           },
         },
       ],
@@ -111,10 +113,10 @@ describe("Workflow runtime resume", () => {
     expect(assertSyncOutcome(runtime.run({ input: "gate" })).status).toBe("paused");
 
     const outcome = assertSyncOutcome(
-      runtime.resume(
-        TOKEN,
-        { decision: "approve" },
-        {
+      runtime.resume({
+        token: TOKEN,
+        resumeInput: { decision: "approve" },
+        runtime: {
           resume: {
             resolve: (request) => {
               capturedRequest = request as unknown as Record<string, unknown>;
@@ -122,7 +124,7 @@ describe("Workflow runtime resume", () => {
             },
           },
         },
-      ),
+      }),
     );
 
     expect(outcome).toMatchObject({
@@ -149,9 +151,12 @@ describe("Workflow runtime resume", () => {
     }
     expect(assertSyncOutcome(runtime.run({ input: "gate" })).status).toBe("paused");
 
-    const outcome = await runtime.resume(TOKEN, undefined, {
-      resume: {
-        resolve: async ({ token }) => ({ input: { token } }),
+    const outcome = await runtime.resume({
+      token: TOKEN,
+      runtime: {
+        resume: {
+          resolve: async ({ token }) => ({ input: { token } }),
+        },
       },
     });
 
@@ -181,9 +186,12 @@ describe("Workflow runtime resume", () => {
     expect(assertSyncOutcome(runtime.run({ input: "gate" })).status).toBe("paused");
 
     const outcome = assertSyncOutcome(
-      runtime.resume(TOKEN, undefined, {
-        resume: {
-          resolve: () => ({ input: undefined, runtime: { diagnostics: "strict" } }),
+      runtime.resume({
+        token: TOKEN,
+        runtime: {
+          resume: {
+            resolve: () => ({ input: undefined, runtime: { diagnostics: "strict" } }),
+          },
         },
       }),
     );
@@ -210,8 +218,11 @@ describe("Workflow runtime resume", () => {
     expect(assertSyncOutcome(runtime.run({ input: "gate" })).status).toBe("paused");
 
     const outcome = assertSyncOutcome(
-      runtime.resume(TOKEN, undefined, {
-        resume: { resolve: ({ token }) => ({ input: { token } }) },
+      runtime.resume({
+        token: TOKEN,
+        runtime: {
+          resume: { resolve: ({ token }) => ({ input: { token } }) },
+        },
       }),
     );
 
@@ -232,7 +243,7 @@ describe("Workflow runtime resume", () => {
       plugins: [
         {
           key: "adapter.interrupt",
-          adapters: { interrupt: createInterruptStrategy("restart") },
+          adapters: { interrupt: { mode: "restart" } },
         },
       ],
       run: () => createPausedResult(),
@@ -251,8 +262,11 @@ describe("Workflow runtime resume", () => {
     expect(assertSyncOutcome(runtime.run({ input: "gate" })).status).toBe("paused");
 
     const outcome = assertSyncOutcome(
-      runtime.resume(TOKEN, undefined, {
-        resume: { resolve: ({ token }) => ({ input: { token } }) },
+      runtime.resume({
+        token: TOKEN,
+        runtime: {
+          resume: { resolve: ({ token }) => ({ input: { token } }) },
+        },
       }),
     );
 

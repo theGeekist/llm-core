@@ -12,7 +12,7 @@ const imageModel: ImageModel = {
   generate: generateImage,
 };
 
-const imageAdapter = Adapter.image("custom.image", imageModel);
+const imageAdapter = Adapter.image({ key: "custom.image", value: imageModel });
 // #endregion docs
 
 void imageAdapter;

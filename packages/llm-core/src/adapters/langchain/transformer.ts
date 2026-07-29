@@ -9,8 +9,7 @@ export function fromLangChainTransformer(
 ): DocumentTransformer {
   function transform({ documents, context }: AdapterRequest<{ documents: Document[] }>) {
     const diagnostics = validateTransformerInput(documents);
-    if (diagnostics.length > 0) {
-      reportDiagnostics(context, diagnostics);
+    if (reportDiagnostics(context, diagnostics)) {
       return [];
     }
     const langchainDocs = documents.map(toLangChainDocument);

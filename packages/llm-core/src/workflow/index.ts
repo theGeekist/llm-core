@@ -10,4 +10,6 @@ export type {
   RecipeContract,
   RecipeName,
   Runtime,
+  WorkflowResumeRequest,
+  WorkflowRuntime,
 } from "./types";

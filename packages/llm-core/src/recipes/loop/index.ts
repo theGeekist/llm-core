@@ -102,4 +102,3 @@ export const createLoopPack = (config?: LoopConfig) =>
 const loop = defineSinglePackRecipe("loop", createLoopPack);
 export const createLoopRecipe = loop.createRecipe;
 export const LoopPack = loop.pack;
-export const loopRecipe = createLoopRecipe;

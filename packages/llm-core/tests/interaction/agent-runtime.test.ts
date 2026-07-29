@@ -140,6 +140,29 @@ describe("createAgentRuntime", () => {
     expect(result.status).toBe("ok");
   });
 
+  it("gives later tool groups precedence while preserving merged tools", async () => {
+    const runtime = createAgentRuntime({
+      model: createToolCallModel([{ id: "priority-1", name: "tools.priority", arguments: {} }]),
+      adapters: {
+        tools: [{ name: "tools.base" }, { name: "tools.priority", execute: () => "base" }],
+      },
+    });
+
+    const result = await runtime.run(
+      { text: "hello" },
+      {
+        adapters: {
+          tools: [
+            { name: "tools.override" },
+            { name: "tools.priority", execute: () => "override" },
+          ],
+        },
+      },
+    );
+
+    expect(readAgentToolResults(result)[0]?.result).toBe("override");
+  });
+
   it("uses model generation when no event stream is attached", async () => {
     let generateCalls = 0;
     let streamCalls = 0;

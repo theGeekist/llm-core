@@ -11,7 +11,12 @@ import {
 type AiJsonSchemaInput = Parameters<typeof jsonSchema>[0];
 type AiZodSchemaInput = Parameters<typeof zodSchema>[0];
 
-export function fromAiSdkTool(name: string, tool: AiTool): Tool {
+export type AiSdkToolInput = {
+  name: string;
+  tool: AiTool;
+};
+
+export function fromAiSdkTool({ name, tool }: AiSdkToolInput): Tool {
   return {
     name,
     description: tool.description,

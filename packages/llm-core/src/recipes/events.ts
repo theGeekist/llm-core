@@ -1,6 +1,5 @@
 import { bindFirst } from "#shared/fp";
-import { maybeMap, maybeReduce } from "#shared/maybe";
-import { combineTriState } from "#shared/tri-state";
+import { maybeReduceTriState } from "#shared/tri-state";
 import type { AdapterTraceEvent, EventStream } from "#adapters/types";
 import type { PipelineContext, PipelineState } from "#workflow/types";
 
@@ -39,15 +38,8 @@ const appendEvents = (state: PipelineState, events: AdapterTraceEvent[]) => {
 
 const emitEventWithStream = (stream: EventStream, event: AdapterTraceEvent) => stream.emit(event);
 
-const emitNextEvent = (stream: EventStream, previous: boolean | null, event: AdapterTraceEvent) =>
-  maybeMap(bindFirst(combineTriState, previous), emitEventWithStream(stream, event));
-
-const emitEventsSequentially = (stream: EventStream, events: AdapterTraceEvent[]) => {
-  if (events.length === 0) {
-    return null;
-  }
-  return maybeReduce(bindFirst(emitNextEvent, stream), null, events);
-};
+const emitEventsSequentially = (stream: EventStream, events: AdapterTraceEvent[]) =>
+  maybeReduceTriState(bindFirst(emitEventWithStream, stream), events);
 
 const emitEventsWithStream = (stream: EventStream, events: AdapterTraceEvent[]) => {
   if (stream.emitMany) {

@@ -84,15 +84,15 @@ describe("Recipe simplification equivalence", () => {
         seenRuntime.push(runtimeInput);
         return next(input, runtimeInput);
       },
-      resume: (next, ...args) => {
-        seenRuntime.push(args[2]);
-        return next(...args);
+      resume: (next, request) => {
+        seenRuntime.push(request.runtime);
+        return next(request);
       },
     });
     const runtimeInput: Runtime = { diagnostics: "strict" };
 
     const runResult = wrapped.run({ input: "run" }, runtimeInput);
-    const resumeResult = wrapped.resume?.("token", undefined, runtimeInput);
+    const resumeResult = wrapped.resume?.({ token: "token", runtime: runtimeInput });
 
     expect(runResult).not.toBeInstanceOf(Promise);
     expect(resumeResult).not.toBeInstanceOf(Promise);
@@ -131,7 +131,7 @@ describe("Recipe simplification equivalence", () => {
     });
 
     wrapped.run({ input: "run" });
-    wrapped.resume?.("token");
+    wrapped.resume?.({ token: "token" });
 
     expect(runReceiver).toBe(true);
     expect(resumeReceiver).toBe(true);

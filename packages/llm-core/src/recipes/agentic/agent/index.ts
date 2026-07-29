@@ -33,5 +33,3 @@ const resolveAgentRecipeDefinition = (config?: AgentRecipeConfig) => ({
 });
 
 export const createAgentRecipe = defineRecipe("agent", resolveAgentRecipeDefinition);
-
-export const agentRecipe = createAgentRecipe();

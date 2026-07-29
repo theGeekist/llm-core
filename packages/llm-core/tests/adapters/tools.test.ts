@@ -18,7 +18,7 @@ describe("Adapter tools", () => {
   const TOOL_NAME = "search";
   const JSON_SCHEMA_KIND = "json-schema";
   const TOOL_LOOKUP = "lookup";
-  type AiToolInput = Parameters<typeof fromAiSdkTool>[1];
+  type AiToolInput = Parameters<typeof fromAiSdkTool>[0]["tool"];
   it("maps LangChain tool metadata and execution", async () => {
     const lcTool = langchainTool((input: { query: string }) => `ok:${input.query}`, {
       name: TOOL_NAME,
@@ -76,7 +76,7 @@ describe("Adapter tools", () => {
       execute: ({ query }: { query: string }) => `ok:${query}`,
     };
 
-    const adapter = fromAiSdkTool("ai.tool", sdkTool);
+    const adapter = fromAiSdkTool({ name: "ai.tool", tool: sdkTool });
     expect(adapter.name).toBe("ai.tool");
     expect(adapter.description).toBe("ai tool");
     expect(adapter.inputSchema?.kind).toBe(JSON_SCHEMA_KIND);

@@ -9,8 +9,9 @@ const first = await runtime.run({ input: "Draft a policy update." });
 if (first.status === "paused") {
   const token = first.token;
 
-  const resumed = await runtime.resume?.(token, {
-    decision: "approve",
+  const resumed = await runtime.resume?.({
+    token,
+    resumeInput: { decision: "approve" },
   });
 
   console.log(resumed?.status);

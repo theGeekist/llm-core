@@ -1,4 +1,11 @@
-import type { Document, Model, RetrievalResult, Retriever, Reranker } from "#adapters/types";
+import type {
+  Document,
+  Model,
+  ModelCall,
+  RetrievalResult,
+  Retriever,
+  Reranker,
+} from "#adapters/types";
 import { toQueryText } from "#adapters/retrieval-query";
 import { bindFirst } from "#shared/fp";
 import { maybeChain, maybeMap } from "#shared/maybe";
@@ -51,6 +58,9 @@ const resolveQuery = (rag: RagState) => rag.query ?? rag.input ?? "";
 
 const readModel = (context: PipelineContext): Model | null | undefined => context.adapters?.model;
 
+const readSystem = (context: PipelineContext) =>
+  readString((context as PipelineContext & { system?: unknown }).system);
+
 const readRetriever = (context: PipelineContext): Retriever | null | undefined =>
   context.adapters?.retriever;
 
@@ -86,28 +96,6 @@ const runRerank = (reranker: Reranker | null | undefined, query: string, documen
   return reranker.rerank({ query: toQueryText(query), documents });
 };
 
-type RetrieveContext = {
-  rag: RagState;
-  query: string;
-  reranker: Reranker | null | undefined;
-};
-
-const createRetrieveContext = (
-  rag: RagState,
-  query: string,
-  reranker: Reranker | null | undefined,
-): RetrieveContext => ({
-  rag,
-  query,
-  reranker,
-});
-
-const handleRetrieved = (context: RetrieveContext, result: RetrievalResult) =>
-  maybeMap(
-    bindFirst(applyRerankedDocuments, context.rag),
-    runRerank(context.reranker, context.query, applyRetrievedDocuments(context.rag, result)),
-  );
-
 type RunRetrieveInput = {
   retriever: Retriever | null | undefined;
   query: string;
@@ -115,21 +103,32 @@ type RunRetrieveInput = {
   reranker: Reranker | null | undefined;
 };
 
+const handleRetrieved = (input: RunRetrieveInput, result: RetrievalResult) =>
+  maybeMap(
+    bindFirst(applyRerankedDocuments, input.rag),
+    runRerank(input.reranker, input.query, applyRetrievedDocuments(input.rag, result)),
+  );
+
 const runRetrieve = (input: RunRetrieveInput) => {
   if (!input.retriever) {
     return null;
   }
   return maybeChain(
-    bindFirst(handleRetrieved, createRetrieveContext(input.rag, input.query, input.reranker)),
+    bindFirst(handleRetrieved, input),
     input.retriever.retrieve({ query: toQueryText(input.query) }),
   );
 };
 
-const runModel = (model: Model | null | undefined, prompt: string) => {
+type RunModelInput = {
+  model: Model | null | undefined;
+  call: ModelCall;
+};
+
+const runModel = ({ model, call }: RunModelInput) => {
   if (!model) {
     return null;
   }
-  return model.generate({ prompt });
+  return model.generate(call);
 };
 
 const applyModelResponse = (rag: RagState, result: { text?: string | null } | undefined) => {
@@ -145,6 +144,7 @@ export const RagStateHelpers = {
   setRagInput,
   resolveQuery,
   readModel,
+  readSystem,
   readRetriever,
   readReranker,
   buildPrompt,

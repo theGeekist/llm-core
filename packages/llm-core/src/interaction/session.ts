@@ -18,6 +18,7 @@ import type {
   InteractionSessionIdentity,
   InteractionSessionOutcome,
   InteractionSessionPauseSnapshot,
+  InteractionSessionResumeRequest,
   InteractionState,
   SessionId,
   SessionPolicy,
@@ -94,10 +95,17 @@ const createSessionRuntime = (options: InteractionSessionOptions): SessionRuntim
 });
 
 const loadSession = (runtime: SessionRuntime) =>
-  runtime.store.load(runtime.sessionId, runtime.context);
+  runtime.store.load({
+    sessionId: runtime.sessionId,
+    context: runtime.context,
+  });
 
 const saveSession = (runtime: SessionRuntime, state: InteractionState) =>
-  runtime.store.save(runtime.sessionId, state, runtime.context);
+  runtime.store.save({
+    sessionId: runtime.sessionId,
+    state,
+    context: runtime.context,
+  });
 
 const hydrateSession = (runtime: SessionRuntime, loaded: InteractionState | null) => {
   runtime.state = loaded ?? runtime.state;
@@ -216,8 +224,7 @@ const readSnapshotState = (runtime: SessionRuntime, snapshot: InteractionSession
 
 const resumeSession = (
   runtime: SessionRuntime,
-  snapshot: InteractionSessionPauseSnapshot,
-  resumeInput?: unknown,
+  { snapshot, resumeInput }: InteractionSessionResumeRequest,
 ) => {
   assertSnapshotSession(runtime.sessionId, snapshot);
   updateSession(runtime, readSnapshotState(runtime, snapshot));

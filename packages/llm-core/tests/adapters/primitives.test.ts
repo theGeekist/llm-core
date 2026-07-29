@@ -4,7 +4,6 @@ import {
   createBuiltinRetriever,
   createBuiltinTrace,
   createEventStreamFromTraceSink,
-  createInterruptStrategy,
 } from "#adapters";
 import { assertSyncValue, captureDiagnostics, makeMessage } from "./helpers";
 
@@ -105,13 +104,5 @@ describe("Adapter primitives", () => {
     stream.emitMany?.([{ name: "run.start" }, { name: "run.end" }]);
 
     expect(events.map((event) => event.name)).toEqual(["run.start", "run.end"]);
-  });
-
-  it("builds interrupt strategies", () => {
-    const strategy = createInterruptStrategy("restart", "HITL", { step: "review" });
-
-    expect(strategy.mode).toBe("restart");
-    expect(strategy.reason).toBe("HITL");
-    expect(strategy.metadata).toEqual({ step: "review" });
   });
 });

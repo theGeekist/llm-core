@@ -38,12 +38,30 @@ describe("Agent state helpers", () => {
       { name: "echo", arguments: { value: "ok" }, id: "tool-1" },
       { name: "missing", arguments: { value: "nope" }, id: "tool-2" },
     ];
-    const results = AgentStateHelpers.executeToolCalls(tools, calls);
+    const results = AgentStateHelpers.executeToolCalls({ tools, calls });
 
     if (!Array.isArray(results)) {
       throw new Error("Expected sync tool results.");
     }
     expect(results[0]?.name).toBe("echo");
     expect(results[1]?.isError).toBe(true);
+  });
+
+  it("preserves tool execution errors for the recipe boundary", async () => {
+    const tools: Tool[] = [
+      {
+        name: "fail",
+        execute: async () => {
+          throw new Error("boom");
+        },
+      },
+    ];
+
+    await expect(
+      AgentStateHelpers.executeToolCalls({
+        tools,
+        calls: [{ name: "fail", arguments: {}, id: "tool-1" }],
+      }),
+    ).rejects.toThrow("boom");
   });
 });

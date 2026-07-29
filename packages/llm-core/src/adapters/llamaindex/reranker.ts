@@ -20,8 +20,7 @@ export function fromLlamaIndexReranker(reranker: BaseNodePostprocessor): Reranke
     context,
   }: AdapterRequest<{ query: RetrievalQuery; documents: Document[] }>) {
     const diagnostics = validateRerankerInput(query, documents);
-    if (diagnostics.length > 0) {
-      reportDiagnostics(context, diagnostics);
+    if (reportDiagnostics(context, diagnostics)) {
       return [];
     }
     const nodes = documents.map((doc) => ({

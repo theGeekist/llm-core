@@ -15,7 +15,10 @@ const recordManager: RecordManagerInterface = {
 const langChainVectorStore = {} as unknown as VectorStore;
 
 // Note: Requires a raw LangChain vector store instance
-const indexing: Indexing = fromLangChainIndexing(recordManager, langChainVectorStore);
+const indexing: Indexing = fromLangChainIndexing({
+  recordManager,
+  vectorStore: langChainVectorStore,
+});
 // #endregion docs
 
 void indexing;

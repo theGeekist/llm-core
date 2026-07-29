@@ -128,13 +128,15 @@ export type ExplainInput = {
 
 export type Outcome<TArtefact = unknown> = ExecutionOutcome<TArtefact>;
 
+export type WorkflowResumeRequest<TResumeInput = unknown> = {
+  token: unknown;
+  resumeInput?: TResumeInput;
+  runtime?: Runtime;
+};
+
 export type WorkflowRuntime<TRunInput = unknown, TArtefact = unknown, TResumeInput = unknown> = {
   run(input: TRunInput, runtime?: Runtime): MaybePromise<Outcome<TArtefact>>;
-  resume?(
-    token: unknown,
-    resumeInput?: TResumeInput,
-    runtime?: Runtime,
-  ): MaybePromise<Outcome<TArtefact>>;
+  resume?(request: WorkflowResumeRequest<TResumeInput>): MaybePromise<Outcome<TArtefact>>;
   capabilities(): MaybePromise<Record<string, unknown>>;
   declaredCapabilities(): Record<string, unknown>;
   adapters(): MaybePromise<AdapterBundle>;

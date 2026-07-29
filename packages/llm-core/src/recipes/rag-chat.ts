@@ -1,48 +1,14 @@
-import type { Plugin } from "#workflow/types";
-import { Recipe } from "./flow";
-import { defineSinglePackRecipe } from "./handle";
+import { createRagRecipe } from "./rag";
 import { createSystemPlugin } from "./system";
 
 export type RagChatConfig = {
-  model?: string;
-  retriever?: string;
   system?: string;
 };
 
-const createModelPlugin = (model: string): Plugin => ({
-  key: "config.model",
-  capabilities: {
-    model: { name: model },
-  },
-});
+const createSynthesisDefaults = (config?: RagChatConfig) =>
+  config?.system ? { plugins: [createSystemPlugin(config.system)] } : undefined;
 
-const createRetrieverPlugin = (retriever: string): Plugin => ({
-  key: "config.retriever",
-  capabilities: {
-    retriever: { name: retriever },
-  },
-});
-
-const defineRagChatSteps = () => ({});
-
-const createRagChatPack = (config?: RagChatConfig) => {
-  const plugins: Plugin[] = [];
-  if (config?.model) {
-    plugins.push(createModelPlugin(config.model));
-  }
-  if (config?.retriever) {
-    plugins.push(createRetrieverPlugin(config.retriever));
-  }
-  if (config?.system) {
-    plugins.push(createSystemPlugin(config.system));
-  }
-  const defaults = plugins.length > 0 ? { plugins } : undefined;
-  return Recipe.pack("rag-chat", defineRagChatSteps, {
-    defaults,
-    minimumCapabilities: ["model", "retriever"],
+export const ragChat = (config?: RagChatConfig) =>
+  createRagRecipe({
+    synthesis: { defaults: createSynthesisDefaults(config) },
   });
-};
-
-const chat = defineSinglePackRecipe("rag", createRagChatPack);
-export const ragChat = chat.createRecipe;
-export const RagChatPack = chat.pack;

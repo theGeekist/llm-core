@@ -5,6 +5,7 @@ import type {
   ResumeInputOf,
   RunInputOf,
   Runtime,
+  WorkflowResumeRequest,
   WorkflowRuntime,
 } from "./types";
 import { mergeRetryConfig } from "./runtime/retry";
@@ -26,9 +27,7 @@ export type RuntimeDecorator<N extends RecipeName> = {
   ) => ReturnType<RuntimeRunMethod<N>>;
   resume: (
     next: RuntimeResumeMethod<N>,
-    token: unknown,
-    resumeInput?: ResumeInputOf<N>,
-    runtime?: Runtime,
+    request: WorkflowResumeRequest<ResumeInputOf<N>>,
   ) => ReturnType<RuntimeResumeMethod<N>>;
 };
 
@@ -41,10 +40,7 @@ export const wrapRuntime = <N extends RecipeName>(
   return {
     ...runtime,
     run: (input, runtimeInput) => decorator.run(run, input, runtimeInput),
-    resume: resume
-      ? (token, resumeInput, runtimeInput) =>
-          decorator.resume(resume, token, resumeInput, runtimeInput)
-      : undefined,
+    resume: resume ? (request) => decorator.resume(resume, request) : undefined,
   };
 };
 
@@ -75,8 +71,12 @@ const runWithRuntimeDefaults = <N extends RecipeName>(
 const resumeWithRuntimeDefaults = <N extends RecipeName>(
   defaults: Runtime,
   next: RuntimeResumeMethod<N>,
-  ...args: Parameters<RuntimeResumeMethod<N>>
-) => next(args[0], args[1], mergeRuntimeDefaults(defaults, args[2]));
+  request: WorkflowResumeRequest<ResumeInputOf<N>>,
+) =>
+  next({
+    ...request,
+    runtime: mergeRuntimeDefaults(defaults, request.runtime),
+  });
 
 export const wrapRuntimeWithDefaults = <N extends RecipeName>(
   runtime: RecipeRuntime<N>,

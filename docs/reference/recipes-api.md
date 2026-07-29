@@ -26,7 +26,7 @@ Available recipes:
 - **`agent`**: ReAct agent with tools, planning, and memory.
 - **`rag`**: Retrieval-augmented generation.
 - **`chat.simple`**: Basic chat with system prompt.
-- **`chat.rag`**: RAG specialized for chat history.
+- **`chat.rag`**: The standard RAG flow with a shorthand system prompt.
 - **`hitl`**: Human-in-the-loop gate.
 - **`ingest`**: Document ingestion pipeline.
 - **`eval`**: Generation evaluation.
@@ -57,10 +57,9 @@ import type { AgentRecipeConfig } from "@geekist/llm-core/recipes";
 
 // Configure once, reuse across requests.
 const agent = recipes["agent"]({
-    planning: { modelInstructions: "Plan before acting." },
-    tools: { toolChoice: "auto" },
-  } satisfies AgentRecipeConfig)
-  .defaults({ adapters: { model, tools, memory } }); // Wire adapters once.
+  planning: { modelInstructions: "Plan before acting." },
+  tools: { toolChoice: "auto" },
+} satisfies AgentRecipeConfig).defaults({ adapters: { model, tools, memory } }); // Wire adapters once.
 
 const result = await agent.run({ input: "Help me debug this RAG flow." });
 ```
@@ -72,10 +71,9 @@ import { recipes } from "@geekist/llm-core/recipes";
 
 // Configure once, reuse across requests.
 const agent = recipes["agent"]({
-    planning: { modelInstructions: "Plan before acting." },
-    tools: { toolChoice: "auto" },
-  })
-  .defaults({ adapters: { model, tools, memory } }); // Wire adapters once.
+  planning: { modelInstructions: "Plan before acting." },
+  tools: { toolChoice: "auto" },
+}).defaults({ adapters: { model, tools, memory } }); // Wire adapters once.
 
 const result = await agent.run({ input: "Help me debug this RAG flow." });
 ```

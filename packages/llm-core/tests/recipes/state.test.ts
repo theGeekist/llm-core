@@ -118,7 +118,7 @@ describe("Recipe state validation", () => {
     };
     const validator = () => false;
     const wrapped = wrapRuntimeWithStateValidation(runtime, validator);
-    const outcome = wrapped.resume ? await wrapped.resume("token") : undefined;
+    const outcome = wrapped.resume ? await wrapped.resume({ token: "token" }) : undefined;
 
     if (!outcome || outcome.status !== "ok") {
       throw new Error("Expected ok outcome.");

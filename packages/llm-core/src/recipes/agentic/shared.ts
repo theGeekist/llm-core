@@ -10,8 +10,7 @@ import type {
 } from "#adapters/types";
 import { readString } from "#adapters/utils";
 import { isRecord } from "#shared/guards";
-import { bindFirst } from "#shared/fp";
-import { maybeAll, maybeMap, type MaybePromise } from "#shared/maybe";
+import { executeToolCalls } from "#shared/tool-execution";
 import type { PipelineContext, PipelineState } from "#workflow/types";
 import type { AgentInput } from "../types";
 
@@ -94,35 +93,6 @@ const applyModelResult = (agent: AgentState, result: ModelResult) => {
     agent.toolCalls = result.toolCalls;
   }
 };
-
-const findTool = (tools: Tool[], call: ToolCall) => tools.find((tool) => tool.name === call.name);
-
-const createMissingToolResult = (call: ToolCall): ToolResult => ({
-  name: call.name,
-  toolCallId: call.id,
-  isError: true,
-  result: { error: "tool_not_found" },
-});
-
-const executeToolCall = (tool: Tool | undefined, call: ToolCall): MaybePromise<ToolResult> => {
-  if (!tool?.execute) {
-    return createMissingToolResult(call);
-  }
-  return maybeMap(
-    (result) => ({
-      name: call.name,
-      toolCallId: call.id,
-      result,
-    }),
-    tool.execute({ input: call.arguments }),
-  );
-};
-
-const executeToolCallWithTools = (tools: Tool[], call: ToolCall) =>
-  executeToolCall(findTool(tools, call), call);
-
-const executeToolCalls = (tools: Tool[], calls: ToolCall[]) =>
-  maybeAll(calls.map(bindFirst(executeToolCallWithTools, tools)));
 
 const applyToolResults = (agent: AgentState, results: ToolResult[]) => {
   agent.toolResults = results;

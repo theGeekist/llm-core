@@ -46,8 +46,7 @@ export function fromLlamaIndexResponseSynthesizer(
 function synthesizeWithDeps(deps: SynthesizerDeps, input: AdapterRequest<SynthesisInput>) {
   const { context } = input;
   const diagnostics = validateResponseSynthesizerInput(input.query, input.documents);
-  if (diagnostics.length > 0) {
-    reportDiagnostics(context, diagnostics);
+  if (reportDiagnostics(context, diagnostics)) {
     return emptyResult(input, diagnostics);
   }
   const queryType = toLlamaIndexQueryType(input.query);
@@ -61,8 +60,7 @@ function synthesizeWithDeps(deps: SynthesizerDeps, input: AdapterRequest<Synthes
 function streamWithDeps(deps: SynthesizerDeps, input: AdapterRequest<SynthesisInput>) {
   const { context } = input;
   const diagnostics = validateResponseSynthesizerInput(input.query, input.documents);
-  if (diagnostics.length > 0) {
-    reportDiagnostics(context, diagnostics);
+  if (reportDiagnostics(context, diagnostics)) {
     return toQueryDiagnosticStreamEvents(diagnostics, input.documents);
   }
   const queryType = toLlamaIndexQueryType(input.query);

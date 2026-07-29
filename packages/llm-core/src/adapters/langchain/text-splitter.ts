@@ -15,8 +15,7 @@ function toWithMetadata(documents: Document[]) {
 export function fromLangChainTextSplitter(splitter: LanchainTextSplitter): TextSplitter {
   function split({ text, context }: AdapterRequest<{ text: string }>) {
     const diagnostics = validateTextSplitterInput(text);
-    if (diagnostics.length > 0) {
-      reportDiagnostics(context, diagnostics);
+    if (reportDiagnostics(context, diagnostics)) {
       return [];
     }
     return splitter.splitText(text);
@@ -24,8 +23,7 @@ export function fromLangChainTextSplitter(splitter: LanchainTextSplitter): TextS
 
   function splitBatch({ texts, context }: AdapterRequest<{ texts: string[] }>) {
     const diagnostics = validateTextSplitterBatchInput(texts);
-    if (diagnostics.length > 0) {
-      reportDiagnostics(context, diagnostics);
+    if (reportDiagnostics(context, diagnostics)) {
       return [];
     }
     return maybeAll(texts.map((text) => splitter.splitText(text)));
@@ -33,8 +31,7 @@ export function fromLangChainTextSplitter(splitter: LanchainTextSplitter): TextS
 
   function splitWithMetadata({ text, context }: AdapterRequest<{ text: string }>) {
     const diagnostics = validateTextSplitterInput(text);
-    if (diagnostics.length > 0) {
-      reportDiagnostics(context, diagnostics);
+    if (reportDiagnostics(context, diagnostics)) {
       return [];
     }
     return maybeMap(toWithMetadata, splitter.createDocuments([text], [{ source: "langchain" }]));
