@@ -87,12 +87,18 @@ bun run typecheck:packages
   independently and deterministically.
 - 2026-07-30 — Review findings remediated at
   `b55e2a35b9ac420f9745b18ec7953fb9d85558e9`.
+- 2026-07-30 — Core identity review findings remediated at
+  `c321545d33ea9c40e40ae94dfb2448f91bebb23b`: the
+  Python peer now mints a fresh RFC 9562 UUIDv7 for every run and event, the
+  TypeScript boundary requires UUIDv7, and identical-start collision coverage
+  passes in both runtime matrices.
 
 ## Handoff
 
 - Implementation commit:
   `3c1913a2eefcb29d75520aac32bd1d29f8500244`, with exact-runtime review
-  remediation at `b55e2a35b9ac420f9745b18ec7953fb9d85558e9`.
+  remediation at `b55e2a35b9ac420f9745b18ec7953fb9d85558e9` and UUIDv7
+  remediation at `c321545d33ea9c40e40ae94dfb2448f91bebb23b`.
 - Changed files:
   - `packages/llm-core/src/adapters/runtimes/fake-remote.ts`
   - `packages/llm-core/src/adapters/runtimes/index.ts`
@@ -105,11 +111,11 @@ bun run typecheck:packages
   - `packages/llm-core/tests/conformance/runner-fixtures.ts`
   - this task file
 - Verification after `bun install --frozen-lockfile`:
-  - default `bun test packages/llm-core/tests/conformance` — exit 0, 13 pass,
+  - default `bun test packages/llm-core/tests/conformance` — exit 0, 14 pass,
     1 optional exact-runtime skip, 0 fail.
   - with `LLM_CORE_PYDANTIC_AI_PYTHON` set to an isolated CPython 3.14.6
     environment containing exact `pydantic-ai-slim==2.19.0` — exit 0,
-    14 pass, 0 fail.
+    15 pass, 0 fail.
   - `bun run typecheck:packages` — exit 0; package typecheck and generated
     contract schema check passed.
   - `bun run typecheck:tests` — exit 0.
