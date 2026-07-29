@@ -4,7 +4,8 @@ import type {
   ToolModelMessage,
   UserModelMessage,
 } from "ai";
-import type { JsonValue, PortableContent } from "#contracts";
+import type { ToolResultOutput } from "@ai-sdk/provider-utils";
+import { isJsonValue, type JsonValue, type PortableContent } from "#contracts";
 import type {
   ModelContentPart,
   ModelMessage,
@@ -45,28 +46,81 @@ const toUserPart = (
   return null;
 };
 
-const toToolResultOutput = (parts: PortableContent[], isError?: boolean) => {
+const assertResolvedToolResultParts = (parts: PortableContent[]): void => {
+  if (parts.some((part) => part.kind === "media-ref")) {
+    throw new TypeError(
+      "AI SDK adapter requires resolved tool-result media; media-ref is not dereferenced.",
+    );
+  }
+};
+
+const toErrorPartJson = (part: PortableContent): JsonValue => {
+  if (part.kind === "text") {
+    return { kind: "text", text: part.text };
+  }
+  if (part.kind === "json") {
+    return { kind: "json", value: part.value };
+  }
+  if (part.kind === "binary") {
+    return {
+      kind: "binary",
+      mediaType: part.mediaType,
+      encoding: part.encoding,
+      data: part.data,
+      byteLength: part.byteLength,
+      digest: part.digest,
+    };
+  }
+  throw new TypeError("Unresolved media-ref cannot enter an AI SDK tool error.");
+};
+
+const toErrorToolResultOutput = (parts: PortableContent[]): ToolResultOutput => ({
+  type: "error-json",
+  value: parts.map(toErrorPartJson),
+});
+
+const toMultipartToolResultOutput = (parts: PortableContent[]): ToolResultOutput => ({
+  type: "content",
+  value: parts.map((part) => {
+    if (part.kind === "text") {
+      return { type: "text", text: part.text };
+    }
+    if (part.kind === "json") {
+      return {
+        type: "file",
+        data: { type: "text", text: toJsonText(part.value) },
+        mediaType: "application/json",
+      };
+    }
+    if (part.kind === "binary") {
+      return {
+        type: "file",
+        data: { type: "data", data: part.data },
+        mediaType: part.mediaType,
+      };
+    }
+    throw new TypeError("Unresolved media-ref cannot enter an AI SDK tool result.");
+  }),
+});
+
+const toToolResultOutput = (
+  parts: PortableContent[],
+  isError?: boolean,
+): ToolResultOutput => {
+  assertResolvedToolResultParts(parts);
+  if (isError) {
+    return toErrorToolResultOutput(parts);
+  }
   if (parts.length === 1) {
     const part = parts[0];
     if (part?.kind === "json") {
-      return { type: isError ? ("error-json" as const) : ("json" as const), value: part.value };
+      return { type: "json", value: part.value };
     }
     if (part?.kind === "text") {
-      return { type: isError ? ("error-text" as const) : ("text" as const), value: part.text };
+      return { type: "text", value: part.text };
     }
   }
-  const value = parts
-    .map((part) => {
-      if (part.kind === "text") {
-        return part.text;
-      }
-      if (part.kind === "json") {
-        return toJsonText(part.value);
-      }
-      return `[${part.kind}:${part.mediaType}]`;
-    })
-    .join("\n");
-  return { type: isError ? ("error-text" as const) : ("text" as const), value };
+  return toMultipartToolResultOutput(parts);
 };
 
 const toAssistantPart = (
@@ -169,9 +223,14 @@ export const toPortableReasoningPart = (text: string): ModelContentPart => ({
 export const toPortableToolCallPart = (
   input: { toolCallId: string; toolName: string; input: unknown },
   mapToolCallId: ToolCallIdMapper,
-): ToolCallPart => ({
-  kind: "tool-call",
-  toolCallId: mapToolCallId(input.toolCallId, input.toolName),
-  name: input.toolName,
-  arguments: (input.input ?? null) as JsonValue,
-});
+): ToolCallPart => {
+  if (!isJsonValue(input.input)) {
+    throw new TypeError("AI SDK tool call input must be strict JSON.");
+  }
+  return {
+    kind: "tool-call",
+    toolCallId: mapToolCallId(input.toolCallId, input.toolName),
+    name: input.toolName,
+    arguments: input.input,
+  };
+};

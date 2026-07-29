@@ -32,7 +32,10 @@ export const toAiSdk7ToolApproval = (input: {
 }): ToolApprovalConfiguration<ToolSet, never> | undefined =>
   input.request.tools?.length
     ? async ({ toolCall }) => {
-        const argumentsValue: JsonValue = isJsonValue(toolCall.input) ? toolCall.input : null;
+        if (!isJsonValue(toolCall.input)) {
+          return "denied";
+        }
+        const argumentsValue: JsonValue = toolCall.input;
         return input.classify
           ? input.classify({
               request: input.request,

@@ -32,6 +32,18 @@ import { toAiSdk7ToolApproval, toAiSdk7Tools } from "./tools";
 import type { CreateAiSdk7ModelInput } from "./types";
 
 type ToolCallLike = { toolCallId: string; toolName: string; input: unknown };
+type ProviderToolCall = { toolCallId: string; toolName: string };
+type InvocationCorrelation = {
+  providerToCore: Map<string, ToolCallId>;
+  coreToProvider: Map<ToolCallId, ProviderToolCall>;
+};
+type CoreToolCallOwner = ProviderToolCall & {
+  invocationId: InvocationContext["invocationId"];
+};
+type MapToolCallInput = ProviderToolCall & {
+  context: InvocationContext;
+  correlation: InvocationCorrelation;
+};
 
 const defaultToolCallId = (): ToolCallId => {
   const bytes = crypto.getRandomValues(new Uint8Array(16));
@@ -107,24 +119,75 @@ const toToolChoice = (request: ModelRequest) =>
     : request.toolChoice?.kind;
 
 export const createAiSdk7Model = (input: CreateAiSdk7ModelInput): Model => {
-  const providerToCore = new Map<string, ToolCallId>();
-  const coreToProvider = new Map<ToolCallId, { toolCallId: string; toolName: string }>();
+  const correlations = new Map<InvocationContext["invocationId"], InvocationCorrelation>();
+  const coreToolCallOwners = new Map<ToolCallId, CoreToolCallOwner>();
 
-  const mapToolCallId = (providerToolCallId: string, toolName: string): ToolCallId => {
-    const existing = providerToCore.get(providerToolCallId);
+  const correlationFor = (context: InvocationContext): InvocationCorrelation => {
+    const existing = correlations.get(context.invocationId);
     if (existing) {
       return existing;
     }
-    const created = input.createToolCallId?.(providerToolCallId) ?? defaultToolCallId();
-    providerToCore.set(providerToolCallId, created);
-    coreToProvider.set(created, { toolCallId: providerToolCallId, toolName });
+    const created = {
+      providerToCore: new Map<string, ToolCallId>(),
+      coreToProvider: new Map<ToolCallId, ProviderToolCall>(),
+    };
+    correlations.set(context.invocationId, created);
     return created;
   };
-  const resolveProviderToolCall = (toolCallId: ToolCallId) =>
-    coreToProvider.get(toolCallId) ?? { toolCallId, toolName: "llm-core-tool" };
+
+  const mapToolCallId = (mapping: MapToolCallInput): ToolCallId => {
+    const existing = mapping.correlation.providerToCore.get(mapping.toolCallId);
+    if (existing) {
+      const reverse = mapping.correlation.coreToProvider.get(existing);
+      if (
+        !reverse ||
+        reverse.toolCallId !== mapping.toolCallId ||
+        reverse.toolName !== mapping.toolName
+      ) {
+        throw new TypeError("AI SDK provider tool-call identity collision.");
+      }
+      return existing;
+    }
+
+    const created = input.createToolCallId?.(mapping.toolCallId) ?? defaultToolCallId();
+    const reverseCollision = mapping.correlation.coreToProvider.get(created);
+    const ownerCollision = coreToolCallOwners.get(created);
+    if (
+      reverseCollision ||
+      (ownerCollision &&
+        (ownerCollision.invocationId !== mapping.context.invocationId ||
+          ownerCollision.toolCallId !== mapping.toolCallId ||
+          ownerCollision.toolName !== mapping.toolName))
+    ) {
+      throw new TypeError("AI SDK core tool-call identity collision.");
+    }
+
+    const providerCall = { toolCallId: mapping.toolCallId, toolName: mapping.toolName };
+    mapping.correlation.providerToCore.set(mapping.toolCallId, created);
+    mapping.correlation.coreToProvider.set(created, providerCall);
+    coreToolCallOwners.set(created, {
+      ...providerCall,
+      invocationId: mapping.context.invocationId,
+    });
+    return created;
+  };
+
+  const resolveProviderToolCall = (
+    correlation: InvocationCorrelation,
+    toolCallId: ToolCallId,
+  ): ProviderToolCall => {
+    const providerCall = correlation.coreToProvider.get(toolCallId);
+    if (!providerCall) {
+      throw new TypeError("Unknown AI SDK tool-call identity for this invocation.");
+    }
+    return providerCall;
+  };
 
   const buildOptions = (request: ModelRequest, context: InvocationContext) => {
-    const prompt = toAiSdk7Messages(request.messages, resolveProviderToolCall);
+    const correlation = correlationFor(context);
+    const prompt = toAiSdk7Messages(request.messages, (toolCallId) =>
+      resolveProviderToolCall(correlation, toolCallId),
+    );
     const tools = toAiSdk7Tools(request.tools);
     return {
       model: input.model,
@@ -145,23 +208,38 @@ export const createAiSdk7Model = (input: CreateAiSdk7ModelInput): Model => {
     };
   };
 
+  const createInvocationToolCallMapper = (
+    context: InvocationContext,
+    correlation: InvocationCorrelation,
+  ) => {
+    return (providerToolCallId: string, toolName: string) =>
+      mapToolCallId({
+        context,
+        correlation,
+        toolCallId: providerToolCallId,
+        toolName,
+      });
+  };
+
   const generate = async (
     request: ModelRequest,
     context: InvocationContext,
   ): Promise<ModelResponse> => {
     try {
       const options = buildOptions(request, context);
+      const correlation = correlationFor(context);
+      const mapInvocationToolCallId = createInvocationToolCallMapper(context, correlation);
       const result =
         request.responseFormat?.kind === "json"
           ? await generateText({ ...options, output: Output.json() })
           : await generateText(options);
       const approvalRequests = result.content
-        .map((part) => approvalFact(part, mapToolCallId))
+        .map((part) => approvalFact(part, mapInvocationToolCallId))
         .filter((part): part is JsonValue => part !== undefined);
       const content =
         request.responseFormat?.kind === "json" && isJsonValue(result.output)
           ? [{ kind: "json" as const, value: result.output }]
-          : toCompletionContent(result.content, mapToolCallId);
+          : toCompletionContent(result.content, mapInvocationToolCallId);
       return {
         kind: "completion",
         content,
@@ -192,6 +270,8 @@ export const createAiSdk7Model = (input: CreateAiSdk7ModelInput): Model => {
     let usage: ReturnType<typeof toModelUsage>;
     try {
       const result = streamText(buildOptions(request, context));
+      const correlation = correlationFor(context);
+      const mapInvocationToolCallId = createInvocationToolCallMapper(context, correlation);
       yield { kind: "start" };
       for await (const part of result.stream) {
         if (part.type === "text-delta") {
@@ -199,7 +279,10 @@ export const createAiSdk7Model = (input: CreateAiSdk7ModelInput): Model => {
         } else if (part.type === "reasoning-delta") {
           yield { kind: "delta", part: toPortableReasoningPart(part.text) };
         } else if (isToolCall(part)) {
-          yield { kind: "delta", part: toPortableToolCallPart(part, mapToolCallId) };
+          yield {
+            kind: "delta",
+            part: toPortableToolCallPart(part, mapInvocationToolCallId),
+          };
         } else if (part.type === "error") {
           yield { kind: "error", error: toError(part.error) };
           return;

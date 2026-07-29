@@ -1,6 +1,6 @@
 import { describe, expect, it } from "bun:test";
 import { toAiSdkMessage } from "../../src/adapters/ai-sdk/messages";
-import { fromAiSdkMessage } from "#adapters";
+import { fromAiSdkMessage, fromAiSdkMessages } from "#adapters";
 import { asAiSdkMessage, makeStructuredContent } from "./helpers";
 
 describe("Adapter AI SDK message conversions", () => {
@@ -209,5 +209,22 @@ describe("Adapter AI SDK message conversions", () => {
     const adapted = fromAiSdkMessage(message);
     expect(adapted.toolCallId).toBe("call-3");
     expect(adapted.name).toBe(TOOL_NAME);
+  });
+
+  it("awaits AI SDK 7 UI message conversion", async () => {
+    const result = await fromAiSdkMessages([
+      {
+        id: "message-1",
+        role: "user",
+        parts: [{ type: "text", text: "hello" }],
+      },
+    ]);
+
+    expect(result).toEqual([
+      {
+        role: "user",
+        content: { text: "hello", parts: [{ type: "text", text: "hello" }] },
+      },
+    ]);
   });
 });

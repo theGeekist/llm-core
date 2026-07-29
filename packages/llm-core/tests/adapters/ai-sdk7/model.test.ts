@@ -76,11 +76,12 @@ const createAdapter = (overrides?: {
   resolveAbortSignal?: () => AbortSignal;
   classifyToolApproval?: () => "denied" | "user-approval";
   redactProviderMetadata?: () => JsonValue | undefined;
+  createToolCallId?: () => ToolCallId;
 }) =>
   createAiSdk7Model({
     model: "test-provider/test-model",
     profile: createBuiltinModelProfile(),
-    createToolCallId: () => TOOL_CALL_ID,
+    createToolCallId: overrides?.createToolCallId ?? (() => TOOL_CALL_ID),
     ...overrides,
   });
 
@@ -273,6 +274,73 @@ describe("AI SDK 7 frozen model adapter", () => {
     ]);
   });
 
+  it("rejects non-JSON dynamic tool input during generation", async () => {
+    generated = {
+      content: [
+        {
+          type: "tool-call",
+          toolCallId: "provider-call",
+          toolName: "lookup",
+          input: () => "not-json",
+        },
+      ],
+      output: undefined,
+      finishReason: "tool-calls",
+      usage,
+      response: { id: "request-11", modelId: "provider-model", timestamp: new Date(0) },
+    };
+    const response = await createAdapter().generate(
+      { messages: [{ role: "user", content: [{ kind: "text", text: "lookup" }] }] },
+      { invocationId: INVOCATION_ID },
+    );
+    expect(response).toMatchObject({ kind: "error", error: { code: "provider-error" } });
+    expect(JSON.stringify(response)).not.toContain("not-json");
+  });
+
+  it("denies invalid approval input before calling trusted classification", async () => {
+    let classified = false;
+    generated = {
+      content: [{ type: "text", text: "done" }],
+      output: undefined,
+      finishReason: "stop",
+      usage,
+      response: { id: "request-12", modelId: "provider-model", timestamp: new Date(0) },
+    };
+    await createAdapter({
+      classifyToolApproval: () => {
+        classified = true;
+        return "user-approval";
+      },
+    }).generate(
+      {
+        messages: [{ role: "user", content: [{ kind: "text", text: "lookup" }] }],
+        tools: [{ name: "lookup" }],
+      },
+      { invocationId: INVOCATION_ID },
+    );
+    const approval = capturedGenerateOptions?.toolApproval as (input: {
+      toolCall: { input: unknown; toolName: string };
+    }) => Promise<string>;
+    expect(await approval({ toolCall: { input: () => "not-json", toolName: "lookup" } })).toBe(
+      "denied",
+    );
+    expect(classified).toBe(false);
+
+    await createAdapter({ classifyToolApproval: () => "denied" }).generate(
+      {
+        messages: [{ role: "user", content: [{ kind: "text", text: "lookup" }] }],
+        tools: [{ name: "lookup" }],
+      },
+      { invocationId: INVOCATION_ID },
+    );
+    const explicitDenial = capturedGenerateOptions?.toolApproval as (input: {
+      toolCall: { input: unknown; toolName: string };
+    }) => Promise<string>;
+    expect(
+      await explicitDenial({ toolCall: { input: { query: "safe" }, toolName: "lookup" } }),
+    ).toBe("denied");
+  });
+
   it("sanitizes provider failures", async () => {
     generated = { throw: new Error("credential=secret") };
     const response = await createAdapter().generate(
@@ -350,5 +418,57 @@ describe("AI SDK 7 frozen model adapter", () => {
 
     expect(events.map((event) => event.kind)).toEqual(["start", "delta", "error"]);
     expect(JSON.stringify(events)).not.toContain("secret stream failure");
+  });
+
+  it("rejects non-JSON dynamic tool input during streaming", async () => {
+    const cyclic: Record<string, unknown> = {};
+    cyclic.self = cyclic;
+    streamed = {
+      stream: asAsyncIterable([
+        {
+          type: "tool-call",
+          toolCallId: "provider-call",
+          toolName: "lookup",
+          input: cyclic,
+        },
+      ]),
+      usage: Promise.resolve(usage),
+      finishReason: Promise.resolve("tool-calls"),
+    };
+    const events = [];
+    for await (const event of createAdapter().stream!(
+      { messages: [{ role: "user", content: [{ kind: "text", text: "lookup" }] }] },
+      { invocationId: INVOCATION_ID },
+    )) {
+      events.push(event);
+    }
+    expect(events.map((event) => event.kind)).toEqual(["start", "error"]);
+  });
+
+  it("maps an actual AI SDK abort stream part to a terminal cancellation error", async () => {
+    streamed = {
+      stream: asAsyncIterable([{ type: "abort", reason: "user-requested" }]),
+      usage: Promise.resolve(usage),
+      finishReason: Promise.resolve("error"),
+    };
+    const events = [];
+    for await (const event of createAdapter().stream!(
+      { messages: [{ role: "user", content: [{ kind: "text", text: "hello" }] }] },
+      { invocationId: INVOCATION_ID },
+    )) {
+      events.push(event);
+    }
+    expect(events).toEqual([
+      { kind: "start" },
+      {
+        kind: "error",
+        error: {
+          code: "timeout",
+          message: "AI SDK provider call was cancelled.",
+          retryable: false,
+          providerCode: "AbortError",
+        },
+      },
+    ]);
   });
 });
