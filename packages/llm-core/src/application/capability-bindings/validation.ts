@@ -118,7 +118,15 @@ const deepFreeze = <T>(value: T): T => {
   return value;
 };
 
-const frozenClone = <T>(value: T): T => deepFreeze(structuredClone(value));
+const frozenDescriptorClone = <T>(value: T): T => {
+  try {
+    return deepFreeze(structuredClone(value));
+  } catch {
+    throw new TypeError(
+      "Capability descriptors must be closed, portable and implementation-bound.",
+    );
+  }
+};
 
 const isSafeExternalId = (value: unknown): value is string =>
   isExternalId(value) && !isSensitivePortableString(value);
@@ -324,7 +332,7 @@ const registerDescriptor = (
   if (new Set(identities).size !== identities.length) {
     throw new TypeError("Capability descriptors cannot contain duplicate claim identities.");
   }
-  const descriptor = frozenClone(value) as unknown as CapabilityBinding;
+  const descriptor = frozenDescriptorClone(value) as unknown as CapabilityBinding;
   if (
     !descriptor.claims.every((claim) =>
       verifyClaimEvidence(kind, implementationToken, descriptor.bindingId, claim, dependencies),

@@ -95,10 +95,14 @@ bun run typecheck:packages
   and test typechecks; schema freshness; scoped ESLint; `git diff --check`; and
   the full package suite with 1,343 passing, 35 credential-gated skips, and zero
   failures.
+- 2026-07-30 — Normalized the remaining descriptor clone boundary: nested
+  transparent proxies and other uncloneable portable lookalikes now fail with
+  the stable registration `TypeError`; symbol and cycle failures retain the
+  same safe diagnostic without native clone details.
 - 2026-07-30 — Independently approved at exact SHA
-  `785215224787acd215857a309ea3b5fc3a3b30ce`, integrated into `main`, and
-  completed after the receiving suite repeated all 31 focused and 1,343 full
-  package tests without failure.
+  `aaa49e6cad0b29fb9889e0ea773e62e1374bc221`, integrated into `main`, and
+  completed after all 32 focused capability-binding tests and the package
+  verification gates passed.
 
 ## Handoff
 

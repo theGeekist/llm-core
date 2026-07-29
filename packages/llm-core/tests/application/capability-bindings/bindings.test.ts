@@ -105,6 +105,33 @@ describe("runtime capability binding registration", () => {
     ).toThrow(TypeError);
   });
 
+  test("normalizes nested proxy, symbol and cycle descriptor failures", () => {
+    const expected = "Capability descriptors must be closed, portable and implementation-bound.";
+
+    const proxied = runtimeBinding("retriever", "retriever:proxy-extension", retriever);
+    proxied.descriptor.extensions = {
+      "dev.llm-core.test": new Proxy({ mode: "safe" }, {}),
+    };
+
+    const symbolBearing = runtimeBinding("retriever", "retriever:symbol-extension", retriever);
+    symbolBearing.descriptor.extensions = {
+      "dev.llm-core.test": { value: Symbol("native") },
+    } as never;
+
+    const cycle: Record<string, unknown> = {};
+    cycle.self = cycle;
+    const cyclic = runtimeBinding("retriever", "retriever:cycle-extension", retriever);
+    cyclic.descriptor.extensions = {
+      "dev.llm-core.test": cycle,
+    } as never;
+
+    for (const source of [proxied, symbolBearing, cyclic]) {
+      expect(() => registerRuntimeCapabilityBinding(source, verificationDependencies())).toThrow(
+        expected,
+      );
+    }
+  });
+
   test("binds kind and implementation identity and prevents callable drift", () => {
     const modelLike = { generate: () => ({ content: [] }) };
     expect(() =>
