@@ -1,6 +1,6 @@
 {
   "name": "@geekist/llm-core",
-  "version": "1.21.5",
+  "version": "2.0.0",
   "license": "Apache-2.0",
   "description": "A compact, vendor-neutral runtime for building and shipping LLM workflows (agents, RAG, ingest, HITL) with deterministic structure, strong typing, and test-first semantics.",
   "keywords": [
@@ -48,7 +48,7 @@
   "type": "module",
   "private": false,
   "scripts": {
-    "build": "bun run scripts/build.ts && bun run build:types",
+    "build": "bun run scripts/build.ts clean && bun run build:types && bun run scripts/build.ts emit",
     "build:types": "tsc -p tsconfig.build.json --emitDeclarationOnly",
     "contracts:schema": "bun run scripts/generate-contract-schemas.ts",
     "contracts:schema:check": "bun run scripts/generate-contract-schemas.ts --check",
@@ -134,6 +134,12 @@
     "#adapters/types": "./src/adapters/types.ts",
     "#adapters/utils": "./src/adapters/utils.ts",
     "#contracts": "./src/contracts/public.ts",
+    "#model": "./src/features/model/public.ts",
+    "#tools": "./src/features/tooling/public.ts",
+    "#control": "./src/features/control/public.ts",
+    "#evidence": "./src/features/evidence/public.ts",
+    "#state": "./src/features/state/public.ts",
+    "#agent": "./src/agent/index.ts",
     "#adapters/registry": "./src/adapters/registry.ts",
     "#adapters/*": "./src/adapters/*.ts",
     "#adapters/ai-sdk/*": "./src/adapters/ai-sdk/*.ts",
@@ -165,93 +171,83 @@
   "exports": {
     ".": {
       "types": "./dist/types/index.d.ts",
-      "browser": "./dist/esm/index.js",
       "import": "./dist/esm/index.js",
       "default": "./dist/esm/index.js"
     },
-    "./workflow": {
-      "types": "./dist/types/src/workflow/index.d.ts",
-      "browser": "./dist/esm/src/workflow/index.js",
-      "import": "./dist/esm/src/workflow/index.js",
-      "default": "./dist/esm/src/workflow/index.js"
-    },
     "./functional": {
       "types": "./dist/types/src/functional/index.d.ts",
-      "browser": "./dist/esm/src/functional/index.js",
       "import": "./dist/esm/src/functional/index.js",
       "default": "./dist/esm/src/functional/index.js"
     },
-    "./adapters": {
-      "types": "./dist/types/src/adapters/index.d.ts",
-      "browser": "./dist/esm/src/adapters/index.js",
-      "import": "./dist/esm/src/adapters/index.js",
-      "default": "./dist/esm/src/adapters/index.js"
+    "./contracts": {
+      "types": "./dist/types/src/contracts/public.d.ts",
+      "import": "./dist/esm/src/contracts/public.js",
+      "default": "./dist/esm/src/contracts/public.js"
+    },
+    "./model": {
+      "types": "./dist/types/src/features/model/public.d.ts",
+      "import": "./dist/esm/src/features/model/public.js",
+      "default": "./dist/esm/src/features/model/public.js"
+    },
+    "./tools": {
+      "types": "./dist/types/src/features/tooling/public.d.ts",
+      "import": "./dist/esm/src/features/tooling/public.js",
+      "default": "./dist/esm/src/features/tooling/public.js"
+    },
+    "./control": {
+      "types": "./dist/types/src/features/control/public.d.ts",
+      "import": "./dist/esm/src/features/control/public.js",
+      "default": "./dist/esm/src/features/control/public.js"
+    },
+    "./evidence": {
+      "types": "./dist/types/src/features/evidence/public.d.ts",
+      "import": "./dist/esm/src/features/evidence/public.js",
+      "default": "./dist/esm/src/features/evidence/public.js"
+    },
+    "./state": {
+      "types": "./dist/types/src/features/state/public.d.ts",
+      "import": "./dist/esm/src/features/state/public.js",
+      "default": "./dist/esm/src/features/state/public.js"
+    },
+    "./agent": {
+      "types": "./dist/types/src/agent/index.d.ts",
+      "import": "./dist/esm/src/agent/index.js",
+      "default": "./dist/esm/src/agent/index.js"
+    },
+    "./workflow": {
+      "types": "./dist/types/src/workflow/index.d.ts",
+      "import": "./dist/esm/src/workflow/index.js",
+      "default": "./dist/esm/src/workflow/index.js"
+    },
+    "./interaction": {
+      "types": "./dist/types/src/interaction/index.d.ts",
+      "import": "./dist/esm/src/interaction/index.js",
+      "default": "./dist/esm/src/interaction/index.js"
     },
     "./adapters/ai-sdk": {
       "types": "./dist/types/src/adapters/ai-sdk/index.d.ts",
-      "browser": "./dist/esm/src/adapters/ai-sdk/index.js",
       "import": "./dist/esm/src/adapters/ai-sdk/index.js",
       "default": "./dist/esm/src/adapters/ai-sdk/index.js"
     },
     "./adapters/ai-sdk-ui": {
       "types": "./dist/types/src/adapters/ai-sdk-ui/index.d.ts",
-      "browser": "./dist/esm/src/adapters/ai-sdk-ui/index.js",
       "import": "./dist/esm/src/adapters/ai-sdk-ui/index.js",
       "default": "./dist/esm/src/adapters/ai-sdk-ui/index.js"
     },
     "./adapters/assistant-ui": {
       "types": "./dist/types/src/adapters/assistant-ui/index.d.ts",
-      "browser": "./dist/esm/src/adapters/assistant-ui/index.js",
       "import": "./dist/esm/src/adapters/assistant-ui/index.js",
       "default": "./dist/esm/src/adapters/assistant-ui/index.js"
     },
     "./adapters/openai-chatkit": {
       "types": "./dist/types/src/adapters/openai-chatkit/index.d.ts",
-      "browser": "./dist/esm/src/adapters/openai-chatkit/index.js",
       "import": "./dist/esm/src/adapters/openai-chatkit/index.js",
       "default": "./dist/esm/src/adapters/openai-chatkit/index.js"
     },
     "./adapters/nlux-ui": {
       "types": "./dist/types/src/adapters/nlux-ui/index.d.ts",
-      "browser": "./dist/esm/src/adapters/nlux-ui/index.js",
       "import": "./dist/esm/src/adapters/nlux-ui/index.js",
       "default": "./dist/esm/src/adapters/nlux-ui/index.js"
-    },
-    "./adapters/langchain": {
-      "types": "./dist/types/src/adapters/langchain/index.d.ts",
-      "browser": "./dist/esm/src/adapters/langchain/index.js",
-      "import": "./dist/esm/src/adapters/langchain/index.js",
-      "default": "./dist/esm/src/adapters/langchain/index.js"
-    },
-    "./adapters/llamaindex": {
-      "types": "./dist/types/src/adapters/llamaindex/index.d.ts",
-      "browser": "./dist/esm/src/adapters/llamaindex/index.js",
-      "import": "./dist/esm/src/adapters/llamaindex/index.js",
-      "default": "./dist/esm/src/adapters/llamaindex/index.js"
-    },
-    "./adapters/primitives": {
-      "types": "./dist/types/src/adapters/primitives/index.d.ts",
-      "browser": "./dist/esm/src/adapters/primitives/index.js",
-      "import": "./dist/esm/src/adapters/primitives/index.js",
-      "default": "./dist/esm/src/adapters/primitives/index.js"
-    },
-    "./recipes": {
-      "types": "./dist/types/src/recipes/index.d.ts",
-      "browser": "./dist/esm/src/recipes/index.js",
-      "import": "./dist/esm/src/recipes/index.js",
-      "default": "./dist/esm/src/recipes/index.js"
-    },
-    "./interaction": {
-      "types": "./dist/types/src/interaction/index.d.ts",
-      "browser": "./dist/esm/src/interaction/index.js",
-      "import": "./dist/esm/src/interaction/index.js",
-      "default": "./dist/esm/src/interaction/index.js"
-    },
-    "./diagnostics": {
-      "types": "./dist/types/src/shared/diagnostics.d.ts",
-      "browser": "./dist/esm/src/shared/diagnostics.js",
-      "import": "./dist/esm/src/shared/diagnostics.js",
-      "default": "./dist/esm/src/shared/diagnostics.js"
     }
   },
   "overrides": {

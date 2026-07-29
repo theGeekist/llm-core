@@ -22,7 +22,7 @@
     },
     "packages/llm-core": {
       "name": "@geekist/llm-core",
-      "version": "1.21.5",
+      "version": "2.0.0",
       "dependencies": {
         "@wpkernel/pipeline": "1.1.0",
       },
