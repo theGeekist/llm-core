@@ -1,15 +1,25 @@
-/// <reference lib="dom" />
-import { createRoot } from "react-dom/client";
-import { App } from "./App";
+import React from "react";
+import ReactDOM from "react-dom/client";
+import type { AiSdkUiProjectionChunk } from "@geekist/llm-core/adapters/ai-sdk-ui";
+import "./styles.css";
 
-const rootElement = document.getElementById("root");
+// Shape-only compile fixture. See docs/interaction for the canonical session lifecycle.
+const exampleChunk: AiSdkUiProjectionChunk = {
+  type: "text-start",
+  id: "example:text",
+};
 
-if (rootElement) {
-  renderApp(rootElement);
+function App() {
+  return (
+    <main>
+      <h1>llm-core v2 agent projection</h1>
+      <p>Qualified AI SDK UI projection chunk: {exampleChunk.type}</p>
+    </main>
+  );
 }
 
-function renderApp(container: HTMLElement) {
-  const root = createRoot(container);
-  root.render(<App />);
-  return true;
-}
+ReactDOM.createRoot(document.getElementById("root")!).render(
+  <React.StrictMode>
+    <App />
+  </React.StrictMode>,
+);

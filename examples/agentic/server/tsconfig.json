@@ -7,12 +7,11 @@
     "ignoreDeprecations": "5.0",
     "strict": true,
     "jsx": "react-jsx",
-    "types": ["bun-types", "node"],
+    "types": ["bun", "node"],
     "typeRoots": ["../../../node_modules/@types"],
     "skipLibCheck": true,
     "baseUrl": ".",
-    "paths": {
-      "@geekist/llm-core/functional": ["../../../packages/llm-core/src/functional/index.ts"]
-    }
-  }
+    "paths": {}
+  },
+  "include": ["index.ts"]
 }

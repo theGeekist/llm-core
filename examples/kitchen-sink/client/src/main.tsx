@@ -1,15 +1,25 @@
-/// <reference lib="dom" />
-import { createRoot } from "react-dom/client";
-import { App } from "./App";
+import React from "react";
+import ReactDOM from "react-dom/client";
+import type { AssistantUiProjectionCommand } from "@geekist/llm-core/adapters/assistant-ui";
+import "./styles.css";
 
-const rootElement = document.getElementById("root");
+// Shape-only compile fixture. See docs/interaction for the canonical session lifecycle.
+const command: AssistantUiProjectionCommand = {
+  type: "add-message",
+  message: { role: "assistant", parts: [{ type: "text", text: "Ready." }] },
+};
 
-if (rootElement) {
-  renderApp(rootElement);
+function App() {
+  return (
+    <main>
+      <h1>llm-core v2 UI projections</h1>
+      <p>Qualified assistant-ui command: {command.type}</p>
+    </main>
+  );
 }
 
-function renderApp(container: HTMLElement) {
-  const root = createRoot(container);
-  root.render(<App />);
-  return true;
-}
+ReactDOM.createRoot(document.getElementById("root")!).render(
+  <React.StrictMode>
+    <App />
+  </React.StrictMode>,
+);

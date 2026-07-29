@@ -1,29 +1,25 @@
-# Kitchen Sink (Bun WebSocket)
+# Kitchen sink shape fixture
 
-A streaming demo that runs **recipes on the server** and streams **interaction UI chunks** to the client over Bun WebSockets.
+This simplified example is a **shape-only compile fixture**, not a canonical
+interaction application. The server demonstrates the final root runner
+lifecycle. The client proves the qualified assistant-ui projection type
+resolves.
 
-## Run
+This directory contains two intentionally small checks:
 
-In two terminals:
+- `server/index.ts` prepares an `AgentSpec`, starts a local `AgentRunner`, and
+  reads its terminal `RunResult`.
+- `client/src/main.tsx` imports the qualified assistant-ui projection surface.
+
+Build the package before checking the examples:
 
 ```bash
-cd examples/kitchen-sink/server
-bun install
-bun run dev
+bun run build
+bun run typecheck:examples
+bun run --cwd examples/kitchen-sink/client build
 ```
 
-```bash
-cd examples/kitchen-sink/client
-bun install
-bun run dev
-```
-
-Open <http://localhost:5173>.
-
-## Notes
-
-- The client resolves `@geekist/llm-core` types from the local build output, so build the package first (e.g. `bun run build` at repo root).
-- The server uses `recipes.*` and wraps model adapters to emit `InteractionEvent` streams.
-- The client uses `useChat` (AI SDK) + `useChatRuntime` (assistant-ui) with a WebSocket `ChatTransport`.
-- The Advanced panel "Live events" stream includes diagnostics and query/source chunks.
-- Configure provider keys in `examples/kitchen-sink/server/.env` (copy from your root `.env` if needed).
+The server example is a local program, not a provider integration. Use
+`@geekist/llm-core/adapters/ai-sdk` when composition supplies an AI SDK 7 model.
+For a real session lifecycle and event-to-UI mapping, use the
+[interaction guide](../../docs/interaction/index.md).

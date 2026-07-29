@@ -1,4 +1,11 @@
 import type { UIMessageChunk } from "ai";
+export { createAiSdkUiWebSocketTransport } from "./ai-sdk-websocket";
+export type {
+  AiSdkUiAuthToken,
+  AiSdkUiWebSocketData,
+  AiSdkUiWebSocketEvent,
+  AiSdkUiWebSocketTransportOptions,
+} from "./ai-sdk-websocket";
 import type { JsonValue } from "#contracts";
 import {
   projectInteractionEvent,

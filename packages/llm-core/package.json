@@ -1,6 +1,6 @@
 {
   "name": "@geekist/llm-core",
-  "version": "1.21.5",
+  "version": "2.0.0",
   "license": "Apache-2.0",
   "description": "A compact, vendor-neutral runtime for building and shipping LLM workflows (agents, RAG, ingest, HITL) with deterministic structure, strong typing, and test-first semantics.",
   "keywords": [
@@ -48,7 +48,7 @@
   "type": "module",
   "private": false,
   "scripts": {
-    "build": "bun run scripts/build.ts && bun run build:types",
+    "build": "bun run scripts/build.ts clean && bun run build:types && bun run scripts/build.ts emit",
     "build:types": "tsc -p tsconfig.build.json --emitDeclarationOnly",
     "contracts:schema": "bun run scripts/generate-contract-schemas.ts",
     "contracts:schema:check": "bun run scripts/generate-contract-schemas.ts --check",
@@ -134,6 +134,12 @@
     "#adapters/types": "./src/adapters/types.ts",
     "#adapters/utils": "./src/adapters/utils.ts",
     "#contracts": "./src/contracts/public.ts",
+    "#model": "./src/features/model/public.ts",
+    "#tools": "./src/features/tooling/public.ts",
+    "#control": "./src/features/control/public.ts",
+    "#evidence": "./src/features/evidence/public.ts",
+    "#state": "./src/features/state/public.ts",
+    "#agent": "./src/agent/index.ts",
     "#adapters/registry": "./src/adapters/registry.ts",
     "#adapters/*": "./src/adapters/*.ts",
     "#adapters/ai-sdk/*": "./src/adapters/ai-sdk/*.ts",
@@ -165,115 +171,111 @@
   "exports": {
     ".": {
       "types": "./dist/types/index.d.ts",
-      "browser": "./dist/esm/index.js",
       "import": "./dist/esm/index.js",
       "default": "./dist/esm/index.js"
     },
-    "./workflow": {
-      "types": "./dist/types/src/workflow/index.d.ts",
-      "browser": "./dist/esm/src/workflow/index.js",
-      "import": "./dist/esm/src/workflow/index.js",
-      "default": "./dist/esm/src/workflow/index.js"
-    },
     "./functional": {
       "types": "./dist/types/src/functional/index.d.ts",
-      "browser": "./dist/esm/src/functional/index.js",
       "import": "./dist/esm/src/functional/index.js",
       "default": "./dist/esm/src/functional/index.js"
     },
-    "./adapters": {
-      "types": "./dist/types/src/adapters/index.d.ts",
-      "browser": "./dist/esm/src/adapters/index.js",
-      "import": "./dist/esm/src/adapters/index.js",
-      "default": "./dist/esm/src/adapters/index.js"
+    "./contracts": {
+      "types": "./dist/types/src/contracts/public.d.ts",
+      "import": "./dist/esm/src/contracts/public.js",
+      "default": "./dist/esm/src/contracts/public.js"
+    },
+    "./model": {
+      "types": "./dist/types/src/features/model/public.d.ts",
+      "import": "./dist/esm/src/features/model/public.js",
+      "default": "./dist/esm/src/features/model/public.js"
+    },
+    "./tools": {
+      "types": "./dist/types/src/features/tooling/public.d.ts",
+      "import": "./dist/esm/src/features/tooling/public.js",
+      "default": "./dist/esm/src/features/tooling/public.js"
+    },
+    "./control": {
+      "types": "./dist/types/src/control/index.d.ts",
+      "import": "./dist/esm/src/control/index.js",
+      "default": "./dist/esm/src/control/index.js"
+    },
+    "./evidence": {
+      "types": "./dist/types/src/features/evidence/public.d.ts",
+      "import": "./dist/esm/src/features/evidence/public.js",
+      "default": "./dist/esm/src/features/evidence/public.js"
+    },
+    "./state": {
+      "types": "./dist/types/src/features/state/public.d.ts",
+      "import": "./dist/esm/src/features/state/public.js",
+      "default": "./dist/esm/src/features/state/public.js"
+    },
+    "./agent": {
+      "types": "./dist/types/src/agent/index.d.ts",
+      "import": "./dist/esm/src/agent/index.js",
+      "default": "./dist/esm/src/agent/index.js"
+    },
+    "./workflow": {
+      "types": "./dist/types/src/workflow/index.d.ts",
+      "import": "./dist/esm/src/workflow/index.js",
+      "default": "./dist/esm/src/workflow/index.js"
+    },
+    "./interaction": {
+      "types": "./dist/types/src/interaction/index.d.ts",
+      "import": "./dist/esm/src/interaction/index.js",
+      "default": "./dist/esm/src/interaction/index.js"
     },
     "./adapters/ai-sdk": {
       "types": "./dist/types/src/adapters/ai-sdk/index.d.ts",
-      "browser": "./dist/esm/src/adapters/ai-sdk/index.js",
       "import": "./dist/esm/src/adapters/ai-sdk/index.js",
       "default": "./dist/esm/src/adapters/ai-sdk/index.js"
     },
     "./adapters/ai-sdk-ui": {
       "types": "./dist/types/src/adapters/ai-sdk-ui/index.d.ts",
-      "browser": "./dist/esm/src/adapters/ai-sdk-ui/index.js",
       "import": "./dist/esm/src/adapters/ai-sdk-ui/index.js",
       "default": "./dist/esm/src/adapters/ai-sdk-ui/index.js"
     },
     "./adapters/assistant-ui": {
       "types": "./dist/types/src/adapters/assistant-ui/index.d.ts",
-      "browser": "./dist/esm/src/adapters/assistant-ui/index.js",
       "import": "./dist/esm/src/adapters/assistant-ui/index.js",
       "default": "./dist/esm/src/adapters/assistant-ui/index.js"
     },
     "./adapters/openai-chatkit": {
       "types": "./dist/types/src/adapters/openai-chatkit/index.d.ts",
-      "browser": "./dist/esm/src/adapters/openai-chatkit/index.js",
       "import": "./dist/esm/src/adapters/openai-chatkit/index.js",
       "default": "./dist/esm/src/adapters/openai-chatkit/index.js"
     },
     "./adapters/nlux-ui": {
       "types": "./dist/types/src/adapters/nlux-ui/index.d.ts",
-      "browser": "./dist/esm/src/adapters/nlux-ui/index.js",
       "import": "./dist/esm/src/adapters/nlux-ui/index.js",
       "default": "./dist/esm/src/adapters/nlux-ui/index.js"
-    },
-    "./adapters/langchain": {
-      "types": "./dist/types/src/adapters/langchain/index.d.ts",
-      "browser": "./dist/esm/src/adapters/langchain/index.js",
-      "import": "./dist/esm/src/adapters/langchain/index.js",
-      "default": "./dist/esm/src/adapters/langchain/index.js"
-    },
-    "./adapters/llamaindex": {
-      "types": "./dist/types/src/adapters/llamaindex/index.d.ts",
-      "browser": "./dist/esm/src/adapters/llamaindex/index.js",
-      "import": "./dist/esm/src/adapters/llamaindex/index.js",
-      "default": "./dist/esm/src/adapters/llamaindex/index.js"
-    },
-    "./adapters/primitives": {
-      "types": "./dist/types/src/adapters/primitives/index.d.ts",
-      "browser": "./dist/esm/src/adapters/primitives/index.js",
-      "import": "./dist/esm/src/adapters/primitives/index.js",
-      "default": "./dist/esm/src/adapters/primitives/index.js"
-    },
-    "./recipes": {
-      "types": "./dist/types/src/recipes/index.d.ts",
-      "browser": "./dist/esm/src/recipes/index.js",
-      "import": "./dist/esm/src/recipes/index.js",
-      "default": "./dist/esm/src/recipes/index.js"
-    },
-    "./interaction": {
-      "types": "./dist/types/src/interaction/index.d.ts",
-      "browser": "./dist/esm/src/interaction/index.js",
-      "import": "./dist/esm/src/interaction/index.js",
-      "default": "./dist/esm/src/interaction/index.js"
-    },
-    "./diagnostics": {
-      "types": "./dist/types/src/shared/diagnostics.d.ts",
-      "browser": "./dist/esm/src/shared/diagnostics.js",
-      "import": "./dist/esm/src/shared/diagnostics.js",
-      "default": "./dist/esm/src/shared/diagnostics.js"
     }
   },
   "overrides": {
     "@langchain/core": "1.1.8"
   },
   "peerDependencies": {
-    "@ai-sdk/anthropic": "^4.0.21",
-    "@ai-sdk/openai": "^4.0.20",
     "@ai-sdk/provider": "^4.0.3",
-    "@ai-sdk/provider-utils": "^5.0.12",
-    "@ai-sdk/react": "^4.0.40",
-    "@langchain/core": "1.1.8",
-    "@langchain/ollama": "^1.1.0",
-    "@langchain/openai": "^1.2.0",
-    "@llamaindex/core": "^0.6.22",
-    "@llamaindex/openai": "^0.4.22",
-    "@llamaindex/workflow-core": "^1.3.3",
-    "ai": "^7.0.37",
-    "assistant-stream": "^0.2.46",
-    "ollama-ai-provider-v2": "^1.5.5",
-    "typescript": "^5.9.3",
-    "zod-to-json-schema": "^3.25.0"
+    "@assistant-ui/react": "^0.11.53",
+    "@nlux/core": "^2.17.1",
+    "@openai/chatkit": "^1.2.0",
+    "ai": "^7.0.37"
+  },
+  "peerDependenciesMeta": {
+    "@ai-sdk/provider": {
+      "optional": true
+    },
+    "@assistant-ui/react": {
+      "optional": true
+    },
+    "@nlux/core": {
+      "optional": true
+    },
+    "@openai/chatkit": {
+      "optional": true
+    },
+    "ai": {
+      "optional": true
+    }
   },
   "files": [
     "dist",

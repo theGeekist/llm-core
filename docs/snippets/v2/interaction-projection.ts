@@ -1,0 +1,40 @@
+import { createInteractionSession } from "@geekist/llm-core/interaction";
+import { createAiSdkUiProjectionMapper } from "@geekist/llm-core/adapters/ai-sdk-ui";
+import type {
+  ConversationSessionStore,
+  InteractionSessionIdentityPort,
+} from "@geekist/llm-core/interaction";
+import type { AgentRunner, PreparedAgentSpec } from "@geekist/llm-core";
+import type { ConversationId, InvocationContext } from "@geekist/llm-core/contracts";
+import type { AiSdkUiProjectionChunk } from "@geekist/llm-core/adapters/ai-sdk-ui";
+
+declare const conversationId: ConversationId;
+declare const agent: PreparedAgentSpec;
+declare const runner: AgentRunner;
+declare const store: ConversationSessionStore;
+declare const identity: InteractionSessionIdentityPort;
+declare const invocationContext: InvocationContext;
+declare const uiStream: {
+  write(chunk: AiSdkUiProjectionChunk): Promise<void>;
+};
+
+const session = createInteractionSession({
+  conversationId,
+  agent,
+  runner,
+  store,
+  identity,
+});
+const interactionRun = await session.send({
+  input: { prompt: "hello" },
+  invocationContext,
+});
+const project = createAiSdkUiProjectionMapper();
+
+for await (const event of interactionRun.events()) {
+  for (const chunk of project(event)) {
+    await uiStream.write(chunk);
+  }
+}
+
+await interactionRun.result();

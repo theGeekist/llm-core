@@ -1,26 +1,64 @@
 import { spawnSync } from "node:child_process";
-import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
+import {
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  readdirSync,
+  rmSync,
+  writeFileSync,
+} from "node:fs";
+import { tmpdir } from "node:os";
 import { dirname, join, relative, resolve, sep } from "node:path";
-import { fileURLToPath, pathToFileURL } from "node:url";
+import { fileURLToPath } from "node:url";
 
 const root = dirname(dirname(fileURLToPath(import.meta.url)));
 const workspaceRoot = resolve(root, "../..");
 const packageJson = JSON.parse(readFileSync(join(root, "package.json"), "utf8"));
 const workspacePackageJson = JSON.parse(readFileSync(join(workspaceRoot, "package.json"), "utf8"));
-const requiredAdapterPeers = [
-  "@ai-sdk/anthropic",
-  "@ai-sdk/openai",
-  "@langchain/core",
-  "@langchain/ollama",
-  "@langchain/openai",
-  "@llamaindex/core",
-  "@llamaindex/openai",
-  "@llamaindex/workflow-core",
-  "ai",
-  "assistant-stream",
-  "ollama-ai-provider-v2",
-  "zod-to-json-schema",
+const expectedSubpaths = [
+  ".",
+  "./functional",
+  "./contracts",
+  "./model",
+  "./tools",
+  "./control",
+  "./evidence",
+  "./state",
+  "./agent",
+  "./workflow",
+  "./interaction",
+  "./adapters/ai-sdk",
+  "./adapters/ai-sdk-ui",
+  "./adapters/assistant-ui",
+  "./adapters/openai-chatkit",
+  "./adapters/nlux-ui",
 ];
+const expectedPeerDependencies = {
+  "@ai-sdk/provider": "^4.0.3",
+  "@assistant-ui/react": "^0.11.53",
+  "@nlux/core": "^2.17.1",
+  "@openai/chatkit": "^1.2.0",
+  ai: "^7.0.37",
+};
+const externalConsumerTypeDependencies = {
+  "@types/json-schema": "^7.0.15",
+  "@types/node": "^22.13.5",
+};
+
+const fail = (message) => {
+  throw new Error(message);
+};
+
+const run = (command, args, options = {}) => {
+  const result = spawnSync(command, args, { encoding: "utf8", ...options });
+  if (result.status !== 0) {
+    process.stdout.write(result.stdout ?? "");
+    process.stderr.write(result.stderr ?? "");
+    fail(`${command} ${args.join(" ")} failed.`);
+  }
+  return result.stdout ?? "";
+};
 
 const walkFiles = (directory) =>
   readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {
@@ -28,25 +66,65 @@ const walkFiles = (directory) =>
     return entry.isDirectory() ? walkFiles(path) : [path];
   });
 
-const fail = (message) => {
-  throw new Error(message);
-};
+const containsSourceAlias = (source) => source.includes('"#') || source.includes("'#");
 
 const nodeMajor = Number.parseInt(process.versions.node.split(".")[0] ?? "", 10);
 if (!Number.isInteger(nodeMajor) || nodeMajor < 22) {
   fail(`Package smoke requires Node.js >=22; received ${process.versions.node}.`);
 }
-if (workspacePackageJson.engines?.node !== ">=22") {
-  fail('Workspace must declare the supported Node.js baseline as ">=22".');
+if (workspacePackageJson.engines?.node !== ">=22" || packageJson.engines?.node !== ">=22") {
+  fail('Workspace and package must declare Node.js ">=22".');
 }
-if (packageJson.type !== "module") {
-  fail('Package must declare "type": "module".');
+if (
+  packageJson.version !== "2.0.0" ||
+  packageJson.type !== "module" ||
+  packageJson.main !== "./dist/esm/index.js" ||
+  packageJson.module !== "./dist/esm/index.js"
+) {
+  fail("Package must publish the v2 ESM-only manifest.");
 }
-if (packageJson.engines?.node !== ">=22") {
-  fail('Package must declare the supported Node.js baseline as ">=22".');
+if (JSON.stringify(Object.keys(packageJson.exports)) !== JSON.stringify(expectedSubpaths)) {
+  fail("Package exports must match the exact ordered ADR-008 surface.");
 }
-if (packageJson.main !== "./dist/esm/index.js" || packageJson.module !== "./dist/esm/index.js") {
-  fail("Package main/module targets must use the ESM build.");
+if (
+  JSON.stringify(packageJson.peerDependencies) !== JSON.stringify(expectedPeerDependencies) ||
+  Object.keys(expectedPeerDependencies).some(
+    (name) => packageJson.peerDependenciesMeta?.[name]?.optional !== true,
+  ) ||
+  Object.keys(packageJson.peerDependenciesMeta ?? {}).some(
+    (name) => !Object.hasOwn(expectedPeerDependencies, name),
+  )
+) {
+  fail("Package peers must match the optional qualified-adapter dependency surface.");
+}
+
+const runtimeTargets = new Set();
+const typeTargets = new Set();
+for (const [subpath, conditions] of Object.entries(packageJson.exports)) {
+  if (
+    typeof conditions !== "object" ||
+    conditions === null ||
+    Array.isArray(conditions) ||
+    Object.hasOwn(conditions, "browser") ||
+    Object.hasOwn(conditions, "require") ||
+    conditions.import !== conditions.default
+  ) {
+    fail(`Export ${subpath} must use types/import/default ESM conditions only.`);
+  }
+  const conditionKeys = Object.keys(conditions);
+  if (conditionKeys.join(",") !== "types,import,default") {
+    fail(`Export ${subpath} has unexpected conditions: ${conditionKeys.join(",")}.`);
+  }
+  if (
+    !conditions.import.startsWith("./dist/esm/") ||
+    !conditions.import.endsWith(".js") ||
+    !conditions.types.startsWith("./dist/types/") ||
+    !conditions.types.endsWith(".d.ts")
+  ) {
+    fail(`Export ${subpath} has an invalid runtime or declaration target.`);
+  }
+  runtimeTargets.add(conditions.import);
+  typeTargets.add(conditions.types);
 }
 
 for (const [name, command] of Object.entries(packageJson.scripts ?? {})) {
@@ -55,109 +133,141 @@ for (const [name, command] of Object.entries(packageJson.scripts ?? {})) {
   }
 }
 
-const packageExports = Object.entries(packageJson.exports ?? {});
-if (packageExports.length === 0) {
-  fail("Package must expose at least one public export.");
-}
-
-const runtimeTargets = new Set();
-const inspectExportTarget = (subpath, target, conditionPath = []) => {
-  if (typeof target === "string") {
-    if (/(?:^|\/)cjs(?:\/|$)|\.cjs$/i.test(target)) {
-      fail(`Export ${subpath} retains a CommonJS target: ${target}`);
-    }
-    const isTypeTarget = conditionPath.includes("types") || target.endsWith(".d.ts");
-    if (!isTypeTarget) {
-      if (!target.startsWith("./dist/esm/") || !target.endsWith(".js")) {
-        fail(`Export ${subpath} runtime target is not ESM: ${target}`);
-      }
-      runtimeTargets.add(target);
-    }
-    return;
-  }
-  if (typeof target !== "object" || target === null || Array.isArray(target)) {
-    fail(`Export ${subpath} contains an invalid target.`);
-  }
-  for (const [condition, value] of Object.entries(target)) {
-    if (condition === "require") {
-      fail(`Export ${subpath} retains a CommonJS require condition.`);
-    }
-    inspectExportTarget(subpath, value, [...conditionPath, condition]);
-  }
-};
-
-for (const [subpath, target] of packageExports) {
-  inspectExportTarget(subpath, target);
-}
-if (runtimeTargets.size === 0) {
-  fail("Package exports contain no ESM runtime targets.");
-}
-
-for (const dependency of requiredAdapterPeers) {
-  if (!packageJson.peerDependencies?.[dependency] && !packageJson.dependencies?.[dependency]) {
-    fail(`Missing runtime dependency metadata for ${dependency}`);
-  }
-}
-
-// Seed a stale CommonJS artifact, then prove the package build removes it.
 const staleCjsArtifacts = [join(root, "dist", "cjs", "stale.cjs"), join(root, "dist", "stale.cjs")];
-for (const staleCjs of staleCjsArtifacts) {
-  mkdirSync(dirname(staleCjs), { recursive: true });
-  writeFileSync(staleCjs, "module.exports = {};\n");
+for (const artifact of staleCjsArtifacts) {
+  mkdirSync(dirname(artifact), { recursive: true });
+  writeFileSync(artifact, "module.exports = {};\n");
 }
+run("bun", ["run", "build"], { cwd: root });
 
-const build = spawnSync("bun", ["run", "build"], {
-  cwd: root,
-  encoding: "utf8",
-});
-if (build.status !== 0) {
-  process.stdout.write(build.stdout);
-  process.stderr.write(build.stderr);
-  process.exit(build.status ?? 1);
+for (const artifact of staleCjsArtifacts) {
+  if (existsSync(artifact)) fail(`Build retained ${relative(root, artifact)}.`);
 }
-for (const staleCjs of staleCjsArtifacts) {
-  if (existsSync(staleCjs)) {
-    fail(`Build did not remove seeded CommonJS artifact: ${relative(root, staleCjs)}`);
-  }
+for (const target of [...runtimeTargets, ...typeTargets]) {
+  if (!existsSync(join(root, target))) fail(`Missing manifest target: ${target}`);
 }
-
-const distFiles = walkFiles(join(root, "dist"));
-for (const file of distFiles) {
-  const relativePath = relative(root, file);
-  const segments = relativePath.split(sep);
-  if (segments.includes("cjs") || file.endsWith(".cjs")) {
-    fail(`CommonJS artifact remains after build: ${relativePath}`);
+for (const file of walkFiles(join(root, "dist"))) {
+  const path = relative(root, file);
+  if (path.split(sep).includes("cjs") || file.endsWith(".cjs")) {
+    fail(`CommonJS artifact remains: ${path}`);
   }
-  if (!file.endsWith(".js")) {
-    continue;
+  if (file.endsWith(".js") && containsSourceAlias(readFileSync(file, "utf8"))) {
+    fail(`Built JavaScript retains a source-only alias: ${path}`);
   }
-  const source = readFileSync(file, "utf8");
-  if (/\b(?:from\s*|import\s*\(?\s*)["']#[^"']+/.test(source)) {
-    fail(`Built artifact retains an internal package alias: ${relativePath}`);
+  if (file.endsWith(".d.ts") && containsSourceAlias(readFileSync(file, "utf8"))) {
+    fail(`Declaration retains a source-only alias: ${path}`);
   }
 }
 
-const esmPaths = [...runtimeTargets].map((runtimeTarget) => {
-  const absoluteTarget = join(root, runtimeTarget);
-  if (!existsSync(absoluteTarget)) {
-    fail(`Export points to a missing ESM artifact: ${runtimeTarget}`);
-  }
-  return pathToFileURL(absoluteTarget).href;
-});
-const smoke = spawnSync(
-  process.execPath,
-  [
-    "--input-type=module",
-    "--eval",
-    esmPaths.map((path) => `await import(${JSON.stringify(path)});`).join("\n"),
-  ],
-  { encoding: "utf8" },
-);
-if (smoke.status !== 0) {
-  process.stderr.write(smoke.stderr);
-  process.exit(smoke.status ?? 1);
+const smokeRoot = mkdtempSync(join(tmpdir(), "llm-core-package-smoke-"));
+try {
+  const packedOutput = run("npm", ["pack", "--json", "--pack-destination", smokeRoot], {
+    cwd: root,
+    env: { ...process.env, npm_config_cache: join(smokeRoot, "npm-cache") },
+  });
+  const packed = JSON.parse(packedOutput);
+  const tarball = join(smokeRoot, packed[0].filename);
+  const consumer = join(smokeRoot, "consumer");
+  mkdirSync(consumer, { recursive: true });
+  const peerDependencies = Object.fromEntries(
+    Object.entries(packageJson.peerDependencies ?? {}).map(([name, range]) => [name, range]),
+  );
+  writeFileSync(
+    join(consumer, "package.json"),
+    JSON.stringify(
+      {
+        name: "llm-core-packed-consumer",
+        private: true,
+        type: "module",
+        dependencies: {
+          "@geekist/llm-core": `file:${tarball}`,
+          ...peerDependencies,
+        },
+        devDependencies: externalConsumerTypeDependencies,
+      },
+      null,
+      2,
+    ),
+  );
+  run("npm", ["install", "--ignore-scripts", "--no-audit", "--no-fund", "--no-package-lock"], {
+    cwd: consumer,
+    env: { ...process.env, npm_config_cache: join(smokeRoot, "npm-cache") },
+  });
+
+  const specifiers = expectedSubpaths.map((subpath) =>
+    subpath === "." ? "@geekist/llm-core" : `@geekist/llm-core/${subpath.slice(2)}`,
+  );
+  const runtimeImports = specifiers
+    .map((specifier) => `await import(${JSON.stringify(specifier)});`)
+    .join("\n");
+  writeFileSync(join(consumer, "runtime.mjs"), `${runtimeImports}\n`);
+  run(process.execPath, ["runtime.mjs"], { cwd: consumer });
+
+  writeFileSync(
+    join(consumer, "consumer.ts"),
+    [
+      'import { createLocalAgentRunner, prepareAgentSpec } from "@geekist/llm-core";',
+      'import type { AgentSpec, PreparedAgentSpec, AgentRunner, AgentRunnerCapabilities, AgentRun, AgentRunRequest, AgentRunEvent, RunResult, MaybePromise, MaybeAsyncIterable } from "@geekist/llm-core";',
+      'import { createCapabilityBindingCatalog, capabilityIdForPort, conversationId, jsonStorageValue, textDocument, textRetrievalQuery } from "@geekist/llm-core/agent";',
+      'import type { CapabilityBindingCatalog, CapabilityBindingResolutionRequest, CapabilityBindingResolutionOutcome, RuntimeCapabilityBinding, RegisteredRuntimeCapabilityBinding, Retriever, Indexer, CacheStore, ConversationStore } from "@geekist/llm-core/agent";',
+      'import { executeControlledTool } from "@geekist/llm-core/control";',
+      'import type { ExecuteControlledToolInput, ControlledToolExecutionOutcome } from "@geekist/llm-core/control";',
+      'import type { ConversationSessionStore, InteractionSession, InteractionSessionIdentityPort } from "@geekist/llm-core/interaction";',
+      'import type { ResumeInterventionWorkflowInput, WorkflowResumeOutcome } from "@geekist/llm-core/workflow";',
+      'import type { AiSdkUiProjectionChunk } from "@geekist/llm-core/adapters/ai-sdk-ui";',
+      'import type { AssistantUiProjectionCommand, AssistantUiProjectionOptions } from "@geekist/llm-core/adapters/assistant-ui";',
+      'import type { ChatKitProjectionEvent } from "@geekist/llm-core/adapters/openai-chatkit";',
+      'import type { NluxInteractionAdapterOptions, NluxProjectionSignal } from "@geekist/llm-core/adapters/nlux-ui";',
+      ...specifiers
+        .slice(1)
+        .map(
+          (specifier, index) => `import * as surface${index} from ${JSON.stringify(specifier)};`,
+        ),
+      "void createLocalAgentRunner; void prepareAgentSpec;",
+      "void createCapabilityBindingCatalog; void capabilityIdForPort; void conversationId; void jsonStorageValue; void textDocument; void textRetrievalQuery;",
+      "void executeControlledTool;",
+      "type RootTypes = [AgentSpec, PreparedAgentSpec, AgentRunner, AgentRunnerCapabilities, AgentRun, AgentRunRequest, AgentRunEvent, RunResult, MaybePromise<unknown>, MaybeAsyncIterable<unknown>];",
+      "declare const rootTypes: RootTypes; void rootTypes;",
+      'type AgentCompositionTypes = [CapabilityBindingCatalog, CapabilityBindingResolutionRequest, CapabilityBindingResolutionOutcome, RuntimeCapabilityBinding<"retriever">, RegisteredRuntimeCapabilityBinding<"retriever">, Retriever, Indexer, CacheStore, ConversationStore];',
+      "declare const agentCompositionTypes: AgentCompositionTypes; void agentCompositionTypes;",
+      "type ControlTypes = [ExecuteControlledToolInput, ControlledToolExecutionOutcome];",
+      "declare const controlTypes: ControlTypes; void controlTypes;",
+      "type InteractionTypes = [ConversationSessionStore, InteractionSession, InteractionSessionIdentityPort];",
+      "declare const interactionTypes: InteractionTypes; void interactionTypes;",
+      "type WorkflowTypes = [ResumeInterventionWorkflowInput, WorkflowResumeOutcome];",
+      "declare const workflowTypes: WorkflowTypes; void workflowTypes;",
+      "type UiTypes = [AiSdkUiProjectionChunk, AssistantUiProjectionCommand, AssistantUiProjectionOptions, ChatKitProjectionEvent, NluxInteractionAdapterOptions, NluxProjectionSignal];",
+      "declare const uiTypes: UiTypes; void uiTypes;",
+      ...specifiers.slice(1).map((_, index) => `void surface${index};`),
+      "",
+    ].join("\n"),
+  );
+  writeFileSync(
+    join(consumer, "tsconfig.json"),
+    JSON.stringify(
+      {
+        compilerOptions: {
+          strict: true,
+          noEmit: true,
+          target: "ESNext",
+          module: "ESNext",
+          moduleResolution: "Bundler",
+          skipLibCheck: false,
+          types: ["node"],
+        },
+        include: ["consumer.ts"],
+      },
+      null,
+      2,
+    ),
+  );
+  run(resolve(workspaceRoot, "node_modules/.bin/tsc"), ["-p", "tsconfig.json"], {
+    cwd: consumer,
+  });
+} finally {
+  rmSync(smokeRoot, { recursive: true, force: true });
 }
 
 console.log(
-  `Loaded ${runtimeTargets.size} ESM runtime targets from ${packageExports.length} package exports; stale CommonJS cleanup verified.`,
+  "Verified 16 ESM-only v2 exports from an isolated packed runtime and declaration consumer.",
 );

@@ -7,14 +7,6 @@
     "lint:fix": "eslint \"**/*.{ts,tsx,js,jsx}\" --fix"
   },
   "dependencies": {
-    "@ai-sdk/anthropic": "2.0.56",
-    "@ai-sdk/openai": "2.0.88",
-    "@geekist/llm-core": "workspace:*",
-    "@langchain/ollama": "1.1.0",
-    "@langchain/openai": "1.2.0",
-    "@llamaindex/openai": "0.4.22",
-    "ai": "5.0.121",
-    "ollama-ai-provider-v2": "1.5.5",
-    "zod": "^4.1.8"
+    "@geekist/llm-core": "workspace:*"
   }
 }

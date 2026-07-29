@@ -4,8 +4,22 @@
     "baseUrl": ".",
     "paths": {
       // Allow resolving the package name to source for internal referencing/tests
-      "@geekist/llm-core": ["./src/index.ts"],
-      "@geekist/llm-core/functional": ["./src/functional/index.ts"]
+      "@geekist/llm-core": ["./index.ts"],
+      "@geekist/llm-core/functional": ["./src/functional/index.ts"],
+      "@geekist/llm-core/contracts": ["./src/contracts/public.ts"],
+      "@geekist/llm-core/model": ["./src/features/model/public.ts"],
+      "@geekist/llm-core/tools": ["./src/features/tooling/public.ts"],
+      "@geekist/llm-core/control": ["./src/control/index.ts"],
+      "@geekist/llm-core/evidence": ["./src/features/evidence/public.ts"],
+      "@geekist/llm-core/state": ["./src/features/state/public.ts"],
+      "@geekist/llm-core/agent": ["./src/agent/index.ts"],
+      "@geekist/llm-core/workflow": ["./src/workflow/index.ts"],
+      "@geekist/llm-core/interaction": ["./src/interaction/index.ts"],
+      "@geekist/llm-core/adapters/ai-sdk": ["./src/adapters/ai-sdk/index.ts"],
+      "@geekist/llm-core/adapters/ai-sdk-ui": ["./src/adapters/ai-sdk-ui/index.ts"],
+      "@geekist/llm-core/adapters/assistant-ui": ["./src/adapters/assistant-ui/index.ts"],
+      "@geekist/llm-core/adapters/openai-chatkit": ["./src/adapters/openai-chatkit/index.ts"],
+      "@geekist/llm-core/adapters/nlux-ui": ["./src/adapters/nlux-ui/index.ts"]
     }
   },
   "include": ["src", "tests", "scripts"],

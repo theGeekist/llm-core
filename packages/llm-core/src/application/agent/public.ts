@@ -1,4 +1,5 @@
 export { createLocalAgentRunner } from "./local-runner";
+export { createModelToolAgentProgram } from "./model-tool-program";
 export type {
   AgentRunIdentityPort,
   ControlledAgentToolExecutionPort,
@@ -9,3 +10,4 @@ export type {
   LocalAgentPreparedRequest,
   LocalAgentProgramPort,
 } from "./types";
+export type { ModelToolAgentProgramOptions } from "./model-tool-program";

@@ -19,13 +19,11 @@ describe("AI SDK 7 direct dependency baseline", () => {
     }
   });
 
-  it("publishes matching v7 peer generations without global AI overrides", () => {
+  it("publishes only the qualified AI SDK peers without global AI overrides", () => {
     expect(packageJson.peerDependencies.ai).toBe("^7.0.37");
     expect(packageJson.peerDependencies["@ai-sdk/provider"]).toBe("^4.0.3");
-    expect(packageJson.peerDependencies["@ai-sdk/provider-utils"]).toBe("^5.0.12");
-    expect(packageJson.peerDependencies["@ai-sdk/openai"]).toBe("^4.0.20");
-    expect(packageJson.peerDependencies["@ai-sdk/anthropic"]).toBe("^4.0.21");
-    expect(packageJson.peerDependencies["@ai-sdk/react"]).toBe("^4.0.40");
+    expect(packageJson.peerDependenciesMeta.ai?.optional).toBe(true);
+    expect(packageJson.peerDependenciesMeta["@ai-sdk/provider"]?.optional).toBe(true);
     expect(packageJson.overrides).not.toHaveProperty("ai");
     expect(packageJson.overrides).not.toHaveProperty("@ai-sdk/react");
   });

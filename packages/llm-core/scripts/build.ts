@@ -1,5 +1,5 @@
-import { existsSync, readdirSync, rmSync } from "node:fs";
-import { resolve } from "node:path";
+import { readFileSync, readdirSync, rmSync, writeFileSync } from "node:fs";
+import { dirname, relative, resolve, sep } from "node:path";
 import type { BunPlugin } from "bun";
 
 type BuildOptions = {
@@ -128,21 +128,74 @@ const EXTERNALS = [
   "zod-to-json-schema/*",
 ];
 
-const readAdapterEntryPoints = (rootDir: string) => {
-  const adaptersDir = resolve(rootDir, "src/adapters");
-  const entries: string[] = [];
-  const items = readdirSync(adaptersDir, { withFileTypes: true });
-  for (const item of items) {
-    if (!item.isDirectory()) {
-      continue;
+const PUBLIC_ENTRY_POINTS = [
+  "index.ts",
+  "src/functional/index.ts",
+  "src/contracts/public.ts",
+  "src/features/model/public.ts",
+  "src/features/tooling/public.ts",
+  "src/control/index.ts",
+  "src/features/evidence/public.ts",
+  "src/features/state/public.ts",
+  "src/agent/index.ts",
+  "src/workflow/index.ts",
+  "src/interaction/index.ts",
+  "src/adapters/ai-sdk/index.ts",
+  "src/adapters/ai-sdk-ui/index.ts",
+  "src/adapters/assistant-ui/index.ts",
+  "src/adapters/openai-chatkit/index.ts",
+  "src/adapters/nlux-ui/index.ts",
+] as const;
+
+const walkFiles = (directory: string): string[] =>
+  readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {
+    const path = resolve(directory, entry.name);
+    return entry.isDirectory() ? walkFiles(path) : [path];
+  });
+
+const declarationAliasTarget = (
+  specifier: string,
+  imports: Record<string, string>,
+): string | null => {
+  const exact = imports[specifier];
+  if (exact) return exact;
+  for (const [pattern, target] of Object.entries(imports)) {
+    if (!pattern.endsWith("*") || !target.includes("*")) continue;
+    const prefix = pattern.slice(0, -1);
+    if (specifier.startsWith(prefix)) {
+      return target.replace("*", specifier.slice(prefix.length));
     }
-    const entry = resolve(adaptersDir, item.name, "index.ts");
-    if (!existsSync(entry)) {
-      continue;
-    }
-    entries.push(entry);
   }
-  return entries;
+  return null;
+};
+
+const rewriteDeclarationAliases = (rootDir: string, distDir: string): void => {
+  const typesDir = resolve(distDir, "types");
+  const packageJson = JSON.parse(readFileSync(resolve(rootDir, "package.json"), "utf8")) as {
+    imports?: Record<string, string>;
+  };
+  const imports = packageJson.imports ?? {};
+  for (const file of walkFiles(typesDir).filter((path) => path.endsWith(".d.ts"))) {
+    const source = readFileSync(file, "utf8");
+    const rewritten = source.replace(/(["'])(#[^"']+)\1/g, (match, quote, specifier: string) => {
+      const target = declarationAliasTarget(specifier, imports);
+      if (!target) return match;
+      const declarationTarget = resolve(
+        typesDir,
+        target.replace(/^\.\//, "").replace(/\.ts$/, ".d.ts"),
+      );
+      let path = relative(dirname(file), declarationTarget)
+        .split(sep)
+        .join("/")
+        .replace(/\.d\.ts$/, "");
+      if (!path.startsWith(".")) path = `./${path}`;
+      return `${quote}${path}${quote}`;
+    });
+    if (/["']#[^"']+["']/.test(rewritten)) {
+      throw new Error(`Declaration retains a source-only alias: ${relative(rootDir, file)}`);
+    }
+    if (rewritten !== source) writeFileSync(file, rewritten);
+  }
 };
 
 const logBuildMessages = (logs: Array<{ level?: string; message?: string }>) => {
@@ -209,9 +262,15 @@ const run = async () => {
   const rootDir = process.cwd();
   const distDir = resolve(rootDir, "dist");
   const outdir = resolve(distDir, "esm");
+  const phase = process.argv[2] ?? "emit";
+  if (phase === "clean") {
+    rmSync(distDir, { recursive: true, force: true });
+    return;
+  }
+  if (phase !== "emit") {
+    throw new TypeError(`Unknown build phase: ${phase}`);
+  }
   let ok = true;
-
-  rmSync(distDir, { recursive: true, force: true });
 
   const baseOptions: BuildOptions = {
     outdir,
@@ -220,20 +279,14 @@ const run = async () => {
     splitting: true,
   };
 
-  ok = (await runBuildEntry(resolve(rootDir, "index.ts"), baseOptions)) && ok;
-  ok = (await runBuildEntry(resolve(rootDir, "src/functional/index.ts"), baseOptions)) && ok;
-  ok = (await runBuildEntry(resolve(rootDir, "src/recipes/index.ts"), baseOptions)) && ok;
-  ok = (await runBuildEntry(resolve(rootDir, "src/interaction/index.ts"), baseOptions)) && ok;
-  ok = (await runBuildEntry(resolve(rootDir, "src/shared/diagnostics.ts"), baseOptions)) && ok;
-  ok = (await runBuildEntry(resolve(rootDir, "src/adapters/index.ts"), baseOptions)) && ok;
-  for (const entry of readAdapterEntryPoints(rootDir)) {
-    ok = (await runBuildEntry(entry, baseOptions)) && ok;
+  for (const entry of PUBLIC_ENTRY_POINTS) {
+    ok = (await runBuildEntry(resolve(rootDir, entry), baseOptions)) && ok;
   }
-  ok = (await runBuildEntry(resolve(rootDir, "src/workflow/index.ts"), baseOptions)) && ok;
 
   if (!ok) {
     process.exit(1);
   }
+  rewriteDeclarationAliases(rootDir, distDir);
 };
 
 await run();

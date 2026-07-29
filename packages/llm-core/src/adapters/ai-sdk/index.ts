@@ -1,12 +1,3 @@
-export { fromAiSdkEmbeddings } from "./embeddings";
-export { fromAiSdkCacheStore, type AiSdkCacheStoreInput } from "./cache";
-export { fromAiSdkImageModel } from "./image";
-export { fromAiSdkMemory, type AiSdkMemoryInput } from "./memory";
-export { fromAiSdkTool, type AiSdkToolInput } from "./tools";
-export { fromAiSdkMessage, fromAiSdkMessages } from "./messages";
-export { fromAiSdkPrompt } from "./model-call";
-export { fromAiSdkModel } from "./model";
-export { fromAiSdkReranker } from "./reranker";
-export { fromAiSdkSpeechModel } from "./speech";
-export { fromAiSdkTranscriptionModel } from "./transcription";
-export { toModelStreamEvents } from "./stream";
+export * from "../providers/ai-sdk/index";
+export * from "../providers/ai-sdk/media/public";
+export * from "../providers/ai-sdk/retrieval/public";

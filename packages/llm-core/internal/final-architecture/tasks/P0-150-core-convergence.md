@@ -3,7 +3,7 @@ architecture_version: 2
 id: P0-150
 title: Converge P0 and delete old contracts
 phase: P0.5
-status: claimed
+status: complete
 priority: P0
 preferred_owner_kind: coordinator
 owner: codex-root
@@ -100,5 +100,36 @@ git diff --check
   dependencies completed. The clean `docs-v2` branch was explicitly frozen
   after rebasing at `7a24d4307e27ce192638b2f124da66e8a9d54477`; stale runtime
   and task-status prose was not merged into `main`.
+- 2026-07-30 — Integrated the source, package-surface and documentation lanes
+  in deterministic order. Reconciled the approved retrieval, WebSocket and
+  Assistant UI fronts with the exact ADR-008 package surface, and corrected
+  the example servers to resolve the installed `@types/bun` package.
+- 2026-07-30 — Independent final review found and closed an abort-before-open
+  WebSocket race. Finalization is now checked before and after re-entrant host
+  callbacks, so cancelled transports cannot send credentials, send chat data
+  or enqueue late incoming chunks.
+- 2026-07-30 — Final verification passed at
+  `06ee8f18b6a3016d84c6daade295b353ad422a86`: 424 repository tests; lint;
+  package, example, snippet and test typechecks; schema freshness; build; docs
+  build; both example client builds; dependency validation; `git diff --check`;
+  and all 16 ESM-only runtime and declaration fronts from an isolated packed
+  consumer.
+- 2026-07-30 — Independently approved for package/public surface,
+  safety/behavior and docs/examples. No review blocker remains.
 
 ## Handoff
+
+- Architecture v2 publishes only the 16 ADR-008 subpaths at version `2.0.0`,
+  requires Node.js 22 or newer and has no CommonJS or browser conditions.
+- Root runtime exports are limited to `createLocalAgentRunner` and
+  `prepareAgentSpec`; capability composition, controlled effects, workflow,
+  interaction and qualified adapters live on their named public fronts.
+- The legacy adapter-owned domain, recipes, pipeline authorities and generic
+  diagnostics were removed after their supported behavior moved to v2 slices.
+- Meaningful effects remain fail-closed behind durable receipts and trusted
+  evidence. General workflows are passive-only; intervention resume owns
+  durable effect recovery.
+- Events and UI transport data cross closed, redacted boundaries. WebSocket
+  cancellation is terminal even when host callbacks finalize re-entrantly.
+- P0 is complete. P1-210 and P1-230 may be claimed in parallel; P1-220 remains
+  dependent on P1-210.

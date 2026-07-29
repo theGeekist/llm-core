@@ -8,5 +8,22 @@
     "outDir": "dist/types",
     "rootDir": "."
   },
-  "include": ["index.ts", "src/**/*.ts"]
+  "include": [
+    "index.ts",
+    "src/functional/index.ts",
+    "src/contracts/public.ts",
+    "src/features/model/public.ts",
+    "src/features/tooling/public.ts",
+    "src/control/index.ts",
+    "src/features/evidence/public.ts",
+    "src/features/state/public.ts",
+    "src/agent/index.ts",
+    "src/workflow/index.ts",
+    "src/interaction/index.ts",
+    "src/adapters/ai-sdk/index.ts",
+    "src/adapters/ai-sdk-ui/index.ts",
+    "src/adapters/assistant-ui/index.ts",
+    "src/adapters/openai-chatkit/index.ts",
+    "src/adapters/nlux-ui/index.ts"
+  ]
 }

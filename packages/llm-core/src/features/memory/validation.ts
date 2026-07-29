@@ -12,6 +12,20 @@ const MEDIA_TYPE_PATTERN =
   // eslint-disable-next-line sonarjs/regex-complexity -- mirrors ADR-003's accepted media type syntax
   /^[A-Za-z0-9!#$&^_.+-]+\/[A-Za-z0-9!#$&^_.+-]+(?:\s*;\s*[A-Za-z0-9!#$&^_.+-]+=(?:[A-Za-z0-9!#$&^_.+-]+|"[^"]*"))*$/;
 const ROLES = new Set(["system", "user", "assistant", "tool"]);
+const SENSITIVE_CONTENT_KEYS = new Set([
+  "accesstoken",
+  "apikey",
+  "authorization",
+  "cookie",
+  "credential",
+  "credentials",
+  "password",
+  "refreshtoken",
+  "secret",
+  "secretref",
+  "secretrefs",
+  "signedurl",
+]);
 
 const isPlainRecord = (value: unknown): value is Record<string, unknown> => {
   if (typeof value !== "object" || value === null || Array.isArray(value)) {
@@ -31,6 +45,19 @@ const hasOnlyKeys = (
     required.every((key) => key in value) && Object.keys(value).every((key) => allowed.has(key))
   );
 };
+
+const hasSensitiveContentKey = (value: unknown): boolean => {
+  if (Array.isArray(value)) return value.some(hasSensitiveContentKey);
+  if (!isPlainRecord(value)) return false;
+  return Object.entries(value).some(
+    ([key, child]) =>
+      SENSITIVE_CONTENT_KEYS.has(key.replaceAll(/[^a-z]/gi, "").toLowerCase()) ||
+      hasSensitiveContentKey(child),
+  );
+};
+
+const isSafePortableJsonValue = (value: unknown): boolean =>
+  isPortableJsonValue(value) && !hasSensitiveContentKey(value);
 
 const isResourceRef = (value: unknown): boolean =>
   isPlainRecord(value) &&
@@ -52,7 +79,7 @@ const isPortableContent = (value: unknown): value is ConversationPortableContent
     case "json":
       return (
         hasOnlyKeys(value, ["kind", "value"], ["schema"]) &&
-        isPortableJsonValue(value.value) &&
+        isSafePortableJsonValue(value.value) &&
         (value.schema === undefined || isSchemaRef(value.schema))
       );
     case "media-ref":
@@ -84,7 +111,7 @@ const isContentPart = (value: unknown): value is ConversationContentPart => {
         isCanonicalUuid(value.toolCallId) &&
         typeof value.name === "string" &&
         value.name.length > 0 &&
-        isPortableJsonValue(value.arguments)
+        isSafePortableJsonValue(value.arguments)
       );
     case "tool-result":
       return (
