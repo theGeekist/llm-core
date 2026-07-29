@@ -216,6 +216,9 @@ const embeddedNode = (record: VectorRecord) => {
 export function createLlamaIndexVectorStore(store: BaseVectorStore): VectorStore {
   return {
     upsert: (request: VectorStoreUpsertRequest) => {
+      if (request.namespace !== undefined) {
+        throw new TypeError("The LlamaIndex vector adapter cannot guarantee namespace isolation.");
+      }
       const nodes =
         "documents" in request
           ? request.documents.map(toLlamaIndexDocument)
@@ -224,6 +227,9 @@ export function createLlamaIndexVectorStore(store: BaseVectorStore): VectorStore
       return maybeMap((ids) => ({ ids }), store.add(nodes));
     },
     delete: (request: VectorStoreDeleteRequest) => {
+      if (request.namespace !== undefined) {
+        throw new TypeError("The LlamaIndex vector adapter cannot guarantee namespace isolation.");
+      }
       if ("filter" in request) return null;
       if (request.ids.length === 0) throw new TypeError("Vector delete requires ids.");
       return maybeMap(() => true, maybeAll(request.ids.map((id) => store.delete(id))));
@@ -233,33 +239,45 @@ export function createLlamaIndexVectorStore(store: BaseVectorStore): VectorStore
 
 const queryType = (query: RetrievalQuery): QueryType => retrievalQueryText(query);
 
+class UnsupportedLlamaIndexContentError extends TypeError {}
+
 const responseText = (response: EngineResponse): string => {
   const content: unknown = response.message.content;
   if (typeof content === "string") return content;
-  if (!Array.isArray(content)) return "";
-  return content
-    .map((part) => {
-      if (typeof part === "string") return part;
-      if (!part || typeof part !== "object") return "";
-      const candidate = part as { text?: unknown };
-      return typeof candidate.text === "string" ? candidate.text : "";
-    })
-    .join("");
+  if (
+    Array.isArray(content) &&
+    content.every(
+      (part) =>
+        part !== null &&
+        typeof part === "object" &&
+        (part as { type?: unknown }).type === "text" &&
+        typeof (part as { text?: unknown }).text === "string",
+    )
+  ) {
+    return content.map((part) => (part as { text: string }).text).join("");
+  }
+  throw new UnsupportedLlamaIndexContentError(
+    "LlamaIndex returned unsupported non-text response content.",
+  );
 };
 
 const responseSources = (response: EngineResponse): Document[] | undefined =>
   response.sourceNodes?.length ? fromLlamaIndexNodes(response.sourceNodes) : undefined;
 
-const nativeExtensions = (raw: unknown) => {
-  const value = jsonObject(raw);
-  return value ? { "org.llamaindex.response": value } : undefined;
-};
-
 const redactedStreamDiagnostic = (error: unknown): QueryDiagnostic => ({
   severity: "error",
-  code: "llamaindex-stream-error",
-  message: "LlamaIndex stream failed.",
-  data: { cause: error instanceof Error ? "native-error" : "native-throw" },
+  code:
+    error instanceof UnsupportedLlamaIndexContentError
+      ? "llamaindex-unsupported-response-content"
+      : "llamaindex-stream-error",
+  message:
+    error instanceof UnsupportedLlamaIndexContentError
+      ? "LlamaIndex returned unsupported non-text response content."
+      : "LlamaIndex stream failed.",
+  data:
+    error instanceof UnsupportedLlamaIndexContentError
+      ? { cause: "unsupported-content" }
+      : { cause: error instanceof Error ? "native-error" : "native-throw" },
 });
 
 const queryResult = (
@@ -270,7 +288,6 @@ const queryResult = (
   query,
   content: [{ kind: "text", text: responseText(response) }],
   sources: responseSources(response) ?? fallbackSources,
-  extensions: nativeExtensions(response.raw),
 });
 
 const streamEvents = async function* (
@@ -280,17 +297,16 @@ const streamEvents = async function* (
 ): AsyncIterable<QueryStreamEvent> {
   let text = "";
   let sources = fallbackSources;
-  let extensions: QueryResult["extensions"];
   yield { kind: "start" };
   try {
     for await (const response of stream) {
+      responseText(response);
       const delta = response.delta ?? "";
       if (delta) {
         text += delta;
         yield { kind: "delta", content: [{ kind: "text", text: delta }] };
       }
       sources = responseSources(response) ?? sources;
-      extensions = nativeExtensions(response.raw) ?? extensions;
     }
   } catch (error) {
     yield { kind: "error", error: redactedStreamDiagnostic(error) };
@@ -302,7 +318,6 @@ const streamEvents = async function* (
       query,
       content: [{ kind: "text", text }],
       sources,
-      extensions,
     },
   };
 };

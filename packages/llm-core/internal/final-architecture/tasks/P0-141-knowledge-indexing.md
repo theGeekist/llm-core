@@ -76,6 +76,9 @@ bun run typecheck:packages
 - 2026-07-29T23:55:00+08:00 — Coordinator review made text-only projections
   fail closed on semantic loss, rejected unsupported structured filters, and
   redacted native streaming failures.
+- 2026-07-30T00:08:00+08:00 — Independent-review follow-up removed native raw
+  projection, rejected unsupported LlamaIndex namespaces and multimodal
+  responses, and blocked empty LangChain filters before side effects.
 
 ## Handoff
 
@@ -95,14 +98,15 @@ bun run typecheck:packages
   LlamaIndex knowledge families without importing legacy adapter contracts.
 - Focused verification:
   `bun test packages/llm-core/tests/retrieval packages/llm-core/tests/indexing`
-  — 20 pass, 0 fail, 72 assertions.
+  — 25 pass, 0 fail, 91 assertions.
 - Static verification: `bun run typecheck:packages`,
   `bun run --cwd packages/llm-core typecheck:tests`,
   `bun run contracts:schema:check`, scoped ESLint and `git diff --check` all
   exit 0.
 - Compatibility decisions for convergence: indexing now receives resolved
   documents; application orchestration must call a `DocumentLoader` first
-  instead of embedding a live loader in `IndexingRequest`. Non-JSON native
-  metadata/raw response values are deliberately not projected. LlamaIndex
-  filter deletion remains unsupported and returns `null`, preserving the
-  current semantic limitation.
+  instead of embedding a live loader in `IndexingRequest`. Native LlamaIndex
+  raw response values are never projected. Its text-only query/synthesis
+  adapter rejects multimodal responses, namespaces fail closed because the
+  native port cannot guarantee isolation, and filter deletion remains
+  unsupported with `null`.

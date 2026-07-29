@@ -226,6 +226,12 @@ export function createLangChainVectorStore(store: LangChainVectorStore): VectorS
       );
     },
     delete: (request: VectorStoreDeleteRequest) => {
+      if ("ids" in request && request.ids.length === 0) {
+        throw new TypeError("Vector delete requires ids.");
+      }
+      if ("filter" in request && Object.keys(request.filter).length === 0) {
+        throw new TypeError("Vector delete requires a non-empty filter.");
+      }
       const options =
         "ids" in request
           ? { ids: request.ids, ...(request.namespace ? { namespace: request.namespace } : {}) }
@@ -233,9 +239,6 @@ export function createLangChainVectorStore(store: LangChainVectorStore): VectorS
               filter: request.filter,
               ...(request.namespace ? { namespace: request.namespace } : {}),
             };
-      if (("ids" in request && request.ids.length === 0) || Object.keys(options).length === 0) {
-        throw new TypeError("Vector delete requires ids or a filter.");
-      }
       return maybeMap(() => true, store.delete(options));
     },
   };
