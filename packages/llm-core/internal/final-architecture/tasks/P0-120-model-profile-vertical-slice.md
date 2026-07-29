@@ -3,7 +3,7 @@ architecture_version: 2
 id: P0-120
 title: Implement model and profile vertical slice
 phase: P0.2
-status: claimed
+status: review
 priority: P0
 preferred_owner_kind: claude-code
 owner: Claude Code
@@ -65,5 +65,88 @@ bun run typecheck:packages
 
 - 2026-07-29T16:48:00+08:00 — Claimed for Claude Code by the architecture
   coordinator after P0-100 completed and was integrated at `6e8e6a5`.
+- 2026-07-29 — Claude Code moved to `in_progress`. Confirmed the contract freeze
+  with the P0-100 owner over the llm-core channel: `#contracts` front exports
+  identity / invocation / schema(content) / versioning / capabilities /
+  extensions. Two corrections absorbed vs my initial assumptions: `DeploymentRef`
+  carries NO `SecretRef` (credentials stay at composition/adapter binding), and
+  `InvocationContext` is passed separately to model operations (not embedded in
+  `ModelRequest`); resolution policy-constraints are a separate resolver input.
+  Building `src/features/model/**` against the frozen contracts.
+- 2026-07-29 — Implementation complete; moved to `review`.
 
 ## Handoff
+
+Status: ready for coordinator review.
+
+### Files added (write scope only)
+
+`src/features/model/`:
+- `references.ts` — `ModelRef`/`ProviderRef`/`DeploymentRef`/`ModelProfileId`
+  branded on the contracts' `OpaqueId`; constructors validate printable-ASCII
+  ids. `DeploymentRef` carries no credential.
+- `content.ts` — `ModelContentPart` closed union reusing contracts'
+  `PortableContent` plus `ReasoningPart`/`ToolCallPart`/`ToolResultPart`;
+  `ModelMessage`/`ModelRole`.
+- `request.ts` — `ModelRequest`, `ToolDeclaration`, `ToolChoice`,
+  `ResponseFormat` (text | json+`SchemaRef`), `SamplingParams`,
+  `ProviderRequestMetadata` (redacted `NativeExtensions`).
+- `response.ts` — `ModelResponse` = `ModelCompletion | ModelErrorResponse`;
+  `FinishReason`, `ModelUsage`, `ModelWarning`, `ModelError`,
+  `ProviderResponseMetadata`.
+- `profile.ts` — `ModelProfile` (versioned; `claims: CapabilityClaim[]` from
+  contracts, evidence-backed).
+- `resolver.ts` — `ModelResolver` port + `createModelResolver()`: deterministic,
+  exact-over-alias precedence, capability filtering, explicit
+  ambiguous/no-eligible/unknown-selection failures, named-default recorded via
+  `matchedBy`. No environment reads.
+- `model.ts` — `Model` port (`generate`/optional `stream`) taking
+  `InvocationContext` as a separate argument; `ModelStreamEvent` projection.
+- `builtin.ts` — `createBuiltinModel`/`createBuiltinModelProfile`: deterministic
+  echo model, first executable path, self-declared conformance evidence
+  placeholder.
+- `public.ts` — single feature front (ADR-001); no deep imports leak.
+
+`tests/model/`: `contracts.test.ts`, `builtin.test.ts`, `resolver.test.ts`,
+`profile.test.ts` (18 tests).
+
+### Verification (from packages/llm-core)
+
+- `bun test tests/model` → 18 pass, 0 fail, 41 expect().
+- `bun test` (full package) → 1072 pass, 35 skip, 0 fail.
+- `bun run typecheck` (`tsc --noEmit`) → exit 0.
+- `bunx eslint src/features/model tests/model` → exit 0.
+- `git status` limited to `src/features/model/**`, `tests/model/**`, this task
+  file.
+
+### ADRs applied
+
+ADR-001 (feature front, contracts-only inward deps), ADR-002 (vocabulary),
+ADR-003 (content union, identity, schema/versioning reuse), ADR-004 (model refs,
+deterministic resolution, credential boundary).
+
+### Deviations / known limits
+
+- `ToolDeclaration.parameters` is a `JsonValue` (JSON-Schema-shaped) placeholder;
+  the tooling feature will own richer declarations at convergence (tooling
+  public front does not exist yet at this base).
+- Resolver `versionRange` supports absent/`*`/exact-match only; richer SemVer
+  range semantics deferred (no generic helper is frozen in P0-100).
+- Builtin capability claim uses self-declared placeholder conformance evidence;
+  real suites belong to the conformance task.
+- Correction to an earlier channel message: the transient ajv typecheck error I
+  reported against the base was a `node_modules` dedup artifact, not a P0-100
+  defect. After dependency resolution settled, `tsc --noEmit` is clean across the
+  whole package. No base fix is required.
+
+### Not done (out of scope)
+
+Root exports / package `exports` / `#model` alias wiring (integration owner,
+P0-150); AI SDK / LangChain / LlamaIndex migration; deletion of legacy
+`adapters/types/model.ts` and `model-selection.ts`.
+
+### Shared-file requests for the integration owner
+
+At convergence, add a `#model` → `src/features/model/public.ts` import alias and
+the `@geekist/llm-core/model` subpath export, then delete the legacy
+adapter-owned model types and `model-selection.ts`.
