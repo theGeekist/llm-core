@@ -3,7 +3,7 @@ architecture_version: 2
 id: P0-130
 title: Implement state and intervention vertical slice
 phase: P0.3
-status: in_progress
+status: review
 priority: P0
 preferred_owner_kind: codex
 owner: codex-root
@@ -66,5 +66,45 @@ bun run typecheck:packages
 - 2026-07-29T19:15:00+08:00 — Reassigned from the retired Claude allocation
   and claimed by the Codex coordinator for delegated subagent execution.
 - 2026-07-29 — Implementation started in the assigned isolated worktree.
+- 2026-07-29 — Implementation and adversarial review completed; moved to
+  `review`.
 
 ## Handoff
+
+- Implementation commit: `c82651f`
+- Worktree state: clean at `c82651f` before this handoff-only update.
+- Changed files:
+  - `packages/llm-core/internal/final-architecture/tasks/P0-130-state-intervention-slice.md`
+  - `packages/llm-core/src/application/workflow/execution.ts`
+  - `packages/llm-core/src/application/workflow/public.ts`
+  - `packages/llm-core/src/application/workflow/resume.ts`
+  - `packages/llm-core/src/application/workflow/types.ts`
+  - `packages/llm-core/src/features/state/compatibility.ts`
+  - `packages/llm-core/src/features/state/intervention.ts`
+  - `packages/llm-core/src/features/state/lifetimes.ts`
+  - `packages/llm-core/src/features/state/public.ts`
+  - `packages/llm-core/src/features/state/types.ts`
+  - `packages/llm-core/src/features/state/validation.ts`
+  - `packages/llm-core/tests/application/workflow/resume.test.ts`
+  - `packages/llm-core/tests/state/compatibility.test.ts`
+  - `packages/llm-core/tests/state/helpers.ts`
+  - `packages/llm-core/tests/state/intervention.test.ts`
+  - `packages/llm-core/tests/state/lifetimes.test.ts`
+- Verification:
+  - `bun test packages/llm-core/tests/state packages/llm-core/tests/application/workflow`
+    — exit 0; 30 passed, 0 failed.
+  - `bun run typecheck:packages` — exit 0; package typecheck and generated
+    contract-schema consistency check passed.
+  - `bunx eslint packages/llm-core/src/features/state packages/llm-core/src/application/workflow packages/llm-core/tests/state packages/llm-core/tests/application/workflow`
+    — exit 0.
+  - `git diff --check` — exit 0.
+- ADRs applied: ADR-005 and ADR-006. No deviations.
+- Independent review: approved after adversarial checks for exact action
+  canonicalization/HMAC binding, authenticated intervention decisions,
+  expiry, decision/intervention replay, checkpoint CAS, durable effect
+  transitions and unsafe replay.
+- Remaining risks and semantic loss: no known semantic loss within task scope.
+  The storage-neutral journal still requires a conforming durable host
+  implementation; an external durable engine remains explicitly out of scope.
+- Shared-file requests: convergence must expose the new `state` and `workflow`
+  public fronts through package exports. No shared file was changed here.
