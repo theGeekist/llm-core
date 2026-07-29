@@ -1,15 +1,17 @@
 import {
   capabilityIdForPort,
   createCapabilityBindingCatalog,
+  type CapabilityEvidenceVerifier,
   type Retriever,
 } from "@geekist/llm-core/agent";
 import type { CapabilityBinding } from "@geekist/llm-core/contracts";
 
 declare const retriever: Retriever;
 declare const descriptor: CapabilityBinding;
+declare const verifyEvidence: CapabilityEvidenceVerifier;
 
 const catalog = createCapabilityBindingCatalog({
-  verifyEvidence: ({ evidence }) => evidence.result === "pass",
+  verifyEvidence,
 });
 
 catalog.register({
