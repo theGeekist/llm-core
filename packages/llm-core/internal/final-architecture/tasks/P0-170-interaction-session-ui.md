@@ -3,7 +3,7 @@ architecture_version: 2
 id: P0-170
 title: Convert interaction sessions and UI projections
 phase: P0.4
-status: claimed
+status: in_progress
 priority: P0
 preferred_owner_kind: codex
 owner: codex-root
@@ -69,5 +69,6 @@ bun run typecheck:packages
 
 - 2026-07-29T22:55:00+08:00 — Claimed by the Codex coordinator after P0-130,
   P0-140 and P0-160 integrated and passed receiving verification.
+- 2026-07-29 — Implementation started in the assigned isolated worktree.
 
 ## Handoff
