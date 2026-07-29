@@ -36,7 +36,7 @@ import {
   runInteractionRequest,
 } from "@geekist/llm-core/interaction";
 
-const PORT = 3001;
+const PORT = 3101;
 
 const server = serve({
   port: PORT,

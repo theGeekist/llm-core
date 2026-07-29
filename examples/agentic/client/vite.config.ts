@@ -9,18 +9,23 @@ export default defineConfig({
       {
         find: "@geekist/llm-core/adapters/ai-sdk-ui",
         replacement: fileURLToPath(
-          new URL("../../../dist/esm/src/adapters/ai-sdk-ui/index.js", import.meta.url),
+          new URL(
+            "../../../packages/llm-core/dist/esm/src/adapters/ai-sdk-ui/index.js",
+            import.meta.url,
+          ),
         ),
       },
       {
         find: "@geekist/llm-core/adapters",
         replacement: fileURLToPath(
-          new URL("../../../dist/esm/src/adapters/index.js", import.meta.url),
+          new URL("../../../packages/llm-core/dist/esm/src/adapters/index.js", import.meta.url),
         ),
       },
       {
         find: /^@geekist\/llm-core$/,
-        replacement: fileURLToPath(new URL("../../../dist/esm/index.js", import.meta.url)),
+        replacement: fileURLToPath(
+          new URL("../../../packages/llm-core/dist/esm/index.js", import.meta.url),
+        ),
       },
       {
         find: "@",
@@ -33,10 +38,10 @@ export default defineConfig({
     ],
   },
   server: {
-    port: 5173,
+    port: 5181,
     proxy: {
       "/ws": {
-        target: "ws://localhost:3001",
+        target: "ws://localhost:3101",
         ws: true,
       },
     },

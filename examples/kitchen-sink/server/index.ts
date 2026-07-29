@@ -31,7 +31,7 @@ import {
 } from "@geekist/llm-core/functional";
 import { resolveInteractionRecipeId, runInteractionRequest } from "@geekist/llm-core/interaction";
 
-const PORT = 3001;
+const PORT = 3102;
 
 const server = serve({
   port: PORT,
