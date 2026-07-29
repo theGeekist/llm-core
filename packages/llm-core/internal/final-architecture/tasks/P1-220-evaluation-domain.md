@@ -87,10 +87,13 @@ bun run typecheck:packages
   deterministic evaluator identity/version order, sync-preserving
   `MaybePromise` composition, explicit-undefined rejection and zero-read
   descriptor snapshots.
+- 2026-07-30 — Integrated into `main` and published through the dedicated
+  `./evaluation` front with matching alias, build entry, architecture
+  characterization and isolated package-consumer coverage.
 
 ## Handoff
 
-- Integration owner should publish `src/features/evaluation/public.ts` as the
-  `./evaluation` subpath and add the matching TypeScript/package import aliases,
-  build entry, and exact public-surface characterization.
-- No root export is proposed. No provider or runner adapter changes are needed.
+- Integration published `src/features/evaluation/public.ts` as the
+  `./evaluation` subpath with matching TypeScript/package aliases, build entry,
+  exact public-surface characterization and package smoke coverage.
+- No root export, provider dependency or runner adapter change was added.

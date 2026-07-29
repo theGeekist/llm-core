@@ -10,6 +10,7 @@ import * as evidence from "../../src/features/evidence/public";
 import * as state from "../../src/features/state/public";
 import * as context from "../../src/features/context/public";
 import * as artifacts from "../../src/features/artifacts/public";
+import * as evaluation from "../../src/features/evaluation/public";
 import * as agent from "../../src/agent/index";
 import * as workflow from "../../src/workflow/index";
 import * as interaction from "../../src/interaction/index";
@@ -30,6 +31,7 @@ const PUBLIC_SURFACE = {
   "./state": state,
   "./context": context,
   "./artifacts": artifacts,
+  "./evaluation": evaluation,
   "./agent": agent,
   "./workflow": workflow,
   "./interaction": interaction,
@@ -46,7 +48,7 @@ const packageJson = (await Bun.file(new URL("../../package.json", import.meta.ur
 };
 
 describe("ADR-008 public package surface", () => {
-  test("publishes exactly the eighteen v2 subpaths", () => {
+  test("publishes exactly the nineteen v2 subpaths", () => {
     expect(packageJson.version).toBe("2.0.0");
     expect(Object.keys(packageJson.exports)).toEqual(Object.keys(PUBLIC_SURFACE));
     expect(Object.values(PUBLIC_SURFACE).every(Boolean)).toBe(true);

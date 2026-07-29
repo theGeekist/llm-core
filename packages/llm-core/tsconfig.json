@@ -14,6 +14,7 @@
       "@geekist/llm-core/state": ["./src/features/state/public.ts"],
       "@geekist/llm-core/context": ["./src/features/context/public.ts"],
       "@geekist/llm-core/artifacts": ["./src/features/artifacts/public.ts"],
+      "@geekist/llm-core/evaluation": ["./src/features/evaluation/public.ts"],
       "@geekist/llm-core/agent": ["./src/agent/index.ts"],
       "@geekist/llm-core/workflow": ["./src/workflow/index.ts"],
       "@geekist/llm-core/interaction": ["./src/interaction/index.ts"],

@@ -21,6 +21,7 @@ Everything else comes from an explicit subpath:
 @geekist/llm-core/state
 @geekist/llm-core/context
 @geekist/llm-core/artifacts
+@geekist/llm-core/evaluation
 @geekist/llm-core/agent
 @geekist/llm-core/workflow
 @geekist/llm-core/interaction

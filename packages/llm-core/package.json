@@ -141,6 +141,7 @@
     "#state": "./src/features/state/public.ts",
     "#context": "./src/features/context/public.ts",
     "#artifacts": "./src/features/artifacts/public.ts",
+    "#evaluation": "./src/features/evaluation/public.ts",
     "#agent": "./src/agent/index.ts",
     "#adapters/registry": "./src/adapters/registry.ts",
     "#adapters/*": "./src/adapters/*.ts",
@@ -220,6 +221,11 @@
       "types": "./dist/types/src/features/artifacts/public.d.ts",
       "import": "./dist/esm/src/features/artifacts/public.js",
       "default": "./dist/esm/src/features/artifacts/public.js"
+    },
+    "./evaluation": {
+      "types": "./dist/types/src/features/evaluation/public.d.ts",
+      "import": "./dist/esm/src/features/evaluation/public.js",
+      "default": "./dist/esm/src/features/evaluation/public.js"
     },
     "./agent": {
       "types": "./dist/types/src/agent/index.d.ts",

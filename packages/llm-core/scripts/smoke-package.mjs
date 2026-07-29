@@ -27,6 +27,7 @@ const expectedSubpaths = [
   "./state",
   "./context",
   "./artifacts",
+  "./evaluation",
   "./agent",
   "./workflow",
   "./interaction",
@@ -220,6 +221,8 @@ try {
       'import type { ContextEntry, ContextManifest } from "@geekist/llm-core/context";',
       'import { createArtifact, createArtifactRef } from "@geekist/llm-core/artifacts";',
       'import type { Artifact, ArtifactRef } from "@geekist/llm-core/artifacts";',
+      'import { createEvaluationCase, createEvaluationComposition, evaluationEvaluatorId } from "@geekist/llm-core/evaluation";',
+      'import type { EvaluationCase, EvaluationComposition, EvaluationResult } from "@geekist/llm-core/evaluation";',
       'import type { AiSdkUiProjectionChunk } from "@geekist/llm-core/adapters/ai-sdk-ui";',
       'import type { AssistantUiProjectionCommand, AssistantUiProjectionOptions } from "@geekist/llm-core/adapters/assistant-ui";',
       'import type { ChatKitProjectionEvent } from "@geekist/llm-core/adapters/openai-chatkit";',
@@ -234,6 +237,7 @@ try {
       "void executeControlledTool;",
       "void createContextEntry; void createContextManifest;",
       "void createArtifact; void createArtifactRef;",
+      "void createEvaluationCase; void createEvaluationComposition; void evaluationEvaluatorId;",
       "type RootTypes = [AgentSpec, PreparedAgentSpec, AgentRunner, AgentRunnerCapabilities, AgentRun, AgentRunRequest, AgentRunEvent, RunResult, MaybePromise<unknown>, MaybeAsyncIterable<unknown>];",
       "declare const rootTypes: RootTypes; void rootTypes;",
       'type AgentCompositionTypes = [CapabilityBindingCatalog, CapabilityBindingResolutionRequest, CapabilityBindingResolutionOutcome, RuntimeCapabilityBinding<"retriever">, RegisteredRuntimeCapabilityBinding<"retriever">, Retriever, Indexer, CacheStore, ConversationStore];',
@@ -246,6 +250,8 @@ try {
       "declare const workflowTypes: WorkflowTypes; void workflowTypes;",
       "type ContextArtifactTypes = [ContextEntry, ContextManifest, Artifact, ArtifactRef];",
       "declare const contextArtifactTypes: ContextArtifactTypes; void contextArtifactTypes;",
+      "type EvaluationTypes = [EvaluationCase, EvaluationComposition, EvaluationResult];",
+      "declare const evaluationTypes: EvaluationTypes; void evaluationTypes;",
       "type UiTypes = [AiSdkUiProjectionChunk, AssistantUiProjectionCommand, AssistantUiProjectionOptions, ChatKitProjectionEvent, NluxInteractionAdapterOptions, NluxProjectionSignal];",
       "declare const uiTypes: UiTypes; void uiTypes;",
       ...specifiers.slice(1).map((_, index) => `void surface${index};`),
@@ -279,5 +285,5 @@ try {
 }
 
 console.log(
-  "Verified 18 ESM-only v2 exports from an isolated packed runtime and declaration consumer.",
+  "Verified 19 ESM-only v2 exports from an isolated packed runtime and declaration consumer.",
 );

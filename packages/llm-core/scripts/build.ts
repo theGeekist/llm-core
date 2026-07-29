@@ -139,6 +139,7 @@ const PUBLIC_ENTRY_POINTS = [
   "src/features/state/public.ts",
   "src/features/context/public.ts",
   "src/features/artifacts/public.ts",
+  "src/features/evaluation/public.ts",
   "src/agent/index.ts",
   "src/workflow/index.ts",
   "src/interaction/index.ts",
