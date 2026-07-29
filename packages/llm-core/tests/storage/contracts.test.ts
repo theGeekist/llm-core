@@ -56,6 +56,16 @@ describe("storage contracts", () => {
       { nested: [{ sessionCookie: "placeholder" }] },
       { nested: [{ PRIVATE_KEY_PEM: "placeholder" }] },
       { nested: [{ secretMaterial: "placeholder" }] },
+      { nested: [{ userAuthorizationValue: "placeholder" }] },
+      { nested: [{ USER_AUTHORIZATION_VALUE: "placeholder" }] },
+      // eslint-disable-next-line sonarjs/no-hardcoded-passwords -- benign rejection fixture
+      { nested: [{ userPasswordValue: "placeholder" }] },
+      // eslint-disable-next-line sonarjs/no-hardcoded-passwords -- benign rejection fixture
+      { nested: [{ "user-password-value": "placeholder" }] },
+      { nested: [{ applicationSecretValue: "placeholder" }] },
+      { nested: [{ application_secret_value: "placeholder" }] },
+      { nested: [{ sessionCookieValue: "placeholder" }] },
+      { nested: [{ session_cookie_value: "placeholder" }] },
     ];
     const unsafeValues: JsonValue[] = [
       { safeKey: "/private/data" },
@@ -68,20 +78,30 @@ describe("storage contracts", () => {
 
     expect(
       jsonStorageValue({
-        opaqueReferences: [
-          secretRef("sk-reference-not-material"),
-          resource,
-        ],
+        opaqueReferences: [secretRef("sk-reference-not-material"), resource],
       }),
     ).toEqual({
       kind: "json",
       value: {
-        opaqueReferences: [
-          { secretId: "sk-reference-not-material" },
-          resource,
-        ],
+        opaqueReferences: [{ secretId: "sk-reference-not-material" }, resource],
       },
     });
+  });
+
+  test("rejects malformed opaque-reference lookalikes recursively", () => {
+    const lookalikes: JsonValue[] = [
+      { ...resource, digest: "not-a-digest" },
+      { ...resource, extra: "placeholder" },
+      { ...resource, resourceId: "not-a-resource-id" },
+      { ...resource, byteLength: "3" },
+      { secretId: "" },
+      { secretId: 42 },
+      { secretId: "sk-reference-not-material", extra: "placeholder" },
+    ];
+
+    for (const lookalike of lookalikes) {
+      expect(() => jsonStorageValue({ nested: [lookalike] })).toThrow();
+    }
   });
 
   test("keeps cache records portable and canonically timestamped", () => {

@@ -1,5 +1,12 @@
 import { describe, expect, test } from "bun:test";
-import { coreId, digest, type ResourceId, type ToolCallId } from "#contracts";
+import {
+  coreId,
+  digest,
+  secretRef,
+  type JsonValue,
+  type ResourceId,
+  type ToolCallId,
+} from "#contracts";
 import {
   registerConversationRecord,
   registerConversationTurn,
@@ -58,6 +65,37 @@ describe("conversation contracts", () => {
     expect(turn.content.map((part) => part.kind)).toEqual(["tool-call", "tool-result"]);
   });
 
+  test("accepts exact closed opaque references at every JSON boundary", () => {
+    const toolCallId = coreId<ToolCallId>("0190bd0c-0000-4000-8000-000000000104");
+    const resourceId = coreId<ResourceId>("0190bd0c-0000-4000-8000-000000000105");
+    const value = {
+      opaqueReferences: [
+        secretRef("sk-reference-not-material"),
+        {
+          resourceId,
+          mediaType: "image/png",
+          byteLength: 3,
+          digest: digest("44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"),
+        },
+      ],
+    };
+
+    expect(
+      registerConversationTurn({
+        role: "assistant",
+        content: [
+          { kind: "json", value },
+          { kind: "tool-call", toolCallId, name: "lookup", arguments: value },
+          {
+            kind: "tool-result",
+            toolCallId,
+            result: [{ kind: "json", value }],
+          },
+        ],
+      }).content.map((part) => part.kind),
+    ).toEqual(["json", "tool-call", "tool-result"]);
+  });
+
   test("rejects binary, native metadata, locators and non-canonical identity", () => {
     expect(() =>
       registerConversationTurn({
@@ -92,30 +130,87 @@ describe("conversation contracts", () => {
 
   test("rejects sensitive JSON content, tool arguments and tool results recursively", () => {
     const toolCallId = coreId<ToolCallId>("0190bd0c-0000-4000-8000-000000000104");
-    for (const content of [
-      [{ kind: "json", value: { nested: [{ Authorization: "placeholder" }] } }],
-      [
-        {
-          kind: "tool-call",
-          toolCallId,
-          name: "unsafe",
-          arguments: { nested: [{ client_secret_value: "placeholder" }] },
-        },
-      ],
-      [
-        {
-          kind: "tool-result",
-          toolCallId,
-          result: [
+    const sensitiveValues: JsonValue[] = [
+      { nested: [{ userAuthorizationValue: "placeholder" }] },
+      // eslint-disable-next-line sonarjs/no-hardcoded-passwords -- benign rejection fixture
+      { nested: [{ userPasswordValue: "placeholder" }] },
+      { nested: [{ applicationSecretValue: "placeholder" }] },
+      { nested: [{ session_cookie_value: "placeholder" }] },
+    ];
+
+    for (const value of sensitiveValues) {
+      expect(() =>
+        registerConversationTurn({
+          role: "assistant",
+          content: [{ kind: "json", value }],
+        }),
+      ).toThrow();
+      expect(() =>
+        registerConversationTurn({
+          role: "assistant",
+          content: [{ kind: "tool-call", toolCallId, name: "unsafe", arguments: value }],
+        }),
+      ).toThrow();
+      expect(() =>
+        registerConversationTurn({
+          role: "assistant",
+          content: [
             {
-              kind: "json",
-              value: { nested: [{ PRIVATE_KEY_PEM: "placeholder" }] },
+              kind: "tool-result",
+              toolCallId,
+              result: [{ kind: "json", value }],
             },
           ],
-        },
-      ],
-    ]) {
-      expect(() => registerConversationTurn({ role: "assistant", content })).toThrow();
+        }),
+      ).toThrow();
+    }
+  });
+
+  test("rejects malformed opaque-reference lookalikes at every JSON boundary", () => {
+    const toolCallId = coreId<ToolCallId>("0190bd0c-0000-4000-8000-000000000104");
+    const resourceId = coreId<ResourceId>("0190bd0c-0000-4000-8000-000000000105");
+    const resourceRef = {
+      resourceId,
+      mediaType: "image/png",
+      byteLength: 3,
+      digest: digest("44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"),
+    };
+    const lookalikes: JsonValue[] = [
+      { ...resourceRef, digest: "not-a-digest" },
+      { ...resourceRef, extra: "placeholder" },
+      { ...resourceRef, resourceId: "not-a-resource-id" },
+      { ...resourceRef, byteLength: "3" },
+      { secretId: "" },
+      { secretId: 42 },
+      { secretId: "sk-reference-not-material", extra: "placeholder" },
+    ];
+
+    for (const lookalike of lookalikes) {
+      const value = { nested: [lookalike] };
+      expect(() =>
+        registerConversationTurn({
+          role: "assistant",
+          content: [{ kind: "json", value }],
+        }),
+      ).toThrow();
+      expect(() =>
+        registerConversationTurn({
+          role: "assistant",
+          content: [{ kind: "tool-call", toolCallId, name: "unsafe", arguments: value }],
+        }),
+      ).toThrow();
+      expect(() =>
+        registerConversationTurn({
+          role: "assistant",
+          content: [
+            {
+              kind: "tool-result",
+              toolCallId,
+              result: [{ kind: "json", value }],
+            },
+          ],
+        }),
+      ).toThrow();
     }
   });
 });

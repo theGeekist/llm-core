@@ -60,13 +60,6 @@ const SENSITIVE_KEY_STEMS = [
   "signedurl",
   "token",
 ] as const;
-const COMPOUND_SENSITIVE_KEY_STEMS = new Set([
-  "apikey",
-  "clientsecret",
-  "privatekey",
-  "providermetadata",
-  "signedurl",
-]);
 const CREDENTIAL_VALUE_PATTERN =
   /^(?:bearer\s+|basic\s+|sk-[a-z0-9]|ghp_|github_pat_|xox[baprs]-|AKIA[0-9a-z]{12}|-----BEGIN [a-z ]*PRIVATE KEY-----)/i;
 const PATH_VALUE_PATTERN = /^(?:\/|~\/|\.{1,2}\/|[A-Za-z]:[\\/]|\\\\|file:)/;
@@ -77,15 +70,7 @@ const normalizedKey = (key: string): string => key.replace(/[^A-Za-z0-9]/g, "").
 
 export const isSensitivePortableKey = (key: string): boolean => {
   const normalized = normalizedKey(key);
-  return SENSITIVE_KEY_STEMS.some((stem) => {
-    if (COMPOUND_SENSITIVE_KEY_STEMS.has(stem)) {
-      return normalized.includes(stem);
-    }
-    if (stem === "path") {
-      return normalized === stem || normalized.endsWith(stem);
-    }
-    return normalized === stem || normalized.startsWith(stem) || normalized.endsWith(stem);
-  });
+  return SENSITIVE_KEY_STEMS.some((stem) => normalized.includes(stem));
 };
 
 export const isSensitivePortableString = (value: string): boolean =>
@@ -95,6 +80,9 @@ export const isSensitivePortableString = (value: string): boolean =>
 
 const isSecretRef = (value: unknown): value is SecretRef =>
   isPlainRecord(value) && hasOnlyKeys(value, ["secretId"]) && isExternalId(value.secretId);
+
+const isOpaqueReferenceLookalike = (value: Record<string, unknown>): boolean =>
+  Object.hasOwn(value, "secretId") || Object.hasOwn(value, "resourceId");
 
 const hasSafePortableJson = (value: JsonValue): boolean => {
   if (typeof value === "string") {
@@ -108,6 +96,9 @@ const hasSafePortableJson = (value: JsonValue): boolean => {
   }
   if (isSecretRef(value) || isResourceRef(value)) {
     return true;
+  }
+  if (isOpaqueReferenceLookalike(value)) {
+    return false;
   }
   return Object.entries(value).every(
     ([key, child]) => !isSensitivePortableKey(key) && hasSafePortableJson(child),

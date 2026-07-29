@@ -81,12 +81,18 @@ bun run typecheck:packages
   boundary while exact opaque references remain supported, and runtime cache
   TTL resolution preserves invalid values for validation before encoding or
   backend writes.
+- 2026-07-30T00:55:00+08:00 — Closed the final independent-review findings:
+  every denied normalized key stem now fails closed regardless of position, and
+  malformed tagged opaque-reference lookalikes can no longer fall back to
+  generic JSON at any recursive portable boundary.
 
 ## Handoff
 
 - Initial implementation: `36d81d0087fd93cf0f362cac4481e512759150b0`.
 - Review-fix implementation:
   `61671e3ba0e88403174e838420d6ef3ad943bfad`.
+- Second review-fix implementation:
+  `7a13a2cae1d563ce616d1f6c808c9662e4223eee`.
 - Final handoff commit: task branch HEAD; exact SHA is reported to the
   coordinator after this handoff commit is created.
 - Worktree: clean at the reported commit.
@@ -98,8 +104,8 @@ bun run typecheck:packages
   - this task file
 - Verification:
   - `bun test packages/llm-core/tests/storage packages/llm-core/tests/memory` —
-    exit 0; 25 passed, 0 failed, 138 assertions.
-  - `bun test packages/llm-core/tests` — exit 0; 1,243 passed, 35 skipped, 0
+    exit 0; 28 passed, 0 failed, 184 assertions.
+  - `bun test packages/llm-core/tests` — exit 0; 1,246 passed, 35 skipped, 0
     failed.
   - `bun run typecheck:packages` — exit 0; package typecheck and schema
     freshness passed.
@@ -114,9 +120,12 @@ bun run typecheck:packages
   record or replace the safe outcome when they throw. Provider metadata is
   never copied.
 - Portable JSON behavior: normalized authorization, password, secret, cookie,
-  client-secret and private-key key variants fail closed recursively, including
-  in conversation JSON and tool arguments/results. Exact `SecretRef` and
-  `ResourceRef` shapes remain opaque portable references.
+  client-secret and private-key key variants fail closed recursively regardless
+  of stem position, including in conversation JSON and tool arguments/results.
+  Exact closed `SecretRef` and `ResourceRef` shapes remain opaque portable
+  references; objects tagged with `secretId` or `resourceId` that are malformed,
+  have extra fields or use the wrong runtime types are rejected rather than
+  treated as generic JSON.
 - Cache TTL behavior: explicit, policy-resolved and backend/default TTL values
   distinguish absent `undefined` from invalid `null` or non-integer values.
   Invalid runtime values fail before encoding and backend writes.
