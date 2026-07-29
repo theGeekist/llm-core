@@ -4,50 +4,7 @@ Capability bindings connect a neutral port to one configured implementation.
 Registration verifies conformance evidence. Resolution is deterministic and
 returns diagnostics instead of selecting the first candidate.
 
-```ts
-import {
-  capabilityIdForPort,
-  createCapabilityBindingCatalog,
-  type CapabilityEvidenceVerifier,
-  type Retriever,
-} from "@geekist/llm-core/agent";
-import type { CapabilityBinding } from "@geekist/llm-core/contracts";
-
-declare const retriever: Retriever;
-declare const descriptor: CapabilityBinding;
-declare const verifyEvidence: CapabilityEvidenceVerifier;
-
-const catalog = createCapabilityBindingCatalog({
-  verifyEvidence,
-});
-
-catalog.register({
-  kind: "retriever",
-  descriptor,
-  port: retriever,
-});
-
-const resolution = catalog.resolve({
-  requirements: [
-    {
-      kind: "retriever",
-      bindingId: descriptor.bindingId,
-      capabilities: [
-        {
-          capabilityId: capabilityIdForPort("retriever"),
-          versionRange: "^1.0.0",
-        },
-      ],
-    },
-  ],
-});
-
-if (resolution.kind === "unresolved") {
-  throw new Error(JSON.stringify(resolution.diagnostics));
-}
-
-const selected = resolution.bindings[0];
-```
+<<< @/snippets/v2/capability-bindings.ts
 
 `verifyEvidence` is a trusted host-composition port, not a predicate over the
 claim's self-reported `result`. It resolves the claim's `EvidenceRef` through
@@ -68,5 +25,4 @@ Keep three things separate:
 - the port is a live implementation value;
 - invocation state records which registered binding was selected.
 
-This replaces legacy aggregate adapter objects and registry lookup. It is not
-a string-keyed service locator.
+This is typed capability composition, not a string-keyed service locator.

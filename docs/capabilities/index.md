@@ -1,20 +1,32 @@
 # Capabilities
 
-Capabilities are typed ports with portable requests, results, and evidence.
-Composition supplies live implementations; application orchestration depends
-only on public contracts.
+A capability is a stable contract for one kind of work. The contract describes
+portable inputs and outputs. A live implementation enters later, when your
+application composes an agent or workflow.
 
-| Subpath        | Responsibility                                                     |
-| -------------- | ------------------------------------------------------------------ |
-| `/model`       | Content, requests, responses, profiles, schemas, and media         |
-| `/tools`       | Tool specifications, strict validation, and action digests         |
-| `/control`     | Policy, approval, cancellation, and concurrency                    |
-| `/evidence`    | Redacted events, usage, and receipts                               |
-| `/state`       | Live, snapshot, resumable, provider-session, and durable lifetimes |
-| `/agent`       | Agent lifecycle, composition, bindings, knowledge, and memory      |
-| `/workflow`    | Explicit workflow orchestration                                    |
-| `/interaction` | Sessions, canonical projections, and reconnect state               |
+This separation lets application code depend on what a component does without
+depending on the provider or framework that performs it.
 
-Storage, memory, retrieval, and indexing ports are imported from `/agent` and
-selected through typed capability bindings. They do not expose hosted
-databases or framework-native engines.
+| Import                         | Responsibility                                                                        |
+| ------------------------------ | ------------------------------------------------------------------------------------- |
+| `@geekist/llm-core/contracts`  | Identity, versioning, schemas, resources, evidence references, and invocation context |
+| `@geekist/llm-core/model`      | Model requests, responses, profiles, content, and media                               |
+| `@geekist/llm-core/tools`      | Tool specifications, bindings, strict argument validation, and action digests         |
+| `@geekist/llm-core/control`    | Policy, approval, cancellation, concurrency, and controlled tool execution            |
+| `@geekist/llm-core/evidence`   | Redacted execution events and storage-neutral receipt journals                        |
+| `@geekist/llm-core/state`      | State lifetimes, intervention contracts, and resume compatibility                     |
+| `@geekist/llm-core/context`    | Scoped, budgeted context manifests                                                    |
+| `@geekist/llm-core/artifacts`  | Portable output identity and provenance                                               |
+| `@geekist/llm-core/evaluation` | Evidence-bound cases, evaluators, and results                                         |
+| `@geekist/llm-core/agent`      | Agent execution and composition, including retrieval, indexing, storage, and memory   |
+
+The capability pages follow the same path you use in an application:
+
+1. Define portable contracts.
+2. Supply qualified live implementations.
+3. Orchestrate work through an agent or workflow.
+4. Preserve redacted evidence and explicit state.
+
+Retrieval, indexing, storage, and memory are curated through `/agent`. Media is
+curated through `/model`. These contracts do not select hosted services or
+expose provider-native clients.

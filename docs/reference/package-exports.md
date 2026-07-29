@@ -34,3 +34,5 @@ Everything else comes from an explicit subpath:
 
 There is no broad adapter barrel. This keeps provider dependencies and native
 types behind qualified boundaries.
+
+For ownership and representative exports, see [API by subpath](/reference/api).

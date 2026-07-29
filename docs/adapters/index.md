@@ -1,77 +1,51 @@
 # Qualified adapters
 
-Adapters translate a provider or UI SDK at the boundary. Import only the
-qualified adapter you use; there is no public broad adapters barrel.
+Adapters translate an external SDK at the edge of llm-core. They implement or
+project a neutral contract without letting provider-native objects become
+portable state.
 
-## AI SDK model
+<<< @/snippets/v2/qualified-adapters.ts
 
-```ts
-import { createAiSdk7Model } from "@geekist/llm-core/adapters/ai-sdk";
+```mermaid
+flowchart LR
+  native["Provider or UI SDK types"]
+  adapter["Qualified adapter"]
+  neutral["llm-core contract"]
+  orchestration["Application orchestration"]
 
-const model = createAiSdk7Model({
-  model: providerModel,
-  profile: registeredProfile,
-  redactProviderMetadata: (metadata) => safeProviderProjection(metadata),
-});
-const response = await model.generate(request, invocationContext);
+  native --> adapter
+  adapter --> neutral
+  neutral --> orchestration
+  orchestration -. "portable requests and events" .-> neutral
 ```
 
-The adapter returns the neutral model contract. Provider-native response data
-may appear only as a namespaced, redacted extension.
+## Import a qualified boundary
 
-## AI SDK UI projection
+There is no public broad adapters barrel. Import only the adapter you use:
 
-```ts
-import { createAiSdkUiProjectionMapper } from "@geekist/llm-core/adapters/ai-sdk-ui";
+| Subpath                    | Boundary                                              |
+| -------------------------- | ----------------------------------------------------- |
+| `/adapters/ai-sdk`         | AI SDK 7 model, media, embedding, and reranking types |
+| `/adapters/ai-sdk-ui`      | AI SDK UI event projection and WebSocket transport    |
+| `/adapters/assistant-ui`   | assistant-ui projection and inbound parsing           |
+| `/adapters/openai-chatkit` | OpenAI ChatKit event projection                       |
+| `/adapters/nlux-ui`        | NLUX projection and chat adapter                      |
 
-const project = createAiSdkUiProjectionMapper();
-for await (const event of interactionRun.events()) {
-  for (const chunk of project(event)) {
-    await uiStream.write(chunk);
-  }
-}
-```
+Qualified imports keep native peer dependencies and types at the edge. Install
+the corresponding optional peer only when your application uses that subpath.
 
-## assistant-ui projection
+## Adapter guarantees
 
-```ts
-import { createAssistantUiProjectionMapper } from "@geekist/llm-core/adapters/assistant-ui";
+A useful adapter states:
 
-const project = createAssistantUiProjectionMapper({
-  includeReasoning: false,
-});
-for await (const event of interactionRun.events()) {
-  for (const command of project(event)) {
-    await commandStream.write(command);
-  }
-}
-```
+- the exact native version or shape it supports;
+- the neutral capability it implements;
+- semantic loss at the translation boundary;
+- which native metadata is omitted or redacted;
+- the executable evidence behind its compatibility claim.
 
-## OpenAI ChatKit projection
+Adapter installation alone proves none of those claims.
 
-```ts
-import { createChatKitProjectionMapper } from "@geekist/llm-core/adapters/openai-chatkit";
-
-const project = createChatKitProjectionMapper();
-for await (const event of interactionRun.events()) {
-  for (const chatKitEvent of project(event)) {
-    eventTarget.dispatchEvent(chatKitEvent);
-  }
-}
-```
-
-## NLUX session adapter
-
-```ts
-import { createNluxChatAdapter } from "@geekist/llm-core/adapters/nlux-ui";
-
-const adapter = createNluxChatAdapter({
-  session,
-  invocationContext: () => invocationContext,
-  mapInput: (message) => ({ prompt: message }),
-});
-```
-
-The NLUX adapter drives the same interaction-session lifecycle and projects
-canonical events into streaming text. Install the corresponding peer only
-when its qualified adapter is used.
+Continue with [AI SDK model integration](/adapters/ai-sdk),
+[UI projections](/adapters/ui), or
+[runtime conformance](/adapters/runtime-conformance).

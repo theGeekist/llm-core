@@ -1,53 +1,60 @@
 # Interaction
 
-Interaction sessions coordinate conversation state with an `AgentRunner` and
-project canonical events into UI-ready state.
+Interaction sessions connect an `AgentRunner` to durable conversation state and
+project canonical events into deterministic UI state.
 
-```ts
-import { createInteractionSession } from "@geekist/llm-core/interaction";
-import { createAiSdkUiProjectionMapper } from "@geekist/llm-core/adapters/ai-sdk-ui";
+<<< @/snippets/v2/interaction-projection.ts
 
-const session = createInteractionSession({
-  conversationId,
-  agent,
-  runner,
-  store,
-  identity: {
-    now: () => new Date().toISOString(),
-    newSnapshotId,
-    newReservationId,
-  },
-});
+```mermaid
+sequenceDiagram
+  participant Client
+  participant Session as InteractionSession
+  participant Store as ConversationSessionStore
+  participant Runner as AgentRunner
+  participant Projection as InteractionProjection
+  participant UI as Qualified UI adapter
 
-const interactionRun = await session.send({
-  input: { prompt: "hello" },
-  invocationContext,
-});
-
-const project = createAiSdkUiProjectionMapper();
-for await (const event of interactionRun.events()) {
-  for (const chunk of project(event)) {
-    await uiStream.write(chunk);
-  }
-}
-
-const { snapshot, run: result } = await interactionRun.result();
+  Client->>Session: send(input, InvocationContext)
+  Session->>Store: load current snapshot
+  Session->>Store: reserve current revision
+  Session->>Runner: start prepared agent
+  loop canonical events
+    Runner-->>Session: AgentRunEvent
+    Session->>Projection: reduce InteractionEvent
+    Session-->>Client: InteractionEvent
+    Client->>UI: project event
+  end
+  Runner-->>Session: RunResult
+  Session->>Store: save next snapshot
+  Session-->>Client: InteractionRunResult
 ```
 
-The session lifecycle is load, atomically reserve the current conversation
-revision, start the runner, reduce canonical events, then commit the next
-snapshot. Reservation happens before execution; a post-execution compare-and-
-swap is not sufficient. A failed commit never authorizes an automatic replay
-of a meaningful effect.
+The reservation happens before runner execution. This matters because an
+optimistic comparison after execution cannot make a meaningful effect safe to
+repeat.
 
-`interactionRun.continuation` is process-local and can reconnect to the same
-live connection through `session.reconnect()`. The returned `snapshot` is a
-portable point-in-time conversation value, not a resumable workflow
-checkpoint. Provider continuity remains an opaque `ProviderSessionRef`.
+## Three event families
 
-UI integrations consume projection events; they do not become an execution,
-receipt or persistence authority. Projected tool input and results must
-already be safe, redacted JSON.
+An `InteractionEvent` wraps exactly one canonical family:
 
-Qualified UI fronts are available for AI SDK UI, assistant-ui, OpenAI ChatKit,
-and NLUX. Each maps canonical interaction events into the target UI protocol.
+- `agent-run` carries an `AgentRunEvent`;
+- `tool-execution` carries redacted `ExecutionEvent` evidence;
+- `content` carries a registered `InteractionContentEvent`.
+
+The reducer projects these families into `InteractionUiEvent` values. UI
+adapters consume that projection. They do not become execution, receipt, or
+persistence authorities.
+
+## State and continuity
+
+The completed interaction result contains a portable conversation snapshot.
+That snapshot is a point-in-time value, not a resumable workflow checkpoint.
+Provider continuity remains an opaque `ProviderSessionRef`.
+
+`InteractionRun.continuation` is different. It is a process-local
+`LiveContinuation` that reconnects to the same live connection while that
+connection still exists.
+
+Continue with [events and projections](/interaction/events),
+[sessions](/interaction/sessions), or
+[reconnect and transport](/interaction/transport).

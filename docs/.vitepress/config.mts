@@ -6,8 +6,11 @@ export default defineConfig({
   description: "Portable contracts and controlled orchestration for LLM applications.",
   base: "/",
   appearance: "dark",
+  srcExclude: ["**/.internal/**"],
   head: [
     ["link", { rel: "icon", href: "/favicon.ico" }],
+    ["link", { rel: "icon", type: "image/png", sizes: "32x32", href: "/favicon-32.png" }],
+    ["link", { rel: "icon", type: "image/png", sizes: "16x16", href: "/favicon-16.png" }],
     ["meta", { property: "og:title", content: "llm-core" }],
     [
       "meta",
@@ -16,18 +19,41 @@ export default defineConfig({
         content: "Portable contracts and controlled orchestration for LLM applications.",
       },
     ],
+    ["meta", { property: "og:image", content: "https://llm-core.geekist.co/og.png" }],
+    ["meta", { property: "og:url", content: "https://llm-core.geekist.co/" }],
+    ["meta", { name: "twitter:card", content: "summary_large_image" }],
   ],
   markdown: {
     config: (markdown) => {
       markdown.use(tabsMarkdownPlugin);
+      const defaultFence =
+        markdown.renderer.rules.fence ??
+        ((tokens, index, options, _environment, renderer) =>
+          renderer.renderToken(tokens, index, options));
+
+      markdown.renderer.rules.fence = (tokens, index, options, environment, renderer) => {
+        const token = tokens[index];
+        if (token.info.trim() !== "mermaid") {
+          return defaultFence(tokens, index, options, environment, renderer);
+        }
+
+        const content = token.content
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;")
+          .replace(/"/g, "&quot;")
+          .replace(/'/g, "&#039;");
+        return `<pre class="mermaid" style="white-space: pre;">${content}</pre>`;
+      };
     },
   },
   themeConfig: {
     nav: [
       { text: "Guide", link: "/guide/hello-world" },
       { text: "Capabilities", link: "/capabilities/" },
-      { text: "Adapters", link: "/adapters/" },
+      { text: "Orchestration", link: "/orchestration/" },
       { text: "Interaction", link: "/interaction/" },
+      { text: "Adapters", link: "/adapters/" },
       { text: "Reference", link: "/reference/vocabulary" },
     ],
     socialLinks: [{ icon: "github", link: "https://github.com/theGeekist/llm-core" }],
@@ -39,8 +65,10 @@ export default defineConfig({
             { text: "Get started", link: "/guide/hello-world" },
             { text: "Core concepts", link: "/guide/core-concepts" },
             { text: "Run an agent", link: "/guide/agent" },
-            { text: "Resume a workflow", link: "/guide/workflow" },
+            { text: "Build and resume a workflow", link: "/guide/workflow" },
+            { text: "Project an interaction", link: "/interaction/" },
             { text: "Why llm-core?", link: "/guide/philosophy" },
+            { text: "Migrate from 1.x", link: "/reference/migration-2" },
           ],
         },
       ],
@@ -49,28 +77,59 @@ export default defineConfig({
           text: "Capabilities",
           items: [
             { text: "Overview", link: "/capabilities/" },
+            { text: "Contracts and portability", link: "/capabilities/contracts" },
+            { text: "Model and media", link: "/capabilities/model" },
+            { text: "Tools", link: "/capabilities/tools" },
+            { text: "Control", link: "/capabilities/control" },
+            { text: "Evidence", link: "/capabilities/evidence" },
+            { text: "State and durability", link: "/capabilities/state" },
+            { text: "Context", link: "/capabilities/context" },
+            { text: "Artifacts", link: "/capabilities/artifacts" },
+            { text: "Evaluation", link: "/capabilities/evaluation" },
+            { text: "Agent capabilities", link: "/capabilities/agent" },
             { text: "Bindings and composition", link: "/capabilities/bindings" },
-            { text: "Models", link: "/capabilities/model" },
-            { text: "Storage and memory", link: "/capabilities/storage-memory" },
             {
               text: "Retrieval and indexing",
               link: "/capabilities/retrieval-indexing",
             },
-            { text: "Tools and control", link: "/capabilities/tools-control" },
-            { text: "Evidence and state", link: "/capabilities/evidence-state" },
+            { text: "Storage and memory", link: "/capabilities/storage-memory" },
+          ],
+        },
+      ],
+      "/orchestration/": [
+        {
+          text: "Orchestration",
+          items: [
+            { text: "Overview", link: "/orchestration/" },
+            { text: "Workflows", link: "/orchestration/workflows" },
+            {
+              text: "Controlled tool execution",
+              link: "/orchestration/controlled-tool-execution",
+            },
+            { text: "Composition patterns", link: "/orchestration/composition-patterns" },
+          ],
+        },
+      ],
+      "/interaction/": [
+        {
+          text: "Interaction",
+          items: [
+            { text: "Overview", link: "/interaction/" },
+            { text: "Events and projections", link: "/interaction/events" },
+            { text: "Sessions", link: "/interaction/sessions" },
+            { text: "Reconnect and transport", link: "/interaction/transport" },
           ],
         },
       ],
       "/adapters/": [
         {
           text: "Adapters",
-          items: [{ text: "Qualified adapters", link: "/adapters/" }],
-        },
-      ],
-      "/interaction/": [
-        {
-          text: "Interaction",
-          items: [{ text: "Sessions and projections", link: "/interaction/" }],
+          items: [
+            { text: "Overview", link: "/adapters/" },
+            { text: "AI SDK model", link: "/adapters/ai-sdk" },
+            { text: "UI projections", link: "/adapters/ui" },
+            { text: "Runtime conformance", link: "/adapters/runtime-conformance" },
+          ],
         },
       ],
       "/reference/": [
@@ -78,8 +137,11 @@ export default defineConfig({
           text: "Reference",
           items: [
             { text: "Vocabulary", link: "/reference/vocabulary" },
-            { text: "Contracts and portability", link: "/reference/contracts" },
+            { text: "API by subpath", link: "/reference/api" },
+            { text: "Contract catalogue", link: "/reference/contracts" },
             { text: "Package exports", link: "/reference/package-exports" },
+            { text: "Packaging and conformance", link: "/reference/conformance" },
+            { text: "Design decisions", link: "/reference/design-decisions" },
             { text: "1.x to 2.0", link: "/reference/migration-2" },
           ],
         },

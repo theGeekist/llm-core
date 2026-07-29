@@ -1,40 +1,77 @@
-# Resume a workflow
+# Build and resume a workflow
 
-The P0 workflow surface coordinates an authenticated intervention against a
-registered checkpoint. It does not revive an arbitrary snapshot.
+A `WorkflowDefinition` describes ordered, author-defined steps. The general
+workflow runtime executes passive steps and returns a
+`WorkflowExecutionOutcome`.
 
-```ts
-import {
-  resumeInterventionWorkflow,
-  type ResumeInterventionWorkflowInput,
-} from "@geekist/llm-core/workflow";
+## Choose the matching workflow path
 
-async function resume(input: ResumeInterventionWorkflowInput) {
-  const outcome = await resumeInterventionWorkflow(input);
+| Need                                    | API                          | State carried forward                      |
+| --------------------------------------- | ---------------------------- | ------------------------------------------ |
+| Run ordered passive steps               | `runWorkflow`                | State in a `completed` or `failed` outcome |
+| Pause passive orchestration             | `runWorkflow`                | Ephemeral `WorkflowPauseSnapshot`          |
+| Continue an ephemeral pause             | `resumeWorkflow`             | Snapshot plus resume input                 |
+| Resume after an authorized intervention | `resumeInterventionWorkflow` | Registered durable checkpoint and journal  |
 
-  if (outcome.status === "reconciliation-required") {
-    await reconciliationQueue.enqueue({
-      stepId: outcome.stepId,
-      effectStatus: outcome.effectStatus,
-    });
-  }
+`defineWorkflow` validates a definition. `composeWorkflow` combines registered
+definitions, and `createWorkflowRegistry` resolves definitions by identity.
+Every general-runtime step has `effect: "none"`. Meaningful effects use the
+controlled intervention path.
 
-  return outcome;
-}
+## Follow the lifecycle
+
+```mermaid
+stateDiagram-v2
+    [*] --> Running: runWorkflow
+    Running --> Completed: completed
+    Running --> Failed: failed
+    Running --> Paused: paused
+    Paused --> Running: resumeWorkflow(snapshot, input)
+    Completed --> [*]
+    Failed --> [*]
+
+    state "Controlled resume" as controlled {
+        [*] --> Registered: registered checkpoint
+        Registered --> Verified: authenticate and verify
+        Verified --> Claimed: atomically claim
+        Claimed --> Executing: record effect started
+        Executing --> Settled: record effect completed
+        Executing --> Reconciliation: started or indeterminate
+        Settled --> [*]
+        Reconciliation --> [*]
+    }
 ```
 
-A real `ResumeInterventionWorkflowInput` supplies:
+The passive snapshot is explicitly ephemeral and is not a durable checkpoint.
+Use it to continue an in-process workflow. Do not store it as proof that an
+external effect can be safely replayed.
 
-1. a `RegisteredResumableCheckpoint`, its matching intervention and an
+## Resume a controlled intervention
+
+The checked example starts from a fully constructed
+`ResumeInterventionWorkflowInput` and handles the outcome that needs operational
+reconciliation.
+
+<<< @/snippets/v2/workflow-resume.ts
+
+A complete controlled-resume input supplies:
+
+1. a `RegisteredResumableCheckpoint`, its matching intervention, and an
    authenticated decision;
-2. expected runtime, schema, code, checkpoint-format and native-reference
+2. expected runtime, schema, code, checkpoint-format, and native-reference
    compatibility;
-3. an action-digest verifier, authentication port, clock and authoritative
+3. an action-digest verifier, authentication port, clock, and authoritative
    resume journal;
-4. the exact ordered steps for this workflow version.
+4. the exact ordered steps for that workflow version.
 
-The journal atomically consumes a decision and claims a checkpoint. Before a
-meaningful resumed step runs, it records `started`; completion then records the
-effect and state. A recorded `started` or `indeterminate` effect is reconciled,
-never blindly replayed. `deferred`, `edit-requires-new-binding` and `escalated`
-resolve the intervention without pretending the checkpoint was resumed.
+The journal atomically consumes the decision and claims the checkpoint. Before
+a meaningful step executes, it durably records the effect as `started`.
+Completion records the resulting effect and state.
+
+If an existing effect is `started` or `indeterminate`, the outcome is
+`reconciliation-required`. The workflow does not blindly replay it. Likewise,
+`deferred`, `edit-requires-new-binding`, and `escalated` resolve the
+intervention without pretending that checkpoint execution completed.
+
+Continue with [controlled tool execution](/orchestration/controlled-tool-execution) or
+review the [API by subpath](/reference/api).

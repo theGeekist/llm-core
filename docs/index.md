@@ -4,7 +4,7 @@ layout: home
 hero:
   name: llm-core
   text: Orchestrate LLM logic instead of gluing it
-  tagline: Describe agents as portable data, execute them through typed runners, and project redacted events into application state.
+  tagline: Describe agents as portable data, execute them through typed runners, and project canonical events into application state.
   image:
     src: /logo.png
     alt: llm-core logo
@@ -18,18 +18,18 @@ hero:
 
 features:
   - title: Specs describe agents
-    details: AgentSpec is portable data. A compatible AgentRunner prepares and executes it.
+    details: AgentSpec captures portable intent. A compatible AgentRunner prepares it and starts a live AgentRun.
   - title: Capabilities are ports
-    details: Models, tools, control, evidence, state, storage, retrieval, and media use explicit contracts.
+    details: Stable contracts keep model, tool, control, evidence, state, and storage concerns separate from adapters.
   - title: Effects follow one path
-    details: Policy, approval, execution, and receipts stay separate so meaningful effects fail closed.
-  - title: Events are safe to project
-    details: Provider-native data enters only through validated, namespaced, redacted extensions.
+    details: Policy, approval, execution, and receipts remain distinct, so meaningful effects fail closed.
+  - title: Events stay precise
+    details: AgentRunEvent, ExecutionEvent, and InteractionEvent each describe a different lifecycle.
 ---
 
 ## Install
 
-`llm-core` 2 requires Node.js 22 or newer and publishes ESM.
+`llm-core` 2 requires Node.js 22 or newer and publishes ESM only.
 
 ```bash
 npm install @geekist/llm-core
@@ -37,13 +37,19 @@ npm install @geekist/llm-core
 
 ## The short version
 
-An [`AgentSpec`](/reference/vocabulary#agent-spec) describes an agent. An
-[`AgentRunner`](/reference/vocabulary#agent-runner) executes it and returns an
-[`AgentRun`](/reference/vocabulary#agent-run). The run emits typed
-`AgentRunEvent` values and terminates exactly once with a `RunResult`.
+An [`AgentSpec`](/reference/vocabulary#agents) describes an agent. An
+[`AgentRunner`](/reference/vocabulary#agents) prepares that spec, starts an
+[`AgentRun`](/reference/vocabulary#agents), and produces one terminal
+`RunResult`. The live run emits typed `AgentRunEvent` values.
 
-Workflows remain explicit orchestration of steps. They are separate from the
-probabilistic agent loop and report through workflow outcomes.
+A `WorkflowDefinition` describes ordered application steps. The workflow
+runtime executes those steps and returns a `WorkflowExecutionOutcome`.
+Interactions reduce canonical `InteractionEvent` values into deterministic
+application state.
 
-Start with [Get started](/guide/hello-world), then read
-[Contracts and portability](/reference/contracts).
+These lifecycles share portable contracts, but they do not collapse into one
+generic event or result type.
+
+Start with [Get started](/guide/hello-world), then explore
+[Core concepts](/guide/core-concepts) and
+[Package exports](/reference/package-exports).
