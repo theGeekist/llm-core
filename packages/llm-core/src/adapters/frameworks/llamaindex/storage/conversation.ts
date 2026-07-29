@@ -67,6 +67,17 @@ const readText = (turn: ConversationTurn): string | null => {
   return text.length > 0 ? text : null;
 };
 
+const safeNotify = (
+  notify: CreateLlamaIndexConversationStoreInput["onProjectionIssue"],
+  issue: LlamaIndexConversationProjectionIssue,
+) => {
+  try {
+    notify?.(issue);
+  } catch {
+    // Diagnostics cannot replace the safe null outcome.
+  }
+};
+
 export const createLlamaIndexConversationStore = (
   input: CreateLlamaIndexConversationStoreInput,
 ): ConversationStore => {
@@ -74,17 +85,23 @@ export const createLlamaIndexConversationStore = (
   const adapter: ConversationStore = {
     read: (_context, conversationId) =>
       maybeMap((messages) => {
-        const turns = messages.flatMap((message, messageIndex) => {
+        const turns: ConversationTurn[] = [];
+        let failed = false;
+        messages.forEach((message, messageIndex) => {
           const turn = toTurn(message);
           if (turn) {
-            return [turn];
+            turns.push(turn);
+            return;
           }
-          onProjectionIssue?.({
+          failed = true;
+          safeNotify(onProjectionIssue, {
             code: "unsupported-native-message-content",
             messageIndex,
           });
-          return [];
         });
+        if (failed) {
+          return null;
+        }
         return registerConversationRecord({
           conversationId,
           turns,

@@ -7,22 +7,26 @@ import {
   type CacheStore,
 } from "../../../../features/storage/public";
 
-export interface AiSdkCacheStore<T> {
+/**
+ * Structural host cache contract. AI SDK 7 does not publish a cache-store API,
+ * so this adapter intentionally makes no AI SDK conformance claim.
+ */
+export interface HostCacheBackend<T> {
   get(key: string): MaybePromise<T | undefined>;
   set(key: string, entry: T): MaybePromise<void>;
   delete(key: string): MaybePromise<boolean>;
   getDefaultTTL?(): number | undefined;
 }
 
-export interface CreateAiSdkCacheStoreInput {
-  readonly store: AiSdkCacheStore<CacheRecord>;
+export interface CreateHostBackedCacheStoreInput {
+  readonly store: HostCacheBackend<CacheRecord>;
   readonly defaultTtlMs?: number;
 }
 
-export const createAiSdkCacheStore = ({
+export const createHostBackedCacheStore = ({
   store,
   defaultTtlMs,
-}: CreateAiSdkCacheStoreInput): CacheStore =>
+}: CreateHostBackedCacheStoreInput): CacheStore =>
   createCacheStoreAdapter<CacheRecord, CacheRecord>({
     backend: {
       read: (_context, key) => store.get(key),

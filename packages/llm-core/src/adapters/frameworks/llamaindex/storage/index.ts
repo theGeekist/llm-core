@@ -5,11 +5,6 @@ export type {
   CreateLlamaIndexConversationStoreInput,
   LlamaIndexConversationProjectionIssue,
 } from "./conversation";
-export { createLlamaIndexKeyValueStore } from "./key-value";
-export type {
-  LlamaIndexChatMessage,
-  LlamaIndexDocument,
-  LlamaIndexDocumentStore,
-  LlamaIndexKeyValueStore,
-  LlamaIndexMemory,
-} from "./types";
+export { createLlamaIndexDocumentKeyValueStore, createLlamaIndexKeyValueStore } from "./key-value";
+export type { CreateLlamaIndexKeyValueStoreInput } from "./key-value";
+export type { LlamaIndexChatMessage, LlamaIndexMemory } from "./types";

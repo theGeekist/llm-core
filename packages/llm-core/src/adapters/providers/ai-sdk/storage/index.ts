@@ -1,10 +1,10 @@
-export { createAiSdkCacheStore } from "./cache";
-export type { AiSdkCacheStore, CreateAiSdkCacheStoreInput } from "./cache";
-export { createAiSdkConversationStores } from "./conversation";
+export { createHostBackedCacheStore } from "./cache";
+export type { CreateHostBackedCacheStoreInput, HostCacheBackend } from "./cache";
+export { createHostConversationStores } from "./conversation";
 export type {
-  AiSdkConversationMessage,
-  AiSdkMemoryProvider,
-  AiSdkWorkingMemory,
-  ConversationProjectionIssue,
-  CreateAiSdkConversationStoresInput,
+  CreateHostConversationStoresInput,
+  HostConversationMessage,
+  HostConversationProjectionIssue,
+  HostConversationProvider,
+  HostWorkingMemory,
 } from "./conversation";

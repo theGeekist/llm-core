@@ -1,15 +1,15 @@
 import { describe, expect, test } from "bun:test";
-import { createAiSdkConversationStores } from "../../src/adapters/providers/ai-sdk/storage";
+import { createHostConversationStores } from "../../src/adapters/providers/ai-sdk/storage";
 import { createLangChainConversationStateStore } from "../../src/adapters/frameworks/langchain/storage";
 import { createLlamaIndexConversationStore } from "../../src/adapters/frameworks/llamaindex/storage";
 import { registerConversationTurn } from "../../src/features/memory/public";
 import { context, conversationId } from "../storage/helpers";
 
 describe("qualified conversation adapters", () => {
-  test("maps AI SDK messages and working memory with closed redaction", async () => {
+  test("maps host messages and working memory with closed redaction", async () => {
     let savedMessage: unknown;
     let savedWorkingMemory: unknown;
-    const stores = createAiSdkConversationStores({
+    const stores = createHostConversationStores({
       userId: "user-1",
       provider: {
         getMessages: () =>
@@ -90,8 +90,8 @@ describe("qualified conversation adapters", () => {
     });
   });
 
-  test("fails closed when AI SDK capabilities or text projection are unavailable", () => {
-    const stores = createAiSdkConversationStores({ provider: {} });
+  test("fails closed when host capabilities or text projection are unavailable", () => {
+    const stores = createHostConversationStores({ provider: {} });
     expect(stores.conversations.read(context, conversationId)).toBeNull();
     expect(
       stores.conversations.append(
@@ -105,7 +105,7 @@ describe("qualified conversation adapters", () => {
     ).toBeNull();
     expect(stores.state.load(context, conversationId, {})).toBeNull();
 
-    const writeOnly = createAiSdkConversationStores({
+    const writeOnly = createHostConversationStores({
       provider: { saveMessage: () => undefined },
     });
     expect(
@@ -120,14 +120,15 @@ describe("qualified conversation adapters", () => {
     ).toBe(false);
   });
 
-  test("omits mixed and binary-only AI SDK turns with safe projection issues", async () => {
+  test("atomically rejects unsupported synchronous host multipart with safe issues", () => {
     const issues: Array<{ code: string; messageIndex: number }> = [];
-    const stores = createAiSdkConversationStores({
+    const stores = createHostConversationStores({
       onProjectionIssue: (issue) => issues.push(issue),
       provider: {
         getMessages: () => [
           {
             role: "assistant",
+            timestamp: new Date("2026-07-29T10:30:00.000Z"),
             content: [
               { type: "reasoning", text: "think " },
               { type: "text", text: "answer" },
@@ -135,6 +136,7 @@ describe("qualified conversation adapters", () => {
           },
           {
             role: "user",
+            timestamp: new Date("2026-07-29T10:31:00.000Z"),
             content: [
               { type: "text", text: "caption" },
               { type: "image", data: "raw" },
@@ -142,17 +144,15 @@ describe("qualified conversation adapters", () => {
           },
           {
             role: "user",
+            timestamp: new Date("2026-07-29T10:32:00.000Z"),
             content: [{ type: "file", data: new Uint8Array([1]) }],
           },
         ],
       },
     });
 
-    const record = await stores.conversations.read(context, conversationId);
-    expect(record?.revision).toBe(3);
-    expect(record?.turns).toEqual([
-      { role: "assistant", content: [{ kind: "text", text: "think answer" }] },
-    ]);
+    const record = stores.conversations.read(context, conversationId);
+    expect(record).toBeNull();
     expect(issues).toEqual([
       { code: "unsupported-native-message-content", messageIndex: 1 },
       { code: "unsupported-native-message-content", messageIndex: 2 },
@@ -160,26 +160,96 @@ describe("qualified conversation adapters", () => {
     expect(JSON.stringify(record)).not.toContain("raw");
   });
 
-  test("maps LangChain JSON state and rejects non-portable provider output", async () => {
+  test("keeps async host multipart failure safe without a callback and when it throws", async () => {
+    const messages = [
+      {
+        role: "user" as const,
+        timestamp: new Date("2026-07-29T10:30:00.000Z"),
+        content: [{ type: "image", data: "raw" }],
+      },
+    ];
+    const withoutCallback = createHostConversationStores({
+      provider: { getMessages: () => Promise.resolve(messages) },
+    });
+    await expect(withoutCallback.conversations.read(context, conversationId)).resolves.toBeNull();
+
+    const throwingCallback = createHostConversationStores({
+      onProjectionIssue: () => {
+        throw new Error("diagnostic failure");
+      },
+      provider: { getMessages: () => Promise.resolve(messages) },
+    });
+    await expect(throwingCallback.conversations.read(context, conversationId)).resolves.toBeNull();
+  });
+
+  test("always supplies a timestamp when appending host messages", () => {
+    let saved: unknown;
+    const now = new Date("2026-07-29T11:00:00.000Z");
+    const stores = createHostConversationStores({
+      now: () => now,
+      provider: {
+        saveMessage: (message) => {
+          saved = message;
+        },
+      },
+    });
+    expect(
+      stores.conversations.append(
+        context,
+        conversationId,
+        registerConversationTurn({
+          role: "assistant",
+          content: [{ kind: "text", text: "timestamped" }],
+        }),
+      ),
+    ).toBe(true);
+    expect(saved).toMatchObject({ timestamp: now });
+  });
+
+  test("fails closed when a host message omits its required timestamp at runtime", () => {
+    const stores = createHostConversationStores({
+      provider: {
+        getMessages: () => [{ role: "user", content: "missing timestamp" } as never],
+      },
+    });
+    expect(stores.conversations.read(context, conversationId)).toBeNull();
+  });
+
+  test("clones and freezes nested LangChain JSON across sync and async boundaries", async () => {
+    const loadedSource = { history: [{ text: "hello" }] };
+    let savedInput: unknown;
+    let savedOutput: unknown;
     const valid = createLangChainConversationStateStore({
-      loadMemoryVariables: () => Promise.resolve({ history: ["hello"] }),
-      saveContext: () => Promise.resolve(),
+      loadMemoryVariables: () => loadedSource,
+      saveContext: async (input, output) => {
+        savedInput = input;
+        savedOutput = output;
+      },
     });
-    await expect(valid.load(context, conversationId, {})).resolves.toEqual({
-      history: ["hello"],
-    });
+    const loaded = valid.load(context, conversationId, {});
+    expect(loaded).toEqual({ history: [{ text: "hello" }] });
+    loadedSource.history[0]!.text = "mutated";
+    expect(loaded).toEqual({ history: [{ text: "hello" }] });
+    expect(Object.isFrozen((loaded as { history: object[] }).history[0])).toBe(true);
+
+    const input = { nested: { value: "input" } };
+    const output = { nested: { value: "output" } };
     await expect(
       valid.save(context, conversationId, {
-        input: { input: "hello" },
-        output: { output: "ok" },
+        input,
+        output,
       }),
     ).resolves.toBe(true);
+    input.nested.value = "changed";
+    output.nested.value = "changed";
+    expect(savedInput).toEqual({ nested: { value: "input" } });
+    expect(savedOutput).toEqual({ nested: { value: "output" } });
 
     const invalid = createLangChainConversationStateStore({
-      loadMemoryVariables: () => ({ unsafe: new Uint8Array([1]) }),
+      loadMemoryVariables: () => Promise.resolve({ nested: { token: "raw" } }),
       saveContext: () => undefined,
     });
-    expect(invalid.load(context, conversationId, {})).toBeNull();
+    await expect(invalid.load(context, conversationId, {})).resolves.toBeNull();
   });
 
   test("maps LlamaIndex conversation roles, append and reset", async () => {
@@ -198,26 +268,20 @@ describe("qualified conversation adapters", () => {
               role: "user",
               content: [
                 { type: "text", text: "caption" },
-                { type: "image", data: "raw" },
+                { type: "image", data: "raw", mimeType: "image/png" },
               ],
             },
           ]),
-        add: (message) => void saved.push(message),
-        clear: () => {
+        add: async (message) => {
+          saved.push(message);
+        },
+        clear: async () => {
           cleared = true;
         },
       },
     });
 
-    await expect(store.read(context, conversationId)).resolves.toEqual({
-      conversationId,
-      revision: 4,
-      turns: [
-        { role: "system", content: [{ kind: "text", text: "note" }] },
-        { role: "system", content: [{ kind: "text", text: "memo" }] },
-        { role: "user", content: [{ kind: "text", text: "native" }] },
-      ],
-    });
+    await expect(store.read(context, conversationId)).resolves.toBeNull();
     expect(issues).toEqual([{ code: "unsupported-native-message-content", messageIndex: 3 }]);
     expect(
       await store.append(

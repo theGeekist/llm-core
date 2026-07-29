@@ -1,9 +1,12 @@
 import {
   isCanonicalUuid,
   isDigest,
+  isExternalId,
   isJsonValue,
+  type JsonObject,
   type JsonValue,
   type ResourceRef,
+  type SecretRef,
 } from "#contracts";
 import type { CacheRecord, StorageValue } from "./types";
 
@@ -43,6 +46,81 @@ const deepFreeze = <T>(value: T): T => {
 
 const frozenClone = <T>(value: T): T => deepFreeze(structuredClone(value));
 
+const SENSITIVE_KEY_NAMES = new Set([
+  "credential",
+  "path",
+  "providermetadata",
+  "signedurl",
+  "token",
+  "apikey",
+]);
+const CREDENTIAL_VALUE_PATTERN =
+  /^(?:bearer\s+|basic\s+|sk-[a-z0-9]|ghp_|github_pat_|xox[baprs]-|AKIA[0-9a-z]{12}|-----BEGIN [a-z ]*PRIVATE KEY-----)/i;
+const PATH_VALUE_PATTERN = /^(?:\/|~\/|\.{1,2}\/|[A-Za-z]:[\\/]|\\\\|file:)/;
+const SIGNED_URL_PARAMETER_PATTERN =
+  /[?&](?:access_token|api[_-]?key|credential|signature|signed|token|x-amz-signature)=/i;
+
+const normalizedKey = (key: string): string => key.replace(/[^A-Za-z0-9]/g, "").toLowerCase();
+
+export const isSensitivePortableKey = (key: string): boolean => {
+  const normalized = normalizedKey(key);
+  return (
+    SENSITIVE_KEY_NAMES.has(normalized) ||
+    normalized.endsWith("credential") ||
+    normalized.endsWith("providermetadata") ||
+    normalized.endsWith("signedurl") ||
+    normalized.endsWith("apikey") ||
+    normalized.endsWith("token") ||
+    normalized.endsWith("path")
+  );
+};
+
+export const isSensitivePortableString = (value: string): boolean =>
+  CREDENTIAL_VALUE_PATTERN.test(value) ||
+  PATH_VALUE_PATTERN.test(value) ||
+  SIGNED_URL_PARAMETER_PATTERN.test(value);
+
+const isSecretRef = (value: unknown): value is SecretRef =>
+  isPlainRecord(value) && hasOnlyKeys(value, ["secretId"]) && isExternalId(value.secretId);
+
+const hasSafePortableJson = (value: JsonValue): boolean => {
+  if (typeof value === "string") {
+    return !isSensitivePortableString(value);
+  }
+  if (value === null || typeof value === "boolean" || typeof value === "number") {
+    return true;
+  }
+  if (Array.isArray(value)) {
+    return value.every(hasSafePortableJson);
+  }
+  if (isSecretRef(value) || isResourceRef(value)) {
+    return true;
+  }
+  return Object.entries(value).every(
+    ([key, child]) => !isSensitivePortableKey(key) && hasSafePortableJson(child),
+  );
+};
+
+export const isPortableJsonValue = (value: unknown): value is JsonValue =>
+  isJsonValue(value) && hasSafePortableJson(value);
+
+export const registerPortableJsonValue = (value: unknown): JsonValue => {
+  if (!isPortableJsonValue(value)) {
+    throw new TypeError(
+      "Portable JSON cannot contain credentials, physical paths, signed URLs or provider metadata.",
+    );
+  }
+  return frozenClone(value);
+};
+
+export const registerPortableJsonObject = (value: unknown): JsonObject => {
+  const registered = registerPortableJsonValue(value);
+  if (registered === null || Array.isArray(registered) || typeof registered !== "object") {
+    throw new TypeError("Portable JSON objects must be closed JSON records.");
+  }
+  return registered;
+};
+
 export const isStorageKey = (value: unknown): value is string =>
   typeof value === "string" && value.length > 0 && value.length <= 1024 && !/\s/.test(value);
 
@@ -75,7 +153,7 @@ export const isStorageValue = (value: unknown): value is StorageValue => {
     return false;
   }
   if (value.kind === "json") {
-    return hasOnlyKeys(value, ["kind", "value"]) && isJsonValue(value.value);
+    return hasOnlyKeys(value, ["kind", "value"]) && isPortableJsonValue(value.value);
   }
   return (
     value.kind === "resource" &&
@@ -94,7 +172,7 @@ export const registerStorageValue = (value: unknown): StorageValue => {
 };
 
 export const jsonStorageValue = (value: JsonValue): StorageValue =>
-  registerStorageValue({ kind: "json", value });
+  registerStorageValue({ kind: "json", value: registerPortableJsonValue(value) });
 
 export const resourceStorageValue = (resource: ResourceRef): StorageValue =>
   registerStorageValue({ kind: "resource", resource });

@@ -1,4 +1,4 @@
-import { isJsonValue, type JsonValue } from "#contracts";
+import type { JsonValue } from "#contracts";
 import { maybeMap, type MaybePromise } from "#shared/maybe";
 import {
   registerConversationRecord,
@@ -8,34 +8,40 @@ import {
   type ConversationStore,
   type ConversationTurn,
 } from "../../../../features/memory/public";
+import {
+  isPortableJsonValue,
+  registerPortableJsonObject,
+  registerPortableJsonValue,
+} from "../../../../features/storage/public";
 
-export interface AiSdkConversationMessage {
+/**
+ * Structural host message contract. AI SDK 7 does not publish a conversation
+ * memory provider, so this adapter intentionally makes no AI SDK claim.
+ */
+export interface HostConversationMessage {
   readonly chatId?: string;
   readonly userId?: string;
   readonly role: "system" | "user" | "assistant" | "tool";
   readonly content: string | readonly unknown[];
-  readonly timestamp?: Date;
+  readonly timestamp: Date;
   readonly metadata?: unknown;
 }
 
-export interface AiSdkWorkingMemory {
+export interface HostWorkingMemory {
   readonly content: string;
-  readonly updatedAt?: Date;
+  readonly updatedAt: Date;
   readonly metadata?: unknown;
 }
 
-export interface AiSdkMemoryProvider {
-  getMessages?(input: {
-    chatId: string;
-    userId?: string;
-  }): MaybePromise<AiSdkConversationMessage[]>;
-  saveMessage?(message: AiSdkConversationMessage): MaybePromise<void>;
+export interface HostConversationProvider {
+  getMessages?(input: { chatId: string; userId?: string }): MaybePromise<HostConversationMessage[]>;
+  saveMessage?(message: HostConversationMessage): MaybePromise<void>;
   clearMessages?(input: { chatId: string; userId?: string }): MaybePromise<void>;
   getWorkingMemory?(input: {
     chatId: string;
     userId?: string;
     scope: "chat";
-  }): MaybePromise<AiSdkWorkingMemory | null>;
+  }): MaybePromise<HostWorkingMemory | null>;
   updateWorkingMemory?(input: {
     chatId: string;
     userId?: string;
@@ -44,18 +50,19 @@ export interface AiSdkMemoryProvider {
   }): MaybePromise<void>;
 }
 
-export interface CreateAiSdkConversationStoresInput {
-  readonly provider: AiSdkMemoryProvider;
+export interface CreateHostConversationStoresInput {
+  readonly provider: HostConversationProvider;
   readonly userId?: string;
-  readonly onProjectionIssue?: (issue: ConversationProjectionIssue) => void;
+  readonly now?: () => Date;
+  readonly onProjectionIssue?: (issue: HostConversationProjectionIssue) => void;
 }
 
-export interface ConversationProjectionIssue {
+export interface HostConversationProjectionIssue {
   readonly code: "unsupported-native-message-content";
   readonly messageIndex: number;
 }
 
-const readNativeText = (content: AiSdkConversationMessage["content"]): string | null => {
+const readNativeText = (content: HostConversationMessage["content"]): string | null => {
   if (typeof content === "string") {
     return content;
   }
@@ -77,15 +84,19 @@ const readNativeText = (content: AiSdkConversationMessage["content"]): string | 
   return content.map((part) => (part as { text: string }).text).join("");
 };
 
-const toTurn = (message: AiSdkConversationMessage): ConversationTurn | null => {
+const toTurn = (message: HostConversationMessage): ConversationTurn | null => {
   const text = readNativeText(message.content);
-  if (text === null) {
+  if (
+    text === null ||
+    !(message.timestamp instanceof Date) ||
+    Number.isNaN(message.timestamp.getTime())
+  ) {
     return null;
   }
   return registerConversationTurn({
     role: message.role,
     content: [{ kind: "text", text }],
-    ...(message.timestamp ? { occurredAt: message.timestamp.toISOString() } : {}),
+    occurredAt: message.timestamp.toISOString(),
   });
 };
 
@@ -103,19 +114,62 @@ const readText = (turn: ConversationTurn): string | null => {
   return text.length > 0 ? text : null;
 };
 
-const toJsonState = (memory: AiSdkWorkingMemory | null): JsonValue | null =>
-  memory
-    ? {
-        workingMemory: memory.content,
-        ...(memory.updatedAt ? { workingMemoryUpdatedAt: memory.updatedAt.toISOString() } : {}),
-      }
-    : null;
+const safeNotify = (
+  notify: CreateHostConversationStoresInput["onProjectionIssue"],
+  issue: HostConversationProjectionIssue,
+) => {
+  try {
+    notify?.(issue);
+  } catch {
+    // Diagnostics cannot replace the safe null outcome.
+  }
+};
 
-export const createAiSdkConversationStores = ({
+const projectMessages = (
+  conversationId: Parameters<ConversationStore["read"]>[1],
+  messages: HostConversationMessage[],
+  notify: CreateHostConversationStoresInput["onProjectionIssue"],
+): ConversationRecord | null => {
+  const turns: ConversationTurn[] = [];
+  let failed = false;
+  messages.forEach((message, messageIndex) => {
+    const turn = toTurn(message);
+    if (turn) {
+      turns.push(turn);
+      return;
+    }
+    failed = true;
+    safeNotify(notify, {
+      code: "unsupported-native-message-content",
+      messageIndex,
+    });
+  });
+  return failed
+    ? null
+    : registerConversationRecord({
+        conversationId,
+        turns,
+        revision: messages.length,
+      });
+};
+
+const toJsonState = (memory: HostWorkingMemory | null): JsonValue | null => {
+  if (!memory || !(memory.updatedAt instanceof Date) || Number.isNaN(memory.updatedAt.getTime())) {
+    return null;
+  }
+  const candidate = {
+    workingMemory: memory.content,
+    workingMemoryUpdatedAt: memory.updatedAt.toISOString(),
+  };
+  return isPortableJsonValue(candidate) ? registerPortableJsonValue(candidate) : null;
+};
+
+export const createHostConversationStores = ({
   provider,
   userId,
+  now = () => new Date(),
   onProjectionIssue,
-}: CreateAiSdkConversationStoresInput): {
+}: CreateHostConversationStoresInput): {
   readonly conversations: ConversationStore;
   readonly state: ConversationStateStore;
 } => {
@@ -125,24 +179,7 @@ export const createAiSdkConversationStores = ({
         return null;
       }
       return maybeMap(
-        (messages): ConversationRecord => {
-          const turns = messages.flatMap((message, messageIndex) => {
-            const turn = toTurn(message);
-            if (turn) {
-              return [turn];
-            }
-            onProjectionIssue?.({
-              code: "unsupported-native-message-content",
-              messageIndex,
-            });
-            return [];
-          });
-          return registerConversationRecord({
-            conversationId,
-            turns,
-            revision: messages.length,
-          });
-        },
+        (messages) => projectMessages(conversationId, messages, onProjectionIssue),
         provider.getMessages({ chatId: conversationId, userId }),
       );
     },
@@ -155,6 +192,10 @@ export const createAiSdkConversationStores = ({
       if (content === null) {
         return false;
       }
+      const timestamp = registered.occurredAt ? new Date(registered.occurredAt) : now();
+      if (!(timestamp instanceof Date) || Number.isNaN(timestamp.getTime())) {
+        return false;
+      }
       return maybeMap(
         () => true,
         provider.saveMessage({
@@ -162,7 +203,7 @@ export const createAiSdkConversationStores = ({
           userId,
           role: registered.role === "tool" ? "assistant" : registered.role,
           content,
-          ...(registered.occurredAt ? { timestamp: new Date(registered.occurredAt) } : {}),
+          timestamp,
         }),
       );
     },
@@ -173,19 +214,23 @@ export const createAiSdkConversationStores = ({
   };
 
   const state: ConversationStateStore = {
-    load: (_context, conversationId) =>
-      provider.getWorkingMemory
+    load: (_context, conversationId, input) => {
+      registerPortableJsonObject(input);
+      return provider.getWorkingMemory
         ? maybeMap(
             toJsonState,
             provider.getWorkingMemory({ chatId: conversationId, userId, scope: "chat" }),
           )
-        : null,
-    save: (_context, conversationId, { output }) => {
+        : null;
+    },
+    save: (_context, conversationId, { input, output }) => {
       if (!provider.updateWorkingMemory) {
         return null;
       }
-      const content = output.workingMemory;
-      if (typeof content !== "string" || !isJsonValue(output)) {
+      registerPortableJsonObject(input);
+      const registeredOutput = registerPortableJsonObject(output);
+      const content = registeredOutput.workingMemory;
+      if (typeof content !== "string") {
         return false;
       }
       return maybeMap(

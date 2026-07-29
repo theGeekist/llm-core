@@ -5,10 +5,9 @@ import {
   type CacheRecord,
   type CacheStore,
 } from "../../../../features/storage/public";
-import type { LlamaIndexKeyValueStore } from "./types";
 
 export interface CreateLlamaIndexCacheStoreInput {
-  readonly store: LlamaIndexKeyValueStore;
+  readonly store: BaseKVStore;
   readonly collection?: string;
 }
 
@@ -16,12 +15,21 @@ export const createLlamaIndexCacheStore = ({
   store,
   collection,
 }: CreateLlamaIndexCacheStoreInput): CacheStore =>
-  createCacheStoreAdapter<unknown, CacheRecord>({
+  createCacheStoreAdapter<unknown, { readonly cacheRecord: CacheRecord }>({
     backend: {
       read: (_context, key) => store.get(key, collection),
       write: (_context, { key, value }) => store.put(key, value, collection),
       remove: (_context, key) => store.delete(key, collection),
     },
-    decode: (value) => (isCacheRecord(value) ? value : null),
-    encode: (_key, value, ttlMs) => createCacheRecord(value, ttlMs),
+    decode: (value) =>
+      value &&
+      typeof value === "object" &&
+      !Array.isArray(value) &&
+      Object.keys(value).length === 1 &&
+      "cacheRecord" in value &&
+      isCacheRecord(value.cacheRecord)
+        ? value.cacheRecord
+        : null,
+    encode: (_key, value, ttlMs) => ({ cacheRecord: createCacheRecord(value, ttlMs) }),
   });
+import type { BaseKVStore } from "@llamaindex/core/storage/kv-store";

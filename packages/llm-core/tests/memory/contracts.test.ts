@@ -89,4 +89,28 @@ describe("conversation contracts", () => {
       }),
     ).toThrow();
   });
+
+  test("rejects sensitive JSON content, tool arguments and tool results recursively", () => {
+    const toolCallId = coreId<ToolCallId>("0190bd0c-0000-4000-8000-000000000104");
+    for (const content of [
+      [{ kind: "json", value: { nested: { credential: "raw" } } }],
+      [
+        {
+          kind: "tool-call",
+          toolCallId,
+          name: "unsafe",
+          arguments: { nested: { apiKey: "raw" } },
+        },
+      ],
+      [
+        {
+          kind: "tool-result",
+          toolCallId,
+          result: [{ kind: "json", value: { nested: { signedUrl: "https://secret" } } }],
+        },
+      ],
+    ]) {
+      expect(() => registerConversationTurn({ role: "assistant", content })).toThrow();
+    }
+  });
 });

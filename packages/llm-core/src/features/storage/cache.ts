@@ -30,16 +30,38 @@ export interface CacheAdapterPolicy<TRead, TStored> {
 
 const trueResult = () => true;
 const nullValue = () => null;
+const MAX_DATE_TIMESTAMP = 8_640_000_000_000_000;
+
+const assertCacheTtl = (ttlMs: number | undefined, now: number): void => {
+  if (ttlMs === undefined) {
+    return;
+  }
+  if (
+    !Number.isSafeInteger(ttlMs) ||
+    ttlMs < 0 ||
+    !Number.isFinite(now) ||
+    now < -MAX_DATE_TIMESTAMP ||
+    now > MAX_DATE_TIMESTAMP ||
+    ttlMs > MAX_DATE_TIMESTAMP - now
+  ) {
+    throw new TypeError(
+      "Cache TTL values must be non-negative safe integers within the portable date range.",
+    );
+  }
+};
 
 export const createCacheRecord = (
   value: StorageValue,
   ttlMs?: number,
   now: () => number = Date.now,
-): CacheRecord =>
-  registerCacheRecord({
+): CacheRecord => {
+  const currentTime = now();
+  assertCacheTtl(ttlMs, currentTime);
+  return registerCacheRecord({
     value: registerStorageValue(value),
-    ...(ttlMs === undefined ? {} : { expiresAt: new Date(now() + ttlMs).toISOString() }),
+    ...(ttlMs === undefined ? {} : { expiresAt: new Date(currentTime + ttlMs).toISOString() }),
   });
+};
 
 export const createCacheStoreAdapter = <TRead, TStored>(
   policy: CacheAdapterPolicy<TRead, TStored>,
@@ -56,7 +78,7 @@ export const createCacheStoreAdapter = <TRead, TStored>(
         if (!record || !isCacheRecord(record)) {
           return null;
         }
-        if (record.expiresAt && now() > Date.parse(record.expiresAt)) {
+        if (record.expiresAt && now() >= Date.parse(record.expiresAt)) {
           return maybeMap(nullValue, policy.backend.remove(context, key));
         }
         return registerStorageValue(record.value);
@@ -71,15 +93,17 @@ export const createCacheStoreAdapter = <TRead, TStored>(
   ) => {
     const { key, value, ttlMs } = input;
     assertStorageKey(key);
-    if (ttlMs !== undefined && (!Number.isSafeInteger(ttlMs) || ttlMs < 0)) {
-      throw new TypeError("Cache TTL values must be non-negative safe integers.");
-    }
+    const currentTime = now();
+    assertCacheTtl(ttlMs, currentTime);
     const resolvedTtl = policy.resolveTtl?.(ttlMs) ?? ttlMs;
+    assertCacheTtl(resolvedTtl, currentTime);
+    const registeredValue = registerStorageValue(value);
+    const encoded = policy.encode(key, registeredValue, resolvedTtl);
     return maybeMap(
       normalizeSet,
       policy.backend.write(context, {
         key,
-        value: policy.encode(key, registerStorageValue(value), resolvedTtl),
+        value: encoded,
       }),
     );
   };

@@ -27,7 +27,7 @@ describe("cache store policy", () => {
 
     expect(cache.set(context, { key: "entry", value, ttlMs: 10 })).toBe(true);
     expect(cache.get(context, "entry")).toEqual(value);
-    now += 11;
+    now += 10;
     expect(cache.get(context, "entry")).toBeNull();
     expect(cache.delete(context, "missing")).toBe(false);
   });
@@ -49,19 +49,73 @@ describe("cache store policy", () => {
     await expect(cache.delete(context, "async")).resolves.toBeNull();
   });
 
-  test("fails closed on invalid keys and TTL values", () => {
+  test("expires zero TTL at the equality boundary", () => {
+    const now = Date.parse("2026-07-29T10:00:00.000Z");
+    const values = new Map<string, CacheRecord>();
+    let removals = 0;
+    const cache = createCacheStoreAdapter<CacheRecord, CacheRecord>({
+      backend: {
+        read: (_context, key) => values.get(key),
+        write: (_context, { key, value }) => void values.set(key, value),
+        remove: (_context, key) => {
+          removals += 1;
+          return values.delete(key);
+        },
+      },
+      decode: (entry) => entry ?? null,
+      encode: (_key, value, ttlMs) => createCacheRecord(value, ttlMs, () => now),
+      now: () => now,
+    });
+
+    expect(cache.set(context, { key: "zero", value: jsonStorageValue("value"), ttlMs: 0 })).toBe(
+      true,
+    );
+    expect(cache.get(context, "zero")).toBeNull();
+    expect(removals).toBe(1);
+  });
+
+  test("fails closed before encoding or writing invalid explicit and resolved TTLs", () => {
+    let encodes = 0;
+    let writes = 0;
     const cache = createCacheStoreAdapter<CacheRecord, CacheRecord>({
       backend: {
         read: () => null,
-        write: () => undefined,
+        write: () => {
+          writes += 1;
+        },
         remove: () => undefined,
       },
       decode: () => null,
-      encode: (_key, value) => createCacheRecord(value),
+      encode: (_key, value) => {
+        encodes += 1;
+        return createCacheRecord(value);
+      },
     });
     expect(() => cache.get(context, "")).toThrow();
-    expect(() =>
-      cache.set(context, { key: "key", value: jsonStorageValue(null), ttlMs: -1 }),
-    ).toThrow();
+    for (const ttlMs of [-1, 0.5, Number.MAX_SAFE_INTEGER]) {
+      expect(() =>
+        cache.set(context, { key: "key", value: jsonStorageValue(null), ttlMs }),
+      ).toThrow();
+    }
+
+    for (const resolvedTtl of [-1, 0.5, Number.MAX_SAFE_INTEGER]) {
+      const resolved = createCacheStoreAdapter<CacheRecord, CacheRecord>({
+        backend: {
+          read: () => null,
+          write: () => {
+            writes += 1;
+          },
+          remove: () => undefined,
+        },
+        decode: () => null,
+        encode: (_key, value) => {
+          encodes += 1;
+          return createCacheRecord(value);
+        },
+        resolveTtl: () => resolvedTtl,
+      });
+      expect(() => resolved.set(context, { key: "key", value: jsonStorageValue(null) })).toThrow();
+    }
+    expect({ encodes, writes }).toEqual({ encodes: 0, writes: 0 });
   });
 });

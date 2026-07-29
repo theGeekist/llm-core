@@ -1,10 +1,5 @@
-import {
-  isCanonicalUuid,
-  isDigest,
-  isJsonValue,
-  isSchemaRef,
-  type ConversationId,
-} from "#contracts";
+import { isCanonicalUuid, isDigest, isSchemaRef, type ConversationId } from "#contracts";
+import { isPortableJsonValue } from "../storage/public";
 import type {
   ConversationContentPart,
   ConversationPortableContent,
@@ -57,7 +52,7 @@ const isPortableContent = (value: unknown): value is ConversationPortableContent
     case "json":
       return (
         hasOnlyKeys(value, ["kind", "value"], ["schema"]) &&
-        isJsonValue(value.value) &&
+        isPortableJsonValue(value.value) &&
         (value.schema === undefined || isSchemaRef(value.schema))
       );
     case "media-ref":
@@ -89,7 +84,7 @@ const isContentPart = (value: unknown): value is ConversationContentPart => {
         isCanonicalUuid(value.toolCallId) &&
         typeof value.name === "string" &&
         value.name.length > 0 &&
-        isJsonValue(value.arguments)
+        isPortableJsonValue(value.arguments)
       );
     case "tool-result":
       return (

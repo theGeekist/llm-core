@@ -1,4 +1,5 @@
 import { describe, expect, test } from "bun:test";
+import { secretRef, type JsonValue } from "#contracts";
 import {
   jsonStorageValue,
   registerCacheRecord,
@@ -38,6 +39,36 @@ describe("storage contracts", () => {
     expect(() =>
       registerStorageValue({ kind: "json", value: { credential: undefined } }),
     ).toThrow();
+  });
+
+  test("rejects recursive sensitive keys and values while preserving opaque references", () => {
+    const unsafe: JsonValue[] = [
+      { nested: { credential: "raw" } },
+      { nested: { path: "/private/data" } },
+      { nested: { signedUrl: "https://storage.invalid/file" } },
+      { nested: { providerMetadata: { model: "native" } } },
+      { nested: { apiKey: "raw" } },
+      { nested: { accessToken: "raw" } },
+      { safeKey: "/private/data" },
+      { safeKey: "https://storage.invalid/file?token=secret" },
+      { safeKey: "Bearer raw-secret" },
+    ];
+    for (const value of unsafe) {
+      expect(() => jsonStorageValue(value)).toThrow();
+    }
+
+    expect(
+      jsonStorageValue({
+        authorization: secretRef("sk-reference-not-material"),
+        resource,
+      }),
+    ).toEqual({
+      kind: "json",
+      value: {
+        authorization: { secretId: "sk-reference-not-material" },
+        resource,
+      },
+    });
   });
 
   test("keeps cache records portable and canonically timestamped", () => {

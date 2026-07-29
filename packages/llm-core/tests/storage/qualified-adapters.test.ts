@@ -1,24 +1,28 @@
 import { describe, expect, test } from "bun:test";
-import { createAiSdkCacheStore } from "../../src/adapters/providers/ai-sdk/storage";
+import { KVDocumentStore } from "@llamaindex/core/storage/doc-store";
+import { SimpleKVStore } from "@llamaindex/core/storage/kv-store";
+import { createHostBackedCacheStore } from "../../src/adapters/providers/ai-sdk/storage";
 import {
   createLangChainCacheStore,
   createLangChainKeyValueStore,
 } from "../../src/adapters/frameworks/langchain/storage";
 import {
   createLlamaIndexCacheStore,
+  createLlamaIndexDocumentKeyValueStore,
   createLlamaIndexKeyValueStore,
 } from "../../src/adapters/frameworks/llamaindex/storage";
 import {
   jsonStorageValue,
+  resourceStorageValue,
   type CacheRecord,
   type StorageValue,
 } from "../../src/features/storage/public";
-import { context } from "./helpers";
+import { context, resource } from "./helpers";
 
 describe("qualified storage adapters", () => {
-  test("maps AI SDK cache stores and default TTL", async () => {
+  test("maps a truthful host cache contract and default TTL", async () => {
     const values = new Map<string, CacheRecord>();
-    const cache = createAiSdkCacheStore({
+    const cache = createHostBackedCacheStore({
       store: {
         get: (key) => values.get(key),
         set: (key, entry) => void values.set(key, entry),
@@ -26,12 +30,31 @@ describe("qualified storage adapters", () => {
         getDefaultTTL: () => 1,
       },
     });
-    const value = jsonStorageValue({ provider: "ai-sdk" });
+    const value = jsonStorageValue({ implementation: "host" });
 
     expect(cache.set(context, { key: "key", value })).toBe(true);
     expect(await cache.get(context, "key")).toEqual(value);
     await new Promise((resolve) => setTimeout(resolve, 5));
     expect(await cache.get(context, "key")).toBeNull();
+  });
+
+  test("rejects an invalid host default TTL before calling set", () => {
+    let writes = 0;
+    const cache = createHostBackedCacheStore({
+      store: {
+        get: () => undefined,
+        set: () => {
+          writes += 1;
+        },
+        delete: () => false,
+        getDefaultTTL: () => -1,
+      },
+    });
+
+    expect(() =>
+      cache.set(context, { key: "key", value: jsonStorageValue({ safe: true }) }),
+    ).toThrow();
+    expect(writes).toBe(0);
   });
 
   test("maps LangChain cache and key-value stores", async () => {
@@ -75,37 +98,63 @@ describe("qualified storage adapters", () => {
     await expect(cache.get(context, "cache")).resolves.toEqual(value);
   });
 
-  test("maps LlamaIndex cache and document stores", async () => {
-    const cacheValues = new Map<string, unknown>();
+  test("round-trips exact values through installed LlamaIndex stores", async () => {
+    const cacheValues = new SimpleKVStore();
     const cache = createLlamaIndexCacheStore({
-      store: {
-        get: (key) => cacheValues.get(key),
-        put: (key, value) => void cacheValues.set(key, value),
-        delete: (key) => cacheValues.delete(key),
-      },
+      store: cacheValues,
+      collection: "llm-core-cache",
     });
     const value = jsonStorageValue({ provider: "llamaindex" });
-    expect(cache.set(context, { key: "cache", value })).toBe(true);
-    expect(cache.get(context, "cache")).toEqual(value);
+    await expect(cache.set(context, { key: "cache", value })).resolves.toBe(true);
+    await expect(cache.get(context, "cache")).resolves.toEqual(value);
 
-    const documents = new Map<string, Record<string, unknown>>();
+    const nativeValues = new SimpleKVStore();
     const keyValue = createLlamaIndexKeyValueStore({
-      docs: () => Object.fromEntries(documents),
-      getDocument: (key) => {
-        const document = documents.get(key);
-        return document ? { toJSON: () => document } : undefined;
-      },
-      addDocuments: (entries) => {
-        entries.forEach((entry) => documents.set(String(entry.id_), entry));
-      },
-      deleteDocument: (key) => void documents.delete(key),
+      store: nativeValues,
+      collection: "llm-core-values",
     });
+    const scalarValue = jsonStorageValue("scalar");
+    const referencedValue = resourceStorageValue(resource);
+    const values = [value, scalarValue, referencedValue];
+    await expect(
+      keyValue.setMany(context, [
+        ["doc-1", value],
+        ["doc-2", scalarValue],
+        ["doc-3", referencedValue],
+      ]),
+    ).resolves.toBe(true);
+    await expect(keyValue.getMany(context, ["doc-1", "doc-2", "doc-3"])).resolves.toEqual(values);
+    await expect(keyValue.list(context, "doc")).resolves.toEqual(["doc-1", "doc-2", "doc-3"]);
+    await nativeValues.put(
+      "foreign",
+      { credential: "raw", signedUrl: "https://storage.invalid/file?token=secret" },
+      "llm-core-values",
+    );
+    await expect(keyValue.getMany(context, ["foreign"])).resolves.toEqual([null]);
+    await expect(keyValue.list(context)).resolves.not.toContain("foreign");
+    expect(() =>
+      keyValue.setMany(context, [
+        ["staged-safe", value],
+        ["staged-unsafe", { kind: "json", value: { token: "raw" } } as never],
+      ]),
+    ).toThrow();
+    await expect(nativeValues.get("staged-safe", "llm-core-values")).resolves.toBeNull();
+    await expect(keyValue.deleteMany(context, ["doc-1"])).resolves.toBe(true);
 
-    expect(keyValue.setMany(context, [["doc-1", value]])).toBe(true);
-    expect(keyValue.getMany(context, ["doc-1"])).toEqual([
-      jsonStorageValue({ provider: "llamaindex", id_: "doc-1" }),
+    const documentStore = new KVDocumentStore(new SimpleKVStore(), "llm-core-documents");
+    const documentValues = createLlamaIndexDocumentKeyValueStore(documentStore);
+    await expect(
+      documentValues.setMany(context, [
+        ["node-1", jsonStorageValue(false)],
+        ["node-2", resourceStorageValue(resource)],
+      ]),
+    ).resolves.toBe(true);
+    await expect(documentValues.getMany(context, ["node-1", "node-2"])).resolves.toEqual([
+      jsonStorageValue(false),
+      resourceStorageValue(resource),
     ]);
-    expect(keyValue.list(context, "doc")).toEqual(["doc-1"]);
-    expect(keyValue.deleteMany(context, ["doc-1"])).toBe(true);
+    const nativeNode = await documentStore.getDocument("node-1", true);
+    expect(nativeNode?.constructor.name).toBe("Document");
+    await expect(documentValues.deleteMany(context, ["node-1", "node-2"])).resolves.toBe(true);
   });
 });
