@@ -314,6 +314,47 @@ describe("intervention workflow resume", () => {
     expect(executions).toBe(0);
   });
 
+  test("uses the immutable decision authenticated before the asynchronous boundary", async () => {
+    const journal = new MemoryResumeJournal();
+    const mutableDecision = structuredClone(decision("deny")) as InterventionDecision & {
+      decision: "approve" | "deny";
+    };
+    let authenticate!: (
+      result: Awaited<ReturnType<InterventionAuthenticationPort["verify"]>>,
+    ) => void;
+    const authentication = new Promise<
+      Awaited<ReturnType<InterventionAuthenticationPort["verify"]>>
+    >((resolve) => {
+      authenticate = resolve;
+    });
+    let authenticatedDecision: InterventionDecision["decision"] | undefined;
+    let executions = 0;
+    const outcome = run({
+      journal,
+      choice: mutableDecision,
+      authentication: {
+        verify: ({ decision: candidate }) => {
+          authenticatedDecision = candidate.decision;
+          return authentication;
+        },
+      },
+      steps: [
+        meaningfulStep(() => {
+          executions += 1;
+          throw new Error("the unauthenticated mutation must not execute");
+        }),
+      ],
+    });
+
+    mutableDecision.decision = "approve";
+    authenticate({ status: "authenticated", principal });
+
+    expect(await outcome).toEqual({ status: "denied" });
+    expect(authenticatedDecision).toBe("deny");
+    expect(journal.events).toEqual(["checkpoint:denied"]);
+    expect(executions).toBe(0);
+  });
+
   test("records durable started before invocation and durable completion before checkpoint commit", async () => {
     const journal = new MemoryResumeJournal();
     const outcome = await run({

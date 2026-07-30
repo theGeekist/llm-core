@@ -7,6 +7,8 @@ import {
 import {
   authenticateIntervention,
   checkResumeCompatibility,
+  createInterventionDecision,
+  createInterventionRequest,
   isRegisteredResumableCheckpoint,
   resolveIntervention,
   type InterventionResolution,
@@ -21,6 +23,29 @@ import type {
   WorkflowResumeOutcome,
 } from "./types";
 import { executeSteps, unsafeEffect } from "./execution";
+
+const snapshotResumeInput = (
+  input: ResumeInterventionWorkflowInput,
+): ResumeInterventionWorkflowInput | null => {
+  try {
+    const intervention = createInterventionRequest(input.intervention);
+    const decision = createInterventionDecision(input.decision);
+    return Object.freeze({
+      checkpoint: input.checkpoint,
+      intervention,
+      decision,
+      expectedCompatibility: input.expectedCompatibility,
+      securityDomain: input.securityDomain,
+      actionDigestPort: input.actionDigestPort,
+      authentication: input.authentication,
+      clock: input.clock,
+      journal: input.journal,
+      steps: input.steps,
+    });
+  } catch {
+    return null;
+  }
+};
 
 const reject = (
   reason: Extract<WorkflowResumeOutcome, { status: "rejected" }>["reason"],
@@ -311,8 +336,12 @@ const persistResolution = async (
 
 /** One authenticated, exact-action-bound workflow intervention/resume path. */
 export const resumeInterventionWorkflow = async (
-  input: ResumeInterventionWorkflowInput,
+  candidate: ResumeInterventionWorkflowInput,
 ): Promise<WorkflowResumeOutcome> => {
+  const input = snapshotResumeInput(candidate);
+  if (!input) {
+    return reject("intervention-rejected");
+  }
   if (!isRegisteredResumableCheckpoint(input.checkpoint)) {
     return reject("checkpoint-not-registered");
   }

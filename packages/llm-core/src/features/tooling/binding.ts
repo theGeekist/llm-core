@@ -1,5 +1,6 @@
+import { isProxy } from "node:util/types";
+import { isUuidV7, type RunId, type StepId, type ToolCallId } from "#contracts";
 import { maybeChain, type MaybePromise } from "#shared/maybe";
-import type { RunId, StepId, ToolCallId } from "#contracts";
 import { defineToolSpec } from "./action";
 import { freezeJsonValue, normalizeStrictJson } from "./canonical-json";
 import type {
@@ -34,6 +35,54 @@ export interface RebindValidatedToolCallInput {
   stepId?: StepId;
 }
 
+const captureRebindInput = (input: RebindValidatedToolCallInput): RebindValidatedToolCallInput => {
+  try {
+    if (
+      input === null ||
+      typeof input !== "object" ||
+      isProxy(input) ||
+      ![Object.prototype, null].includes(Object.getPrototypeOf(input))
+    ) {
+      throw new TypeError();
+    }
+    const descriptors = Object.getOwnPropertyDescriptors(input);
+    const keys = Reflect.ownKeys(descriptors);
+    const allowed = new Set(["binding", "call", "toolCallId", "runId", "stepId"]);
+    if (
+      !["binding", "call", "toolCallId", "runId"].every((key) => Object.hasOwn(descriptors, key)) ||
+      keys.some((key) => typeof key !== "string" || !allowed.has(key)) ||
+      keys.some((key) => {
+        const descriptor = descriptors[key as string];
+        return descriptor?.enumerable !== true || !("value" in descriptor);
+      })
+    ) {
+      throw new TypeError();
+    }
+    const captured = Object.freeze({
+      binding: descriptors.binding!.value as ToolBinding,
+      call: descriptors.call!.value as ToolCall,
+      toolCallId: descriptors.toolCallId!.value as ToolCallId,
+      runId: descriptors.runId!.value as RunId,
+      ...(descriptors.stepId === undefined
+        ? {}
+        : { stepId: descriptors.stepId.value as StepId | undefined }),
+    });
+    if (
+      !isUuidV7(captured.toolCallId) ||
+      !isUuidV7(captured.runId) ||
+      (captured.stepId !== undefined && !isUuidV7(captured.stepId))
+    ) {
+      throw new TypeError("Replacement tool lifecycle identities must be canonical UUIDv7 IDs.");
+    }
+    return captured;
+  } catch (error) {
+    if (error instanceof TypeError && error.message.length > 0) {
+      throw error;
+    }
+    throw new TypeError("Validated-call rebinding requires a closed data-property input.");
+  }
+};
+
 /** Returns true only for the exact facade returned by `createToolBinding`. */
 export const isRegisteredToolBinding = (value: unknown): value is ToolBinding =>
   value !== null &&
@@ -45,24 +94,27 @@ export const isRegisteredToolBinding = (value: unknown): value is ToolBinding =>
  * one-shot proof that the call's external arguments were already validated.
  */
 export const rebindValidatedToolCall = (input: RebindValidatedToolCallInput): ToolCall => {
-  const state = registeredToolBindings.get(input.binding);
-  if (!state?.validatedCalls.has(input.call)) {
+  const captured = captureRebindInput(input);
+  const state = registeredToolBindings.get(captured.binding);
+  if (!state?.validatedCalls.has(captured.call)) {
     throw new TypeError("Only a call validated by this tool binding can be rebound.");
   }
-  const invocation = { ...input.call.invocation };
+  const invocation = { ...captured.call.invocation };
   delete invocation.stepId;
   const rebound = Object.freeze({
-    ...input.call,
-    toolCallId: input.toolCallId,
+    ...captured.call,
+    toolCallId: captured.toolCallId,
     invocation: freezeJsonValue(
       normalizeStrictJson({
         ...invocation,
-        runId: input.runId,
-        ...(input.stepId === undefined ? {} : { stepId: input.stepId }),
+        runId: captured.runId,
+        ...(captured.stepId === undefined ? {} : { stepId: captured.stepId }),
       }),
     ) as unknown as ToolCall["invocation"],
   });
-  state.validatedCalls.delete(input.call);
+  if (!state.validatedCalls.delete(captured.call)) {
+    throw new TypeError("Validated-call provenance was already consumed.");
+  }
   state.validatedCalls.add(rebound);
   return rebound;
 };

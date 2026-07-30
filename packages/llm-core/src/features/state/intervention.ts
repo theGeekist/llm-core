@@ -171,10 +171,23 @@ export type InterventionResolution =
     };
 
 export const createInterventionRequest = (request: InterventionRequest): InterventionRequest => {
-  if (!isValidRequest(request)) {
-    throw new TypeError("Intervention requests require a timestamp and distinct allowed decisions.");
+  const snapshot = deepFreeze(clonePortable(request));
+  if (!isValidRequest(snapshot)) {
+    throw new TypeError(
+      "Intervention requests require a timestamp and distinct allowed decisions.",
+    );
   }
-  return deepFreeze(clonePortable(request));
+  return snapshot;
+};
+
+export const createInterventionDecision = (
+  decision: InterventionDecision,
+): InterventionDecision => {
+  const snapshot = deepFreeze(clonePortable(decision));
+  if (!isValidDecision(snapshot)) {
+    throw new TypeError("Intervention decisions must be closed, portable, and action-bound.");
+  }
+  return snapshot;
 };
 
 const reject = (

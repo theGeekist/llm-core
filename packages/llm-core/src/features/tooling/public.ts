@@ -8,7 +8,7 @@ export {
   toolId,
   verifyActionDigest,
 } from "./action";
-export { createToolBinding, isRegisteredToolBinding, rebindValidatedToolCall } from "./binding";
+export { createToolBinding, isRegisteredToolBinding } from "./binding";
 export { registerToolSchema } from "./schema-registration";
 export { ToolArgumentValidationError, validateToolArguments } from "./validation";
 export type {
@@ -20,7 +20,7 @@ export type {
   BindActionInput,
   BoundAction,
 } from "./action";
-export type { CreateToolBindingInput, RebindValidatedToolCallInput, ToolExecutor } from "./binding";
+export type { CreateToolBindingInput, ToolExecutor } from "./binding";
 export type { RegisteredToolSchema, ToolSchemaDigestPort } from "./schema-registration";
 export type {
   ToolArgumentIssue,

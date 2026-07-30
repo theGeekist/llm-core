@@ -52,6 +52,7 @@ describe("ADR-008 public package surface", () => {
     expect(packageJson.version).toBe("2.0.0");
     expect(Object.keys(packageJson.exports)).toEqual(Object.keys(PUBLIC_SURFACE));
     expect(Object.values(PUBLIC_SURFACE).every(Boolean)).toBe(true);
+    expect("rebindValidatedToolCall" in tools).toBe(false);
   });
 
   test("does not retain legacy public subpaths", () => {

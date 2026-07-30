@@ -31,11 +31,11 @@ import {
 import {
   bindAction,
   isRegisteredToolBinding,
-  rebindValidatedToolCall,
   type BoundAction,
   type EffectClass,
   type ToolExecutionControl,
 } from "../../features/tooling/public";
+import { rebindValidatedToolCall } from "../../features/tooling/orchestration";
 import type {
   ControlledToolExecutionOutcome,
   EventDelivery,

@@ -34,9 +34,7 @@ const legacyFiles = [
 ] as const;
 
 const importSpecifiers = (source: string): string[] => {
-  const matches = source.matchAll(
-    /(?:from\s+|import\s*\(\s*)["']([^"']+)["']/g,
-  );
+  const matches = source.matchAll(/(?:from\s+|import\s*\(\s*)["']([^"']+)["']/g);
   return [...matches].map((match) => match[1]!);
 };
 
@@ -54,6 +52,9 @@ const resolveInternalImport = (file: string, specifier: string): string | null =
 
 const isPublicFront = (path: string): boolean =>
   path.endsWith("/public.ts") || path.endsWith("/index.ts");
+
+const isApplicationFeatureFront = (path: string): boolean =>
+  isPublicFront(path) || path.endsWith("/orchestration.ts");
 
 describe("architecture v2 source boundaries", () => {
   test("removes the adapter-owned domain and legacy orchestration authorities", () => {
@@ -100,10 +101,7 @@ describe("architecture v2 source boundaries", () => {
           violations.push(`${owner} -> ${imported}`);
           continue;
         }
-        if (
-          feature &&
-          /^(?:application|composition|adapters)\//.test(imported)
-        ) {
+        if (feature && /^(?:application|composition|adapters)\//.test(imported)) {
           violations.push(`${owner} -> ${imported}`);
           continue;
         }
@@ -111,15 +109,12 @@ describe("architecture v2 source boundaries", () => {
         if (
           owner.startsWith("application/") &&
           importedFeature &&
-          !isPublicFront(imported)
+          !isApplicationFeatureFront(imported)
         ) {
           violations.push(`${owner} -> ${imported}`);
           continue;
         }
-        if (
-          owner.startsWith("application/") &&
-          /^(?:composition|adapters)\//.test(imported)
-        ) {
+        if (owner.startsWith("application/") && /^(?:composition|adapters)\//.test(imported)) {
           violations.push(`${owner} -> ${imported}`);
           continue;
         }

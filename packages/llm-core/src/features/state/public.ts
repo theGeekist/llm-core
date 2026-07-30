@@ -16,6 +16,7 @@ export {
   registerResumableCheckpoint,
 } from "./lifetimes";
 export {
+  createInterventionDecision,
   createInterventionRequest,
   interventionDecisionId,
   interventionId,

@@ -23,7 +23,7 @@ const importsOf = (source: string): string[] =>
   [...source.matchAll(/(?:from|import)\s*(?:\([^)]*)?["']([^"']+)["']/g)].map((match) => match[1]!);
 
 describe("v2 package boundaries", () => {
-  test("cross-feature imports use public fronts", () => {
+  test("cross-feature imports use public or application-only fronts", () => {
     const violations: string[] = [];
     for (const file of scannedRoots.flatMap(walk)) {
       const owner = relative(sourceRoot, file).split("/").slice(0, 2).join("/");
@@ -31,7 +31,9 @@ describe("v2 package boundaries", () => {
         if (!specifier.includes("features/")) continue;
         const target = relative(sourceRoot, resolve(file, "..", specifier));
         const targetOwner = target.split("/").slice(0, 2).join("/");
-        if (owner !== targetOwner && !target.endsWith("/public")) {
+        const applicationFront =
+          owner.startsWith("application/") && target.endsWith("/orchestration");
+        if (owner !== targetOwner && !target.endsWith("/public") && !applicationFront) {
           violations.push(`${relative(root, file)} -> ${specifier}`);
         }
       }

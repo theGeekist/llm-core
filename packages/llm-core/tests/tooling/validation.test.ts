@@ -1,6 +1,14 @@
 import { createHash } from "node:crypto";
 import { describe, expect, test } from "bun:test";
-import { contractVersion, coreId, digest, type InvocationId, type ToolCallId } from "#contracts";
+import {
+  contractVersion,
+  coreId,
+  digest,
+  type InvocationId,
+  type RunId,
+  type StepId,
+  type ToolCallId,
+} from "#contracts";
 import {
   ToolArgumentValidationError,
   createToolBinding,
@@ -12,6 +20,7 @@ import {
   type ToolBinding,
   type ToolArgumentValidationPort,
 } from "../../src/features/tooling/public";
+import { rebindValidatedToolCall } from "../../src/features/tooling/orchestration";
 
 const schemaDigestPort = {
   digest: (canonicalSchema: string) =>
@@ -168,5 +177,98 @@ describe("strict tool argument validation", () => {
     await binding.execute({ call: validatedCall });
     expect(executions).toBe(2);
     expect(validations).toBe(4);
+  });
+
+  test("provenance transfer rejects hostile inputs and consumes the exact validated call", async () => {
+    const schema = await registerToolSchema(
+      {
+        type: "object",
+        additionalProperties: false,
+        required: ["count"],
+        properties: { count: { type: "integer" } },
+      },
+      schemaDigestPort,
+    );
+    const spec = defineToolSpec({
+      id: toolId("math.count.rebind"),
+      version: contractVersion("1.0.0"),
+      description: "Rebind a validated count call.",
+      inputSchema: schema,
+      effect: { class: "read-only", targets: [] },
+      execution: {
+        concurrency: "shared",
+        cancellation: "unsupported",
+        idempotency: "required",
+        retryAfterStart: "never",
+      },
+    });
+    let validations = 0;
+    let executions = 0;
+    const binding = createToolBinding({
+      spec,
+      argumentValidator: {
+        validate: (input) => {
+          validations += 1;
+          return strictCountValidator.validate(input);
+        },
+      },
+      execute: ({ call }) => {
+        executions += 1;
+        return { toolCallId: call.toolCallId, status: "succeeded", content: [] };
+      },
+    });
+    const validatedCall = await binding.validate({
+      call: {
+        toolCallId: coreId<ToolCallId>("018f0c7a-4d2b-7abc-8def-2123456789ab"),
+        toolId: spec.id,
+        toolVersion: spec.version,
+        arguments: { count: 1 },
+        invocation: {
+          invocationId: coreId<InvocationId>("018f0c7a-4d2b-7abc-8def-3123456789ab"),
+        },
+      },
+    });
+    const replacement = {
+      binding,
+      call: validatedCall,
+      toolCallId: coreId<ToolCallId>("018f0c7a-4d2b-7abc-8def-4123456789ab"),
+      runId: coreId<RunId>("018f0c7a-4d2b-7abc-8def-5123456789ab"),
+      stepId: coreId<StepId>("018f0c7a-4d2b-7abc-8def-6123456789ab"),
+    };
+    let accessorReads = 0;
+    const hostile = Object.create(null) as Record<string, unknown>;
+    Object.defineProperties(hostile, {
+      binding: { enumerable: true, value: binding },
+      call: {
+        enumerable: true,
+        get: () => {
+          accessorReads += 1;
+          return validatedCall;
+        },
+      },
+      toolCallId: { enumerable: true, value: replacement.toolCallId },
+      runId: { enumerable: true, value: replacement.runId },
+      stepId: { enumerable: true, value: replacement.stepId },
+    });
+
+    expect(() => rebindValidatedToolCall(hostile as never)).toThrow("closed data-property");
+    expect(accessorReads).toBe(0);
+    expect(() => rebindValidatedToolCall(new Proxy(replacement, {}))).toThrow(
+      "closed data-property",
+    );
+    expect(() =>
+      rebindValidatedToolCall({
+        ...replacement,
+        runId: coreId<RunId>("00000000-0000-4000-8000-000000000001"),
+      }),
+    ).toThrow("UUIDv7");
+
+    const rebound = rebindValidatedToolCall(replacement);
+    expect(() => rebindValidatedToolCall(replacement)).toThrow("validated by this tool binding");
+    await binding.execute({ call: rebound });
+
+    expect(rebound.arguments).toEqual({ count: 1 });
+    expect(validations).toBe(1);
+    expect(executions).toBe(1);
   });
 });
