@@ -9,8 +9,8 @@ Started: 29 July 2026
 
 Implement the Architecture v2 `llm-core` posture established by the framework research:
 a small, typed TypeScript interoperability and control kernel with explicit
-capability boundaries, one orchestration surface and qualified framework
-adapters.
+capability boundaries, one orchestration surface, specification compilation
+and qualified framework adapters.
 
 The supporting research assessment is:
 
@@ -75,6 +75,7 @@ packages/llm-core/src/
     context/       # P1
     artifacts/     # P1
     evaluation/    # P1
+    specifications/ # P2
 
   application/
     capability-bindings/
@@ -83,6 +84,7 @@ packages/llm-core/src/
     recipes/
     agent/
     interaction/
+    specification-compiler/ # P2
 
   adapters/
     providers/
@@ -96,19 +98,29 @@ packages/llm-core/src/
   shared/
 ```
 
-Initial public fronts:
+Curated public fronts after P2:
 
 ```text
+@geekist/llm-core
+@geekist/llm-core/functional
 @geekist/llm-core/contracts
 @geekist/llm-core/model
 @geekist/llm-core/tools
 @geekist/llm-core/control
 @geekist/llm-core/evidence
 @geekist/llm-core/state
+@geekist/llm-core/context
+@geekist/llm-core/artifacts
+@geekist/llm-core/evaluation
 @geekist/llm-core/agent
 @geekist/llm-core/workflow
 @geekist/llm-core/interaction
+@geekist/llm-core/specifications
 @geekist/llm-core/adapters/ai-sdk
+@geekist/llm-core/adapters/ai-sdk-ui
+@geekist/llm-core/adapters/assistant-ui
+@geekist/llm-core/adapters/openai-chatkit
+@geekist/llm-core/adapters/nlux-ui
 ```
 
 Do not expose the whole feature surface from the root package entry.
@@ -185,6 +197,14 @@ Qualify `Context`, `State`, `Memory`, `Task`, `Runtime`, `Profile`, `Result` and
 12. `application/` is the only cross-capability orchestration layer.
 13. Optional framework dependencies appear only under adapter entrypoints.
 14. No guarantee-bearing field remains `unknown`.
+15. Specification import records observed intent and never authorizes
+    execution.
+16. The canonical specification model is a typed semantic graph; dependency
+    DAGs and workflow programs are derived purpose-specific views.
+17. Every cross-format conversion reports preserved, degraded and rejected
+    semantics explicitly.
+18. Pipeline owns generic composition mechanics; `llm-core` owns
+    specification meaning, authority, admission and durable state.
 
 ## Decision gates
 
@@ -195,8 +215,12 @@ Implementation beyond characterization requires accepted ADRs for:
 3. schema authority, identity, versioning and native extensions;
 4. model/provider/profile resolution and credential ownership;
 5. action digest, policy, approval, effect and event semantics;
-6. state lifetimes, checkpoint compatibility and runner lifecycle; and
-7. AI SDK 7 module-format posture, conformance levels and second runtime.
+6. state lifetimes, checkpoint compatibility and runner lifecycle;
+7. AI SDK 7 module-format posture, conformance levels and second runtime; and
+8. specification interoperability, source authority, admission and Pipeline
+   ownership; and
+9. qualified specification-adapter publication and serialized package
+   integration.
 
 See [`decisions/README.md`](decisions/README.md).
 
@@ -213,7 +237,10 @@ See [`decisions/README.md`](decisions/README.md).
 | P0.5 | Converge and delete old contracts                                | All P0 spokes in review      | No old public names/call sites; full CI passes             |
 | P1.1 | Context, artifacts and evaluation                                | P0 converged                 | Provenance and real evaluation path pass                   |
 | P1.2 | Conformance and second runtime                                   | P0 converged                 | Non-AI-SDK runner proves neutrality                        |
-| X1   | External framework integrations                                  | Conformance levels stable    | Versioned support declarations exist                       |
+| P2.1 | Canonical specification graph and conversion contracts           | ADR-009 accepted             | Portable contracts and adversarial validation pass         |
+| P2.2 | Resolution, admission, compilation and authority enforcement     | P2.1; Pipeline composition   | Projected plans reject drift at controlled gateways        |
+| P2.3 | Public front and multi-format conformance                        | P2.2                         | Packed consumer and versioned support declarations pass    |
+| X1   | Additional framework integrations                                | P2.3                         | Versioned support declarations exist                       |
 
 ## Dependency graph
 
@@ -232,7 +259,38 @@ I0-010 + P0-149 + P0-170 ────────────> P0-150
 P0-150 ───────────────────────────────> P1-210
 P0-150 + P1-210 ─────────────────────> P1-220
 P0-150 + P0-160 + P0-170 ────────────> P1-230
+P1-210 + P1-230 + ADR-009 ───────────> P2-300
+P2-300 + WPKERNEL-PIPELINE-RELEASE ──> P2-310
+P2-310 ───────────────────────────────> P2-315
+P2-315 ───────────────────────────────> P2-320
+P2-320 ───────────────────────────────> X1-400 + X1-410 + X1-420 + X1-430 + X1-440
+X1-400 + ADR-010 ────────────────────> X1-405
+X1-410 + ADR-010 ────────────────────> X1-415
+X1-420 + ADR-010 ────────────────────> X1-425
+X1-430 + ADR-010 ────────────────────> X1-435
+X1-440 + ADR-010 ────────────────────> X1-445
 ```
+
+`WPKERNEL-PIPELINE-RELEASE` is a release gate, not an implementation gap.
+WPKernel Phases 1 through 6 are implemented, and the external packed fixture
+already proves helper replacement output, typed `next(output?)`, synchronous
+preservation, public step shape, duplicate-edge handling, run-local diagnostics
+and cast-free inline `createStages` inference through the public
+`PipelineStageDependencies` family.
+
+The gate becomes complete when WPKernel reconciles the stale local `1.0.0`
+manifest with the already-published `1.1.0` consumer baseline, chooses and
+publishes a forward exact version, and `llm-core` passes against that released
+artifact with its exact dependency and lockfile updated. WPKernel's reusable
+pre-release evidence command is:
+
+```sh
+pnpm --filter @wpkernel/pipeline qualify:packed
+```
+
+Run-wide rollback and exactly-once commit are implemented upstream but are not
+semantic requirements for the initial pure compiler. Process-local suspension
+is not an `llm-core` durable-checkpoint dependency.
 
 ## Parallelization rules
 
@@ -286,6 +344,20 @@ bun run docs:build
 
 Every worker records command, exit status and concise result in the task
 handoff. “Tests passed” without commands is not evidence.
+
+Every task that changes package exports, build/declaration entrypoints,
+TypeScript mappings, package smoke expectations or public documentation also
+runs:
+
+```sh
+bun run --cwd packages/llm-core release:build
+bun run test:package
+bun run docs:check
+bun run --cwd packages/llm-core format:check
+```
+
+Focused adapter and architecture tests supplement this release gate; they never
+replace it.
 
 ## Migration completion rules
 

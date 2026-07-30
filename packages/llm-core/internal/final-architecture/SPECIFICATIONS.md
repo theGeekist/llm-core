@@ -1,0 +1,391 @@
+# Specification Interoperability Architecture
+
+Architecture version: v2
+Decision authority:
+[`ADR-009`](decisions/ADR-009-specification-interoperability.md)
+Implementation wave: P2
+
+## Outcome
+
+`llm-core` gains a specification interoperability layer without becoming a
+software-delivery platform and without treating any external framework as the
+canonical model.
+
+The layer serves two distinct AI-first software delivery use cases:
+
+1. **Delivery-method interoperability** — observe, import and reconcile
+   requirements, plans, decisions and work artifacts from systems such as
+   OpenSpec, Spec Kit, AI-SDLC and BMAD.
+2. **Runtime-specification interoperability** — project admitted intent into
+   portable agent, workflow, tool, context, evaluation and execution contracts,
+   including runtime-oriented formats such as PydanticAI `AgentSpec`.
+
+These use cases share identity, provenance, loss accounting and admission, but
+they do not share one universal source schema.
+
+## Package shape
+
+Keep one npm package:
+
+```text
+@geekist/llm-core/specifications
+```
+
+The front aggregates the portable specification feature and its application
+compiler. It does not re-export framework packages or provider-native values.
+
+Framework integrations remain qualified:
+
+```text
+@geekist/llm-core/adapters/openspec
+@geekist/llm-core/adapters/pydantic-ai-spec
+@geekist/llm-core/adapters/ai-sdlc
+@geekist/llm-core/adapters/spec-kit
+@geekist/llm-core/adapters/bmad
+```
+
+Those adapter fronts are added only when their individual conformance and
+coordinator-owned publication tasks are complete. They do not block the core
+`./specifications` front and are not part of P2's initial 20-entry package
+gate.
+
+Do not add a broad `./delivery` front. It would combine source lifecycle,
+project policy, orchestration and product concerns that do not yet form one
+cohesive capability.
+
+## The eight seams
+
+| Seam                  | Input                                                         | Output                                                      | Authority                                                                    |
+| --------------------- | ------------------------------------------------------------- | ----------------------------------------------------------- | ---------------------------------------------------------------------------- |
+| 1. Observe            | External files, CLI output, API resources or runtime specs    | Detached `SourceSnapshot`                                   | Adapter records what existed; it does not interpret or authorize             |
+| 2. Import             | Versioned snapshot                                            | Imported nodes, relationships and conversion report         | Format adapter owns parsing and source-version conformance                   |
+| 3. Reconcile          | One or more imports                                           | Canonical `SpecificationSet`                                | Core owns identity, provenance, source authority and conflict representation |
+| 4. Resolve            | Canonical semantic graph                                      | `ResolvedSpecification` plus diagnostics                    | Core derives references, requirements and unresolved questions               |
+| 5. Derive views       | Resolved graph                                                | Dependency DAG and workflow program                         | Each view declares which relationship kinds it interprets                    |
+| 6. Admit              | Resolved specification, policy decisions and evidence         | Admission decision and, when accepted, a portable record    | Application policy or authenticated human authority; never the importer      |
+| 7. Project            | Runtime-registered accepted specification plus target         | Target-neutral compiled plan or qualified native projection | Projector reports exact, preserved, degraded and rejected semantics          |
+| 8. Reconcile feedback | Execution receipts, evaluations, drift and produced artifacts | `SpecificationChangeProposal` with lineage                  | Evidence may propose a change; only the source owner may accept it           |
+
+The eighth seam closes the lifecycle without creating an unsafe write-back
+loop. Runtime evidence can show that intent and implementation diverged, but
+`llm-core` never overwrites authoritative OpenSpec, Spec Kit, AI-SDLC or BMAD
+material silently.
+
+## Canonical state model
+
+```text
+SourceSnapshot
+  ├── format identity and detected version
+  ├── observed-at time and source revision
+  ├── root documents and referenced documents
+  ├── source role: primary | overlay | reference | generated
+  ├── authority: authoritative | advisory | informative
+  └── namespaced native extensions
+
+SpecificationSet
+  ├── stable set identity and contract version
+  ├── source snapshots
+  ├── typed semantic nodes
+  ├── typed relationships
+  ├── source bindings and provenance
+  └── reconciliation diagnostics
+
+ResolvedSpecification
+  ├── reconciled semantic graph
+  ├── resolved references
+  ├── decisions and open questions
+  ├── conflicts and blocked items
+  ├── dependency view
+  └── workflow view
+
+AcceptedSpecificationRecord
+  ├── resolved-specification digest
+  ├── admission decision and evidence
+  ├── admitted scope
+  ├── policy/version bindings
+  ├── source revision/digest bindings
+  └── expiry or invalidation conditions
+
+RegisteredAcceptedSpecification
+  ├── verified AcceptedSpecificationRecord
+  ├── current resolved specification
+  └── module-private runtime provenance (origin, not continuing validity)
+
+ProjectionAuthoritySnapshot
+  ├── checked-at time
+  ├── resolved-specification digest
+  ├── policy/version bindings
+  ├── source revision/digest bindings
+  └── authority and admitted scope
+
+SpecificationChangeProposal
+  ├── target source and format
+  ├── base source revision and digest
+  ├── proposed semantic changes
+  ├── originating accepted-specification record
+  ├── execution/evaluation evidence
+  └── conversion report
+```
+
+The snapshot, set, resolved value, acceptance record and change proposal are
+distinct portable branded contracts. Brands provide compile-time separation;
+they are not execution authority.
+
+`RegisteredAcceptedSpecification` is a live, process-local value recorded in a
+module-private provenance registry. It can be obtained only by completing
+admission or verifying an `AcceptedSpecificationRecord` against current
+authority, source revision, resolved digest, admitted scope, policy versions
+and expiry. Registration proves origin; it does not make acceptance timeless.
+
+After asynchronous authentication or policy evaluation, the admission path
+rechecks every binding immediately before runtime registration. Deserialization
+or a process restart discards runtime authority and requires the portable
+record to be verified again.
+
+Every projection enters through the application-owned
+`projectAcceptedSpecification` path. That path verifies runtime provenance,
+obtains one consistent `ProjectionAuthoritySnapshot` from trusted authority,
+policy and source-revision ports, then checks expiry with a trusted clock at the
+final synchronous boundary before invoking a projector. Adapters implement
+translation; they do not duplicate or bypass admission validity.
+
+The result is a `ProjectionEnvelope<TProjection>` that binds the native or
+target-neutral projection to the exact authority snapshot used. Projection is
+pure, so a concurrent change after that snapshot creates a stale envelope
+rather than an unauthorized effect.
+
+P2-310 exposes `verifyProjectionAuthoritySnapshot`. P2-315 integrates it into
+every `llm-core`-controlled agent/workflow preparation, execution and resume
+gateway capable of consuming a projection. Preparation validates immediately
+before creating a runtime object; execution and resume validate again
+immediately before effects. Durable state retains the projection identity and
+authority snapshot needed for revalidation.
+
+Extracting `TProjection` from its envelope removes `llm-core` execution
+authority. A raw native value may be used by an external framework under that
+framework's controls, but it cannot enter an `llm-core` preparation or
+execution gateway without its envelope and successful current validation.
+
+## Graph, DAG and workflow semantics
+
+The canonical `SpecificationSet` is a typed directed multigraph:
+
+- parallel relationships are valid when their identity, source or semantics
+  differ;
+- cycles are valid for relationships such as `relates`, `refines`,
+  `conflicts`, `supersedes` and iterative workflow transitions;
+- unresolved and contradictory material is represented, not normalized away;
+- decisions and questions are first-class nodes rather than free-form
+  metadata; and
+- stable source bindings preserve the owning document and optional location.
+
+Two views are derived from that graph:
+
+### Dependency view
+
+The dependency view interprets only declared dependency-bearing relationship
+kinds. It must be acyclic to become ready. A cycle produces a structured
+resolution diagnostic and blocks admission for the affected scope; it does not
+invalidate the entire semantic graph.
+
+### Workflow view
+
+The workflow view is a program, not a DAG. It may contain branches, joins,
+bounded loops, review/repair cycles, intervention points and terminal partial
+or blocked outcomes. Execution engines receive this view only after admission.
+
+## Format and conformance model
+
+Every adapter declares:
+
+- a namespaced format identifier;
+- detectable supported versions or version ranges;
+- operation: import, export or both;
+- conformance levels;
+- preserved native-extension namespaces;
+- source ownership and write-back behavior; and
+- fixtures used to substantiate the claim.
+
+Conformance levels are cumulative only when explicitly declared:
+
+| Level      | Claim                                                                    |
+| ---------- | ------------------------------------------------------------------------ |
+| Syntax     | The adapter can detect and parse the declared format version             |
+| Semantic   | Required source meaning maps into canonical nodes and relationships      |
+| Projection | An admitted canonical subset can be emitted for the target               |
+| Round trip | Declared semantics survive import and export within tested bounds        |
+| Lifecycle  | Source-specific sync, archive or write-back behavior is supported safely |
+
+Every import and projection returns a conversion report:
+
+```text
+fidelity: exact | partial | rejected
+issues[]:
+  code
+  severity
+  disposition: preserved | degraded | rejected
+  source location or canonical node identity
+  explanation
+```
+
+No adapter may claim framework support merely because it parses JSON or
+Markdown. Unknown fields are retained only as strict JSON under validated
+reverse-DNS extension namespaces.
+
+## Initial support order
+
+| Order | Integration                       | Why                                                                                                    |
+| ----- | --------------------------------- | ------------------------------------------------------------------------------------------------------ |
+| 1     | OpenSpec file/CLI import          | Proves roots, references, current truth, deltas, validation and archive-aware source ownership         |
+| 2     | PydanticAI `AgentSpec` projection | Proves the other interoperability axis: canonical admitted intent to a typed runtime specification     |
+| 3     | AI-SDLC JSON import               | Proves structured cross-language resources, decisions, admission metadata and evidence-oriented fields |
+| 4     | Spec Kit file/CLI import          | Adds constitutions, overlays, templates and branch/join/loop workflow semantics                        |
+| 5     | BMAD file/CLI import              | Adds stable planning identities, append-only memory, preservation and partial/blocked outcomes         |
+
+OpenSpec and PydanticAI are the first pair because they prove unlike boundaries,
+not because either is the universal model. AI-SDLC is next because its
+structured resources stress governance and evidence. Spec Kit and BMAD require
+weaker, separately versioned file/CLI claims until they publish stable,
+comprehensive runtime schemas. This is release preference, not an architectural
+dependency between adapter implementations.
+
+## Pipeline integration
+
+Source observation stays in qualified adapters because it may perform file,
+CLI or API I/O. The application compiler accepts detached snapshots and uses
+Pipeline for the remaining mechanics:
+
+```text
+import -> reconcile -> resolve -> admit -> project
+```
+
+The compiler owns one typed immutable state value for a run. Helpers may
+replace that state. Around helpers may call `next(replacement)` and inspect the
+final downstream state.
+
+Pipeline does not know about any state field or stage meaning. In particular,
+`providedKeys` is not treated as a cross-stage semantic dependency system.
+Stage order supplies control ordering; typed compiler state carries data.
+
+### Capability gates
+
+| WPKernel capability                                     | Required for initial compiler?   | `llm-core` response                                                                                                       |
+| ------------------------------------------------------- | -------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
+| Authoritative returned output and typed `next(output?)` | Implemented and packed-qualified | Use the published forward version; do not bind to the stale local manifest                                                |
+| Sync-preserving composition                             | Implemented and packed-qualified | Preserve the package-wide `MaybePromise` contract                                                                         |
+| Run-wide rollback                                       | No for pure compilation          | Implemented upstream; required before helpers acquire reversible external resources                                       |
+| Exactly-once commit                                     | No for pure compilation          | Implemented upstream; required before any compiler stage performs source write-back                                       |
+| Public step shape and deduplicated edges                | Implemented and packed-qualified | Use for deterministic traces and dependency registration                                                                  |
+| Run-local diagnostics                                   | Implemented and verified         | Retain invocation-owned diagnostics; still construct one Pipeline instance per initial compile invocation                 |
+| Typed custom-stage API                                  | Implemented and packed-qualified | Use the public `PipelineStageDependencies` family with inferred inline `createStages`; do not cast private Pipeline types |
+| Process-local suspension boundary                       | Not a compiler dependency        | Never expose it as a durable `llm-core` checkpoint                                                                        |
+
+The release gate is a packed `@wpkernel/pipeline` artifact, not an unpublished
+monorepo checkout. `llm-core` records the exact tested version.
+
+### Current WPKernel compiler API evidence
+
+WPKernel Phase 6 is implemented and documented. The root public type family is:
+
+- `AgnosticPipelineOptions`;
+- `PipelineStageDependencies`;
+- `PipelineStageState`;
+- `PipelineStageResult`;
+- `PipelineStage`;
+- `PipelineHelperStageOptions`;
+- `PipelineRegisteredHelper`;
+- `PipelineHelperRollback`;
+- `PipelineStageDiagnostics`; and
+- `PipelineHalt`.
+
+The packed external-consumer fixture proves root-only imports, cast-free inline
+`createStages` inference, invalid kind/state/stage rejection, immutable
+replacement state, typed `next(output?)` and fully synchronous completion. The
+reusable gate is:
+
+```sh
+pnpm --filter @wpkernel/pipeline qualify:packed
+```
+
+Its current tarball reports the stale local manifest version `1.0.0`, while
+`llm-core` already pins published Pipeline `1.1.0`. P2-310 is blocked only
+until WPKernel reconciles version history, publishes a forward exact version,
+and `llm-core` qualifies against and pins that released artifact.
+
+## Error and evidence posture
+
+- Malformed, proxy-backed, accessor-backed, cyclic, sparse or symbol-bearing
+  portable values fail at the boundary before semantic reads.
+- Media types, digests, IDs, versions and timestamps receive semantic
+  validation, not regex-only acceptance.
+- Duplicate canonical identities and dangling source/relationship references
+  fail closed.
+- Conflicting authoritative sources become explicit conflicts.
+- Advisory material cannot silently override authoritative material.
+- Admission decisions bind the exact resolved-specification digest, scope,
+  policy versions and evidence.
+- Runtime admission provenance is unforgeable and process-local. A TypeScript
+  brand or reconstructed portable record is insufficient for projection.
+- Runtime provenance proves how admission was obtained, not whether it remains
+  current. Every projection revalidates expiry, authority, policy versions,
+  source revisions, resolved digest and scope through trusted ports.
+- A later source revision, expired decision or changed policy invalidates the
+  accepted value rather than mutating it.
+- Projected results bind their `ProjectionAuthoritySnapshot`; preparation or
+  execution rejects them after authority drift.
+- Controlled preparation, execution and resume accept a
+  `ProjectionEnvelope<TProjection>`, never a raw native projection as evidence
+  of admission.
+- Execution receipts and evaluations retain lineage to the accepted
+  specification and compiled projection.
+- Evidence and drift may derive a `SpecificationChangeProposal` without
+  external effects. Applying it is a separate adapter lifecycle operation
+  requiring authenticated source authority, base-revision compare-and-swap,
+  stale-proposal rejection and a durable application receipt.
+
+## Implementation sequence
+
+1. P2-300 defines and validates snapshots, semantic graphs, conversion reports,
+   portable acceptance records, change proposals and adapter capabilities.
+2. P2-310 adds reconciliation, resolution, derived views, admission and the
+   pure Pipeline-backed compiler after the forward WPKernel release gate. The
+   required composition and typed custom-stage APIs are already implemented and
+   packed-qualified upstream. P2-310 owns runtime registration of accepted
+   specifications, projection envelopes and the public authority-snapshot
+   verifier.
+3. P2-315 integrates post-projection authority verification into controlled
+   preparation, execution and resume paths and proves rejection before effects.
+4. P2-320 publishes `./specifications` and verifies the 20-entry packed package.
+5. X1-400, X1-410, X1-420, X1-430 and X1-440 implement independent adapter
+   mappings and conformance fixtures.
+6. X1-405, X1-415, X1-425, X1-435 and X1-445 are coordinator-owned publication
+   tasks that serialize package metadata and packed-consumer changes.
+7. A later source-application task may apply change proposals only after its
+   adapter proves authenticated ownership, optimistic concurrency, stale
+   rejection, conversion-loss handling and durable receipts.
+
+## Evidence base
+
+The design is grounded in the local framework assessments:
+
+- `/Users/jasonnathan/Repos/aifsd-agent-framework-research/profiles/openspec.md`
+- `/Users/jasonnathan/Repos/aifsd-agent-framework-research/profiles/spec-kit.md`
+- `/Users/jasonnathan/Repos/aifsd-agent-framework-research/profiles/ai-sdlc.md`
+- `/Users/jasonnathan/Repos/aifsd-agent-framework-research/profiles/bmad-method.md`
+- `/Users/jasonnathan/Repos/aifsd-agent-framework-research/profiles/pydantic-ai.md`
+- `/Users/jasonnathan/Repos/aifsd-agent-framework-research/DEPENDENCY-REUSE-BOUNDARIES.md`
+
+The WPKernel adoption gates are derived from:
+
+- `/Users/jasonnathan/Repos/@wpkernel/docs/packages/pipeline/hardening-plan.md`
+
+## Deliberate non-goals
+
+- no universal SDLC schema;
+- no hosted specification store, portal, issue tracker or approval inbox;
+- no implicit execution on import;
+- no silent source write-back;
+- no claim of lossless cross-framework conversion;
+- no framework lifecycle in the package root;
+- no durable checkpoint built from Pipeline's process-local suspension; and
+- no custom Pipeline fork or LLM-specific helper kinds in WPKernel.
