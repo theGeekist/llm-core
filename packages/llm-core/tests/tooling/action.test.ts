@@ -134,6 +134,36 @@ describe("canonical tool actions", () => {
     expect(integerAction.tool.inputSchemaDigest).not.toEqual(numberAction.tool.inputSchemaDigest);
   });
 
+  test("rejects a forged schema document and digest pairing", async () => {
+    const registered = await registerToolSchema(inputSchema, schemaDigestPort);
+    const forged = {
+      document: {
+        ...inputSchema,
+        properties: { amount: { type: "string" } },
+      },
+      digest: registered.digest,
+    };
+
+    expect(() =>
+      defineToolSpec({
+        id: toolId("billing.invoice.create"),
+        version: contractVersion("1.0.0"),
+        description: "Create an invoice",
+        inputSchema: forged as unknown as ToolSpec["inputSchema"],
+        effect: {
+          class: "external-write",
+          targets: [{ kind: "service", id: "billing-api" }],
+        },
+        execution: {
+          concurrency: "exclusive",
+          cancellation: "provider-acknowledged",
+          idempotency: "required",
+          retryAfterStart: "requires-conformance",
+        },
+      }),
+    ).toThrow(TypeError);
+  });
+
   test("binds authority, effects and explicit exclusive semantics but excludes lifecycle fields", async () => {
     const spec = await createSpec(inputSchema, "exclusive");
     const call = createCall({ amount: 100 });

@@ -24,8 +24,11 @@ import type { ModelProfile } from "./profile";
  */
 
 const CAPABILITY_ID = /^(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$/;
-const MEDIA_TYPE = /^[A-Za-z0-9!#$&^_.+-]+\/[A-Za-z0-9!#$&^_.+-]+/;
-const DATE_TIME = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2})$/;
+const MEDIA_TYPE =
+  // eslint-disable-next-line sonarjs/regex-complexity -- RFC token and quoted-string grammar are intentionally explicit
+  /^[!#$%&'*+\-.^_`|~A-Za-z0-9]+\/[!#$%&'*+\-.^_`|~A-Za-z0-9]+(?:[ \t]*;[ \t]*[!#$%&'*+\-.^_`|~A-Za-z0-9]+[ \t]*=[ \t]*(?:[!#$%&'*+\-.^_`|~A-Za-z0-9]+|"(?:[\t \x21\x23-\x5b\x5d-\x7e\x80-\xff]|\\[\t \x21-\x7e\x80-\xff])*"))*$/;
+const DATE_TIME =
+  /^(\d{4})-(\d{2})-(\d{2})[Tt](\d{2}):(\d{2}):(\d{2})(?:\.\d+)?(?:[Zz]|([+-])(\d{2}):(\d{2}))$/;
 
 const EVIDENCE_KINDS: ReadonlySet<string> = new Set([
   "artifact",
@@ -73,8 +76,98 @@ const isCapabilityId = (value: unknown): boolean =>
   typeof value === "string" && CAPABILITY_ID.test(value);
 const isImplementationId = (value: unknown): boolean =>
   typeof value === "string" && isExternalId(value);
-const isDateTime = (value: unknown): boolean => typeof value === "string" && DATE_TIME.test(value);
-const isMediaType = (value: unknown): boolean => typeof value === "string" && MEDIA_TYPE.test(value);
+const isLeapYear = (year: number): boolean =>
+  year % 4 === 0 && (year % 100 !== 0 || year % 400 === 0);
+
+const daysInMonth = (year: number, month: number): number => {
+  if (month === 2) return isLeapYear(year) ? 29 : 28;
+  return [4, 6, 9, 11].includes(month) ? 30 : 31;
+};
+
+interface CalendarDate {
+  year: number;
+  month: number;
+  day: number;
+}
+
+const shiftCalendarDate = (date: CalendarDate, shift: -1 | 0 | 1): CalendarDate => {
+  const { year, month, day } = date;
+  if (shift === 0) return date;
+  if (shift === 1) {
+    if (day < daysInMonth(year, month)) return { year, month, day: day + 1 };
+    if (month < 12) return { year, month: month + 1, day: 1 };
+    return { year: year + 1, month: 1, day: 1 };
+  }
+  if (day > 1) return { year, month, day: day - 1 };
+  if (month > 1) {
+    const previousMonth = month - 1;
+    return { year, month: previousMonth, day: daysInMonth(year, previousMonth) };
+  }
+  return { year: year - 1, month: 12, day: 31 };
+};
+
+const isPossibleLeapSecond = (
+  date: CalendarDate,
+  time: { hour: number; minute: number; offsetMinutes: number },
+): boolean => {
+  const { hour, minute, offsetMinutes } = time;
+  const utcMinutesUnbounded = hour * 60 + minute - offsetMinutes;
+  const dayShift = utcMinutesUnbounded < 0 ? -1 : utcMinutesUnbounded >= 1_440 ? 1 : 0;
+  const utcMinutes = (utcMinutesUnbounded + 1_440) % 1_440;
+  const utcDate = shiftCalendarDate(date, dayShift);
+  return (
+    utcMinutes === 23 * 60 + 59 &&
+    ((utcDate.month === 6 && utcDate.day === 30) || (utcDate.month === 12 && utcDate.day === 31))
+  );
+};
+
+const isDateTime = (value: unknown): boolean => {
+  if (typeof value !== "string") return false;
+  const match = DATE_TIME.exec(value);
+  if (!match) return false;
+
+  const [, yearValue, monthValue, dayValue, hourValue, minuteValue, secondValue] = match;
+  const offsetHourValue = match[8];
+  const offsetMinuteValue = match[9];
+  if (
+    yearValue === undefined ||
+    monthValue === undefined ||
+    dayValue === undefined ||
+    hourValue === undefined ||
+    minuteValue === undefined ||
+    secondValue === undefined
+  ) {
+    return false;
+  }
+
+  const year = Number(yearValue);
+  const month = Number(monthValue);
+  const day = Number(dayValue);
+  const hour = Number(hourValue);
+  const minute = Number(minuteValue);
+  const second = Number(secondValue);
+  const offsetSign = match[7] === "-" ? -1 : 1;
+  const offsetHour = offsetHourValue === undefined ? 0 : Number(offsetHourValue);
+  const offsetMinute = offsetMinuteValue === undefined ? 0 : Number(offsetMinuteValue);
+  const offsetMinutes = offsetSign * (offsetHour * 60 + offsetMinute);
+
+  const hasValidFields =
+    month >= 1 &&
+    month <= 12 &&
+    day >= 1 &&
+    day <= daysInMonth(year, month) &&
+    hour <= 23 &&
+    minute <= 59 &&
+    second <= 60 &&
+    offsetHour <= 23 &&
+    offsetMinute <= 59;
+  return (
+    hasValidFields &&
+    (second < 60 || isPossibleLeapSecond({ year, month, day }, { hour, minute, offsetMinutes }))
+  );
+};
+const isMediaType = (value: unknown): boolean =>
+  typeof value === "string" && MEDIA_TYPE.test(value);
 const isByteLength = (value: unknown): boolean =>
   typeof value === "number" && Number.isInteger(value) && value >= 0;
 

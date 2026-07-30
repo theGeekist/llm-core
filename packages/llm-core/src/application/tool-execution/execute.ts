@@ -179,15 +179,15 @@ const assertReceiptIdentity = (
   receipt: ToolExecutionReceipt,
   expected: {
     receiptId?: ToolExecutionReceipt["receiptId"];
-    runId: ToolExecutionReceipt["runId"];
-    toolCallId: ToolExecutionReceipt["toolCallId"];
+    runId?: ToolExecutionReceipt["runId"];
+    toolCallId?: ToolExecutionReceipt["toolCallId"];
     actionDigest: ToolExecutionReceipt["actionDigest"];
   },
 ): void => {
   if (
     (expected.receiptId && receipt.receiptId !== expected.receiptId) ||
-    receipt.runId !== expected.runId ||
-    receipt.toolCallId !== expected.toolCallId ||
+    (expected.runId && receipt.runId !== expected.runId) ||
+    (expected.toolCallId && receipt.toolCallId !== expected.toolCallId) ||
     !actionDigestsEqual(receipt.actionDigest, expected.actionDigest)
   ) {
     throw new ToolExecutionCoordinationError(
@@ -386,8 +386,8 @@ export const executeControlledTool = async (
   originalInput: ExecuteControlledToolInput,
 ): Promise<ControlledToolExecutionOutcome> => {
   const validatedCall = await originalInput.binding.validate(originalInput.call);
-  const input = { ...originalInput, call: validatedCall };
-  const runId = requireRunId(input);
+  let input = { ...originalInput, call: validatedCall };
+  const requestedRunId = requireRunId(input);
   const effectClass = input.binding.spec.effect.class;
   const isMeaningful = meaningfulEffect(effectClass);
   if (isMeaningful && !input.call.idempotencyKey) {
@@ -414,7 +414,7 @@ export const executeControlledTool = async (
     },
     actionDigest: bound.digest,
     effectClass,
-    runId,
+    runId: requestedRunId,
     stepId: input.call.invocation.stepId,
     toolCallId: input.call.toolCallId,
     redaction: input.redaction ?? DEFAULT_REDACTION,
@@ -423,11 +423,16 @@ export const executeControlledTool = async (
   if (reservation.kind === "conflict") {
     return { status: "conflict", existingReceiptId: reservation.existingReceiptId };
   }
-  assertReceiptIdentity(reservation.receipt, {
-    runId,
-    toolCallId: input.call.toolCallId,
-    actionDigest: bound.digest,
-  });
+  assertReceiptIdentity(
+    reservation.receipt,
+    reservation.kind === "created"
+      ? {
+          runId: requestedRunId,
+          toolCallId: input.call.toolCallId,
+          actionDigest: bound.digest,
+        }
+      : { actionDigest: bound.digest },
+  );
   if (
     !reservationKeysEqual(reservation.receipt.key, reserveRequest.key) ||
     (reservation.kind === "created" &&
@@ -445,6 +450,29 @@ export const executeControlledTool = async (
     return replayOutcome;
   }
 
+  if (reservation.kind === "existing") {
+    const requestedInvocation = { ...input.call.invocation };
+    delete requestedInvocation.stepId;
+    input = {
+      ...input,
+      call: {
+        ...input.call,
+        toolCallId: reservation.receipt.toolCallId,
+        invocation:
+          reservation.receipt.stepId === undefined
+            ? {
+                ...requestedInvocation,
+                runId: reservation.receipt.runId,
+              }
+            : {
+                ...requestedInvocation,
+                runId: reservation.receipt.runId,
+                stepId: reservation.receipt.stepId,
+              },
+      },
+    };
+  }
+  const runId = reservation.receipt.runId;
   let receipt = reservation.receipt;
   let delivery: EventDelivery =
     reservation.kind === "created"

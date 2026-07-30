@@ -354,5 +354,18 @@ describe("ToolReceiptJournal contract", () => {
     expect(JSON.stringify(safeExtensions)).toBe(
       '{"com.example.audit":{"classification":"restricted"}}',
     );
+    const mutableExtensions = {
+      "com.example.audit": { classification: "restricted" },
+    };
+    const registeredExtensions = redactedNativeExtensions(mutableExtensions);
+    mutableExtensions["com.example.audit"] = { classification: secret };
+    expect(registeredExtensions["com.example.audit"]).toEqual({
+      classification: "restricted",
+    });
+    expect(Object.isFrozen(registeredExtensions)).toBe(true);
+    expect(Object.isFrozen(registeredExtensions["com.example.audit"])).toBe(true);
+    expect(
+      () => ((registeredExtensions["com.example.audit"] as Record<string, unknown>).token = secret),
+    ).toThrow(TypeError);
   });
 });

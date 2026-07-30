@@ -141,4 +141,87 @@ describe("model profile registration", () => {
     } as unknown as CapabilityClaim;
     expect(() => registerModelProfile({ ...baseProfile(), claims: [leaky] })).toThrow();
   });
+
+  test("rejects malformed media types in conformance evidence", () => {
+    const [good] = baseProfile().claims;
+    if (!good || good.status !== "supported") throw new Error("expected a supported builtin claim");
+    for (const mediaType of [
+      "application/json garbage",
+      'application/json; profile="unterminated',
+      'application/json; profile="line\nbreak"',
+    ]) {
+      const malformed = {
+        ...good,
+        evidence: {
+          ...good.evidence,
+          report: {
+            ...good.evidence.report,
+            content: {
+              ...good.evidence.report.content,
+              mediaType,
+            },
+          },
+        },
+      } as unknown as CapabilityClaim;
+
+      expect(() => registerModelProfile({ ...baseProfile(), claims: [malformed] })).toThrow(
+        TypeError,
+      );
+    }
+  });
+
+  test("rejects semantically invalid RFC 3339 evidence timestamps", () => {
+    const [good] = baseProfile().claims;
+    if (!good || good.status !== "supported") throw new Error("expected a supported builtin claim");
+
+    for (const observedAt of [
+      "2026-99-99T99:99:99Z",
+      "2026-02-29T00:00:00Z",
+      "2024-02-30T00:00:00Z",
+      "2026-01-01T24:00:00Z",
+      "2026-01-01T00:00:00+24:00",
+    ]) {
+      const malformed = {
+        ...good,
+        evidence: { ...good.evidence, observedAt },
+      } as unknown as CapabilityClaim;
+      expect(() => registerModelProfile({ ...baseProfile(), claims: [malformed] })).toThrow(
+        TypeError,
+      );
+    }
+  });
+
+  test("accepts valid leap-day and offset RFC 3339 evidence timestamps", () => {
+    const [good] = baseProfile().claims;
+    if (!good || good.status !== "supported") throw new Error("expected a supported builtin claim");
+    const valid = {
+      ...good,
+      evidence: {
+        ...good.evidence,
+        observedAt: "2024-02-29T23:59:59.123+08:00",
+        report: {
+          ...good.evidence.report,
+          content: {
+            ...good.evidence.report.content,
+            mediaType: "application/json; charset=utf-8",
+          },
+        },
+      },
+    } as unknown as CapabilityClaim;
+
+    expect(() => registerModelProfile({ ...baseProfile(), claims: [valid] })).not.toThrow();
+  });
+
+  test("accepts RFC 3339 lowercase separators and possible leap seconds", () => {
+    const [good] = baseProfile().claims;
+    if (!good || good.status !== "supported") throw new Error("expected a supported builtin claim");
+
+    for (const observedAt of ["1990-12-31t23:59:60z", "1991-01-01T07:59:60+08:00"]) {
+      const valid = {
+        ...good,
+        evidence: { ...good.evidence, observedAt },
+      } as unknown as CapabilityClaim;
+      expect(() => registerModelProfile({ ...baseProfile(), claims: [valid] })).not.toThrow();
+    }
+  });
 });

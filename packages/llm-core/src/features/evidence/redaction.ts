@@ -71,6 +71,16 @@ const containsSensitiveKey = (value: JsonValue): boolean => {
   );
 };
 
+const deepFreezeJson = (value: JsonValue): JsonValue => {
+  if (value === null || typeof value !== "object") {
+    return value;
+  }
+  for (const child of Object.values(value)) {
+    deepFreezeJson(child);
+  }
+  return Object.freeze(value) as JsonValue;
+};
+
 /**
  * Marks already-redacted reverse-DNS extensions as safe for projection.
  *
@@ -83,10 +93,23 @@ export function redactedNativeExtensions(value: Record<string, unknown>): Redact
       "Redacted native extensions require reverse-DNS namespaces and JSON-compatible values.",
     );
   }
-  if (Object.values(value).some(containsSensitiveKey)) {
+  let snapshot: unknown;
+  try {
+    snapshot = structuredClone(value);
+  } catch {
+    throw new TypeError(
+      "Redacted native extensions require cloneable reverse-DNS namespaces and JSON-compatible values.",
+    );
+  }
+  if (!isNativeExtensions(snapshot)) {
+    throw new TypeError(
+      "Redacted native extensions changed while crossing the redaction boundary.",
+    );
+  }
+  if (Object.values(snapshot).some(containsSensitiveKey)) {
     throw new TypeError(
       "Receipt and event extensions cannot contain sensitive or raw payload fields.",
     );
   }
-  return value as RedactedNativeExtensions;
+  return deepFreezeJson(snapshot) as RedactedNativeExtensions;
 }

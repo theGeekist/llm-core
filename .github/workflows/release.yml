@@ -34,8 +34,11 @@ jobs:
       - name: Install core deps
         run: bun install --cwd packages/llm-core
 
-      - name: Build Core
-        run: bun run --filter @geekist/llm-core build
+      - name: Verify Core
+        run: bun run --cwd packages/llm-core release:check
+
+      - name: Verify packed Core package
+        run: bun run test:package
 
       - name: Publish Core
         run: cd packages/llm-core && npm publish --access public

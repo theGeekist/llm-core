@@ -2,6 +2,7 @@ import { isContractVersion, isDigest, isExternalId } from "#contracts";
 import type { SecretRef } from "#contracts";
 import { maybeMap, type MaybePromise } from "#shared/maybe";
 import { canonicalizeJson, freezeJsonValue, normalizeStrictJson } from "./canonical-json";
+import { isRegisteredToolSchema } from "./schema-registration";
 import type { ActionDocument, EffectTarget, ToolCall, ToolId, ToolSpec } from "./types";
 
 declare const actionDigestValueBrand: unique symbol;
@@ -90,7 +91,7 @@ const assertToolSpec = (spec: ToolSpec): void => {
   if (!TOOL_ID_PATTERN.test(spec.id) || !isContractVersion(spec.version)) {
     throw new TypeError("Tool specs require a stable ID and immutable SemVer version.");
   }
-  if (!isDigest(spec.inputSchema.digest)) {
+  if (!isRegisteredToolSchema(spec.inputSchema) || !isDigest(spec.inputSchema.digest)) {
     throw new TypeError("Tool specs require a registered input-schema digest.");
   }
   if (spec.effect.class !== "read-only" && spec.effect.targets.length === 0) {
@@ -102,17 +103,13 @@ export const defineToolSpec = (spec: ToolSpec): ToolSpec => {
   assertToolSpec(spec);
   const defined = {
     ...spec,
-    inputSchema: {
-      document: freezeJsonValue(normalizeStrictJson(spec.inputSchema.document)),
-      digest: Object.freeze({ ...spec.inputSchema.digest }),
-    } as ToolSpec["inputSchema"],
+    inputSchema: spec.inputSchema,
     effect: {
       class: spec.effect.class,
       targets: normalizeTargets(spec.effect.targets),
     },
     execution: { ...spec.execution },
   };
-  Object.freeze(defined.inputSchema);
   defined.effect.targets.forEach(Object.freeze);
   Object.freeze(defined.effect.targets);
   Object.freeze(defined.effect);

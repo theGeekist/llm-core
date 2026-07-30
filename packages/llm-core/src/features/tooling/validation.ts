@@ -1,7 +1,7 @@
 import type { JsonValue } from "#contracts";
 import { maybeMap, type MaybePromise } from "#shared/maybe";
 import { normalizeStrictJson } from "./canonical-json";
-import type { RegisteredToolSchema } from "./schema-registration";
+import { isRegisteredToolSchema, type RegisteredToolSchema } from "./schema-registration";
 
 export interface ToolArgumentValidationRequest {
   schema: RegisteredToolSchema;
@@ -51,6 +51,9 @@ export const validateToolArguments = (
   value: unknown,
   port: ToolArgumentValidationPort,
 ): MaybePromise<JsonValue> => {
+  if (!isRegisteredToolSchema(schema)) {
+    throw new TypeError("Tool argument validation requires a registered input schema.");
+  }
   const argumentsValue = normalizeStrictJson(value);
   return maybeMap(
     readValidatedArguments(argumentsValue),

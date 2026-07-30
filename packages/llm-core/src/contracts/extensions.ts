@@ -34,6 +34,69 @@ const isJsonObject = (value: object) => {
   return prototype === Object.prototype || prototype === null;
 };
 
+const isEnumerableDataDescriptor = (
+  descriptor: PropertyDescriptor | undefined,
+): descriptor is PropertyDescriptor & { value: unknown } =>
+  descriptor !== undefined && descriptor.enumerable === true && "value" in descriptor;
+
+const inspectJsonArray = (value: unknown[], ancestors: Set<object>): boolean => {
+  const ownKeys = Reflect.ownKeys(value);
+  if (ownKeys.some((key) => typeof key === "symbol")) {
+    return false;
+  }
+
+  const descriptors = Object.getOwnPropertyDescriptors(value);
+  const lengthDescriptor = Object.getOwnPropertyDescriptor(value, "length");
+  if (
+    lengthDescriptor === undefined ||
+    !("value" in lengthDescriptor) ||
+    lengthDescriptor.enumerable !== false ||
+    typeof lengthDescriptor.value !== "number"
+  ) {
+    return false;
+  }
+
+  const length = lengthDescriptor.value;
+  if (ownKeys.length !== length + 1) {
+    return false;
+  }
+
+  return ownKeys.every((key) => {
+    if (key === "length") {
+      return true;
+    }
+    if (typeof key !== "string" || !/^(?:0|[1-9]\d*)$/.test(key)) {
+      return false;
+    }
+    const index = Number(key);
+    return (
+      Number.isSafeInteger(index) &&
+      index < length &&
+      isEnumerableDataDescriptor(descriptors[key]) &&
+      inspectJsonValue(descriptors[key].value, ancestors)
+    );
+  });
+};
+
+const inspectJsonObject = (value: object, ancestors: Set<object>): boolean => {
+  if (!isJsonObject(value)) {
+    return false;
+  }
+
+  const ownKeys = Reflect.ownKeys(value);
+  if (ownKeys.some((key) => typeof key === "symbol")) {
+    return false;
+  }
+
+  const descriptors = Object.getOwnPropertyDescriptors(value);
+  return ownKeys.every(
+    (key) =>
+      typeof key === "string" &&
+      isEnumerableDataDescriptor(descriptors[key]) &&
+      inspectJsonValue(descriptors[key].value, ancestors),
+  );
+};
+
 const inspectJsonValue = (value: unknown, ancestors: Set<object>): value is JsonValue => {
   if (
     value === null ||
@@ -48,24 +111,55 @@ const inspectJsonValue = (value: unknown, ancestors: Set<object>): value is Json
   }
 
   ancestors.add(value);
-  const valid = Array.isArray(value)
-    ? value.every((item) => inspectJsonValue(item, ancestors))
-    : isJsonObject(value) &&
-      Object.values(value).every((item) => inspectJsonValue(item, ancestors));
-  ancestors.delete(value);
-  return valid;
+  try {
+    return Array.isArray(value)
+      ? inspectJsonArray(value, ancestors)
+      : inspectJsonObject(value, ancestors);
+  } finally {
+    ancestors.delete(value);
+  }
 };
 
-export const isJsonValue = (value: unknown): value is JsonValue =>
-  inspectJsonValue(value, new Set<object>());
+export const isJsonValue = (value: unknown): value is JsonValue => {
+  try {
+    if (!inspectJsonValue(value, new Set<object>())) {
+      return false;
+    }
 
-export const isNativeExtensions = (value: unknown): value is NativeExtensions => {
-  if (typeof value !== "object" || value === null || Array.isArray(value) || !isJsonObject(value)) {
+    // Descriptor traversal alone cannot distinguish an ordinary object from a
+    // Proxy whose traps present safe descriptors but return different values
+    // through property reads. Structured cloning rejects proxies without
+    // invoking their `get` traps; validating the detached result also ensures
+    // the accepted graph survives the snapshot boundary as strict JSON data.
+    const clone = (
+      globalThis as unknown as {
+        readonly structuredClone?: (input: unknown) => unknown;
+      }
+    ).structuredClone;
+    if (clone === undefined) {
+      return false;
+    }
+    const snapshot: unknown = clone(value);
+    return inspectJsonValue(snapshot, new Set<object>());
+  } catch {
     return false;
   }
-  return Object.entries(value).every(
-    ([namespace, extension]) => isExtensionNamespace(namespace) && isJsonValue(extension),
-  );
+};
+
+export const isNativeExtensions = (value: unknown): value is NativeExtensions => {
+  try {
+    return (
+      typeof value === "object" &&
+      value !== null &&
+      !Array.isArray(value) &&
+      isJsonValue(value) &&
+      Reflect.ownKeys(value).every(
+        (namespace) => typeof namespace === "string" && isExtensionNamespace(namespace),
+      )
+    );
+  } catch {
+    return false;
+  }
 };
 
 export function nativeExtensions(value: Record<string, unknown>): NativeExtensions {

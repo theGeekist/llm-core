@@ -13,6 +13,7 @@ import {
   type PrincipalId,
   type ResourceId,
   type RunId,
+  type StepId,
   type TenantId,
   type ToolCallId,
 } from "#contracts";
@@ -51,6 +52,10 @@ import {
 
 const RUN_ID = coreId<RunId>("018f0f4e-8c5b-7a91-8c3b-123456789001");
 const CALL_ID = coreId<ToolCallId>("018f0f4e-8c5b-7a91-8c3b-123456789002");
+const REPLAY_RUN_ID = coreId<RunId>("018f0f4e-8c5b-7a91-8c3b-123456789004");
+const REPLAY_CALL_ID = coreId<ToolCallId>("018f0f4e-8c5b-7a91-8c3b-123456789005");
+const STEP_ID = coreId<StepId>("018f0f4e-8c5b-7a91-8c3b-123456789006");
+const REPLAY_STEP_ID = coreId<StepId>("018f0f4e-8c5b-7a91-8c3b-123456789007");
 const KEY_REF = secretRef("vault:tool-action/current");
 
 const digestPort: ActionDigestPort = {
@@ -225,7 +230,7 @@ const allowPolicy = {
 
 const baseInput = (
   journal: ToolReceiptJournal,
-  execute: () => ReturnType<NonNullable<Parameters<typeof createToolBinding>[0]["execute"]>>,
+  execute: NonNullable<Parameters<typeof createToolBinding>[0]["execute"]>,
 ) => ({
   binding: createToolBinding({
     spec: SPEC,
@@ -553,6 +558,110 @@ describe("controlled tool execution", () => {
     expect(replay.status).toBe("existing");
     expect(changed.status).toBe("conflict");
     expect(executions).toBe(1);
+  });
+
+  it("returns the original receipt for an idempotent replay from another run and call", async () => {
+    const journal = new MemoryJournal();
+    let executions = 0;
+    const input = baseInput(journal, () => {
+      executions += 1;
+      return { toolCallId: CALL_ID, status: "succeeded", content: [] };
+    });
+
+    const first = await executeControlledTool(input);
+    const replay = await executeControlledTool({
+      ...input,
+      call: {
+        ...input.call,
+        toolCallId: REPLAY_CALL_ID,
+        invocation: {
+          ...input.call.invocation,
+          runId: REPLAY_RUN_ID,
+        },
+      },
+      facts: facts(),
+    });
+
+    expect(first.status).toBe("succeeded");
+    expect(replay.status).toBe("existing");
+    expect("receipt" in replay && replay.receipt.runId).toBe(RUN_ID);
+    expect("receipt" in replay && replay.receipt.toolCallId).toBe(CALL_ID);
+    expect(executions).toBe(1);
+  });
+
+  it("continues a pending replay under the original receipt identity", async () => {
+    const journal = new MemoryJournal();
+    let executedCall: ToolCall | undefined;
+    const input = baseInput(journal, (boundCall) => {
+      executedCall = boundCall;
+      return { toolCallId: boundCall.toolCallId, status: "succeeded", content: [] };
+    });
+    input.call = {
+      ...input.call,
+      invocation: { ...input.call.invocation, stepId: STEP_ID },
+    };
+    input.policy = {
+      evaluate: ({ evaluation }) => ({
+        evaluation,
+        policyId: "example.tool-policy",
+        policyVersion: contractVersion("1.0.0"),
+        decidedAt: "2026-07-29T00:00:00.000Z",
+        decision: "require-approval",
+      }),
+    };
+    const evidence = {
+      evidenceId: coreId<EvidenceId>(id(84)),
+      kind: "other",
+      content: {
+        resourceId: coreId<ResourceId>(id(85)),
+        mediaType: "application/json",
+        byteLength: 2,
+        digest: digest("d".repeat(64)),
+      },
+    } as const;
+    const approval = {
+      expiresAt: "2026-07-29T00:01:00.000Z",
+      authenticator: {
+        verify: (decision: ApprovalDecision) => ({
+          status: "authenticated" as const,
+          principal: decision.actor,
+        }),
+      },
+      request: () => Promise.resolve(null),
+    };
+
+    const pending = await executeControlledTool({ ...input, approval });
+    const replay = await executeControlledTool({
+      ...input,
+      call: {
+        ...input.call,
+        toolCallId: REPLAY_CALL_ID,
+        invocation: {
+          ...input.call.invocation,
+          runId: REPLAY_RUN_ID,
+          stepId: REPLAY_STEP_ID,
+        },
+      },
+      approval: {
+        ...approval,
+        request: (request) =>
+          Promise.resolve({
+            approval: request.approval,
+            decision: "approve",
+            decidedAt: request.requestedAt,
+            actor: { principalId: externalId<PrincipalId>("user:42") },
+            authentication: { scheme: "test", evidence },
+          } satisfies ApprovalDecision),
+      },
+      facts: facts(),
+    });
+
+    expect(pending.status).toBe("awaiting-approval");
+    expect(replay.status).toBe("succeeded");
+    expect(executedCall?.toolCallId).toBe(CALL_ID);
+    expect(executedCall?.invocation.runId).toBe(RUN_ID);
+    expect(executedCall?.invocation.stepId).toBe(STEP_ID);
+    expect("receipt" in replay && replay.receipt.stepId).toBe(STEP_ID);
   });
 
   it("records cancellation before start without invoking the binding", async () => {
