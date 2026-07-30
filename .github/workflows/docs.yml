@@ -38,6 +38,9 @@ jobs:
       - name: Install core deps
         run: bun install --cwd packages/llm-core
 
+      - name: Build core
+        run: bun run build
+
       - name: Build docs
         run: bun run docs:build
 
