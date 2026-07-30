@@ -4,7 +4,7 @@ Architecture version: v2
 Status: accepted
 Date: 2026-07-29
 Owners: architecture coordinator
-Affected tasks: P0-100, P0-110, P0-120, P0-130
+Affected tasks: core-contracts, core-tool-control-events, core-model-runtime, core-state-interventions
 Supersedes: none
 
 ## Context
@@ -54,7 +54,7 @@ The mandatory closed content union contains:
 - `{ kind: "binary", mediaType, encoding: "base64", data, byteLength, digest }`;
 - `{ kind: "media-ref", mediaType, resource, altText? }`.
 
-P0 digests use SHA-256 with lowercase hexadecimal values. Binary length and
+Core-stage digests use SHA-256 with lowercase hexadecimal values. Binary length and
 digest describe decoded bytes.
 
 `ResourceRef` contains `resourceId`, `mediaType`, `byteLength`, and digest. A
@@ -91,7 +91,7 @@ opaque references and never content, evidence, or canonical event payloads.
 - Zod as contract authority; it remains acceptable at adapter/application
   edges, but its runtime conversion semantics do not define the cross-language
   ABI.
-- Hand-authored schema as the P0 authority.
+- Hand-authored schema as the core-stage authority.
 - Unchecked TypeScript-only contracts.
 - A catch-all portable `raw: unknown` content variant.
 - Physical storage locators inside resource or evidence references.

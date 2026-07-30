@@ -2,7 +2,7 @@
 
 Date: 2026-07-29
 
-These are pre-replacement baselines owned by later P0.x tasks. Each target is
+These are pre-replacement baselines owned by later core tasks. Each target is
 intended to be driven to zero or to a qualified form. This file is the
 blast-radius reference for ADR-002.
 

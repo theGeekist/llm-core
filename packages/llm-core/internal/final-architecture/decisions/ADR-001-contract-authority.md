@@ -4,7 +4,7 @@ Architecture version: v2
 Status: accepted
 Date: 2026-07-29
 Owners: architecture coordinator
-Affected tasks: P0-100, P0-110, P0-120, P0-130, P0-140
+Affected tasks: core-contracts, core-tool-control-events, core-model-runtime, core-state-interventions, core-agent-runner
 Supersedes: none
 
 ## Context
@@ -31,7 +31,7 @@ own the kernel vocabulary and permits cross-layer cycles.
 - `src/composition` owns concrete binding assembly, provider factories,
   secrets/environment resolution, defaults, and delivery-time selection.
 - `src/services` is reserved for optional host-facing implementations of
-  stable ports. Do not create it in P0 without a concrete service.
+  stable ports. Do not create it in the core stage without a concrete service.
 - `src/shared` contains domain-neutral pure utilities and depends on no higher
   layer.
 - Allowed direction is `shared <- contracts <- feature public fronts <-
@@ -59,4 +59,4 @@ all legacy authorities.
 
 ## Follow-up tasks
 
-P0-100 establishes the contract front; P0-150 owns final exports and deletion.
+core-contracts establishes the contract front; core-convergence owns final exports and deletion.

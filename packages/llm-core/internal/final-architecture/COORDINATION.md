@@ -5,25 +5,35 @@ Architecture v2 program without relying on shared conversation state.
 
 ## Allocation
 
-Claude Code's completed I0-010 and P0-120 contributions remain historical.
-After P0-120, every remaining task is allocated to the Codex/coordinator swarm.
+Claude Code's completed api-baseline and core-model-runtime contributions remain historical.
+After core-model-runtime, every remaining task is allocated to the Codex/coordinator swarm.
 The coordinator delegates disjoint subtasks to child agents while retaining the
 task lease, review responsibility and integration authority.
 
-## Dependency-safe execution waves
+## Dependency-safe execution order
 
-1. Wave 0: `A0-001` and `I0-010` may run concurrently.
-2. Wave 1: `P0-100` runs after A0.
-3. Wave 2: `P0-110` and `P0-120` run concurrently.
-4. Wave 3: Codex-owned `P0-130` and `P0-155` may run concurrently after their
-   gates;
-   `P0-140` follows `P0-130` and the model slice.
-5. Wave 4: `P0-160` runs after the packaging gate and establishes one green
-   AI SDK 7 provider/UI compatibility baseline; `P0-170` then runs after the
-   state, runner and AI SDK compatibility slices.
-6. Wave 5: `P0-150` integrates P0 in the deterministic order below.
-7. Wave 6: only after `P0-150` is done, `P1-210` and `P1-230` may begin
-   concurrently through separate Codex agents. `P1-220` follows `P1-210`.
+- **Architecture and baseline:** `architecture-decisions` and `api-baseline`
+  may run concurrently.
+- **Core contracts:** `core-contracts` runs after `architecture-decisions`.
+- **Core runtime slices:** `core-tool-control-events` and `core-model-runtime`
+  run concurrently. `core-state-interventions` and `core-ai-sdk-packaging` may
+  then run concurrently after their gates. `core-agent-runner` follows the
+  state and model slices.
+- **Core adapters and interactions:** `core-ai-sdk-adapter` runs after the
+  packaging gate and establishes one green AI SDK 7 provider/UI compatibility
+  baseline. `core-interactions` follows the state, runner and AI SDK slices.
+- **Core convergence:** `core-convergence` integrates the core tasks in the
+  deterministic order below.
+- **Capabilities:** after `core-convergence`,
+  `capabilities-context-artifacts` and
+  `capabilities-runtime-conformance` may run concurrently.
+  `capabilities-evaluation` follows `capabilities-context-artifacts`.
+- **Language:** after capabilities, the language tasks audit, decide and
+  atomically replace the public language. Specification work remains blocked
+  until `language-rollout` passes.
+- **Specifications and adapters:** specification work begins after
+  `language-rollout`. Adapter implementations begin after the specification
+  API is published; their publication tasks remain serialized.
 
 ## Claim protocol
 
@@ -83,23 +93,23 @@ The coordinator integrates only reviewed task commits and never uncommitted
 worker directories. Ready commits are integrated in topological order; ties are
 resolved by ascending task ID.
 
-For P0, the expected order is:
+For the core stage, the expected order is:
 
 ```text
-I0-010
-P0-100
-P0-110
-P0-120
-P0-130
-P0-140
-P0-155
-P0-160
-P0-170
-P0-150
+api-baseline
+core-contracts
+core-tool-control-events
+core-model-runtime
+core-state-interventions
+core-agent-runner
+core-ai-sdk-packaging
+core-ai-sdk-adapter
+core-interactions
+core-convergence
 ```
 
 After each integration, the coordinator runs the receiving task's focused
-verification. `P0-150` runs the complete verification baseline. A failed
+verification. `core-convergence` runs the complete verification baseline. A failed
 integration returns to the originating task; the coordinator does not repair
 capability internals inside the integration commit.
 
@@ -114,3 +124,9 @@ Project state is recoverable from, in order:
 
 Chat transcripts, model memory, and uncommitted worktree state are never
 required inputs.
+
+For renamed historical tasks, `legacy_id`, `branch` and `worktree` are
+immutable provenance. They retain the exact values used when the work ran,
+even when those values contain the retired numbering scheme. Terminology
+audits must exclude these provenance fields; current task IDs, dependencies
+and planning prose still use descriptive names.

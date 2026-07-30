@@ -4,7 +4,7 @@ Architecture version: v2
 Status: accepted
 Date: 2026-07-29
 Owners: architecture coordinator
-Affected tasks: P0-120, P0-160
+Affected tasks: core-model-runtime, core-ai-sdk-adapter
 Supersedes: none
 
 ## Context

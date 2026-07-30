@@ -2,9 +2,9 @@
 architecture_version: 2
 id: TASK-ID
 title: Task title
-phase: PHASE
+stage: STAGE
 status: proposed
-priority: P0
+priority: critical
 preferred_owner_kind: codex
 owner: null
 owner_kind: null

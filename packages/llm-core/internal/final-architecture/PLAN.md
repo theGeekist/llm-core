@@ -43,7 +43,7 @@ Cross-swarm execution follows
 - Every feature exposes a `public.ts`; deep feature imports are prohibited.
 - Root exports, package metadata, shared fixtures and deletion of old contracts
   are serialized integration-owner work.
-- Complete and converge P0 before making a P1 task ready.
+- Complete and converge the core stage before starting capability expansion.
 - Keep modules and tests below the existing 500-SLOC planning threshold where
   practical.
 
@@ -72,10 +72,10 @@ packages/llm-core/src/
     storage/
     memory/
     media/
-    context/       # P1
-    artifacts/     # P1
-    evaluation/    # P1
-    specifications/ # P2
+    context/       # capabilities stage
+    artifacts/     # capabilities stage
+    evaluation/    # capabilities stage
+    specifications/ # specifications stage
 
   application/
     capability-bindings/
@@ -84,7 +84,7 @@ packages/llm-core/src/
     recipes/
     agent/
     interaction/
-    specification-compiler/ # P2
+    specification-compiler/ # specifications stage
 
   adapters/
     providers/
@@ -98,7 +98,7 @@ packages/llm-core/src/
   shared/
 ```
 
-Curated public fronts after P2:
+Curated public fronts after the specifications stage:
 
 ```text
 @geekist/llm-core
@@ -157,24 +157,26 @@ Expected feature dependencies:
 - policy → approval → execution → receipt coordination belongs in
   `application/tool-execution`.
 
-## Canonical vocabulary
+## Public language
 
-The naming ADR must ratify the exact surface, but implementation tasks use these
-proposed names:
+The complete audit and journey contracts are in
+[`LANGUAGE.md`](LANGUAGE.md). ADR-011 places a dedicated language stage before
+specification work.
 
-- `AgentSpec`, `AgentRunner`, `AgentRun`, `AgentRunRequest`, `RunResult`;
-- `ModelRequest`, `ModelResponse`, `ProviderRequestMetadata`,
-  `ProviderResponseMetadata`, `ModelProfile`;
-- `ToolSpec`, `ToolCall`, `ToolResult`, `ToolExecutionReceipt`;
-- `InvocationContext`, `ExecutionEvent`, `EventSink`;
-- `PolicyDecision`, `ApprovalRequest`, `ApprovalDecision`,
-  `InterventionRequest`, `ResumeStrategy`;
-- `LiveContinuation`, `Snapshot`, `ResumableCheckpoint`,
-  `DurableExecutionHandle`; and
-- `Artifact` using the industry-standard spelling.
+Architecture v2 keeps three language levels:
 
-Qualify `Context`, `State`, `Memory`, `Task`, `Runtime`, `Profile`, `Result` and
-`Thread`. Do not introduce bare forms.
+- common application language built from familiar nouns such as agent, tool,
+  workflow, conversation, specification, run, result, approval and plan;
+- explicit extension language for runtimes, stores, adapters, policies,
+  receipts, checkpoints and compatibility; and
+- internal lifecycle language for bindings, registration provenance, authority
+  snapshots, envelopes, claims and coordinator journals.
+
+ADR-011 establishes the language levels and usability gate. language-vocabulary proposes
+ADR-012 with the exact replacement map. Until ADR-012 is accepted, existing
+names describe the shipped v2 surface but are not authority for new specification
+names. Do not add aliases or make internal lifecycle machinery a required step
+in a common journey.
 
 ## Architectural invariants
 
@@ -205,6 +207,9 @@ Qualify `Context`, `State`, `Memory`, `Task`, `Runtime`, `Profile`, `Result` and
     semantics explicitly.
 18. Pipeline owns generic composition mechanics; `llm-core` owns
     specification meaning, authority, admission and durable state.
+19. Common APIs express user intent. Preparation, binding, registration,
+    projection and authority verification remain automatic unless the caller is
+    implementing that extension boundary.
 
 ## Decision gates
 
@@ -220,55 +225,54 @@ Implementation beyond characterization requires accepted ADRs for:
 8. specification interoperability, source authority, admission and Pipeline
    ownership; and
 9. qualified specification-adapter publication and serialized package
-   integration.
+   integration; and
+10. accessible public language, progressive disclosure and common-journey
+    usability.
 
 See [`decisions/README.md`](decisions/README.md).
 
-## Implementation waves
+## Implementation stages
 
-| Wave | Purpose                                                          | Entry gate                   | Exit gate                                                  |
-| ---- | ---------------------------------------------------------------- | ---------------------------- | ---------------------------------------------------------- |
-| A0   | Freeze decisions and ownership                                   | Research assessment complete | ADR-001 through ADR-007 accepted                           |
-| I0   | Characterize the current public surface                          | None                         | Compile fixtures and blast-radius evidence stored          |
-| P0.1 | Build narrow-waist contracts                                     | A0                           | Identity, invocation, version and extension contracts pass |
-| P0.2 | Parallel model and tool/control/event slices                     | P0.1                         | Both vertical slices pass focused tests                    |
-| P0.3 | State/intervention and agent runner                              | P0.2                         | Local runner uses the new lifecycle contracts              |
-| P0.4 | Packaging gate, then parallel AI SDK and interaction conversions | P0.3 contracts frozen        | Dependency gate, adapter and session/UI suites pass        |
-| P0.5 | Converge and delete old contracts                                | All P0 spokes in review      | No old public names/call sites; full CI passes             |
-| P1.1 | Context, artifacts and evaluation                                | P0 converged                 | Provenance and real evaluation path pass                   |
-| P1.2 | Conformance and second runtime                                   | P0 converged                 | Non-AI-SDK runner proves neutrality                        |
-| P2.1 | Canonical specification graph and conversion contracts           | ADR-009 accepted             | Portable contracts and adversarial validation pass         |
-| P2.2 | Resolution, admission, compilation and authority enforcement     | P2.1; Pipeline composition   | Projected plans reject drift at controlled gateways        |
-| P2.3 | Public front and multi-format conformance                        | P2.2                         | Packed consumer and versioned support declarations pass    |
-| X1   | Additional framework integrations                                | P2.3                         | Versioned support declarations exist                       |
+| Stage          | Purpose                                             | Entry gate                    | Exit gate                                               |
+| -------------- | --------------------------------------------------- | ----------------------------- | ------------------------------------------------------- |
+| Architecture   | Freeze decisions and ownership                      | Research assessment complete  | Foundational ADRs accepted                              |
+| Baseline       | Characterize the current public surface             | None                          | Compile fixtures and blast-radius evidence stored       |
+| Core           | Build and converge the runtime kernel               | Architecture decisions frozen | Old contracts removed and full CI passes                |
+| Capabilities   | Add context, artifacts, evaluation and conformance  | Core converged                | Provenance and runtime-neutral conformance proven       |
+| Language       | Settle and roll out the public language atomically  | Capabilities complete         | Packed common journeys use no internal vocabulary       |
+| Specifications | Add specification contracts, compiler and authority | Language rollout complete     | Packed specification API and authority checks pass      |
+| Adapters       | Add qualified framework integrations                | Specification API complete    | Versioned support declarations and packed adapters pass |
 
 ## Dependency graph
 
 ```text
-A0-001 ───────────────────────────────> P0-100
-P0-100 ───────────────────────────────> P0-110 + P0-120
-P0-110 ───────────────────────────────> P0-130
-P0-110 + P0-120 ─────────────────────> P0-155 ──> P0-160
-P0-110 + P0-120 + P0-130 ────────────> P0-140
-P0-100 + P0-120 + P0-160 ────────────> P0-141
-P0-100 + P0-120 + P0-130 + P0-160 ──> P0-142
-P0-100 + P0-120 + P0-140 + P0-160 ──> P0-143
-P0-141 + P0-142 + P0-143 ────────────> P0-149
-P0-130 + P0-140 + P0-160 ───────────> P0-170
-I0-010 + P0-149 + P0-170 ────────────> P0-150
-P0-150 ───────────────────────────────> P1-210
-P0-150 + P1-210 ─────────────────────> P1-220
-P0-150 + P0-160 + P0-170 ────────────> P1-230
-P1-210 + P1-230 + ADR-009 ───────────> P2-300
-P2-300 + WPKERNEL-PIPELINE-RELEASE ──> P2-310
-P2-310 ───────────────────────────────> P2-315
-P2-315 ───────────────────────────────> P2-320
-P2-320 ───────────────────────────────> X1-400 + X1-410 + X1-420 + X1-430 + X1-440
-X1-400 + ADR-010 ────────────────────> X1-405
-X1-410 + ADR-010 ────────────────────> X1-415
-X1-420 + ADR-010 ────────────────────> X1-425
-X1-430 + ADR-010 ────────────────────> X1-435
-X1-440 + ADR-010 ────────────────────> X1-445
+architecture-decisions ───────────────────────────────> core-contracts
+core-contracts ───────────────────────────────> core-tool-control-events + core-model-runtime
+core-tool-control-events ───────────────────────────────> core-state-interventions
+core-tool-control-events + core-model-runtime ─────────────────────> core-ai-sdk-packaging ──> core-ai-sdk-adapter
+core-tool-control-events + core-model-runtime + core-state-interventions ────────────> core-agent-runner
+core-contracts + core-model-runtime + core-ai-sdk-adapter ────────────> core-knowledge
+core-contracts + core-model-runtime + core-state-interventions + core-ai-sdk-adapter ──> core-conversations
+core-contracts + core-model-runtime + core-agent-runner + core-ai-sdk-adapter ──> core-media-schemas-skills
+core-knowledge + core-conversations + core-media-schemas-skills ────────────> core-capability-bindings
+core-state-interventions + core-agent-runner + core-ai-sdk-adapter ───────────> core-interactions
+api-baseline + core-capability-bindings + core-interactions ────────────> core-convergence
+core-convergence ───────────────────────────────> capabilities-context-artifacts
+core-convergence + capabilities-context-artifacts ─────────────────────> capabilities-evaluation
+core-convergence + core-ai-sdk-adapter + core-interactions ────────────> capabilities-runtime-conformance
+capabilities-context-artifacts + capabilities-evaluation + capabilities-runtime-conformance ────────────> language-audit
+language-audit + ADR-011 ────────────────────> language-vocabulary ──> ADR-012
+ADR-012 ─────────────────────────────> language-rollout
+language-rollout + ADR-009 ────────────────────> specification-contracts
+specification-contracts + WPKERNEL-PIPELINE-RELEASE ──> specification-compiler
+specification-compiler ───────────────────────────────> specification-authority
+specification-authority ───────────────────────────────> specification-api
+specification-api ───────────────────────────────> adapter-openspec + adapter-pydantic-ai + adapter-ai-sdlc + adapter-spec-kit + adapter-bmad
+adapter-openspec + ADR-010 ────────────────────> adapter-openspec-release
+adapter-pydantic-ai + ADR-010 ────────────────────> adapter-pydantic-ai-release
+adapter-ai-sdlc + ADR-010 ────────────────────> adapter-ai-sdlc-release
+adapter-spec-kit + ADR-010 ────────────────────> adapter-spec-kit-release
+adapter-bmad + ADR-010 ────────────────────> adapter-bmad-release
 ```
 
 `WPKERNEL-PIPELINE-RELEASE` is a release gate, not an implementation gap.
@@ -318,7 +322,7 @@ The task claim is advisory, not a distributed lock. See the task template.
 
 ## Swarm allocation
 
-Claude Code's completed I0-010 and P0-120 contributions remain historical.
+Claude Code's completed api-baseline and core-model-runtime contributions remain historical.
 Every remaining Architecture v2 task is owned by the Codex/coordinator swarm.
 The coordinator uses parallel child agents with disjoint write scopes and
 retains task leases, review responsibility and deterministic integration.

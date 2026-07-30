@@ -136,7 +136,7 @@ interface EvalContext {
 
 type RangeResult = "any" | "exact-match" | "exact-mismatch" | "unsupported";
 
-// P0 supports an absent/`*` range or an exact SemVer only. A range operator
+// The current resolver supports an absent/`*` range or an exact SemVer only. A range operator
 // (`^`, `~`, ranges) is reported as unsupported rather than silently treated as
 // an exact match, so resolution never downgrades on an unproven range.
 const evaluateRange = (range: string | undefined, version: string): RangeResult => {

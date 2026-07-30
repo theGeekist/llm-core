@@ -1,53 +1,58 @@
 # llm-core Architecture v2 Status
 
 Architecture version: v2
-Updated: 30 July 2026
-Active tasks: 0
+Updated: 31 July 2026
+Active tasks: 1
 
 This is a projection. Task files under [`tasks/`](tasks/) are authoritative.
 Swarm claiming and integration follow [`COORDINATION.md`](COORDINATION.md).
 
-| ID     | Phase | Status   | Planned swarm | Owner                     | Depends on                        |
-| ------ | ----- | -------- | ------------- | ------------------------- | --------------------------------- |
-| A0-001 | A0    | done     | coordinator   | architecture-coordinator  | —                                 |
-| I0-010 | I0    | complete | historical    | Claude Code               | —                                 |
-| P0-100 | P0.1  | complete | Codex         | codex-root                | A0-001                            |
-| P0-110 | P0.2  | complete | Codex         | codex-root                | P0-100                            |
-| P0-120 | P0.2  | complete | historical    | Claude Code               | P0-100                            |
-| P0-130 | P0.3  | complete | Codex         | codex-root                | P0-110                            |
-| P0-140 | P0.3  | complete | Codex         | codex-root                | P0-110, P0-120, P0-130            |
-| P0-141 | P0.3  | complete | Codex         | codex-root                | P0-100, P0-120, P0-160            |
-| P0-142 | P0.3  | complete | Codex         | codex-root                | P0-100, P0-120, P0-130, P0-160    |
-| P0-143 | P0.3  | complete | Codex         | codex-root                | P0-100, P0-120, P0-140, P0-160    |
-| P0-149 | P0.4  | complete | Codex         | codex-root                | P0-141, P0-142, P0-143            |
-| P0-155 | P0.4  | complete | Codex         | codex-root                | P0-110, P0-120                    |
-| P0-160 | P0.4  | complete | Codex         | codex-root                | P0-110, P0-120, P0-155            |
-| P0-170 | P0.4  | complete | Codex         | codex-root                | P0-130, P0-140, P0-160            |
-| P0-150 | P0.5  | complete | coordinator   | codex-root                | I0-010, P0-149, P0-170            |
-| P1-210 | P1.1  | complete | Codex         | codex-context-artifacts   | P0-150                            |
-| P1-220 | P1.1  | complete | Codex         | codex-evaluation-domain   | P0-150, P1-210                    |
-| P1-230 | P1.2  | complete | Codex         | codex-conformance-runtime | P0-150, P0-160, P0-170            |
-| P2-300 | P2.1  | ready    | coordinator   | —                         | P1-210, P1-230, ADR-009           |
-| P2-310 | P2.2  | blocked  | coordinator   | —                         | P2-300, WPKERNEL-PIPELINE-RELEASE |
-| P2-315 | P2.2  | proposed | coordinator   | —                         | P2-310                            |
-| P2-320 | P2.3  | proposed | coordinator   | —                         | P2-315                            |
-| X1-400 | X1    | proposed | Codex         | —                         | P2-320                            |
-| X1-405 | X1    | proposed | coordinator   | —                         | X1-400, ADR-010                   |
-| X1-410 | X1    | proposed | Codex         | —                         | P2-320                            |
-| X1-415 | X1    | proposed | coordinator   | —                         | X1-410, ADR-010                   |
-| X1-420 | X1    | proposed | Codex         | —                         | P2-320                            |
-| X1-425 | X1    | proposed | coordinator   | —                         | X1-420, ADR-010                   |
-| X1-430 | X1    | proposed | Codex         | —                         | P2-320                            |
-| X1-435 | X1    | proposed | coordinator   | —                         | X1-430, ADR-010                   |
-| X1-440 | X1    | proposed | Codex         | —                         | P2-320                            |
-| X1-445 | X1    | proposed | coordinator   | —                         | X1-440, ADR-010                   |
+| Task                             | Stage          | Status      | Planned swarm | Owner                     | Depends on                                                                                |
+| -------------------------------- | -------------- | ----------- | ------------- | ------------------------- | ----------------------------------------------------------------------------------------- |
+| architecture-decisions           | architecture   | done        | coordinator   | architecture-coordinator  | —                                                                                         |
+| api-baseline                     | baseline       | done        | historical    | Claude Code               | —                                                                                         |
+| core-contracts                   | core           | done        | Codex         | codex-root                | architecture-decisions                                                                    |
+| core-tool-control-events         | core           | done        | Codex         | codex-root                | core-contracts                                                                            |
+| core-model-runtime               | core           | done        | historical    | Claude Code               | core-contracts                                                                            |
+| core-state-interventions         | core           | done        | Codex         | codex-root                | core-tool-control-events                                                                  |
+| core-agent-runner                | core           | done        | Codex         | codex-root                | core-tool-control-events, core-model-runtime, core-state-interventions                    |
+| core-knowledge                   | core           | done        | Codex         | codex-root                | core-contracts, core-model-runtime, core-ai-sdk-adapter                                   |
+| core-conversations               | core           | done        | Codex         | codex-root                | core-contracts, core-model-runtime, core-state-interventions, core-ai-sdk-adapter         |
+| core-media-schemas-skills        | core           | done        | Codex         | codex-root                | core-contracts, core-model-runtime, core-agent-runner, core-ai-sdk-adapter                |
+| core-capability-bindings         | core           | done        | Codex         | codex-root                | core-knowledge, core-conversations, core-media-schemas-skills                             |
+| core-ai-sdk-packaging            | core           | done        | Codex         | codex-root                | core-tool-control-events, core-model-runtime                                              |
+| core-ai-sdk-adapter              | core           | done        | Codex         | codex-root                | core-tool-control-events, core-model-runtime, core-ai-sdk-packaging                       |
+| core-interactions                | core           | done        | Codex         | codex-root                | core-state-interventions, core-agent-runner, core-ai-sdk-adapter                          |
+| core-convergence                 | core           | done        | coordinator   | codex-root                | api-baseline, core-capability-bindings, core-interactions                                 |
+| capabilities-context-artifacts   | capabilities   | done        | Codex         | codex-context-artifacts   | core-convergence                                                                          |
+| capabilities-evaluation          | capabilities   | done        | Codex         | codex-evaluation-domain   | core-convergence, capabilities-context-artifacts                                          |
+| capabilities-runtime-conformance | capabilities   | done        | Codex         | codex-conformance-runtime | core-convergence, core-ai-sdk-adapter, core-interactions                                  |
+| language-audit                   | language       | in_progress | coordinator   | codex-root                | capabilities-context-artifacts, capabilities-evaluation, capabilities-runtime-conformance |
+| language-vocabulary              | language       | proposed    | coordinator   | —                         | language-audit, ADR-011                                                                   |
+| language-rollout                 | language       | proposed    | coordinator   | —                         | language-vocabulary, ADR-012                                                              |
+| specification-contracts          | specifications | blocked     | coordinator   | —                         | language-rollout, ADR-009                                                                 |
+| specification-compiler           | specifications | blocked     | coordinator   | —                         | specification-contracts, WPKERNEL-PIPELINE-RELEASE                                        |
+| specification-authority          | specifications | proposed    | coordinator   | —                         | specification-compiler                                                                    |
+| specification-api                | specifications | proposed    | coordinator   | —                         | specification-authority                                                                   |
+| adapter-openspec                 | adapters       | proposed    | Codex         | —                         | specification-api                                                                         |
+| adapter-openspec-release         | adapters       | proposed    | coordinator   | —                         | adapter-openspec, ADR-010                                                                 |
+| adapter-pydantic-ai              | adapters       | proposed    | Codex         | —                         | specification-api                                                                         |
+| adapter-pydantic-ai-release      | adapters       | proposed    | coordinator   | —                         | adapter-pydantic-ai, ADR-010                                                              |
+| adapter-ai-sdlc                  | adapters       | proposed    | Codex         | —                         | specification-api                                                                         |
+| adapter-ai-sdlc-release          | adapters       | proposed    | coordinator   | —                         | adapter-ai-sdlc, ADR-010                                                                  |
+| adapter-spec-kit                 | adapters       | proposed    | Codex         | —                         | specification-api                                                                         |
+| adapter-spec-kit-release         | adapters       | proposed    | coordinator   | —                         | adapter-spec-kit, ADR-010                                                                 |
+| adapter-bmad                     | adapters       | proposed    | Codex         | —                         | specification-api                                                                         |
+| adapter-bmad-release             | adapters       | proposed    | coordinator   | —                         | adapter-bmad, ADR-010                                                                     |
 
 ## Next action
 
-Complete P2-300's canonical graph and conversion contracts. P2-310 may begin
-after those contracts pass review and WPKernel publishes a forward exact
-Pipeline version. Phases 1 through 6, including typed custom stages, are already
-implemented and packed-qualified; version reconciliation and release are the
-remaining external blocker. The current verified release baseline remains the
-19-front package surface until P2-320 publishes and verifies the twentieth
-`./specifications` front.
+Review language-level ADR-011, then use `language-vocabulary` to propose the
+separate exact-vocabulary ADR-012, synchronize downstream briefs and record the
+desired common-journey fixtures. After ADR-012 is accepted, `language-rollout`
+changes source, package entrypoints, documentation and packed usability as one
+atomic integration. `specification-contracts` remains blocked until that task
+passes.
+
+WPKernel's forward Pipeline release can complete in parallel. specification-compiler still
+requires qualification against its exact packed release after specification-contracts.

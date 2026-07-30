@@ -3,7 +3,11 @@
 Architecture version: v2
 Decision authority:
 [`ADR-009`](decisions/ADR-009-specification-interoperability.md)
-Implementation wave: P2
+Implementation stage: specifications
+
+Public names in this document remain provisional until language-vocabulary ratifies the
+exact language. The internal authority boundaries remain required even when
+the common API hides their machinery.
 
 ## Outcome
 
@@ -46,32 +50,36 @@ Framework integrations remain qualified:
 
 Those adapter fronts are added only when their individual conformance and
 coordinator-owned publication tasks are complete. They do not block the core
-`./specifications` front and are not part of P2's initial 20-entry package
+`./specifications` front and are not part of the specifications stage's initial
+20-entry package
 gate.
 
 Do not add a broad `./delivery` front. It would combine source lifecycle,
 project policy, orchestration and product concerns that do not yet form one
 cohesive capability.
 
-## The eight seams
+## The eight boundaries
 
-| Seam                  | Input                                                         | Output                                                      | Authority                                                                    |
-| --------------------- | ------------------------------------------------------------- | ----------------------------------------------------------- | ---------------------------------------------------------------------------- |
-| 1. Observe            | External files, CLI output, API resources or runtime specs    | Detached `SourceSnapshot`                                   | Adapter records what existed; it does not interpret or authorize             |
-| 2. Import             | Versioned snapshot                                            | Imported nodes, relationships and conversion report         | Format adapter owns parsing and source-version conformance                   |
-| 3. Reconcile          | One or more imports                                           | Canonical `SpecificationSet`                                | Core owns identity, provenance, source authority and conflict representation |
-| 4. Resolve            | Canonical semantic graph                                      | `ResolvedSpecification` plus diagnostics                    | Core derives references, requirements and unresolved questions               |
-| 5. Derive views       | Resolved graph                                                | Dependency DAG and workflow program                         | Each view declares which relationship kinds it interprets                    |
-| 6. Admit              | Resolved specification, policy decisions and evidence         | Admission decision and, when accepted, a portable record    | Application policy or authenticated human authority; never the importer      |
-| 7. Project            | Runtime-registered accepted specification plus target         | Target-neutral compiled plan or qualified native projection | Projector reports exact, preserved, degraded and rejected semantics          |
-| 8. Reconcile feedback | Execution receipts, evaluations, drift and produced artifacts | `SpecificationChangeProposal` with lineage                  | Evidence may propose a change; only the source owner may accept it           |
+| Reader-facing boundary    | Internal responsibility | Input                                                         | Output                                                       | Authority                                                                    |
+| ------------------------- | ----------------------- | ------------------------------------------------------------- | ------------------------------------------------------------ | ---------------------------------------------------------------------------- |
+| 1. Load source            | Observe                 | External files, CLI output, API resources or runtime specs    | Detached source snapshot                                     | Adapter records what existed; it does not interpret or authorize             |
+| 2. Read format            | Import                  | Versioned snapshot                                            | Imported nodes, relationships and conversion report          | Format adapter owns parsing and source-version compatibility                 |
+| 3. Combine specifications | Reconcile               | One or more imports                                           | Canonical specification graph                                | Core owns identity, provenance, source authority and conflict representation |
+| 4. Check specification    | Resolve                 | Canonical semantic graph                                      | Checked specification plus diagnostics                       | Core derives references, requirements and unresolved questions               |
+| 5. Build plans            | Derive views            | Checked graph                                                 | Dependency plan and workflow program                         | Each view declares which relationship kinds it interprets                    |
+| 6. Decide                 | Admit                   | Checked specification, policy decisions and evidence          | Specification decision and, when accepted, a portable record | Application policy or authenticated human authority; never the importer      |
+| 7. Compile                | Project                 | Runtime-verified accepted specification plus target           | Target-neutral execution plan or framework-native value      | Compiler reports exact, changed and unsupported semantics                    |
+| 8. Propose changes        | Reconcile feedback      | Execution receipts, evaluations, drift and produced artifacts | Proposed specification change with lineage                   | Evidence may propose a change; only the source owner may accept it           |
 
-The eighth seam closes the lifecycle without creating an unsafe write-back
+The eighth boundary closes the lifecycle without creating an unsafe write-back
 loop. Runtime evidence can show that intent and implementation diverged, but
 `llm-core` never overwrites authoritative OpenSpec, Spec Kit, AI-SDLC or BMAD
 material silently.
 
 ## Canonical state model
+
+These are internal architecture names, not a required public call sequence.
+`language-vocabulary` decides which values remain publicly named.
 
 ```text
 SourceSnapshot
@@ -98,16 +106,20 @@ ResolvedSpecification
   ├── dependency view
   └── workflow view
 
-AcceptedSpecificationRecord
-  ├── resolved-specification digest
-  ├── admission decision and evidence
-  ├── admitted scope
-  ├── policy/version bindings
-  ├── source revision/digest bindings
-  └── expiry or invalidation conditions
+SpecificationDecision
+  ├── accepted
+  │   └── record: SpecificationDecisionRecord
+  │       ├── resolved-specification digest
+  │       ├── admission decision and evidence
+  │       ├── admitted scope
+  │       ├── policy/version bindings
+  │       ├── source revision/digest bindings
+  │       └── expiry or invalidation conditions
+  ├── rejected
+  └── needs-input
 
 RegisteredAcceptedSpecification
-  ├── verified AcceptedSpecificationRecord
+  ├── verified SpecificationDecisionRecord
   ├── current resolved specification
   └── module-private runtime provenance (origin, not continuing validity)
 
@@ -127,13 +139,13 @@ SpecificationChangeProposal
   └── conversion report
 ```
 
-The snapshot, set, resolved value, acceptance record and change proposal are
+The snapshot, set, resolved value, decision record and change proposal are
 distinct portable branded contracts. Brands provide compile-time separation;
 they are not execution authority.
 
 `RegisteredAcceptedSpecification` is a live, process-local value recorded in a
 module-private provenance registry. It can be obtained only by completing
-admission or verifying an `AcceptedSpecificationRecord` against current
+admission or verifying a `SpecificationDecisionRecord` against current
 authority, source revision, resolved digest, admitted scope, policy versions
 and expiry. Registration proves origin; it does not make acceptance timeless.
 
@@ -154,7 +166,7 @@ target-neutral projection to the exact authority snapshot used. Projection is
 pure, so a concurrent change after that snapshot creates a stale envelope
 rather than an unauthorized effect.
 
-P2-310 exposes `verifyProjectionAuthoritySnapshot`. P2-315 integrates it into
+specification-compiler exposes `verifyProjectionAuthoritySnapshot`. specification-authority integrates it into
 every `llm-core`-controlled agent/workflow preparation, execution and resume
 gateway capable of consuming a projection. Preparation validates immediately
 before creating a runtime object; execution and resume validate again
@@ -251,12 +263,12 @@ dependency between adapter implementations.
 
 ## Pipeline integration
 
-Source observation stays in qualified adapters because it may perform file,
+Source loading stays in framework adapters because it may perform file,
 CLI or API I/O. The application compiler accepts detached snapshots and uses
 Pipeline for the remaining mechanics:
 
 ```text
-import -> reconcile -> resolve -> admit -> project
+read -> combine -> check -> decide -> compile
 ```
 
 The compiler owns one typed immutable state value for a run. Helpers may
@@ -308,7 +320,7 @@ pnpm --filter @wpkernel/pipeline qualify:packed
 ```
 
 Its current tarball reports the stale local manifest version `1.0.0`, while
-`llm-core` already pins published Pipeline `1.1.0`. P2-310 is blocked only
+`llm-core` already pins published Pipeline `1.1.0`. specification-compiler is blocked only
 until WPKernel reconciles version history, publishes a forward exact version,
 and `llm-core` qualifies against and pins that released artifact.
 
@@ -345,22 +357,25 @@ and `llm-core` qualifies against and pins that released artifact.
 
 ## Implementation sequence
 
-1. P2-300 defines and validates snapshots, semantic graphs, conversion reports,
-   portable acceptance records, change proposals and adapter capabilities.
-2. P2-310 adds reconciliation, resolution, derived views, admission and the
+1. The language stage settles the public language and proves the common
+   journeys.
+2. specification-contracts defines and validates snapshots, semantic graphs, conversion reports,
+   portable specification decision records, change proposals and adapter
+   capabilities.
+3. specification-compiler adds reconciliation, resolution, derived views, admission and the
    pure Pipeline-backed compiler after the forward WPKernel release gate. The
    required composition and typed custom-stage APIs are already implemented and
-   packed-qualified upstream. P2-310 owns runtime registration of accepted
+   packed-qualified upstream. specification-compiler owns runtime registration of accepted
    specifications, projection envelopes and the public authority-snapshot
    verifier.
-3. P2-315 integrates post-projection authority verification into controlled
+4. specification-authority integrates post-projection authority verification into controlled
    preparation, execution and resume paths and proves rejection before effects.
-4. P2-320 publishes `./specifications` and verifies the 20-entry packed package.
-5. X1-400, X1-410, X1-420, X1-430 and X1-440 implement independent adapter
+5. specification-api publishes `./specifications` and verifies the 20-entry packed package.
+6. adapter-openspec, adapter-pydantic-ai, adapter-ai-sdlc, adapter-spec-kit and adapter-bmad implement independent adapter
    mappings and conformance fixtures.
-6. X1-405, X1-415, X1-425, X1-435 and X1-445 are coordinator-owned publication
+7. adapter-openspec-release, adapter-pydantic-ai-release, adapter-ai-sdlc-release, adapter-spec-kit-release and adapter-bmad-release are coordinator-owned publication
    tasks that serialize package metadata and packed-consumer changes.
-7. A later source-application task may apply change proposals only after its
+8. A later source-application task may apply change proposals only after its
    adapter proves authenticated ownership, optimistic concurrency, stale
    rejection, conversion-loss handling and durable receipts.
 

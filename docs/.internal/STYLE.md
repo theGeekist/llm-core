@@ -30,7 +30,23 @@ in `.internal/`:
 - private labels such as “public front”, “feature front”, and “convergence”.
 
 Use reader-facing terms such as capability, subpath export, stable contract,
-and qualified adapter. Write in the present tense about the current release.
+and framework or provider adapter. Reserve `qualified` for an exact tested
+compatibility claim. Write in the present tense about the current release.
+
+## Progressive disclosure
+
+Start with the action the reader wants to complete. Common guides use familiar
+nouns such as agent, tool, workflow, conversation, specification, run, result,
+approval and plan.
+
+Introduce runner, port, binding, registry, provenance, snapshot, checkpoint,
+projection and compatibility language only when the reader is implementing
+that extension or guarantee. Internal lifecycle rigor should make the common
+path safe; it should not become a list of manual steps.
+
+Treat every README-sized example as a language test. If a simple agent, tool,
+workflow, conversation or specification example requires an implementation
+term, review the API boundary before explaining the term more thoroughly.
 
 ## Authoritative mental model
 

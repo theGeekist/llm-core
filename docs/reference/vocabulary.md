@@ -4,6 +4,20 @@
 value is JSON-compatible and safe to validate, store, or send. A live value
 holds behavior or a handle to work executing now.
 
+This page describes the currently shipped contracts. Not every public type
+belongs to ordinary application usage:
+
+| Level     | When you need it                                       | Typical language                                 |
+| --------- | ------------------------------------------------------ | ------------------------------------------------ |
+| Common    | Build and run an application                           | agent, tool, workflow, run, result, conversation |
+| Extension | Implement a runtime, store, adapter or safety boundary | runner, port, policy, receipt, checkpoint        |
+| Internal  | Understand core implementation mechanics               | binding provenance, registration, coordinator    |
+
+Current low-level composition APIs expose some extension types directly. Their
+presence here does not mean every application owns their implementation. The
+sections below document them precisely so you can identify where application,
+runner, adapter and storage responsibilities differ.
+
 ## Agents
 
 | Term                | Meaning                                                                                                      |

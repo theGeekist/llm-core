@@ -4,7 +4,7 @@ Architecture version: v2
 Status: accepted
 Date: 2026-07-30
 Owners: architecture coordinator
-Affected tasks: P2-300, P2-310, P2-315, P2-320, X1-400 through X1-445
+Affected tasks: specification-contracts, specification-compiler, specification-authority, specification-api, adapter-openspec through adapter-bmad-release
 Supersedes: ADR-008's fixed public-subpath list only
 
 ## Context
@@ -71,7 +71,7 @@ durable LLM execution state.
   current authority/policy/source snapshot, checks expiry at the final
   synchronous boundary and only then invokes the target projector.
 - Projection results bind the authority snapshot used for validation.
-  P2-315 makes controlled preparation, execution and resume recheck that
+  specification-authority makes controlled preparation, execution and resume recheck that
   binding before runtime construction or effects begin.
 - The projection result is an envelope carrying the native/target-neutral value,
   projection identity and authority snapshot. Extracting the raw projection
@@ -129,7 +129,7 @@ durable LLM execution state.
   private Pipeline stage dependencies.
 - WPKernel Phase 6 has implemented and packed-qualified that public facade,
   including cast-free inline `createStages` inference from root exports. The
-  remaining P2-310 blocker is a forward published exact Pipeline version, not
+  remaining specification-compiler blocker is a forward published exact Pipeline version, not
   custom-stage API implementation.
 - Process-local suspension is optional compiler machinery, not a portable
   contract dependency.
@@ -156,7 +156,7 @@ fit for execution.
 
 The core specification front increases the Architecture v2 package surface
 from 19 to 20 entries. Qualified adapter implementations and publication are
-separate X1 tasks so independent conformance work does not contend on shared
+separate adapter tasks so independent conformance work does not contend on shared
 package metadata. ADR-010 governs their conditional public fronts and
 coordinator-owned publication. Release verification must continue to test both
 runtime and declaration imports from an isolated packed-package consumer.

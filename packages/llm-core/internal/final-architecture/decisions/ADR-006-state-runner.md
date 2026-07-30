@@ -4,7 +4,7 @@ Architecture version: v2
 Status: accepted
 Date: 2026-07-29
 Owners: architecture coordinator
-Affected tasks: P0-130, P0-140, P0-170
+Affected tasks: core-state-interventions, core-agent-runner, core-interactions
 Supersedes: none
 
 ## Context

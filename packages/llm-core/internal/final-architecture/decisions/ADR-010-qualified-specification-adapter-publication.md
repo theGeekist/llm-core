@@ -4,13 +4,13 @@ Architecture version: v2
 Status: accepted
 Date: 2026-07-30
 Owners: architecture coordinator
-Affected tasks: X1-400 through X1-445
+Affected tasks: adapter-openspec through adapter-bmad-release
 Supersedes: ADR-009's per-adapter public-surface-decision requirement
 
 ## Context
 
 ADR-009 keeps framework semantics in qualified adapters and originally required
-each future adapter front to receive a separate public-surface decision. The X1
+each future adapter front to receive a separate public-surface decision. The adapter
 implementation briefs then promised public fronts while excluding shared
 package metadata from their write scopes.
 
@@ -44,7 +44,7 @@ integration files.
   - package smoke fixtures;
   - public support documentation; and
   - isolated packed-consumer verification.
-- P2-320 and every adapter publication task run the complete hardened release
+- specification-api and every adapter publication task run the complete hardened release
   gate: package `release:build`, isolated `test:package`, repository
   `docs:check` and package `format:check`. Focused tests supplement rather than
   replace this gate.
@@ -60,6 +60,6 @@ integration files.
 ## Consequences
 
 OpenSpec, PydanticAI, AI-SDLC, Spec Kit and BMAD implementation work can proceed
-independently after P2-320. Package integration remains deterministic and
+independently after specification-api. Package integration remains deterministic and
 truthful. The public export count grows only when an individual publication
 task succeeds, so release evidence records the exact surface at each version.

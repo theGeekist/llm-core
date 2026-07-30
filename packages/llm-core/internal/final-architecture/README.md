@@ -11,10 +11,12 @@ the explicit v2 marker is authoritative. Every ADR and task created from the
 templates in this directory belongs to Architecture v2 unless a later
 superseding architecture version says otherwise.
 
-- [`PLAN.md`](PLAN.md) defines the target posture and implementation waves.
+- [`PLAN.md`](PLAN.md) defines the target posture and implementation stages.
 - [`STATUS.md`](STATUS.md) projects current task state.
 - [`COORDINATION.md`](COORDINATION.md) defines deterministic swarm execution.
-- [`SPECIFICATIONS.md`](SPECIFICATIONS.md) defines the P2 specification model,
+- [`LANGUAGE.md`](LANGUAGE.md) records the complete public-language audit,
+  journey contracts and language rollout gate.
+- [`SPECIFICATIONS.md`](SPECIFICATIONS.md) defines the specification model,
   eight interoperability seams and Pipeline adoption gates.
 - [`decisions/`](decisions/) contains accepted Architecture v2 ADRs.
 - [`tasks/`](tasks/) contains Architecture v2 implementation briefs.

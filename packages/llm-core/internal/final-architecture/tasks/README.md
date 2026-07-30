@@ -11,6 +11,13 @@ integration are defined in [`../COORDINATION.md`](../COORDINATION.md).
 
 Use `blocked` when a named dependency or unresolved decision prevents progress. Use `cancelled` only when the coordinator removes the task.
 
+## Language stage
+
+The language stage runs before specification work. Its common-journey fixtures
+and exact term map are architecture inputs, not a final documentation cleanup.
+New capability tasks must not invent public names while `language-vocabulary`
+is unresolved.
+
 ## Claiming a task
 
 1. Confirm every `depends_on` task is `done`.
@@ -33,3 +40,7 @@ merge, cherry-pick, or integrate their own work.
 5. The coordinator reviews it and changes the status to `done`.
 
 `STATUS.md` is a projection for humans. The task brief remains authoritative.
+
+Renamed completed tasks may contain `legacy_id` plus historical `branch` and
+`worktree` values. Those fields are immutable execution provenance, not active
+planning terminology.
