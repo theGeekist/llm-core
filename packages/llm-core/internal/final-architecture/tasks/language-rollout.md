@@ -3,16 +3,16 @@ architecture_version: 2
 id: language-rollout
 title: Atomic public-language rollout
 stage: language
-status: proposed
+status: in_progress
 priority: critical
 preferred_owner_kind: coordinator
-owner:
+owner: codex-root
 owner_kind: codex
-lease_started_at:
-lease_expires_at:
-base_sha:
-branch:
-worktree:
+lease_started_at: 2026-07-31T06:00:00+08:00
+lease_expires_at: 2026-08-01T06:00:00+08:00
+base_sha: 17d2b38a
+branch: main
+worktree: /Users/jasonnathan/Repos/@theGeekist/llm-core
 depends_on:
   - language-vocabulary
 decision_dependencies:
@@ -83,7 +83,9 @@ bun run typecheck:examples
 
 ## Work log
 
-Not started.
+2026-07-31 — Claimed after ADR-012 passed coordinator review at `17d2b38`.
+Implementation was divided into disjoint Agent/Tool, Workflow and Conversation
+workstreams; the coordinator owns root/package/build integration.
 
 ## Handoff
 

@@ -1,7 +1,7 @@
 # ADR-012 — Exact Public Vocabulary and Package Surfaces
 
 Architecture version: v2
-Status: proposed
+Status: accepted
 Date: 2026-07-31
 Owners: architecture coordinator
 Affected tasks: language-vocabulary, language-rollout, specification-contracts

@@ -3,7 +3,7 @@ architecture_version: 2
 id: language-vocabulary
 title: Exact public vocabulary and package surfaces
 stage: language
-status: review
+status: done
 priority: critical
 preferred_owner_kind: coordinator
 owner: codex-root
@@ -99,7 +99,7 @@ git diff --check
 ## Handoff
 
 ADR-012, the five desired common journeys and the compiler-resolved export
-inventory are ready for coordinator review. The specification and adapter
-briefs use the proposed exact names, and Pipeline 1.2.0 is independently
-qualified. Do not claim language-rollout until ADR-012 is accepted and this
-task is marked done.
+inventory passed coordinator review and were integrated at `17d2b38`.
+Specification and adapter briefs use the exact names, and Pipeline 1.2.0 is
+independently qualified. language-rollout owns the atomic source and package
+convergence.

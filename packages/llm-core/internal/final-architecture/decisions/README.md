@@ -16,7 +16,7 @@ authoritative unless superseded; substantive change requires a superseding ADR.
 | [ADR-009](ADR-009-specification-interoperability.md)              | Specification interoperability and compilation        | accepted |
 | [ADR-010](ADR-010-qualified-specification-adapter-publication.md) | Qualified specification adapter publication           | accepted |
 | [ADR-011](ADR-011-accessible-public-language.md)                  | Accessible public language and progressive disclosure | accepted |
-| [ADR-012](ADR-012-exact-public-vocabulary.md)                     | Exact public vocabulary and package surfaces          | proposed |
+| [ADR-012](ADR-012-exact-public-vocabulary.md)                     | Exact public vocabulary and package surfaces          | accepted |
 
 A later change uses a superseding ADR so another worker can reconstruct why the
 architecture moved.
