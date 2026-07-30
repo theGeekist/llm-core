@@ -38,21 +38,27 @@ Effect class describes operational risk. Idempotency is a separate
 
 ## What the action digest binds
 
-`actionDigest` is an HMAC-like security-domain binding produced by the
-application's `ActionDigestPort`. The key arrives by opaque `SecretRef`, so key
-rotation and storage remain outside portable action data.
+`actionDigest` requires the application's `ActionDigestPort` to compute
+HMAC-SHA-256 over the UTF-8 bytes of the canonical action document. The port
+resolves an opaque, rotation-capable `SecretRef` inside the supplied
+`securityDomain`; callers do not receive the key. The returned value is exactly
+the 43-character, unpadded base64url encoding of the 32-byte digest and carries
+the algorithm label `hmac-sha-256`.
 
-| Included in the canonical action          | Deliberately excluded                    |
-| ----------------------------------------- | ---------------------------------------- |
-| Tool ID, version, and input-schema digest | Raw credential material                  |
-| Effect class and exact effect targets     | Policy or approval decisions             |
-| Authority identity and delegation chain   | Receipt lifecycle and timestamps         |
-| Execution and idempotency semantics       | Provider clients and native payloads     |
-| Strict normalized arguments               | Event delivery or storage implementation |
+| Included in the canonical action                    | Deliberately excluded                                  |
+| --------------------------------------------------- | ------------------------------------------------------ |
+| Tool ID, version, and input-schema digest           | Run, step, tool-call, and correlation IDs              |
+| Effect class and exact effect targets               | Trace, span, and other observability identity          |
+| Tenant, principal, and delegation authority present | Idempotency keys, attempt counters, and caller labels  |
+| Execution and idempotency semantics                 | Policy or approval decisions                           |
+| Strict normalized arguments                         | Receipt lifecycle, revisions, and timestamps           |
+|                                                     | Raw credentials, provider clients, and native payloads |
+|                                                     | Event delivery and storage implementation              |
 
 Policy, approval, and receipts bind to the resulting digest. Changing an
-included fact requires a new decision; rotating the key changes the key
-reference without exposing key material.
+included fact requires a new decision. Idempotency semantics are bound, but a
+particular idempotency key is lifecycle coordination data and is not. Rotating
+the key changes the key reference without exposing key material.
 
 A tool declaration does not execute itself. Route meaningful effects through
 controlled tool execution so policy, approval, receipts, and recovery apply.

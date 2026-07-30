@@ -42,7 +42,7 @@ external systems to them.
 | Noun                       | Meaning                                                                                             |
 | -------------------------- | --------------------------------------------------------------------------------------------------- |
 | `AgentSpec`                | Portable agent intent: identity, version, instructions, effect requirement, metadata, and skills.   |
-| `AgentRunner`              | Executable port that prepares a spec and starts or resumes a run.                                   |
+| `AgentRunner`              | Executable port that prepares a spec and starts a run. Resume is optional and capability-gated.     |
 | `AgentRun`                 | Live handle exposing `AgentRunEvent` values, typed controls, and one terminal result.               |
 | `RunResult`                | Terminal agent result: `completed`, `failed`, `denied`, or `cancelled`.                             |
 | `WorkflowDefinition`       | Ordered, author-defined workflow steps.                                                             |

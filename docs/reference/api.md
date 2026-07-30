@@ -6,7 +6,7 @@ subpaths. Import from the owner of the contract you use.
 | Subpath                    | Responsibility                   | Representative exports                                                          |
 | -------------------------- | -------------------------------- | ------------------------------------------------------------------------------- |
 | `@geekist/llm-core`        | Local agent composition          | `createLocalAgentRunner`, agent specification and run types                     |
-| `/functional`              | Sync-preserving composition      | `maybeMap`, `maybeChain`, `maybeReduce`, `maybeAll`, step/iterable adapters     |
+| `/functional`              | Sync-preserving composition      | `maybeMap`, `maybeChain`, `maybeAll`, `maybeTry`, step collection               |
 | `/contracts`               | Portable primitives              | identity, invocation, schema, versioning, capability claims                     |
 | `/model`                   | Models and media                 | model requests, profiles, resolution, media ports                               |
 | `/tools`                   | Tool definitions                 | schemas, bindings, validation, canonical actions                                |
@@ -29,4 +29,5 @@ The package exposes no broad adapter barrel and no global recipe catalogue.
 Deep feature imports are implementation details.
 
 See the capability pages for behavior and guarantees, and
-[Package exports](/reference/package-exports) for packaging constraints.
+[Functional helpers](/reference/functional) for the complete helper surface.
+See [Package exports](/reference/package-exports) for packaging constraints.

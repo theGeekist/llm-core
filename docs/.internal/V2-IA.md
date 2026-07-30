@@ -36,6 +36,7 @@ navigation commitments.
 10. Evaluation
 11. Agent capabilities
     - Bindings and composition
+    - Agent skills
     - Retrieval and indexing
     - Storage and memory
 
@@ -68,10 +69,12 @@ through the `/agent` package surface. Media is curated through `/model`.
 1. Vocabulary
 2. API by subpath
 3. Contract catalogue
-4. Package exports
-5. Packaging and conformance
-6. Design decisions
-7. Migrate from 1.x to 2.0
+4. Functional helpers
+5. Failures and diagnostics
+6. Package exports
+7. Packaging and conformance
+8. Design decisions
+9. Migrate from 1.x to 2.0
 
 ## Page rules
 
@@ -86,17 +89,18 @@ through the `/agent` package surface. Media is curated through `/model`.
 
 ## Visual map
 
-| Page                  | Preferred visual                                       |
-| --------------------- | ------------------------------------------------------ |
-| Core concepts         | dependency flow and separate agent/workflow lifecycles |
-| Contracts             | portable/live boundary                                 |
-| Control               | controlled-effect sequence                             |
-| State                 | lifetime taxonomy                                      |
-| Context and Artifacts | provenance flow                                        |
-| Evaluation            | evidence-binding graph                                 |
-| Agent guide           | prepare/start/events/result sequence                   |
-| Workflow              | pause/resume state diagram                             |
-| Interaction           | event projection sequence                              |
-| Adapters              | native-to-neutral boundary                             |
+| Page          | Preferred visual                                       |
+| ------------- | ------------------------------------------------------ |
+| Core concepts | dependency flow and separate agent/workflow lifecycles |
+| Contracts     | portable/live boundary                                 |
+| Control       | control-contract relationship                          |
+| State         | lifetime taxonomy                                      |
+| Context       | selection and provenance flow                          |
+| Artifacts     | output provenance flow                                 |
+| Evaluation    | evidence-binding graph                                 |
+| Agent guide   | prepare/start/events/result sequence                   |
+| Workflow      | pause/resume state diagram                             |
+| Interaction   | event projection sequence                              |
+| Adapters      | native-to-neutral boundary                             |
 
 Vocabulary, package exports, and migration use tables instead of diagrams.

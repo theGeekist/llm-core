@@ -1,0 +1,55 @@
+# Failures and diagnostics
+
+llm-core uses typed outcomes for expected operational states and throws for
+invalid contracts, forged runtime facades, and coordination responses that
+cannot be trusted. This page collects the public failure families; capability
+pages remain authoritative for recovery behavior.
+
+## Boundary and model failures
+
+| Surface                  | Failure form                           | Meaning                                                                                                                                     |
+| ------------------------ | -------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| Tool argument validation | `ToolArgumentValidationError`          | Arguments do not satisfy the registered strict schema.                                                                                      |
+| Model response           | `{ kind: "error", error: ModelError }` | A provider call completed with `provider-error`, `rate-limited`, `timeout`, `cancelled`, `invalid-request`, `content-filter`, or `unknown`. |
+| Contract boundary        | `TypeError`                            | Portable data, identity, version, schema, or runtime provenance is invalid.                                                                 |
+
+Model errors carry a portable code and message. Provider-native codes and
+metadata remain optional edge data. See [Model and media](/capabilities/model).
+
+## Capability binding diagnostics
+
+`CapabilityBindingResolutionOutcome` is either `resolved` or `unresolved`.
+Both variants carry `CapabilityBindingDiagnostic` values so selection,
+duplicates, unsupported ranges, missing bindings, and invalid bindings remain
+inspectable without parsing an exception message. An unresolved required
+capability must be handled before execution.
+
+## Controlled effects
+
+`ControlledToolExecutionOutcome` keeps recovery-significant states distinct:
+
+| Status                | Caller action                                                                   |
+| --------------------- | ------------------------------------------------------------------------------- |
+| `succeeded`, `failed` | Consume the result and authoritative receipt.                                   |
+| `awaiting-approval`   | Retain the reservation and resume with authenticated approval.                  |
+| `denied`, `cancelled` | Treat the effect as not authorized or cancelled under the recorded disposition. |
+| `existing`            | Use the authoritative terminal receipt; do not replay the effect.               |
+| `conflict`            | Reconcile the competing idempotency reservation.                                |
+| `indeterminate`       | Reconcile externally before any retry.                                          |
+
+Malformed journal acknowledgements and other untrustworthy coordination
+responses throw `ToolExecutionCoordinationError`. See
+[Controlled tool execution](/orchestration/controlled-tool-execution).
+
+## Resume and agent outcomes
+
+`WorkflowResumeOutcome` distinguishes `rejected`, `incompatible`,
+`reconciliation-required`, and `failed` from completed intervention
+dispositions. A compatibility failure means the registered checkpoint cannot
+run under the expected runtime or workflow contract. Reconciliation is
+required when a meaningful effect is recorded as `started` or `indeterminate`.
+
+An agent `RunResult` terminates as `completed`, `failed`, `denied`, or
+`cancelled`. Its optional `reasonCode` is a safe machine-readable category, not
+provider-native error payload. See [State and durability](/capabilities/state)
+and [Run an agent](/guide/agent).

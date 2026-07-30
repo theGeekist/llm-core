@@ -18,14 +18,14 @@ documentation against the shipped 19-front, ESM-only package surface.
 
 ## Work sections
 
-| Section                    | Source pages                                                                 | Required outcome                                                               |
-| -------------------------- | ---------------------------------------------------------------------------- | ------------------------------------------------------------------------------ |
-| Guide                      | landing and `guide/*`                                                        | Accurate mental model and task-led walkthroughs.                               |
-| Core capabilities          | contracts, model, tools, control, evidence, state                            | One focused page per guarantee-bearing public capability.                      |
-| Agent-owned and P1 domains | bindings, retrieval/indexing, storage/memory, context, artifacts, evaluation | Explain ownership, portability, and composition without inventing subpaths.    |
-| Orchestration              | workflow and controlled execution                                            | Separate passive workflow execution from durable controlled effects.           |
-| Interaction and adapters   | interaction and qualified adapter pages                                      | Explain event projection, session ownership, redaction, and native boundaries. |
-| Reference                  | vocabulary, exports, contracts, conformance, decisions, migration            | Exact names and mappings with no tutorial duplication.                         |
+| Section                    | Source pages                                                                                         | Required outcome                                                               |
+| -------------------------- | ---------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------ |
+| Guide                      | landing and `guide/*`                                                                                | Accurate mental model and task-led walkthroughs.                               |
+| Core capabilities          | contracts, model, tools, control, evidence, state                                                    | One focused page per guarantee-bearing public capability.                      |
+| Agent-owned and P1 domains | bindings, retrieval/indexing, storage/memory, context, artifacts, evaluation                         | Explain ownership, portability, and composition without inventing subpaths.    |
+| Orchestration              | workflow and controlled execution                                                                    | Separate passive workflow execution from durable controlled effects.           |
+| Interaction and adapters   | interaction and qualified adapter pages                                                              | Explain event projection, session ownership, redaction, and native boundaries. |
+| Reference                  | vocabulary, API, functional helpers, failures, exports, contracts, conformance, decisions, migration | Exact names and mappings with no tutorial duplication.                         |
 
 ## Completed snippet inventory
 

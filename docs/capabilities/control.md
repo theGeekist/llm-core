@@ -17,30 +17,20 @@ mismatched decisions are denied.
 ## Meaningful effects fail closed
 
 ```mermaid
-sequenceDiagram
-  participant O as Orchestrator
-  participant R as Receipt journal
-  participant P as Policy port
-  participant A as Approval port
-  participant G as Concurrency gate
-  participant T as Tool binding
-
-  O->>R: Reserve idempotency key
-  R-->>O: Authoritative reservation
-  O->>P: Evaluate exact action digest
-  P-->>O: Allow, deny, or require approval
-  opt Approval required
-    O->>A: Authenticate approval
-    A-->>O: Verified approval or denial
-  end
-  O->>G: Acquire lease
-  G-->>O: Lease
-  O->>R: Append started
-  O->>T: Execute once
-  T-->>O: Result or failure
-  O->>R: Append final disposition
-  O->>G: Release lease
+flowchart LR
+  D["Exact ActionDigest"] --> P["PolicyEvaluationPort"]
+  D --> A["ApprovalAuthenticationPort"]
+  P --> C["Control disposition"]
+  A --> C
+  X["Cancellation request"] --> C
+  M["ExecutionConcurrency"] --> G["ConcurrencyGate"]
+  G --> L["Live execution lease"]
 ```
+
+These contracts contribute independent control facts; the capability does not
+sequence them. The canonical ordering, including receipt reservation,
+authorization, lease acquisition, execution, and durable completion, lives in
+[Controlled tool execution](/orchestration/controlled-tool-execution).
 
 The receipt reservation and concurrency lease solve different problems. The
 receipt journal establishes durable effect identity and recovery. The gate

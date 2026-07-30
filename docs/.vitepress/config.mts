@@ -145,6 +145,8 @@ export default defineConfig({
           items: [
             { text: "Vocabulary", link: "/reference/vocabulary" },
             { text: "API by subpath", link: "/reference/api" },
+            { text: "Functional helpers", link: "/reference/functional" },
+            { text: "Failures and diagnostics", link: "/reference/failures" },
             { text: "Contract catalogue", link: "/reference/contracts" },
             { text: "Package exports", link: "/reference/package-exports" },
             { text: "Packaging and conformance", link: "/reference/conformance" },
