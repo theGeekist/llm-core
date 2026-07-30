@@ -31,6 +31,7 @@ import {
 import {
   bindAction,
   isRegisteredToolBinding,
+  rebindValidatedToolCall,
   type BoundAction,
   type EffectClass,
   type ToolExecutionControl,
@@ -462,25 +463,15 @@ export const executeControlledTool = async (
   }
 
   if (reservation.kind === "existing") {
-    const requestedInvocation = { ...input.call.invocation };
-    delete requestedInvocation.stepId;
     input = {
       ...input,
-      call: {
-        ...input.call,
+      call: rebindValidatedToolCall({
+        binding: input.binding,
+        call: input.call,
         toolCallId: reservation.receipt.toolCallId,
-        invocation:
-          reservation.receipt.stepId === undefined
-            ? {
-                ...requestedInvocation,
-                runId: reservation.receipt.runId,
-              }
-            : {
-                ...requestedInvocation,
-                runId: reservation.receipt.runId,
-                stepId: reservation.receipt.stepId,
-              },
-      },
+        runId: reservation.receipt.runId,
+        ...(reservation.receipt.stepId === undefined ? {} : { stepId: reservation.receipt.stepId }),
+      }),
     };
   }
   const runId = reservation.receipt.runId;

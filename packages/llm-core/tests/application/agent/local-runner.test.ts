@@ -126,7 +126,10 @@ const basicProgram = (): LocalAgentProgramPort => ({
   },
 });
 
-const startInterventionRun = async (authentication: InterventionAuthenticationPort) => {
+const startInterventionRun = async (
+  authentication: InterventionAuthenticationPort,
+  now: () => string = () => "2026-07-29T14:00:00.000Z",
+) => {
   let release!: () => void;
   const pending = new Promise<void>((resolve) => {
     release = resolve;
@@ -150,7 +153,7 @@ const startInterventionRun = async (authentication: InterventionAuthenticationPo
         return { status: "completed" };
       },
     },
-    { interventions: { authentication } },
+    { identity: { ...identityPort(), now }, interventions: { authentication } },
   );
   const run = await target.start(request(await prepare(target), null));
   const base = decision("approve");
@@ -501,6 +504,28 @@ describe("createLocalAgentRunner", () => {
     authenticateAfterTerminal({ status: "authenticated", principal });
     expect((await late).status).toBe("already-terminal");
     expect(terminalFixture.observed()).toBe(0);
+  });
+
+  test("rejects an intervention that expires during asynchronous authentication", async () => {
+    let currentTime = "2026-07-29T14:00:00.000Z";
+    let authenticate!: (
+      result: Awaited<ReturnType<InterventionAuthenticationPort["verify"]>>,
+    ) => void;
+    const authentication = new Promise<
+      Awaited<ReturnType<InterventionAuthenticationPort["verify"]>>
+    >((resolve) => {
+      authenticate = resolve;
+    });
+    const fixture = await startInterventionRun({ verify: () => authentication }, () => currentTime);
+
+    const outcome = fixture.run.intervene(fixture.bound);
+    currentTime = "2026-07-29T15:00:00.000Z";
+    authenticate({ status: "authenticated", principal });
+
+    expect((await outcome).status).toBe("rejected");
+    fixture.release();
+    await fixture.run.result();
+    expect(fixture.observed()).toBe(0);
   });
 
   test("validates forged child requests before recursion", async () => {

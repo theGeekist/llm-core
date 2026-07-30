@@ -340,7 +340,11 @@ export const resumeInterventionWorkflow = async (
   if (!(await verifyAction(input, authorized.action))) {
     return reject("action-verification-failed");
   }
-  const begun = await beginResume(input, resolution);
+  const acceptanceResolution = resolveDecision(input);
+  if (!acceptanceResolution || acceptanceResolution.status === "rejected") {
+    return reject("intervention-rejected");
+  }
+  const begun = await beginResume(input, acceptanceResolution);
   if (begun.status !== "accepted") {
     return begun;
   }
@@ -358,8 +362,8 @@ export const resumeInterventionWorkflow = async (
       effectStatus: unsafe.status,
     };
   }
-  if (resolution.status !== "approved") {
-    return persistResolution(input, begun, resolution);
+  if (acceptanceResolution.status !== "approved") {
+    return persistResolution(input, begun, acceptanceResolution);
   }
   if (!begun.checkpoint) {
     await safelyQuarantine({

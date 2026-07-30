@@ -765,10 +765,27 @@ describe("controlled tool execution", () => {
   it("continues a pending replay under the original receipt identity", async () => {
     const journal = new MemoryJournal();
     let executedCall: ToolCall | undefined;
-    const input = baseInput(journal, ({ call: boundCall }) => {
+    let validations = 0;
+    const base = baseInput(journal, ({ call: boundCall }) => {
       executedCall = boundCall;
       return { toolCallId: boundCall.toolCallId, status: "succeeded", content: [] };
     });
+    const input = {
+      ...base,
+      binding: createToolBinding({
+        spec: SPEC,
+        argumentValidator: {
+          validate: () => {
+            validations += 1;
+            if (validations > 2) {
+              throw new Error("validator must not be re-entered after replay admission");
+            }
+            return { valid: true };
+          },
+        },
+        execute: base.binding.execute,
+      }),
+    };
     input.call = {
       ...input.call,
       invocation: { ...input.call.invocation, stepId: STEP_ID },
@@ -835,6 +852,7 @@ describe("controlled tool execution", () => {
     expect(executedCall?.invocation.runId).toBe(RUN_ID);
     expect(executedCall?.invocation.stepId).toBe(STEP_ID);
     expect("receipt" in replay && replay.receipt.stepId).toBe(STEP_ID);
+    expect(validations).toBe(2);
   });
 
   it("records cancellation before start without invoking the binding", async () => {

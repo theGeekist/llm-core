@@ -1,4 +1,5 @@
 import { maybeChain, type MaybePromise } from "#shared/maybe";
+import type { RunId, StepId, ToolCallId } from "#contracts";
 import { defineToolSpec } from "./action";
 import { freezeJsonValue, normalizeStrictJson } from "./canonical-json";
 import type {
@@ -11,7 +12,11 @@ import type {
 } from "./types";
 import { validateToolArguments, type ToolArgumentValidationPort } from "./validation";
 
-const registeredToolBindings = new WeakSet<object>();
+interface RegisteredToolBindingState {
+  validatedCalls: WeakSet<object>;
+}
+
+const registeredToolBindings = new WeakMap<object, RegisteredToolBindingState>();
 
 export type ToolExecutor = (input: ToolExecutionInput) => MaybePromise<ToolResult>;
 
@@ -21,11 +26,46 @@ export interface CreateToolBindingInput {
   execute: ToolExecutor;
 }
 
+export interface RebindValidatedToolCallInput {
+  binding: ToolBinding;
+  call: ToolCall;
+  toolCallId: ToolCallId;
+  runId: RunId;
+  stepId?: StepId;
+}
+
 /** Returns true only for the exact facade returned by `createToolBinding`. */
 export const isRegisteredToolBinding = (value: unknown): value is ToolBinding =>
   value !== null &&
   (typeof value === "object" || typeof value === "function") &&
   registeredToolBindings.has(value);
+
+/**
+ * Rebinds only durable lifecycle identity while preserving a binding's
+ * one-shot proof that the call's external arguments were already validated.
+ */
+export const rebindValidatedToolCall = (input: RebindValidatedToolCallInput): ToolCall => {
+  const state = registeredToolBindings.get(input.binding);
+  if (!state?.validatedCalls.has(input.call)) {
+    throw new TypeError("Only a call validated by this tool binding can be rebound.");
+  }
+  const invocation = { ...input.call.invocation };
+  delete invocation.stepId;
+  const rebound = Object.freeze({
+    ...input.call,
+    toolCallId: input.toolCallId,
+    invocation: freezeJsonValue(
+      normalizeStrictJson({
+        ...invocation,
+        runId: input.runId,
+        ...(input.stepId === undefined ? {} : { stepId: input.stepId }),
+      }),
+    ) as unknown as ToolCall["invocation"],
+  });
+  state.validatedCalls.delete(input.call);
+  state.validatedCalls.add(rebound);
+  return rebound;
+};
 
 /**
  * Creates a binding whose executable path cannot bypass strict registered
@@ -76,6 +116,6 @@ export const createToolBinding = (input: CreateToolBindingInput): ToolBinding =>
             validate({ call: executionInput.call }),
           ),
   });
-  registeredToolBindings.add(binding);
+  registeredToolBindings.set(binding, { validatedCalls });
   return binding;
 };

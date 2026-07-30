@@ -10,6 +10,7 @@ import {
   interventionId,
   interventionDecisionId,
   registerResumableCheckpoint,
+  type InterventionAuthenticationPort,
   type InterventionDecision,
   type InterventionRequest,
   type RegisteredResumableCheckpoint,
@@ -184,7 +185,9 @@ const run = (input: {
   steps?: readonly ResumableWorkflowStep[];
   digestVerified?: boolean;
   authenticated?: boolean;
+  authentication?: InterventionAuthenticationPort;
   clockThrows?: boolean;
+  now?: () => string;
 }) =>
   resumeInterventionWorkflow({
     checkpoint: input.registered ?? registerResumableCheckpoint(checkpoint()),
@@ -193,7 +196,7 @@ const run = (input: {
     expectedCompatibility: COMPATIBILITY,
     securityDomain: "tenant:test",
     actionDigestPort: digestPort(input.digestVerified),
-    authentication: {
+    authentication: input.authentication ?? {
       verify: () =>
         input.authenticated === false
           ? { status: "rejected" as const }
@@ -204,7 +207,7 @@ const run = (input: {
         if (input.clockThrows) {
           throw new Error("clock unavailable");
         }
-        return LATER;
+        return input.now?.() ?? LATER;
       },
     },
     journal: input.journal ?? new MemoryResumeJournal(),
@@ -276,6 +279,39 @@ describe("intervention workflow resume", () => {
       reason: "intervention-rejected",
     });
     expect(journal.events).toEqual([]);
+  });
+
+  test("rejects a decision that expires during asynchronous authentication", async () => {
+    const journal = new MemoryResumeJournal();
+    let currentTime = LATER;
+    let authenticate!: (
+      result: Awaited<ReturnType<InterventionAuthenticationPort["verify"]>>,
+    ) => void;
+    const authentication = new Promise<
+      Awaited<ReturnType<InterventionAuthenticationPort["verify"]>>
+    >((resolve) => {
+      authenticate = resolve;
+    });
+    let executions = 0;
+    const outcome = run({
+      journal,
+      authentication: { verify: () => authentication },
+      now: () => currentTime,
+      steps: [
+        meaningfulStep(() => {
+          executions += 1;
+          throw new Error("expired intervention must not execute");
+        }),
+      ],
+    });
+
+    currentTime = "2026-07-29T13:00:00.000Z";
+    authenticate({ status: "authenticated", principal });
+
+    expect(await outcome).toEqual({ status: "rejected", reason: "intervention-rejected" });
+    expect(journal.events).toEqual([]);
+    expect(journal.checkpointState).toBe("available");
+    expect(executions).toBe(0);
   });
 
   test("records durable started before invocation and durable completion before checkpoint commit", async () => {

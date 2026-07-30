@@ -23,7 +23,6 @@ import {
   checkResumeCompatibility,
   createInterventionRequest,
   isRegisteredResumableCheckpoint,
-  resolveIntervention,
   type InterventionDecision,
   type InterventionRequest,
   type RegisteredResumableCheckpoint,
@@ -33,6 +32,7 @@ import type {
   LocalAgentExecutionContext,
   LocalAgentExecutionResult,
 } from "./types";
+import { resolvableInterventionAt } from "./intervention";
 import { readInterventionAuthentication } from "./intervention-authentication";
 import { guardResumeToolExecution } from "./resume-effects";
 import { resultFacts } from "./run-event";
@@ -312,14 +312,12 @@ export const createLocalAgentRunner = (options: CreateLocalAgentRunnerOptions): 
         return { status: "rejected", acknowledgedAt };
       }
       let admittedDecision: InterventionDecision;
-      let resolution: ReturnType<typeof resolveIntervention>;
       try {
         admittedDecision = frozenPortable(decision);
-        resolution = resolveIntervention(pending, admittedDecision, acknowledgedAt);
       } catch {
         return { status: "rejected", acknowledgedAt };
       }
-      if (resolution.status === "rejected") {
+      if (resolvableInterventionAt(pending, admittedDecision, () => acknowledgedAt) === null) {
         return { status: "rejected", acknowledgedAt };
       }
       const finish = (authenticated: boolean): AgentInterventionAcknowledgement => {
@@ -334,6 +332,10 @@ export const createLocalAgentRunner = (options: CreateLocalAgentRunnerOptions): 
         ) {
           return { status: "rejected", acknowledgedAt };
         }
+        const acceptedAt = resolvableInterventionAt(pending, admittedDecision, readNow);
+        if (acceptedAt === null) {
+          return { status: "rejected", acknowledgedAt };
+        }
         const receivedEvent = buildEvent({
           state,
           kind: "agent.run.intervention.received",
@@ -345,7 +347,7 @@ export const createLocalAgentRunner = (options: CreateLocalAgentRunnerOptions): 
         state.interventions.push(admittedDecision);
         state.interventionRequests.delete(admittedDecision.intervention.interventionId);
         appendBuiltEvent(state, receivedEvent);
-        return { status: "accepted", acknowledgedAt };
+        return { status: "accepted", acknowledgedAt: acceptedAt };
       };
       return maybeChain(
         finish,
