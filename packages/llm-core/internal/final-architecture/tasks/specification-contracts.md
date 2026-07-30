@@ -45,7 +45,7 @@ authority.
 ## Deliverables
 
 - Versioned format and importer/exporter capability declarations.
-- Immutable `SourceSnapshot`, `SpecificationSet` and typed node/relationship
+- Immutable `SpecificationSourceSnapshot`, `SpecificationGraph` and typed node/relationship
   contracts.
 - First-class source authority, decisions, unresolved questions and native
   extension preservation.
@@ -53,9 +53,9 @@ authority.
 - A `SpecificationDecision` discriminated outcome with accepted, rejected and
   needs-input branches. Its accepted branch carries a portable
   `SpecificationDecisionRecord` binding the exact resolved digest,
-  admitted scope, decision/evidence, authority, policy versions, source
+  accepted scope, decision/evidence, authority, policy versions, source
   revisions and expiry/invalidation conditions.
-- A portable `SpecificationChangeProposal` binding proposed semantic changes
+- A portable `ProposedSpecificationChange` binding proposed semantic changes
   and their evidence to an exact target source revision and digest.
 - Adversarial validation for accessors, proxies, symbols, cycles, sparse
   arrays, duplicate identities and dangling relationships.
@@ -68,7 +68,7 @@ authority.
 - Native material is namespaced and strict JSON.
 - Import results, resolved specifications and portable specification decision
   records
-  cannot be passed where runtime-registered admission authority is required.
+  cannot be passed where runtime-registered decision authority is required.
 - A change proposal is pure data. It cannot apply itself, mutate a source or
   imply source-owner acceptance.
 - Feature code depends only on contracts, artifact/evidence public fronts and

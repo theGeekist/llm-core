@@ -15,7 +15,6 @@ branch:
 worktree:
 depends_on:
   - specification-contracts
-  - WPKERNEL-PIPELINE-RELEASE
 decision_dependencies:
   - ADR-005
   - ADR-006
@@ -49,18 +48,18 @@ authority boundaries beneath that simpler public journey.
 - Deterministic graph reconciliation and dependency resolution.
 - Cycle reporting for dependency-only edges without rejecting valid cycles in
   the semantic graph or workflow program.
-- Explicit admission outcomes: accepted, rejected or needs-input.
+- Explicit review outcomes: accepted, rejected or needs-input.
 - Runtime registration of accepted specifications using module-private,
   unforgeable provenance.
-- An application-owned `projectAcceptedSpecification` path with trusted clock,
+- An application-owned `compileSpecification` path with trusted clock,
   authority, policy and source-revision ports.
-- A portable `ProjectionAuthoritySnapshot` bound into every projection result.
-- A `ProjectionEnvelope<TProjection>` retaining projection identity, the
+- An internal `CompilationAuthoritySnapshot` bound into every compiled result.
+- A `CompiledSpecification<T>` retaining compilation identity, the
   accepted-specification binding and authority snapshot.
-- A public `verifyProjectionAuthoritySnapshot` operation for controlled
+- An internal `verifyCompilationAuthority` operation for controlled
   preparation/execution gateways.
 - A target-neutral compiled plan that requires an
-  `RegisteredAcceptedSpecification`.
+  `AcceptedSpecificationHandle`.
 - Pure, per-invocation Pipeline orchestration using immutable replacement
   output, typed around-continuations and the public typed custom-stage
   dependency facade.
@@ -69,22 +68,23 @@ authority boundaries beneath that simpler public journey.
 
 - Import cannot trigger effects or mint an accepted specification.
 - A portable `SpecificationDecisionRecord`, reconstructed object or TypeScript
-  cast cannot satisfy the projector's runtime admission check.
-- Admission completion or record verification rechecks authority, expiry,
+  cast cannot satisfy the compiler's runtime decision check.
+- Review completion or record verification rechecks authority, expiry,
   source revision, resolved digest, scope and policy versions immediately
   before adding the exact frozen value to a module-private provenance registry.
-- Registration is not treated as continuing validity. Every projection obtains
+- Registration is not treated as continuing validity. Every compilation obtains
   a consistent current authority/policy/source snapshot, checks expiry at the
   final synchronous boundary and fails closed before invoking the adapter when
-  any admitted binding has changed.
-- Projectors cannot be invoked through the public application surface without
-  use-time revalidation, and projection results bind the validated snapshot for
+  any accepted binding has changed.
+- Compilers and adapters cannot be invoked through the public application
+  surface without use-time revalidation, and compiled results bind the
+  validated snapshot for
   later preparation/execution checks.
-- `verifyProjectionAuthoritySnapshot` rejects changed expiry, authority, policy,
+- `verifyCompilationAuthority` rejects changed expiry, authority, policy,
   source revision, resolved digest or scope using trusted current-state ports.
-- Extracting the raw projection from its envelope does not preserve
+- Extracting the raw value from `CompiledSpecification<T>` does not preserve
   `llm-core` execution authority.
-- Deserialization and process restart require admission verification and
+- Deserialization and process restart require decision verification and
   registration again.
 - Compiler helpers perform no external commit and register no durable rollback.
 - Every invocation owns its Pipeline instance and diagnostics.
@@ -109,15 +109,15 @@ bun run lint
 ```
 
 Focused tests include registration followed by expiry, policy-version change
-and source-revision advancement before projection. All three must reject
-without invoking the target projector.
+and source-revision advancement before compilation. All three must reject
+without invoking the target compiler or adapter.
 
 ## Work log
 
-WPKernel Phases 1 through 6 are implemented and packed-qualified. Blocked
-pending specification-contracts and reconciliation of Pipeline's stale local `1.0.0` manifest
-with published `1.1.0`, followed by a forward exact release and `llm-core`
-qualification against that released artifact.
+WPKernel Pipeline 1.2.0 is published, pinned exactly and packed-qualified by
+`llm-core`: the release build passed 515 tests with one optional compatibility
+skip, and the isolated consumer verified all 19 ESM runtime and declaration
+entrypoints. The remaining blocker is `specification-contracts`.
 
 ## Handoff
 

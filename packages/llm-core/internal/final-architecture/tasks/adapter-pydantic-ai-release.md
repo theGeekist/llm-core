@@ -45,14 +45,14 @@ updated_at: 2026-07-30
 
 ## Objective
 
-Publish the independently verified PydanticAI projection adapter through the
+Publish the independently verified PydanticAI compilation adapter through the
 conditionally approved `@geekist/llm-core/adapters/pydantic-ai-spec` front.
 
 ## Deliverables
 
 - Package, build, declaration and source-resolution entries.
 - Updated public-surface and package-smoke expectations.
-- Public exact-version and projection-support documentation.
+- Public exact-version and compilation-support documentation.
 - Runtime and declaration verification from an isolated packed consumer.
 
 ## Acceptance criteria

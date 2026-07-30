@@ -203,7 +203,8 @@ const review = await reviewSpecification(specification, { policy, evidence });
 
 if (review.status === "accepted") {
   const plan = await compileSpecification(review, { target: agentTarget });
-  await runAgent(plan, input);
+  const agent = createAgent({ specification: plan });
+  await agent.run(input);
 }
 ```
 
@@ -217,35 +218,39 @@ before relying on it.
 The implementation may provide a safe convenience operation combining review
 and compilation. It must not make import itself an authorization step.
 
-## Initial term disposition
+## Exact term disposition
 
-The exact replacement map remains a `language-vocabulary` decision. This table
-records the direction established by the audit.
+ADR-012 proposes this exact replacement map:
 
-| Current term                        | Direction                                                                 |
-| ----------------------------------- | ------------------------------------------------------------------------- |
-| `AgentSpec`                         | Review `AgentDefinition` or a ready-to-use `Agent`                        |
-| `PreparedAgentSpec`                 | Advanced/internal; `PreparedAgent` only if a public name remains required |
-| `createLocalAgentRunner`            | Common `createAgent`; retain an explicit runtime constructor if needed    |
-| `ToolSpec` / `defineToolSpec`       | Common `Tool` / `defineTool`                                              |
-| `ToolBinding`                       | Advanced/internal execution binding                                       |
-| `executeControlledTool`             | Automatic beneath common tools; advanced controlled execution API         |
-| `ExecutableWorkflowStep`            | Common workflow step or action                                            |
-| `MeaningfulWorkflowStep`            | External-effect workflow action or internal classification                |
-| `InterventionRequest`               | Review `ReviewRequest`, `InputRequest` or a smaller exact family          |
-| capability binding resolution types | Extension surface, not common `./agent` vocabulary                        |
-| `SpecificationSet`                  | Public `Specification`; internal `SpecificationGraph`                     |
-| `ResolvedSpecification`             | Internal resolution value                                                 |
-| admission / admit                   | Public specification review and decision                                  |
-| specification review outcome        | `SpecificationDecision`: accepted, rejected or needs-input                |
-| `AcceptedSpecificationRecord`       | `SpecificationDecisionRecord` on the accepted decision branch             |
-| `RegisteredAcceptedSpecification`   | Opaque internal authority token                                           |
-| projection / project                | Public compile or convert                                                 |
-| `ProjectionEnvelope<T>`             | `CompiledSpecification<T>` or `ExecutionPlan`                             |
-| `ProjectionAuthoritySnapshot`       | Internal execution-control detail                                         |
-| `SpecificationChangeProposal`       | `ProposedSpecificationChange`                                             |
-| conformance                         | Public supported features, versions or compatibility                      |
-| qualified adapter                   | Public framework or provider adapter                                      |
+| Current term                        | Exact disposition                                                        |
+| ----------------------------------- | ------------------------------------------------------------------------ |
+| `AgentSpec`                         | Extension `AgentDefinition`; common ready object `Agent`                 |
+| `PreparedAgentSpec`                 | Extension `PreparedAgentDefinition`                                      |
+| `createLocalAgentRunner`            | Stays on `./agent/runtime`; common facade is `createAgent`               |
+| `RunResult`                         | Common `AgentResult`                                                     |
+| `ToolSpec` / `defineToolSpec`       | Extension `ToolDefinition` / `defineToolDefinition`                      |
+| `ToolBinding`                       | Common ready object `Tool`; binding machinery moves to `./tools/runtime` |
+| `ToolResult` / `ToolFailure`        | `ToolExecutionResult` / `ToolExecutionFailure`                           |
+| `ExecutableWorkflowStep`            | Common `WorkflowStep`                                                    |
+| `WorkflowExecutionOutcome`          | Common `WorkflowResult`                                                  |
+| `WorkflowPauseSnapshot`             | Common `WorkflowPause`                                                   |
+| `MeaningfulWorkflowStep`            | Runtime extension `ControlledWorkflowStep`                               |
+| `InteractionUiEvent`                | Common `ConversationEvent`                                               |
+| raw `Interaction*` machinery        | Extension `./interaction`; not mechanically renamed                      |
+| capability binding resolution types | Extension surface, not common `./agent` vocabulary                       |
+| `ContextManifest`                   | Common `ContextSelection`; factory `selectContext`                       |
+| `SpecificationSet`                  | Public `Specification`; internal `SpecificationGraph`                    |
+| `ResolvedSpecification`             | Internal `CheckedSpecification`                                          |
+| admission / admit                   | Public specification review and decision                                 |
+| specification review outcome        | `SpecificationDecision`: accepted, rejected or needs-input               |
+| `AcceptedSpecificationRecord`       | `SpecificationDecisionRecord` on the accepted decision branch            |
+| `RegisteredAcceptedSpecification`   | Internal `AcceptedSpecificationHandle`                                   |
+| projection / project                | Public compile or convert                                                |
+| `ProjectionEnvelope<T>`             | `CompiledSpecification<T>`; target-neutral payload `ExecutionPlan`       |
+| `ProjectionAuthoritySnapshot`       | Internal `CompilationAuthoritySnapshot`                                  |
+| `SpecificationChangeProposal`       | `ProposedSpecificationChange`                                            |
+| conformance                         | Public supported features, versions or compatibility                     |
+| qualified adapter                   | Public framework or provider adapter                                     |
 
 ## Specification lifecycle language
 

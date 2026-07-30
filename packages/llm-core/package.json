@@ -40,7 +40,7 @@
     "node": ">=22"
   },
   "dependencies": {
-    "@wpkernel/pipeline": "1.1.0"
+    "@wpkernel/pipeline": "1.2.0"
   },
   "main": "./dist/esm/index.js",
   "module": "./dist/esm/index.js",

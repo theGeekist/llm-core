@@ -3,7 +3,7 @@ architecture_version: 2
 id: language-audit
 title: Public language findings and journey contract
 stage: language
-status: in_progress
+status: done
 priority: critical
 preferred_owner_kind: coordinator
 owner: codex-root
@@ -63,5 +63,6 @@ bun run --cwd packages/llm-core format:check
 
 ## Handoff
 
-The findings are complete and awaiting coordinator commit/review closure.
-language-vocabulary owns the exact replacement map and desired public API journey fixtures.
+The findings passed independent review and were integrated at `b87116c`.
+`language-vocabulary` owns the exact replacement map and desired public API
+journey fixtures.

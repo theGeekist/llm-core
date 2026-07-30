@@ -1,7 +1,7 @@
 ---
 architecture_version: 2
 id: adapter-pydantic-ai
-title: PydanticAI AgentSpec projection adapter
+title: PydanticAI AgentSpec compilation adapter
 stage: adapters
 status: proposed
 priority: normal
@@ -33,11 +33,11 @@ review_owner: coordinator
 updated_at: 2026-07-30
 ---
 
-# adapter-pydantic-ai — PydanticAI AgentSpec projection adapter
+# adapter-pydantic-ai — PydanticAI AgentSpec compilation adapter
 
 ## Objective
 
-Project the admitted portable subset of an `llm-core` specification into the
+Compile the accepted portable subset of an `llm-core` specification into the
 exact supported PydanticAI `AgentSpec` boundary, proving runtime-specification
 interoperability without making Python objects part of the TypeScript core.
 
@@ -48,23 +48,23 @@ interoperability without making Python objects part of the TypeScript core.
 - Mapping for supported agent, model requirement, prompt, tool, context and
   evaluation semantics.
 - A conversion report for unsupported runtime features and native extensions.
-- A `ProjectionEnvelope<PydanticAgentSpecProjection>` that retains the
-  projection identity and `ProjectionAuthoritySnapshot`.
+- A `CompiledSpecification<PydanticAgentDefinition>` that retains the
+  compilation identity and internal `CompilationAuthoritySnapshot`.
 - Cross-runtime fixtures and declaration/runtime package coverage.
 - A coordinator handoff requesting conditional publication through adapter-pydantic-ai-release.
 
 ## Acceptance criteria
 
-- Projection requires a `RegisteredAcceptedSpecification`.
-- The adapter is invoked only by the application-owned projection entrypoint
+- Compilation requires an `AcceptedSpecificationHandle`.
+- The adapter is invoked only by the application-owned compilation entrypoint
   after use-time authority validation; it does not interpret registration as
   continuing validity.
 - No Python object or Pydantic type crosses a portable TypeScript contract.
 - Native execution bindings stay adapter-qualified.
-- A projected spec does not imply that a Python runtime has been prepared or
+- A compiled spec does not imply that a Python runtime has been prepared or
   started.
-- The `llm-core`-controlled PydanticAI preparation bridge accepts the projection
-  envelope and revalidates it; a native `AgentSpec` extracted alone is never
+- The `llm-core`-controlled PydanticAI preparation bridge accepts the compiled
+  specification and revalidates it; a native `AgentSpec` extracted alone is never
   accepted as execution authority.
 - Exact supported and unsupported fields are covered by fixtures.
 - Conformance covers registration followed by expiry, policy change and source

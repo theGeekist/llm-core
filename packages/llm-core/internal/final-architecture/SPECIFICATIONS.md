@@ -20,11 +20,11 @@ The layer serves two distinct AI-first software delivery use cases:
 1. **Delivery-method interoperability** — observe, import and reconcile
    requirements, plans, decisions and work artifacts from systems such as
    OpenSpec, Spec Kit, AI-SDLC and BMAD.
-2. **Runtime-specification interoperability** — project admitted intent into
+2. **Runtime-specification interoperability** — compile accepted intent into
    portable agent, workflow, tool, context, evaluation and execution contracts,
    including runtime-oriented formats such as PydanticAI `AgentSpec`.
 
-These use cases share identity, provenance, loss accounting and admission, but
+These use cases share identity, provenance, loss accounting and review, but
 they do not share one universal source schema.
 
 ## Package shape
@@ -48,10 +48,10 @@ Framework integrations remain qualified:
 @geekist/llm-core/adapters/bmad
 ```
 
-Those adapter fronts are added only when their individual conformance and
+Those adapter fronts are added only when their individual verification and
 coordinator-owned publication tasks are complete. They do not block the core
 `./specifications` front and are not part of the specifications stage's initial
-20-entry package
+30-entry package
 gate.
 
 Do not add a broad `./delivery` front. It would combine source lifecycle,
@@ -82,7 +82,7 @@ These are internal architecture names, not a required public call sequence.
 `language-vocabulary` decides which values remain publicly named.
 
 ```text
-SourceSnapshot
+SpecificationSourceSnapshot
   ├── format identity and detected version
   ├── observed-at time and source revision
   ├── root documents and referenced documents
@@ -90,7 +90,7 @@ SourceSnapshot
   ├── authority: authoritative | advisory | informative
   └── namespaced native extensions
 
-SpecificationSet
+SpecificationGraph
   ├── stable set identity and contract version
   ├── source snapshots
   ├── typed semantic nodes
@@ -98,7 +98,7 @@ SpecificationSet
   ├── source bindings and provenance
   └── reconciliation diagnostics
 
-ResolvedSpecification
+CheckedSpecification
   ├── reconciled semantic graph
   ├── resolved references
   ├── decisions and open questions
@@ -110,27 +110,27 @@ SpecificationDecision
   ├── accepted
   │   └── record: SpecificationDecisionRecord
   │       ├── resolved-specification digest
-  │       ├── admission decision and evidence
-  │       ├── admitted scope
+  │       ├── specification decision and evidence
+  │       ├── accepted scope
   │       ├── policy/version bindings
   │       ├── source revision/digest bindings
   │       └── expiry or invalidation conditions
   ├── rejected
   └── needs-input
 
-RegisteredAcceptedSpecification
+AcceptedSpecificationHandle
   ├── verified SpecificationDecisionRecord
   ├── current resolved specification
   └── module-private runtime provenance (origin, not continuing validity)
 
-ProjectionAuthoritySnapshot
+CompilationAuthoritySnapshot
   ├── checked-at time
   ├── resolved-specification digest
   ├── policy/version bindings
   ├── source revision/digest bindings
-  └── authority and admitted scope
+  └── authority and accepted scope
 
-SpecificationChangeProposal
+ProposedSpecificationChange
   ├── target source and format
   ├── base source revision and digest
   ├── proposed semantic changes
@@ -139,48 +139,50 @@ SpecificationChangeProposal
   └── conversion report
 ```
 
-The snapshot, set, resolved value, decision record and change proposal are
+The source snapshot, graph, checked value, decision record and change proposal are
 distinct portable branded contracts. Brands provide compile-time separation;
 they are not execution authority.
 
-`RegisteredAcceptedSpecification` is a live, process-local value recorded in a
+`AcceptedSpecificationHandle` is a live, process-local value recorded in a
 module-private provenance registry. It can be obtained only by completing
-admission or verifying a `SpecificationDecisionRecord` against current
-authority, source revision, resolved digest, admitted scope, policy versions
+review or verifying a `SpecificationDecisionRecord` against current authority,
+source revision, resolved digest, accepted scope, policy versions
 and expiry. Registration proves origin; it does not make acceptance timeless.
 
-After asynchronous authentication or policy evaluation, the admission path
+After asynchronous authentication or policy evaluation, the review path
 rechecks every binding immediately before runtime registration. Deserialization
 or a process restart discards runtime authority and requires the portable
 record to be verified again.
 
-Every projection enters through the application-owned
-`projectAcceptedSpecification` path. That path verifies runtime provenance,
-obtains one consistent `ProjectionAuthoritySnapshot` from trusted authority,
+Every compilation enters through the application-owned
+`compileSpecification` path. That path verifies runtime provenance,
+obtains one consistent `CompilationAuthoritySnapshot` from trusted authority,
 policy and source-revision ports, then checks expiry with a trusted clock at the
-final synchronous boundary before invoking a projector. Adapters implement
-translation; they do not duplicate or bypass admission validity.
+final synchronous boundary before invoking a compiler or adapter. Adapters implement
+translation; they do not duplicate or bypass decision validity.
 
-The result is a `ProjectionEnvelope<TProjection>` that binds the native or
-target-neutral projection to the exact authority snapshot used. Projection is
-pure, so a concurrent change after that snapshot creates a stale envelope
+The result is a `CompiledSpecification<T>` that binds the native or
+target-neutral compiled value to the exact authority snapshot used. Compilation
+is pure, so a concurrent change after that snapshot creates a stale result
 rather than an unauthorized effect.
 
-specification-compiler exposes `verifyProjectionAuthoritySnapshot`. specification-authority integrates it into
+specification-compiler owns the internal `verifyCompilationAuthority`.
+specification-authority integrates it into
 every `llm-core`-controlled agent/workflow preparation, execution and resume
-gateway capable of consuming a projection. Preparation validates immediately
+gateway capable of consuming a compiled specification. Preparation validates immediately
 before creating a runtime object; execution and resume validate again
-immediately before effects. Durable state retains the projection identity and
+immediately before effects. Durable state retains the compilation identity and
 authority snapshot needed for revalidation.
 
-Extracting `TProjection` from its envelope removes `llm-core` execution
+Extracting `T` from `CompiledSpecification<T>` removes `llm-core` execution
 authority. A raw native value may be used by an external framework under that
 framework's controls, but it cannot enter an `llm-core` preparation or
-execution gateway without its envelope and successful current validation.
+execution gateway without its authority-bound wrapper and successful current
+validation.
 
 ## Graph, DAG and workflow semantics
 
-The canonical `SpecificationSet` is a typed directed multigraph:
+The canonical `SpecificationGraph` is a typed directed multigraph:
 
 - parallel relationships are valid when their identity, source or semantics
   differ;
@@ -197,38 +199,38 @@ Two views are derived from that graph:
 
 The dependency view interprets only declared dependency-bearing relationship
 kinds. It must be acyclic to become ready. A cycle produces a structured
-resolution diagnostic and blocks admission for the affected scope; it does not
+resolution diagnostic and blocks acceptance for the affected scope; it does not
 invalidate the entire semantic graph.
 
 ### Workflow view
 
 The workflow view is a program, not a DAG. It may contain branches, joins,
 bounded loops, review/repair cycles, intervention points and terminal partial
-or blocked outcomes. Execution engines receive this view only after admission.
+or blocked outcomes. Execution engines receive this view only after review.
 
-## Format and conformance model
+## Format and support model
 
 Every adapter declares:
 
 - a namespaced format identifier;
 - detectable supported versions or version ranges;
 - operation: import, export or both;
-- conformance levels;
+- supported formats, versions, operations and features;
 - preserved native-extension namespaces;
 - source ownership and write-back behavior; and
 - fixtures used to substantiate the claim.
 
-Conformance levels are cumulative only when explicitly declared:
+Support levels are cumulative only when explicitly declared:
 
-| Level      | Claim                                                                    |
-| ---------- | ------------------------------------------------------------------------ |
-| Syntax     | The adapter can detect and parse the declared format version             |
-| Semantic   | Required source meaning maps into canonical nodes and relationships      |
-| Projection | An admitted canonical subset can be emitted for the target               |
-| Round trip | Declared semantics survive import and export within tested bounds        |
-| Lifecycle  | Source-specific sync, archive or write-back behavior is supported safely |
+| Level       | Claim                                                                    |
+| ----------- | ------------------------------------------------------------------------ |
+| Syntax      | The adapter can detect and parse the declared format version             |
+| Semantic    | Required source meaning maps into canonical nodes and relationships      |
+| Compilation | An accepted canonical subset can be compiled for the target              |
+| Round trip  | Declared semantics survive import and export within tested bounds        |
+| Lifecycle   | Source-specific sync, archive or write-back behavior is supported safely |
 
-Every import and projection returns a conversion report:
+Every import and adapter conversion returns a conversion report:
 
 ```text
 fidelity: exact | partial | rejected
@@ -246,13 +248,13 @@ reverse-DNS extension namespaces.
 
 ## Initial support order
 
-| Order | Integration                       | Why                                                                                                    |
-| ----- | --------------------------------- | ------------------------------------------------------------------------------------------------------ |
-| 1     | OpenSpec file/CLI import          | Proves roots, references, current truth, deltas, validation and archive-aware source ownership         |
-| 2     | PydanticAI `AgentSpec` projection | Proves the other interoperability axis: canonical admitted intent to a typed runtime specification     |
-| 3     | AI-SDLC JSON import               | Proves structured cross-language resources, decisions, admission metadata and evidence-oriented fields |
-| 4     | Spec Kit file/CLI import          | Adds constitutions, overlays, templates and branch/join/loop workflow semantics                        |
-| 5     | BMAD file/CLI import              | Adds stable planning identities, append-only memory, preservation and partial/blocked outcomes         |
+| Order | Integration                        | Why                                                                                                 |
+| ----- | ---------------------------------- | --------------------------------------------------------------------------------------------------- |
+| 1     | OpenSpec file/CLI import           | Proves roots, references, current truth, deltas, validation and archive-aware source ownership      |
+| 2     | PydanticAI `AgentSpec` compilation | Proves the other interoperability axis: canonical accepted intent to a typed runtime specification  |
+| 3     | AI-SDLC JSON import                | Proves structured cross-language resources, decisions, review metadata and evidence-oriented fields |
+| 4     | Spec Kit file/CLI import           | Adds constitutions, overlays, templates and branch/join/loop workflow semantics                     |
+| 5     | BMAD file/CLI import               | Adds stable planning identities, append-only memory, preservation and partial/blocked outcomes      |
 
 OpenSpec and PydanticAI are the first pair because they prove unlike boundaries,
 not because either is the universal model. AI-SDLC is next because its
@@ -292,8 +294,9 @@ Stage order supplies control ordering; typed compiler state carries data.
 | Typed custom-stage API                                  | Implemented and packed-qualified | Use the public `PipelineStageDependencies` family with inferred inline `createStages`; do not cast private Pipeline types |
 | Process-local suspension boundary                       | Not a compiler dependency        | Never expose it as a durable `llm-core` checkpoint                                                                        |
 
-The release gate is a packed `@wpkernel/pipeline` artifact, not an unpublished
-monorepo checkout. `llm-core` records the exact tested version.
+The release gate is the packed `@wpkernel/pipeline@1.2.0` artifact, not an
+unpublished monorepo checkout. `llm-core` pins that exact tested version and
+lockfile integrity.
 
 ### Current WPKernel compiler API evidence
 
@@ -319,10 +322,11 @@ reusable gate is:
 pnpm --filter @wpkernel/pipeline qualify:packed
 ```
 
-Its current tarball reports the stale local manifest version `1.0.0`, while
-`llm-core` already pins published Pipeline `1.1.0`. specification-compiler is blocked only
-until WPKernel reconciles version history, publishes a forward exact version,
-and `llm-core` qualifies against and pins that released artifact.
+The release gate passed on 31 July 2026: the package release build passed 515
+tests with one optional compatibility skip, and the isolated packed consumer
+verified all 19 ESM runtime and declaration entrypoints against Pipeline
+1.2.0. `specification-compiler` is no longer blocked on WPKernel; its remaining
+gates are `specification-contracts` and the accepted vocabulary decisions.
 
 ## Error and evidence posture
 
@@ -334,23 +338,23 @@ and `llm-core` qualifies against and pins that released artifact.
   fail closed.
 - Conflicting authoritative sources become explicit conflicts.
 - Advisory material cannot silently override authoritative material.
-- Admission decisions bind the exact resolved-specification digest, scope,
+- Specification decisions bind the exact resolved-specification digest, scope,
   policy versions and evidence.
-- Runtime admission provenance is unforgeable and process-local. A TypeScript
-  brand or reconstructed portable record is insufficient for projection.
-- Runtime provenance proves how admission was obtained, not whether it remains
-  current. Every projection revalidates expiry, authority, policy versions,
+- Runtime decision provenance is unforgeable and process-local. A TypeScript
+  brand or reconstructed portable record is insufficient for compilation.
+- Runtime provenance proves how acceptance was obtained, not whether it remains
+  current. Every compilation revalidates expiry, authority, policy versions,
   source revisions, resolved digest and scope through trusted ports.
 - A later source revision, expired decision or changed policy invalidates the
   accepted value rather than mutating it.
-- Projected results bind their `ProjectionAuthoritySnapshot`; preparation or
+- Compiled results bind their `CompilationAuthoritySnapshot`; preparation or
   execution rejects them after authority drift.
 - Controlled preparation, execution and resume accept a
-  `ProjectionEnvelope<TProjection>`, never a raw native projection as evidence
-  of admission.
+  `CompiledSpecification<T>`, never a raw native value as evidence of
+  acceptance.
 - Execution receipts and evaluations retain lineage to the accepted
-  specification and compiled projection.
-- Evidence and drift may derive a `SpecificationChangeProposal` without
+  specification and compiled result.
+- Evidence and drift may derive a `ProposedSpecificationChange` without
   external effects. Applying it is a separate adapter lifecycle operation
   requiring authenticated source authority, base-revision compare-and-swap,
   stale-proposal rejection and a durable application receipt.
@@ -362,17 +366,20 @@ and `llm-core` qualifies against and pins that released artifact.
 2. specification-contracts defines and validates snapshots, semantic graphs, conversion reports,
    portable specification decision records, change proposals and adapter
    capabilities.
-3. specification-compiler adds reconciliation, resolution, derived views, admission and the
-   pure Pipeline-backed compiler after the forward WPKernel release gate. The
+3. specification-compiler adds reconciliation, resolution, derived views,
+   review and the pure Pipeline-backed compiler after the completed WPKernel
+   release gate. The
    required composition and typed custom-stage APIs are already implemented and
    packed-qualified upstream. specification-compiler owns runtime registration of accepted
-   specifications, projection envelopes and the public authority-snapshot
-   verifier.
-4. specification-authority integrates post-projection authority verification into controlled
+   specifications and authority-bound compiled results. Its authority-snapshot
+   verifier remains internal.
+4. specification-authority integrates post-compilation authority verification
+   into controlled
    preparation, execution and resume paths and proves rejection before effects.
-5. specification-api publishes `./specifications` and verifies the 20-entry packed package.
+5. specification-api publishes `./specifications`, adds the common
+   specification journey to the root and verifies the 30-entry packed package.
 6. adapter-openspec, adapter-pydantic-ai, adapter-ai-sdlc, adapter-spec-kit and adapter-bmad implement independent adapter
-   mappings and conformance fixtures.
+   mappings and verification fixtures.
 7. adapter-openspec-release, adapter-pydantic-ai-release, adapter-ai-sdlc-release, adapter-spec-kit-release and adapter-bmad-release are coordinator-owned publication
    tasks that serialize package metadata and packed-consumer changes.
 8. A later source-application task may apply change proposals only after its

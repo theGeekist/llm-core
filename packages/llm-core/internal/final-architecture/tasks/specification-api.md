@@ -47,19 +47,22 @@ multi-format compatibility with adapter-neutral fixtures.
 
 ## Deliverables
 
-- `@geekist/llm-core/specifications` as the sole aggregate specification front.
+- `@geekist/llm-core/specifications` as the full extension specification front,
+  with the common load/review/compile journey also exported from the root.
 - Two deliberately unlike test dialects exercising source-oriented import and
-  runtime-oriented projection without publishing framework adapters.
+  runtime-oriented compilation without publishing framework adapters.
 - Support declarations that distinguish parsing, semantic preservation,
-  admission and executable projection conformance.
-- Public projection envelopes and authority-snapshot verification whose
-  controlled preparation/execution integration is already proven by specification-authority.
-- Runtime, declaration and isolated packed-consumer verification for all 20
+  review and executable-compilation support.
+- Public `SpecificationDecision` and `CompiledSpecification<T>` contracts whose
+  controlled preparation/execution integration is already proven by
+  specification-authority. Authority snapshots and verification stay internal.
+- Runtime, declaration and isolated packed-consumer verification for all 30
   public entries.
 
 ## Acceptance criteria
 
-- The package root remains unchanged.
+- The package root adds only `loadSpecification`, `reviewSpecification`,
+  `compileSpecification` and their common facade contracts.
 - Framework dependencies and native types do not leak into the core
   specification front.
 - Unsupported source semantics are preserved under namespaced extensions,
@@ -68,7 +71,7 @@ multi-format compatibility with adapter-neutral fixtures.
   qualified adapters, not implied support.
 - Architecture tests reject deep feature/application imports.
 - The complete package release, isolated consumer, documentation and formatting
-  gates pass after the twentieth front is added.
+  gates pass after the thirtieth front is added.
 
 ## Verification
 

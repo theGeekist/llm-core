@@ -25,7 +25,7 @@
       "name": "@geekist/llm-core",
       "version": "2.0.0",
       "dependencies": {
-        "@wpkernel/pipeline": "1.1.0",
+        "@wpkernel/pipeline": "1.2.0",
       },
       "devDependencies": {
         "@ai-sdk-tools/cache": "^1.2.0",
@@ -1007,7 +1007,7 @@
 
     "@workflow/serde": ["@workflow/serde@4.1.0", "", {}, "sha512-pav4F2BoirECWR7Nf1TKt+2eETcBj7jj4cBefQ8VXQCA6NPkaKeLfj/zMgi+3zYV5ZIBT4GuUiphsj0/b9hPQQ=="],
 
-    "@wpkernel/pipeline": ["@wpkernel/pipeline@1.1.0", "", {}, "sha512-5L5kq9gGL1x6DrG1gnLhnf2SOToKRIAaqDa35gbJIhVbyl/WobL/h0+RlNtqQDZVlMjDrC4uH09oxXhlVEpQ8g=="],
+    "@wpkernel/pipeline": ["@wpkernel/pipeline@1.2.0", "", {}, "sha512-bJ4WvrbKZ9vr4Tv8DKous0VzZJVaA51fAEKTl3A+fHr7r8YYaCL1SHF+JDeMfqG9C7etJckuVpwBWbZx3HFVMw=="],
 
     "abort-controller": ["abort-controller@3.0.0", "", { "dependencies": { "event-target-shim": "^5.0.0" } }, "sha512-h8lQ8tacZYnR3vNQTgibj+tODHI5/+l06Au2Pcriv/Gmet0eaj4TwWH41sO9wnHDiQsEj19q0drzdWdeAHtweg=="],
 

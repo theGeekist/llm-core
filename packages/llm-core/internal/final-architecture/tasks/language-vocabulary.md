@@ -3,16 +3,16 @@ architecture_version: 2
 id: language-vocabulary
 title: Exact public vocabulary and package surfaces
 stage: language
-status: proposed
+status: review
 priority: critical
 preferred_owner_kind: coordinator
-owner:
+owner: codex-root
 owner_kind: codex
-lease_started_at:
-lease_expires_at:
-base_sha:
-branch:
-worktree:
+lease_started_at: 2026-07-31T04:56:07+08:00
+lease_expires_at: 2026-08-01T04:56:07+08:00
+base_sha: b87116c21ccb833cf3084bf2f12e277d5cbb6c0e
+branch: main
+worktree: /Users/jasonnathan/Repos/@theGeekist/llm-core
 depends_on:
   - language-audit
 decision_dependencies:
@@ -24,10 +24,13 @@ write_scope:
   - packages/llm-core/internal/final-architecture/SPECIFICATIONS.md
   - packages/llm-core/internal/final-architecture/decisions/ADR-012-exact-public-vocabulary.md
   - packages/llm-core/internal/final-architecture/decisions/README.md
+  - packages/llm-core/internal/final-architecture/tasks/language-rollout.md
   - packages/llm-core/internal/final-architecture/tasks/language-vocabulary.md
   - packages/llm-core/internal/final-architecture/tasks/specification-*.md
   - packages/llm-core/internal/final-architecture/tasks/adapter-*.md
   - packages/llm-core/tests/language/**
+  - packages/llm-core/package.json
+  - bun.lock
 read_scope:
   - packages/llm-core/src/**
   - packages/llm-core/tests/**
@@ -74,15 +77,29 @@ before implementation begins.
 ## Verification
 
 ```sh
+node packages/llm-core/tests/language/inventory-public-exports.mjs >/dev/null
+! rg -i '\b(port|binding|registry|provenance|envelope|snapshot|admission|projection|disposition|conformance)\b' packages/llm-core/tests/language/desired
 bunx prettier packages/llm-core/internal/final-architecture --check
 git diff --check
 ```
 
 ## Work log
 
-Pending review and acceptance of language-level ADR-011. Once accepted, this
-task may create the separate exact-vocabulary ADR-012 without a circular gate.
+- 2026-07-31 — ADR-011 accepted after independent review. Claimed by the
+  coordinator at `b87116c`; three read-only agents were assigned disjoint
+  common-API, specification-language and package-surface audits.
+- 2026-07-31 — The audits converged on five common facades, qualified runtime
+  and capability fronts, an internal-only compilation-authority verifier and
+  no compatibility aliases. ADR-012, desired-journey fixtures and a
+  compiler-resolved 731-export inventory were drafted.
+- 2026-07-31 — `@wpkernel/pipeline` 1.2.0 was pinned exactly. The package
+  release build passed 515 tests with one optional compatibility skip, and the
+  isolated packed consumer verified all 19 runtime and declaration exports.
 
 ## Handoff
 
-Pending.
+ADR-012, the five desired common journeys and the compiler-resolved export
+inventory are ready for coordinator review. The specification and adapter
+briefs use the proposed exact names, and Pipeline 1.2.0 is independently
+qualified. Do not claim language-rollout until ADR-012 is accepted and this
+task is marked done.

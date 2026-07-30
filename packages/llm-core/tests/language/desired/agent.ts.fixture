@@ -1,0 +1,17 @@
+import { createAgent } from "@geekist/llm-core";
+
+const agent = createAgent({
+  model,
+  instructions: "Answer clearly.",
+  tools: [search],
+});
+
+const result = await agent.run("Why is the sky blue?");
+result.status;
+result.output;
+
+const run = agent.start("Research this topic.");
+for await (const event of run.events()) {
+  render(event);
+}
+await run.result();

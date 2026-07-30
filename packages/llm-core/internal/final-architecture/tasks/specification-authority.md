@@ -49,26 +49,31 @@ construction or effects begin.
 
 ## Deliverables
 
-- Agent and workflow gateways accept a `ProjectionEnvelope<TProjection>` rather
-  than treating a raw native projection as execution authority.
-- Each gateway calls specification-compiler's `verifyProjectionAuthoritySnapshot` against
+- Agent and workflow gateways accept a `CompiledSpecification<T>` rather than
+  treating a raw native value as execution authority.
+- Each gateway calls specification-compiler's internal
+  `verifyCompilationAuthority` against
   trusted clock, authority, policy and source-revision ports.
 - Preparation validates immediately before constructing a native runtime
   object. Execution and resume validate again immediately before effects.
-- Projection identity and authority-snapshot bindings survive the durable state
+- Compilation identity and authority-snapshot bindings survive the durable state
   needed for resume.
-- Projection-derived execution context cannot be stripped or substituted before
+- Compilation-derived execution context cannot be stripped or substituted before
   controlled tool execution.
+- `AgentConfig.specification` accepts
+  `CompiledSpecification<ExecutionPlan>`. `createAgent`, `Agent.run` and
+  `Agent.start` are the exact common preparation/execution gateways; no
+  separate common `runAgent` function is introduced.
 
 ## Acceptance criteria
 
 - The call-site audit identifies every existing agent/workflow gateway capable
-  of consuming a projected plan and records its enforcement point.
+  of consuming a compiled plan and records its enforcement point.
 - This regression rejects before adapter preparation, tool invocation or any
   other effect:
 
   ```text
-  project successfully
+  compile successfully
   → expiry, policy, source revision or authority changes
   → prepare, execute or resume
   → reject before any effect
@@ -76,13 +81,14 @@ construction or effects begin.
 
 - Successful preparation does not authorize later execution indefinitely;
   execution and resume revalidate current authority independently.
-- A raw target-neutral or native projection extracted from its envelope cannot
+- A raw target-neutral or native value extracted from
+  `CompiledSpecification<T>` cannot
   enter an `llm-core`-controlled preparation or execution path.
 - Durable reload does not restore runtime authority without current
   verification.
 - Unrelated direct agent/workflow inputs retain their existing contract; the
-  projection authority requirement applies when execution derives from a
-  specification projection.
+  compilation-authority requirement applies when execution derives from a
+  compiled specification.
 
 ## Verification
 

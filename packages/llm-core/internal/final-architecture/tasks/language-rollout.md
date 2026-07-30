@@ -49,7 +49,10 @@ main branch with a deliberately broken release build.
 
 ## Acceptance criteria
 
-- Language fixtures compile through the real package root and subpath exports.
+- The implemented Agent, Tool, Workflow and Conversation fixtures compile
+  through the real package root and subpath exports. The Specification fixture
+  remains a checked desired contract until the specifications stage implements
+  it, then becomes a compile gate in specification-api.
 - Common fronts no longer aggregate unrelated capability internals.
 - Common agent, tool, workflow and conversation journeys hide preparation,
   binding, registration and projection mechanics.

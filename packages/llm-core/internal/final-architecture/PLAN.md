@@ -98,24 +98,33 @@ packages/llm-core/src/
   shared/
 ```
 
-Curated public fronts after the specifications stage:
+Curated public fronts after the language rollout:
 
 ```text
 @geekist/llm-core
-@geekist/llm-core/functional
-@geekist/llm-core/contracts
-@geekist/llm-core/model
+@geekist/llm-core/agent
 @geekist/llm-core/tools
+@geekist/llm-core/workflow
+@geekist/llm-core/conversation
+@geekist/llm-core/model
 @geekist/llm-core/control
-@geekist/llm-core/evidence
-@geekist/llm-core/state
 @geekist/llm-core/context
 @geekist/llm-core/artifacts
 @geekist/llm-core/evaluation
-@geekist/llm-core/agent
-@geekist/llm-core/workflow
+@geekist/llm-core/agent/runtime
+@geekist/llm-core/tools/runtime
+@geekist/llm-core/workflow/runtime
+@geekist/llm-core/model/runtime
+@geekist/llm-core/control/runtime
+@geekist/llm-core/contracts
+@geekist/llm-core/evidence
+@geekist/llm-core/state
 @geekist/llm-core/interaction
-@geekist/llm-core/specifications
+@geekist/llm-core/retrieval
+@geekist/llm-core/indexing
+@geekist/llm-core/storage
+@geekist/llm-core/memory
+@geekist/llm-core/media
 @geekist/llm-core/adapters/ai-sdk
 @geekist/llm-core/adapters/ai-sdk-ui
 @geekist/llm-core/adapters/assistant-ui
@@ -123,7 +132,10 @@ Curated public fronts after the specifications stage:
 @geekist/llm-core/adapters/nlux-ui
 ```
 
-Do not expose the whole feature surface from the root package entry.
+The specifications stage adds `@geekist/llm-core/specifications`; qualified
+framework adapters are added only after their own release gates. `./functional`
+is removed. Do not expose the whole feature surface from the root package
+entry.
 
 ## Dependency direction
 
@@ -264,7 +276,7 @@ capabilities-context-artifacts + capabilities-evaluation + capabilities-runtime-
 language-audit + ADR-011 ────────────────────> language-vocabulary ──> ADR-012
 ADR-012 ─────────────────────────────> language-rollout
 language-rollout + ADR-009 ────────────────────> specification-contracts
-specification-contracts + WPKERNEL-PIPELINE-RELEASE ──> specification-compiler
+specification-contracts ────────────────────────> specification-compiler
 specification-compiler ───────────────────────────────> specification-authority
 specification-authority ───────────────────────────────> specification-api
 specification-api ───────────────────────────────> adapter-openspec + adapter-pydantic-ai + adapter-ai-sdlc + adapter-spec-kit + adapter-bmad
@@ -275,18 +287,15 @@ adapter-spec-kit + ADR-010 ─────────────────�
 adapter-bmad + ADR-010 ────────────────────> adapter-bmad-release
 ```
 
-`WPKERNEL-PIPELINE-RELEASE` is a release gate, not an implementation gap.
-WPKernel Phases 1 through 6 are implemented, and the external packed fixture
-already proves helper replacement output, typed `next(output?)`, synchronous
-preservation, public step shape, duplicate-edge handling, run-local diagnostics
-and cast-free inline `createStages` inference through the public
-`PipelineStageDependencies` family.
+The WPKernel Pipeline release gate is complete. `llm-core` pins the published
+`@wpkernel/pipeline@1.2.0` artifact and its lockfile integrity, passes the full
+release build, and verifies all 19 ESM runtime and declaration entrypoints from
+an isolated packed consumer. The release provides helper replacement output,
+typed `next(output?)`, synchronous preservation, public step shape,
+duplicate-edge handling, run-local diagnostics and cast-free inline
+`createStages` inference through the public `PipelineStageDependencies` family.
 
-The gate becomes complete when WPKernel reconciles the stale local `1.0.0`
-manifest with the already-published `1.1.0` consumer baseline, chooses and
-publishes a forward exact version, and `llm-core` passes against that released
-artifact with its exact dependency and lockfile updated. WPKernel's reusable
-pre-release evidence command is:
+WPKernel's reusable pre-release evidence command remains:
 
 ```sh
 pnpm --filter @wpkernel/pipeline qualify:packed

@@ -1,7 +1,7 @@
 # ADR-011 — Accessible Public Language and Progressive Disclosure
 
 Architecture version: v2
-Status: proposed
+Status: accepted
 Date: 2026-07-30
 Owners: architecture coordinator
 Affected tasks: language-audit through language-rollout, specification-contracts through specification-api, adapter-openspec through adapter-bmad-release
