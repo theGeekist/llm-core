@@ -44,14 +44,7 @@ const BUDGET_KEYS = new Set([
 ]);
 const SAFE_CODE = /^[a-z][a-z0-9._-]{0,127}$/;
 const ACTION_DIGEST = /^[A-Za-z0-9_-]{43}$/;
-const INTERVENTION_DECISIONS = new Set([
-  "approve",
-  "deny",
-  "defer",
-  "edit",
-  "cancel",
-  "escalate",
-]);
+const INTERVENTION_DECISIONS = new Set(["approve", "deny", "defer", "edit", "cancel", "escalate"]);
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === "object" &&
@@ -101,9 +94,7 @@ const isBudget = (value: unknown): boolean => {
   );
 };
 
-const hasValidInvocationIdentity = (
-  value: AgentRunRequest["invocationContext"],
-): boolean =>
+const hasValidInvocationIdentity = (value: AgentRunRequest["invocationContext"]): boolean =>
   isCanonicalUuid(value.invocationId) &&
   (value.runId === undefined || isCanonicalUuid(value.runId)) &&
   (value.stepId === undefined || isCanonicalUuid(value.stepId)) &&
@@ -111,9 +102,7 @@ const hasValidInvocationIdentity = (
   (value.conversationId === undefined || isCanonicalUuid(value.conversationId)) &&
   (value.correlationId === undefined || isExternalId(value.correlationId));
 
-const hasValidInvocationAuthority = (
-  value: AgentRunRequest["invocationContext"],
-): boolean =>
+const hasValidInvocationAuthority = (value: AgentRunRequest["invocationContext"]): boolean =>
   (value.principal === undefined || exactRef(value.principal, "principalId")) &&
   (value.tenant === undefined || exactRef(value.tenant, "tenantId")) &&
   (value.delegationChain === undefined ||
@@ -131,9 +120,7 @@ const hasValidTrace = (value: AgentRunRequest["invocationContext"]["trace"]): bo
     isSpanId(value.spanId) &&
     (value.traceFlags === undefined || isTraceFlags(value.traceFlags)));
 
-const isClosedInvocationContext = (
-  value: AgentRunRequest["invocationContext"],
-): boolean =>
+const isClosedInvocationContext = (value: AgentRunRequest["invocationContext"]): boolean =>
   isRecord(value) &&
   isJsonValue(value) &&
   hasOnlyKeys(value, INVOCATION_KEYS) &&
@@ -172,9 +159,7 @@ export const validateAgentRunRequest = (request: AgentRunRequest): void => {
   }
 };
 
-export const validateAgentCancellationRequest = (
-  request: AgentCancellationRequest,
-): void => {
+export const validateAgentCancellationRequest = (request: AgentCancellationRequest): void => {
   if (
     !isRecord(request) ||
     !hasOnlyKeys(request, new Set(["requestedAt", "reason"])) ||

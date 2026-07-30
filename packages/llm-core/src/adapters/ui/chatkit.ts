@@ -45,8 +45,8 @@ const mapProjection = (event: InteractionUiEvent): readonly ChatKitProjectionEve
   }
 };
 
-export const createChatKitProjectionMapper = (): UiProjectionMapper<ChatKitProjectionEvent> =>
-  (event: InteractionEvent) => {
+export const createChatKitProjectionMapper =
+  (): UiProjectionMapper<ChatKitProjectionEvent> => (event: InteractionEvent) => {
     const projected = projectInteractionEvent(event);
     return projected ? mapProjection(projected) : [];
   };

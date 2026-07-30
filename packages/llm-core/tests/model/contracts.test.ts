@@ -28,7 +28,12 @@ describe("model request/response representability", () => {
       {
         kind: "media-ref",
         mediaType: "image/png",
-        resource: { resourceId: RESOURCE_ID, mediaType: "image/png", byteLength: 10, digest: DIGEST },
+        resource: {
+          resourceId: RESOURCE_ID,
+          mediaType: "image/png",
+          byteLength: 10,
+          digest: DIGEST,
+        },
       },
       { kind: "reasoning", text: "because" },
       { kind: "tool-call", toolCallId: TOOL_CALL_ID, name: "search", arguments: { q: "x" } },

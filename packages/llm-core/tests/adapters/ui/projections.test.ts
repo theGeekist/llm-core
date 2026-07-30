@@ -132,9 +132,7 @@ describe("canonical UI projections", () => {
       "chatkit.error",
       "chatkit.response.end",
     ]);
-    expect((errorEvents[0] as CustomEvent<{ error: Error }>).detail.error).toBeInstanceOf(
-      Error,
-    );
+    expect((errorEvents[0] as CustomEvent<{ error: Error }>).detail.error).toBeInstanceOf(Error);
   });
 
   test("maps NLUX text and terminal callbacks with Error objects", () => {

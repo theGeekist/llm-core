@@ -1,10 +1,4 @@
-import {
-  coreId,
-  isCanonicalUuid,
-  isExternalId,
-  type EventId,
-  type RunId,
-} from "#contracts";
+import { coreId, isCanonicalUuid, isExternalId, type EventId, type RunId } from "#contracts";
 import type { InteractionUiEvent } from "./types";
 import {
   isCanonicalInteractionTimestamp,
@@ -31,14 +25,7 @@ const RECEIPT_STATES = [
   "compensated",
   "compensation_failed",
 ] as const;
-const INTERVENTION_DECISIONS = [
-  "approve",
-  "deny",
-  "defer",
-  "edit",
-  "cancel",
-  "escalate",
-] as const;
+const INTERVENTION_DECISIONS = ["approve", "deny", "defer", "edit", "cancel", "escalate"] as const;
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === "object" && value !== null && !Array.isArray(value);
@@ -81,9 +68,7 @@ const canonicalId = (value: unknown, field: string): string => {
   return value;
 };
 
-const commonIdentity = (
-  value: Record<string, unknown>,
-): { eventId: EventId; runId: RunId } => ({
+const commonIdentity = (value: Record<string, unknown>): { eventId: EventId; runId: RunId } => ({
   eventId: coreId<EventId>(canonicalId(value.eventId, "eventId")),
   runId: coreId<RunId>(canonicalId(value.runId, "runId")),
 });
@@ -97,9 +82,7 @@ const allowedDecisions = (value: unknown): readonly string[] => {
     value.length === 0 ||
     new Set(value).size !== value.length ||
     !value.every((entry) =>
-      INTERVENTION_DECISIONS.includes(
-        entry as (typeof INTERVENTION_DECISIONS)[number],
-      ),
+      INTERVENTION_DECISIONS.includes(entry as (typeof INTERVENTION_DECISIONS)[number]),
     )
   ) {
     throw new TypeError("Conversation snapshot intervention decisions must be closed.");
@@ -127,14 +110,7 @@ export const registerInteractionUiEvent = (value: unknown): InteractionUiEvent =
       break;
     case "intervention-requested":
       if (
-        hasOnlyKeys(value, [
-          "kind",
-          "eventId",
-          "runId",
-          "interventionId",
-          "allowed",
-          "expiresAt",
-        ])
+        hasOnlyKeys(value, ["kind", "eventId", "runId", "interventionId", "allowed", "expiresAt"])
       ) {
         return {
           kind,
@@ -259,15 +235,7 @@ export const registerInteractionUiEvent = (value: unknown): InteractionUiEvent =
       }
       break;
     case "message-failed":
-      if (
-        hasOnlyKeys(value, [
-          "kind",
-          "eventId",
-          "runId",
-          "messageId",
-          "reasonCode",
-        ])
-      ) {
+      if (hasOnlyKeys(value, ["kind", "eventId", "runId", "messageId", "reasonCode"])) {
         return {
           kind,
           ...common,

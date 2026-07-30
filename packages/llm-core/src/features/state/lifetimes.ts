@@ -74,9 +74,7 @@ export const createSnapshot = (input: {
  * The only entry into durable checkpoint resume. It validates, defensively
  * clones, freezes and nominally registers loaded portable data.
  */
-export const registerResumableCheckpoint = (
-  input: unknown,
-): RegisteredResumableCheckpoint => {
+export const registerResumableCheckpoint = (input: unknown): RegisteredResumableCheckpoint => {
   if (isLiveContinuation(input)) {
     throw new TypeError("LiveContinuation cannot enter durable checkpoint registration.");
   }

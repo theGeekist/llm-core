@@ -20,7 +20,10 @@ const NAMESPACE =
 export const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === "object" && value !== null && !Array.isArray(value);
 
-export const hasOnlyKeys = (value: Record<string, unknown>, allowed: readonly string[]): boolean => {
+export const hasOnlyKeys = (
+  value: Record<string, unknown>,
+  allowed: readonly string[],
+): boolean => {
   const keys = new Set(allowed);
   return Object.keys(value).every((key) => keys.has(key));
 };
@@ -135,9 +138,9 @@ const isUniqueStrings = (value: unknown): value is readonly string[] =>
   value.every((item) => typeof item === "string") &&
   new Set(value).size === value.length;
 
-export const validateCheckpoint: (
-  value: unknown,
-) => asserts value is ResumableCheckpoint = (value) => {
+export const validateCheckpoint: (value: unknown) => asserts value is ResumableCheckpoint = (
+  value,
+) => {
   if (
     !isRecord(value) ||
     !hasOnlyKeys(value, [

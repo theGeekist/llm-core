@@ -80,9 +80,7 @@ export const receipt = (stepId: StepId, status: "completed" | "started" | "indet
   },
 });
 
-export const checkpoint = (
-  overrides: Partial<ResumableCheckpoint> = {},
-): ResumableCheckpoint => ({
+export const checkpoint = (overrides: Partial<ResumableCheckpoint> = {}): ResumableCheckpoint => ({
   kind: "resumable-checkpoint",
   checkpointId: CHECKPOINT_ID,
   runId: RUN_ID,
@@ -123,9 +121,7 @@ export const principal = {
   principalId: externalId<PrincipalId>("operator:jason"),
 };
 
-export const decision = (
-  kind: InterventionDecision["decision"],
-): InterventionDecision => {
+export const decision = (kind: InterventionDecision["decision"]): InterventionDecision => {
   const base = {
     decisionId: DECISION_ID,
     intervention: intervention().intervention,
@@ -155,6 +151,4 @@ export const decision = (
 };
 
 export const providerSessionId = externalId<ProviderSessionId>("provider-session-123");
-export const durableJobId = newCoreId<DurableJobId>(
-  "018f0f4e-8c5b-7a91-8c3b-123456789a09",
-);
+export const durableJobId = newCoreId<DurableJobId>("018f0f4e-8c5b-7a91-8c3b-123456789a09");

@@ -1,10 +1,4 @@
-import type {
-  ConversationId,
-  EventId,
-  InvocationContext,
-  JsonValue,
-  RunId,
-} from "#contracts";
+import type { ConversationId, EventId, InvocationContext, JsonValue, RunId } from "#contracts";
 import type { MaybePromise } from "#shared/maybe";
 import type {
   AgentRun,
@@ -19,11 +13,7 @@ import type {
   RedactionMetadata,
   ToolReceiptState,
 } from "../../features/evidence/public";
-import type {
-  LiveContinuation,
-  ProviderSessionRef,
-  Snapshot,
-} from "../../features/state/public";
+import type { LiveContinuation, ProviderSessionRef, Snapshot } from "../../features/state/public";
 
 export interface InteractionContentEventFactsByKind {
   readonly "interaction.message.started": {
@@ -251,9 +241,7 @@ export interface ConversationSessionReservation {
 }
 
 export interface ConversationSessionStore {
-  load(
-    request: ConversationSessionLoadRequest,
-  ): MaybePromise<ConversationSessionSnapshot | null>;
+  load(request: ConversationSessionLoadRequest): MaybePromise<ConversationSessionSnapshot | null>;
   /**
    * Atomically acquires exclusive ownership of `expectedRevision`.
    *
@@ -304,9 +292,7 @@ export interface InteractionSession {
   emitContent(event: RegisteredInteractionContentEvent): Promise<void>;
   load(): Promise<ConversationSessionSnapshot>;
   send(request: InteractionSendRequest): Promise<InteractionRun>;
-  reconnect(
-    continuation: LiveContinuation<InteractionLiveConnection>,
-  ): InteractionLiveConnection;
+  reconnect(continuation: LiveContinuation<InteractionLiveConnection>): InteractionLiveConnection;
 }
 
 export interface InteractionSessionIdentityPort {

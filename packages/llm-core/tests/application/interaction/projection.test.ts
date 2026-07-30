@@ -9,15 +9,7 @@ import {
 } from "../../../src/application/interaction/public";
 import type { ExecutionEvent } from "../../../src/features/evidence/public";
 import { coreId, type EvidenceId, type ToolCallId } from "#contracts";
-import {
-  AGENT,
-  CONVERSATION_ID,
-  NOW,
-  RUN_ID,
-  agentEvent,
-  contentEvent,
-  eventId,
-} from "./helpers";
+import { AGENT, CONVERSATION_ID, NOW, RUN_ID, agentEvent, contentEvent, eventId } from "./helpers";
 
 describe("interaction event projection", () => {
   test("reduces canonical runner facts idempotently", () => {
@@ -63,9 +55,7 @@ describe("interaction event projection", () => {
       agentEvent("agent.run.progress", 0, { code: "different-fact" }),
     );
 
-    expect(() => reduceInteractionProjection(state, collision)).toThrow(
-      "conflicting facts",
-    );
+    expect(() => reduceInteractionProjection(state, collision)).toThrow("conflicting facts");
   });
 
   test("whitelists redacted execution facts and drops undeclared sensitive fields", () => {
@@ -124,9 +114,7 @@ describe("interaction event projection", () => {
       CONVERSATION_ID,
       agentEvent("agent.run.progress", 0, { code: "late" }),
     );
-    expect(() => reduceInteractionProjection(running, regressed)).toThrow(
-      "monotonically",
-    );
+    expect(() => reduceInteractionProjection(running, regressed)).toThrow("monotonically");
 
     const terminal = interactionAgentEvent(
       CONVERSATION_ID,
@@ -146,10 +134,7 @@ describe("interaction event projection", () => {
   });
 
   test("closes completed and failed content messages against later deltas", () => {
-    for (const kind of [
-      "interaction.message.completed",
-      "interaction.message.failed",
-    ] as const) {
+    for (const kind of ["interaction.message.completed", "interaction.message.failed"] as const) {
       const initial = createInteractionProjection(CONVERSATION_ID);
       const started = interactionContentEvent(
         CONVERSATION_ID,
@@ -177,9 +162,7 @@ describe("interaction event projection", () => {
         }),
       );
 
-      expect(() => reduceInteractionProjection(closed, late)).toThrow(
-        "terminal message",
-      );
+      expect(() => reduceInteractionProjection(closed, late)).toThrow("terminal message");
     }
   });
 
@@ -209,9 +192,7 @@ describe("interaction event projection", () => {
       }),
     );
 
-    expect(() => reduceInteractionProjection(initial, delta)).toThrow(
-      "preceding start",
-    );
+    expect(() => reduceInteractionProjection(initial, delta)).toThrow("preceding start");
     const running = reduceInteractionProjection(initial, started);
     const duplicateStart = interactionContentEvent(
       CONVERSATION_ID,
@@ -222,9 +203,7 @@ describe("interaction event projection", () => {
     expect(() => reduceInteractionProjection(running, duplicateStart)).toThrow(
       "start exactly once",
     );
-    expect(() => reduceInteractionProjection(running, toolResult)).toThrow(
-      "preceding tool call",
-    );
+    expect(() => reduceInteractionProjection(running, toolResult)).toThrow("preceding tool call");
   });
 
   test("rejects run termination while a projected content message is open", () => {
@@ -246,16 +225,11 @@ describe("interaction event projection", () => {
       agentEvent("agent.run.completed", 2, { status: "completed" }),
     );
     const running = reduceInteractionProjection(
-      reduceInteractionProjection(
-        createInteractionProjection(CONVERSATION_ID),
-        started,
-      ),
+      reduceInteractionProjection(createInteractionProjection(CONVERSATION_ID), started),
       delta,
     );
 
-    expect(() => reduceInteractionProjection(running, terminal)).toThrow(
-      "message remains open",
-    );
+    expect(() => reduceInteractionProjection(running, terminal)).toThrow("message remains open");
   });
 
   test("requires content events to pass the closed registration boundary", () => {
@@ -269,9 +243,7 @@ describe("interaction event projection", () => {
       redaction: { kind: "not-required" },
     };
 
-    expect(() =>
-      interactionContentEvent(CONVERSATION_ID, raw as never),
-    ).toThrow("registered");
+    expect(() => interactionContentEvent(CONVERSATION_ID, raw as never)).toThrow("registered");
     expect(() =>
       registerInteractionContentEvent({
         ...raw,

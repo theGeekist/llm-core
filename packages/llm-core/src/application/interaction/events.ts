@@ -1,9 +1,4 @@
-import {
-  isJsonValue,
-  type ConversationId,
-  type EventId,
-  type RunId,
-} from "#contracts";
+import { isJsonValue, type ConversationId, type EventId, type RunId } from "#contracts";
 import type { AgentRunEvent } from "../../features/agent/public";
 import type { ExecutionEvent } from "../../features/evidence/public";
 import type {
@@ -118,9 +113,7 @@ export const interactionExecutionEvent = (
       },
       ...(source.facts.policy ? { policy: { ...source.facts.policy } } : {}),
       ...(source.facts.approval ? { approval: { ...source.facts.approval } } : {}),
-      ...(source.facts.cancellation
-        ? { cancellation: { ...source.facts.cancellation } }
-        : {}),
+      ...(source.facts.cancellation ? { cancellation: { ...source.facts.cancellation } } : {}),
       ...(source.facts.approvalExpiresAt
         ? { approvalExpiresAt: source.facts.approvalExpiresAt }
         : {}),
@@ -136,17 +129,13 @@ export const interactionExecutionEvent = (
             kind: source.redaction.kind,
             categories: [...source.redaction.categories],
           },
-    ...(source.authorizedEvidence
-      ? { authorizedEvidence: { ...source.authorizedEvidence } }
-      : {}),
+    ...(source.authorizedEvidence ? { authorizedEvidence: { ...source.authorizedEvidence } } : {}),
     ...(source.extensions ? { extensions: { ...source.extensions } } : {}),
   };
   return freezePortable({ kind: "tool-execution", conversationId, event });
 };
 
-const contentFacts = (
-  event: InteractionContentEvent,
-): InteractionContentEvent["facts"] => {
+const contentFacts = (event: InteractionContentEvent): InteractionContentEvent["facts"] => {
   switch (event.kind) {
     case "interaction.message.started":
     case "interaction.message.completed":

@@ -8,13 +8,7 @@ import {
   isRegisteredResumableCheckpoint,
   registerResumableCheckpoint,
 } from "../../src/features/state/public";
-import {
-  COMPATIBILITY,
-  NOW,
-  checkpoint,
-  durableJobId,
-  providerSessionId,
-} from "./helpers";
+import { COMPATIBILITY, NOW, checkpoint, durableJobId, providerSessionId } from "./helpers";
 
 describe("state lifetime boundaries", () => {
   test("live continuations are process-local and cannot masquerade as JSON checkpoints", () => {
@@ -68,8 +62,8 @@ describe("state lifetime boundaries", () => {
     expect(registered.state).toEqual({ nested: { value: 1 } });
     expect(Object.isFrozen(registered)).toBe(true);
     expect(Object.isFrozen(registered.compatibility)).toBe(true);
-    expect(() =>
-      registerResumableCheckpoint({ ...source, credential: "sk-secret" }),
-    ).toThrow("valid, closed");
+    expect(() => registerResumableCheckpoint({ ...source, credential: "sk-secret" })).toThrow(
+      "valid, closed",
+    );
   });
 });

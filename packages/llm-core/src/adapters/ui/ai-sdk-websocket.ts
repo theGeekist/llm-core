@@ -180,11 +180,7 @@ const observableClientMessage = (
 ): ClientMessage & { readonly token?: "[redacted]" } =>
   message.type === "auth.set" ? { ...message, token: "[redacted]" } : message;
 
-const finalize = (
-  state: StreamState,
-  error?: Error,
-  settleController = true,
-): void => {
+const finalize = (state: StreamState, error?: Error, settleController = true): void => {
   if (state.finalized) return;
   state.finalized = true;
   if (state.abort && state.sendOptions.abortSignal) {

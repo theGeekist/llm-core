@@ -103,10 +103,7 @@ const toMultipartToolResultOutput = (parts: PortableContent[]): ToolResultOutput
   }),
 });
 
-const toToolResultOutput = (
-  parts: PortableContent[],
-  isError?: boolean,
-): ToolResultOutput => {
+const toToolResultOutput = (parts: PortableContent[], isError?: boolean): ToolResultOutput => {
   assertResolvedToolResultParts(parts);
   if (isError) {
     return toErrorToolResultOutput(parts);
@@ -181,7 +178,9 @@ export const toAiSdk7Messages = (
     if (message.role === "system") {
       instructions.push(
         message.content
-          .filter((part): part is Extract<ModelContentPart, { kind: "text" }> => part.kind === "text")
+          .filter(
+            (part): part is Extract<ModelContentPart, { kind: "text" }> => part.kind === "text",
+          )
           .map((part) => part.text)
           .join("\n"),
       );
@@ -202,7 +201,9 @@ export const toAiSdk7Messages = (
     }
     const content = message.content
       .map(toUserPart)
-      .filter((part): part is Exclude<UserModelMessage["content"], string>[number] => Boolean(part));
+      .filter((part): part is Exclude<UserModelMessage["content"], string>[number] =>
+        Boolean(part),
+      );
     mapped.push({ role: "user", content });
   }
 

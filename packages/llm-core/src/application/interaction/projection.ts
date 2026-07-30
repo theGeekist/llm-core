@@ -5,11 +5,7 @@ import type {
   InteractionRunStatus,
   InteractionUiEvent,
 } from "./types";
-import {
-  interactionEventId,
-  interactionRunId,
-  interactionSequenceKey,
-} from "./events";
+import { interactionEventId, interactionRunId, interactionSequenceKey } from "./events";
 
 const terminalStatus = (event: InteractionEvent): InteractionRunStatus | null => {
   if (event.kind !== "agent-run") {
@@ -116,9 +112,7 @@ export const projectInteractionEvent = (event: InteractionEvent): InteractionUiE
       runId,
       toolCallId: event.event.toolCallId,
       receiptState: event.event.facts.receiptState,
-      ...(event.event.facts.reasonCode
-        ? { reasonCode: event.event.facts.reasonCode }
-        : {}),
+      ...(event.event.facts.reasonCode ? { reasonCode: event.event.facts.reasonCode } : {}),
     });
   }
   switch (event.event.kind) {
@@ -156,9 +150,7 @@ export const projectInteractionEvent = (event: InteractionEvent): InteractionUiE
         eventId,
         runId,
         status: event.event.facts.status,
-        ...(event.event.facts.reasonCode
-          ? { reasonCode: event.event.facts.reasonCode }
-          : {}),
+        ...(event.event.facts.reasonCode ? { reasonCode: event.event.facts.reasonCode } : {}),
       });
     case "agent.run.intervention.received":
     case "agent.run.cancellation.acknowledged":
@@ -192,24 +184,17 @@ export const reduceInteractionProjection = (
   if (
     terminalStatus(event) !== null &&
     state.startedMessageKeys.some(
-      (key) =>
-        key.startsWith(`${runId}:`) && !state.terminalMessageKeys.includes(key),
+      (key) => key.startsWith(`${runId}:`) && !state.terminalMessageKeys.includes(key),
     )
   ) {
-    throw new TypeError(
-      "Interaction runs cannot terminate while a content message remains open.",
-    );
+    throw new TypeError("Interaction runs cannot terminate while a content message remains open.");
   }
-  const messageKey =
-    event.kind === "content"
-      ? `${runId}:${event.event.facts.messageId}`
-      : null;
+  const messageKey = event.kind === "content" ? `${runId}:${event.event.facts.messageId}` : null;
   if (messageKey && state.terminalMessageKeys.includes(messageKey)) {
     throw new TypeError("Interaction content cannot follow a terminal message event.");
   }
   const startsMessage =
-    event.kind === "content" &&
-    event.event.kind === "interaction.message.started";
+    event.kind === "content" && event.event.kind === "interaction.message.started";
   if (messageKey && startsMessage && state.startedMessageKeys.includes(messageKey)) {
     throw new TypeError("Interaction messages can start exactly once.");
   }

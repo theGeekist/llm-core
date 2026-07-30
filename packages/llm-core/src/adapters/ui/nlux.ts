@@ -1,8 +1,4 @@
-import type {
-  ChatAdapter,
-  ChatAdapterExtras,
-  StreamingAdapterObserver,
-} from "@nlux/core";
+import type { ChatAdapter, ChatAdapterExtras, StreamingAdapterObserver } from "@nlux/core";
 import type { InvocationContext, JsonValue } from "#contracts";
 import {
   projectInteractionEvent,
@@ -20,10 +16,7 @@ export type NluxProjectionSignal =
 export interface NluxInteractionAdapterOptions {
   readonly session: InteractionSession;
   readonly invocationContext: (extras: ChatAdapterExtras<string>) => InvocationContext;
-  readonly mapInput?: (
-    message: string,
-    extras: ChatAdapterExtras<string>,
-  ) => JsonValue;
+  readonly mapInput?: (message: string, extras: ChatAdapterExtras<string>) => JsonValue;
 }
 
 const mapProjection = (event: InteractionUiEvent): readonly NluxProjectionSignal[] => {
@@ -39,8 +32,8 @@ const mapProjection = (event: InteractionUiEvent): readonly NluxProjectionSignal
   }
 };
 
-export const createNluxProjectionMapper = (): UiProjectionMapper<NluxProjectionSignal> =>
-  (event: InteractionEvent) => {
+export const createNluxProjectionMapper =
+  (): UiProjectionMapper<NluxProjectionSignal> => (event: InteractionEvent) => {
     const projected = projectInteractionEvent(event);
     return projected ? mapProjection(projected) : [];
   };

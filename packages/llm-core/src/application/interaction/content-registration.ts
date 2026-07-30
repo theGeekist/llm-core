@@ -7,10 +7,7 @@ import {
   type JsonValue,
   type RunId,
 } from "#contracts";
-import type {
-  RedactionCategory,
-  RedactionMetadata,
-} from "../../features/evidence/public";
+import type { RedactionCategory, RedactionMetadata } from "../../features/evidence/public";
 import type {
   InteractionContentEvent,
   InteractionContentEventKind,
@@ -57,9 +54,7 @@ const externalString = (value: unknown, field: string): string => {
 export const isSafeInteractionCode = (value: unknown): value is string =>
   typeof value === "string" && value.length <= 128 && SAFE_CODE.test(value);
 
-export const isCanonicalInteractionTimestamp = (
-  value: unknown,
-): value is string =>
+export const isCanonicalInteractionTimestamp = (value: unknown): value is string =>
   typeof value === "string" &&
   Number.isFinite(Date.parse(value)) &&
   new Date(value).toISOString() === value;
@@ -78,9 +73,7 @@ const hasSensitiveProjectionKey = (value: unknown): boolean => {
   );
 };
 
-export const isSafeInteractionProjectionJson = (
-  value: unknown,
-): value is JsonValue =>
+export const isSafeInteractionProjectionJson = (value: unknown): value is JsonValue =>
   isJsonValue(value) && !hasSensitiveProjectionKey(value);
 
 const safeCode = (value: unknown): string => {
@@ -144,12 +137,7 @@ const facts = (
       break;
     case "interaction.message.tool.call":
       if (
-        hasOnlyKeys(value, [
-          "messageId",
-          "toolCallId",
-          "toolName",
-          "projectedInput",
-        ]) &&
+        hasOnlyKeys(value, ["messageId", "toolCallId", "toolName", "projectedInput"]) &&
         isSafeInteractionProjectionJson(value.projectedInput)
       ) {
         return {
@@ -162,13 +150,7 @@ const facts = (
       break;
     case "interaction.message.tool.result":
       if (
-        hasOnlyKeys(value, [
-          "messageId",
-          "toolCallId",
-          "toolName",
-          "projectedResult",
-          "isError",
-        ]) &&
+        hasOnlyKeys(value, ["messageId", "toolCallId", "toolName", "projectedResult", "isError"]) &&
         isSafeInteractionProjectionJson(value.projectedResult) &&
         typeof value.isError === "boolean"
       ) {
@@ -243,6 +225,4 @@ export const registerInteractionContentEvent = (
 export const isRegisteredInteractionContentEvent = (
   value: unknown,
 ): value is RegisteredInteractionContentEvent =>
-  typeof value === "object" &&
-  value !== null &&
-  registeredContentEvents.has(value);
+  typeof value === "object" && value !== null && registeredContentEvents.has(value);

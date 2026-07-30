@@ -1,4 +1,1 @@
-export {
-  createChatKitProjectionMapper,
-  type ChatKitProjectionEvent,
-} from "../ui/chatkit";
+export { createChatKitProjectionMapper, type ChatKitProjectionEvent } from "../ui/chatkit";

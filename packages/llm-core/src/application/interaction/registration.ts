@@ -9,10 +9,7 @@ import {
   type RunId,
 } from "#contracts";
 import { createSnapshot } from "../../features/state/public";
-import {
-  isCanonicalInteractionTimestamp,
-  isSafeInteractionCode,
-} from "./content-registration";
+import { isCanonicalInteractionTimestamp, isSafeInteractionCode } from "./content-registration";
 import { registerInteractionProviderSession } from "./provider-session-registration";
 import { registerInteractionUiEvent } from "./ui-event-registration";
 import type {
@@ -111,19 +108,12 @@ const normalizeProjection = (
     throw new TypeError("Stored projection indexes must be canonical and reconstructable.");
   }
   const derivedTerminalRunIds = [
-    ...new Set(
-      events
-        .filter((event) => event.kind === "run-finished")
-        .map((event) => event.runId),
-    ),
+    ...new Set(events.filter((event) => event.kind === "run-finished").map((event) => event.runId)),
   ];
   const derivedTerminalMessageKeys = [
     ...new Set(
       events
-        .filter(
-          (event) =>
-            event.kind === "message-finished" || event.kind === "message-failed",
-        )
+        .filter((event) => event.kind === "message-finished" || event.kind === "message-failed")
         .map((event) => `${event.runId}:${event.messageId}`),
     ),
   ];
@@ -134,8 +124,7 @@ const normalizeProjection = (
     if (
       event.kind === "run-finished" &&
       derivedStartedMessageKeys.some(
-        (key) =>
-          key.startsWith(`${event.runId}:`) && !closedMessageKeys.has(key),
+        (key) => key.startsWith(`${event.runId}:`) && !closedMessageKeys.has(key),
       )
     ) {
       throw new TypeError(
@@ -187,27 +176,19 @@ const normalizeProjection = (
     terminalRunIds.length !== derivedTerminalRunIds.length ||
     terminalRunIds.some((id, index) => id !== derivedTerminalRunIds[index]) ||
     value.terminalMessageKeys.length !== derivedTerminalMessageKeys.length ||
-    value.terminalMessageKeys.some(
-      (key, index) => key !== derivedTerminalMessageKeys[index],
-    ) ||
+    value.terminalMessageKeys.some((key, index) => key !== derivedTerminalMessageKeys[index]) ||
     value.startedMessageKeys.length !== derivedStartedMessageKeys.length ||
-    value.startedMessageKeys.some(
-      (key, index) => key !== derivedStartedMessageKeys[index],
-    ) ||
+    value.startedMessageKeys.some((key, index) => key !== derivedStartedMessageKeys[index]) ||
     value.seenToolCallKeys.length !== derivedSeenToolCallKeys.length ||
-    value.seenToolCallKeys.some(
-      (key, index) => key !== derivedSeenToolCallKeys[index],
-    )
+    value.seenToolCallKeys.some((key, index) => key !== derivedSeenToolCallKeys[index])
   ) {
     throw new TypeError("Stored projection terminal indexes are inconsistent.");
   }
   const lastTerminal = events.findLast((event) => event.kind === "run-finished");
   if (
-    (lastTerminal === undefined &&
-      (value.status !== "idle" || value.runId !== undefined)) ||
+    (lastTerminal === undefined && (value.status !== "idle" || value.runId !== undefined)) ||
     (lastTerminal !== undefined &&
-      (value.status !== lastTerminal.status ||
-        value.runId !== lastTerminal.runId))
+      (value.status !== lastTerminal.status || value.runId !== lastTerminal.runId))
   ) {
     throw new TypeError("Stored projection status must match its terminal event.");
   }
@@ -241,9 +222,7 @@ const normalizeTurn = (value: unknown): ConversationTurn => {
     runId: runId(value.runId),
     input: structuredClone(value.input),
     status: value.status as (typeof TERMINAL_STATUSES)[number],
-    ...(value.output === undefined
-      ? {}
-      : { output: structuredClone(value.output) as JsonValue }),
+    ...(value.output === undefined ? {} : { output: structuredClone(value.output) as JsonValue }),
     ...(reasonCode ? { reasonCode } : {}),
   };
 };
@@ -254,13 +233,7 @@ const normalizeValue = (
 ): ConversationSessionValue => {
   if (
     !isRecord(value) ||
-    !hasOnlyKeys(value, [
-      "conversationId",
-      "revision",
-      "turns",
-      "projection",
-      "providerSession",
-    ]) ||
+    !hasOnlyKeys(value, ["conversationId", "revision", "turns", "projection", "providerSession"]) ||
     value.conversationId !== expectedConversationId ||
     !Number.isSafeInteger(value.revision) ||
     (value.revision as number) < 0 ||
