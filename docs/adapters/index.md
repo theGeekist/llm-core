@@ -6,17 +6,34 @@ portable state.
 
 <<< @/snippets/v2/qualified-adapters.ts
 
-```mermaid
-flowchart LR
-  native["Provider or UI SDK types"]
-  adapter["Qualified adapter"]
-  neutral["llm-core contract"]
-  orchestration["Application orchestration"]
+### Capability adapters
 
-  native --> adapter
-  adapter --> neutral
-  neutral --> orchestration
-  orchestration -. "portable requests and events" .-> neutral
+```mermaid
+flowchart TB
+  Application["Application composition"]
+  Port["Neutral capability port"]
+  Adapter["Qualified capability adapter"]
+  Provider["Provider SDK"]
+
+  Application -->|"portable request"| Port
+  Port --> Adapter
+  Adapter -->|"native request"| Provider
+  Provider -->|"native result"| Adapter
+  Adapter -->|"portable result"| Port
+```
+
+### UI projection adapters
+
+```mermaid
+flowchart TB
+  Interaction["Canonical interaction projection"]
+  UIAdapter["Qualified UI adapter"]
+  Protocol["UI protocol"]
+  Client["UI client"]
+
+  Interaction --> UIAdapter
+  UIAdapter --> Protocol
+  Protocol --> Client
 ```
 
 ## Import a qualified boundary

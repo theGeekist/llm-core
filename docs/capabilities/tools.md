@@ -21,12 +21,36 @@ to that exact action. If arguments or effect targets change, the digest changes.
 
 Effect classes make operational risk explicit:
 
-| Effect class           | Meaning                                                      |
-| ---------------------- | ------------------------------------------------------------ |
-| `read-only`            | Observes without changing a meaningful external resource     |
-| `idempotent-write`     | Repeating the same action has the declared idempotent effect |
-| `non-idempotent-write` | Repetition can create an additional meaningful effect        |
-| `unknown`              | The host cannot establish safer semantics                    |
+| Effect class     | Meaning                                                      |
+| ---------------- | ------------------------------------------------------------ |
+| `read-only`      | Observes without changing a meaningful external resource     |
+| `reversible`     | Changes state and has an explicit compensation path          |
+| `external-write` | Changes a resource outside the current process               |
+| `destructive`    | Irreversibly deletes or damages meaningful state             |
+| `privileged`     | Requires elevated authority even if the operation is bounded |
+
+Effect class describes operational risk. Idempotency is a separate
+`ToolExecutionSemantics.idempotency` guarantee: `not-supported`, `required`, or
+`provider-enforced`. Retry after start is independently `never` or
+`requires-conformance`.
+
+## What the action digest binds
+
+`actionDigest` is an HMAC-like security-domain binding produced by the
+application's `ActionDigestPort`. The key arrives by opaque `SecretRef`, so key
+rotation and storage remain outside portable action data.
+
+| Included in the canonical action          | Deliberately excluded                    |
+| ----------------------------------------- | ---------------------------------------- |
+| Tool ID, version, and input-schema digest | Raw credential material                  |
+| Effect class and exact effect targets     | Policy or approval decisions             |
+| Authority identity and delegation chain   | Receipt lifecycle and timestamps         |
+| Execution and idempotency semantics       | Provider clients and native payloads     |
+| Strict normalized arguments               | Event delivery or storage implementation |
+
+Policy, approval, and receipts bind to the resulting digest. Changing an
+included fact requires a new decision; rotating the key changes the key
+reference without exposing key material.
 
 A tool declaration does not execute itself. Route meaningful effects through
 controlled tool execution so policy, approval, receipts, and recovery apply.

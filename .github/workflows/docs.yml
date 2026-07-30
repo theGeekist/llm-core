@@ -41,6 +41,12 @@ jobs:
       - name: Build docs
         run: bun run docs:build
 
+      - name: Install browser
+        run: bunx playwright install --with-deps chromium
+
+      - name: Smoke test Mermaid rendering
+        run: bun run docs:mermaid:check
+
       - name: Typecheck Snippets
         run: bun run docs:snippets:typecheck
 

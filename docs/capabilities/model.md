@@ -16,6 +16,28 @@ A `ModelProfile` records model, provider, deployment, contract version, and
 evidence-backed capability claims. It is portable data, not a provider client.
 Registering a profile validates, clones, and freezes it.
 
+## Resolve a model binding
+
+`ModelRef` expresses logical selection intent. `ProviderRef` identifies a
+service dialect, while `DeploymentRef` identifies one configured endpoint.
+None carries a credential or executable client.
+
+<<< @/snippets/v2/model-resolution.ts
+
+`createModelResolver` evaluates bindings deterministically:
+
+1. an exact `ModelRef` match wins before aliases;
+2. without an explicit selection, a named `policy.defaultModel` is required;
+3. policy allow-lists and required evidence-backed capabilities filter matches;
+4. constraints require a trusted evaluator and fail closed on throws or
+   non-boolean results;
+5. zero eligible bindings and multiple eligible bindings return unresolved
+   outcomes with diagnostics.
+
+The resolver never selects the first candidate, reads credentials, silently
+downgrades a requirement, or turns a provider/deployment identity into model
+selection intent.
+
 The built-in model is deterministic and useful for local composition and
 tests. Provider integrations remain qualified adapter imports, for example:
 

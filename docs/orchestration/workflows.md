@@ -27,13 +27,16 @@ stateDiagram-v2
   Failed --> [*]
 ```
 
-The terminal `WorkflowExecutionOutcome` is one of:
+The `WorkflowExecutionOutcome` is one of:
 
 | Status      | Carries                                            |
 | ----------- | -------------------------------------------------- |
 | `completed` | Final state and completed step keys                |
 | `paused`    | An ephemeral `WorkflowPauseSnapshot`               |
 | `failed`    | The failing step, error, and any rollback failures |
+
+`paused` returns control from the current invocation but is not terminal for
+the workflow lifecycle. A compatible `resumeWorkflow` call continues it.
 
 ## Pause and resume
 

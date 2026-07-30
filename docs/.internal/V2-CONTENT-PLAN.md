@@ -27,30 +27,35 @@ documentation against the shipped 19-front, ESM-only package surface.
 | Interaction and adapters   | interaction and qualified adapter pages                                      | Explain event projection, session ownership, redaction, and native boundaries. |
 | Reference                  | vocabulary, exports, contracts, conformance, decisions, migration            | Exact names and mappings with no tutorial duplication.                         |
 
-## Snippet ledger
+## Completed snippet inventory
 
-Existing checked snippets:
+Every V2 snippet exists, typechecks, and is embedded by a published page:
 
-- `local-agent.ts`
-- `capability-bindings.ts`
-- `interaction-projection.ts`
-- `retrieval-indexing.ts`
-- `storage-memory.ts`
-- `workflow-resume.ts`
-
-Required additions:
-
-- contracts and resource references;
-- model profile and model call;
-- tool schema and binding;
-- controlled tool execution;
-- evidence and redaction;
-- state lifetimes;
-- context manifests;
-- artifacts and provenance;
-- evaluation composition;
-- media;
-- qualified adapter mapping.
+- [x] `agent-capabilities.ts`
+- [x] `agent-skills.ts`
+- [x] `artifact-provenance.ts`
+- [x] `capability-bindings.ts`
+- [x] `capability-invocation-retry.ts`
+- [x] `context-manifest.ts`
+- [x] `contracts-portability.ts`
+- [x] `control-policy.ts`
+- [x] `controlled-tool-execution.ts`
+- [x] `evaluation-composition.ts`
+- [x] `evidence-redaction.ts`
+- [x] `interaction-events.ts`
+- [x] `interaction-projection.ts`
+- [x] `interaction-transport.ts`
+- [x] `local-agent.ts`
+- [x] `model-media.ts`
+- [x] `model-resolution.ts`
+- [x] `model-tool-agent.ts`
+- [x] `qualified-adapters.ts`
+- [x] `retrieval-indexing.ts`
+- [x] `state-lifetimes.ts`
+- [x] `storage-memory.ts`
+- [x] `tool-binding.ts`
+- [x] `workflow-composition.ts`
+- [x] `workflow-resume.ts`
 
 Every reusable TypeScript example belongs in `docs/snippets/v2/`, passes
 `docs:snippets:typecheck`, and is embedded by at least one published page.
@@ -68,7 +73,7 @@ Every reusable TypeScript example belongs in `docs/snippets/v2/`, passes
 
 ## Completion gates
 
-- Every package export is documented once in the API reference.
+- Every public package subpath is documented in the API reference.
 - Every sidebar link exists.
 - Every published import resolves.
 - All snippet files typecheck and every snippet is referenced.

@@ -22,6 +22,61 @@ Events are projections of the durable execution record. They are useful for
 observation, but replaying an event sink does not substitute for receipt
 recovery.
 
+## Receipt recovery lifecycle
+
+```mermaid
+stateDiagram-v2
+  [*] --> reserved
+  reserved --> awaiting_policy
+  reserved --> denied
+  reserved --> expired
+  reserved --> cancelled_before_start
+  awaiting_policy --> awaiting_approval
+  awaiting_policy --> ready
+  awaiting_policy --> denied
+  awaiting_policy --> expired
+  awaiting_policy --> cancelled_before_start
+  awaiting_approval --> awaiting_approval
+  awaiting_approval --> ready
+  awaiting_approval --> denied
+  awaiting_approval --> expired
+  awaiting_approval --> cancelled_before_start
+  ready --> started
+  ready --> denied
+  ready --> expired
+  ready --> cancelled_before_start
+  started --> started
+  started --> succeeded
+  started --> failed_after_start
+  started --> indeterminate
+  indeterminate --> succeeded
+  indeterminate --> failed_after_start
+  indeterminate --> reconciliation_required
+  succeeded --> compensation_required
+  failed_after_start --> compensation_required
+  compensation_required --> compensating
+  compensating --> compensated
+  compensating --> compensation_failed
+```
+
+Denied, expired, and cancelled-before-start are terminal branches before
+`started`. An indeterminate receipt may be reconciled to succeeded or
+failed-after-start when authoritative evidence becomes available.
+
+Receipt state and effect disposition answer different questions:
+
+| Effect disposition | Meaning                                              |
+| ------------------ | ---------------------------------------------------- |
+| `not-started`      | Execution did not cross the durable started boundary |
+| `none`             | The operation completed without a meaningful effect  |
+| `applied`          | The intended effect is known to have applied         |
+| `partial`          | Only part of the intended effect applied             |
+| `unknown`          | The effect cannot yet be established                 |
+| `compensated`      | A recorded compensation completed                    |
+
+The receipt snapshot is append-derived. Recovery loads its ordered durable
+history; it does not infer state from best-effort events.
+
 ## Redaction happens before emission
 
 `redactedNativeExtensions` accepts strict JSON only after sensitive provider

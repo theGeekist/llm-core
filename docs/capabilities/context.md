@@ -20,3 +20,17 @@ through composition, while `InvocationContext` carries identity and authority.
 Provenance distinguishes application, system, or user-supplied content from
 derived and retrieved content. Retrieved entries can link to both their source
 `ResourceRef` and supporting `EvidenceRef`.
+
+```mermaid
+flowchart TB
+  Source["Source ResourceRef"]
+  Evidence["EvidenceRef"]
+  Entry["ContextEntry<br/>content, provenance, cost"]
+  Manifest["ContextManifest<br/>ordered and budgeted"]
+  Invocation["Invocation, run, or step"]
+
+  Source -->|"retrieved or derived from"| Entry
+  Evidence -->|"supports provenance"| Entry
+  Entry --> Manifest
+  Manifest -->|"declares exact input"| Invocation
+```

@@ -5,7 +5,7 @@ llm-core, that work belongs to the `/workflow` and `/control` subpaths rather
 than to a model, tool, store, or adapter.
 
 ```mermaid
-flowchart LR
+flowchart TB
   contracts["Portable contracts"] --> capabilities["Capability ports"]
   capabilities --> orchestration["Application orchestration"]
   orchestration --> adapters["Qualified adapters"]

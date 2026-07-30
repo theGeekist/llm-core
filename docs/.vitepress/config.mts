@@ -43,7 +43,8 @@ export default defineConfig({
           .replace(/>/g, "&gt;")
           .replace(/"/g, "&quot;")
           .replace(/'/g, "&#039;");
-        return `<pre class="mermaid" style="white-space: pre;">${content}</pre>`;
+        const source = encodeURIComponent(token.content);
+        return `<div class="mermaid-container" data-mermaid-source="${source}"><pre class="mermaid" style="white-space: pre;">${content}</pre></div>`;
       };
     },
   },
@@ -86,13 +87,19 @@ export default defineConfig({
             { text: "Context", link: "/capabilities/context" },
             { text: "Artifacts", link: "/capabilities/artifacts" },
             { text: "Evaluation", link: "/capabilities/evaluation" },
-            { text: "Agent capabilities", link: "/capabilities/agent" },
-            { text: "Bindings and composition", link: "/capabilities/bindings" },
             {
-              text: "Retrieval and indexing",
-              link: "/capabilities/retrieval-indexing",
+              text: "Agent capabilities",
+              link: "/capabilities/agent",
+              items: [
+                { text: "Bindings and composition", link: "/capabilities/bindings" },
+                { text: "Agent skills", link: "/capabilities/agent-skills" },
+                {
+                  text: "Retrieval and indexing",
+                  link: "/capabilities/retrieval-indexing",
+                },
+                { text: "Storage and memory", link: "/capabilities/storage-memory" },
+              ],
             },
-            { text: "Storage and memory", link: "/capabilities/storage-memory" },
           ],
         },
       ],

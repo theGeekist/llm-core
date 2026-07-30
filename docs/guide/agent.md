@@ -6,8 +6,8 @@ through the terminal result.
 
 ## The complete local run
 
-The checked example keeps composition deliberately small. Its program echoes
-the input and declares read-only behavior.
+The first checked example keeps composition deliberately small. Its program
+echoes the input and declares read-only behavior.
 
 <<< @/snippets/v2/local-agent.ts
 
@@ -20,6 +20,24 @@ The three phases matter:
 
 A spec prepared for one runner is not transferable proof that another runner
 can execute it. Every selected runner prepares the spec for itself.
+
+## Build the model and tool program
+
+`createModelToolAgentProgram` is the intended bridge from a neutral `Model` and
+registered `ToolBinding` values into `createLocalAgentRunner`. It owns the model
+loop, tool-call handling, optional conversation persistence, child-agent
+dispatch, model-call budgets, and portable termination.
+
+<<< @/snippets/v2/model-tool-agent.ts
+
+Read-only tools can execute directly through their binding. Every other effect
+class requires both a composed controlled-execution port and a
+`controlledToolInput` mapper. If either is missing, the program returns a safe
+tool failure instead of bypassing policy, approval, or receipts.
+
+The invocation budget and `maxModelCalls` both apply; the smaller limit wins.
+Conversation persistence accepts portable content only and rejects inline
+binary data rather than silently dropping it.
 
 ## Read the lifecycle
 

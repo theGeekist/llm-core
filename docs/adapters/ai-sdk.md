@@ -1,7 +1,7 @@
 # AI SDK model integration
 
 The `/adapters/ai-sdk` subpath translates AI SDK 7 capabilities into neutral
-llm-core ports. The assessed SDK version is available as
+llm-core ports. The version covered by the conformance suite is available as
 `AI_SDK_SUPPORTED_VERSION`.
 
 ## Language model

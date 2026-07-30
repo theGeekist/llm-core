@@ -13,8 +13,8 @@ workflow runtime executes passive steps and returns a
 | Continue an ephemeral pause             | `resumeWorkflow`             | Snapshot plus resume input                 |
 | Resume after an authorized intervention | `resumeInterventionWorkflow` | Registered durable checkpoint and journal  |
 
-`defineWorkflow` validates a definition. `composeWorkflow` combines registered
-definitions, and `createWorkflowRegistry` resolves definitions by identity.
+`defineWorkflow` validates a definition. `composeWorkflow` combines ordinary
+definitions, and `createWorkflowRegistry` resolves registered definitions by identity.
 Every general-runtime step has `effect: "none"`. Meaningful effects use the
 controlled intervention path.
 
@@ -22,24 +22,13 @@ controlled intervention path.
 
 ```mermaid
 stateDiagram-v2
-    [*] --> Running: runWorkflow
-    Running --> Completed: completed
-    Running --> Failed: failed
-    Running --> Paused: paused
-    Paused --> Running: resumeWorkflow(snapshot, input)
-    Completed --> [*]
-    Failed --> [*]
-
-    state "Controlled resume" as controlled {
-        [*] --> Registered: registered checkpoint
-        Registered --> Verified: authenticate and verify
-        Verified --> Claimed: atomically claim
-        Claimed --> Executing: record effect started
-        Executing --> Settled: record effect completed
-        Executing --> Reconciliation: started or indeterminate
-        Settled --> [*]
-        Reconciliation --> [*]
-    }
+  [*] --> Running: runWorkflow
+  Running --> Completed: completed
+  Running --> Failed: failed
+  Running --> Paused: paused
+  Paused --> Running: resumeWorkflow(snapshot, input)
+  Completed --> [*]
+  Failed --> [*]
 ```
 
 The passive snapshot is explicitly ephemeral and is not a durable checkpoint.
@@ -47,6 +36,18 @@ Use it to continue an in-process workflow. Do not store it as proof that an
 external effect can be safely replayed.
 
 ## Resume a controlled intervention
+
+```mermaid
+stateDiagram-v2
+  [*] --> Registered: registered checkpoint
+  Registered --> Verified: authenticate and verify
+  Verified --> Claimed: atomically claim
+  Claimed --> Executing: record effect started
+  Executing --> Settled: record effect completed
+  Executing --> Reconciliation: started or indeterminate
+  Settled --> [*]
+  Reconciliation --> [*]
+```
 
 The checked example starts from a fully constructed
 `ResumeInterventionWorkflowInput` and handles the outcome that needs operational

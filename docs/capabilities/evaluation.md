@@ -12,7 +12,7 @@ evaluator identity and case identity. A judgement can report `pass`, `fail`, or
 `inconclusive`.
 
 ```mermaid
-flowchart LR
+flowchart TB
   Context["ContextManifest"] --> Run["Agent or workflow execution"]
   Run --> Artifact["Artifact"]
   Run --> Receipt["Execution receipt"]

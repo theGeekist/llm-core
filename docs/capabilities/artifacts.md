@@ -20,3 +20,19 @@ undeclared keys. The resulting artifact is cloned and frozen.
 
 The artifact contract does not imply storage. Pair it with an application-owned
 `ResourceStore` when execution must read or write bytes.
+
+```mermaid
+flowchart TB
+  Sources["Source ArtifactRef values"]
+  Operation["Invocation, run, step, or operation"]
+  Evidence["EvidenceRef"]
+  Artifact["Artifact<br/>identity, integrity, provenance"]
+  Resource["ArtifactRef / ResourceRef"]
+  Store["Authorized ResourceStore"]
+
+  Sources -->|"derived provenance"| Artifact
+  Operation -->|"generated provenance"| Artifact
+  Evidence -->|"supports claim"| Artifact
+  Artifact --> Resource
+  Resource -->|"live byte access only"| Store
+```

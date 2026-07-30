@@ -20,6 +20,12 @@ together; do not add compatibility aliases.
 | `artefact`                                    | `artifact`                                                      |
 | broad adapter import                          | a qualified adapter subpath                                     |
 | recipe catalogue import                       | explicit workflow or agent composition                          |
+| `/diagnostics`                                | application-owned diagnostic projection                         |
+| workflow `Plugin` hooks                       | explicit composition around definitions and runner ports        |
+| recipe `Pack` composition                     | ordinary arrays, records, and application composition           |
+| `/adapters/langchain`                         | application adapter or curated `/agent` memory/storage ports    |
+| `/adapters/llamaindex`                        | application adapter or curated retrieval/indexing ports         |
+| `/adapters/primitives`                        | direct neutral capability ports                                 |
 
 ## Root agent run
 
@@ -130,6 +136,40 @@ const result = await run.result();
 
 Use `@geekist/llm-core/workflow` for authenticated checkpoint resume. There is
 no global recipe catalogue in 2.0.
+
+## Removed diagnostics and composition helpers
+
+Version 2 does not publish `/diagnostics`. Keep operational diagnostic objects
+in the application or observability adapter that owns their schema. Portable
+failures use the closed error, outcome, receipt, and diagnostic unions exported
+by the capability that produces them; do not recreate a generic cross-domain
+diagnostic bag.
+
+The V1 recipe `Pack` and workflow `Plugin` abstractions are also removed.
+Compose ordinary definitions and ports at the application boundary:
+
+- use `composeWorkflow` for reusable passive workflow definitions;
+- use `createModelToolAgentProgram` for the model/tool agent loop;
+- wrap a runner, model, or workflow explicitly when the application needs
+  hooks;
+- keep hook configuration live and outside portable specs or checkpoints.
+
+There is no plugin registry with hidden execution authority in V2.
+
+## Removed framework adapter subpaths
+
+The LangChain, LlamaIndex, and primitives subpaths are not published in V2.
+Their former responsibilities split by ownership:
+
+| Removed subpath        | Migration path                                                        |
+| ---------------------- | --------------------------------------------------------------------- |
+| `/adapters/langchain`  | Implement application adapters against `/agent` memory/storage ports  |
+| `/adapters/llamaindex` | Implement application adapters against retrieval/indexing/store ports |
+| `/adapters/primitives` | Bind the relevant neutral port directly                               |
+
+Do not import old implementation files by deep path. If an application still
+needs one integration, own it at the boundary, pin the native version, declare
+semantic loss, redact native data, and qualify it with conformance evidence.
 
 ## Tool control
 

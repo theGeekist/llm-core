@@ -12,7 +12,7 @@ smoke test installs a packed artifact into an isolated consumer and verifies all
 | Local runner         | The TypeScript runner obeys preparation, event, control, effect, and terminal-result rules.                             |
 | Deterministic remote | A fake remote runner exercises replay, drop, reorder, timeout, and correlation faults.                                  |
 | Process transport    | A real Python process verifies language-neutral framing and identity behavior without claiming framework compatibility. |
-| Exact runtime        | CI installs the assessed runtime version and executes its dedicated compatibility tests.                                |
+| Exact runtime        | CI installs the supported runtime version and executes its dedicated compatibility tests.                               |
 
 ## First Python reference runtime
 
@@ -35,3 +35,18 @@ A compatibility declaration is narrower than package installation. Check:
 5. the executable evidence backing the claim.
 
 Transport success alone does not establish runtime conformance.
+
+## Commands and evidence
+
+| Gate                       | Command                                            |
+| -------------------------- | -------------------------------------------------- |
+| Shared repository tests    | `bun test`                                         |
+| Package release checks     | `bun run --cwd packages/llm-core release:check`    |
+| Packed consumer validation | `bun run test:package`                             |
+| Documentation contracts    | `bun run docs:check`                               |
+| Documentation rendering    | `bun run docs:build && bun run docs:mermaid:check` |
+
+The exact-runtime suite is
+`tests/conformance/pydantic-ai-compatibility.test.ts`. The process-transport
+coverage lives in `tests/conformance/runner-conformance.test.ts`. These names
+locate evidence; they do not create a published runtime adapter.

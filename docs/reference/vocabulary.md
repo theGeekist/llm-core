@@ -10,7 +10,7 @@ holds behavior or a handle to work executing now.
 | ------------------- | ------------------------------------------------------------------------------------------------------------ |
 | `AgentSpec`         | Portable agent intent: identity, version, instructions, effect requirement, metadata, and skill references.  |
 | `PreparedAgentSpec` | A spec prepared and branded by one compatible runner.                                                        |
-| `AgentRunner`       | Port that reports capabilities, prepares specs, and starts or resumes runs.                                  |
+| `AgentRunner`       | Port that reports capabilities, prepares specs, starts runs, and may support checkpoint resume.              |
 | `AgentRun`          | Live handle exposing `AgentRunEvent` values, cancellation or intervention controls, and one terminal result. |
 | `RunResult`         | Terminal result: `completed`, `failed`, `denied`, or `cancelled`.                                            |
 | `AgentRunEvent`     | Typed event family for an agent run. It is distinct from controlled-effect evidence.                         |

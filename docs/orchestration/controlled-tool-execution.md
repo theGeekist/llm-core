@@ -23,17 +23,22 @@ sequenceDiagram
   Control->>Control: bind action and compute digest
   Control->>Journal: reserve idempotency identity
   Journal-->>Control: authoritative receipt
+  Control-->>Events: schedule reservation event
   Control->>Journal: append awaiting_policy
+  Control-->>Events: schedule transition event
   Control->>Policy: evaluate exact action digest
   opt approval required
     Control->>Approval: request and authenticate decision
+    Control->>Journal: append awaiting_approval or ready
+    Control-->>Events: schedule transition event
   end
   Control->>Gate: acquire lease
   Control->>Journal: append started
+  Control-->>Events: schedule started event
   Control->>Tool: execute once
   Tool-->>Control: ToolResult
   Control->>Journal: append terminal disposition
-  Control-->>Events: schedule redacted ExecutionEvent
+  Control-->>Events: schedule terminal event
   Control-->>Host: ControlledToolExecutionOutcome
 ```
 

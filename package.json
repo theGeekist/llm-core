@@ -23,6 +23,7 @@
     "format": "prettier \"**/*.{ts,tsx,js,jsx,json,md}\" --write",
     "docs:dev": "bunx vitepress dev docs",
     "docs:build": "bunx vitepress build docs",
+    "docs:mermaid:check": "node scripts/check-docs-mermaid.mjs",
     "docs:preview": "bunx vitepress preview docs",
     "docs:check": "bun run scripts/check-docs.ts && bun run docs:snippets:typecheck",
     "docs:snippets:typecheck": "bun tsc -p docs/snippets/tsconfig.json --noEmit",
@@ -30,6 +31,7 @@
     "typecheck:tests": "bun run --cwd packages/llm-core typecheck:tests"
   },
   "devDependencies": {
+    "@playwright/test": "1.57.0",
     "prettier": "3.3.3",
     "eslint": "8.57.0",
     "eslint-config-prettier": "9.1.0",

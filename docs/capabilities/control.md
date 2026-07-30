@@ -44,8 +44,8 @@ sequenceDiagram
 
 The receipt reservation and concurrency lease solve different problems. The
 receipt journal establishes durable effect identity and recovery. The gate
-limits overlapping live execution. An `EventSink` records redacted evidence
-but replaces neither mechanism.
+limits overlapping live execution. An `EventSink` emits a best-effort redacted
+projection but replaces neither mechanism.
 
 Retry after an effect starts requires verified idempotency or reconciliation.
 A caller-provided label does not establish either guarantee.

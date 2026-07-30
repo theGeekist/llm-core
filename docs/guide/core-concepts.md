@@ -11,7 +11,8 @@ an effect requirement, metadata, and skill references. It does not contain
 provider clients, credentials, or open connections.
 
 An `AgentRunner` is a live port. It declares its capabilities, prepares a spec
-for its own execution environment, and starts or resumes an `AgentRun`.
+for its own execution environment, and starts an `AgentRun`. It may resume one
+when checkpoint resume is supported.
 `InvocationContext` carries portable identity and authority separately from
 those live dependencies.
 
@@ -23,7 +24,9 @@ Application code decides which implementations to compose.
 flowchart LR
     Spec["AgentSpec<br/>portable intent"] --> Runner["AgentRunner<br/>live execution port"]
     Context["InvocationContext<br/>identity and authority"] --> Runner
-    Adapter["Qualified adapter<br/>external system boundary"] --> Runner
+    Adapter["Qualified adapter<br/>external system boundary"] --> Port["Capability port"]
+    Port --> Composition["Application composition"]
+    Composition --> Runner
     Runner --> Run["AgentRun<br/>live handle"]
     Run --> AgentEvents["AgentRunEvent<br/>agent lifecycle"]
     Run --> Result["RunResult<br/>one terminal result"]
@@ -46,7 +49,7 @@ pause points, and rollback behavior are explicit in a `WorkflowDefinition`.
 
 Keeping the models separate gives each one an honest result:
 
-| Lifecycle   | Live or returned value     | Terminal shape                                               |
+| Lifecycle   | Live or returned value     | Outcome shape                                                |
 | ----------- | -------------------------- | ------------------------------------------------------------ |
 | Agent       | `AgentRun`                 | `RunResult`: `completed`, `failed`, `denied`, or `cancelled` |
 | Workflow    | `WorkflowExecutionOutcome` | `completed`, `paused`, or `failed`                           |
@@ -83,7 +86,7 @@ The package uses several closed event families because they answer different
 questions:
 
 - `AgentRunEvent` reports the lifecycle of one live agent run.
-- `ExecutionEvent` records redacted evidence for controlled tool execution.
+- `ExecutionEvent` projects redacted evidence for controlled tool execution.
 - `InteractionEvent` is reduced into deterministic interaction state.
 
 An `AgentRunEvent` is not an `ExecutionEvent`. Controlled tool use may produce

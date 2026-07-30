@@ -1,7 +1,7 @@
 # Interaction
 
-Interaction sessions connect an `AgentRunner` to durable conversation state and
-project canonical events into deterministic UI state.
+Interaction sessions connect an `AgentRunner` to store-backed portable
+conversation state and project canonical events into deterministic UI state.
 
 <<< @/snippets/v2/interaction-projection.ts
 
