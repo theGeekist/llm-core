@@ -348,7 +348,7 @@ describe("workflow application runtime", () => {
       steps: [append("three")],
     });
     const registry = createWorkflowRegistry<State, Pause, Resume>();
-    registry.register(composed);
+    registry.register({ definition: composed });
 
     expect(registry.resolve("composed")).toBe(composed);
     expect(registry.resolve("first")).toBeUndefined();
@@ -358,7 +358,7 @@ describe("workflow application runtime", () => {
       "two",
       "three",
     ]);
-    expect(() => registry.register(composed)).toThrow("already registered");
+    expect(() => registry.register({ definition: composed })).toThrow("already registered");
   });
 
   test("rejects duplicate composition keys and mismatched resume snapshots", () => {

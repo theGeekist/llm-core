@@ -4,7 +4,7 @@ The package is ESM-only and requires Node.js 22 or newer.
 
 The root contains only local agent execution:
 
-- Runtime values: `createLocalAgentRunner`, `prepareAgentSpec`
+- Runtime value: `createLocalAgentRunner`
 - Types: `AgentSpec`, `PreparedAgentSpec`, `AgentRunner`,
   `AgentRunnerCapabilities`, `AgentRun`, `AgentRunRequest`, `AgentRunEvent`,
   `RunResult`, `MaybePromise`, `MaybeAsyncIterable`

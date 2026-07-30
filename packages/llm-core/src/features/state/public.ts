@@ -22,6 +22,8 @@ export {
   resolveIntervention,
   type InterventionResolution,
 } from "./intervention";
+export { authenticateIntervention } from "./authentication";
+export type { AuthenticateInterventionInput } from "./authentication";
 export type {
   ApproveInterventionDecision,
   CancelInterventionDecision,
@@ -35,10 +37,13 @@ export type {
   InterventionDecision,
   InterventionDecisionId,
   InterventionAuthenticationRef,
+  InterventionAuthenticationPort,
+  InterventionAuthenticationResult,
   InterventionId,
   InterventionKind,
   InterventionRef,
   InterventionRequest,
+  VerifyInterventionAuthenticationInput,
   LiveContinuation,
   NativeReferenceCompatibility,
   ProviderSessionRef,

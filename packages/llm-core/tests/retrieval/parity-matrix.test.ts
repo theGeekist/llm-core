@@ -76,8 +76,10 @@ describe("qualified adapter parity matrix", () => {
       }),
     } as unknown as EmbeddingModel;
     const embedder = createAiSdkEmbedder(embeddingModel);
-    expect(await embedder.embed({ text: "one" }, CONTEXT)).toEqual([3]);
-    expect(await embedder.embedMany?.({ texts: ["a", "four"] }, CONTEXT)).toEqual([[1], [4]]);
+    expect(await embedder.embed({ request: { text: "one" }, context: CONTEXT })).toEqual([3]);
+    expect(
+      await embedder.embedMany?.({ request: { texts: ["a", "four"] }, context: CONTEXT }),
+    ).toEqual([[1], [4]]);
 
     const rerankingModel = {
       specificationVersion: "v3",
@@ -92,10 +94,10 @@ describe("qualified adapter parity matrix", () => {
         }),
     } as unknown as RerankingModelV3;
     const documents = [textDocument("zero"), textDocument("one"), textDocument("two")];
-    const ranked = await createAiSdkReranker(rerankingModel).rerank(
-      { query: textRetrievalQuery("q"), documents },
-      CONTEXT,
-    );
+    const ranked = await createAiSdkReranker(rerankingModel).rerank({
+      request: { query: textRetrievalQuery("q"), documents },
+      context: CONTEXT,
+    });
     expect(ranked.map(documentText)).toEqual(["two", "zero"]);
     expect(ranked.map((document) => document.score)).toEqual([0.9, 0.5]);
   });
@@ -108,7 +110,10 @@ describe("qualified adapter parity matrix", () => {
           new LangChainDocument({ pageContent: "loaded-2" }),
         ]),
     } as never);
-    expect((await loader.load(CONTEXT)).map(documentText)).toEqual(["loaded-1", "loaded-2"]);
+    expect((await loader.load({ context: CONTEXT })).map(documentText)).toEqual([
+      "loaded-1",
+      "loaded-2",
+    ]);
 
     const splitter = createLangChainTextSplitter({
       splitText: (text: string) => Promise.resolve(text.split("|")),
@@ -118,19 +123,28 @@ describe("qualified adapter parity matrix", () => {
           new LangChainDocument({ pageContent: "right", metadata: { part: 2 } }),
         ]),
     } as never);
-    expect(await splitter.split({ text: "left|right" }, CONTEXT)).toEqual(["left", "right"]);
-    expect(await splitter.splitBatch?.({ texts: ["a|b", "c|d"] }, CONTEXT)).toEqual([
+    expect(await splitter.split({ request: { text: "left|right" }, context: CONTEXT })).toEqual([
+      "left",
+      "right",
+    ]);
+    expect(
+      await splitter.splitBatch?.({ request: { texts: ["a|b", "c|d"] }, context: CONTEXT }),
+    ).toEqual([
       ["a", "b"],
       ["c", "d"],
     ]);
-    expect(await splitter.splitWithMetadata?.({ text: "left|right" }, CONTEXT)).toHaveLength(2);
+    expect(
+      await splitter.splitWithMetadata?.({ request: { text: "left|right" }, context: CONTEXT }),
+    ).toHaveLength(2);
 
     const embedder = createLangChainEmbedder({
       embedQuery: (text: string) => [text.length],
       embedDocuments: (texts: string[]) => Promise.resolve(texts.map((text) => [text.length])),
     } as never);
-    expect(embedder.embed({ text: "abc" }, CONTEXT)).toEqual([3]);
-    expect(await embedder.embedMany?.({ texts: ["a", "ab"] }, CONTEXT)).toEqual([[1], [2]]);
+    expect(embedder.embed({ request: { text: "abc" }, context: CONTEXT })).toEqual([3]);
+    expect(
+      await embedder.embedMany?.({ request: { texts: ["a", "ab"] }, context: CONTEXT }),
+    ).toEqual([[1], [2]]);
 
     const retriever = createLangChainRetriever({
       invoke: () =>
@@ -140,9 +154,12 @@ describe("qualified adapter parity matrix", () => {
         ]),
     } as never);
     expect(
-      (await retriever.retrieve({ query: textRetrievalQuery("find") }, CONTEXT)).documents.map(
-        documentText,
-      ),
+      (
+        await retriever.retrieve({
+          request: { query: textRetrievalQuery("find") },
+          context: CONTEXT,
+        })
+      ).documents.map(documentText),
     ).toEqual(["first", "second"]);
 
     const reranker = createLangChainReranker({
@@ -151,13 +168,13 @@ describe("qualified adapter parity matrix", () => {
     } as never);
     expect(
       (
-        await reranker.rerank(
-          {
+        await reranker.rerank({
+          request: {
             query: textRetrievalQuery("rank"),
             documents: [textDocument("first"), textDocument("second")],
           },
-          CONTEXT,
-        )
+          context: CONTEXT,
+        })
       ).map(documentText),
     ).toEqual(["second", "first"]);
   });
@@ -181,19 +198,26 @@ describe("qualified adapter parity matrix", () => {
     const store = createLangChainVectorStore(nativeStore);
 
     expect(
-      await store.upsert(
-        { documents: [textDocument("one", { id: "d-1" })], namespace: "ns" },
-        CONTEXT,
-      ),
+      await store.upsert({
+        request: { documents: [textDocument("one", { id: "d-1" })], namespace: "ns" },
+        context: CONTEXT,
+      }),
     ).toEqual({ ids: ["d-1"] });
     expect(
-      await store.upsert(
-        { vectors: [{ id: "v-1", values: [0.1, 0.2] }], namespace: "ns" },
-        CONTEXT,
-      ),
+      await store.upsert({
+        request: { vectors: [{ id: "v-1", values: [0.1, 0.2] }], namespace: "ns" },
+        context: CONTEXT,
+      }),
     ).toEqual({ ids: ["v-1"] });
-    expect(await store.delete({ ids: ["d-1"], namespace: "ns" }, CONTEXT)).toBe(true);
-    expect(await store.delete({ filter: { stale: true }, namespace: "ns" }, CONTEXT)).toBe(true);
+    expect(
+      await store.delete({ request: { ids: ["d-1"], namespace: "ns" }, context: CONTEXT }),
+    ).toBe(true);
+    expect(
+      await store.delete({
+        request: { filter: { stale: true }, namespace: "ns" },
+        context: CONTEXT,
+      }),
+    ).toBe(true);
     expect(calls.map((call) => call.kind)).toEqual(["documents", "vectors", "delete", "delete"]);
     expect(calls[2]?.value).toEqual({ ids: ["d-1"], namespace: "ns" });
     expect(calls[3]?.value).toEqual({ filter: { stale: true }, namespace: "ns" });
@@ -214,7 +238,7 @@ describe("qualified adapter parity matrix", () => {
     const result = await createLangChainIndexer({
       recordManager,
       vectorStore: indexStore,
-    }).index({ documents: [textDocument("indexed")] }, CONTEXT);
+    }).index({ request: { documents: [textDocument("indexed")] }, context: CONTEXT });
     expect(result).toEqual({ added: 1, deleted: 0, updated: 0, skipped: 0 });
   });
 
@@ -226,23 +250,33 @@ describe("qualified adapter parity matrix", () => {
           new LlamaDocument({ text: "loaded-2" }),
         ]),
     } as unknown as BaseReader);
-    expect((await loader.load(CONTEXT)).map(documentText)).toEqual(["loaded-1", "loaded-2"]);
+    expect((await loader.load({ context: CONTEXT })).map(documentText)).toEqual([
+      "loaded-1",
+      "loaded-2",
+    ]);
 
     const splitter = createLlamaIndexTextSplitter({
       splitText: (text: string) => text.split("|"),
     } as never);
-    expect(splitter.split({ text: "left|right" }, CONTEXT)).toEqual(["left", "right"]);
-    expect(splitter.splitBatch?.({ texts: ["a|b", "c|d"] }, CONTEXT)).toEqual([
-      ["a", "b"],
-      ["c", "d"],
+    expect(splitter.split({ request: { text: "left|right" }, context: CONTEXT })).toEqual([
+      "left",
+      "right",
     ]);
+    expect(splitter.splitBatch?.({ request: { texts: ["a|b", "c|d"] }, context: CONTEXT })).toEqual(
+      [
+        ["a", "b"],
+        ["c", "d"],
+      ],
+    );
 
     const embedder = createLlamaIndexEmbedder({
       getTextEmbedding: (text: string) => [text.length],
       getTextEmbeddings: (texts: string[]) => Promise.resolve(texts.map((text) => [text.length])),
     } as never);
-    expect(embedder.embed({ text: "abc" }, CONTEXT)).toEqual([3]);
-    expect(await embedder.embedMany?.({ texts: ["a", "ab"] }, CONTEXT)).toEqual([[1], [2]]);
+    expect(embedder.embed({ request: { text: "abc" }, context: CONTEXT })).toEqual([3]);
+    expect(
+      await embedder.embedMany?.({ request: { texts: ["a", "ab"] }, context: CONTEXT }),
+    ).toEqual([[1], [2]]);
 
     const transformer = createLlamaIndexDocumentTransformer({
       getNodesFromDocuments: (documents: LlamaDocument[]) =>
@@ -251,7 +285,9 @@ describe("qualified adapter parity matrix", () => {
         ),
     } as never);
     expect(
-      (await transformer.transform([textDocument("changed")], CONTEXT)).map(documentText),
+      (await transformer.transform({ documents: [textDocument("changed")], context: CONTEXT })).map(
+        documentText,
+      ),
     ).toEqual(["changed!"]);
 
     const retriever = createLlamaIndexRetriever({
@@ -261,7 +297,10 @@ describe("qualified adapter parity matrix", () => {
           { node: new LlamaDocument({ text: "second" }), score: 0.8 },
         ]),
     } as never);
-    const retrieved = await retriever.retrieve({ query: textRetrievalQuery("find") }, CONTEXT);
+    const retrieved = await retriever.retrieve({
+      request: { query: textRetrievalQuery("find") },
+      context: CONTEXT,
+    });
     expect(retrieved.documents.map(documentText)).toEqual(["first", "second"]);
     expect(retrieved.documents.map((document) => document.score)).toEqual([0.2, 0.8]);
 
@@ -270,10 +309,10 @@ describe("qualified adapter parity matrix", () => {
     } as never);
     expect(
       (
-        await reranker.rerank(
-          { query: textRetrievalQuery("rank"), documents: retrieved.documents },
-          CONTEXT,
-        )
+        await reranker.rerank({
+          request: { query: textRetrievalQuery("rank"), documents: retrieved.documents },
+          context: CONTEXT,
+        })
       ).map(documentText),
     ).toEqual(["second", "first"]);
   });
@@ -293,11 +332,14 @@ describe("qualified adapter parity matrix", () => {
       query: async ({ stream }: { stream?: boolean }) => (stream ? iterable : completion),
     } as unknown as BaseQueryEngine;
     const queryEngine = createLlamaIndexQueryEngine(engine);
-    const result = await queryEngine.query({ query: textRetrievalQuery("q") }, CONTEXT);
+    const result = await queryEngine.query({
+      request: { query: textRetrievalQuery("q") },
+      context: CONTEXT,
+    });
     expect(documentText({ content: result.content })).toBe("complete");
     expect(result.sources?.map(documentText)).toEqual(["source"]);
     const queryEvents = await collect(
-      queryEngine.stream?.({ query: textRetrievalQuery("q") }, CONTEXT) ?? [],
+      queryEngine.stream?.({ request: { query: textRetrievalQuery("q") }, context: CONTEXT }) ?? [],
     );
     expect(queryEvents.map((event) => event.kind)).toEqual(["start", "delta", "end"]);
 
@@ -305,16 +347,16 @@ describe("qualified adapter parity matrix", () => {
       synthesize: async (_input: unknown, stream?: boolean) => (stream ? iterable : completion),
     } as unknown as BaseSynthesizer;
     const responseSynthesizer = createLlamaIndexResponseSynthesizer(synthesizer);
-    const synthesis = await responseSynthesizer.synthesize(
-      { query: textRetrievalQuery("q"), documents: [textDocument("fallback")] },
-      CONTEXT,
-    );
+    const synthesis = await responseSynthesizer.synthesize({
+      request: { query: textRetrievalQuery("q"), documents: [textDocument("fallback")] },
+      context: CONTEXT,
+    });
     expect(documentText({ content: synthesis.content })).toBe("complete");
     const synthesisEvents = await collect(
-      responseSynthesizer.stream?.(
-        { query: textRetrievalQuery("q"), documents: [textDocument("fallback")] },
-        CONTEXT,
-      ) ?? [],
+      responseSynthesizer.stream?.({
+        request: { query: textRetrievalQuery("q"), documents: [textDocument("fallback")] },
+        context: CONTEXT,
+      }) ?? [],
     );
     expect(synthesisEvents.map((event) => event.kind)).toEqual(["start", "delta", "end"]);
 
@@ -326,11 +368,18 @@ describe("qualified adapter parity matrix", () => {
       },
     } as unknown as BaseVectorStore;
     const store = createLlamaIndexVectorStore(nativeStore);
-    expect(await store.upsert({ vectors: [{ id: "v-1", values: [1, 2] }] }, CONTEXT)).toEqual({
+    expect(
+      await store.upsert({
+        request: { vectors: [{ id: "v-1", values: [1, 2] }] },
+        context: CONTEXT,
+      }),
+    ).toEqual({
       ids: ["v-1"],
     });
-    expect(await store.delete({ ids: ["v-1"] }, CONTEXT)).toBe(true);
-    expect(await store.delete({ filter: { stale: true } }, CONTEXT)).toBeNull();
+    expect(await store.delete({ request: { ids: ["v-1"] }, context: CONTEXT })).toBe(true);
+    expect(
+      await store.delete({ request: { filter: { stale: true } }, context: CONTEXT }),
+    ).toBeNull();
     expect(deleted).toEqual(["v-1"]);
   });
 
@@ -339,8 +388,10 @@ describe("qualified adapter parity matrix", () => {
       query: async () => rejectingStream("credential=sk-sensitive"),
     } as unknown as BaseQueryEngine;
     const events = await collect(
-      createLlamaIndexQueryEngine(engine).stream?.({ query: textRetrievalQuery("q") }, CONTEXT) ??
-        [],
+      createLlamaIndexQueryEngine(engine).stream?.({
+        request: { query: textRetrievalQuery("q") },
+        context: CONTEXT,
+      }) ?? [],
     );
 
     expect(events).toEqual([

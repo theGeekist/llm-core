@@ -18,7 +18,7 @@ const retryDelay = (
   attempt: number,
 ): number => {
   const configured = step.retry?.delayMs;
-  const delay = typeof configured === "function" ? configured(error, attempt) : configured;
+  const delay = typeof configured === "function" ? configured({ error, attempt }) : configured;
   return Math.max(0, delay ?? 0);
 };
 
@@ -33,7 +33,7 @@ const mayRetry = (
     : 1;
   return (
     attempt < maxAttempts &&
-    (step.retry?.shouldRetry === undefined || step.retry.shouldRetry(error, attempt))
+    (step.retry?.shouldRetry === undefined || step.retry.shouldRetry({ error, attempt }))
   );
 };
 

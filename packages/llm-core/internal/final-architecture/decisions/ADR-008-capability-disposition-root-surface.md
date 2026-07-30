@@ -29,8 +29,9 @@ surface unresolved.
   `./evidence`, `./state`, `./agent`, `./workflow`, `./interaction`,
   `./adapters/ai-sdk`, `./adapters/ai-sdk-ui`, `./adapters/assistant-ui`,
   `./adapters/openai-chatkit`, and `./adapters/nlux-ui`.
-- The root is the minimal orchestration surface. Runtime values are
-  `createLocalAgentRunner` and `prepareAgentSpec`. Named root types are
+- The root is the minimal orchestration surface. Its sole runtime value is
+  `createLocalAgentRunner`; prepared specifications are produced only by
+  `AgentRunner.prepare()`. Named root types are
   `AgentSpec`, `PreparedAgentSpec`, `AgentRunner`, `AgentRunnerCapabilities`,
   `AgentRun`, `AgentRunRequest`, `AgentRunEvent`, `RunResult`, `MaybePromise`
   and `MaybeAsyncIterable`. Everything else is imported from an explicit

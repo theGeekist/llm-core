@@ -1,7 +1,6 @@
 export type { MaybeAsyncIterable, MaybePromise } from "../shared/maybe";
 export {
   collectStep,
-  composeK,
   isPromiseLike,
   maybeAll,
   maybeChain,

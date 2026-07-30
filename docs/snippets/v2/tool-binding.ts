@@ -48,7 +48,7 @@ const spec = defineToolSpec({
 const binding = createToolBinding({
   spec,
   argumentValidator,
-  execute: (call) => ({
+  execute: ({ call }) => ({
     toolCallId: call.toolCallId,
     status: "succeeded",
     content: [{ kind: "json", value: { hits: [] } }],

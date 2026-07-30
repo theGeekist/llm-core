@@ -19,7 +19,12 @@ export interface SchemaResolution {
 }
 
 export interface SchemaDocumentResolver {
-  resolve(schema: SchemaRef, context: InvocationContext): MaybePromise<SchemaResolution | null>;
+  resolve(input: SchemaDocumentResolveInput): MaybePromise<SchemaResolution | null>;
+}
+
+export interface SchemaDocumentResolveInput {
+  readonly schema: SchemaRef;
+  readonly context: InvocationContext;
 }
 
 export interface RegisteredSchemaDocument {
@@ -27,6 +32,12 @@ export interface RegisteredSchemaDocument {
   readonly document: JsonValue;
   readonly verifiedDigest: Digest;
   readonly [registeredSchemaDocumentBrand]: true;
+}
+
+export interface ResolveSchemaDocumentInput {
+  readonly schema: SchemaRef;
+  readonly context: InvocationContext;
+  readonly resolver: SchemaDocumentResolver;
 }
 
 const registeredDocuments = new WeakSet<object>();
@@ -90,16 +101,18 @@ const registerResolution = (
 };
 
 export const resolveSchemaDocument = (
-  schema: SchemaRef,
-  context: InvocationContext,
-  resolver: SchemaDocumentResolver,
+  input: ResolveSchemaDocumentInput,
 ): MaybePromise<RegisteredSchemaDocument> => {
+  const { schema, context, resolver } = input;
   if (!isSchemaRef(schema)) {
     throw new TypeError("Schema resolution requires a portable SchemaRef.");
   }
   return maybeMap(
     (resolution) => registerResolution(schema, resolution),
-    resolver.resolve(structuredClone(schema), structuredClone(context)),
+    resolver.resolve({
+      schema: structuredClone(schema),
+      context: structuredClone(context),
+    }),
   );
 };
 

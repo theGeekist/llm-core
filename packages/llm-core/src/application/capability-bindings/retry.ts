@@ -1,5 +1,6 @@
 import type { MaybePromise } from "#shared/maybe";
 import { isPromiseLike, maybeChain } from "#shared/maybe";
+import { hasOnlyKeys, isPortableRecord as isRecord } from "#shared/portable-data";
 import { isRegisteredRuntimeCapabilityBinding } from "./validation";
 import type { AnyRegisteredRuntimeCapabilityBinding } from "./types";
 
@@ -46,15 +47,6 @@ const RETRY_REASONS = new Set<CapabilityRetryReason>([
 const MAX_ATTEMPTS = 10;
 const MAX_DELAY_MS = 86_400_000;
 
-const isRecord = (value: unknown): value is Record<string, unknown> =>
-  typeof value === "object" &&
-  value !== null &&
-  !Array.isArray(value) &&
-  (Object.getPrototypeOf(value) === Object.prototype || Object.getPrototypeOf(value) === null);
-
-const hasExactKeys = (value: Record<string, unknown>, keys: readonly string[]): boolean =>
-  Object.keys(value).sort().join(",") === keys.toSorted().join(",");
-
 const supportedClaim = (
   binding: AnyRegisteredRuntimeCapabilityBinding,
   capabilityId: string,
@@ -89,7 +81,7 @@ const validatePolicy = <TResult>(input: ExecuteWithQualifiedRetryInput<TResult>)
   }
   if (
     !isRecord(policy) ||
-    !hasExactKeys(policy, ["maxAttempts", "delayMs", "retryOn", "guarantee"]) ||
+    !hasOnlyKeys(policy, ["maxAttempts", "delayMs", "retryOn", "guarantee"]) ||
     !Number.isSafeInteger(policy.maxAttempts) ||
     policy.maxAttempts < 1 ||
     policy.maxAttempts > MAX_ATTEMPTS ||
@@ -100,7 +92,8 @@ const validatePolicy = <TResult>(input: ExecuteWithQualifiedRetryInput<TResult>)
     policy.retryOn.length === 0 ||
     !policy.retryOn.every((reason) => RETRY_REASONS.has(reason)) ||
     new Set(policy.retryOn).size !== policy.retryOn.length ||
-    !(policy.guarantee in RETRY_GUARANTEE_CAPABILITIES)
+    typeof policy.guarantee !== "string" ||
+    !Object.hasOwn(RETRY_GUARANTEE_CAPABILITIES, policy.guarantee)
   ) {
     throw new TypeError("Retry policy must be closed, bounded and guarantee-bearing.");
   }

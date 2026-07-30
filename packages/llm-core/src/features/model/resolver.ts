@@ -8,7 +8,7 @@ import type {
   PortableImplementationId,
 } from "#contracts";
 import { deepFreeze } from "./freeze";
-import type { RegisteredModelProfile } from "./profile";
+import { isRegisteredModelProfile, type RegisteredModelProfile } from "./profile";
 import type { DeploymentRef, ModelRef, ProviderRef } from "./references";
 
 /**
@@ -91,6 +91,7 @@ export type ResolutionDiagnosticCode =
   | "selected-alias"
   | "selected-default"
   | "excluded-capability"
+  | "unregistered-profile"
   | "binding-profile-mismatch"
   | "unsupported-version-range"
   | "unproven-constraint"
@@ -295,6 +296,14 @@ const bindingEligible = (
   policy: ModelResolutionPolicy | undefined,
 ): boolean => {
   const { binding, diagnostics } = context;
+  if (!isRegisteredModelProfile(binding.profile)) {
+    diagnostics.push({
+      code: "unregistered-profile",
+      message: `binding ${binding.bindingId} references an unregistered model profile`,
+      bindingId: binding.bindingId,
+    });
+    return false;
+  }
   if (!profileMatchesBinding(binding)) {
     diagnostics.push({
       code: "binding-profile-mismatch",

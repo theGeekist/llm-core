@@ -1,5 +1,11 @@
 export { createCacheRecord, createCacheStoreAdapter } from "./cache";
-export type { CacheAdapterPolicy, CacheBackend } from "./cache";
+export type {
+  CacheAdapterPolicy,
+  CacheBackend,
+  CacheBackendReadInput,
+  CacheBackendRemoveInput,
+  CacheBackendWriteInput,
+} from "./cache";
 export {
   assertStorageKey,
   assertStorageKeys,
@@ -20,9 +26,19 @@ export {
 export type {
   CacheRecord,
   CacheStore,
+  CacheStoreDeleteInput,
+  CacheStoreGetInput,
+  CacheStoreSetInput,
   KeyValueStore,
+  KeyValueStoreDeleteManyInput,
+  KeyValueStoreGetManyInput,
+  KeyValueStoreListInput,
+  KeyValueStoreSetManyInput,
   LiveResourceWrite,
   ResourceStore,
+  ResourceStoreDeleteInput,
+  ResourceStoreReadInput,
+  ResourceStoreWriteInput,
   StorageMutationResult,
   StorageValue,
 } from "./types";

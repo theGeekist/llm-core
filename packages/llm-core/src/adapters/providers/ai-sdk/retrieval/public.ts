@@ -1,12 +1,7 @@
 import type { RerankingModelV3 } from "@ai-sdk/provider";
 import { embed, embedMany, type EmbeddingModel } from "ai";
 import { maybeMap } from "#shared/maybe";
-import type {
-  Document,
-  Embedder,
-  Reranker,
-  RerankRequest,
-} from "../../../../features/retrieval/public";
+import type { Document, Embedder, Reranker } from "../../../../features/retrieval/public";
 import { documentText, retrievalQueryText } from "../../../../features/retrieval/public";
 
 const requireText = (value: string, operation: string) => {
@@ -17,11 +12,11 @@ const requireText = (value: string, operation: string) => {
 
 export function createAiSdkEmbedder(model: EmbeddingModel): Embedder {
   return {
-    embed: ({ text }) => {
+    embed: ({ request: { text } }) => {
       requireText(text, "Embedding");
       return maybeMap((result) => result.embedding, embed({ model, value: text }));
     },
-    embedMany: ({ texts }) => {
+    embedMany: ({ request: { texts } }) => {
       if (texts.length === 0) throw new TypeError("Batch embedding requires text.");
       texts.forEach((text) => requireText(text, "Batch embedding"));
       return maybeMap((result) => result.embeddings, embedMany({ model, values: texts }));
@@ -40,7 +35,7 @@ const mapRanking = (documents: Document[], ranking: RerankResult["ranking"]) =>
 
 export function createAiSdkReranker(model: RerankingModelV3): Reranker {
   return {
-    rerank: ({ query, documents }: RerankRequest) => {
+    rerank: ({ request: { query, documents } }) => {
       if (documents.length === 0) throw new TypeError("Reranking requires documents.");
       const queryText = retrievalQueryText(query);
       requireText(queryText, "Reranking");

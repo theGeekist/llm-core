@@ -1,4 +1,4 @@
-import { createLocalAgentRunner, prepareAgentSpec } from "@geekist/llm-core";
+import { createLocalAgentRunner } from "@geekist/llm-core";
 import {
   contractVersion,
   newCoreId,
@@ -26,12 +26,12 @@ const runner = createLocalAgentRunner({
   },
 });
 
-const agent = prepareAgentSpec({
+const agent = {
   agentId: "example.agentic.echo",
   version: contractVersion("2.0.0"),
   instructions: "Return the supplied input.",
   effectRequirement: "read-only",
-});
+} as const;
 
 const prepared = await runner.prepare(agent);
 const run = await runner.start({

@@ -8,43 +8,17 @@ import {
   type ResourceRef,
   type SecretRef,
 } from "#contracts";
+import {
+  cloneFrozen as frozenClone,
+  hasOnlyKeys,
+  isPortableRecord as isPlainRecord,
+} from "#shared/portable-data";
 import type { CacheRecord, StorageValue } from "./types";
 
 const MEDIA_TYPE_PATTERN =
   // eslint-disable-next-line sonarjs/regex-complexity -- mirrors ADR-003's accepted media type syntax
   /^[A-Za-z0-9!#$&^_.+-]+\/[A-Za-z0-9!#$&^_.+-]+(?:\s*;\s*[A-Za-z0-9!#$&^_.+-]+=(?:[A-Za-z0-9!#$&^_.+-]+|"[^"]*"))*$/;
 const CANONICAL_TIMESTAMP_PATTERN = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{3})?Z$/;
-
-const isPlainRecord = (value: unknown): value is Record<string, unknown> => {
-  if (typeof value !== "object" || value === null || Array.isArray(value)) {
-    return false;
-  }
-  const prototype = Object.getPrototypeOf(value);
-  return prototype === Object.prototype || prototype === null;
-};
-
-const hasOnlyKeys = (
-  value: Record<string, unknown>,
-  required: readonly string[],
-  optional: readonly string[] = [],
-): boolean => {
-  const allowed = new Set([...required, ...optional]);
-  return (
-    required.every((key) => key in value) && Object.keys(value).every((key) => allowed.has(key))
-  );
-};
-
-const deepFreeze = <T>(value: T): T => {
-  if (value && typeof value === "object" && !Object.isFrozen(value)) {
-    Object.freeze(value);
-    for (const child of Object.values(value)) {
-      deepFreeze(child);
-    }
-  }
-  return value;
-};
-
-const frozenClone = <T>(value: T): T => deepFreeze(structuredClone(value));
 
 const SENSITIVE_KEY_STEMS = [
   "apikey",

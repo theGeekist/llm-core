@@ -4,7 +4,7 @@ import {
   maybeThen,
   maybeTry as pipelineMaybeTry,
 } from "@wpkernel/pipeline/core/async-utils";
-import type { MaybePromise, Program } from "@wpkernel/pipeline/core";
+import type { MaybePromise } from "@wpkernel/pipeline/core";
 import { bindFirst } from "./fp";
 
 type MaybeThunk<T> = { (): MaybePromise<T> };
@@ -24,59 +24,8 @@ type FoldStepInput<T, TState> = {
 };
 
 export type { MaybePromise };
-export type { Program };
 export type MaybeAsyncIterable<T> = StepSource<T> | MaybePromise<StepSource<T>>;
 export { isPromiseLike };
-
-const applyComposeK = (fns: readonly MaybeHandler<unknown, unknown>[], value: unknown) => {
-  let result: MaybePromise<unknown> = value;
-  for (let index = fns.length - 1; index >= 0; index -= 1) {
-    const fn = fns[index];
-    if (!fn) {
-      continue;
-    }
-    result = maybeThen(result, fn);
-  }
-  return result;
-};
-
-export function composeK<TIn, TOut>(
-  fn: MaybeHandler<TIn, TOut>,
-): (value: TIn) => MaybePromise<TOut>;
-export function composeK<TIn, TMid, TOut>(
-  fn1: MaybeHandler<TMid, TOut>,
-  fn2: MaybeHandler<TIn, TMid>,
-): (value: TIn) => MaybePromise<TOut>;
-export function composeK<TIn, TMid, TMid2, TOut>(
-  fn1: MaybeHandler<TMid2, TOut>,
-  fn2: MaybeHandler<TMid, TMid2>,
-  fn3: MaybeHandler<TIn, TMid>,
-): (value: TIn) => MaybePromise<TOut>;
-export function composeK<TIn, TMid, TMid2, TMid3, TOut>(
-  fn1: MaybeHandler<TMid3, TOut>,
-  fn2: MaybeHandler<TMid2, TMid3>,
-  fn3: MaybeHandler<TMid, TMid2>,
-  fn4: MaybeHandler<TIn, TMid>,
-): (value: TIn) => MaybePromise<TOut>;
-export function composeK<TIn, TMid, TMid2, TMid3, TMid4, TOut>(
-  fn1: MaybeHandler<TMid4, TOut>,
-  fn2: MaybeHandler<TMid3, TMid4>,
-  fn3: MaybeHandler<TMid2, TMid3>,
-  fn4: MaybeHandler<TMid, TMid2>,
-  fn5: MaybeHandler<TIn, TMid>,
-): (value: TIn) => MaybePromise<TOut>;
-export function composeK<TIn, TMid, TMid2, TMid3, TMid4, TMid5, TOut>(
-  fn1: MaybeHandler<TMid5, TOut>,
-  fn2: MaybeHandler<TMid4, TMid5>,
-  fn3: MaybeHandler<TMid3, TMid4>,
-  fn4: MaybeHandler<TMid2, TMid3>,
-  fn5: MaybeHandler<TMid, TMid2>,
-  fn6: MaybeHandler<TIn, TMid>,
-): (value: TIn) => MaybePromise<TOut>;
-export function composeK<S>(...fns: Program<S>[]): Program<S>;
-export function composeK(...fns: Array<MaybeHandler<unknown, unknown>>) {
-  return bindFirst(applyComposeK, fns);
-}
 
 const returnConstant = <T>(value: T) => value;
 

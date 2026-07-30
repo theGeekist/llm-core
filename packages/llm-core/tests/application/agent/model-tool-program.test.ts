@@ -3,6 +3,7 @@ import { describe, expect, test } from "bun:test";
 import {
   contractVersion,
   coreId,
+  digest,
   type ConversationId,
   type EventId,
   type InvocationId,
@@ -12,6 +13,7 @@ import {
 import {
   createLocalAgentRunner,
   createModelToolAgentProgram,
+  type DeclaredSubagentBinding,
 } from "../../../src/application/agent/public";
 import type { Model, ModelRequest } from "../../../src/features/model/public";
 import type { AgentRunner, PreparedAgentSpec } from "../../../src/features/agent/public";
@@ -20,12 +22,22 @@ import type {
   ControlledToolExecutionOutcome,
   ExecuteControlledToolInput,
 } from "../../../src/application/tool-execution/public";
-import type { ToolBinding, ToolCall, ToolId } from "../../../src/features/tooling/public";
+import {
+  createToolBinding,
+  registerToolSchema,
+  toolId,
+  type ToolBinding,
+  type ToolCall,
+} from "../../../src/features/tooling/public";
 
-const RUN_ID = coreId<RunId>("00000000-0000-4000-8000-000000000001");
+const RUN_ID = coreId<RunId>("00000000-0000-7000-8000-000000000001");
 const INVOCATION_ID = coreId<InvocationId>("00000000-0000-4000-8000-000000000002");
 const TOOL_CALL_ID = coreId<ToolCallId>("00000000-0000-4000-8000-000000000003");
 const CONVERSATION_ID = coreId<ConversationId>("00000000-0000-4000-8000-000000000004");
+const TOOL_INPUT_SCHEMA = await registerToolSchema(
+  { type: "object" },
+  { digest: () => digest("0".repeat(64)) },
+);
 
 const model = (generate: Model["generate"]): Model => ({
   profile: {} as Model["profile"],
@@ -36,13 +48,16 @@ const binding = (
   effect: ToolBinding["spec"]["effect"]["class"],
   execute: ToolBinding["execute"],
 ): ToolBinding =>
-  ({
+  createToolBinding({
     spec: {
-      id: "lookup" as ToolId,
+      id: toolId("test.lookup"),
       version: contractVersion("1.0.0"),
       description: "Lookup a value",
-      inputSchema: { document: { type: "object" } },
-      effect: { class: effect, targets: [] },
+      inputSchema: TOOL_INPUT_SCHEMA,
+      effect: {
+        class: effect,
+        targets: effect === "read-only" ? [] : [{ kind: "service", id: "test-service" }],
+      },
       execution: {
         concurrency: "shared",
         cancellation: "unsupported",
@@ -50,9 +65,9 @@ const binding = (
         retryAfterStart: "never",
       },
     },
-    validate: (call: ToolCall) => call,
+    argumentValidator: { validate: () => ({ valid: true }) },
     execute,
-  }) as unknown as ToolBinding;
+  });
 
 const runnerWith = (
   program: ReturnType<typeof createModelToolAgentProgram>,
@@ -67,7 +82,7 @@ const runnerWith = (
     identity: {
       newRunId: () => RUN_ID,
       newEventId: () =>
-        coreId<EventId>(`00000000-0000-4000-8000-${String(event++).padStart(12, "0")}`),
+        coreId<EventId>(`00000000-0000-7000-8000-${String(event++).padStart(12, "0")}`),
       now: () => "2026-07-30T00:00:00.000Z",
     },
     program,
@@ -93,6 +108,20 @@ const prepare = async (
     effectRequirement: "read-only",
   });
 
+const declaredSubagent = (
+  resolve: DeclaredSubagentBinding["resolve"],
+  declaration: DeclaredSubagentBinding["declaration"] = {
+    name: "researcher",
+    description: "Delegate focused research.",
+    parameters: { type: "object" },
+  },
+): DeclaredSubagentBinding => ({
+  declaration,
+  agentId: "researcher",
+  agentVersion: contractVersion("1.0.0"),
+  resolve,
+});
+
 const run = async (
   runner: AgentRunner,
   agent: PreparedAgentSpec,
@@ -108,10 +137,38 @@ const run = async (
   ).result();
 
 describe("model/tool agent program", () => {
+  test("rejects shaped and cloned ToolBinding forgeries before model declaration", () => {
+    let modelCalls = 0;
+    const valid = binding("read-only", () => ({
+      toolCallId: TOOL_CALL_ID,
+      status: "succeeded",
+      content: [],
+    }));
+    const generate: Model["generate"] = () => {
+      modelCalls += 1;
+      return {
+        kind: "completion",
+        content: [{ kind: "text", text: "should not run" }],
+        finishReason: "stop",
+      };
+    };
+    const forgeries = [
+      { ...valid },
+      { spec: valid.spec, validate: valid.validate, execute: valid.execute },
+    ] as ToolBinding[];
+
+    for (const forged of forgeries) {
+      expect(() =>
+        createModelToolAgentProgram({ model: model(generate), tools: [forged] }),
+      ).toThrow("Model tool programs require registered ToolBinding values.");
+    }
+    expect(modelCalls).toBe(0);
+  });
+
   test("makes createLocalAgentRunner a complete synchronous model loop", async () => {
     let observed: ModelRequest | undefined;
     const program = createModelToolAgentProgram({
-      model: model((input) => {
+      model: model(({ request: input }) => {
         observed = input;
         return {
           kind: "completion",
@@ -136,7 +193,7 @@ describe("model/tool agent program", () => {
   test("executes validated read-only tools and feeds results back to the model", async () => {
     const requests: ModelRequest[] = [];
     const calls: ToolCall[] = [];
-    const tool = binding("read-only", (call) => {
+    const tool = binding("read-only", ({ call }) => {
       calls.push(call);
       return {
         toolCallId: call.toolCallId,
@@ -146,7 +203,7 @@ describe("model/tool agent program", () => {
     });
     const program = createModelToolAgentProgram({
       tools: [tool],
-      model: model((input) => {
+      model: model(({ request: input }) => {
         requests.push(structuredClone(input));
         return requests.length === 1
           ? {
@@ -155,7 +212,7 @@ describe("model/tool agent program", () => {
                 {
                   kind: "tool-call",
                   toolCallId: TOOL_CALL_ID,
-                  name: "lookup",
+                  name: "test.lookup",
                   arguments: { key: "answer" },
                 },
               ],
@@ -191,7 +248,7 @@ describe("model/tool agent program", () => {
   test("fails meaningful effects closed when no controlled path is composed", async () => {
     let directExecutions = 0;
     let modelCalls = 0;
-    const tool = binding("external-write", (call) => {
+    const tool = binding("external-write", ({ call }) => {
       directExecutions += 1;
       return { toolCallId: call.toolCallId, status: "succeeded", content: [] };
     });
@@ -206,7 +263,7 @@ describe("model/tool agent program", () => {
                 {
                   kind: "tool-call",
                   toolCallId: TOOL_CALL_ID,
-                  name: "lookup",
+                  name: "test.lookup",
                   arguments: {},
                 },
               ],
@@ -237,7 +294,7 @@ describe("model/tool agent program", () => {
     });
     const program = createModelToolAgentProgram({
       tools: [tool],
-      controlledToolInput: (_binding, call) => ({ call }) as unknown as ExecuteControlledToolInput,
+      controlledToolInput: ({ call }) => ({ call }) as unknown as ExecuteControlledToolInput,
       model: model(() => {
         modelCalls += 1;
         return modelCalls === 1
@@ -247,7 +304,7 @@ describe("model/tool agent program", () => {
                 {
                   kind: "tool-call",
                   toolCallId: TOOL_CALL_ID,
-                  name: "lookup",
+                  name: "test.lookup",
                   arguments: { write: true },
                 },
               ],
@@ -289,12 +346,19 @@ describe("model/tool agent program", () => {
     expect(controlledExecutions).toBe(1);
   });
 
-  test("preserves child-run identity and result semantics for configured subagents", async () => {
-    const subagents: Record<string, PreparedAgentSpec> = {};
+  test("declares subagents to the model and preserves the prepared child identity", async () => {
+    const childRef: { current?: PreparedAgentSpec } = {};
     const seenInstructions: string[] = [];
+    const requests: ModelRequest[] = [];
+    const declaration = {
+      name: "researcher",
+      description: "Delegate focused research.",
+      parameters: { type: "object" },
+    };
     const program = createModelToolAgentProgram({
-      subagents,
-      model: model((input) => {
+      subagents: [declaredSubagent(() => childRef.current, declaration)],
+      model: model(({ request: input }) => {
+        requests.push(input);
         const instruction = (input.messages[0]?.content[0] as { text: string }).text;
         seenInstructions.push(instruction);
         if (
@@ -321,15 +385,151 @@ describe("model/tool agent program", () => {
         };
       }),
     });
+    declaration.description = "mutated after composition";
     const runner = runnerWith(program);
     const parent = await prepare(runner, "Delegate.", "parent");
-    subagents.researcher = await prepare(runner, "Research.", "researcher");
+    childRef.current = await prepare(runner, "Research.", "researcher");
 
     expect(await run(runner, parent)).toMatchObject({
       status: "completed",
       output: "final",
     });
+    expect(requests[0]?.tools).toEqual([
+      {
+        name: "researcher",
+        description: "Delegate focused research.",
+        parameters: { type: "object" },
+      },
+    ]);
+    expect(Object.isFrozen(requests[0]?.tools?.[0])).toBe(true);
+    expect(Object.isFrozen(requests[0]?.tools?.[0]?.parameters)).toBe(true);
     expect(seenInstructions).toEqual(["Delegate.", "Research.", "Delegate."]);
+    expect(requests[2]?.messages.at(-1)).toMatchObject({
+      role: "tool",
+      content: [
+        {
+          kind: "tool-result",
+          toolCallId: TOOL_CALL_ID,
+          result: [{ kind: "json", value: { status: "completed", runId: RUN_ID } }],
+        },
+      ],
+    });
+  });
+
+  test("never resolves or starts a child for an undeclared model-emitted name", async () => {
+    let resolverCalls = 0;
+    let modelCalls = 0;
+    const program = createModelToolAgentProgram({
+      subagents: [
+        declaredSubagent(() => {
+          resolverCalls += 1;
+          return undefined;
+        }),
+      ],
+      model: model(() => {
+        modelCalls += 1;
+        return modelCalls === 1
+          ? {
+              kind: "completion",
+              content: [
+                {
+                  kind: "tool-call",
+                  toolCallId: TOOL_CALL_ID,
+                  name: "intruder",
+                  arguments: {},
+                },
+              ],
+              finishReason: "tool-calls",
+            }
+          : {
+              kind: "completion",
+              content: [{ kind: "text", text: "closed" }],
+              finishReason: "stop",
+            };
+      }),
+    });
+    const runner = runnerWith(program);
+    const parent = await prepare(runner, "Do not run undeclared children.", "parent");
+
+    expect(await run(runner, parent)).toMatchObject({ status: "completed", output: "closed" });
+    expect(resolverCalls).toBe(0);
+  });
+
+  test("rejects duplicate and colliding subagent declarations at composition", () => {
+    const subagent = declaredSubagent(() => undefined);
+
+    expect(() =>
+      createModelToolAgentProgram({
+        model: model(() => {
+          throw new Error("unreachable");
+        }),
+        subagents: [subagent, declaredSubagent(() => undefined)],
+      }),
+    ).toThrow("unique tool declaration names");
+
+    expect(() =>
+      createModelToolAgentProgram({
+        model: model(() => {
+          throw new Error("unreachable");
+        }),
+        tools: [
+          binding("read-only", () => {
+            throw new Error("unreachable");
+          }),
+        ],
+        subagents: [
+          declaredSubagent(() => undefined, {
+            name: "test.lookup",
+            description: "Collides with the tool.",
+          }),
+        ],
+      }),
+    ).toThrow("cannot use the same name");
+  });
+
+  test("fails closed when a declared subagent resolver returns a forged spec", async () => {
+    let modelCalls = 0;
+    const program = createModelToolAgentProgram({
+      subagents: [
+        declaredSubagent(
+          () =>
+            ({
+              agentId: "researcher",
+              version: contractVersion("1.0.0"),
+              instructions: "Forged.",
+              effectRequirement: "read-only",
+            }) as PreparedAgentSpec,
+        ),
+      ],
+      model: model(() => {
+        modelCalls += 1;
+        return modelCalls === 1
+          ? {
+              kind: "completion",
+              content: [
+                {
+                  kind: "tool-call",
+                  toolCallId: TOOL_CALL_ID,
+                  name: "researcher",
+                  arguments: {},
+                },
+              ],
+              finishReason: "tool-calls",
+            }
+          : {
+              kind: "completion",
+              content: [{ kind: "text", text: "forgery rejected" }],
+              finishReason: "stop",
+            };
+      }),
+    });
+    const runner = runnerWith(program);
+    const parent = await prepare(runner, "Delegate safely.", "parent");
+
+    expect(await run(runner, parent)).toMatchObject({
+      status: "completed",
+      output: "forgery rejected",
+    });
   });
 
   test("honours the invocation model-call budget", async () => {
@@ -378,7 +578,7 @@ describe("model/tool agent program", () => {
           },
         ],
       }),
-      append: (_context, _conversationId, turn) => {
+      append: ({ turn }) => {
         appended.push(turn);
         return true;
       },
@@ -386,7 +586,7 @@ describe("model/tool agent program", () => {
     };
     const program = createModelToolAgentProgram({
       conversation,
-      model: model((input) => {
+      model: model(({ request: input }) => {
         observed = input;
         return {
           kind: "completion",
@@ -508,7 +708,7 @@ describe("model/tool agent program", () => {
 
   test("rejects sensitive tool arguments before executing the tool", async () => {
     let executions = 0;
-    const tool = binding("read-only", (call) => {
+    const tool = binding("read-only", ({ call }) => {
       executions += 1;
       return { toolCallId: call.toolCallId, status: "succeeded", content: [] };
     });
@@ -521,7 +721,7 @@ describe("model/tool agent program", () => {
             {
               kind: "tool-call",
               toolCallId: TOOL_CALL_ID,
-              name: "lookup",
+              name: "test.lookup",
               arguments: { accessToken: "secret" },
             },
           ],
@@ -540,7 +740,7 @@ describe("model/tool agent program", () => {
 
   test("rejects sensitive tool results before another model call", async () => {
     let modelCalls = 0;
-    const tool = binding("read-only", (call) => ({
+    const tool = binding("read-only", ({ call }) => ({
       toolCallId: call.toolCallId,
       status: "succeeded",
       content: [{ kind: "json", value: { credentials: "secret" } }],
@@ -556,7 +756,7 @@ describe("model/tool agent program", () => {
               {
                 kind: "tool-call",
                 toolCallId: TOOL_CALL_ID,
-                name: "lookup",
+                name: "test.lookup",
                 arguments: { key: "safe" },
               },
             ],

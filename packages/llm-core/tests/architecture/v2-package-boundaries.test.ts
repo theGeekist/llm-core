@@ -39,11 +39,22 @@ describe("v2 package boundaries", () => {
     expect(violations).toEqual([]);
   });
 
-  test("new architecture fronts do not depend on adapter-owned contracts", () => {
-    const violations = scannedRoots
-      .flatMap(walk)
-      .filter((file) => /#adapters(?:\/types)?|adapters\/types/.test(readFileSync(file, "utf8")))
-      .map((file) => relative(root, file));
+  test("keeps private source aliases limited to the two shared dependency fronts", () => {
+    const manifest = JSON.parse(readFileSync(resolve(root, "package.json"), "utf8")) as {
+      imports?: Record<string, string>;
+    };
+    expect(Object.keys(manifest.imports ?? {}).sort()).toEqual(["#contracts", "#shared/*"]);
+
+    const violations = walk(sourceRoot).flatMap((file) =>
+      importsOf(readFileSync(file, "utf8"))
+        .filter(
+          (specifier) =>
+            specifier.startsWith("#") &&
+            specifier !== "#contracts" &&
+            !specifier.startsWith("#shared/"),
+        )
+        .map((specifier) => `${relative(root, file)} -> ${specifier}`),
+    );
     expect(violations).toEqual([]);
   });
 });

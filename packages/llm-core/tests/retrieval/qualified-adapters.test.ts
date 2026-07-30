@@ -109,10 +109,10 @@ describe("qualified retrieval adapters", () => {
     } as unknown as RerankingModelV3;
     const reranker = createAiSdkReranker(model);
     const documents = [textDocument("one"), textDocument("two")];
-    const ranked = await reranker.rerank(
-      { query: textRetrievalQuery("order"), documents },
-      { invocationId: "0190bd0c-0000-7000-8000-000000001412" as never },
-    );
+    const ranked = await reranker.rerank({
+      request: { query: textRetrievalQuery("order"), documents },
+      context: { invocationId: "0190bd0c-0000-7000-8000-000000001412" as never },
+    });
 
     expect(ranked.map(documentText)).toEqual(["two", "one"]);
     expect(ranked.map((document) => document.score)).toEqual([0.9, 0.2]);

@@ -7,6 +7,7 @@ import {
   isTraceId,
   type InvocationContext,
 } from "#contracts";
+import { cloneFrozen, hasOnlyKeys, isPortableRecord as isRecord } from "#shared/portable-data";
 import {
   createDurableExecutionHandle,
   createProviderSessionRef,
@@ -45,15 +46,6 @@ const BUDGET_KEYS = new Set([
   "maxCost",
 ]);
 
-const isRecord = (value: unknown): value is Record<string, unknown> =>
-  typeof value === "object" &&
-  value !== null &&
-  !Array.isArray(value) &&
-  (Object.getPrototypeOf(value) === Object.prototype || Object.getPrototypeOf(value) === null);
-
-const hasOnlyKeys = (value: Record<string, unknown>, allowed: ReadonlySet<string>): boolean =>
-  Object.keys(value).every((key) => allowed.has(key));
-
 const exactRef = (value: unknown, key: string): boolean =>
   isRecord(value) &&
   Object.keys(value).length === 1 &&
@@ -78,7 +70,7 @@ const isInvocationLimit = (value: unknown): boolean =>
 
 const isBudget = (value: unknown): boolean =>
   isRecord(value) &&
-  hasOnlyKeys(value, BUDGET_KEYS) &&
+  hasOnlyKeys(value, [], [...BUDGET_KEYS]) &&
   Object.entries(value).every(([key, entry]) =>
     key === "maxCost" ? isCostLimit(entry) : isInvocationLimit(entry),
   );
@@ -104,7 +96,7 @@ const hasValidAuthority = (value: InvocationContext): boolean =>
 const hasValidTrace = (value: InvocationContext["trace"]): boolean =>
   value === undefined ||
   (isRecord(value) &&
-    hasOnlyKeys(value, new Set(["traceId", "spanId", "traceFlags"])) &&
+    hasOnlyKeys(value, ["traceId", "spanId"], ["traceFlags"]) &&
     isTraceId(value.traceId) &&
     isSpanId(value.spanId) &&
     (value.traceFlags === undefined || isTraceFlags(value.traceFlags)));
@@ -112,22 +104,16 @@ const hasValidTrace = (value: InvocationContext["trace"]): boolean =>
 const isClosedInvocationContext = (value: unknown): value is InvocationContext =>
   isRecord(value) &&
   isJsonValue(value) &&
-  hasOnlyKeys(value, INVOCATION_KEYS) &&
+  hasOnlyKeys(
+    value,
+    ["invocationId"],
+    [...INVOCATION_KEYS].filter((key) => key !== "invocationId"),
+  ) &&
   hasValidIdentity(value as unknown as InvocationContext) &&
   hasValidAuthority(value as unknown as InvocationContext) &&
   hasValidTrace((value as unknown as InvocationContext).trace) &&
   (value.deadlineAt === undefined || isCanonicalTimestamp(value.deadlineAt)) &&
   (value.budget === undefined || isBudget(value.budget));
-
-const deepFreeze = <T>(value: T): T => {
-  if (value && typeof value === "object" && !Object.isFrozen(value)) {
-    Object.freeze(value);
-    for (const child of Object.values(value)) {
-      deepFreeze(child);
-    }
-  }
-  return value;
-};
 
 export type CapabilityInvocationState =
   | { readonly kind: "active" }
@@ -252,14 +238,14 @@ export const registerCapabilityInvocation = (input: {
   const candidate: unknown = input;
   if (
     !isRecord(candidate) ||
-    !hasOnlyKeys(candidate, new Set(["invocationContext", "state"])) ||
+    !hasOnlyKeys(candidate, ["invocationContext"], ["state"]) ||
     !Object.hasOwn(candidate, "invocationContext") ||
     !isClosedInvocationContext(candidate.invocationContext)
   ) {
     throw new TypeError("Capability invocation requires a closed InvocationContext.");
   }
   return Object.freeze({
-    invocationContext: deepFreeze(structuredClone(candidate.invocationContext)),
+    invocationContext: cloneFrozen(candidate.invocationContext),
     state: registerState(candidate.state as CapabilityInvocationState | undefined),
   });
 };

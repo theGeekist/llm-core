@@ -11,7 +11,9 @@ strict: arguments are checked without coercion, unknown fields can be rejected,
 and the validator cannot replace the caller's normalized input.
 
 `createToolBinding` joins the portable specification to a live executor. The
-binding validates every call before invoking that executor.
+exact frozen facade it returns is runtime-registered and validates every call
+before invoking that executor. Shaped objects, casts, spreads, and clones do not
+carry that provenance and are rejected before controlled side effects.
 
 ## Actions and effects
 

@@ -59,10 +59,14 @@ describe("tool schema registration", () => {
     let called = false;
 
     expect(() =>
-      validateToolArguments(forged, "value", {
-        validate: () => {
-          called = true;
-          return { valid: true };
+      validateToolArguments({
+        schema: forged,
+        arguments: "value",
+        port: {
+          validate: () => {
+            called = true;
+            return { valid: true };
+          },
         },
       }),
     ).toThrow(TypeError);

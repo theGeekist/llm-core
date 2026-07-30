@@ -37,22 +37,22 @@ import {
 } from "../../state/helpers";
 
 const ACTION_DOCUMENT = {
-    contractProfile: "llm-core.action/v1",
-    tool: {
-      id: "test.safe-action",
-      version: "1.0.0",
-      inputSchemaDigest: { algorithm: "sha-256", value: "a".repeat(64) },
-    },
-    effect: { class: "external-write", targets: [{ kind: "service", id: "test-service" }] },
-    authority: {},
-    execution: {
-      concurrency: "exclusive",
-      cancellation: "provider-acknowledged",
-      idempotency: "required",
-      retryAfterStart: "never",
-    },
-    arguments: { safe: true },
-  } as unknown as BoundAction["document"];
+  contractProfile: "llm-core.action/v1",
+  tool: {
+    id: "test.safe-action",
+    version: "1.0.0",
+    inputSchemaDigest: { algorithm: "sha-256", value: "a".repeat(64) },
+  },
+  effect: { class: "external-write", targets: [{ kind: "service", id: "test-service" }] },
+  authority: {},
+  execution: {
+    concurrency: "exclusive",
+    cancellation: "provider-acknowledged",
+    idempotency: "required",
+    retryAfterStart: "never",
+  },
+  arguments: { safe: true },
+} as unknown as BoundAction["document"];
 
 const ACTION: BoundAction = {
   document: ACTION_DOCUMENT,
@@ -127,9 +127,7 @@ class MemoryResumeJournal implements WorkflowResumeJournal {
     };
   }
 
-  recordEffectCompleted(
-    _input: Parameters<WorkflowResumeJournal["recordEffectCompleted"]>[0],
-  ) {
+  recordEffectCompleted(_input: Parameters<WorkflowResumeJournal["recordEffectCompleted"]>[0]) {
     this.events.push("effect:completed");
     return this.persistEffect;
   }
@@ -162,7 +160,7 @@ const passiveStep = (
 });
 
 const meaningfulStep = (
-  execute: MeaningfulWorkflowStep["execute"] = (_state, _action, started) => ({
+  execute: MeaningfulWorkflowStep["execute"] = ({ started }) => ({
     state: { applied: true },
     recordedEffect: { ...started, status: "completed" },
   }),
@@ -285,7 +283,7 @@ describe("intervention workflow resume", () => {
     const outcome = await run({
       journal,
       steps: [
-        meaningfulStep((_state, action, started) => {
+        meaningfulStep(({ action, started }) => {
           journal.events.push("effect:invoke");
           expect(action).toBe(ACTION);
           expect(started.status).toBe("started");
@@ -366,7 +364,7 @@ describe("intervention workflow resume", () => {
     const outcome = await run({
       journal,
       steps: [
-        meaningfulStep((_state, _action, started) => {
+        meaningfulStep(({ started }) => {
           executions += 1;
           return { state: {}, recordedEffect: { ...started, status: "completed" } };
         }),
@@ -394,9 +392,9 @@ describe("intervention workflow resume", () => {
       reason: "intervention-already-resolved",
     });
     const request = nextIntervention();
-    expect(
-      (await run({ journal, request, choice: nextDecision(request) })).status,
-    ).toBe("completed");
+    expect((await run({ journal, request, choice: nextDecision(request) })).status).toBe(
+      "completed",
+    );
   });
 
   test("validates compatibility before authentication, claim or execution", async () => {

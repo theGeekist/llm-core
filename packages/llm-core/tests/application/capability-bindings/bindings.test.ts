@@ -40,7 +40,12 @@ describe("runtime capability binding registration", () => {
     expect(Object.isFrozen(registered.descriptor)).toBe(true);
     expect(Object.isFrozen(retriever)).toBe(false);
     expect(Object.isFrozen(registered.port)).toBe(true);
-    expect(registered.port.retrieve({ query: { content: [] } }, {} as never)).toEqual({
+    expect(
+      registered.port.retrieve({
+        request: { query: { content: [] } },
+        context: {} as never,
+      }),
+    ).toEqual({
       documents: [],
     });
   });
@@ -146,7 +151,9 @@ describe("runtime capability binding registration", () => {
     modelLike.generate = () => {
       throw new Error("mutated");
     };
-    expect(registered.port.generate({} as never, {} as never) as unknown).toEqual({
+    expect(
+      registered.port.generate({ request: {} as never, context: {} as never }) as unknown,
+    ).toEqual({
       content: [],
     });
   });

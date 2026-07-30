@@ -57,7 +57,7 @@ export const createLlamaIndexKeyValueStore = ({
   collection,
 }: CreateLlamaIndexKeyValueStoreInput): KeyValueStore => {
   const adapter: KeyValueStore = {
-    list: (_context, prefix) =>
+    list: ({ prefix }) =>
       maybeMap(
         (values) =>
           Object.entries(values)
@@ -66,14 +66,14 @@ export const createLlamaIndexKeyValueStore = ({
             .filter((key) => prefix === undefined || key.startsWith(prefix)),
         store.getAll(collection),
       ),
-    getMany: (_context, keys) => {
+    getMany: ({ keys }) => {
       assertStorageKeys(keys);
       return maybeMap(
         (values) => values.map(readStorageEnvelope),
         maybeAll(keys.map((key) => store.get(key, collection))),
       );
     },
-    setMany: (_context, entries) => {
+    setMany: ({ entries }) => {
       if (entries.length === 0) {
         throw new TypeError("Storage entry collections must be non-empty.");
       }
@@ -84,7 +84,7 @@ export const createLlamaIndexKeyValueStore = ({
       const writes = staged.map(([key, value]) => store.put(key, value, collection));
       return maybeMap(() => true, maybeAll(writes));
     },
-    deleteMany: (_context, keys) => {
+    deleteMany: ({ keys }) => {
       assertStorageKeys(keys);
       return maybeMap(
         (results) => results.every(Boolean),
@@ -100,7 +100,7 @@ const nodeEnvelope = (node: BaseNode | null | undefined): StorageValue | null =>
 
 export const createLlamaIndexDocumentKeyValueStore = (store: BaseDocumentStore): KeyValueStore => {
   const adapter: KeyValueStore = {
-    list: (_context, prefix) =>
+    list: ({ prefix }) =>
       maybeMap(
         (documents) =>
           Object.entries(documents)
@@ -109,14 +109,14 @@ export const createLlamaIndexDocumentKeyValueStore = (store: BaseDocumentStore):
             .filter((key) => prefix === undefined || key.startsWith(prefix)),
         store.docs(),
       ),
-    getMany: (_context, keys) => {
+    getMany: ({ keys }) => {
       assertStorageKeys(keys);
       return maybeMap(
         (documents) => documents.map(nodeEnvelope),
         maybeAll(keys.map((key) => store.getDocument(key, false))),
       );
     },
-    setMany: (_context, entries) => {
+    setMany: ({ entries }) => {
       if (entries.length === 0) {
         throw new TypeError("Storage entry collections must be non-empty.");
       }
@@ -130,7 +130,7 @@ export const createLlamaIndexDocumentKeyValueStore = (store: BaseDocumentStore):
       });
       return maybeMap(() => true, store.addDocuments(documents, true));
     },
-    deleteMany: (_context, keys) => {
+    deleteMany: ({ keys }) => {
       assertStorageKeys(keys);
       return maybeMap(() => true, maybeAll(keys.map((key) => store.deleteDocument(key, false))));
     },

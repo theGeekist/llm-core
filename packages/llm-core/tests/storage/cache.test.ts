@@ -13,23 +13,23 @@ describe("cache store policy", () => {
     const values = new Map<string, CacheRecord>();
     const cache = createCacheStoreAdapter<CacheRecord, CacheRecord>({
       backend: {
-        read: (_context, key) => values.get(key),
-        write: (_context, { key, value }) => {
+        read: ({ key }) => values.get(key),
+        write: ({ key, value }) => {
           values.set(key, value);
         },
-        remove: (_context, key) => values.delete(key),
+        remove: ({ key }) => values.delete(key),
       },
       decode: (value) => value ?? null,
-      encode: (_key, value, ttlMs) => createCacheRecord(value, ttlMs, () => now),
+      encode: ({ value, ttlMs }) => createCacheRecord(value, ttlMs, () => now),
       now: () => now,
     });
     const value = jsonStorageValue({ cached: true });
 
-    expect(cache.set(context, { key: "entry", value, ttlMs: 10 })).toBe(true);
-    expect(cache.get(context, "entry")).toEqual(value);
+    expect(cache.set({ context, key: "entry", value, ttlMs: 10 })).toBe(true);
+    expect(cache.get({ context, key: "entry" })).toEqual(value);
     now += 10;
-    expect(cache.get(context, "entry")).toBeNull();
-    expect(cache.delete(context, "missing")).toBe(false);
+    expect(cache.get({ context, key: "entry" })).toBeNull();
+    expect(cache.delete({ context, key: "missing" })).toBe(false);
   });
 
   test("preserves async behavior and unknown deletion as null", async () => {
@@ -41,12 +41,12 @@ describe("cache store policy", () => {
         remove: async () => null,
       },
       decode: (entry) => entry ?? null,
-      encode: (_key, entry) => createCacheRecord(entry),
+      encode: ({ value: entry }) => createCacheRecord(entry),
     });
 
-    await expect(cache.get(context, "async")).resolves.toEqual(value);
-    await expect(cache.set(context, { key: "async", value })).resolves.toBe(true);
-    await expect(cache.delete(context, "async")).resolves.toBeNull();
+    await expect(cache.get({ context, key: "async" })).resolves.toEqual(value);
+    await expect(cache.set({ context, key: "async", value })).resolves.toBe(true);
+    await expect(cache.delete({ context, key: "async" })).resolves.toBeNull();
   });
 
   test("expires zero TTL at the equality boundary", () => {
@@ -55,22 +55,22 @@ describe("cache store policy", () => {
     let removals = 0;
     const cache = createCacheStoreAdapter<CacheRecord, CacheRecord>({
       backend: {
-        read: (_context, key) => values.get(key),
-        write: (_context, { key, value }) => void values.set(key, value),
-        remove: (_context, key) => {
+        read: ({ key }) => values.get(key),
+        write: ({ key, value }) => void values.set(key, value),
+        remove: ({ key }) => {
           removals += 1;
           return values.delete(key);
         },
       },
       decode: (entry) => entry ?? null,
-      encode: (_key, value, ttlMs) => createCacheRecord(value, ttlMs, () => now),
+      encode: ({ value, ttlMs }) => createCacheRecord(value, ttlMs, () => now),
       now: () => now,
     });
 
-    expect(cache.set(context, { key: "zero", value: jsonStorageValue("value"), ttlMs: 0 })).toBe(
+    expect(cache.set({ context, key: "zero", value: jsonStorageValue("value"), ttlMs: 0 })).toBe(
       true,
     );
-    expect(cache.get(context, "zero")).toBeNull();
+    expect(cache.get({ context, key: "zero" })).toBeNull();
     expect(removals).toBe(1);
   });
 
@@ -86,12 +86,12 @@ describe("cache store policy", () => {
         remove: () => undefined,
       },
       decode: () => null,
-      encode: (_key, value) => {
+      encode: ({ value }) => {
         encodes += 1;
         return createCacheRecord(value);
       },
     });
-    expect(() => cache.get(context, "")).toThrow();
+    expect(() => cache.get({ context, key: "" })).toThrow();
     const invalidRuntimeTtls: unknown[] = [
       null,
       Number.NaN,
@@ -103,7 +103,8 @@ describe("cache store policy", () => {
     ];
     for (const ttlMs of invalidRuntimeTtls) {
       expect(() =>
-        cache.set(context, {
+        cache.set({
+          context,
           key: "key",
           value: jsonStorageValue(null),
           ttlMs: ttlMs as never,
@@ -121,13 +122,13 @@ describe("cache store policy", () => {
           remove: () => undefined,
         },
         decode: () => null,
-        encode: (_key, value) => {
+        encode: ({ value }) => {
           encodes += 1;
           return createCacheRecord(value);
         },
         resolveTtl: () => resolvedTtl,
       });
-      expect(() => resolved.set(context, { key: "key", value: jsonStorageValue(null) })).toThrow();
+      expect(() => resolved.set({ context, key: "key", value: jsonStorageValue(null) })).toThrow();
     }
     expect({ encodes, writes }).toEqual({ encodes: 0, writes: 0 });
   });

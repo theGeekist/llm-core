@@ -1,11 +1,10 @@
 import { contractVersion, digest, newCoreId } from "#contracts";
-import type { EvidenceId, InvocationContext, ResourceId, SupportedCapabilityClaim } from "#contracts";
+import type { EvidenceId, ResourceId, SupportedCapabilityClaim } from "#contracts";
 import type { ModelContentPart, ModelMessage } from "./content";
 import type { Model } from "./model";
 import { registerModelProfile } from "./profile";
 import type { ModelProfile, RegisteredModelProfile } from "./profile";
 import { deploymentRef, modelProfileId, modelRef, providerRef } from "./references";
-import type { ModelRequest } from "./request";
 import type { ModelResponse, ModelUsage } from "./response";
 
 /**
@@ -97,11 +96,9 @@ const usageFor = (inputChars: number, outputChars: number): ModelUsage => ({
 });
 
 /** Create the builtin echo model. Pure and deterministic given its input. */
-export const createBuiltinModel = (
-  profile: ModelProfile = createBuiltinModelProfile(),
-): Model => ({
+export const createBuiltinModel = (profile: ModelProfile = createBuiltinModelProfile()): Model => ({
   profile,
-  generate(request: ModelRequest, _context: InvocationContext): ModelResponse {
+  generate({ request }): ModelResponse {
     const text = lastUserText(request.messages);
     const usage = usageFor(countText(request.messages), text.length);
     const metadata = { provider: profile.provider };

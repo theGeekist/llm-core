@@ -5,6 +5,7 @@ import {
   type BoundAction,
 } from "../../features/tooling/public";
 import {
+  authenticateIntervention,
   checkResumeCompatibility,
   isRegisteredResumableCheckpoint,
   resolveIntervention,
@@ -101,15 +102,11 @@ const verifyAction = async (
 };
 
 const authenticateDecision = async (input: ResumeInterventionWorkflowInput): Promise<boolean> => {
-  try {
-    const result = await input.authentication.verify(input.intervention, input.decision);
-    return (
-      result.status === "authenticated" &&
-      result.principal.principalId === input.decision.actor.principalId
-    );
-  } catch {
-    return false;
-  }
+  return authenticateIntervention({
+    authentication: input.authentication,
+    request: input.intervention,
+    decision: input.decision,
+  });
 };
 
 const shouldClaimCheckpoint = (resolution: InterventionResolution): boolean =>
@@ -117,9 +114,7 @@ const shouldClaimCheckpoint = (resolution: InterventionResolution): boolean =>
   resolution.status === "denied" ||
   resolution.status === "cancelled";
 
-const resolveDecision = (
-  input: ResumeInterventionWorkflowInput,
-): InterventionResolution | null => {
+const resolveDecision = (input: ResumeInterventionWorkflowInput): InterventionResolution | null => {
   try {
     return resolveIntervention(input.intervention, input.decision, input.clock.now());
   } catch {
@@ -208,7 +203,7 @@ const safelyQuarantine = async (input: {
   workflow: ResumeInterventionWorkflowInput;
   decision: WorkflowDecisionToken;
   claim?: WorkflowCheckpointClaim;
-  reason: Parameters<ResumeInterventionWorkflowInput["journal"]["quarantine"]>[0]["reason"],
+  reason: Parameters<ResumeInterventionWorkflowInput["journal"]["quarantine"]>[0]["reason"];
 }): Promise<void> => {
   try {
     await input.workflow.journal.quarantine({
@@ -251,9 +246,7 @@ const checkpointCommit = (
   disposition: outcome.status,
   state: outcome.status === "completed" ? outcome.state : input.checkpoint.state,
   completedStepIds:
-    outcome.status === "completed"
-      ? outcome.completedStepIds
-      : input.checkpoint.completedStepIds,
+    outcome.status === "completed" ? outcome.completedStepIds : input.checkpoint.completedStepIds,
   recordedEffects:
     outcome.status === "completed" ? outcome.recordedEffects : input.checkpoint.recordedEffects,
 });
@@ -262,7 +255,7 @@ const completeClaimedCheckpoint = async (input: {
   workflow: ResumeInterventionWorkflowInput;
   decision: WorkflowDecisionToken;
   claim: WorkflowCheckpointClaim;
-  outcome: Extract<WorkflowResumeOutcome, { status: "completed" | "denied" | "cancelled" }>,
+  outcome: Extract<WorkflowResumeOutcome, { status: "completed" | "denied" | "cancelled" }>;
 }): Promise<WorkflowResumeOutcome> => {
   try {
     if (

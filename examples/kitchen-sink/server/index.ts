@@ -1,4 +1,4 @@
-import { createLocalAgentRunner, prepareAgentSpec } from "@geekist/llm-core";
+import { createLocalAgentRunner } from "@geekist/llm-core";
 import {
   contractVersion,
   newCoreId,
@@ -26,14 +26,12 @@ const runner = createLocalAgentRunner({
   },
 });
 
-const prepared = await runner.prepare(
-  prepareAgentSpec({
-    agentId: "example.kitchen-sink",
-    version: contractVersion("2.0.0"),
-    instructions: "Return a portable result.",
-    effectRequirement: "read-only",
-  }),
-);
+const prepared = await runner.prepare({
+  agentId: "example.kitchen-sink",
+  version: contractVersion("2.0.0"),
+  instructions: "Return a portable result.",
+  effectRequirement: "read-only",
+});
 const run = await runner.start({
   agent: prepared,
   invocationContext: {

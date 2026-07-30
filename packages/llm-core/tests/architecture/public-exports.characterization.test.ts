@@ -8,15 +8,20 @@ import * as openaiChatkit from "../../src/adapters/openai-chatkit/index";
 import * as nluxUi from "../../src/adapters/nlux-ui/index";
 import * as agent from "../../src/agent/index";
 import * as control from "../../src/control/index";
+import * as functional from "../../src/functional/index";
 import type {
   CapabilityBindingCatalog,
   CapabilityBindingResolutionOutcome,
   CapabilityBindingResolutionRequest,
   CacheStore,
+  CacheStoreGetInput,
+  ConversationAppendInput,
   ConversationStore,
   Indexer,
+  IndexerIndexInput,
   RegisteredRuntimeCapabilityBinding,
   Retriever,
+  RetrieverRetrieveInput,
   RuntimeCapabilityBinding,
 } from "../../src/agent/index";
 import type {
@@ -56,16 +61,37 @@ type _CompositionSurfaceTypes = [
   RuntimeCapabilityBinding<"retriever">,
   RegisteredRuntimeCapabilityBinding<"retriever">,
   Retriever,
+  RetrieverRetrieveInput,
   Indexer,
+  IndexerIndexInput,
   CacheStore,
+  CacheStoreGetInput,
   ConversationStore,
+  ConversationAppendInput,
   ExecuteControlledToolInput,
   ControlledToolExecutionOutcome,
 ];
 
 describe("ADR-008 curated exports", () => {
   test("keeps the root minimal", () => {
-    expect(Object.keys(root).sort()).toEqual(["createLocalAgentRunner", "prepareAgentSpec"]);
+    expect(Object.keys(root).sort()).toEqual(["createLocalAgentRunner"]);
+  });
+
+  test("publishes only the used sync-preserving functional helpers", () => {
+    expect(Object.keys(functional).sort()).toEqual([
+      "bindFirst",
+      "collectStep",
+      "compose",
+      "isPromiseLike",
+      "maybeAll",
+      "maybeChain",
+      "maybeMap",
+      "maybeMapOr",
+      "maybeTap",
+      "maybeToStep",
+      "maybeTry",
+      "toUndefined",
+    ]);
   });
 
   test("publishes only the v2 AI SDK provider front", () => {
@@ -76,6 +102,7 @@ describe("ADR-008 curated exports", () => {
       "createAiSdk7Model",
       "createAiSdkEmbedder",
       "createAiSdkReranker",
+      "createInMemoryAiSdk7ToolCallCorrelationStore",
       "fromAiSdkImageModel",
       "fromAiSdkSpeechModel",
       "fromAiSdkTranscriptionModel",
@@ -99,6 +126,7 @@ describe("ADR-008 curated exports", () => {
   });
 
   test("publishes runner composition through the agent front", () => {
+    expect(agent).not.toHaveProperty("createPreparedAgentSpec");
     for (const name of [
       "createCapabilityBindingCatalog",
       "capabilityIdForPort",

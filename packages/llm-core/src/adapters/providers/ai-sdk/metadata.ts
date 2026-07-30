@@ -20,14 +20,13 @@ export const AI_SDK7_SEMANTIC_LOSS = Object.freeze([
   "media-ref content requires composition to resolve it before invocation",
   "provider warning text is redacted to a stable generic message",
   "stream approval/native metadata has no field on the frozen ModelStreamEvent contract",
-  "ModelError has no cancellation code, so AI SDK aborts map to timeout",
   "generated files and sources have no lossless frozen ModelContentPart projection",
   "multipart JSON tool results use application/json file parts because AI SDK content output has no JSON part",
 ]);
 
-export const toModelUsage = (usage?: LanguageModelUsage): import(
-  "../../../features/model/public"
-).ModelUsage | undefined =>
+export const toModelUsage = (
+  usage?: LanguageModelUsage,
+): import("../../../features/model/public").ModelUsage | undefined =>
   usage
     ? {
         inputTokens: usage.inputTokens,

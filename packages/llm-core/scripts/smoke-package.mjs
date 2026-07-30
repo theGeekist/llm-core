@@ -209,10 +209,10 @@ try {
   writeFileSync(
     join(consumer, "consumer.ts"),
     [
-      'import { createLocalAgentRunner, prepareAgentSpec } from "@geekist/llm-core";',
+      'import { createLocalAgentRunner } from "@geekist/llm-core";',
       'import type { AgentSpec, PreparedAgentSpec, AgentRunner, AgentRunnerCapabilities, AgentRun, AgentRunRequest, AgentRunEvent, RunResult, MaybePromise, MaybeAsyncIterable } from "@geekist/llm-core";',
       'import { createCapabilityBindingCatalog, capabilityIdForPort, conversationId, jsonStorageValue, textDocument, textRetrievalQuery } from "@geekist/llm-core/agent";',
-      'import type { CapabilityBindingCatalog, CapabilityBindingResolutionRequest, CapabilityBindingResolutionOutcome, RuntimeCapabilityBinding, RegisteredRuntimeCapabilityBinding, Retriever, Indexer, CacheStore, ConversationStore } from "@geekist/llm-core/agent";',
+      'import type { CapabilityBindingCatalog, CapabilityBindingResolutionRequest, CapabilityBindingResolutionOutcome, RuntimeCapabilityBinding, RegisteredRuntimeCapabilityBinding, Retriever, RetrieverRetrieveInput, Indexer, IndexerIndexInput, CacheStore, CacheStoreGetInput, ConversationStore, ConversationAppendInput } from "@geekist/llm-core/agent";',
       'import { executeControlledTool } from "@geekist/llm-core/control";',
       'import type { ExecuteControlledToolInput, ControlledToolExecutionOutcome } from "@geekist/llm-core/control";',
       'import type { ConversationSessionStore, InteractionSession, InteractionSessionIdentityPort } from "@geekist/llm-core/interaction";',
@@ -232,7 +232,7 @@ try {
         .map(
           (specifier, index) => `import * as surface${index} from ${JSON.stringify(specifier)};`,
         ),
-      "void createLocalAgentRunner; void prepareAgentSpec;",
+      "void createLocalAgentRunner;",
       "void createCapabilityBindingCatalog; void capabilityIdForPort; void conversationId; void jsonStorageValue; void textDocument; void textRetrievalQuery;",
       "void executeControlledTool;",
       "void createContextEntry; void createContextManifest;",
@@ -240,7 +240,7 @@ try {
       "void createEvaluationCase; void createEvaluationComposition; void evaluationEvaluatorId;",
       "type RootTypes = [AgentSpec, PreparedAgentSpec, AgentRunner, AgentRunnerCapabilities, AgentRun, AgentRunRequest, AgentRunEvent, RunResult, MaybePromise<unknown>, MaybeAsyncIterable<unknown>];",
       "declare const rootTypes: RootTypes; void rootTypes;",
-      'type AgentCompositionTypes = [CapabilityBindingCatalog, CapabilityBindingResolutionRequest, CapabilityBindingResolutionOutcome, RuntimeCapabilityBinding<"retriever">, RegisteredRuntimeCapabilityBinding<"retriever">, Retriever, Indexer, CacheStore, ConversationStore];',
+      'type AgentCompositionTypes = [CapabilityBindingCatalog, CapabilityBindingResolutionRequest, CapabilityBindingResolutionOutcome, RuntimeCapabilityBinding<"retriever">, RegisteredRuntimeCapabilityBinding<"retriever">, Retriever, RetrieverRetrieveInput, Indexer, IndexerIndexInput, CacheStore, CacheStoreGetInput, ConversationStore, ConversationAppendInput];',
       "declare const agentCompositionTypes: AgentCompositionTypes; void agentCompositionTypes;",
       "type ControlTypes = [ExecuteControlledToolInput, ControlledToolExecutionOutcome];",
       "declare const controlTypes: ControlTypes; void controlTypes;",

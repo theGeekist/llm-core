@@ -6,7 +6,12 @@ import {
   isJsonValue,
   isNativeExtensions,
   isSchemaRef,
+  type CapabilityClaim,
+  type CapabilityConstraint,
+  type ConformanceEvidence,
 } from "#contracts";
+import { isCapabilityClaim } from "../../contracts/capability-claim-validation";
+import { hasOnlyKeys, isPortableRecord as isRecord } from "#shared/portable-data";
 import type { ModelProfile } from "./profile";
 
 /**
@@ -41,36 +46,21 @@ const EVIDENCE_KINDS: ReadonlySet<string> = new Set([
   "tool-result",
 ]);
 
-const EVIDENCE_BASE_KEYS = [
+const EVIDENCE_REQUIRED_KEYS = [
   "report",
   "suiteId",
   "suiteVersion",
   "observedAt",
   "implementationId",
   "implementationVersion",
+  "result",
+] as const;
+const EVIDENCE_OPTIONAL_KEYS = [
   "providerId",
   "providerVersion",
   "contractSchema",
   "extensions",
-  "result",
 ] as const;
-
-const CLAIM_BASE_KEYS = [
-  "capabilityId",
-  "version",
-  "additionalEvidence",
-  "extensions",
-  "status",
-  "evidence",
-] as const;
-
-const isRecord = (value: unknown): value is Record<string, unknown> =>
-  typeof value === "object" && value !== null && !Array.isArray(value);
-
-const hasOnlyKeys = (record: Record<string, unknown>, allowed: readonly string[]): boolean => {
-  const permitted = new Set<string>(allowed);
-  return Object.keys(record).every((key) => permitted.has(key));
-};
 
 const isCapabilityId = (value: unknown): boolean =>
   typeof value === "string" && CAPABILITY_ID.test(value);
@@ -181,14 +171,14 @@ const isResourceRef = (value: unknown): boolean =>
 
 const isEvidenceRef = (value: unknown): boolean =>
   isRecord(value) &&
-  hasOnlyKeys(value, ["evidenceId", "kind", "content", "schema"]) &&
+  hasOnlyKeys(value, ["evidenceId", "kind", "content"], ["schema"]) &&
   isCanonicalUuid(value.evidenceId) &&
   typeof value.kind === "string" &&
   EVIDENCE_KINDS.has(value.kind) &&
   isResourceRef(value.content) &&
   (value.schema === undefined || isSchemaRef(value.schema));
 
-const isConstraint = (value: unknown): boolean =>
+const isConstraint = (value: unknown): value is CapabilityConstraint =>
   isRecord(value) &&
   hasOnlyKeys(value, ["name", "value"]) &&
   typeof value.name === "string" &&
@@ -211,50 +201,32 @@ const isEvidenceBase = (evidence: Record<string, unknown>): boolean =>
 
 const isPassingEvidence = (value: unknown): boolean =>
   isRecord(value) &&
-  hasOnlyKeys(value, EVIDENCE_BASE_KEYS) &&
+  hasOnlyKeys(value, EVIDENCE_REQUIRED_KEYS, EVIDENCE_OPTIONAL_KEYS) &&
   value.result === "pass" &&
   isEvidenceBase(value);
 const isPartialEvidence = (value: unknown): boolean =>
   isRecord(value) &&
-  hasOnlyKeys(value, [...EVIDENCE_BASE_KEYS, "limitations"]) &&
+  hasOnlyKeys(value, [...EVIDENCE_REQUIRED_KEYS, "limitations"], EVIDENCE_OPTIONAL_KEYS) &&
   value.result === "partial" &&
   isEvidenceBase(value) &&
   isConstraintList(value.limitations, 1);
 const isFailedEvidence = (value: unknown): boolean =>
   isRecord(value) &&
-  hasOnlyKeys(value, [...EVIDENCE_BASE_KEYS, "failures"]) &&
+  hasOnlyKeys(value, [...EVIDENCE_REQUIRED_KEYS, "failures"], EVIDENCE_OPTIONAL_KEYS) &&
   value.result === "fail" &&
   isEvidenceBase(value) &&
   isConstraintList(value.failures, 1);
-const isAnyEvidence = (value: unknown): boolean =>
+const isAnyEvidence = (value: unknown): value is ConformanceEvidence =>
   isPassingEvidence(value) || isPartialEvidence(value) || isFailedEvidence(value);
 
-const isClaimBase = (claim: Record<string, unknown>): boolean =>
-  isCapabilityId(claim.capabilityId) &&
-  isContractVersion(claim.version) &&
-  (claim.additionalEvidence === undefined ||
-    (Array.isArray(claim.additionalEvidence) && claim.additionalEvidence.every(isAnyEvidence))) &&
-  (claim.extensions === undefined || isNativeExtensions(claim.extensions));
-
-const isValidClaim = (value: unknown): boolean => {
-  if (!isRecord(value) || !isClaimBase(value)) {
-    return false;
-  }
-  switch (value.status) {
-    case "supported":
-      return hasOnlyKeys(value, CLAIM_BASE_KEYS) && isPassingEvidence(value.evidence);
-    case "conditional":
-      return (
-        hasOnlyKeys(value, [...CLAIM_BASE_KEYS, "conditions"]) &&
-        (isPassingEvidence(value.evidence) || isPartialEvidence(value.evidence)) &&
-        isConstraintList(value.conditions, 1)
-      );
-    case "unsupported":
-      return hasOnlyKeys(value, CLAIM_BASE_KEYS) && isFailedEvidence(value.evidence);
-    default:
-      return false;
-  }
-};
+const isValidClaim = (value: unknown): value is CapabilityClaim =>
+  isCapabilityClaim(value, {
+    isCapabilityId,
+    isContractVersion,
+    isEvidence: isAnyEvidence,
+    isConstraint,
+    isExtensions: isNativeExtensions,
+  });
 
 /** Throw a `TypeError` if `profile` is not a fully valid, closed portable profile. */
 export const validateModelProfileValue = (profile: ModelProfile): void => {
@@ -263,16 +235,11 @@ export const validateModelProfileValue = (profile: ModelProfile): void => {
     throw new TypeError("ModelProfile must be an object.");
   }
   if (
-    !hasOnlyKeys(value, [
-      "profileId",
-      "version",
-      "model",
-      "provider",
-      "deployment",
-      "claims",
-      "schema",
-      "extensions",
-    ])
+    !hasOnlyKeys(
+      value,
+      ["profileId", "version", "model", "provider", "deployment", "claims"],
+      ["schema", "extensions"],
+    )
   ) {
     throw new TypeError("ModelProfile contains undeclared keys; portable objects are closed.");
   }

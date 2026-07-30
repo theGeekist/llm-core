@@ -2,9 +2,8 @@ export { composeWorkflow, createWorkflowRegistry, defineWorkflow } from "./regis
 export { resumeInterventionWorkflow } from "./resume";
 export { resumeWorkflow, runWorkflow } from "./runtime";
 export type {
-  InterventionAuthenticationPort,
-  InterventionAuthenticationResult,
   MeaningfulWorkflowStep,
+  MeaningfulWorkflowStepExecuteInput,
   PassiveWorkflowStep,
   ResumableWorkflowStep,
   ResumeInterventionWorkflowInput,
@@ -24,7 +23,10 @@ export type {
   WorkflowExecutionOutcome,
   WorkflowPauseSnapshot,
   WorkflowRegistry,
+  WorkflowRegistryRegisterInput,
+  WorkflowRetryDelayInput,
   WorkflowRetryPolicy,
+  WorkflowShouldRetryInput,
   WorkflowRollbackContext,
   WorkflowRollbackFailure,
   WorkflowRollbackMode,

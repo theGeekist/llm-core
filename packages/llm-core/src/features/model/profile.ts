@@ -31,6 +31,11 @@ export type RegisteredModelProfile = ModelProfile & {
   readonly [registeredModelProfileBrand]: "RegisteredModelProfile";
 };
 
+const registeredModelProfiles = new WeakSet<object>();
+
+export const isRegisteredModelProfile = (value: unknown): value is RegisteredModelProfile =>
+  typeof value === "object" && value !== null && registeredModelProfiles.has(value);
+
 /**
  * Deep-clone, then fully validate the clone, then deep-freeze and brand it.
  *
@@ -46,5 +51,7 @@ export const registerModelProfile = (profile: ModelProfile): RegisteredModelProf
     throw new TypeError("ModelProfile must be structured-cloneable portable data.");
   }
   validateModelProfileValue(copy);
-  return deepFreeze(copy) as RegisteredModelProfile;
+  const registered = deepFreeze(copy) as RegisteredModelProfile;
+  registeredModelProfiles.add(registered);
+  return registered;
 };

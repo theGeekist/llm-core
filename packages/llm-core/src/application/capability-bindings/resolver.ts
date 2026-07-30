@@ -6,6 +6,11 @@ import {
   type CapabilityConstraint,
   type CapabilityRequirement,
 } from "#contracts";
+import {
+  cloneFrozen as frozenClone,
+  hasOnlyKeys,
+  isPortableRecord as isRecord,
+} from "#shared/portable-data";
 import { isPortableJsonValue, isSensitivePortableString } from "../../features/storage/public";
 import { CAPABILITY_PORT_DEFINITIONS } from "./ports";
 import { isRegisteredRuntimeCapabilityBinding } from "./validation";
@@ -25,29 +30,6 @@ const PORT_KINDS = new Set<CapabilityPortKind>(
   Object.keys(CAPABILITY_PORT_DEFINITIONS) as CapabilityPortKind[],
 );
 
-const isRecord = (value: unknown): value is Record<string, unknown> =>
-  typeof value === "object" &&
-  value !== null &&
-  !Array.isArray(value) &&
-  (Object.getPrototypeOf(value) === Object.prototype || Object.getPrototypeOf(value) === null);
-
-const hasOnlyKeys = (value: Record<string, unknown>, allowed: readonly string[]): boolean => {
-  const permitted = new Set(allowed);
-  return Object.keys(value).every((key) => permitted.has(key));
-};
-
-const deepFreeze = <T>(value: T): T => {
-  if (value && typeof value === "object" && !Object.isFrozen(value)) {
-    Object.freeze(value);
-    for (const child of Object.values(value)) {
-      deepFreeze(child);
-    }
-  }
-  return value;
-};
-
-const frozenClone = <T>(value: T): T => deepFreeze(structuredClone(value));
-
 const isSafeExternalId = (value: unknown): value is string =>
   isExternalId(value) && !isSensitivePortableString(value);
 
@@ -63,7 +45,7 @@ const isConstraint = (value: unknown): value is CapabilityConstraint =>
 
 const isRequirement = (value: unknown): value is CapabilityRequirement =>
   isRecord(value) &&
-  hasOnlyKeys(value, ["capabilityId", "versionRange", "required", "constraints", "extensions"]) &&
+  hasOnlyKeys(value, ["capabilityId"], ["versionRange", "required", "constraints", "extensions"]) &&
   typeof value.capabilityId === "string" &&
   CAPABILITY_ID.test(value.capabilityId) &&
   (value.versionRange === undefined || typeof value.versionRange === "string") &&
@@ -74,7 +56,7 @@ const isRequirement = (value: unknown): value is CapabilityRequirement =>
 
 const isPortRequirement = (value: unknown): value is CapabilityPortRequirement =>
   isRecord(value) &&
-  hasOnlyKeys(value, ["kind", "bindingId", "capabilities"]) &&
+  hasOnlyKeys(value, ["kind"], ["bindingId", "capabilities"]) &&
   typeof value.kind === "string" &&
   PORT_KINDS.has(value.kind as CapabilityPortKind) &&
   (value.bindingId === undefined || isSafeExternalId(value.bindingId)) &&
@@ -91,7 +73,7 @@ const isBindingInput = (value: unknown): boolean =>
 const validateRequest = (request: CapabilityBindingResolutionRequest): void => {
   if (
     !isRecord(request) ||
-    !hasOnlyKeys(request, ["requirements", "bindings", "defaults"]) ||
+    !hasOnlyKeys(request, ["requirements", "bindings"], ["defaults"]) ||
     !Array.isArray(request.requirements) ||
     request.requirements.length === 0 ||
     !request.requirements.every(isPortRequirement) ||

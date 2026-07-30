@@ -21,25 +21,19 @@ import {
   type InteractionContentEvent,
   type RegisteredInteractionContentEvent,
 } from "../../../src/application/interaction/public";
-import { prepareAgentSpec } from "../../../src/features/agent/public";
+import { prepareWithLocalRunner } from "../../agent/helpers";
 
-export const CONVERSATION_ID = newCoreId<ConversationId>(
-  "018f0f4e-8c5b-7a91-8c3b-123456789d01",
-);
+export const CONVERSATION_ID = newCoreId<ConversationId>("018f0f4e-8c5b-7a91-8c3b-123456789d01");
 export const OTHER_CONVERSATION_ID = newCoreId<ConversationId>(
   "018f0f4e-8c5b-7a91-8c3b-123456789d02",
 );
 export const RUN_ID = newCoreId<RunId>("018f0f4e-8c5b-7a91-8c3b-123456789d03");
-export const SECOND_RUN_ID = newCoreId<RunId>(
-  "018f0f4e-8c5b-7a91-8c3b-123456789d05",
-);
-export const INVOCATION_ID = newCoreId<InvocationId>(
-  "018f0f4e-8c5b-7a91-8c3b-123456789d04",
-);
+export const SECOND_RUN_ID = newCoreId<RunId>("018f0f4e-8c5b-7a91-8c3b-123456789d05");
+export const INVOCATION_ID = newCoreId<InvocationId>("018f0f4e-8c5b-7a91-8c3b-123456789d04");
 export const PROVIDER_SESSION_ID = externalId<ProviderSessionId>("provider-session-1");
 export const NOW = "2026-07-29T15:00:00.000Z";
 
-export const AGENT: PreparedAgentSpec = prepareAgentSpec({
+export const AGENT: PreparedAgentSpec = prepareWithLocalRunner({
   agentId: "interaction-test-agent",
   version: contractVersion("2.0.0"),
   instructions: "Test interaction orchestration.",

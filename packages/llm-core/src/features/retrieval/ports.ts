@@ -12,12 +12,19 @@ export interface TextSplitBatchRequest {
 }
 
 export interface TextSplitter {
-  split(request: TextSplitRequest, context: InvocationContext): MaybePromise<string[]>;
-  splitBatch?(request: TextSplitBatchRequest, context: InvocationContext): MaybePromise<string[][]>;
-  splitWithMetadata?(
-    request: TextSplitRequest,
-    context: InvocationContext,
-  ): MaybePromise<DocumentChunk[]>;
+  split(input: TextSplitterSplitInput): MaybePromise<string[]>;
+  splitBatch?(input: TextSplitterSplitBatchInput): MaybePromise<string[][]>;
+  splitWithMetadata?(input: TextSplitterSplitInput): MaybePromise<DocumentChunk[]>;
+}
+
+export interface TextSplitterSplitInput {
+  readonly request: TextSplitRequest;
+  readonly context: InvocationContext;
+}
+
+export interface TextSplitterSplitBatchInput {
+  readonly request: TextSplitBatchRequest;
+  readonly context: InvocationContext;
 }
 
 export interface EmbedRequest {
@@ -29,8 +36,18 @@ export interface EmbedManyRequest {
 }
 
 export interface Embedder {
-  embed(request: EmbedRequest, context: InvocationContext): MaybePromise<number[]>;
-  embedMany?(request: EmbedManyRequest, context: InvocationContext): MaybePromise<number[][]>;
+  embed(input: EmbedderEmbedInput): MaybePromise<number[]>;
+  embedMany?(input: EmbedderEmbedManyInput): MaybePromise<number[][]>;
+}
+
+export interface EmbedderEmbedInput {
+  readonly request: EmbedRequest;
+  readonly context: InvocationContext;
+}
+
+export interface EmbedderEmbedManyInput {
+  readonly request: EmbedManyRequest;
+  readonly context: InvocationContext;
 }
 
 export interface RetrieveRequest {
@@ -38,7 +55,12 @@ export interface RetrieveRequest {
 }
 
 export interface Retriever {
-  retrieve(request: RetrieveRequest, context: InvocationContext): MaybePromise<RetrievalResult>;
+  retrieve(input: RetrieverRetrieveInput): MaybePromise<RetrievalResult>;
+}
+
+export interface RetrieverRetrieveInput {
+  readonly request: RetrieveRequest;
+  readonly context: InvocationContext;
 }
 
 export interface RerankRequest {
@@ -47,15 +69,29 @@ export interface RerankRequest {
 }
 
 export interface Reranker {
-  rerank(request: RerankRequest, context: InvocationContext): MaybePromise<Document[]>;
+  rerank(input: RerankerRerankInput): MaybePromise<Document[]>;
+}
+
+export interface RerankerRerankInput {
+  readonly request: RerankRequest;
+  readonly context: InvocationContext;
 }
 
 export interface DocumentLoader {
-  load(context: InvocationContext): MaybePromise<Document[]>;
+  load(input: DocumentLoaderLoadInput): MaybePromise<Document[]>;
+}
+
+export interface DocumentLoaderLoadInput {
+  readonly context: InvocationContext;
 }
 
 export interface DocumentTransformer {
-  transform(documents: Document[], context: InvocationContext): MaybePromise<Document[]>;
+  transform(input: DocumentTransformerTransformInput): MaybePromise<Document[]>;
+}
+
+export interface DocumentTransformerTransformInput {
+  readonly documents: Document[];
+  readonly context: InvocationContext;
 }
 
 export interface QueryRequest {
@@ -63,8 +99,13 @@ export interface QueryRequest {
 }
 
 export interface QueryEngine {
-  query(request: QueryRequest, context: InvocationContext): MaybePromise<QueryResult>;
-  stream?(request: QueryRequest, context: InvocationContext): MaybeAsyncIterable<QueryStreamEvent>;
+  query(input: QueryEngineQueryInput): MaybePromise<QueryResult>;
+  stream?(input: QueryEngineQueryInput): MaybeAsyncIterable<QueryStreamEvent>;
+}
+
+export interface QueryEngineQueryInput {
+  readonly request: QueryRequest;
+  readonly context: InvocationContext;
 }
 
 export interface SynthesisRequest {
@@ -73,9 +114,11 @@ export interface SynthesisRequest {
 }
 
 export interface ResponseSynthesizer {
-  synthesize(request: SynthesisRequest, context: InvocationContext): MaybePromise<QueryResult>;
-  stream?(
-    request: SynthesisRequest,
-    context: InvocationContext,
-  ): MaybeAsyncIterable<QueryStreamEvent>;
+  synthesize(input: ResponseSynthesizerSynthesizeInput): MaybePromise<QueryResult>;
+  stream?(input: ResponseSynthesizerSynthesizeInput): MaybeAsyncIterable<QueryStreamEvent>;
+}
+
+export interface ResponseSynthesizerSynthesizeInput {
+  readonly request: SynthesisRequest;
+  readonly context: InvocationContext;
 }

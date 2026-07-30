@@ -13,22 +13,18 @@ hand-edit import paths in every doc.
 - Update docs to include snippets via `<<<` where appropriate (start with recipes + adapters).
 - Add a docs snippet typecheck command so CI can validate snippet files.
 
-## Import Rewrite Rules
+## Import Rules
 
-Keep snippet files using local aliases for type safety:
-
-- `#adapters` -> `@geekist/llm-core/adapters`
-- `@geekist/llm-core/recipes` -> `@geekist/llm-core/recipes`
-- `#workflow` -> `@geekist/llm-core/workflow`
-- `#interaction` -> `@geekist/llm-core/interaction`
-
-At render time, rewrite these in code fences only. The docs should always show npm imports.
+Snippet files use the published `@geekist/llm-core` package subpaths directly.
+The obsolete feature and adapter private-import aliases were removed at v2
+convergence; only `#contracts` and `#shared/*` remain for package-internal
+dependencies.
 
 ## Acceptance Criteria
 
 - Snippet files compile under a `docs/snippets/tsconfig.json`.
 - VitePress dev/build shows npm imports in rendered docs.
-- No manual import swapping in markdown files.
+- No private-to-public import swapping in markdown files.
 - Docs remain readable and consistent with published package paths.
 
 ## Completion Checklist
@@ -41,6 +37,6 @@ At render time, rewrite these in code fences only. The docs should always show n
 
 ## Notes
 
-- Keep snippet imports local so they can resolve against `src/` and the current codebase.
-- The rewrite hook should be minimal and deterministic (no AST parsing required).
+- Keep snippet imports aligned with the public package exports so typechecking
+  verifies the same paths shown to consumers.
 - Apply rewrites only to code fences (not prose).

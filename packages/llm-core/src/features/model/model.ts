@@ -6,13 +6,24 @@ import type { ModelRequest } from "./request";
 import type { FinishReason, ModelError, ModelResponse, ModelUsage } from "./response";
 
 /**
- * The model port. `InvocationContext` is passed as a distinct argument (ADR-004)
- * so identity/authority never leak into the portable `ModelRequest`.
+ * The model port. Its unary input keeps `InvocationContext` structurally
+ * separate from the portable `ModelRequest` (ADR-004), so authority never
+ * leaks into model payloads while every operation has one evolvable boundary.
  */
 export interface Model {
   readonly profile: ModelProfile;
-  generate(request: ModelRequest, context: InvocationContext): MaybePromise<ModelResponse>;
-  stream?(request: ModelRequest, context: InvocationContext): AsyncIterable<ModelStreamEvent>;
+  generate(input: ModelGenerateInput): MaybePromise<ModelResponse>;
+  stream?(input: ModelStreamInput): AsyncIterable<ModelStreamEvent>;
+}
+
+export interface ModelGenerateInput {
+  readonly request: ModelRequest;
+  readonly context: InvocationContext;
+}
+
+export interface ModelStreamInput {
+  readonly request: ModelRequest;
+  readonly context: InvocationContext;
 }
 
 /** Streaming projection of a model response. `ExecutionEvent` remains canonical. */

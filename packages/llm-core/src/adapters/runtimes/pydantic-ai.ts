@@ -1,5 +1,4 @@
 import { contractVersion, isUuidV7, type ContractVersion, type JsonValue } from "#contracts";
-import { prepareAgentSpec } from "../../features/agent/public";
 import type {
   AgentCancellationAcknowledgement,
   AgentCancellationRequest,
@@ -13,6 +12,7 @@ import type {
   PreparedAgentSpec,
   RunResult,
 } from "../../features/agent/public";
+import { createPreparedAgentSpec } from "../../features/agent/public";
 import type { InterventionDecision } from "../../features/state/public";
 import {
   PYDANTIC_AI_BRIDGE_PROTOCOL,
@@ -433,7 +433,7 @@ const createBridgeRunner = (
         "prepare",
       );
       const token = stringField(payload.token, "token", "prepare");
-      const prepared = prepareAgentSpec(clonePortable(spec));
+      const prepared = createPreparedAgentSpec(clonePortable(spec));
       tokens.set(prepared, token);
       return prepared;
     },

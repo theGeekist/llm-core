@@ -8,7 +8,7 @@ export {
   toolId,
   verifyActionDigest,
 } from "./action";
-export { createToolBinding } from "./binding";
+export { createToolBinding, isRegisteredToolBinding } from "./binding";
 export { registerToolSchema } from "./schema-registration";
 export { ToolArgumentValidationError, validateToolArguments } from "./validation";
 export type {
@@ -24,9 +24,10 @@ export type { CreateToolBindingInput, ToolExecutor } from "./binding";
 export type { RegisteredToolSchema, ToolSchemaDigestPort } from "./schema-registration";
 export type {
   ToolArgumentIssue,
+  ToolArgumentValidationInput,
   ToolArgumentValidationPort,
-  ToolArgumentValidationRequest,
   ToolArgumentValidationResult,
+  ValidateToolArgumentsInput,
 } from "./validation";
 export type {
   ActionDocument,
@@ -35,12 +36,13 @@ export type {
   EffectTarget,
   EffectTargetKind,
   ExecutionConcurrency,
-  ExecutionMode,
   IdempotencySemantics,
   RetryAfterStartSemantics,
   ToolBinding,
+  ToolBindingValidationInput,
   ToolCall,
   ToolEffect,
+  ToolExecutionInput,
   ToolExecutionSemantics,
   ToolExecutionControl,
   ToolFailure,

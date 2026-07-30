@@ -33,7 +33,7 @@ export const fromAiSdkImageModel = (
   model: ImageModelV3,
   options: AiSdkImageAdapterOptions,
 ): ImageGenerationPort => ({
-  async generate(request, context) {
+  async generate({ request, context }) {
     validateImageGenerationRequest(request);
     try {
       const files = request.sourceImages

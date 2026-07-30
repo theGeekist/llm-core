@@ -152,7 +152,11 @@ const executeStep = async (input: {
   try {
     result = normalizeStepResult(
       input.step,
-      await input.step.execute(input.state, input.step.action, started),
+      await input.step.execute({
+        state: input.state,
+        action: input.step.action,
+        started,
+      }),
     );
   } catch {
     return { valid: false, reason: "invalid-step-result" };

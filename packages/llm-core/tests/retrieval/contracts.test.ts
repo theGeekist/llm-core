@@ -90,19 +90,22 @@ describe("retrieval feature front", () => {
   test("passes InvocationContext separately through sync and async ports", async () => {
     const seen: InvocationContext[] = [];
     const loader: DocumentLoader = {
-      load: (invocation) => {
+      load: ({ context: invocation }) => {
         seen.push(invocation);
         return [textDocument("loaded")];
       },
     };
     const retriever: Retriever = {
-      retrieve: async ({ query }, invocation) => {
+      retrieve: async ({ request: { query }, context: invocation }) => {
         seen.push(invocation);
-        return { query, documents: await loader.load(invocation) };
+        return { query, documents: await loader.load({ context: invocation }) };
       },
     };
 
-    const result = await retriever.retrieve({ query: textRetrievalQuery("q") }, context);
+    const result = await retriever.retrieve({
+      request: { query: textRetrievalQuery("q") },
+      context: context,
+    });
     expect(result.documents.map(documentText)).toEqual(["loaded"]);
     expect(seen).toEqual([context, context]);
     expect("context" in result).toBe(false);
@@ -110,15 +113,15 @@ describe("retrieval feature front", () => {
 
   test("preserves optional batch and stream behavior on capability ports", async () => {
     const splitter: TextSplitter = {
-      split: ({ text }) => text.split(" "),
-      splitBatch: ({ texts }) => Promise.resolve(texts.map((text) => text.split(" "))),
+      split: ({ request: { text } }) => text.split(" "),
+      splitBatch: ({ request: { texts } }) => Promise.resolve(texts.map((text) => text.split(" "))),
     };
     const queryEngine: QueryEngine = {
-      query: ({ query }) => ({
+      query: ({ request: { query } }) => ({
         query,
         content: [{ kind: "text", text: "answer" }],
       }),
-      stream: ({ query }) =>
+      stream: ({ request: { query } }) =>
         Promise.resolve([
           { kind: "start" as const },
           {
@@ -128,13 +131,15 @@ describe("retrieval feature front", () => {
         ]),
     };
 
-    expect(await splitter.splitBatch?.({ texts: ["a b", "c d"] }, context)).toEqual([
+    expect(
+      await splitter.splitBatch?.({ request: { texts: ["a b", "c d"] }, context: context }),
+    ).toEqual([
       ["a", "b"],
       ["c", "d"],
     ]);
-    expect(queryEngine.stream?.({ query: textRetrievalQuery("q") }, context)).toBeInstanceOf(
-      Promise,
-    );
+    expect(
+      queryEngine.stream?.({ request: { query: textRetrievalQuery("q") }, context: context }),
+    ).toBeInstanceOf(Promise);
   });
 
   test("uses closed discriminants for structured filters", () => {

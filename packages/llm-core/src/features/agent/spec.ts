@@ -51,7 +51,11 @@ const isSafeMetadata = (value: unknown): boolean => {
   );
 };
 
-export const prepareAgentSpec = (spec: AgentSpec): PreparedAgentSpec => {
+/**
+ * Internal constructor used only by AgentRunner.prepare implementations.
+ * Public callers submit portable AgentSpec values to a runner.
+ */
+export const createPreparedAgentSpec = (spec: AgentSpec): PreparedAgentSpec => {
   if (
     Object.keys(spec).every((key) =>
       ["agentId", "version", "instructions", "effectRequirement", "metadata", "skills"].includes(

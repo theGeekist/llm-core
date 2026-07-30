@@ -1,0 +1,33 @@
+import { contractVersion } from "#contracts";
+import { isPromiseLike } from "#shared/maybe";
+import { createLocalAgentRunner } from "../../src/application/agent/public";
+import type { AgentSpec, PreparedAgentSpec } from "../../src/features/agent/public";
+
+const validatingRunner = createLocalAgentRunner({
+  runnerId: "tests.agent-validation",
+  runnerVersion: contractVersion("2.0.0"),
+  identity: {
+    newRunId: () => {
+      throw new Error("validation-only runner cannot start");
+    },
+    newEventId: () => {
+      throw new Error("validation-only runner cannot start");
+    },
+    now: () => {
+      throw new Error("validation-only runner cannot start");
+    },
+  },
+  program: {
+    execute: () => {
+      throw new Error("validation-only runner cannot execute");
+    },
+  },
+});
+
+export const prepareWithLocalRunner = (spec: AgentSpec): PreparedAgentSpec => {
+  const prepared = validatingRunner.prepare(spec);
+  if (isPromiseLike(prepared)) {
+    throw new TypeError("The local validation runner must prepare synchronously.");
+  }
+  return prepared;
+};

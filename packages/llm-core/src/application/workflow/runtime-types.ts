@@ -32,8 +32,18 @@ export interface WorkflowRollbackContext<TState> {
 export interface WorkflowRetryPolicy {
   /** Total calls including the initial call. Values below one are treated as one. */
   readonly maxAttempts: number;
-  readonly shouldRetry?: (error: unknown, attempt: number) => boolean;
-  readonly delayMs?: number | ((error: unknown, attempt: number) => number);
+  readonly shouldRetry?: (input: WorkflowShouldRetryInput) => boolean;
+  readonly delayMs?: number | ((input: WorkflowRetryDelayInput) => number);
+}
+
+export interface WorkflowShouldRetryInput {
+  readonly error: unknown;
+  readonly attempt: number;
+}
+
+export interface WorkflowRetryDelayInput {
+  readonly error: unknown;
+  readonly attempt: number;
 }
 
 export interface ExecutableWorkflowStep<TState, TPause, TResumeInput = unknown> {
@@ -95,10 +105,12 @@ export interface WorkflowRuntimeOptions {
 }
 
 export interface WorkflowRegistry<TState, TPause, TResumeInput = unknown> {
-  register(
-    definition: WorkflowDefinition<TState, TPause, TResumeInput>,
-    options?: { readonly replace?: boolean },
-  ): void;
+  register(input: WorkflowRegistryRegisterInput<TState, TPause, TResumeInput>): void;
   resolve(workflowId: string): WorkflowDefinition<TState, TPause, TResumeInput> | undefined;
   list(): readonly WorkflowDefinition<TState, TPause, TResumeInput>[];
+}
+
+export interface WorkflowRegistryRegisterInput<TState, TPause, TResumeInput = unknown> {
+  readonly definition: WorkflowDefinition<TState, TPause, TResumeInput>;
+  readonly replace?: boolean;
 }

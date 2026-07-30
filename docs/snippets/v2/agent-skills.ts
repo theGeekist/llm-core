@@ -22,14 +22,14 @@ const pinned = registerAgentSkill({
   digest: digest("a".repeat(64)),
 });
 
-const loaded = await loadAgentSkills(
-  {
+const loaded = await loadAgentSkills({
+  request: {
     directories: [".agents/skills"],
     disabledSkillIds: [pinned.skillId],
   },
-  invocationContext,
+  context: invocationContext,
   loader,
-);
+});
 
 console.log(
   pinned.skillId,

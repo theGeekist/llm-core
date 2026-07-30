@@ -23,7 +23,12 @@ export interface IndexingResult {
 }
 
 export interface Indexer {
-  index(request: IndexingRequest, context: InvocationContext): MaybePromise<IndexingResult>;
+  index(input: IndexerIndexInput): MaybePromise<IndexingResult>;
+}
+
+export interface IndexerIndexInput {
+  readonly request: IndexingRequest;
+  readonly context: InvocationContext;
 }
 
 export interface VectorRecord {
@@ -55,12 +60,16 @@ export interface VectorStoreUpsertResult {
 
 export interface VectorStore {
   readonly info?: VectorStoreInfo;
-  upsert(
-    request: VectorStoreUpsertRequest,
-    context: InvocationContext,
-  ): MaybePromise<VectorStoreUpsertResult | null>;
-  delete(
-    request: VectorStoreDeleteRequest,
-    context: InvocationContext,
-  ): MaybePromise<boolean | null>;
+  upsert(input: VectorStoreUpsertInput): MaybePromise<VectorStoreUpsertResult | null>;
+  delete(input: VectorStoreDeleteInput): MaybePromise<boolean | null>;
+}
+
+export interface VectorStoreUpsertInput {
+  readonly request: VectorStoreUpsertRequest;
+  readonly context: InvocationContext;
+}
+
+export interface VectorStoreDeleteInput {
+  readonly request: VectorStoreDeleteRequest;
+  readonly context: InvocationContext;
 }

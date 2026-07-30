@@ -13,9 +13,14 @@ import {
  */
 export interface HostCacheBackend<T> {
   get(key: string): MaybePromise<T | undefined>;
-  set(key: string, entry: T): MaybePromise<void>;
+  set(input: HostCacheSetInput<T>): MaybePromise<void>;
   delete(key: string): MaybePromise<boolean>;
   getDefaultTTL?(): unknown;
+}
+
+export interface HostCacheSetInput<T> {
+  readonly key: string;
+  readonly entry: T;
 }
 
 export interface CreateHostBackedCacheStoreInput {
@@ -29,12 +34,12 @@ export const createHostBackedCacheStore = ({
 }: CreateHostBackedCacheStoreInput): CacheStore =>
   createCacheStoreAdapter<CacheRecord, CacheRecord>({
     backend: {
-      read: (_context, key) => store.get(key),
-      write: (_context, { key, value }) => store.set(key, value),
-      remove: (_context, key) => store.delete(key),
+      read: ({ key }) => store.get(key),
+      write: ({ key, value }) => store.set({ key, entry: value }),
+      remove: ({ key }) => store.delete(key),
     },
     decode: (entry) => (isCacheRecord(entry) ? entry : null),
-    encode: (_key, value, ttlMs) => createCacheRecord(value, ttlMs),
+    encode: ({ value, ttlMs }) => createCacheRecord(value, ttlMs),
     resolveTtl: (ttlMs) => {
       if (ttlMs !== undefined) {
         return ttlMs;

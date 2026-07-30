@@ -1,7 +1,8 @@
-export type RecordValue = Record<string, unknown>;
+import { isPortableRecord, type PortableRecord } from "./portable-data";
 
-export const isRecord = (value: unknown): value is RecordValue =>
-  value !== null && typeof value === "object" && !Array.isArray(value);
+export type RecordValue = PortableRecord;
+
+export const isRecord = isPortableRecord;
 
 export const hasKeys = (value: RecordValue) => Object.keys(value).length > 0;
 

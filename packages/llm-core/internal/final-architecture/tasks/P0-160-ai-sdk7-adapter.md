@@ -218,6 +218,6 @@ Status: complete.
 - The frozen stream contract has no field for provider-native or approval
   metadata; stream tool calls still reach core control, while those native
   fields are not projected.
-- `ModelError` has no cancellation code, so AI SDK aborts map to `timeout`.
+- AI SDK aborts map to the neutral `cancelled` model error code.
 - Generated provider files and sources lack a lossless frozen content
   projection and are not surfaced by this adapter version.

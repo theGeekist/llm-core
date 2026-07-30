@@ -10,18 +10,33 @@ import {
 } from "./validation";
 
 export interface CacheBackend<TRead, TStored> {
-  read(context: InvocationContext, key: string): MaybePromise<TRead | null | undefined>;
-  write(
-    context: InvocationContext,
-    input: { readonly key: string; readonly value: TStored },
-  ): MaybePromise<unknown>;
-  remove(context: InvocationContext, key: string): MaybePromise<unknown>;
+  read(input: CacheBackendReadInput): MaybePromise<TRead | null | undefined>;
+  write(input: CacheBackendWriteInput<TStored>): MaybePromise<unknown>;
+  remove(input: CacheBackendRemoveInput): MaybePromise<unknown>;
+}
+
+export interface CacheBackendReadInput {
+  readonly context: InvocationContext;
+  readonly key: string;
+}
+
+export interface CacheBackendWriteInput<TStored> extends CacheBackendReadInput {
+  readonly value: TStored;
+}
+
+export interface CacheBackendRemoveInput {
+  readonly context: InvocationContext;
+  readonly key: string;
 }
 
 export interface CacheAdapterPolicy<TRead, TStored> {
   readonly backend: CacheBackend<TRead, TStored>;
   readonly decode: (value: TRead | null | undefined) => CacheRecord | null;
-  readonly encode: (key: string, value: StorageValue, ttlMs?: number) => TStored;
+  readonly encode: (input: {
+    readonly key: string;
+    readonly value: StorageValue;
+    readonly ttlMs?: number;
+  }) => TStored;
   readonly now?: () => number;
   readonly resolveTtl?: (ttlMs?: number) => unknown;
   readonly normalizeSetResult?: (value: unknown) => StorageMutationResult;
@@ -32,10 +47,7 @@ const trueResult = () => true;
 const nullValue = () => null;
 const MAX_DATE_TIMESTAMP = 8_640_000_000_000_000;
 
-function assertCacheTtl(
-  ttlMs: unknown,
-  now: number,
-): asserts ttlMs is number | undefined {
+function assertCacheTtl(ttlMs: unknown, now: number): asserts ttlMs is number | undefined {
   if (ttlMs === undefined) {
     return;
   }
@@ -74,47 +86,41 @@ export const createCacheStoreAdapter = <TRead, TStored>(
   const normalizeSet = policy.normalizeSetResult ?? trueResult;
   const normalizeDelete = policy.normalizeDeleteResult ?? normalizeTriState;
 
-  const get = (context: InvocationContext, key: string) => {
+  const get: CacheStore["get"] = ({ context, key }) => {
     assertStorageKey(key);
-    return maybeChain(
-      (stored: TRead | null | undefined) => {
-        const record = policy.decode(stored);
-        if (!record || !isCacheRecord(record)) {
-          return null;
-        }
-        if (record.expiresAt && now() >= Date.parse(record.expiresAt)) {
-          return maybeMap(nullValue, policy.backend.remove(context, key));
-        }
-        return registerStorageValue(record.value);
-      },
-      policy.backend.read(context, key),
-    );
+    return maybeChain((stored: TRead | null | undefined) => {
+      const record = policy.decode(stored);
+      if (!record || !isCacheRecord(record)) {
+        return null;
+      }
+      if (record.expiresAt && now() >= Date.parse(record.expiresAt)) {
+        return maybeMap(nullValue, policy.backend.remove({ context, key }));
+      }
+      return registerStorageValue(record.value);
+    }, policy.backend.read({ context, key }));
   };
 
-  const set = (
-    context: InvocationContext,
-    input: { readonly key: string; readonly value: StorageValue; readonly ttlMs?: number },
-  ) => {
-    const { key, value, ttlMs } = input;
+  const set: CacheStore["set"] = ({ context, key, value, ttlMs }) => {
     assertStorageKey(key);
     const currentTime = now();
     assertCacheTtl(ttlMs, currentTime);
     const resolvedTtl = policy.resolveTtl ? policy.resolveTtl(ttlMs) : ttlMs;
     assertCacheTtl(resolvedTtl, currentTime);
     const registeredValue = registerStorageValue(value);
-    const encoded = policy.encode(key, registeredValue, resolvedTtl);
+    const encoded = policy.encode({ key, value: registeredValue, ttlMs: resolvedTtl });
     return maybeMap(
       normalizeSet,
-      policy.backend.write(context, {
+      policy.backend.write({
+        context,
         key,
         value: encoded,
       }),
     );
   };
 
-  const del = (context: InvocationContext, key: string) => {
+  const del: CacheStore["delete"] = ({ context, key }) => {
     assertStorageKey(key);
-    return maybeMap(normalizeDelete, policy.backend.remove(context, key));
+    return maybeMap(normalizeDelete, policy.backend.remove({ context, key }));
   };
 
   return Object.freeze({ get, set, delete: del });

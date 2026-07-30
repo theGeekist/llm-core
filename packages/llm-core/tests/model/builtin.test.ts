@@ -27,7 +27,7 @@ describe("builtin model", () => {
 
   test("echoes the last user text with usage and a stop finish", async () => {
     const model = createBuiltinModel();
-    const response = await model.generate(ask("ping"), CONTEXT);
+    const response = await model.generate({ request: ask("ping"), context: CONTEXT });
     expect(response.kind).toBe("completion");
     if (response.kind !== "completion") return;
     expect(response.content).toEqual([{ kind: "text", text: "ping" }]);
@@ -38,10 +38,10 @@ describe("builtin model", () => {
 
   test("produces structured JSON output when a json response format is requested", async () => {
     const model = createBuiltinModel();
-    const response = await model.generate(
-      { ...ask("payload"), responseFormat: { kind: "json" } },
-      CONTEXT,
-    );
+    const response = await model.generate({
+      request: { ...ask("payload"), responseFormat: { kind: "json" } },
+      context: CONTEXT,
+    });
     if (response.kind !== "completion") throw new Error("expected completion");
     const [part] = response.content;
     expect(part?.kind).toBe("json");
@@ -52,16 +52,16 @@ describe("builtin model", () => {
 
   test("is deterministic for identical input", async () => {
     const model = createBuiltinModel();
-    const a = await model.generate(ask("same"), CONTEXT);
-    const b = await model.generate(ask("same"), CONTEXT);
+    const a = await model.generate({ request: ask("same"), context: CONTEXT });
+    const b = await model.generate({ request: ask("same"), context: CONTEXT });
     expect(a).toEqual(b);
   });
 
   test("ignores ambient provider credentials", async () => {
     const model = createBuiltinModel();
-    const baseline = await model.generate(ask("secretless"), CONTEXT);
+    const baseline = await model.generate({ request: ask("secretless"), context: CONTEXT });
     process.env.OPENAI_API_KEY = "sk-should-be-ignored";
-    const withEnv = await model.generate(ask("secretless"), CONTEXT);
+    const withEnv = await model.generate({ request: ask("secretless"), context: CONTEXT });
     expect(withEnv).toEqual(baseline);
     expect(JSON.stringify(withEnv)).not.toContain("sk-should-be-ignored");
   });

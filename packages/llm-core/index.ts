@@ -1,5 +1,4 @@
 export { createLocalAgentRunner } from "./src/application/agent/public";
-export { prepareAgentSpec } from "./src/features/agent/public";
 
 export type {
   AgentRun,

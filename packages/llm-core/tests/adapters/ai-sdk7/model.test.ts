@@ -1,11 +1,9 @@
 import { afterAll, beforeAll, describe, expect, it, mock } from "bun:test";
+import { coreId, newCoreId, type InvocationId, type JsonValue, type ToolCallId } from "#contracts";
 import {
-  newCoreId,
-  type InvocationId,
-  type JsonValue,
-  type ToolCallId,
-} from "#contracts";
-import { createBuiltinModelProfile } from "../../../src/features/model/public";
+  createBuiltinModelProfile,
+  type RegisteredModelProfile,
+} from "../../../src/features/model/public";
 
 const TOOL_CALL_ID = newCoreId<ToolCallId>("0190bd0c-0000-7000-8000-000000000071");
 const INVOCATION_ID = newCoreId<InvocationId>("0190bd0c-0000-7000-8000-000000000072");
@@ -37,9 +35,8 @@ let generated: Record<string, unknown>;
 let streamed: Record<string, unknown>;
 let capturedGenerateOptions: Record<string, unknown> | undefined;
 let capturedStreamOptions: Record<string, unknown> | undefined;
-let createAiSdk7Model: typeof import(
-  "../../../src/adapters/providers/ai-sdk"
-).createAiSdk7Model;
+let createAiSdk7Model: typeof import("../../../src/adapters/providers/ai-sdk").createAiSdk7Model;
+let createInMemoryAiSdk7ToolCallCorrelationStore: typeof import("../../../src/adapters/providers/ai-sdk").createInMemoryAiSdk7ToolCallCorrelationStore;
 
 beforeAll(async () => {
   generated = {};
@@ -65,7 +62,9 @@ beforeAll(async () => {
       json: () => ({ kind: "json-output" }),
     },
   }));
-  ({ createAiSdk7Model } = await import("../../../src/adapters/providers/ai-sdk"));
+  ({ createAiSdk7Model, createInMemoryAiSdk7ToolCallCorrelationStore } = await import(
+    "../../../src/adapters/providers/ai-sdk"
+  ));
 });
 
 afterAll(() => {
@@ -77,15 +76,53 @@ const createAdapter = (overrides?: {
   classifyToolApproval?: () => "denied" | "user-approval";
   redactProviderMetadata?: () => JsonValue | undefined;
   createToolCallId?: () => ToolCallId;
+  profile?: RegisteredModelProfile;
 }) =>
   createAiSdk7Model({
     model: "test-provider/test-model",
     profile: createBuiltinModelProfile(),
+    toolCallCorrelationStore: createInMemoryAiSdk7ToolCallCorrelationStore({ maxScopes: 32 }),
     createToolCallId: overrides?.createToolCallId ?? (() => TOOL_CALL_ID),
     ...overrides,
   });
 
 describe("AI SDK 7 frozen model adapter", () => {
+  it("rejects a plain profile before any provider operation", () => {
+    const forged = {
+      ...createBuiltinModelProfile(),
+      version: "not-semver",
+    } as unknown as RegisteredModelProfile;
+
+    expect(() => createAdapter({ profile: forged })).toThrow("require a registered model profile");
+  });
+
+  it("rejects UUIDv4 values returned by the tool-call identity factory", async () => {
+    generated = {
+      content: [
+        {
+          type: "tool-call",
+          toolCallId: "provider-call-v4",
+          toolName: "lookup",
+          input: { query: "safe" },
+        },
+      ],
+      finishReason: "tool-calls",
+      usage,
+      warnings: [],
+    };
+    const response = await createAdapter({
+      createToolCallId: () => coreId<ToolCallId>("00000000-0000-4000-8000-000000000001"),
+    }).generate({
+      request: { messages: [{ role: "user", content: [{ kind: "text", text: "hello" }] }] },
+      context: { invocationId: INVOCATION_ID },
+    });
+
+    expect(response).toMatchObject({
+      kind: "error",
+      error: { code: "provider-error" },
+    });
+  });
+
   it("maps multipart completion, usage, warnings, approval and redacted native metadata", async () => {
     generated = {
       content: [
@@ -123,8 +160,8 @@ describe("AI SDK 7 frozen model adapter", () => {
       redactProviderMetadata: () => ({ region: "sg" }),
     });
 
-    const response = await adapter.generate(
-      {
+    const response = await adapter.generate({
+      request: {
         messages: [
           { role: "system", content: [{ kind: "text", text: "be concise" }] },
           { role: "user", content: [{ kind: "text", text: "hello" }] },
@@ -137,8 +174,8 @@ describe("AI SDK 7 frozen model adapter", () => {
           },
         ],
       },
-      { invocationId: INVOCATION_ID },
-    );
+      context: { invocationId: INVOCATION_ID },
+    });
 
     expect(response.kind).toBe("completion");
     if (response.kind !== "completion") {
@@ -177,34 +214,31 @@ describe("AI SDK 7 frozen model adapter", () => {
     expect(capturedGenerateOptions?.instructions).toBe("be concise");
     expect(capturedGenerateOptions?.abortSignal).toBe(abortController.signal);
 
-    const tools = capturedGenerateOptions?.tools as Record<
-      string,
-      { execute?: unknown }
-    >;
+    const tools = capturedGenerateOptions?.tools as Record<string, { execute?: unknown }>;
     expect(tools.lookup?.execute).toBeUndefined();
     const approval = capturedGenerateOptions?.toolApproval as (input: {
       toolCall: { input: JsonValue; toolName: string };
     }) => Promise<string>;
-    expect(
-      await approval({ toolCall: { input: { query: "safe" }, toolName: "lookup" } }),
-    ).toBe("user-approval");
+    expect(await approval({ toolCall: { input: { query: "safe" }, toolName: "lookup" } })).toBe(
+      "user-approval",
+    );
   });
 
   it("uses AI SDK 7 Output.json for structured output", async () => {
     generated = {
-      content: [{ type: "text", text: "{\"ok\":true}" }],
+      content: [{ type: "text", text: '{"ok":true}' }],
       output: { ok: true },
       finishReason: "stop",
       usage,
       response: { id: "request-2", modelId: "provider-model", timestamp: new Date(0) },
     };
-    const response = await createAdapter().generate(
-      {
+    const response = await createAdapter().generate({
+      request: {
         messages: [{ role: "user", content: [{ kind: "text", text: "json" }] }],
         responseFormat: { kind: "json" },
       },
-      { invocationId: INVOCATION_ID },
-    );
+      context: { invocationId: INVOCATION_ID },
+    });
 
     expect(capturedGenerateOptions?.output).toEqual({ kind: "json-output" });
     expect(response).toMatchObject({
@@ -229,10 +263,10 @@ describe("AI SDK 7 frozen model adapter", () => {
       usage,
       response: { id: "request-3", modelId: "provider-model", timestamp: new Date(0) },
     };
-    await adapter.generate(
-      { messages: [{ role: "user", content: [{ kind: "text", text: "lookup" }] }] },
-      { invocationId: INVOCATION_ID },
-    );
+    await adapter.generate({
+      request: { messages: [{ role: "user", content: [{ kind: "text", text: "lookup" }] }] },
+      context: { invocationId: INVOCATION_ID },
+    });
 
     generated = {
       content: [{ type: "text", text: "done" }],
@@ -241,8 +275,8 @@ describe("AI SDK 7 frozen model adapter", () => {
       usage,
       response: { id: "request-4", modelId: "provider-model", timestamp: new Date(0) },
     };
-    await adapter.generate(
-      {
+    await adapter.generate({
+      request: {
         messages: [
           {
             role: "tool",
@@ -256,8 +290,8 @@ describe("AI SDK 7 frozen model adapter", () => {
           },
         ],
       },
-      { invocationId: INVOCATION_ID },
-    );
+      context: { invocationId: INVOCATION_ID },
+    });
 
     expect(capturedGenerateOptions?.messages).toEqual([
       {
@@ -289,10 +323,10 @@ describe("AI SDK 7 frozen model adapter", () => {
       usage,
       response: { id: "request-11", modelId: "provider-model", timestamp: new Date(0) },
     };
-    const response = await createAdapter().generate(
-      { messages: [{ role: "user", content: [{ kind: "text", text: "lookup" }] }] },
-      { invocationId: INVOCATION_ID },
-    );
+    const response = await createAdapter().generate({
+      request: { messages: [{ role: "user", content: [{ kind: "text", text: "lookup" }] }] },
+      context: { invocationId: INVOCATION_ID },
+    });
     expect(response).toMatchObject({ kind: "error", error: { code: "provider-error" } });
     expect(JSON.stringify(response)).not.toContain("not-json");
   });
@@ -311,13 +345,13 @@ describe("AI SDK 7 frozen model adapter", () => {
         classified = true;
         return "user-approval";
       },
-    }).generate(
-      {
+    }).generate({
+      request: {
         messages: [{ role: "user", content: [{ kind: "text", text: "lookup" }] }],
         tools: [{ name: "lookup" }],
       },
-      { invocationId: INVOCATION_ID },
-    );
+      context: { invocationId: INVOCATION_ID },
+    });
     const approval = capturedGenerateOptions?.toolApproval as (input: {
       toolCall: { input: unknown; toolName: string };
     }) => Promise<string>;
@@ -326,13 +360,13 @@ describe("AI SDK 7 frozen model adapter", () => {
     );
     expect(classified).toBe(false);
 
-    await createAdapter({ classifyToolApproval: () => "denied" }).generate(
-      {
+    await createAdapter({ classifyToolApproval: () => "denied" }).generate({
+      request: {
         messages: [{ role: "user", content: [{ kind: "text", text: "lookup" }] }],
         tools: [{ name: "lookup" }],
       },
-      { invocationId: INVOCATION_ID },
-    );
+      context: { invocationId: INVOCATION_ID },
+    });
     const explicitDenial = capturedGenerateOptions?.toolApproval as (input: {
       toolCall: { input: unknown; toolName: string };
     }) => Promise<string>;
@@ -343,10 +377,10 @@ describe("AI SDK 7 frozen model adapter", () => {
 
   it("sanitizes provider failures", async () => {
     generated = { throw: new Error("credential=secret") };
-    const response = await createAdapter().generate(
-      { messages: [{ role: "user", content: [{ kind: "text", text: "hello" }] }] },
-      { invocationId: INVOCATION_ID },
-    );
+    const response = await createAdapter().generate({
+      request: { messages: [{ role: "user", content: [{ kind: "text", text: "hello" }] }] },
+      context: { invocationId: INVOCATION_ID },
+    });
 
     expect(response).toMatchObject({
       kind: "error",
@@ -377,10 +411,10 @@ describe("AI SDK 7 frozen model adapter", () => {
     const abortController = new AbortController();
     const adapter = createAdapter({ resolveAbortSignal: () => abortController.signal });
     const events = [];
-    for await (const event of adapter.stream!(
-      { messages: [{ role: "user", content: [{ kind: "text", text: "hello" }] }] },
-      { invocationId: INVOCATION_ID },
-    )) {
+    for await (const event of adapter.stream!({
+      request: { messages: [{ role: "user", content: [{ kind: "text", text: "hello" }] }] },
+      context: { invocationId: INVOCATION_ID },
+    })) {
       events.push(event);
     }
 
@@ -409,10 +443,10 @@ describe("AI SDK 7 frozen model adapter", () => {
       finishReason: Promise.resolve("error"),
     };
     const events = [];
-    for await (const event of createAdapter().stream!(
-      { messages: [{ role: "user", content: [{ kind: "text", text: "hello" }] }] },
-      { invocationId: INVOCATION_ID },
-    )) {
+    for await (const event of createAdapter().stream!({
+      request: { messages: [{ role: "user", content: [{ kind: "text", text: "hello" }] }] },
+      context: { invocationId: INVOCATION_ID },
+    })) {
       events.push(event);
     }
 
@@ -436,10 +470,10 @@ describe("AI SDK 7 frozen model adapter", () => {
       finishReason: Promise.resolve("tool-calls"),
     };
     const events = [];
-    for await (const event of createAdapter().stream!(
-      { messages: [{ role: "user", content: [{ kind: "text", text: "lookup" }] }] },
-      { invocationId: INVOCATION_ID },
-    )) {
+    for await (const event of createAdapter().stream!({
+      request: { messages: [{ role: "user", content: [{ kind: "text", text: "lookup" }] }] },
+      context: { invocationId: INVOCATION_ID },
+    })) {
       events.push(event);
     }
     expect(events.map((event) => event.kind)).toEqual(["start", "error"]);
@@ -452,10 +486,10 @@ describe("AI SDK 7 frozen model adapter", () => {
       finishReason: Promise.resolve("error"),
     };
     const events = [];
-    for await (const event of createAdapter().stream!(
-      { messages: [{ role: "user", content: [{ kind: "text", text: "hello" }] }] },
-      { invocationId: INVOCATION_ID },
-    )) {
+    for await (const event of createAdapter().stream!({
+      request: { messages: [{ role: "user", content: [{ kind: "text", text: "hello" }] }] },
+      context: { invocationId: INVOCATION_ID },
+    })) {
       events.push(event);
     }
     expect(events).toEqual([
@@ -463,12 +497,31 @@ describe("AI SDK 7 frozen model adapter", () => {
       {
         kind: "error",
         error: {
-          code: "timeout",
+          code: "cancelled",
           message: "AI SDK provider call was cancelled.",
           retryable: false,
           providerCode: "AbortError",
         },
       },
     ]);
+  });
+
+  it("maps a rejected AI SDK generation abort to cancellation rather than timeout", async () => {
+    generated = { throw: new DOMException("Aborted", "AbortError") };
+
+    expect(
+      await createAdapter().generate({
+        request: { messages: [{ role: "user", content: [{ kind: "text", text: "hello" }] }] },
+        context: { invocationId: INVOCATION_ID },
+      }),
+    ).toMatchObject({
+      kind: "error",
+      error: {
+        code: "cancelled",
+        message: "AI SDK provider call was cancelled.",
+        retryable: false,
+        providerCode: "AbortError",
+      },
+    });
   });
 });

@@ -21,17 +21,22 @@ export type LiveMediaInput =
     };
 
 export interface MediaResourceResolver {
-  resolve(resource: ResourceRef, context: InvocationContext): MaybePromise<Uint8Array>;
+  resolve(input: MediaResourceResolveInput): MaybePromise<Uint8Array>;
 }
 
 export interface MediaOutputProjector {
-  project(
-    input: {
-      readonly mediaType: string;
-      readonly bytes: Uint8Array;
-    },
-    context: InvocationContext,
-  ): MaybePromise<PortableMediaContent>;
+  project(input: MediaOutputProjectInput): MaybePromise<PortableMediaContent>;
+}
+
+export interface MediaResourceResolveInput {
+  readonly resource: ResourceRef;
+  readonly context: InvocationContext;
+}
+
+export interface MediaOutputProjectInput {
+  readonly mediaType: string;
+  readonly bytes: Uint8Array;
+  readonly context: InvocationContext;
 }
 
 export interface ImageGenerationRequest {
@@ -55,10 +60,12 @@ export interface ImageGenerationResult {
 }
 
 export interface ImageGenerationPort {
-  generate(
-    request: ImageGenerationRequest,
-    context: InvocationContext,
-  ): MaybePromise<ImageGenerationResult>;
+  generate(input: ImageGenerationInput): MaybePromise<ImageGenerationResult>;
+}
+
+export interface ImageGenerationInput {
+  readonly request: ImageGenerationRequest;
+  readonly context: InvocationContext;
 }
 
 export interface SpeechGenerationRequest {
@@ -76,10 +83,12 @@ export interface SpeechGenerationResult {
 }
 
 export interface SpeechGenerationPort {
-  generate(
-    request: SpeechGenerationRequest,
-    context: InvocationContext,
-  ): MaybePromise<SpeechGenerationResult>;
+  generate(input: SpeechGenerationInput): MaybePromise<SpeechGenerationResult>;
+}
+
+export interface SpeechGenerationInput {
+  readonly request: SpeechGenerationRequest;
+  readonly context: InvocationContext;
 }
 
 export interface TranscriptionRequest {
@@ -101,8 +110,10 @@ export interface TranscriptionResult {
 }
 
 export interface TranscriptionPort {
-  transcribe(
-    request: TranscriptionRequest,
-    context: InvocationContext,
-  ): MaybePromise<TranscriptionResult>;
+  transcribe(input: TranscriptionInput): MaybePromise<TranscriptionResult>;
+}
+
+export interface TranscriptionInput {
+  readonly request: TranscriptionRequest;
+  readonly context: InvocationContext;
 }

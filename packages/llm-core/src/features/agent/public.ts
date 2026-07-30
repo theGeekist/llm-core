@@ -1,9 +1,12 @@
-export { isPreparedAgentSpec, prepareAgentSpec } from "./spec";
+/** @internal Runner implementations only; omitted from supported package fronts. */
+export { createPreparedAgentSpec, isPreparedAgentSpec } from "./spec";
 export { loadAgentSkills, registerAgentSkill } from "./skills";
 export type {
   AgentSkillRef,
+  LoadAgentSkillsInput,
   LocalSkillCandidate,
   LocalSkillLoader,
+  LocalSkillLoadInput,
   LocalSkillLoadRequest,
   SkillId,
   SkillScope,

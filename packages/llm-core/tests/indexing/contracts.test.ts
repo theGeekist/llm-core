@@ -11,13 +11,16 @@ describe("indexing feature front", () => {
   test("keeps indexing input portable and context separate", async () => {
     const seen: InvocationContext[] = [];
     const indexer: Indexer = {
-      index: ({ documents }, invocation) => {
+      index: ({ request: { documents }, context: invocation }) => {
         seen.push(invocation);
         return { added: documents.length, deleted: 0, updated: 0, skipped: 0 };
       },
     };
 
-    const result = await indexer.index({ documents: [textDocument("one")] }, context);
+    const result = await indexer.index({
+      request: { documents: [textDocument("one")] },
+      context: context,
+    });
     expect(result).toEqual({ added: 1, deleted: 0, updated: 0, skipped: 0 });
     expect(seen).toEqual([context]);
   });
@@ -26,20 +29,23 @@ describe("indexing feature front", () => {
     const calls: string[] = [];
     const store: VectorStore = {
       info: { dimension: 2, namespace: "test" },
-      upsert: (request) => {
+      upsert: ({ request }) => {
         calls.push("documents" in request ? "documents" : "vectors");
         return { ids: ["stored"] };
       },
-      delete: (request) => {
+      delete: ({ request }) => {
         calls.push("ids" in request ? "ids" : "filter");
         return true;
       },
     };
 
-    await store.upsert({ documents: [textDocument("one")] }, context);
-    await store.upsert({ vectors: [{ id: "v1", values: [0.1, 0.2] }] }, context);
-    await store.delete({ ids: ["v1"] }, context);
-    await store.delete({ filter: { status: "stale" } }, context);
+    await store.upsert({ request: { documents: [textDocument("one")] }, context: context });
+    await store.upsert({
+      request: { vectors: [{ id: "v1", values: [0.1, 0.2] }] },
+      context: context,
+    });
+    await store.delete({ request: { ids: ["v1"] }, context: context });
+    await store.delete({ request: { filter: { status: "stale" } }, context: context });
     expect(calls).toEqual(["documents", "vectors", "ids", "filter"]);
     expect(store.info?.dimension).toBe(2);
   });

@@ -168,7 +168,7 @@ describe("capability invocation bridge", () => {
     const seen: InvocationContext[] = [];
     const retriever = registerRuntimeCapabilityBinding(
       runtimeBinding("retriever", "retriever:context", {
-        retrieve: (_request, context) => {
+        retrieve: ({ context }) => {
           seen.push(context);
           return { documents: [] };
         },
@@ -177,7 +177,7 @@ describe("capability invocation bridge", () => {
     );
     const cache = registerRuntimeCapabilityBinding(
       runtimeBinding("cache-store", "cache:context", {
-        get: (context) => {
+        get: ({ context }) => {
           seen.push(context);
           return null;
         },
@@ -191,11 +191,11 @@ describe("capability invocation bridge", () => {
         "query-engine",
         "query:context",
         {
-          query: (_request, context) => {
+          query: ({ context }) => {
             seen.push(context);
             return { content: [] };
           },
-          stream: async function* (_request, context) {
+          stream: async function* ({ context }) {
             seen.push(context);
             yield { kind: "start" as const };
           },
@@ -205,15 +205,18 @@ describe("capability invocation bridge", () => {
       verificationDependencies(),
     );
 
-    const retrieval = retriever.port.retrieve(
-      { query: { content: [] } },
-      registeredInvocation.invocationContext,
-    );
-    const cached = cache.port.get(registeredInvocation.invocationContext, "key");
-    const stream = query.port.stream!(
-      { query: { content: [] } },
-      registeredInvocation.invocationContext,
-    );
+    const retrieval = retriever.port.retrieve({
+      request: { query: { content: [] } },
+      context: registeredInvocation.invocationContext,
+    });
+    const cached = cache.port.get({
+      context: registeredInvocation.invocationContext,
+      key: "key",
+    });
+    const stream = query.port.stream!({
+      request: { query: { content: [] } },
+      context: registeredInvocation.invocationContext,
+    });
 
     expect(retrieval).toEqual({ documents: [] });
     expect(cached).toBeNull();

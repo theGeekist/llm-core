@@ -55,9 +55,12 @@ describe("qualified retrieval adapters fail closed", () => {
     } as unknown as BaseQueryEngine;
     const adapter = createLlamaIndexQueryEngine(engine);
 
-    const result = await adapter.query({ query: textRetrievalQuery("q") }, CONTEXT);
+    const result = await adapter.query({
+      request: { query: textRetrievalQuery("q") },
+      context: CONTEXT,
+    });
     const events = await collect(
-      adapter.stream?.({ query: textRetrievalQuery("q") }, CONTEXT) ?? [],
+      adapter.stream?.({ request: { query: textRetrievalQuery("q") }, context: CONTEXT }) ?? [],
     );
     const projection = JSON.stringify({ result, events });
     expect(result.extensions).toBeUndefined();
@@ -81,19 +84,25 @@ describe("qualified retrieval adapters fail closed", () => {
     const adapter = createLlamaIndexVectorStore(native);
 
     expect(() =>
-      adapter.upsert({ documents: [textDocument("doc")], namespace: "tenant-a" }, CONTEXT),
+      adapter.upsert({
+        request: { documents: [textDocument("doc")], namespace: "tenant-a" },
+        context: CONTEXT,
+      }),
     ).toThrow("namespace isolation");
     expect(() =>
-      adapter.upsert(
-        { vectors: [{ id: "vector", values: [0.1, 0.2] }], namespace: "tenant-a" },
-        CONTEXT,
-      ),
+      adapter.upsert({
+        request: { vectors: [{ id: "vector", values: [0.1, 0.2] }], namespace: "tenant-a" },
+        context: CONTEXT,
+      }),
     ).toThrow("namespace isolation");
-    expect(() => adapter.delete({ ids: ["doc"], namespace: "tenant-a" }, CONTEXT)).toThrow(
-      "namespace isolation",
-    );
     expect(() =>
-      adapter.delete({ filter: { stale: true }, namespace: "tenant-a" }, CONTEXT),
+      adapter.delete({ request: { ids: ["doc"], namespace: "tenant-a" }, context: CONTEXT }),
+    ).toThrow("namespace isolation");
+    expect(() =>
+      adapter.delete({
+        request: { filter: { stale: true }, namespace: "tenant-a" },
+        context: CONTEXT,
+      }),
     ).toThrow("namespace isolation");
     expect({ adds, deletes }).toEqual({ adds: 0, deletes: 0 });
   });
@@ -107,7 +116,9 @@ describe("qualified retrieval adapters fail closed", () => {
     } as unknown as LangChainVectorStore;
     const adapter = createLangChainVectorStore(native);
 
-    expect(() => adapter.delete({ filter: {} }, CONTEXT)).toThrow("non-empty filter");
+    expect(() => adapter.delete({ request: { filter: {} }, context: CONTEXT })).toThrow(
+      "non-empty filter",
+    );
     expect(deletes).toBe(0);
   });
 
@@ -124,13 +135,16 @@ describe("qualified retrieval adapters fail closed", () => {
     } as unknown as BaseSynthesizer;
 
     await expect(
-      createLlamaIndexQueryEngine(engine).query({ query: textRetrievalQuery("q") }, CONTEXT),
+      createLlamaIndexQueryEngine(engine).query({
+        request: { query: textRetrievalQuery("q") },
+        context: CONTEXT,
+      }),
     ).rejects.toThrow("unsupported non-text");
     await expect(
-      createLlamaIndexResponseSynthesizer(synthesizer).synthesize(
-        { query: textRetrievalQuery("q"), documents: [textDocument("source")] },
-        CONTEXT,
-      ),
+      createLlamaIndexResponseSynthesizer(synthesizer).synthesize({
+        request: { query: textRetrievalQuery("q"), documents: [textDocument("source")] },
+        context: CONTEXT,
+      }),
     ).rejects.toThrow("unsupported non-text");
   });
 
@@ -148,14 +162,16 @@ describe("qualified retrieval adapters fail closed", () => {
     } as unknown as BaseSynthesizer;
 
     const queryEvents = await collect(
-      createLlamaIndexQueryEngine(engine).stream?.({ query: textRetrievalQuery("q") }, CONTEXT) ??
-        [],
+      createLlamaIndexQueryEngine(engine).stream?.({
+        request: { query: textRetrievalQuery("q") },
+        context: CONTEXT,
+      }) ?? [],
     );
     const synthesisEvents = await collect(
-      createLlamaIndexResponseSynthesizer(synthesizer).stream?.(
-        { query: textRetrievalQuery("q"), documents: [textDocument("source")] },
-        CONTEXT,
-      ) ?? [],
+      createLlamaIndexResponseSynthesizer(synthesizer).stream?.({
+        request: { query: textRetrievalQuery("q"), documents: [textDocument("source")] },
+        context: CONTEXT,
+      }) ?? [],
     );
 
     for (const events of [queryEvents, synthesisEvents]) {

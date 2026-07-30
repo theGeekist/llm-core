@@ -13,15 +13,15 @@ const request: ModelRequest = {
   messages: [{ role: "user", content: [{ kind: "text", text: "hello" }] }],
 };
 
-const response = await createBuiltinModel().generate(request, context);
+const response = await createBuiltinModel().generate({ request, context });
 
 declare const images: ImageGenerationPort;
 declare const transcription: TranscriptionPort;
 
-await images.generate({ prompt: "A contour map", count: 1 }, context);
-await transcription.transcribe(
-  { audio: { kind: "bytes", mediaType: "audio/wav", bytes: new Uint8Array() } },
+await images.generate({ request: { prompt: "A contour map", count: 1 }, context });
+await transcription.transcribe({
+  request: { audio: { kind: "bytes", mediaType: "audio/wav", bytes: new Uint8Array() } },
   context,
-);
+});
 
 void response;

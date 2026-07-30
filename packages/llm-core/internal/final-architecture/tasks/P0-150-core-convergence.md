@@ -121,9 +121,10 @@ git diff --check
 
 - Architecture v2 publishes only the 16 ADR-008 subpaths at version `2.0.0`,
   requires Node.js 22 or newer and has no CommonJS or browser conditions.
-- Root runtime exports are limited to `createLocalAgentRunner` and
-  `prepareAgentSpec`; capability composition, controlled effects, workflow,
-  interaction and qualified adapters live on their named public fronts.
+- The root runtime export is limited to `createLocalAgentRunner`;
+  runner-provenanced specifications come from `AgentRunner.prepare()`.
+  Capability composition, controlled effects, workflow, interaction and
+  qualified adapters live on their named public fronts.
 - The legacy adapter-owned domain, recipes, pipeline authorities and generic
   diagnostics were removed after their supported behavior moved to v2 slices.
 - Meaningful effects remain fail-closed behind durable receipts and trusted

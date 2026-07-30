@@ -14,6 +14,8 @@ describe("guards", () => {
       expect(isRecord(1)).toBe(false);
       expect(isRecord("string")).toBe(false);
       expect(isRecord([])).toBe(false);
+      expect(isRecord(Object.create({ inherited: true }))).toBe(false);
+      expect(isRecord(new (class RecordLike {})())).toBe(false);
     });
   });
 

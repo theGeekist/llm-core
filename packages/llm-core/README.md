@@ -9,15 +9,18 @@ npm install @geekist/llm-core
 ```
 
 ```ts
-import { createLocalAgentRunner, prepareAgentSpec } from "@geekist/llm-core";
+import type { AgentRunner, AgentSpec } from "@geekist/llm-core";
 import { contractVersion } from "@geekist/llm-core/contracts";
 
-const agent = prepareAgentSpec({
+const spec: AgentSpec = {
   agentId: "example.echo",
   version: contractVersion("2.0.0"),
   instructions: "Return a portable result.",
   effectRequirement: "read-only",
-});
+};
+
+declare const runner: AgentRunner;
+const agent = await runner.prepare(spec);
 ```
 
 Use explicit capability subpaths for models, tools, control, evidence, state,

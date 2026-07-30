@@ -1,12 +1,9 @@
-import type { JsonValue, PrincipalRef, StepId } from "#contracts";
+import type { JsonValue, StepId } from "#contracts";
 import type { MaybePromise } from "#shared/maybe";
-import type {
-  ActionDigest,
-  ActionDigestPort,
-  BoundAction,
-} from "../../features/tooling/public";
+import type { ActionDigest, ActionDigestPort, BoundAction } from "../../features/tooling/public";
 import type {
   CheckpointId,
+  InterventionAuthenticationPort,
   InterventionDecision,
   InterventionDecisionId,
   InterventionId,
@@ -101,17 +98,6 @@ export interface WorkflowResumeJournal {
   }): MaybePromise<void>;
 }
 
-export type InterventionAuthenticationResult =
-  | { readonly status: "authenticated"; readonly principal: PrincipalRef }
-  | { readonly status: "rejected" };
-
-export interface InterventionAuthenticationPort {
-  verify(
-    request: InterventionRequest,
-    decision: InterventionDecision,
-  ): MaybePromise<InterventionAuthenticationResult>;
-}
-
 export interface WorkflowClock {
   now(): string;
 }
@@ -132,11 +118,13 @@ export interface MeaningfulWorkflowStep {
   readonly stepId: StepId;
   readonly effect: "meaningful";
   readonly action: BoundAction;
-  execute(
-    state: JsonValue,
-    action: BoundAction,
-    started: RecordedEffect,
-  ): MaybePromise<WorkflowStepResult>;
+  execute(input: MeaningfulWorkflowStepExecuteInput): MaybePromise<WorkflowStepResult>;
+}
+
+export interface MeaningfulWorkflowStepExecuteInput {
+  readonly state: JsonValue;
+  readonly action: BoundAction;
+  readonly started: RecordedEffect;
 }
 
 export type ResumableWorkflowStep = PassiveWorkflowStep | MeaningfulWorkflowStep;

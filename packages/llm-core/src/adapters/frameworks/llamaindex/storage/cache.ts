@@ -17,9 +17,9 @@ export const createLlamaIndexCacheStore = ({
 }: CreateLlamaIndexCacheStoreInput): CacheStore =>
   createCacheStoreAdapter<unknown, { readonly cacheRecord: CacheRecord }>({
     backend: {
-      read: (_context, key) => store.get(key, collection),
-      write: (_context, { key, value }) => store.put(key, value, collection),
-      remove: (_context, key) => store.delete(key, collection),
+      read: ({ key }) => store.get(key, collection),
+      write: ({ key, value }) => store.put(key, value, collection),
+      remove: ({ key }) => store.delete(key, collection),
     },
     decode: (value) =>
       value &&
@@ -30,6 +30,6 @@ export const createLlamaIndexCacheStore = ({
       isCacheRecord(value.cacheRecord)
         ? value.cacheRecord
         : null,
-    encode: (_key, value, ttlMs) => ({ cacheRecord: createCacheRecord(value, ttlMs) }),
+    encode: ({ value, ttlMs }) => ({ cacheRecord: createCacheRecord(value, ttlMs) }),
   });
 import type { BaseKVStore } from "@llamaindex/core/storage/kv-store";

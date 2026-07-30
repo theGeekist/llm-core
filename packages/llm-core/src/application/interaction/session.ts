@@ -2,6 +2,7 @@ import {
   isCanonicalUuid,
   isExternalId,
   isJsonValue,
+  isUuidV7,
   type ConversationId,
   type JsonValue,
   type RunId,
@@ -100,10 +101,7 @@ const asSnapshot = (
     .filter((event) => event.kind === "run-finished")
     .map((event) => event.runId);
   const terminalMessageKeys = events
-    .filter(
-      (event) =>
-        event.kind === "message-finished" || event.kind === "message-failed",
-    )
+    .filter((event) => event.kind === "message-finished" || event.kind === "message-failed")
     .map((event) => `${event.runId}:${event.messageId}`);
   const startedMessageKeys = events
     .filter((event) => event.kind === "message-started")
@@ -234,11 +232,12 @@ export const createInteractionSession = (
       if (!isExternalId(reservationId)) {
         throw new TypeError("Conversation reservation IDs must be opaque external IDs.");
       }
-      reservation = await options.store.reserve({
-        conversationId: options.conversationId,
-        expectedRevision: loaded.value.revision,
-        reservationId,
-      }) ?? undefined;
+      reservation =
+        (await options.store.reserve({
+          conversationId: options.conversationId,
+          expectedRevision: loaded.value.revision,
+          reservationId,
+        })) ?? undefined;
       if (
         !reservation ||
         reservation.conversationId !== options.conversationId ||
@@ -249,9 +248,7 @@ export const createInteractionSession = (
       }
       const capabilities = await options.runner.capabilities();
       if (loaded.value.providerSession && !capabilities.providerSessionContinuation) {
-        throw new TypeError(
-          "The selected runner cannot continue the stored provider session.",
-        );
+        throw new TypeError("The selected runner cannot continue the stored provider session.");
       }
       submittedInput = structuredClone(request.input);
       agentRun = await options.runner.start({
@@ -261,12 +258,10 @@ export const createInteractionSession = (
           conversationId: options.conversationId,
         }),
         input: structuredClone(submittedInput),
-        ...(loaded.value.providerSession
-          ? { providerSession: loaded.value.providerSession }
-          : {}),
+        ...(loaded.value.providerSession ? { providerSession: loaded.value.providerSession } : {}),
       });
-      if (!isCanonicalUuid(agentRun.identity.runId)) {
-        throw new TypeError("Agent runs must return a canonical run ID.");
+      if (!isUuidV7(agentRun.identity.runId)) {
+        throw new TypeError("New interaction agent runs must use UUIDv7 run IDs.");
       }
       log = new InteractionEventLog();
       active = {
@@ -310,10 +305,7 @@ export const createInteractionSession = (
             }
             terminalStatus = source.facts.status;
             terminalReasonCode = source.facts.reasonCode;
-            if (
-              terminalReasonCode !== undefined &&
-              !isSafeInteractionCode(terminalReasonCode)
-            ) {
+            if (terminalReasonCode !== undefined && !isSafeInteractionCode(terminalReasonCode)) {
               throw new TypeError("Agent terminal events require a safe reason code.");
             }
           }

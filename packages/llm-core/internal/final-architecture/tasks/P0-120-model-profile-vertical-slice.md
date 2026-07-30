@@ -189,12 +189,12 @@ deterministic resolution, credential boundary).
 
 ### Not done (out of scope)
 
-Root exports / package `exports` / `#model` alias wiring (integration owner,
-P0-150); AI SDK / LangChain / LlamaIndex migration; deletion of legacy
+Root exports / package `exports` wiring (integration owner, P0-150); AI SDK /
+LangChain / LlamaIndex migration; deletion of legacy
 `adapters/types/model.ts` and `model-selection.ts`.
 
 ### Shared-file requests for the integration owner
 
-At convergence, add a `#model` → `src/features/model/public.ts` import alias and
-the `@geekist/llm-core/model` subpath export, then delete the legacy
-adapter-owned model types and `model-selection.ts`.
+At convergence, add the `@geekist/llm-core/model` subpath export, then delete
+the legacy adapter-owned model types and `model-selection.ts`. The final v2
+package intentionally does not retain a private model compatibility alias.

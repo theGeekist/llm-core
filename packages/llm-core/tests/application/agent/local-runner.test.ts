@@ -2,6 +2,7 @@
 import { describe, expect, test } from "bun:test";
 import {
   contractVersion,
+  coreId,
   newCoreId,
   type EventId,
   type InvocationId,
@@ -17,19 +18,21 @@ import type {
   AgentRun,
   AgentRunner,
   AgentRunRequest,
+  AgentSpec,
   PreparedAgentSpec,
 } from "../../../src/features/agent/public";
 import {
   registerResumableCheckpoint,
+  type InterventionAuthenticationPort,
   type RecordedEffectStatus,
 } from "../../../src/features/state/public";
-import { prepareAgentSpec } from "../../../src/features/agent/public";
 import {
   COMPATIBILITY,
   STEP_ONE,
   checkpoint,
   decision,
   intervention,
+  principal,
   receipt,
 } from "../../state/helpers";
 
@@ -46,6 +49,7 @@ const IDS = [
   "018f0f4e-8c5b-7a91-8c3b-123456789b0a",
 ] as const;
 const INVOCATION_ID = newCoreId<InvocationId>("018f0f4e-8c5b-7a91-8c3b-123456789c01");
+const UUID_V4 = "00000000-0000-4000-8000-000000000001";
 
 const identityPort = (): AgentRunIdentityPort => {
   let index = 0;
@@ -122,6 +126,42 @@ const basicProgram = (): LocalAgentProgramPort => ({
   },
 });
 
+const startInterventionRun = async (authentication: InterventionAuthenticationPort) => {
+  let release!: () => void;
+  const pending = new Promise<void>((resolve) => {
+    release = resolve;
+  });
+  let observed = 0;
+  const target = runner(
+    {
+      async execute(context) {
+        const baseRequest = intervention();
+        await context.requestIntervention({
+          ...baseRequest,
+          intervention: {
+            ...baseRequest.intervention,
+            runId: context.identity.runId,
+          },
+          requestedAt: "2026-07-29T14:00:00.000Z",
+          expiresAt: "2026-07-29T15:00:00.000Z",
+        });
+        await pending;
+        observed = context.receivedInterventions().length;
+        return { status: "completed" };
+      },
+    },
+    { interventions: { authentication } },
+  );
+  const run = await target.start(request(await prepare(target), null));
+  const base = decision("approve");
+  const bound = {
+    ...base,
+    decidedAt: "2026-07-29T14:00:00.000Z",
+    intervention: { ...base.intervention, runId: run.identity.runId },
+  };
+  return { bound, observed: () => observed, release, run };
+};
+
 lifecycleContract("local", () => runner(basicProgram()));
 lifecycleContract("fake remote", () => {
   const local = runner(basicProgram());
@@ -134,6 +174,33 @@ lifecycleContract("fake remote", () => {
 });
 
 describe("createLocalAgentRunner", () => {
+  test("rejects UUIDv4 values returned by run and event identity ports", async () => {
+    const program: LocalAgentProgramPort = {
+      execute: () => ({ status: "completed" }),
+    };
+    const runIdTarget = runner(program, {
+      identity: {
+        ...identityPort(),
+        newRunId: () => coreId<RunId>(UUID_V4),
+      },
+    });
+    const preparedForRun = await prepare(runIdTarget);
+    expect(() => runIdTarget.start(request(preparedForRun, null))).toThrow(
+      "must mint UUIDv7 run IDs",
+    );
+
+    const eventIdTarget = runner(program, {
+      identity: {
+        ...identityPort(),
+        newEventId: () => coreId<EventId>(UUID_V4),
+      },
+    });
+    const preparedForEvent = await prepare(eventIdTarget);
+    expect(() => eventIdTarget.start(request(preparedForEvent, null))).toThrow(
+      "must mint UUIDv7 event IDs",
+    );
+  });
+
   test("fails closed when a meaningful-effect path was not explicitly configured", async () => {
     const target = runner(basicProgram());
     expect(() =>
@@ -162,23 +229,29 @@ describe("createLocalAgentRunner", () => {
         ),
       ),
     ).toThrow("prepared");
-    expect(() =>
-      target.start(request(agent, { invalid: undefined } as never)),
-    ).toThrow("portable");
+    expect(() => target.start(request(agent, { invalid: undefined } as never))).toThrow("portable");
   });
 
-  test("rejects specs prepared globally or by another runner at every boundary", async () => {
+  test("rejects shaped or foreign prepared specs at every boundary", async () => {
     const target = runner(basicProgram());
     const other = runner(basicProgram());
-    const globallyPrepared = prepareAgentSpec({
+    const portable: AgentSpec = {
       agentId: "writer",
       version: contractVersion("2.0.0"),
       instructions: "Write.",
-      effectRequirement: "controlled",
-    });
+      effectRequirement: "read-only",
+    };
+    const staticallyRejected: AgentRunRequest = {
+      // @ts-expect-error Portable authoring data has no runner preparation provenance.
+      agent: portable,
+      invocationContext: { invocationId: INVOCATION_ID },
+      input: null,
+    };
+    const shaped = portable as PreparedAgentSpec;
     const otherPrepared = await prepare(other);
 
-    expect(() => target.start(request(globallyPrepared, null))).toThrow("runner instance");
+    void staticallyRejected;
+    expect(() => target.start(request(shaped, null))).toThrow("prepared");
     expect(() => target.start(request(otherPrepared, null))).toThrow("runner instance");
   });
 
@@ -255,9 +328,7 @@ describe("createLocalAgentRunner", () => {
         async execute(context) {
           await pending;
           return {
-            status: context.cancellation.isCancellationRequested()
-              ? "cancelled"
-              : "completed",
+            status: context.cancellation.isCancellationRequested() ? "cancelled" : "completed",
           };
         },
       },
@@ -273,9 +344,9 @@ describe("createLocalAgentRunner", () => {
     );
     const run = await target.start(request(await prepare(target), null));
 
-    expect(() =>
-      run.cancel({ requestedAt: "2026-07-29T14:00:01.000Z" }),
-    ).toThrow("canonical event IDs");
+    expect(() => run.cancel({ requestedAt: "2026-07-29T14:00:01.000Z" })).toThrow(
+      "must mint UUIDv7 event IDs",
+    );
     release();
 
     expect((await run.result()).status).toBe("completed");
@@ -286,38 +357,14 @@ describe("createLocalAgentRunner", () => {
   });
 
   test("accepts only run-bound typed interventions when enabled", async () => {
-    let release!: () => void;
-    const pending = new Promise<void>((resolve) => {
-      release = resolve;
-    });
-    let observed = 0;
-    const target = runner(
-      {
-        async execute(context) {
-          const baseRequest = intervention();
-          await context.requestIntervention({
-            ...baseRequest,
-            intervention: {
-              ...baseRequest.intervention,
-              runId: context.identity.runId,
-            },
-            requestedAt: "2026-07-29T14:00:00.000Z",
-            expiresAt: "2026-07-29T15:00:00.000Z",
-          });
-          await pending;
-          observed = context.receivedInterventions().length;
-          return { status: "completed" };
-        },
+    let authentications = 0;
+    const fixture = await startInterventionRun({
+      verify: ({ decision: candidate }) => {
+        authentications += 1;
+        return { status: "authenticated", principal: candidate.actor };
       },
-      { interventions: true },
-    );
-    const run = await target.start(request(await prepare(target), null));
-    const base = decision("approve");
-    const bound = {
-      ...base,
-      decidedAt: "2026-07-29T14:00:00.000Z",
-      intervention: { ...base.intervention, runId: run.identity.runId },
-    };
+    });
+    const { bound, release, run } = fixture;
     const wrongDigest = {
       ...bound,
       intervention: {
@@ -332,14 +379,13 @@ describe("createLocalAgentRunner", () => {
     expect((await run.intervene(wrongDigest)).status).toBe("rejected");
     expect((await run.intervene(bound)).status).toBe("accepted");
     expect((await run.intervene(decision("approve"))).status).toBe("rejected");
+    expect(authentications).toBe(1);
     release();
     await run.result();
 
-    expect(observed).toBe(1);
+    expect(fixture.observed()).toBe(1);
     const events = await collect(run);
-    const requested = events.find(
-      (event) => event.kind === "agent.run.intervention.requested",
-    );
+    const requested = events.find((event) => event.kind === "agent.run.intervention.requested");
     expect(requested?.facts).toMatchObject({
       checkpointRevision: 3,
       runId: run.identity.runId,
@@ -347,6 +393,114 @@ describe("createLocalAgentRunner", () => {
       expiresAt: "2026-07-29T15:00:00.000Z",
     });
     expect(JSON.stringify(requested)).not.toContain("reason");
+  });
+
+  test("requires an authentication port when interventions are composed", () => {
+    expect(() =>
+      runner(basicProgram(), {
+        interventions: {} as never,
+      }),
+    ).toThrow("authentication port");
+  });
+
+  test("rejects forged evidence, principal mismatch and malformed verifier outcomes", async () => {
+    const expectedEvidenceId = decision("approve").authentication.evidence.evidenceId;
+    const evidenceFixture = await startInterventionRun({
+      verify: ({ decision: candidate }) =>
+        candidate.authentication.evidence.evidenceId === expectedEvidenceId
+          ? { status: "authenticated", principal: candidate.actor }
+          : { status: "rejected" },
+    });
+    const forgedEvidence = {
+      ...evidenceFixture.bound,
+      authentication: {
+        ...evidenceFixture.bound.authentication,
+        evidence: {
+          ...evidenceFixture.bound.authentication.evidence,
+          evidenceId: newCoreId(
+            "018f0f4e-8c5b-7a91-8c3b-123456789b11",
+          ) as typeof expectedEvidenceId,
+        },
+      },
+    };
+    expect((await evidenceFixture.run.intervene(forgedEvidence)).status).toBe("rejected");
+    evidenceFixture.release();
+    await evidenceFixture.run.result();
+
+    for (const authentication of [
+      {
+        verify: () => ({
+          status: "authenticated" as const,
+          principal: { principalId: "operator:someone-else" as typeof principal.principalId },
+        }),
+      },
+      { verify: () => true as never },
+      {
+        verify: () =>
+          ({
+            status: "authenticated",
+            principal: { ...principal, extra: true },
+          }) as never,
+      },
+      {
+        verify: () => {
+          throw new Error("verifier unavailable");
+        },
+      },
+      {
+        verify: async () => {
+          throw new Error("async verifier unavailable");
+        },
+      },
+    ] satisfies InterventionAuthenticationPort[]) {
+      const fixture = await startInterventionRun(authentication);
+      expect((await fixture.run.intervene(fixture.bound)).status).toBe("rejected");
+      fixture.release();
+      await fixture.run.result();
+      expect(fixture.observed()).toBe(0);
+    }
+  });
+
+  test("rechecks pending and terminal state after asynchronous authentication", async () => {
+    let authenticate!: (
+      result: Awaited<ReturnType<InterventionAuthenticationPort["verify"]>>,
+    ) => void;
+    const authentication = new Promise<
+      Awaited<ReturnType<InterventionAuthenticationPort["verify"]>>
+    >((resolve) => {
+      authenticate = resolve;
+    });
+    const duplicateFixture = await startInterventionRun({
+      verify: () => authentication,
+    });
+    const first = duplicateFixture.run.intervene(duplicateFixture.bound);
+    const duplicate = duplicateFixture.run.intervene(duplicateFixture.bound);
+    authenticate({ status: "authenticated", principal });
+    expect((await Promise.all([first, duplicate])).map(({ status }) => status).sort()).toEqual([
+      "accepted",
+      "rejected",
+    ]);
+    duplicateFixture.release();
+    await duplicateFixture.run.result();
+    expect(duplicateFixture.observed()).toBe(1);
+
+    let authenticateAfterTerminal!: (
+      result: Awaited<ReturnType<InterventionAuthenticationPort["verify"]>>,
+    ) => void;
+    const terminalAuthentication = new Promise<
+      Awaited<ReturnType<InterventionAuthenticationPort["verify"]>>
+    >((resolve) => {
+      authenticateAfterTerminal = resolve;
+    });
+    const terminalFixture = await startInterventionRun({
+      verify: () => terminalAuthentication,
+    });
+    const late = terminalFixture.run.intervene(terminalFixture.bound);
+    terminalFixture.release();
+    await terminalFixture.run.result();
+    authenticateAfterTerminal({ status: "authenticated", principal });
+    expect((await late).status).toBe("already-terminal");
+    expect(terminalFixture.observed()).toBe(0);
   });
 
   test("validates forged child requests before recursion", async () => {
@@ -357,12 +511,12 @@ describe("createLocalAgentRunner", () => {
           try {
             await context.startChild(
               request(
-                prepareAgentSpec({
+                {
                   agentId: "forged-child",
                   version: contractVersion("2.0.0"),
                   instructions: "Bypass.",
                   effectRequirement: "read-only",
-                }),
+                } as PreparedAgentSpec,
                 { kind: "child" },
               ),
             );
@@ -387,9 +541,7 @@ describe("createLocalAgentRunner", () => {
         if ((context.request.input as { kind: string }).kind === "child") {
           return { status: "completed", output: { child: true } };
         }
-        const child = await context.startChild(
-          request(context.request.agent, { kind: "child" }),
-        );
+        const child = await context.startChild(request(context.request.agent, { kind: "child" }));
         childIdentity = child.identity;
         await child.result();
         return { status: "completed" };
@@ -449,7 +601,7 @@ describe("createLocalAgentRunner", () => {
       const target = runner(
         {
           execute: () => ({ status: "completed" }),
-          async resume(context) {
+          async resume({ context }) {
             try {
               await context.controlledToolExecution!.execute({
                 call: { invocation: { stepId: STEP_ONE } },
@@ -485,15 +637,18 @@ describe("createLocalAgentRunner", () => {
   test("settles and closes atomically when the clock fails at terminal time", async () => {
     const port = identityPort();
     let clockCalls = 0;
-    const target = runner({ execute: () => ({ status: "completed" }) }, {
-      identity: {
-        ...port,
-        now: () => {
-          clockCalls += 1;
-          return clockCalls >= 3 ? "bad-clock" : "2026-07-29T14:00:00.000Z";
+    const target = runner(
+      { execute: () => ({ status: "completed" }) },
+      {
+        identity: {
+          ...port,
+          now: () => {
+            clockCalls += 1;
+            return clockCalls >= 3 ? "bad-clock" : "2026-07-29T14:00:00.000Z";
+          },
         },
       },
-    });
+    );
     const run = await target.start(request(await prepare(target), null));
 
     expect((await run.result()).status).toBe("completed");
@@ -528,7 +683,7 @@ describe("createLocalAgentRunner", () => {
     );
     const agent = await prepare(target);
 
-    expect(() => target.start(request(agent, null))).toThrow("canonical event IDs");
+    expect(() => target.start(request(agent, null))).toThrow("must mint UUIDv7 event IDs");
     expect(executed).toBe(false);
   });
 
@@ -546,10 +701,7 @@ describe("createLocalAgentRunner", () => {
 
     expect((await run.result()).status).toBe("failed");
     const events = await collect(run);
-    expect(events.map((event) => event.kind)).toEqual([
-      "agent.run.started",
-      "agent.run.failed",
-    ]);
+    expect(events.map((event) => event.kind)).toEqual(["agent.run.started", "agent.run.failed"]);
     expect(JSON.stringify(events)).not.toContain("secret");
   });
 
@@ -579,9 +731,7 @@ describe("createLocalAgentRunner", () => {
           },
         }) as never,
     });
-    const badRun = await badResultRunner.start(
-      request(await prepare(badResultRunner), null),
-    );
+    const badRun = await badResultRunner.start(request(await prepare(badResultRunner), null));
     expect((await badRun.result()).status).toBe("failed");
     expect((await collect(badRun)).at(-1)?.kind).toBe("agent.run.failed");
   });

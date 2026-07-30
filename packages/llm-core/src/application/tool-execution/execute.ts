@@ -2,7 +2,7 @@
  * This is the auditable application state machine. Its branches deliberately
  * mirror durable receipt states and fail-closed recovery paths.
  */
-import type { JsonValue, RunId } from "#contracts";
+import { isUuidV7, type JsonValue, type RunId } from "#contracts";
 import {
   approvalId,
   authorizePolicyDecision,
@@ -30,6 +30,7 @@ import {
 } from "../../features/evidence/public";
 import {
   bindAction,
+  isRegisteredToolBinding,
   type BoundAction,
   type EffectClass,
   type ToolExecutionControl,
@@ -60,6 +61,13 @@ const TERMINAL_STATES = new Set<ToolReceiptState>([
 ]);
 
 const meaningfulEffect = (effectClass: EffectClass): boolean => effectClass !== "read-only";
+
+const mintedId = <TId extends string>(value: TId, label: string): TId => {
+  if (!isUuidV7(value)) {
+    throw new TypeError(`${label} identity ports must mint canonical UUIDv7 IDs.`);
+  }
+  return value;
+};
 
 const requireRunId = (input: ExecuteControlledToolInput): RunId => {
   const runId = input.call.invocation.runId;
@@ -145,7 +153,7 @@ const reservationEvent = (
   input: ExecuteControlledToolInput,
   receipt: ToolExecutionReceipt,
 ): ExecutionEvent => ({
-  eventId: input.facts.newEventId(),
+  eventId: mintedId(input.facts.newEventId(), "Tool execution event"),
   kind: "tool.receipt.reserved",
   occurredAt: input.facts.now(),
   sequence: receipt.revision,
@@ -162,7 +170,7 @@ const transitionEvent = (
   receipt: ToolExecutionReceipt,
   transition: ToolReceiptTransition,
 ): ExecutionEvent => ({
-  eventId: input.facts.newEventId(),
+  eventId: mintedId(input.facts.newEventId(), "Tool execution event"),
   kind: eventKind(transition.from, transition.to),
   occurredAt: transition.recordedAt,
   sequence: receipt.revision,
@@ -218,7 +226,7 @@ const append = async (
   details: TransitionDetails = {},
 ): Promise<{ receipt: ToolExecutionReceipt; delivery: EventDelivery }> => {
   const transition: ToolReceiptTransition = {
-    transitionId: input.facts.newEventId(),
+    transitionId: mintedId(input.facts.newEventId(), "Tool receipt transition"),
     from: receipt.state,
     to,
     recordedAt: input.facts.now(),
@@ -270,7 +278,7 @@ const cancellationRef = (
   receipt: ToolExecutionReceipt,
 ): CancellationRef =>
   receipt.cancellation ?? {
-    cancellationId: cancellationId(input.facts.newCancellationId()),
+    cancellationId: cancellationId(mintedId(input.facts.newCancellationId(), "Tool cancellation")),
     runId: receipt.runId,
     toolCallId: receipt.toolCallId,
     actionDigest: receipt.actionDigest,
@@ -385,7 +393,10 @@ const existingOutcome = (receipt: ToolExecutionReceipt): ControlledToolExecution
 export const executeControlledTool = async (
   originalInput: ExecuteControlledToolInput,
 ): Promise<ControlledToolExecutionOutcome> => {
-  const validatedCall = await originalInput.binding.validate(originalInput.call);
+  if (!isRegisteredToolBinding(originalInput.binding)) {
+    throw new TypeError("Controlled tool execution requires a registered ToolBinding.");
+  }
+  const validatedCall = await originalInput.binding.validate({ call: originalInput.call });
   let input = { ...originalInput, call: validatedCall };
   const requestedRunId = requireRunId(input);
   const effectClass = input.binding.spec.effect.class;
@@ -404,7 +415,7 @@ export const executeControlledTool = async (
     digestPort: input.digestPort,
   });
   const reserveRequest = {
-    receiptId: input.facts.newReceiptId(),
+    receiptId: mintedId(input.facts.newReceiptId(), "Tool receipt"),
     key: {
       securityDomain: input.securityDomain,
       tenantId: input.call.invocation.tenant?.tenantId,
@@ -496,7 +507,9 @@ export const executeControlledTool = async (
     }
     const policy: PolicyEvaluationRef | undefined = input.policy
       ? {
-          policyEvaluationId: policyEvaluationId(input.facts.newPolicyEvaluationId()),
+          policyEvaluationId: policyEvaluationId(
+            mintedId(input.facts.newPolicyEvaluationId(), "Tool policy evaluation"),
+          ),
           runId,
           toolCallId: input.call.toolCallId,
           actionDigest: bound.digest,
@@ -549,7 +562,7 @@ export const executeControlledTool = async (
         delivery = mergeDelivery(delivery, ready.delivery);
       } else {
         const approval: ApprovalRef = {
-          approvalId: approvalId(input.facts.newApprovalId()),
+          approvalId: approvalId(mintedId(input.facts.newApprovalId(), "Tool approval")),
           runId,
           toolCallId: input.call.toolCallId,
           actionDigest: bound.digest,
@@ -745,7 +758,7 @@ export const executeControlledTool = async (
     }
 
     try {
-      const result = await input.binding.execute(input.call, control);
+      const result = await input.binding.execute({ call: input.call, control });
       stopCancellationObservation();
       await cancellationPersistence;
       if (result.toolCallId !== input.call.toolCallId) {

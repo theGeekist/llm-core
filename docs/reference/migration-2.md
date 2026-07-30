@@ -119,10 +119,10 @@ After, compose the steps that your application owns:
 ```ts
 import { textRetrievalQuery } from "@geekist/llm-core/agent";
 
-const retrieved = await ports.retriever.retrieve(
-  { query: textRetrievalQuery(input.question) },
-  invocationContext,
-);
+const retrieved = await ports.retriever.retrieve({
+  request: { query: textRetrievalQuery(input.question) },
+  context: invocationContext,
+});
 const run = await runner.start({
   agent: answerAgent,
   invocationContext,

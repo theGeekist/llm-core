@@ -42,7 +42,10 @@ export const resolveLiveMedia = async (
   if (!resources) {
     throw new TypeError("Referenced media requires an authorized resource resolver.");
   }
-  const bytes = await resources.resolve(structuredClone(input.resource), structuredClone(context));
+  const bytes = await resources.resolve({
+    resource: structuredClone(input.resource),
+    context: structuredClone(context),
+  });
   if (
     !(bytes instanceof Uint8Array) ||
     bytes.byteLength !== input.resource.byteLength ||
@@ -70,10 +73,11 @@ export const projectNativeBytes = async (input: {
 }): Promise<PortableMediaContent> => {
   const bytes = decodeNativeBytes(input.value);
   const source = { mediaType: input.mediaType, bytes: bytes.slice() };
-  const projected = await input.output.project(
-    { mediaType: source.mediaType, bytes: source.bytes.slice() },
-    structuredClone(input.context),
-  );
+  const projected = await input.output.project({
+    mediaType: source.mediaType,
+    bytes: source.bytes.slice(),
+    context: structuredClone(input.context),
+  });
   return registerProjectedMediaContent(projected, source);
 };
 

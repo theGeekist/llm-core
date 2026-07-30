@@ -116,11 +116,11 @@ export function createLlamaIndexDocumentLoader(reader: BaseReader): DocumentLoad
 
 export function createLlamaIndexEmbedder(embedding: BaseEmbedding): Embedder {
   return {
-    embed: ({ text }) => {
+    embed: ({ request: { text } }) => {
       requireNonBlank(text, "Embedding");
       return embedding.getTextEmbedding(text);
     },
-    embedMany: ({ texts }) => {
+    embedMany: ({ request: { texts } }) => {
       if (texts.length === 0) throw new TypeError("Batch embedding requires text.");
       texts.forEach((text) => requireNonBlank(text, "Batch embedding"));
       return embedding.getTextEmbeddings(texts);
@@ -133,16 +133,16 @@ const chunks = (values: string[]): DocumentChunk[] =>
 
 export function createLlamaIndexTextSplitter(splitter: LlamaIndexTextSplitter): TextSplitter {
   return {
-    split: ({ text }) => {
+    split: ({ request: { text } }) => {
       requireNonBlank(text, "Text splitting");
       return splitter.splitText(text);
     },
-    splitBatch: ({ texts }) => {
+    splitBatch: ({ request: { texts } }) => {
       if (texts.length === 0) throw new TypeError("Batch text splitting requires text.");
       texts.forEach((text) => requireNonBlank(text, "Batch text splitting"));
       return texts.map((text) => splitter.splitText(text));
     },
-    splitWithMetadata: ({ text }) => {
+    splitWithMetadata: ({ request: { text } }) => {
       requireNonBlank(text, "Text splitting");
       return chunks(splitter.splitText(text));
     },
@@ -151,7 +151,7 @@ export function createLlamaIndexTextSplitter(splitter: LlamaIndexTextSplitter): 
 
 export function createLlamaIndexDocumentTransformer(parser: NodeParser): DocumentTransformer {
   return {
-    transform: (documents) => {
+    transform: ({ documents }) => {
       if (documents.length === 0) throw new TypeError("Transformation requires documents.");
       return maybeMapArray(
         fromLlamaIndexNode,
@@ -163,7 +163,7 @@ export function createLlamaIndexDocumentTransformer(parser: NodeParser): Documen
 
 export function createLlamaIndexRetriever(retriever: BaseRetriever): Retriever {
   return {
-    retrieve: ({ query }) => {
+    retrieve: ({ request: { query } }) => {
       const text = retrievalQueryText(query);
       requireNonBlank(text, "Retrieval");
       return maybeMap(
@@ -181,7 +181,7 @@ const nodeText = (node: BaseNode) =>
 
 export function createLlamaIndexReranker(reranker: BaseNodePostprocessor): Reranker {
   return {
-    rerank: ({ query, documents }) => {
+    rerank: ({ request: { query, documents } }) => {
       if (documents.length === 0) throw new TypeError("Reranking requires documents.");
       const text = retrievalQueryText(query);
       requireNonBlank(text, "Reranking");
@@ -215,7 +215,7 @@ const embeddedNode = (record: VectorRecord) => {
 
 export function createLlamaIndexVectorStore(store: BaseVectorStore): VectorStore {
   return {
-    upsert: (request: VectorStoreUpsertRequest) => {
+    upsert: ({ request }: { request: VectorStoreUpsertRequest }) => {
       if (request.namespace !== undefined) {
         throw new TypeError("The LlamaIndex vector adapter cannot guarantee namespace isolation.");
       }
@@ -226,7 +226,7 @@ export function createLlamaIndexVectorStore(store: BaseVectorStore): VectorStore
       if (nodes.length === 0) throw new TypeError("Vector upsert requires values.");
       return maybeMap((ids) => ({ ids }), store.add(nodes));
     },
-    delete: (request: VectorStoreDeleteRequest) => {
+    delete: ({ request }: { request: VectorStoreDeleteRequest }) => {
       if (request.namespace !== undefined) {
         throw new TypeError("The LlamaIndex vector adapter cannot guarantee namespace isolation.");
       }
@@ -324,7 +324,7 @@ const streamEvents = async function* (
 
 export function createLlamaIndexQueryEngine(engine: BaseQueryEngine): QueryEngine {
   return {
-    query: ({ query }) => {
+    query: ({ request: { query } }) => {
       const text = retrievalQueryText(query);
       requireNonBlank(text, "Query engine");
       return maybeMap(
@@ -332,7 +332,7 @@ export function createLlamaIndexQueryEngine(engine: BaseQueryEngine): QueryEngin
         engine.query({ query: queryType(query) }),
       );
     },
-    stream: ({ query }) => {
+    stream: ({ request: { query } }) => {
       const text = retrievalQueryText(query);
       requireNonBlank(text, "Query engine");
       return maybeMap(
@@ -367,7 +367,7 @@ export function createLlamaIndexResponseSynthesizer(
   synthesizer: BaseSynthesizer,
 ): ResponseSynthesizer {
   return {
-    synthesize: (request) => {
+    synthesize: ({ request }) => {
       if (request.documents.length === 0) {
         throw new TypeError("Response synthesis requires documents.");
       }
@@ -377,7 +377,7 @@ export function createLlamaIndexResponseSynthesizer(
         synthesize(synthesizer, request),
       );
     },
-    stream: (request) => {
+    stream: ({ request }) => {
       if (request.documents.length === 0) {
         throw new TypeError("Response synthesis requires documents.");
       }

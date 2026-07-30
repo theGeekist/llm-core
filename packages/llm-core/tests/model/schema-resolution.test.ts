@@ -27,10 +27,14 @@ describe("trusted schema resolution", () => {
   test("registers matching strict JSON with mutation isolation", async () => {
     const native = DOCUMENT_BYTES.slice();
     let receivedContext: typeof CONTEXT | undefined;
-    const resolved = await resolveSchemaDocument(REF, CONTEXT, {
-      resolve: (_schema, context) => {
-        receivedContext = context;
-        return { schema: REF, bytes: native };
+    const resolved = await resolveSchemaDocument({
+      schema: REF,
+      context: CONTEXT,
+      resolver: {
+        resolve: ({ context }) => {
+          receivedContext = context;
+          return { schema: REF, bytes: native };
+        },
       },
     });
     native[0] = 0;
@@ -42,15 +46,23 @@ describe("trusted schema resolution", () => {
   });
 
   test("independently rejects mismatched, malformed and cyclic resolver values", async () => {
-    expect(() => resolveSchemaDocument(REF, CONTEXT, { resolve: () => null })).toThrow(
-      "exact bytes",
-    );
     expect(() =>
-      resolveSchemaDocument(REF, CONTEXT, {
-        resolve: () => ({
-          schema: REF,
-          bytes: new TextEncoder().encode('{"different":true}'),
-        }),
+      resolveSchemaDocument({
+        schema: REF,
+        context: CONTEXT,
+        resolver: { resolve: () => null },
+      }),
+    ).toThrow("exact bytes");
+    expect(() =>
+      resolveSchemaDocument({
+        schema: REF,
+        context: CONTEXT,
+        resolver: {
+          resolve: () => ({
+            schema: REF,
+            bytes: new TextEncoder().encode('{"different":true}'),
+          }),
+        },
       }),
     ).toThrow("SHA-256");
     const malformedUtf8 = new Uint8Array([0xff]);
@@ -59,11 +71,15 @@ describe("trusted schema resolution", () => {
       digest: digest(createHash("sha256").update(malformedUtf8).digest("hex")),
     });
     expect(() =>
-      resolveSchemaDocument(malformedUtf8Ref, CONTEXT, {
-        resolve: () => ({
-          schema: malformedUtf8Ref,
-          bytes: malformedUtf8,
-        }),
+      resolveSchemaDocument({
+        schema: malformedUtf8Ref,
+        context: CONTEXT,
+        resolver: {
+          resolve: () => ({
+            schema: malformedUtf8Ref,
+            bytes: malformedUtf8,
+          }),
+        },
       }),
     ).toThrow("strict UTF-8 JSON");
 
@@ -73,16 +89,24 @@ describe("trusted schema resolution", () => {
       digest: digest(createHash("sha256").update(malformedBytes).digest("hex")),
     });
     expect(() =>
-      resolveSchemaDocument(malformedRef, CONTEXT, {
-        resolve: () => ({ schema: malformedRef, bytes: malformedBytes }),
+      resolveSchemaDocument({
+        schema: malformedRef,
+        context: CONTEXT,
+        resolver: {
+          resolve: () => ({ schema: malformedRef, bytes: malformedBytes }),
+        },
       }),
     ).toThrow("strict UTF-8 JSON");
 
     const cyclic: Record<string, unknown> = { schema: REF, bytes: DOCUMENT_BYTES };
     cyclic.self = cyclic;
-    expect(() => resolveSchemaDocument(REF, CONTEXT, { resolve: () => cyclic as never })).toThrow(
-      "exact bytes",
-    );
+    expect(() =>
+      resolveSchemaDocument({
+        schema: REF,
+        context: CONTEXT,
+        resolver: { resolve: () => cyclic as never },
+      }),
+    ).toThrow("exact bytes");
   });
 });
 

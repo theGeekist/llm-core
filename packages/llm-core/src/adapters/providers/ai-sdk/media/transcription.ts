@@ -10,7 +10,7 @@ export const fromAiSdkTranscriptionModel = (
   model: TranscriptionModelV3,
   options: Pick<AiSdkMediaAdapterOptions, "resources"> = {},
 ): TranscriptionPort => ({
-  async transcribe(request, context) {
+  async transcribe({ request, context }) {
     if (!isLiveMediaInput(request.audio)) {
       throw new TypeError("Transcription requires valid live media input.");
     }

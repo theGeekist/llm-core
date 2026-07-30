@@ -14,14 +14,19 @@ const context: InvocationContext = {
 };
 const id = conversationId("018f0f4e-8c5b-7a91-8c3b-123456789c02");
 
-await cache.set(context, {
+await cache.set({
+  context,
   key: "tenant-a:answer",
   value: jsonStorageValue({ answer: 42 }),
   ttlMs: 60_000,
 });
 
-await conversations.append(context, id, {
-  role: "user",
-  content: [{ kind: "text", text: "Remember this." }],
-  occurredAt: new Date().toISOString(),
+await conversations.append({
+  context,
+  conversationId: id,
+  turn: {
+    role: "user",
+    content: [{ kind: "text", text: "Remember this." }],
+    occurredAt: new Date().toISOString(),
+  },
 });

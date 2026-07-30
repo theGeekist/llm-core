@@ -13,8 +13,8 @@ const context: InvocationContext = {
   invocationId: newCoreId<InvocationId>("018f0f4e-8c5b-7a91-8c3b-123456789c01"),
 };
 
-await indexer.index(
-  {
+await indexer.index({
+  request: {
     documents: [
       textDocument("Receipts are authoritative.", {
         id: "control/receipts",
@@ -24,6 +24,9 @@ await indexer.index(
     options: { cleanup: "incremental", batchSize: 50 },
   },
   context,
-);
+});
 
-await retriever.retrieve({ query: textRetrievalQuery("What is authoritative?") }, context);
+await retriever.retrieve({
+  request: { query: textRetrievalQuery("What is authoritative?") },
+  context,
+});

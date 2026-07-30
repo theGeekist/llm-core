@@ -22,10 +22,12 @@ export interface LocalSkillLoadRequest {
 }
 
 export interface LocalSkillLoader {
-  load(
-    request: LocalSkillLoadRequest,
-    context: InvocationContext,
-  ): MaybePromise<readonly LocalSkillCandidate[]>;
+  load(input: LocalSkillLoadInput): MaybePromise<readonly LocalSkillCandidate[]>;
+}
+
+export interface LocalSkillLoadInput {
+  readonly request: LocalSkillLoadRequest;
+  readonly context: InvocationContext;
 }
 
 const SCOPES = new Set<SkillScope>(["admin", "repo", "system", "user"]);
@@ -93,11 +95,15 @@ const stripLocalPaths = (
   return Object.freeze(registered);
 };
 
-export const loadAgentSkills = (
-  request: LocalSkillLoadRequest,
-  context: InvocationContext,
-  loader: LocalSkillLoader,
-): MaybePromise<readonly AgentSkillRef[]> => {
+export interface LoadAgentSkillsInput extends LocalSkillLoadInput {
+  readonly loader: LocalSkillLoader;
+}
+
+export const loadAgentSkills = ({
+  request,
+  context,
+  loader,
+}: LoadAgentSkillsInput): MaybePromise<readonly AgentSkillRef[]> => {
   if (
     typeof request !== "object" ||
     request === null ||
@@ -118,6 +124,9 @@ export const loadAgentSkills = (
   const disabledSkillIds = new Set<string>(request.disabledSkillIds ?? []);
   return maybeMap(
     (candidates) => stripLocalPaths(candidates, disabledSkillIds),
-    loader.load(structuredClone(request), structuredClone(context)),
+    loader.load({
+      request: structuredClone(request),
+      context: structuredClone(context),
+    }),
   );
 };

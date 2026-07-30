@@ -1,4 +1,10 @@
-import type { JsonValue, ToolCallId } from "#contracts";
+import {
+  isContractVersion,
+  isExternalId,
+  isJsonValue,
+  type JsonValue,
+  type ToolCallId,
+} from "#contracts";
 import { isPromiseLike, maybeChain, maybeReduce, type MaybePromise } from "#shared/maybe";
 import {
   registerConversationRecord,
@@ -14,9 +20,19 @@ import type {
   ToolCallPart,
   ToolDeclaration,
 } from "../../features/model/public";
-import type { ToolBinding, ToolCall, ToolResult } from "../../features/tooling/public";
-import type { PreparedAgentSpec, RunResult } from "../../features/agent/public";
+import {
+  isRegisteredToolBinding,
+  type ToolBinding,
+  type ToolCall,
+  type ToolResult,
+} from "../../features/tooling/public";
+import {
+  isPreparedAgentSpec,
+  type PreparedAgentSpec,
+  type RunResult,
+} from "../../features/agent/public";
 import type {
+  DeclaredSubagentBinding,
   LocalAgentExecutionContext,
   LocalAgentExecutionResult,
   LocalAgentProgramPort,
@@ -26,14 +42,18 @@ export interface ModelToolAgentProgramOptions {
   readonly model: Model;
   readonly tools?: readonly ToolBinding[];
   readonly conversation?: ConversationStore;
-  readonly subagents?: Readonly<Record<string, PreparedAgentSpec>>;
+  readonly subagents?: readonly DeclaredSubagentBinding[];
   readonly maxModelCalls?: number;
   readonly projectOutput?: (content: readonly ModelContentPart[]) => JsonValue;
   readonly controlledToolInput?: (
-    binding: ToolBinding,
-    call: ToolCall,
-    context: LocalAgentExecutionContext,
+    input: ControlledToolInputFactoryInput,
   ) => Parameters<NonNullable<LocalAgentExecutionContext["controlledToolExecution"]>["execute"]>[0];
+}
+
+export interface ControlledToolInputFactoryInput {
+  readonly binding: ToolBinding;
+  readonly call: ToolCall;
+  readonly context: LocalAgentExecutionContext;
 }
 
 interface LoopState {
@@ -41,6 +61,13 @@ interface LoopState {
   readonly messages: ModelMessage[];
   modelCalls: number;
   toolCalls: number;
+}
+
+interface ComposedSubagentBinding {
+  readonly declaration: Readonly<ToolDeclaration>;
+  readonly agentId: string;
+  readonly agentVersion: DeclaredSubagentBinding["agentVersion"];
+  readonly resolve: DeclaredSubagentBinding["resolve"];
 }
 
 const textOutput = (content: readonly ModelContentPart[]): JsonValue => {
@@ -61,6 +88,50 @@ const toolDeclarations = (bindings: readonly ToolBinding[]): ToolDeclaration[] =
     description: spec.description,
     parameters: spec.inputSchema.document,
   }));
+
+const freezeJson = <T extends JsonValue>(value: T): T => {
+  if (value !== null && typeof value === "object" && !Object.isFrozen(value)) {
+    Object.freeze(value);
+    Object.values(value).forEach((child) => freezeJson(child));
+  }
+  return value;
+};
+
+const snapshotDeclaration = (declaration: Readonly<ToolDeclaration>): Readonly<ToolDeclaration> => {
+  if (
+    !isJsonValue(declaration) ||
+    !isExternalId(declaration.name) ||
+    (declaration.description !== undefined && typeof declaration.description !== "string")
+  ) {
+    throw new TypeError("Subagent declarations must be portable model tool declarations.");
+  }
+  const keys = Object.keys(declaration);
+  if (keys.some((key) => !["name", "description", "parameters"].includes(key))) {
+    throw new TypeError("Subagent declarations cannot contain undeclared fields.");
+  }
+  return freezeJson(structuredClone(declaration));
+};
+
+const composeSubagents = (
+  bindings: readonly DeclaredSubagentBinding[],
+): readonly ComposedSubagentBinding[] => {
+  const composed = bindings.map((binding): ComposedSubagentBinding => {
+    if (
+      !isExternalId(binding.agentId) ||
+      !isContractVersion(binding.agentVersion) ||
+      typeof binding.resolve !== "function"
+    ) {
+      throw new TypeError("Subagent bindings require a stable expected agent identity.");
+    }
+    return Object.freeze({
+      declaration: snapshotDeclaration(binding.declaration),
+      agentId: binding.agentId,
+      agentVersion: binding.agentVersion,
+      resolve: binding.resolve,
+    });
+  });
+  return Object.freeze(composed);
+};
 
 const initialMessages = (
   context: LocalAgentExecutionContext,
@@ -98,6 +169,27 @@ const childToolResult = (call: ToolCallPart, result: RunResult): ModelContentPar
   ...(result.status !== "completed" ? { isError: true } : {}),
 });
 
+const unavailableChildResult = (call: ToolCallPart): ModelContentPart =>
+  asToolResultPart(call, {
+    toolCallId: call.toolCallId,
+    status: "failed",
+    error: { code: "subagent-unavailable", retryable: false },
+  });
+
+const runDeclaredSubagent = (
+  state: LoopState,
+  call: ToolCallPart,
+  child: PreparedAgentSpec,
+): MaybePromise<ModelContentPart> =>
+  maybeChain(
+    (run) => maybeChain((result) => childToolResult(call, result), run.result()),
+    state.context.startChild({
+      agent: child,
+      invocationContext: state.context.request.invocationContext,
+      input: call.arguments,
+    }),
+  );
+
 const appendConversation = (
   store: ConversationStore | undefined,
   state: LoopState,
@@ -116,7 +208,11 @@ const appendConversation = (
   // eslint-disable-next-line consistent-return
   return maybeChain(
     (): void => {},
-    store.append(state.context.request.invocationContext, conversationId, turn),
+    store.append({
+      context: state.context.request.invocationContext,
+      conversationId,
+      turn,
+    }),
   );
 };
 
@@ -140,24 +236,41 @@ export const createModelToolAgentProgram = (
   options: ModelToolAgentProgramOptions,
 ): LocalAgentProgramPort => {
   const bindings = [...(options.tools ?? [])];
+  if (bindings.some((binding) => !isRegisteredToolBinding(binding))) {
+    throw new TypeError("Model tool programs require registered ToolBinding values.");
+  }
   const byName = new Map(bindings.map((binding) => [binding.spec.id as string, binding]));
   if (byName.size !== bindings.length) {
     throw new TypeError("Agent tool bindings must use unique tool identities.");
   }
+  const subagents = composeSubagents(options.subagents ?? []);
+  const subagentsByName = new Map(subagents.map((binding) => [binding.declaration.name, binding]));
+  if (subagentsByName.size !== subagents.length) {
+    throw new TypeError("Agent subagent bindings must use unique tool declaration names.");
+  }
+  if ([...subagentsByName.keys()].some((name) => byName.has(name))) {
+    throw new TypeError("Agent tool and subagent declarations cannot use the same name.");
+  }
+  const declarations = Object.freeze([
+    ...toolDeclarations(bindings),
+    ...subagents.map((binding) => binding.declaration),
+  ]);
   const maxModelCalls = validateLimit(options.maxModelCalls);
   const projectOutput = options.projectOutput ?? textOutput;
 
   const runTool = (state: LoopState, callPart: ToolCallPart): MaybePromise<ModelContentPart> => {
-    const child = options.subagents?.[callPart.name];
-    if (child) {
-      return maybeChain(
-        (run) => maybeChain((result) => childToolResult(callPart, result), run.result()),
-        state.context.startChild({
-          agent: child,
-          invocationContext: state.context.request.invocationContext,
-          input: callPart.arguments,
-        }),
-      );
+    const subagent = subagentsByName.get(callPart.name);
+    if (subagent) {
+      return maybeChain((child) => {
+        if (
+          !isPreparedAgentSpec(child) ||
+          child.agentId !== subagent.agentId ||
+          child.version !== subagent.agentVersion
+        ) {
+          return unavailableChildResult(callPart);
+        }
+        return runDeclaredSubagent(state, callPart, child);
+      }, subagent.resolve());
     }
     const binding = byName.get(callPart.name);
     if (!binding) {
@@ -166,6 +279,9 @@ export const createModelToolAgentProgram = (
         status: "failed",
         error: { code: "unknown-tool", retryable: false },
       });
+    }
+    if (!isRegisteredToolBinding(binding)) {
+      throw new TypeError("Model tool execution requires a registered ToolBinding.");
     }
     const call: ToolCall = {
       toolCallId: callPart.toolCallId as ToolCallId,
@@ -198,11 +314,11 @@ export const createModelToolAgentProgram = (
           });
         },
         state.context.controlledToolExecution.execute(
-          options.controlledToolInput(binding, call, state.context),
+          options.controlledToolInput({ binding, call, context: state.context }),
         ),
       );
     }
-    return maybeChain((result) => asToolResultPart(callPart, result), binding.execute(call));
+    return maybeChain((result) => asToolResultPart(callPart, result), binding.execute({ call }));
   };
 
   // The loop deliberately keeps the model response, tool fan-out and portable
@@ -271,13 +387,13 @@ export const createModelToolAgentProgram = (
           appendConversation(options.conversation, state, assistant),
         );
       },
-      options.model.generate(
-        {
+      options.model.generate({
+        request: {
           messages: structuredClone(state.messages),
-          ...(bindings.length > 0 ? { tools: toolDeclarations(bindings) } : {}),
+          ...(declarations.length > 0 ? { tools: [...declarations] } : {}),
         },
-        state.context.request.invocationContext,
-      ),
+        context: state.context.request.invocationContext,
+      }),
     );
   };
   /* eslint-enable sonarjs/no-nested-functions */
@@ -288,7 +404,10 @@ export const createModelToolAgentProgram = (
     const conversationId = context.request.invocationContext.conversationId;
     const loaded =
       options.conversation && conversationId
-        ? options.conversation.read(context.request.invocationContext, conversationId)
+        ? options.conversation.read({
+            context: context.request.invocationContext,
+            conversationId,
+          })
         : null;
     const start = (record: Awaited<typeof loaded>) => {
       const registered = record === null ? null : registerConversationRecord(record);

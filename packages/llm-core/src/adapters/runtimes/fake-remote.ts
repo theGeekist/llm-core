@@ -1,5 +1,4 @@
 import type { JsonValue } from "#contracts";
-import { prepareAgentSpec } from "../../features/agent/public";
 import type {
   AgentCancellationRequest,
   AgentResumeRequest,
@@ -11,6 +10,7 @@ import type {
   PreparedAgentSpec,
   RunResult,
 } from "../../features/agent/public";
+import { createPreparedAgentSpec } from "../../features/agent/public";
 import type { InterventionDecision } from "../../features/state/public";
 import { registerResumableCheckpoint } from "../../features/state/public";
 
@@ -105,7 +105,7 @@ export const createDeterministicFakeRemoteRunner = (
   const prepare = async (spec: AgentSpec): Promise<PreparedAgentSpec> =>
     invoke("prepare", options, async () => {
       const remote = await server.prepare(portableClone(spec));
-      const client = prepareAgentSpec(portableClone(spec));
+      const client = createPreparedAgentSpec(portableClone(spec));
       preparedTokens.set(client, remote);
       return client;
     });

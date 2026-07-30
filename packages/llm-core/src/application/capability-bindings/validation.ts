@@ -13,6 +13,13 @@ import {
   type EvidenceRef,
   type NativeExtensions,
 } from "#contracts";
+import { isCapabilityClaim } from "../../contracts/capability-claim-validation";
+import {
+  cloneFrozen,
+  deepFreeze,
+  hasOnlyKeys,
+  isPortableRecord as isRecord,
+} from "#shared/portable-data";
 import { isSensitivePortableString, isPortableJsonValue } from "../../features/storage/public";
 import { CAPABILITY_PORT_DEFINITIONS, type CapabilityPortDefinition } from "./ports";
 import type {
@@ -43,24 +50,6 @@ const PORT_KINDS = new Set<CapabilityPortKind>(
   Object.keys(CAPABILITY_PORT_DEFINITIONS) as CapabilityPortKind[],
 );
 const registeredBindings = new WeakSet<object>();
-
-const isRecord = (value: unknown): value is Record<string, unknown> =>
-  typeof value === "object" &&
-  value !== null &&
-  !Array.isArray(value) &&
-  (Object.getPrototypeOf(value) === Object.prototype || Object.getPrototypeOf(value) === null);
-
-const hasOnlyKeys = (
-  value: Record<string, unknown>,
-  required: readonly string[],
-  optional: readonly string[] = [],
-): boolean => {
-  const allowed = new Set([...required, ...optional]);
-  return (
-    required.every((key) => Object.hasOwn(value, key)) &&
-    Object.keys(value).every((key) => allowed.has(key))
-  );
-};
 
 const hasOnlyDataPropertiesDeep = (value: unknown, ancestors = new Set<object>()): boolean => {
   if (value === null || typeof value !== "object") return true;
@@ -108,19 +97,9 @@ const readClosedBinding = (
   }
 };
 
-const deepFreeze = <T>(value: T): T => {
-  if (value && typeof value === "object" && !Object.isFrozen(value)) {
-    Object.freeze(value);
-    for (const child of Object.values(value)) {
-      deepFreeze(child);
-    }
-  }
-  return value;
-};
-
 const frozenDescriptorClone = <T>(value: T): T => {
   try {
-    return deepFreeze(structuredClone(value));
+    return cloneFrozen(value);
   } catch {
     throw new TypeError(
       "Capability descriptors must be closed, portable and implementation-bound.",
@@ -224,55 +203,19 @@ const isEvidence = (value: unknown, bindingId: string): value is ConformanceEvid
   );
 };
 
-const CLAIM_REQUIRED_KEYS = ["capabilityId", "version", "status", "evidence"] as const;
-const CLAIM_OPTIONAL_KEYS = ["additionalEvidence", "extensions"] as const;
-
 const evidenceForClaim = (claim: CapabilityClaim): readonly ConformanceEvidence[] => [
   claim.evidence,
   ...(claim.additionalEvidence ?? []),
 ];
 
-const isClaim = (value: unknown, bindingId: string): value is CapabilityClaim => {
-  if (
-    !isRecord(value) ||
-    !isCapabilityId(value.capabilityId) ||
-    !isContractVersion(value.version) ||
-    (value.extensions !== undefined && !isCapabilityExtensions(value.extensions)) ||
-    !isEvidence(value.evidence, bindingId) ||
-    (value.additionalEvidence !== undefined &&
-      (!Array.isArray(value.additionalEvidence) ||
-        !value.additionalEvidence.every((entry) => isEvidence(entry, bindingId))))
-  ) {
-    return false;
-  }
-  if (value.status === "supported") {
-    return (
-      hasOnlyKeys(value, CLAIM_REQUIRED_KEYS, CLAIM_OPTIONAL_KEYS) &&
-      value.evidence.result === "pass" &&
-      evidenceForClaim(value as unknown as CapabilityClaim).every(
-        (evidence) => evidence.result === "pass",
-      )
-    );
-  }
-  if (value.status === "conditional") {
-    return (
-      hasOnlyKeys(value, [...CLAIM_REQUIRED_KEYS, "conditions"], CLAIM_OPTIONAL_KEYS) &&
-      (value.evidence.result === "pass" || value.evidence.result === "partial") &&
-      evidenceForClaim(value as unknown as CapabilityClaim).every(
-        (evidence) => evidence.result === "pass" || evidence.result === "partial",
-      ) &&
-      isConstraintList(value.conditions, 1)
-    );
-  }
-  return (
-    value.status === "unsupported" &&
-    hasOnlyKeys(value, CLAIM_REQUIRED_KEYS, CLAIM_OPTIONAL_KEYS) &&
-    value.evidence.result === "fail" &&
-    evidenceForClaim(value as unknown as CapabilityClaim).every(
-      (evidence) => evidence.result === "fail",
-    )
-  );
-};
+const isClaim = (value: unknown, bindingId: string): value is CapabilityClaim =>
+  isCapabilityClaim(value, {
+    isCapabilityId,
+    isContractVersion,
+    isEvidence: (evidence): evidence is ConformanceEvidence => isEvidence(evidence, bindingId),
+    isConstraint,
+    isExtensions: isCapabilityExtensions,
+  });
 
 const verifyClaimEvidence = (
   kind: CapabilityPortKind,

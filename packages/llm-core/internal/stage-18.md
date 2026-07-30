@@ -63,10 +63,10 @@ export type StageEnv<...> = {
 };
 ```
 
-### 3) Runner becomes iterative (not composeK)
+### 3) Runner becomes iterative
 
-Replace `composeK` with a stage loop that can pause mid-run. The stage index becomes part of the
-pause snapshot so resume can continue deterministically.
+Use a stage loop that can pause mid-run. The stage index becomes part of the pause snapshot so
+resume can continue deterministically.
 
 ```ts
 // pipeline/src/core/runner/program.ts (internal)
@@ -168,7 +168,7 @@ Epipe runtime changes (follow-up stage):
 
 ## Risks
 
-- Stage execution order must remain deterministic after switching from `composeK`.
+- Stage execution order must remain deterministic after switching to an iterative runner.
 - Resume must not re-run already-completed stages.
 - Rollback stacks must remain valid after resume (no duplication).
 

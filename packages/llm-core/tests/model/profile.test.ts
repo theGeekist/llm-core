@@ -4,6 +4,7 @@ import type { CapabilityClaim, ContractVersion } from "#contracts";
 import {
   createBuiltinModelProfile,
   deploymentRef,
+  isRegisteredModelProfile,
   modelProfileId,
   modelRef,
   providerRef,
@@ -72,6 +73,9 @@ describe("model profile registration", () => {
       claims,
     };
     const registered = registerModelProfile(source);
+    expect(isRegisteredModelProfile(source)).toBe(false);
+    expect(isRegisteredModelProfile(registered)).toBe(true);
+    expect(isRegisteredModelProfile({ ...registered })).toBe(false);
     claims.push(first); // mutate the source array after registration
     expect(registered.claims.length).toBe(1);
     expect(Object.isFrozen(registered)).toBe(true);
@@ -99,6 +103,25 @@ describe("model profile registration", () => {
       evidence: {},
     } as unknown as CapabilityClaim;
     expect(() => registerModelProfile({ ...baseProfile(), claims: [malformed] })).toThrow();
+  });
+
+  test("rejects contradictory additional evidence through the canonical claim validator", () => {
+    const [good] = baseProfile().claims;
+    if (!good || good.status !== "supported") throw new Error("expected a supported builtin claim");
+    const contradictory = {
+      ...good,
+      additionalEvidence: [
+        {
+          ...good.evidence,
+          result: "fail",
+          failures: [{ name: "outcome", value: "failed" }],
+        },
+      ],
+    } as unknown as CapabilityClaim;
+
+    expect(() => registerModelProfile({ ...baseProfile(), claims: [contradictory] })).toThrow(
+      TypeError,
+    );
   });
 
   test("rejects a claim with a non-namespaced capability id", () => {

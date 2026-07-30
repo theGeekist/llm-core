@@ -83,7 +83,7 @@ export const createLlamaIndexConversationStore = (
 ): ConversationStore => {
   const { memory, onProjectionIssue } = input;
   const adapter: ConversationStore = {
-    read: (_context, conversationId) =>
+    read: ({ conversationId }) =>
       maybeMap((messages) => {
         const turns: ConversationTurn[] = [];
         let failed = false;
@@ -108,7 +108,7 @@ export const createLlamaIndexConversationStore = (
           revision: messages.length,
         });
       }, memory.getLLM()),
-    append: (_context, _conversationId, turn) => {
+    append: ({ turn }) => {
       const registered = registerConversationTurn(turn);
       const content = readText(registered);
       if (content === null) {

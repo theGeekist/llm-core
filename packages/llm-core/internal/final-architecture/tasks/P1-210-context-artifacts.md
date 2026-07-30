@@ -147,9 +147,8 @@ Implementation and review-remediation commits:
 
 ### Integration result
 
-- Added `#context` and `#artifacts` aliases in
-  `packages/llm-core/package.json`, targeting the two feature `public.ts`
-  files.
+- Published context and artifacts through their explicit package subpaths.
+  Their temporary private source aliases were removed at v2 convergence.
 - Published `./context` and `./artifacts` as the P1 extension of ADR-008's P0
   sixteen-subpath surface.
 - Added both public fronts to `PUBLIC_ENTRY_POINTS` in

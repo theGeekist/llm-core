@@ -1,11 +1,11 @@
 import type { RunId, ToolCallId } from "#contracts";
-import type { ExecutionMode } from "../tooling/public";
+import type { ExecutionConcurrency } from "../tooling/public";
 import type { ControlMaybePromise } from "./shared";
 
 export interface ConcurrencyRequest {
   runId: RunId;
   toolCallId: ToolCallId;
-  mode: ExecutionMode;
+  mode: ExecutionConcurrency;
 }
 
 /**
@@ -34,7 +34,7 @@ type SchedulerState = {
   queue: PendingRequest[];
 };
 
-const canAcquire = (state: SchedulerState, mode: ExecutionMode): boolean =>
+const canAcquire = (state: SchedulerState, mode: ExecutionConcurrency): boolean =>
   mode === "exclusive"
     ? !state.activeExclusive && state.activeShared === 0
     : !state.activeExclusive;

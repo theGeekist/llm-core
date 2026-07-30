@@ -94,11 +94,11 @@ export function createLangChainDocumentLoader(loader: BaseDocumentLoader): Docum
 
 export function createLangChainEmbedder(embeddings: EmbeddingsInterface<number[]>): Embedder {
   return {
-    embed: ({ text }) => {
+    embed: ({ request: { text } }) => {
       requireNonBlank(text, "Embedding");
       return embeddings.embedQuery(text);
     },
-    embedMany: ({ texts }) => {
+    embedMany: ({ request: { texts } }) => {
       if (texts.length === 0) throw new TypeError("Batch embedding requires text.");
       texts.forEach((text) => requireNonBlank(text, "Batch embedding"));
       return embeddings.embedDocuments(texts);
@@ -114,16 +114,16 @@ const toChunks = (documents: LangChainDocument[]): DocumentChunk[] =>
 
 export function createLangChainTextSplitter(splitter: LangChainTextSplitter): TextSplitter {
   return {
-    split: ({ text }) => {
+    split: ({ request: { text } }) => {
       requireNonBlank(text, "Text splitting");
       return splitter.splitText(text);
     },
-    splitBatch: ({ texts }) => {
+    splitBatch: ({ request: { texts } }) => {
       if (texts.length === 0) throw new TypeError("Batch text splitting requires text.");
       texts.forEach((text) => requireNonBlank(text, "Batch text splitting"));
       return maybeAll(texts.map((text) => splitter.splitText(text)));
     },
-    splitWithMetadata: ({ text }) => {
+    splitWithMetadata: ({ request: { text } }) => {
       requireNonBlank(text, "Text splitting");
       return maybeMap(toChunks, splitter.createDocuments([text], [{ source: "langchain" }]));
     },
@@ -132,7 +132,7 @@ export function createLangChainTextSplitter(splitter: LangChainTextSplitter): Te
 
 export function createLangChainRetriever(retriever: BaseRetrieverInterface): Retriever {
   return {
-    retrieve: ({ query }) => {
+    retrieve: ({ request: { query } }) => {
       const text = retrievalQueryText(query);
       requireNonBlank(text, "Retrieval");
       return maybeMap(
@@ -145,7 +145,7 @@ export function createLangChainRetriever(retriever: BaseRetrieverInterface): Ret
 
 export function createLangChainReranker(compressor: BaseDocumentCompressor): Reranker {
   return {
-    rerank: ({ query, documents }) => {
+    rerank: ({ request: { query, documents } }) => {
       if (documents.length === 0) throw new TypeError("Reranking requires documents.");
       const text = retrievalQueryText(query);
       requireNonBlank(text, "Reranking");
@@ -200,7 +200,7 @@ const vectorDocument = (record: VectorRecord) =>
 
 export function createLangChainVectorStore(store: LangChainVectorStore): VectorStore {
   return {
-    upsert: (request: VectorStoreUpsertRequest) => {
+    upsert: ({ request }: { request: VectorStoreUpsertRequest }) => {
       if ("documents" in request) {
         if (request.documents.length === 0) {
           throw new TypeError("Vector upsert requires documents.");
@@ -225,7 +225,7 @@ export function createLangChainVectorStore(store: LangChainVectorStore): VectorS
         ),
       );
     },
-    delete: (request: VectorStoreDeleteRequest) => {
+    delete: ({ request }: { request: VectorStoreDeleteRequest }) => {
       if ("ids" in request && request.ids.length === 0) {
         throw new TypeError("Vector delete requires ids.");
       }
@@ -278,7 +278,7 @@ const executeIndex = (
 
 export function createLangChainIndexer(input: LangChainIndexerInput): Indexer {
   return {
-    index: ({ documents, options }) => {
+    index: ({ request: { documents, options } }) => {
       if (documents.length === 0) throw new TypeError("Indexing requires documents.");
       return maybeChain(
         () => executeIndex(input, documents, options),

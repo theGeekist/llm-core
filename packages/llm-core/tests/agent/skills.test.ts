@@ -2,11 +2,11 @@ import { describe, expect, test } from "bun:test";
 import { contractVersion, digest, newCoreId, type InvocationId } from "#contracts";
 import {
   loadAgentSkills,
-  prepareAgentSpec,
   registerAgentSkill,
   type AgentSkillRef,
   type LocalSkillCandidate,
 } from "../../src/features/agent/public";
+import { prepareWithLocalRunner } from "./helpers";
 
 const SKILL: AgentSkillRef = registerAgentSkill({
   skillId: "skill:review",
@@ -23,11 +23,11 @@ describe("portable agent skills", () => {
       ...SKILL,
       localPath: "/Users/example/private/repo/SKILL.md",
     };
-    const skills = await loadAgentSkills(
-      { directories: ["/Users/example/private/repo"] },
-      CONTEXT,
-      { load: () => [candidate] },
-    );
+    const skills = await loadAgentSkills({
+      request: { directories: ["/Users/example/private/repo"] },
+      context: CONTEXT,
+      loader: { load: () => [candidate] },
+    });
     expect(skills).toEqual([SKILL]);
     expect(JSON.stringify(skills)).not.toContain("/Users/example");
     expect(() => registerAgentSkill(candidate)).toThrow("closed portable");
@@ -40,17 +40,17 @@ describe("portable agent skills", () => {
     };
     const request = { directories: ["/workspace/skills"] };
     let receivedContext: typeof CONTEXT | undefined;
-    const skills = await loadAgentSkills(
+    const skills = await loadAgentSkills({
       request,
-      { ...CONTEXT },
-      {
-        load: (received, context) => {
+      context: { ...CONTEXT },
+      loader: {
+        load: ({ request: received, context }) => {
           receivedContext = context;
           (received.directories as string[])[0] = "/credential/path";
           return [candidate];
         },
       },
-    );
+    });
     (candidate as { localPath: string }).localPath = "/mutated";
     expect(skills).toEqual([SKILL]);
     expect(request.directories).toEqual(["/workspace/skills"]);
@@ -59,7 +59,7 @@ describe("portable agent skills", () => {
   });
 
   test("embeds only registered skill identity in prepared agent specs", () => {
-    const spec = prepareAgentSpec({
+    const spec = prepareWithLocalRunner({
       agentId: "agent:skills",
       version: contractVersion("2.0.0"),
       instructions: "Use the selected skills.",
@@ -69,7 +69,7 @@ describe("portable agent skills", () => {
     expect(spec.skills).toEqual([SKILL]);
     expect(JSON.stringify(spec)).not.toContain("path");
     expect(() =>
-      prepareAgentSpec({
+      prepareWithLocalRunner({
         ...spec,
         skills: [
           {
@@ -81,7 +81,7 @@ describe("portable agent skills", () => {
     ).toThrow("SHA-256");
 
     expect(() =>
-      prepareAgentSpec({
+      prepareWithLocalRunner({
         agentId: "agent:skills",
         version: contractVersion("2.0.0"),
         instructions: "Use unique skills.",
@@ -102,7 +102,7 @@ describe("portable agent skills", () => {
       { nested: { callback_URL_value: "placeholder" } },
     ]) {
       expect(() =>
-        prepareAgentSpec({
+        prepareWithLocalRunner({
           agentId: "agent:skills",
           version: contractVersion("2.0.0"),
           instructions: "Reject physical locators.",
@@ -115,28 +115,38 @@ describe("portable agent skills", () => {
 
   test("rejects duplicate loader identities", async () => {
     expect(() =>
-      loadAgentSkills({ directories: ["/skills"] }, CONTEXT, {
-        load: () => [
-          { ...SKILL, localPath: "/skills/a" },
-          {
-            ...SKILL,
-            digest: digest("b".repeat(64)),
-            localPath: "/skills/b",
-          },
-        ],
+      loadAgentSkills({
+        request: { directories: ["/skills"] },
+        context: CONTEXT,
+        loader: {
+          load: () => [
+            { ...SKILL, localPath: "/skills/a" },
+            {
+              ...SKILL,
+              digest: digest("b".repeat(64)),
+              localPath: "/skills/b",
+            },
+          ],
+        },
       }),
     ).toThrow("duplicate portable identities");
   });
 
   test("rejects blank and undeclared local candidate fields", () => {
     expect(() =>
-      loadAgentSkills({ directories: ["/skills"] }, CONTEXT, {
-        load: () => [{ ...SKILL, localPath: " " }],
+      loadAgentSkills({
+        request: { directories: ["/skills"] },
+        context: CONTEXT,
+        loader: { load: () => [{ ...SKILL, localPath: " " }] },
       }),
     ).toThrow("nonblank path");
     expect(() =>
-      loadAgentSkills({ directories: ["/skills"] }, CONTEXT, {
-        load: () => [{ ...SKILL, localPath: "/skills/a", credential: "secret" }] as never,
+      loadAgentSkills({
+        request: { directories: ["/skills"] },
+        context: CONTEXT,
+        loader: {
+          load: () => [{ ...SKILL, localPath: "/skills/a", credential: "secret" }] as never,
+        },
       }),
     ).toThrow("closed candidate");
   });
@@ -148,19 +158,19 @@ describe("portable agent skills", () => {
       digest: digest("b".repeat(64)),
     });
     expect(
-      await loadAgentSkills(
-        {
+      await loadAgentSkills({
+        request: {
           directories: ["/workspace/skills"],
           disabledSkillIds: [SKILL.skillId],
         },
-        CONTEXT,
-        {
+        context: CONTEXT,
+        loader: {
           load: () => [
             { ...SKILL, localPath: "/workspace/skills/disabled" },
             { ...enabled, localPath: "/workspace/skills/enabled" },
           ],
         },
-      ),
+      }),
     ).toEqual([enabled]);
   });
 });

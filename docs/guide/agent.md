@@ -13,18 +13,19 @@ echoes the input and declares read-only behavior.
 
 The three phases matter:
 
-1. `prepareAgentSpec` validates and freezes portable authoring data.
+1. An `AgentSpec` carries portable authoring data.
 2. `createLocalAgentRunner` receives live identity and execution ports.
-3. `runner.prepare()` binds the spec to that runner before `runner.start()`
+3. `runner.prepare()` validates, freezes, and binds the spec to that runner before `runner.start()`
    creates an `AgentRun`.
 
-A spec prepared for one runner is not transferable proof that another runner
-can execute it. Every selected runner prepares the spec for itself.
+A `PreparedAgentSpec` can only come from `runner.prepare()`. It is
+runtime-provenanced and is not transferable proof that another runner can
+execute it. Every selected runner prepares the portable `AgentSpec` for itself.
 
 ## Build the model and tool program
 
 `createModelToolAgentProgram` is the intended bridge from a neutral `Model` and
-registered `ToolBinding` values into `createLocalAgentRunner`. It owns the model
+`ToolBinding` values registered by `createToolBinding` into `createLocalAgentRunner`. It owns the model
 loop, tool-call handling, optional conversation persistence, child-agent
 dispatch, model-call budgets, and portable termination.
 
@@ -97,6 +98,11 @@ session continuation, durable execution signalling, and child runs.
 Optional behavior remains capability-gated. In particular, a controlled agent
 must be composed with the controlled tool-execution port. If that guarantee is
 absent, preparation fails closed.
+
+Local intervention support likewise requires an
+`InterventionAuthenticationPort` at composition. The runner structurally
+resolves each decision, authenticates its evidence and actor, and records it
+only while the matching request is still pending.
 
 Next, [build and resume a workflow](/guide/workflow) or review
 [capability contracts](/capabilities/).

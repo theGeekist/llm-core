@@ -96,6 +96,28 @@ describe("qualified capability retry", () => {
     expect(attempts).toBe(0);
   });
 
+  test("rejects inherited guarantee names before a single attempt", () => {
+    let attempts = 0;
+    expect(() =>
+      executeWithQualifiedRetry({
+        binding: retrieverBinding(),
+        effect: "read-only",
+        phase: "before-start",
+        policy: {
+          maxAttempts: 1,
+          delayMs: 0,
+          retryOn: ["network"],
+          guarantee: "toString",
+        } as never,
+        call: () => {
+          attempts += 1;
+          return "unsafe";
+        },
+      }),
+    ).toThrow("closed, bounded");
+    expect(attempts).toBe(0);
+  });
+
   test("retries synchronously only under an exact supported guarantee", () => {
     let attempts = 0;
     const binding = retrieverBinding([
@@ -280,7 +302,8 @@ describe("qualified capability retry", () => {
         },
         classifyFailure: () => "network",
         call: () =>
-          binding.port.set({} as never, {
+          binding.port.set({
+            context: {} as never,
             key: "key",
             value: { kind: "json", value: "value" },
           }),
@@ -320,7 +343,8 @@ describe("qualified capability retry", () => {
         },
         classifyFailure: () => "network",
         call: () =>
-          binding.port.set({} as never, {
+          binding.port.set({
+            context: {} as never,
             key: "key",
             value: { kind: "json", value: "value" },
           }),

@@ -1,4 +1,4 @@
-import type { EventId, JsonValue, RunId } from "#contracts";
+import type { ContractVersion, EventId, JsonValue, RunId } from "#contracts";
 import type { MaybePromise } from "#shared/maybe";
 import type {
   ControlledToolExecutionOutcome,
@@ -13,8 +13,10 @@ import type {
   PreparedAgentSpec,
   RunResult,
 } from "../../features/agent/public";
+import type { ToolDeclaration } from "../../features/model/public";
 import type {
   InterventionDecision,
+  InterventionAuthenticationPort,
   InterventionRequest,
   RegisteredResumableCheckpoint,
   ResumeCompatibility,
@@ -56,10 +58,26 @@ export interface LocalAgentExecutionContext {
 
 export interface LocalAgentProgramPort {
   execute(context: LocalAgentExecutionContext): MaybePromise<LocalAgentExecutionResult>;
-  resume?(
-    context: LocalAgentExecutionContext,
-    checkpoint: RegisteredResumableCheckpoint,
-  ): MaybePromise<LocalAgentExecutionResult>;
+  resume?(input: LocalAgentProgramResumeInput): MaybePromise<LocalAgentExecutionResult>;
+}
+
+export interface LocalAgentProgramResumeInput {
+  readonly context: LocalAgentExecutionContext;
+  readonly checkpoint: RegisteredResumableCheckpoint;
+}
+
+/**
+ * A model-visible child-agent capability.
+ *
+ * The expected agent identity is fixed at composition time while `resolve`
+ * remains live so a child prepared by the composed runner can be supplied
+ * after program construction.
+ */
+export interface DeclaredSubagentBinding {
+  readonly declaration: Readonly<ToolDeclaration>;
+  readonly agentId: string;
+  readonly agentVersion: ContractVersion;
+  readonly resolve: () => MaybePromise<PreparedAgentSpec | undefined>;
 }
 
 export interface CreateLocalAgentRunnerOptions {
@@ -68,7 +86,9 @@ export interface CreateLocalAgentRunnerOptions {
   readonly runnerId: string;
   readonly runnerVersion: AgentRunnerCapabilities["runnerVersion"];
   readonly controlledToolExecution?: ControlledAgentToolExecutionPort;
-  readonly interventions?: boolean;
+  readonly interventions?: {
+    readonly authentication: InterventionAuthenticationPort;
+  };
   readonly resumeCompatibility?: ResumeCompatibility;
 }
 

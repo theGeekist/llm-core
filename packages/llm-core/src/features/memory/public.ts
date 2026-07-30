@@ -6,9 +6,14 @@ export {
   registerConversationTurn,
 } from "./validation";
 export type {
+  ConversationAppendInput,
   ConversationContentPart,
   ConversationPortableContent,
+  ConversationReadInput,
   ConversationRecord,
+  ConversationResetInput,
+  ConversationStateLoadInput,
+  ConversationStateSaveInput,
   ConversationStateStore,
   ConversationStore,
   ConversationToolResultPart,

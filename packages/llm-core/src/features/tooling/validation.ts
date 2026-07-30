@@ -3,9 +3,15 @@ import { maybeMap, type MaybePromise } from "#shared/maybe";
 import { normalizeStrictJson } from "./canonical-json";
 import { isRegisteredToolSchema, type RegisteredToolSchema } from "./schema-registration";
 
-export interface ToolArgumentValidationRequest {
+export interface ToolArgumentValidationInput {
   schema: RegisteredToolSchema;
   arguments: JsonValue;
+}
+
+export interface ValidateToolArgumentsInput {
+  schema: RegisteredToolSchema;
+  arguments: unknown;
+  port: ToolArgumentValidationPort;
 }
 
 export interface ToolArgumentIssue {
@@ -24,7 +30,7 @@ export type ToolArgumentValidationResult =
  * arguments, so execution always receives the exact normalized input checked.
  */
 export interface ToolArgumentValidationPort {
-  validate(request: ToolArgumentValidationRequest): MaybePromise<ToolArgumentValidationResult>;
+  validate(input: ToolArgumentValidationInput): MaybePromise<ToolArgumentValidationResult>;
 }
 
 export class ToolArgumentValidationError extends TypeError {
@@ -47,16 +53,14 @@ const readValidatedArguments =
   };
 
 export const validateToolArguments = (
-  schema: RegisteredToolSchema,
-  value: unknown,
-  port: ToolArgumentValidationPort,
+  input: ValidateToolArgumentsInput,
 ): MaybePromise<JsonValue> => {
-  if (!isRegisteredToolSchema(schema)) {
+  if (!isRegisteredToolSchema(input.schema)) {
     throw new TypeError("Tool argument validation requires a registered input schema.");
   }
-  const argumentsValue = normalizeStrictJson(value);
+  const argumentsValue = normalizeStrictJson(input.arguments);
   return maybeMap(
     readValidatedArguments(argumentsValue),
-    port.validate({ schema, arguments: argumentsValue }),
+    input.port.validate({ schema: input.schema, arguments: argumentsValue }),
   );
 };

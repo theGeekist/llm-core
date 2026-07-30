@@ -38,8 +38,6 @@ export interface ToolEffect {
 }
 
 export type ExecutionConcurrency = "shared" | "exclusive";
-// eslint-disable-next-line sonarjs/redundant-type-aliases -- cross-slice canonical name
-export type ExecutionMode = ExecutionConcurrency;
 export type CancellationSemantics = "unsupported" | "cooperative" | "provider-acknowledged";
 export type IdempotencySemantics = "not-supported" | "required" | "provider-enforced";
 export type RetryAfterStartSemantics = "never" | "requires-conformance";
@@ -87,10 +85,19 @@ export type ToolResult =
       error: ToolFailure;
     };
 
+export interface ToolBindingValidationInput {
+  call: ToolCall;
+}
+
+export interface ToolExecutionInput {
+  call: ToolCall;
+  control?: ToolExecutionControl;
+}
+
 export interface ToolBinding {
   spec: ToolSpec;
-  validate(call: ToolCall): MaybePromise<ToolCall>;
-  execute(call: ToolCall, control?: ToolExecutionControl): MaybePromise<ToolResult>;
+  validate(input: ToolBindingValidationInput): MaybePromise<ToolCall>;
+  execute(input: ToolExecutionInput): MaybePromise<ToolResult>;
 }
 
 /**

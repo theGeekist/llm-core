@@ -1,7 +1,6 @@
-import { isCanonicalUuid, type EventId, type RunId } from "#contracts";
-import { isPromiseLike, type MaybePromise } from "#shared/maybe";
+import { isCanonicalUuid, isUuidV7, type EventId, type RunId } from "#contracts";
+import { isPromiseLike, maybeChain, type MaybePromise } from "#shared/maybe";
 import {
-  prepareAgentSpec,
   type AgentCancellationAcknowledgement,
   type AgentCancellationRequest,
   type AgentInterventionAcknowledgement,
@@ -17,8 +16,10 @@ import {
   type AgentSpec,
   type PreparedAgentSpec,
   type RunResult,
+  createPreparedAgentSpec,
 } from "../../features/agent/public";
 import {
+  authenticateIntervention,
   checkResumeCompatibility,
   createInterventionRequest,
   isRegisteredResumableCheckpoint,
@@ -32,7 +33,9 @@ import type {
   LocalAgentExecutionContext,
   LocalAgentExecutionResult,
 } from "./types";
+import { readInterventionAuthentication } from "./intervention-authentication";
 import { guardResumeToolExecution } from "./resume-effects";
+import { resultFacts } from "./run-event";
 import {
   isCanonicalTimestamp,
   validateAgentRunRequest,
@@ -136,19 +139,15 @@ interface BuildEventInput {
 const terminalKind = (status: RunResult["status"]): AgentRunEventKind =>
   `agent.run.${status}` as AgentRunEventKind;
 
-const resultFacts = (result: RunResult): AgentRunEvent["facts"] => ({
-  status: result.status,
-  ...(result.reasonCode ? { reasonCode: result.reasonCode } : {}),
-});
-
 export const createLocalAgentRunner = (options: CreateLocalAgentRunnerOptions): AgentRunner => {
+  const interventionAuthentication = readInterventionAuthentication(options);
   const runnerPreparedSpecs = new WeakSet<object>();
   const capabilities = deepFreeze<AgentRunnerCapabilities>({
     runnerId: options.runnerId,
     runnerVersion: options.runnerVersion,
     controlledEffects: Boolean(options.controlledToolExecution),
     cancellation: "cooperative",
-    interventions: options.interventions === true,
+    interventions: options.interventions !== undefined,
     checkpointResume: Boolean(options.resumeCompatibility && options.program.resume),
     providerSessionContinuation: true,
     durableExecutionSignalling: false,
@@ -168,11 +167,7 @@ export const createLocalAgentRunner = (options: CreateLocalAgentRunnerOptions): 
     }) as AgentRunEvent;
   };
 
-  const emit = (
-    state: RunState,
-    kind: AgentRunEventKind,
-    facts: AgentRunEvent["facts"],
-  ): void => {
+  const emit = (state: RunState, kind: AgentRunEventKind, facts: AgentRunEvent["facts"]): void => {
     const event = buildEvent({ state, kind, facts });
     state.log.append(event);
     state.lastOccurredAt = event.occurredAt;
@@ -195,16 +190,16 @@ export const createLocalAgentRunner = (options: CreateLocalAgentRunnerOptions): 
 
   const readRunId = (): RunId => {
     const value = options.identity.newRunId();
-    if (!isCanonicalUuid(value)) {
-      throw new TypeError("Agent runner identity ports must return canonical run IDs.");
+    if (!isUuidV7(value)) {
+      throw new TypeError("Agent runner identity ports must mint UUIDv7 run IDs.");
     }
     return value;
   };
 
   const readEventId = () => {
     const value = options.identity.newEventId();
-    if (!isCanonicalUuid(value)) {
-      throw new TypeError("Agent runner identity ports must return canonical event IDs.");
+    if (!isUuidV7(value)) {
+      throw new TypeError("Agent runner identity ports must mint UUIDv7 event IDs.");
     }
     return value;
   };
@@ -299,7 +294,9 @@ export const createLocalAgentRunner = (options: CreateLocalAgentRunnerOptions): 
       appendBuiltEvent(state, acknowledgedEvent);
       return { status: "acknowledged", acknowledgedAt };
     };
-    const intervene = (decision: InterventionDecision): AgentInterventionAcknowledgement => {
+    const intervene = (
+      decision: InterventionDecision,
+    ): MaybePromise<AgentInterventionAcknowledgement> => {
       const acknowledgedAt = readNow();
       if (state.terminal) {
         return { status: "already-terminal", acknowledgedAt };
@@ -314,24 +311,58 @@ export const createLocalAgentRunner = (options: CreateLocalAgentRunnerOptions): 
       if (!pending) {
         return { status: "rejected", acknowledgedAt };
       }
-      const resolution = resolveIntervention(pending, decision, acknowledgedAt);
+      let admittedDecision: InterventionDecision;
+      let resolution: ReturnType<typeof resolveIntervention>;
+      try {
+        admittedDecision = frozenPortable(decision);
+        resolution = resolveIntervention(pending, admittedDecision, acknowledgedAt);
+      } catch {
+        return { status: "rejected", acknowledgedAt };
+      }
       if (resolution.status === "rejected") {
         return { status: "rejected", acknowledgedAt };
       }
-      const receivedEvent = buildEvent({
-        state,
-        kind: "agent.run.intervention.received",
-        facts: {
-          decision: decision.decision,
-          interventionId: decision.intervention.interventionId,
-        },
-      });
-      state.interventions.push(frozenPortable(decision));
-      state.interventionRequests.delete(decision.intervention.interventionId);
-      appendBuiltEvent(state, receivedEvent);
-      return { status: "accepted", acknowledgedAt };
+      const finish = (authenticated: boolean): AgentInterventionAcknowledgement => {
+        if (!authenticated) {
+          return { status: "rejected", acknowledgedAt };
+        }
+        if (state.terminal) {
+          return { status: "already-terminal", acknowledgedAt };
+        }
+        if (
+          state.interventionRequests.get(admittedDecision.intervention.interventionId) !== pending
+        ) {
+          return { status: "rejected", acknowledgedAt };
+        }
+        const receivedEvent = buildEvent({
+          state,
+          kind: "agent.run.intervention.received",
+          facts: {
+            decision: admittedDecision.decision,
+            interventionId: admittedDecision.intervention.interventionId,
+          },
+        });
+        state.interventions.push(admittedDecision);
+        state.interventionRequests.delete(admittedDecision.intervention.interventionId);
+        appendBuiltEvent(state, receivedEvent);
+        return { status: "accepted", acknowledgedAt };
+      };
+      return maybeChain(
+        finish,
+        authenticateIntervention({
+          authentication: interventionAuthentication!,
+          request: pending,
+          decision: admittedDecision,
+        }),
+      );
     };
-    const run: AgentRun = Object.freeze({ identity: state.identity, events, result, cancel, intervene });
+    const run: AgentRun = Object.freeze({
+      identity: state.identity,
+      events,
+      result,
+      cancel,
+      intervene,
+    });
 
     const startChild = (child: AgentRunRequest): AgentRun => {
       validateForRunner(child);
@@ -415,7 +446,7 @@ export const createLocalAgentRunner = (options: CreateLocalAgentRunnerOptions): 
 
     try {
       const execution = checkpoint
-        ? options.program.resume?.(context, checkpoint)
+        ? options.program.resume?.({ context, checkpoint })
         : options.program.execute(context);
       if (!execution) {
         state.result = settle(state, {
@@ -449,7 +480,7 @@ export const createLocalAgentRunner = (options: CreateLocalAgentRunnerOptions): 
   };
 
   const prepare = (spec: AgentSpec): PreparedAgentSpec => {
-    const prepared = prepareAgentSpec(spec);
+    const prepared = createPreparedAgentSpec(spec);
     if (prepared.effectRequirement === "controlled" && !capabilities.controlledEffects) {
       throw new TypeError("This runner cannot establish a controlled path for meaningful effects.");
     }

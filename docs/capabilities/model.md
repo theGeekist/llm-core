@@ -3,6 +3,9 @@
 The `/model` subpath defines provider-neutral model and media contracts.
 `ModelRequest` carries messages, tools, response format, sampling, and redacted
 metadata. `ModelResponse` represents either a completion or a structured error.
+`ModelError.code` distinguishes provider cancellation (`cancelled`) from an
+elapsed deadline (`timeout`), so callers do not retry an explicit abort as a
+timeout.
 
 Content uses a closed union: text, JSON, inline binary, media reference,
 reasoning, tool call, and tool result. A `media-ref` points to a `ResourceRef`;

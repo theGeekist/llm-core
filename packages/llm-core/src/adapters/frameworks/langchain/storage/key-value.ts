@@ -16,8 +16,8 @@ export const createLangChainKeyValueStore = (
   store: LangChainBaseStore<StorageValue>,
 ): KeyValueStore => {
   const adapter: KeyValueStore = {
-    list: (_context, prefix) => collectKeys(store, prefix),
-    getMany: (_context, keys) => {
+    list: ({ prefix }) => collectKeys(store, prefix),
+    getMany: ({ keys }) => {
       assertStorageKeys(keys);
       return maybeMap(
         (values) =>
@@ -25,7 +25,7 @@ export const createLangChainKeyValueStore = (
         store.mget([...keys]),
       );
     },
-    setMany: (_context, entries) => {
+    setMany: ({ entries }) => {
       if (entries.length === 0) {
         throw new TypeError("Storage entry collections must be non-empty.");
       }
@@ -35,7 +35,7 @@ export const createLangChainKeyValueStore = (
       );
       return maybeMap(() => true, store.mset(registered));
     },
-    deleteMany: (_context, keys) => {
+    deleteMany: ({ keys }) => {
       assertStorageKeys(keys);
       return maybeMap(() => true, store.mdelete([...keys]));
     },

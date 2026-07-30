@@ -46,7 +46,10 @@ const binding = (
 
 const TEXT_REQ: CapabilityRequirement[] = [{ capabilityId: BUILTIN_TEXT_CAPABILITY }];
 const CONSTRAINED: CapabilityRequirement[] = [
-  { capabilityId: BUILTIN_TEXT_CAPABILITY, constraints: [{ name: "maxOutputTokens", value: 4096 }] },
+  {
+    capabilityId: BUILTIN_TEXT_CAPABILITY,
+    constraints: [{ name: "maxOutputTokens", value: 4096 }],
+  },
 ];
 
 describe("model resolver — selection", () => {
@@ -208,6 +211,25 @@ describe("model resolver — capabilities and constraints", () => {
 });
 
 describe("model resolver — integrity and policy", () => {
+  test("rejects a structurally valid profile that was not registered", () => {
+    let evaluations = 0;
+    const forged = { ...withModel(M1) } as RegisteredModelProfile;
+    const outcome = createModelResolver({
+      constraintEvaluator: () => {
+        evaluations += 1;
+        return true;
+      },
+    }).resolve({
+      selection: M1,
+      requiredCapabilities: CONSTRAINED,
+      bindings: [binding("forged", M1, { profile: forged })],
+    });
+
+    if (outcome.kind !== "unresolved") throw new Error("expected unresolved");
+    expect(outcome.diagnostics.some((d) => d.code === "unregistered-profile")).toBe(true);
+    expect(evaluations).toBe(0);
+  });
+
   test("rejects a binding whose profile does not match its references", () => {
     const mismatched: ModelBinding = {
       bindingId: "mismatch",

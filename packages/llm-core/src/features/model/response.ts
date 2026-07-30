@@ -4,13 +4,7 @@ import type { ProviderRef } from "./references";
 
 /** Neutral model response (ADR-004). Native objects never appear in these fields. */
 
-export type FinishReason =
-  | "stop"
-  | "length"
-  | "content-filter"
-  | "tool-calls"
-  | "error"
-  | "other";
+export type FinishReason = "stop" | "length" | "content-filter" | "tool-calls" | "error" | "other";
 
 export interface ModelUsage {
   inputTokens?: number;
@@ -32,6 +26,7 @@ export type ModelErrorCode =
   | "provider-error"
   | "rate-limited"
   | "timeout"
+  | "cancelled"
   | "invalid-request"
   | "content-filter"
   | "unknown";

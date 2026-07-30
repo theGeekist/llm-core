@@ -2,6 +2,7 @@ import {
   isCanonicalUuid,
   isExternalId,
   isJsonValue,
+  isUuidV7,
   type EventId,
   type JsonValue,
   type RunId,
@@ -86,7 +87,7 @@ export const parseAssistantUiInboundEvents = (
   ): boolean => {
     const eventId = context.newEventId();
     const occurredAt = context.now();
-    if (!isCanonicalUuid(eventId) || !validRedaction(redaction)) return false;
+    if (!isUuidV7(eventId) || !validRedaction(redaction)) return false;
     try {
       events.push(
         registerInteractionContentEvent({

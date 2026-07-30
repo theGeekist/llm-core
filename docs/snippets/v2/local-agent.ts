@@ -1,4 +1,4 @@
-import { createLocalAgentRunner, prepareAgentSpec } from "@geekist/llm-core";
+import { createLocalAgentRunner } from "@geekist/llm-core";
 import {
   contractVersion,
   newCoreId,
@@ -11,12 +11,12 @@ let idSequence = 1;
 const uuid = () => `018f0f4e-8c5b-7a91-8c3b-${(idSequence++).toString(16).padStart(12, "0")}`;
 
 // 1. Authoring: the spec is portable data.
-const agent = prepareAgentSpec({
+const agent = {
   agentId: "example.echo",
   version: contractVersion("2.0.0"),
   instructions: "Return the supplied input.",
   effectRequirement: "read-only",
-});
+} as const;
 
 // 2. Composition: live behavior enters through explicit ports.
 const runner = createLocalAgentRunner({

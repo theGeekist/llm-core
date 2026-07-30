@@ -126,7 +126,7 @@ const safeNotify = (
 };
 
 const projectMessages = (
-  conversationId: Parameters<ConversationStore["read"]>[1],
+  conversationId: Parameters<ConversationStore["read"]>[0]["conversationId"],
   messages: HostConversationMessage[],
   notify: CreateHostConversationStoresInput["onProjectionIssue"],
 ): ConversationRecord | null => {
@@ -174,7 +174,7 @@ export const createHostConversationStores = ({
   readonly state: ConversationStateStore;
 } => {
   const conversations: ConversationStore = {
-    read: (_context, conversationId) => {
+    read: ({ conversationId }) => {
       if (!provider.getMessages) {
         return null;
       }
@@ -183,7 +183,7 @@ export const createHostConversationStores = ({
         provider.getMessages({ chatId: conversationId, userId }),
       );
     },
-    append: (_context, conversationId, turn) => {
+    append: ({ conversationId, turn }) => {
       if (!provider.saveMessage) {
         return null;
       }
@@ -207,14 +207,14 @@ export const createHostConversationStores = ({
         }),
       );
     },
-    reset: (_context, conversationId) =>
+    reset: ({ conversationId }) =>
       provider.clearMessages
         ? maybeMap(() => true, provider.clearMessages({ chatId: conversationId, userId }))
         : null,
   };
 
   const state: ConversationStateStore = {
-    load: (_context, conversationId, input) => {
+    load: ({ conversationId, input }) => {
       registerPortableJsonObject(input);
       return provider.getWorkingMemory
         ? maybeMap(
@@ -223,7 +223,7 @@ export const createHostConversationStores = ({
           )
         : null;
     },
-    save: (_context, conversationId, { input, output }) => {
+    save: ({ conversationId, state: { input, output } }) => {
       if (!provider.updateWorkingMemory) {
         return null;
       }

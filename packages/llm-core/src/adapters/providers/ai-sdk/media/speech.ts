@@ -19,7 +19,7 @@ export const fromAiSdkSpeechModel = (
   model: SpeechModelV3,
   options: AiSdkMediaAdapterOptions,
 ): SpeechGenerationPort => ({
-  async generate(request, context) {
+  async generate({ request, context }) {
     validateSpeechGenerationRequest(request);
     const mediaType = MEDIA_TYPES[request.outputFormat];
     if (!mediaType) {

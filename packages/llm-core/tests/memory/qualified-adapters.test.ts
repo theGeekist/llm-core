@@ -38,7 +38,7 @@ describe("qualified conversation adapters", () => {
       },
     });
 
-    const record = await stores.conversations.read(context, conversationId);
+    const record = await stores.conversations.read({ context, conversationId });
     expect(record).toEqual({
       conversationId,
       revision: 1,
@@ -54,15 +54,15 @@ describe("qualified conversation adapters", () => {
     expect(JSON.stringify(record)).not.toContain("signedUrl");
 
     expect(
-      await stores.conversations.append(
+      await stores.conversations.append({
         context,
         conversationId,
-        registerConversationTurn({
+        turn: registerConversationTurn({
           role: "assistant",
           content: [{ kind: "text", text: "ok" }],
           occurredAt: "2026-07-29T10:32:00.000Z",
         }),
-      ),
+      }),
     ).toBe(true);
     expect(savedMessage).toEqual({
       chatId: conversationId,
@@ -72,14 +72,18 @@ describe("qualified conversation adapters", () => {
       timestamp: new Date("2026-07-29T10:32:00.000Z"),
     });
 
-    expect(await stores.state.load(context, conversationId, {})).toEqual({
+    expect(await stores.state.load({ context, conversationId, input: {} })).toEqual({
       workingMemory: "facts",
       workingMemoryUpdatedAt: "2026-07-29T10:31:00.000Z",
     });
     expect(
-      await stores.state.save(context, conversationId, {
-        input: {},
-        output: { workingMemory: "updated" },
+      await stores.state.save({
+        context,
+        conversationId,
+        state: {
+          input: {},
+          output: { workingMemory: "updated" },
+        },
       }),
     ).toBe(true);
     expect(savedWorkingMemory).toEqual({
@@ -92,31 +96,31 @@ describe("qualified conversation adapters", () => {
 
   test("fails closed when host capabilities or text projection are unavailable", () => {
     const stores = createHostConversationStores({ provider: {} });
-    expect(stores.conversations.read(context, conversationId)).toBeNull();
+    expect(stores.conversations.read({ context, conversationId })).toBeNull();
     expect(
-      stores.conversations.append(
+      stores.conversations.append({
         context,
         conversationId,
-        registerConversationTurn({
+        turn: registerConversationTurn({
           role: "assistant",
           content: [{ kind: "json", value: { no: "text" } }],
         }),
-      ),
+      }),
     ).toBeNull();
-    expect(stores.state.load(context, conversationId, {})).toBeNull();
+    expect(stores.state.load({ context, conversationId, input: {} })).toBeNull();
 
     const writeOnly = createHostConversationStores({
       provider: { saveMessage: () => undefined },
     });
     expect(
-      writeOnly.conversations.append(
+      writeOnly.conversations.append({
         context,
         conversationId,
-        registerConversationTurn({
+        turn: registerConversationTurn({
           role: "assistant",
           content: [{ kind: "json", value: { no: "text" } }],
         }),
-      ),
+      }),
     ).toBe(false);
   });
 
@@ -151,7 +155,7 @@ describe("qualified conversation adapters", () => {
       },
     });
 
-    const record = stores.conversations.read(context, conversationId);
+    const record = stores.conversations.read({ context, conversationId });
     expect(record).toBeNull();
     expect(issues).toEqual([
       { code: "unsupported-native-message-content", messageIndex: 1 },
@@ -171,7 +175,9 @@ describe("qualified conversation adapters", () => {
     const withoutCallback = createHostConversationStores({
       provider: { getMessages: () => Promise.resolve(messages) },
     });
-    await expect(withoutCallback.conversations.read(context, conversationId)).resolves.toBeNull();
+    await expect(
+      withoutCallback.conversations.read({ context, conversationId }),
+    ).resolves.toBeNull();
 
     const throwingCallback = createHostConversationStores({
       onProjectionIssue: () => {
@@ -179,7 +185,9 @@ describe("qualified conversation adapters", () => {
       },
       provider: { getMessages: () => Promise.resolve(messages) },
     });
-    await expect(throwingCallback.conversations.read(context, conversationId)).resolves.toBeNull();
+    await expect(
+      throwingCallback.conversations.read({ context, conversationId }),
+    ).resolves.toBeNull();
   });
 
   test("always supplies a timestamp when appending host messages", () => {
@@ -194,14 +202,14 @@ describe("qualified conversation adapters", () => {
       },
     });
     expect(
-      stores.conversations.append(
+      stores.conversations.append({
         context,
         conversationId,
-        registerConversationTurn({
+        turn: registerConversationTurn({
           role: "assistant",
           content: [{ kind: "text", text: "timestamped" }],
         }),
-      ),
+      }),
     ).toBe(true);
     expect(saved).toMatchObject({ timestamp: now });
   });
@@ -212,7 +220,7 @@ describe("qualified conversation adapters", () => {
         getMessages: () => [{ role: "user", content: "missing timestamp" } as never],
       },
     });
-    expect(stores.conversations.read(context, conversationId)).toBeNull();
+    expect(stores.conversations.read({ context, conversationId })).toBeNull();
   });
 
   test("clones and freezes nested LangChain JSON across sync and async boundaries", async () => {
@@ -226,7 +234,7 @@ describe("qualified conversation adapters", () => {
         savedOutput = output;
       },
     });
-    const loaded = valid.load(context, conversationId, {});
+    const loaded = valid.load({ context, conversationId, input: {} });
     expect(loaded).toEqual({ history: [{ text: "hello" }] });
     loadedSource.history[0]!.text = "mutated";
     expect(loaded).toEqual({ history: [{ text: "hello" }] });
@@ -235,9 +243,10 @@ describe("qualified conversation adapters", () => {
     const input = { nested: { value: "input" } };
     const output = { nested: { value: "output" } };
     await expect(
-      valid.save(context, conversationId, {
-        input,
-        output,
+      valid.save({
+        context,
+        conversationId,
+        state: { input, output },
       }),
     ).resolves.toBe(true);
     input.nested.value = "changed";
@@ -249,7 +258,7 @@ describe("qualified conversation adapters", () => {
       loadMemoryVariables: () => Promise.resolve({ nested: { token: "raw" } }),
       saveContext: () => undefined,
     });
-    await expect(invalid.load(context, conversationId, {})).resolves.toBeNull();
+    await expect(invalid.load({ context, conversationId, input: {} })).resolves.toBeNull();
   });
 
   test("maps LlamaIndex conversation roles, append and reset", async () => {
@@ -281,20 +290,20 @@ describe("qualified conversation adapters", () => {
       },
     });
 
-    await expect(store.read(context, conversationId)).resolves.toBeNull();
+    await expect(store.read({ context, conversationId })).resolves.toBeNull();
     expect(issues).toEqual([{ code: "unsupported-native-message-content", messageIndex: 3 }]);
     expect(
-      await store.append(
+      await store.append({
         context,
         conversationId,
-        registerConversationTurn({
+        turn: registerConversationTurn({
           role: "tool",
           content: [{ kind: "text", text: "result" }],
         }),
-      ),
+      }),
     ).toBe(true);
     expect(saved).toEqual([{ role: "assistant", content: "result" }]);
-    expect(await store.reset(context, conversationId)).toBe(true);
+    expect(await store.reset({ context, conversationId })).toBe(true);
     expect(cleared).toBe(true);
   });
 });

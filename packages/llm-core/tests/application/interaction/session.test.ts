@@ -1,5 +1,6 @@
 /* eslint-disable max-lines -- adversarial session lifecycle cases share one in-memory store fixture */
 import { describe, expect, test } from "bun:test";
+import { coreId, type RunId } from "#contracts";
 import { isLiveContinuation } from "../../../src/features/state/public";
 import {
   createInteractionSession,
@@ -8,11 +9,7 @@ import {
   type ConversationSessionStore,
   type InteractionSession,
 } from "../../../src/application/interaction/public";
-import type {
-  AgentRun,
-  AgentRunRequest,
-  RunResult,
-} from "../../../src/features/agent/public";
+import type { AgentRun, AgentRunRequest, RunResult } from "../../../src/features/agent/public";
 import type { AgentRunner } from "../../../src/features/agent/public";
 import {
   AGENT,
@@ -33,20 +30,14 @@ const memoryStore = () => {
   const store: ConversationSessionStore = {
     load: () => snapshot,
     reserve: ({ conversationId, expectedRevision, reservationId }) => {
-      if (
-        reservation ||
-        (snapshot?.value.revision ?? 0) !== expectedRevision
-      ) {
+      if (reservation || (snapshot?.value.revision ?? 0) !== expectedRevision) {
         return null;
       }
       reservation = reservationId;
       return { conversationId, expectedRevision, reservationId };
     },
     save: ({ expectedRevision, reservationId, snapshot: next }) => {
-      if (
-        reservation !== reservationId ||
-        (snapshot?.value.revision ?? 0) !== expectedRevision
-      ) {
+      if (reservation !== reservationId || (snapshot?.value.revision ?? 0) !== expectedRevision) {
         return "conflict";
       }
       snapshot = next;
@@ -61,10 +52,7 @@ const memoryStore = () => {
   return { store, read: () => snapshot };
 };
 
-const runner = (
-  start: AgentRunner["start"],
-  providerSessionContinuation = true,
-): AgentRunner => ({
+const runner = (start: AgentRunner["start"], providerSessionContinuation = true): AgentRunner => ({
   capabilities: () => ({
     runnerId: "test.runner",
     runnerVersion: AGENT.version,
@@ -81,6 +69,29 @@ const runner = (
 });
 
 describe("interaction session orchestration", () => {
+  test("rejects UUIDv4 run identities minted for a new interaction", async () => {
+    const memory = memoryStore();
+    const uuidV4RunId = coreId<RunId>("00000000-0000-4000-8000-000000000001");
+    const session = createInteractionSession({
+      conversationId: CONVERSATION_ID,
+      agent: AGENT,
+      runner: runner((request) => completedRun(request, undefined, uuidV4RunId)),
+      store: memory.store,
+      identity: {
+        now: () => NOW,
+        newSnapshotId: () => "snapshot:uuidv7",
+        newReservationId: () => "reservation:uuidv7",
+      },
+    });
+
+    await expect(
+      session.send({
+        input: "hello",
+        invocationContext: { invocationId: INVOCATION_ID },
+      }),
+    ).rejects.toThrow("must use UUIDv7 run IDs");
+  });
+
   test("persists conversation snapshots and carries provider continuity only", async () => {
     const memory = memoryStore();
     const requests: AgentRunRequest[] = [];
@@ -117,11 +128,7 @@ describe("interaction session orchestration", () => {
     });
     await second.result();
 
-    expect(liveEvents.map((event) => event.kind)).toEqual([
-      "agent-run",
-      "agent-run",
-      "agent-run",
-    ]);
+    expect(liveEvents.map((event) => event.kind)).toEqual(["agent-run", "agent-run", "agent-run"]);
     expect(first.snapshot.kind).toBe("snapshot");
     expect(first.snapshot.value.turns).toHaveLength(1);
     expect(memory.read()?.value.turns).toHaveLength(2);
@@ -296,33 +303,32 @@ describe("interaction session orchestration", () => {
       value: { projection: { terminalRunIds: string[] } };
     };
     poisonedIndex.value.projection.terminalRunIds.push(SECOND_RUN_ID);
-    expect(() =>
-      registerConversationSessionSnapshot(poisonedIndex, CONVERSATION_ID),
-    ).toThrow("terminal indexes");
+    expect(() => registerConversationSessionSnapshot(poisonedIndex, CONVERSATION_ID)).toThrow(
+      "terminal indexes",
+    );
     const unsafeReason = structuredClone(memory.read()) as unknown as {
       value: {
         turns: Array<Record<string, unknown>>;
         projection: { events: Array<Record<string, unknown>> };
       };
     };
-    unsafeReason.value.projection.events[2]!.reasonCode =
-      "credential=sk-must-not-project";
-    expect(() =>
-      registerConversationSessionSnapshot(unsafeReason, CONVERSATION_ID),
-    ).toThrow("safe code");
+    unsafeReason.value.projection.events[2]!.reasonCode = "credential=sk-must-not-project";
+    expect(() => registerConversationSessionSnapshot(unsafeReason, CONVERSATION_ID)).toThrow(
+      "safe code",
+    );
     unsafeReason.value.projection.events[2]!.reasonCode = "terminal-safe";
     unsafeReason.value.turns[0]!.reasonCode = "secret token text";
-    expect(() =>
-      registerConversationSessionSnapshot(unsafeReason, CONVERSATION_ID),
-    ).toThrow("safe code");
+    expect(() => registerConversationSessionSnapshot(unsafeReason, CONVERSATION_ID)).toThrow(
+      "safe code",
+    );
 
     const unsafeIdentity = structuredClone(memory.read()) as unknown as {
       value: { projection: { events: Array<Record<string, unknown>> } };
     };
     unsafeIdentity.value.projection.events[0]!.agentId = "agent id with spaces";
-    expect(() =>
-      registerConversationSessionSnapshot(unsafeIdentity, CONVERSATION_ID),
-    ).toThrow("external ID");
+    expect(() => registerConversationSessionSnapshot(unsafeIdentity, CONVERSATION_ID)).toThrow(
+      "external ID",
+    );
 
     const unsafeIntervention = structuredClone(memory.read()) as unknown as {
       value: { projection: { events: Array<Record<string, unknown>> } };
@@ -335,14 +341,14 @@ describe("interaction session orchestration", () => {
       allowed: ["approve", "steal"],
       expiresAt: NOW,
     };
-    expect(() =>
-      registerConversationSessionSnapshot(unsafeIntervention, CONVERSATION_ID),
-    ).toThrow("decisions");
+    expect(() => registerConversationSessionSnapshot(unsafeIntervention, CONVERSATION_ID)).toThrow(
+      "decisions",
+    );
     unsafeIntervention.value.projection.events[1]!.allowed = ["approve"];
     unsafeIntervention.value.projection.events[1]!.expiresAt = "not-a-timestamp";
-    expect(() =>
-      registerConversationSessionSnapshot(unsafeIntervention, CONVERSATION_ID),
-    ).toThrow("timestamp");
+    expect(() => registerConversationSessionSnapshot(unsafeIntervention, CONVERSATION_ID)).toThrow(
+      "timestamp",
+    );
     unsafeIntervention.value.projection.events[1] = {
       kind: "tool-call",
       eventId: eventId("e01"),
@@ -352,9 +358,9 @@ describe("interaction session orchestration", () => {
       toolName: "lookup",
       projectedInput: { credential: "sk-must-not-project" },
     };
-    expect(() =>
-      registerConversationSessionSnapshot(unsafeIntervention, CONVERSATION_ID),
-    ).toThrow("closed safe shape");
+    expect(() => registerConversationSessionSnapshot(unsafeIntervention, CONVERSATION_ID)).toThrow(
+      "closed safe shape",
+    );
 
     const tainted = structuredClone(memory.read()) as unknown as {
       value: {
@@ -474,11 +480,7 @@ describe("interaction session orchestration", () => {
     const memory = memoryStore();
     let capabilityCalls = 0;
     const baseRunner = runner((request) =>
-      completedRun(
-        request,
-        undefined,
-        capabilityCalls > 1 ? SECOND_RUN_ID : undefined,
-      ),
+      completedRun(request, undefined, capabilityCalls > 1 ? SECOND_RUN_ID : undefined),
     );
     const flakyRunner: AgentRunner = {
       ...baseRunner,

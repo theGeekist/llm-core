@@ -128,7 +128,7 @@ export const resumeSafetyTarget = (remote: boolean): ResumeSafetyTarget => {
     },
     program: {
       execute: () => ({ status: "completed" }),
-      async resume(context) {
+      async resume({ context }) {
         try {
           await context.controlledToolExecution!.execute({
             call: { invocation: { stepId: STEP_ONE } },

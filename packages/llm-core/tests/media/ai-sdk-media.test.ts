@@ -21,7 +21,7 @@ let lastOutputContext: typeof CONTEXT | undefined;
 let lastResourceContext: typeof CONTEXT | undefined;
 
 const output: MediaOutputProjector = {
-  project: ({ mediaType, bytes }, context) => {
+  project: ({ mediaType, bytes, context }) => {
     lastOutputContext = context;
     return {
       kind: "binary",
@@ -41,7 +41,7 @@ const resource = {
   digest: bytesDigest(new Uint8Array([7, 8, 9])),
 };
 const resources: MediaResourceResolver = {
-  resolve: (_resource, context) => {
+  resolve: ({ context }) => {
     lastResourceContext = context;
     return new Uint8Array([7, 8, 9]);
   },
@@ -77,8 +77,8 @@ describe("AI SDK v3 media adapters", () => {
       output,
       resources,
     });
-    const result = await adapter.generate(
-      {
+    const result = await adapter.generate({
+      request: {
         prompt: "draw",
         count: 2,
         sourceImages: [
@@ -87,8 +87,8 @@ describe("AI SDK v3 media adapters", () => {
         ],
         mask: { kind: "bytes", mediaType: "image/png", bytes: new Uint8Array([2]) },
       },
-      CONTEXT,
-    );
+      context: CONTEXT,
+    });
 
     expect(call?.files).toHaveLength(2);
     expect(call?.mask?.type).toBe("file");
@@ -119,7 +119,7 @@ describe("AI SDK v3 media adapters", () => {
       fromAiSdkImageModel(partial, {
         generatedMediaType: "image/png",
         output,
-      }).generate({ prompt: "draw", count: 2 }, CONTEXT),
+      }).generate({ request: { prompt: "draw", count: 2 }, context: CONTEXT }),
     ).rejects.toThrow("AI SDK image generation failed");
 
     const throwing = {
@@ -130,7 +130,7 @@ describe("AI SDK v3 media adapters", () => {
       fromAiSdkImageModel(throwing, {
         generatedMediaType: "image/png",
         output,
-      }).generate({ prompt: "draw", count: 1 }, CONTEXT),
+      }).generate({ request: { prompt: "draw", count: 1 }, context: CONTEXT }),
     ).rejects.not.toThrow("sk-secret");
   });
 
@@ -148,12 +148,15 @@ describe("AI SDK v3 media adapters", () => {
     } as SpeechModelV3;
     const adapter = fromAiSdkSpeechModel(model, { output });
     await expect(
-      adapter.generate({ text: "hello", outputFormat: "wav" }, CONTEXT),
+      adapter.generate({ request: { text: "hello", outputFormat: "wav" }, context: CONTEXT }),
     ).resolves.toMatchObject({
       audio: { kind: "binary", mediaType: "audio/wav", byteLength: 2 },
     });
     await expect(
-      adapter.generate({ text: "hello", outputFormat: "native-special" }, CONTEXT),
+      adapter.generate({
+        request: { text: "hello", outputFormat: "native-special" },
+        context: CONTEXT,
+      }),
     ).rejects.toThrow("lossless");
   });
 
@@ -181,12 +184,12 @@ describe("AI SDK v3 media adapters", () => {
       digest: bytesDigest(new Uint8Array([7, 8, 9])),
     };
     await expect(
-      fromAiSdkTranscriptionModel(model, { resources }).transcribe(
-        {
+      fromAiSdkTranscriptionModel(model, { resources }).transcribe({
+        request: {
           audio: { kind: "resource", resource: audioResource },
         },
-        CONTEXT,
-      ),
+        context: CONTEXT,
+      }),
     ).rejects.toThrow("AI SDK transcription failed");
     expect(audio).toEqual(new Uint8Array([7, 8, 9]));
   });
@@ -243,13 +246,13 @@ describe("AI SDK v3 media adapters", () => {
         generatedMediaType: "image/png",
         output,
         resources: wrongResources,
-      }).generate(
-        {
+      }).generate({
+        request: {
           count: 1,
           sourceImages: [{ kind: "resource", resource }],
         },
-        CONTEXT,
-      ),
+        context: CONTEXT,
+      }),
     ).rejects.toThrow("failed");
     expect(calls).toBe(0);
 
@@ -258,8 +261,8 @@ describe("AI SDK v3 media adapters", () => {
         generatedMediaType: "image/png",
         output,
         resources,
-      }).generate(
-        {
+      }).generate({
+        request: {
           count: 1,
           sourceImages: [
             {
@@ -268,8 +271,8 @@ describe("AI SDK v3 media adapters", () => {
             } as never,
           ],
         },
-        CONTEXT,
-      ),
+        context: CONTEXT,
+      }),
     ).rejects.toThrow("closed valid");
     expect(calls).toBe(0);
   });
@@ -300,16 +303,16 @@ describe("AI SDK v3 media adapters", () => {
       },
     };
     await expect(
-      fromAiSdkSpeechModel(model, { output: substitutingOutput }).generate(
-        { text: "hello", outputFormat: "wav" },
-        CONTEXT,
-      ),
+      fromAiSdkSpeechModel(model, { output: substitutingOutput }).generate({
+        request: { text: "hello", outputFormat: "wav" },
+        context: CONTEXT,
+      }),
     ).rejects.toThrow("failed");
 
-    const result = await fromAiSdkSpeechModel(model, { output }).generate(
-      { text: "hello", outputFormat: "wav" },
-      CONTEXT,
-    );
+    const result = await fromAiSdkSpeechModel(model, { output }).generate({
+      request: { text: "hello", outputFormat: "wav" },
+      context: CONTEXT,
+    });
     expect(result.extensions).toEqual({
       "dev.vercel.ai-sdk": {
         provider: "[redacted]",

@@ -41,12 +41,12 @@ export const createWorkflowRegistry = <TState, TPause, TResumeInput = unknown>()
 > => {
   const definitions = new Map<string, WorkflowDefinition<TState, TPause, TResumeInput>>();
   return {
-    register(definition, options) {
+    register({ definition, replace }) {
       const accepted =
         Object.isFrozen(definition) && Object.isFrozen(definition.steps)
           ? definition
           : defineWorkflow(definition);
-      if (definitions.has(accepted.workflowId) && options?.replace !== true) {
+      if (definitions.has(accepted.workflowId) && replace !== true) {
         throw new TypeError(`Workflow "${accepted.workflowId}" is already registered.`);
       }
       definitions.set(accepted.workflowId, accepted);

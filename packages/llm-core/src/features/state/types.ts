@@ -10,6 +10,7 @@ import type {
   SchemaRef,
   StepId,
 } from "#contracts";
+import type { MaybePromise } from "#shared/maybe";
 import type { ActionDigest } from "../tooling/public";
 
 declare const checkpointIdBrand: unique symbol;
@@ -136,6 +137,21 @@ export interface InterventionRequest {
 export interface InterventionAuthenticationRef {
   readonly scheme: string;
   readonly evidence: EvidenceRef;
+}
+
+export type InterventionAuthenticationResult =
+  | { readonly status: "authenticated"; readonly principal: PrincipalRef }
+  | { readonly status: "rejected" };
+
+export interface VerifyInterventionAuthenticationInput {
+  readonly request: InterventionRequest;
+  readonly decision: InterventionDecision;
+}
+
+export interface InterventionAuthenticationPort {
+  verify(
+    input: VerifyInterventionAuthenticationInput,
+  ): MaybePromise<InterventionAuthenticationResult>;
 }
 
 interface InterventionDecisionBase {

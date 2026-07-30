@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import { contractVersion } from "#contracts";
-import { prepareAgentSpec } from "../../src/features/agent/public";
+import { prepareWithLocalRunner } from "./helpers";
 
 describe("AgentSpec", () => {
   test("defensively clones and freezes portable specifications", () => {
@@ -11,7 +11,7 @@ describe("AgentSpec", () => {
       effectRequirement: "read-only" as const,
       metadata: { nested: { value: "original" } },
     };
-    const prepared = prepareAgentSpec(source);
+    const prepared = prepareWithLocalRunner(source);
 
     source.metadata.nested.value = "mutated";
 
@@ -22,7 +22,7 @@ describe("AgentSpec", () => {
 
   test("rejects non-portable metadata", () => {
     expect(() =>
-      prepareAgentSpec({
+      prepareWithLocalRunner({
         agentId: "researcher",
         version: contractVersion("2.0.0"),
         instructions: "Research.",
