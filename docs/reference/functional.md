@@ -23,9 +23,11 @@ constructs when an operation is always synchronous or always asynchronous.
 
 ## Steps and iteration
 
-`maybeToStep` converts a value, promise, iterable, or async iterable into a
-`MaybeAsyncIterable`. `collectStep` consumes that step into an array while
-preserving a synchronous return for synchronous inputs.
+`maybeToStep` accepts a `MaybeAsyncIterable<T>`: a `Step<T>`, iterable, async
+iterable, or a promise of one. It normalizes that source to `Step<T>` and
+returns `Promise<Step<T>>` only when the source itself is promised.
+`collectStep` consumes a `Step<T>` into an array while preserving a synchronous
+return when every pull is synchronous.
 
 ## Function composition
 

@@ -16,6 +16,21 @@ pages remain authoritative for recovery behavior.
 Model errors carry a portable code and message. Provider-native codes and
 metadata remain optional edge data. See [Model and media](/capabilities/model).
 
+## Model resolution diagnostics
+
+`ModelResolutionOutcome` is either `resolved` with one exact `ModelResolution`,
+or `unresolved` with a reason and `ResolutionDiagnostic` values:
+
+| Unresolved reason     | Meaning                                                  |
+| --------------------- | -------------------------------------------------------- |
+| `no-eligible-binding` | No registered binding satisfies capabilities and policy. |
+| `ambiguous`           | More than one eligible binding remains.                  |
+| `unknown-selection`   | An explicit model selection matches no known binding.    |
+
+Diagnostics retain the selection, exclusion, version, constraint, policy, and
+evaluator decisions that produced the outcome. They are separate from provider
+execution errors because resolution occurs before a model call.
+
 ## Capability binding diagnostics
 
 `CapabilityBindingResolutionOutcome` is either `resolved` or `unresolved`.
