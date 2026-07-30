@@ -1,7 +1,7 @@
 # Architecture v2 Decision Index
 
-`A0-001` accepted the Architecture v2 decision set. Accepted ADRs are immutable;
-substantive change requires a superseding ADR.
+`A0-001` accepted the Architecture v2 decision set. Accepted ADRs are
+authoritative unless superseded; substantive change requires a superseding ADR.
 
 | ADR                                                       | Topic                                               | Status   |
 | --------------------------------------------------------- | --------------------------------------------------- | -------- |
