@@ -3,7 +3,7 @@ architecture_version: 2
 id: specification-contracts
 title: Specification model and conversion
 stage: specifications
-status: in_progress
+status: review
 priority: high
 preferred_owner_kind: coordinator
 owner: codex-specification-contracts-review
@@ -101,11 +101,34 @@ bun run lint
 - 2026-08-01 — Reopened after review found missing adapter ownership/evidence
   declarations and graph-attached conversion-report binding checks. Remediation
   proceeds from integrated `af4b6bc` on `task/specification-contracts-review`.
+- 2026-08-01 — Remediation committed at `5714059`: closed adapter support now
+  declares ownership, write-back, fixtures and evidence; graph-attached reports
+  reject unknown source/document and node bindings. All specified gates passed.
 
 ## Handoff
 
-Remediation in progress. The preceding implementation handoff remains below as
-historical provenance.
+Remediation ready for coordinator review.
+
+- Commit: `5714059869ed30883276d2482b662fa89d244315`
+- Worktree: clean at the remediation commit before this review-state record.
+- Changed files:
+  - `packages/llm-core/src/features/specifications/graph-bindings.ts`
+  - `packages/llm-core/src/features/specifications/validation-support.ts`
+  - `packages/llm-core/src/features/specifications/public.ts`
+  - `packages/llm-core/src/features/specifications/types.ts`
+  - `packages/llm-core/src/features/specifications/validation.ts`
+  - `packages/llm-core/tests/specifications/contracts.test.ts`
+  - this task file
+- Verification (all exit 0): `bun test packages/llm-core/tests/specifications`
+  (5 pass); `bun run typecheck:packages` (including
+  `contracts:schema:check`); `bun run typecheck:tests`; `bun run lint`; and
+  `git diff --check`.
+- Applied ADRs: ADR-001, ADR-003, ADR-009, ADR-011 and ADR-012. No deviations.
+- Remaining boundary: support declarations make no source change. Authenticated
+  source application remains a later qualified adapter lifecycle operation.
+- No shared-file changes are requested from the integration owner.
+
+The preceding implementation handoff remains as historical provenance.
 
 - Commit: `a40a9391af2d3a9c6cecc1511d82d238a56fc0e1`
 - Worktree: clean at the implementation commit before this review-state record.
