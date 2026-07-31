@@ -100,6 +100,8 @@ export const defineTool = <TArguments extends JsonValue>(
   }
   const id = toolId(config.name);
   const effect = normalizeEffect(config.effect);
+  const validateArguments = config.input.validate;
+  const execute = config.execute;
   const inputSchema = registerToolSchema(config.input.schema, { digest: schemaDigest });
   if (isPromiseLike(inputSchema)) {
     throw new TypeError("The built-in tool schema digest must complete synchronously.");
@@ -114,7 +116,7 @@ export const defineTool = <TArguments extends JsonValue>(
       execution: executionSemantics(config, effect),
     },
     argumentValidator: {
-      validate: ({ arguments: argumentsValue }) => config.input.validate(argumentsValue),
+      validate: ({ arguments: argumentsValue }) => validateArguments(argumentsValue),
     },
     execute: ({ call }): MaybePromise<ToolExecutionResult> =>
       maybeMap(
@@ -128,7 +130,7 @@ export const defineTool = <TArguments extends JsonValue>(
             content: contentFor(value),
           };
         },
-        config.execute(call.arguments as TArguments),
+        execute(call.arguments as TArguments),
       ),
   });
   const tool = Object.freeze({

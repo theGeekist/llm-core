@@ -1,12 +1,53 @@
 import { describe, expect, test } from "bun:test";
-import { newCoreId, type InvocationId, type ToolCallId } from "#contracts";
+import { newCoreId, type InvocationId, type JsonValue, type ToolCallId } from "#contracts";
 import { defineTool } from "../../src/features/tooling/public";
-import { readExecutableTool } from "../../src/features/tooling/runtime";
+import {
+  readExecutableTool,
+  type ToolArgumentValidationResult,
+} from "../../src/features/tooling/runtime";
 
 const TOOL_CALL_ID = newCoreId<ToolCallId>("0190bd0c-0000-7000-8000-000000000001");
 const INVOCATION_ID = newCoreId<InvocationId>("0190bd0c-0000-7000-8000-000000000002");
 
 describe("common Tool facade", () => {
+  test("snapshots validator and executor callbacks at definition time", async () => {
+    const input = {
+      schema: { type: "object" },
+      validate: (_value: JsonValue): ToolArgumentValidationResult => ({ valid: true }),
+    };
+    const config = {
+      name: "snapshot",
+      description: "Keep the original callback behavior.",
+      input,
+      effect: "read-only" as const,
+      execute: (_value: JsonValue) => "original",
+    };
+    const tool = defineTool(config);
+
+    input.validate = (): ToolArgumentValidationResult => ({
+      valid: false,
+      issues: [{ path: "", code: "changed" }],
+    });
+    config.execute = () => "changed";
+
+    const executable = readExecutableTool(tool);
+    expect(
+      await executable.execute({
+        call: {
+          toolCallId: TOOL_CALL_ID,
+          toolId: executable.definition.id,
+          toolVersion: executable.definition.version,
+          arguments: {},
+          invocation: { invocationId: INVOCATION_ID },
+        },
+      }),
+    ).toEqual({
+      toolCallId: TOOL_CALL_ID,
+      status: "succeeded",
+      content: [{ kind: "text", text: "original" }],
+    });
+  });
+
   test("hides schema registration and executable binding", async () => {
     const search = defineTool({
       name: "search",
