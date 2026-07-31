@@ -3,16 +3,16 @@ architecture_version: 2
 id: specification-contracts
 title: Specification model and conversion
 stage: specifications
-status: ready
+status: in_progress
 priority: high
 preferred_owner_kind: coordinator
-owner:
+owner: codex-specification-contracts
 owner_kind: codex
-lease_started_at:
-lease_expires_at:
-base_sha:
-branch:
-worktree:
+lease_started_at: 2026-08-01T06:30:35+08:00
+lease_expires_at: 2026-08-02T06:30:35+08:00
+base_sha: d3023639b4a02463959cde30cee7e30ec7cd8c9f
+branch: task/specification-contracts
+worktree: /Users/jasonnathan/Repos/@theGeekist/llm-core/.worktrees/specification-contracts
 depends_on:
   - language-rollout
 decision_dependencies:
