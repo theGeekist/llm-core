@@ -3,7 +3,7 @@ architecture_version: 2
 id: specification-contracts
 title: Specification model and conversion
 stage: specifications
-status: review
+status: done
 priority: high
 preferred_owner_kind: coordinator
 owner: codex-specification-contracts
@@ -96,10 +96,12 @@ bun run lint
   `task/specification-contracts`: detached source snapshots, semantic graph,
   conversion/support declarations, portable decision records and pure change
   proposals. The graph validates reference integrity while preserving cycles.
+- 2026-08-01 — Coordinator integrated the reviewed task branch into `main` at
+  `fcdadc6`; focused specification-contract tests passed after integration.
 
 ## Handoff
 
-Ready for coordinator review.
+Complete and integrated by the coordinator.
 
 - Commit: `a40a9391af2d3a9c6cecc1511d82d238a56fc0e1`
 - Worktree: clean at the implementation commit before this review-state record.
