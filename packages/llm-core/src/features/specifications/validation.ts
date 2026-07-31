@@ -1,12 +1,5 @@
-import {
-  isContractVersion,
-  isDigest,
-  isExtensionNamespace,
-  isExternalId,
-  isJsonValue,
-  isNativeExtensions,
-} from "#contracts";
-import { hasOnlyKeys, isPortableRecord, type PortableRecord } from "#shared/portable-data";
+import { isContractVersion, isDigest, isExtensionNamespace, isJsonValue } from "#contracts";
+import { hasOnlyKeys } from "#shared/portable-data";
 import type {
   ConversionIssue,
   ConversionReport,
@@ -22,61 +15,18 @@ import type {
   SpecificationSourceBinding,
   SpecificationSourceSnapshot,
 } from "./types";
-
-const fail = (message: string): never => {
-  throw new TypeError(`Specification contracts require ${message}.`);
-};
-
-/* eslint-disable max-params -- closed-shape validation needs required and optional key lists. */
-const record = (
-  value: unknown,
-  required: readonly string[],
-  optional: readonly string[] = [],
-  message: string,
-): PortableRecord => {
-  if (!isPortableRecord(value) || !hasOnlyKeys(value, required, optional)) fail(message);
-  return value as PortableRecord;
-};
-/* eslint-enable max-params */
-
-const valueOf = <T>(value: PortableRecord, key: string): T => {
-  const descriptor = Object.getOwnPropertyDescriptor(value, key);
-  if (descriptor === undefined) return undefined as T;
-  if (!("value" in descriptor)) fail("closed data properties");
-  return (descriptor as PropertyDescriptor & { value: T }).value;
-};
-
-const nonBlankId = (value: unknown, message: string): string => {
-  if (!isExternalId(value)) fail(message);
-  return value as string;
-};
-
-const nonBlankText = (value: unknown, message: string): string => {
-  if (typeof value !== "string" || value.trim().length === 0) fail(message);
-  return value as string;
-};
-
-const timestamp = (value: unknown, message: string): string => {
-  if (typeof value !== "string" || Number.isNaN(Date.parse(value))) fail(message);
-  if (new Date(value as string).toISOString() !== value) fail(message);
-  return value as string;
-};
-
-const unique = (values: readonly string[], message: string): void => {
-  if (new Set(values).size !== values.length) fail(message);
-};
-
-const values = (value: unknown, message: string): readonly unknown[] => {
-  if (!Array.isArray(value)) fail(message);
-  return value as readonly unknown[];
-};
-
-const optionalExtensions = (value: PortableRecord, key = "extensions"): void => {
-  const extensions = valueOf<unknown>(value, key);
-  if (extensions !== undefined && !isNativeExtensions(extensions)) {
-    fail("strict JSON native extensions with reverse-DNS namespaces");
-  }
-};
+import { assertKnownBinding, assertReportBindings } from "./graph-bindings";
+import {
+  fail,
+  nonBlankId,
+  nonBlankText,
+  optionalExtensions,
+  record,
+  timestamp,
+  unique,
+  valueOf,
+  values,
+} from "./validation-support";
 
 function assertFormat(value: unknown): asserts value is SpecificationFormat {
   const input = record(value, ["id", "version"], [], "a closed format identity");
@@ -230,16 +180,6 @@ function assertRelationship(value: unknown): asserts value is SpecificationRelat
   optionalExtensions(input);
 }
 
-const assertKnownBinding = (
-  binding: SpecificationSourceBinding,
-  sources: readonly SpecificationSourceSnapshot[],
-): void => {
-  const source = sources.find((candidate) => candidate.sourceId === binding.sourceId);
-  if (!source || !source.documents.some((document) => document.documentId === binding.documentId)) {
-    fail("node and relationship bindings to declared source documents");
-  }
-};
-
 export function assertSpecificationGraph(value: unknown): asserts value is SpecificationGraph {
   const input = record(
     value,
@@ -280,7 +220,10 @@ export function assertSpecificationGraph(value: unknown): asserts value is Speci
     assertKnownBinding(relationship.source, snapshots);
   });
   const report = valueOf<unknown>(input, "report");
-  if (report !== undefined) assertConversionReport(report);
+  if (report !== undefined) {
+    assertConversionReport(report);
+    assertReportBindings(report, snapshots, nodeIds);
+  }
 }
 
 export function assertSpecificationAdapterSupport(
@@ -295,6 +238,10 @@ export function assertSpecificationAdapterSupport(
       "levels",
       "features",
       "preservedExtensionNamespaces",
+      "sourceOwnership",
+      "writeBack",
+      "fixtures",
+      "evidence",
     ],
     [],
     "closed adapter support declarations",
@@ -328,6 +275,32 @@ export function assertSpecificationAdapterSupport(
   );
   if (!namespaces.every(isExtensionNamespace)) fail("reverse-DNS preserved extension namespaces");
   unique(namespaces as string[], "unique preserved extension namespaces");
+  if (!["source-owned", "adapter-owned"].includes(String(valueOf(input, "sourceOwnership")))) {
+    fail("known adapter source ownership values");
+  }
+  const writeBack = String(valueOf(input, "writeBack"));
+  if (!["unsupported", "proposal-only", "source-authorized"].includes(writeBack)) {
+    fail("known adapter write-back behaviors");
+  }
+  if (writeBack === "source-authorized" && !levels.includes("lifecycle")) {
+    fail("source-authorized write-back to declare lifecycle conformance");
+  }
+  const fixtures = values(valueOf(input, "fixtures"), "dense adapter fixture arrays");
+  if (fixtures.length === 0) fail("at least one adapter support fixture");
+  const fixtureIds = fixtures.map((fixture) => {
+    const item = record(fixture, ["fixtureId", "digest"], [], "closed adapter fixtures");
+    const fixtureId = nonBlankId(valueOf(item, "fixtureId"), "stable adapter fixture identities");
+    if (!isDigest(valueOf(item, "digest"))) fail("SHA-256 adapter fixture digests");
+    return fixtureId;
+  });
+  unique(fixtureIds, "unique adapter fixture identities");
+  const evidence = values(valueOf(input, "evidence"), "dense adapter evidence arrays");
+  if (evidence.length === 0) fail("at least one adapter support evidence binding");
+  evidence.forEach(assertEvidenceBinding);
+  unique(
+    (evidence as SpecificationEvidenceBinding[]).map((binding) => binding.evidenceId),
+    "unique adapter support evidence identities",
+  );
 }
 
 function assertEvidenceBinding(value: unknown): asserts value is SpecificationEvidenceBinding {

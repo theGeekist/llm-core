@@ -134,12 +134,25 @@ export interface SpecificationGraph {
 }
 
 export type SpecificationAdapterDirection = "import" | "export" | "both";
+/** Who retains authority over the source after the adapter has observed it. */
+export type SpecificationAdapterSourceOwnership = "source-owned" | "adapter-owned";
+/** Explicitly states whether the adapter can write a change back to its source. */
+export type SpecificationAdapterWriteBack =
+  | "unsupported"
+  | "proposal-only"
+  | "source-authorized";
 export type SpecificationConformanceLevel =
   | "syntax"
   | "semantic"
   | "compilation"
   | "round-trip"
   | "lifecycle";
+
+/** A content-addressed fixture that substantiates one adapter support claim. */
+export interface SpecificationAdapterFixture {
+  readonly fixtureId: string;
+  readonly digest: Digest;
+}
 
 /** Versioned, format-specific declaration without an adapter implementation. */
 export interface SpecificationAdapterSupport {
@@ -149,6 +162,10 @@ export interface SpecificationAdapterSupport {
   readonly levels: readonly SpecificationConformanceLevel[];
   readonly features: readonly string[];
   readonly preservedExtensionNamespaces: readonly ExtensionNamespace[];
+  readonly sourceOwnership: SpecificationAdapterSourceOwnership;
+  readonly writeBack: SpecificationAdapterWriteBack;
+  readonly fixtures: readonly SpecificationAdapterFixture[];
+  readonly evidence: readonly SpecificationEvidenceBinding[];
 }
 
 export interface SpecificationQuestion {

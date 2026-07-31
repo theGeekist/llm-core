@@ -160,6 +160,44 @@ describe("specification contracts", () => {
     };
     untraced.nodes[0]!.source.documentId = "missing.document";
     expect(() => createSpecificationGraph(untraced as never)).toThrow("declared source documents");
+
+    const reportWithUnknownSource = structuredClone(graphInput()) as unknown as {
+      report: unknown;
+    };
+    reportWithUnknownSource.report = {
+      fidelity: "partial",
+      issues: [
+        {
+          code: "missing-source",
+          severity: "warning",
+          disposition: "degraded",
+          explanation: "The source could not be resolved.",
+          source: { sourceId: "missing.source", documentId: "missing.document" },
+        },
+      ],
+    };
+    expect(() => createSpecificationGraph(reportWithUnknownSource as never)).toThrow(
+      "conversion report issue bindings to declared source documents",
+    );
+
+    const reportWithUnknownNode = structuredClone(graphInput()) as unknown as {
+      report: unknown;
+    };
+    reportWithUnknownNode.report = {
+      fidelity: "rejected",
+      issues: [
+        {
+          code: "missing-node",
+          severity: "error",
+          disposition: "rejected",
+          explanation: "The canonical node could not be resolved.",
+          nodeId: "missing.node",
+        },
+      ],
+    };
+    expect(() => createSpecificationGraph(reportWithUnknownNode as never)).toThrow(
+      "conversion report issue node identities that reference declared graph nodes",
+    );
   });
 
   test("declares versioned adapter support and records conversion loss explicitly", () => {
@@ -170,8 +208,32 @@ describe("specification contracts", () => {
       levels: ["syntax", "semantic"],
       features: ["requirements", "decisions"],
       preservedExtensionNamespaces: [extensionNamespace("org.example.source")],
+      sourceOwnership: "source-owned",
+      writeBack: "proposal-only",
+      fixtures: [{ fixtureId: "fixture.openspec.v1", digest: evidenceDigest }],
+      evidence: [{ evidenceId: "evidence.openspec.v1", digest: evidenceDigest }],
     });
     expect(Object.isFrozen(support)).toBe(true);
+    expect(support.writeBack).toBe("proposal-only");
+
+    expect(() =>
+      createSpecificationAdapterSupport({
+        ...support,
+        writeBack: "implicit" as never,
+      }),
+    ).toThrow("known adapter write-back behaviors");
+    expect(() =>
+      createSpecificationAdapterSupport({
+        ...support,
+        writeBack: "source-authorized",
+      }),
+    ).toThrow("source-authorized write-back to declare lifecycle conformance");
+    expect(() =>
+      createSpecificationAdapterSupport({
+        ...support,
+        fixtures: [],
+      }),
+    ).toThrow("at least one adapter support fixture");
 
     const partial = createConversionReport({
       fidelity: "partial",

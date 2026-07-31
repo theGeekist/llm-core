@@ -3,16 +3,16 @@ architecture_version: 2
 id: specification-contracts
 title: Specification model and conversion
 stage: specifications
-status: done
+status: in_progress
 priority: high
 preferred_owner_kind: coordinator
-owner: codex-specification-contracts
+owner: codex-specification-contracts-review
 owner_kind: codex
-lease_started_at: 2026-08-01T06:30:35+08:00
-lease_expires_at: 2026-08-02T06:30:35+08:00
-base_sha: d3023639b4a02463959cde30cee7e30ec7cd8c9f
-branch: task/specification-contracts
-worktree: /Users/jasonnathan/Repos/@theGeekist/llm-core/.worktrees/specification-contracts
+lease_started_at: 2026-08-01T07:05:15+08:00
+lease_expires_at: 2026-08-02T07:05:15+08:00
+base_sha: af4b6bc
+branch: task/specification-contracts-review
+worktree: /Users/jasonnathan/Repos/@theGeekist/llm-core/.worktrees/specification-contracts-review
 depends_on:
   - language-rollout
 decision_dependencies:
@@ -98,10 +98,14 @@ bun run lint
   proposals. The graph validates reference integrity while preserving cycles.
 - 2026-08-01 — Coordinator integrated the reviewed task branch into `main` at
   `fcdadc6`; focused specification-contract tests passed after integration.
+- 2026-08-01 — Reopened after review found missing adapter ownership/evidence
+  declarations and graph-attached conversion-report binding checks. Remediation
+  proceeds from integrated `af4b6bc` on `task/specification-contracts-review`.
 
 ## Handoff
 
-Complete and integrated by the coordinator.
+Remediation in progress. The preceding implementation handoff remains below as
+historical provenance.
 
 - Commit: `a40a9391af2d3a9c6cecc1511d82d238a56fc0e1`
 - Worktree: clean at the implementation commit before this review-state record.
