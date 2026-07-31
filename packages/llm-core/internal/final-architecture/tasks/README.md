@@ -18,6 +18,33 @@ and exact term map are architecture inputs, not a final documentation cleanup.
 New capability tasks must not invent public names while `language-vocabulary`
 is unresolved.
 
+## Qualification stage
+
+ADR-013 preserves the remaining operational work exposed by the 19-framework
+assessment without turning `llm-core` into a hosted platform. Qualification
+tasks may proceed after the language rollout when their stated dependencies
+are done. They do not block the specification sequence unless a task declares
+that dependency explicitly. Every runtime, workspace, or protocol adapter
+must declare exact supported versions, semantic loss and its durable-state
+posture before a separate publication task adds a package entrypoint.
+
+## Integrations stage
+
+ADR-014 adds a typed connector lifecycle without collapsing MCP, A2A, SaaS,
+authorization and usage-provider semantics into one plugin API. Connector
+contracts and authorization references precede concrete protocol/provider
+adapters. Credential values remain host/platform owned, and every meaningful
+connector action still enters the ADR-005 control path.
+
+## Applications stage
+
+Desktop and mobile are delivery applications over a shared client contract,
+not feature folders inside `llm-core`. The client task follows specification,
+authorization and cost-intelligence gates. Each platform task must record its
+own secure-storage, authorization callback, offline synchronization,
+background execution, signing/update and supported-OS posture before it can be
+made ready.
+
 ## Claiming a task
 
 1. Confirm every `depends_on` task is `done`.

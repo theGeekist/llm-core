@@ -91,3 +91,9 @@ Effect disposition is separately `not-started`, `none`, `applied`, `partial`,
 - Retrying a thrown meaningful effect without disposition proof.
 - Treating reversible effects or cancellation requests as intrinsically safe.
 - Requiring SQL, KV, Temporal, or any particular storage backend.
+
+## Later extension
+
+ADR-014 requires every meaningful connector action to use this control path
+and makes retryability an operation-specific, conformance-backed declaration.
+It does not supersede this decision.

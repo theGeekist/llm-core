@@ -1,10 +1,11 @@
 # Public Language Review
 
 Architecture version: v2
-Status: findings complete; exact replacement map pending
-Decision proposal:
-[`ADR-011`](decisions/ADR-011-accessible-public-language.md)
-Implementation stage: language
+Status: complete
+Decisions:
+[`ADR-011`](decisions/ADR-011-accessible-public-language.md) and
+[`ADR-012`](decisions/ADR-012-exact-public-vocabulary.md)
+Implementation stage: complete at `71b21de`
 
 ## Outcome
 

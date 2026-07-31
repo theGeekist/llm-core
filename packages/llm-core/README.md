@@ -23,10 +23,11 @@ const result = await agent.run("Why is the sky blue?");
 console.log(result.status, result.output);
 ```
 
-The root exposes the common agent, tool, and conversation journeys. Runtime
-implementers use `/agent/runtime` and `/tools/runtime`. Use `/interaction` for
-explicit runner sessions, raw interaction events, projections, and reconnect
-state. Qualified adapter paths contain provider or UI integration code.
+The root exposes the common agent, tool, workflow, and conversation journeys.
+Runtime implementers use `/agent/runtime` and `/tools/runtime`. Use
+`/interaction` for explicit runner sessions, raw interaction events,
+projections, and reconnect state. Qualified adapter paths contain provider or
+UI integration code.
 
 Provider-native data is projected only as validated, namespaced, redacted JSON.
 Portable values never contain credentials, physical paths, or live framework

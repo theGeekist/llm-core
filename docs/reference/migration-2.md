@@ -117,7 +117,7 @@ const result = await recipes.rag.run(input, { adapters });
 After, compose the steps that your application owns:
 
 ```ts
-import { textRetrievalQuery } from "@geekist/llm-core/agent";
+import { textRetrievalQuery } from "@geekist/llm-core/retrieval";
 
 const retrieved = await ports.retriever.retrieve({
   request: { query: textRetrievalQuery(input.question) },
@@ -183,7 +183,7 @@ const result = await tool.execute(argumentsValue);
 After:
 
 ```ts
-import { executeControlledTool } from "@geekist/llm-core/control";
+import { executeControlledTool } from "@geekist/llm-core/tools/runtime";
 
 const outcome = await executeControlledTool({
   tool,

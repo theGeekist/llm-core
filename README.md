@@ -23,8 +23,8 @@ const result = await agent.run("Why is the sky blue?");
 console.log(result.status, result.output);
 ```
 
-The root contains the common `createAgent`, `defineTool`, and
-`createConversation` journeys. Runtime implementers use explicit extension
+The root contains the common `createAgent`, `defineTool`, `defineWorkflow`,
+and `createConversation` journeys. Runtime implementers use explicit extension
 paths such as `@geekist/llm-core/agent/runtime` and
 `@geekist/llm-core/tools/runtime`. Provider integrations live on qualified
 adapter paths such as `@geekist/llm-core/adapters/ai-sdk`.

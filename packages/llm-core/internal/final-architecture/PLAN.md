@@ -10,7 +10,9 @@ Started: 29 July 2026
 Implement the Architecture v2 `llm-core` posture established by the framework research:
 a small, typed TypeScript interoperability and control kernel with explicit
 capability boundaries, one orchestration surface, specification compilation
-and qualified framework adapters.
+and qualified framework adapters. A later product layer adds connector
+lifecycles, cost intelligence and end-user desktop/mobile applications without
+moving their delivery concerns into the kernel.
 
 The supporting research assessment is:
 
@@ -76,6 +78,8 @@ packages/llm-core/src/
     artifacts/     # capabilities stage
     evaluation/    # capabilities stage
     specifications/ # specifications stage
+    workspace/     # qualified execution-workspace stage
+    integrations/  # connector contracts; no provider credentials
 
   application/
     capability-bindings/
@@ -90,6 +94,8 @@ packages/llm-core/src/
     providers/
     frameworks/
     runtimes/
+    protocols/
+    connectors/
     ui/
     primitives/
 
@@ -136,6 +142,18 @@ The specifications stage adds `@geekist/llm-core/specifications`; qualified
 framework adapters are added only after their own release gates. `./functional`
 is removed. Do not expose the whole feature surface from the root package
 entry.
+
+Product delivery follows the kernel rather than living inside it:
+
+```text
+packages/llm-client/  # shared local/remote client and synchronization contract
+apps/desktop/         # full operator, local profiler and optional connector host
+apps/mobile/          # companion control, approvals, status and cost visibility
+```
+
+These paths are planning targets, not permission to publish a package or choose
+an app framework. ADR-014 and their task gates require those decisions and
+packed/native release evidence first.
 
 ## Dependency direction
 
@@ -239,21 +257,28 @@ Implementation beyond characterization requires accepted ADRs for:
 9. qualified specification-adapter publication and serialized package
    integration; and
 10. accessible public language, progressive disclosure and common-journey
-    usability.
+    usability; and
+11. operational qualification boundaries for context, evidence, evaluation,
+    durable recovery, workspace and protocol adapters; and
+12. connector lifecycle, authorization, cost intelligence and end-user client
+    application boundaries.
 
 See [`decisions/README.md`](decisions/README.md).
 
 ## Implementation stages
 
-| Stage          | Purpose                                             | Entry gate                    | Exit gate                                               |
-| -------------- | --------------------------------------------------- | ----------------------------- | ------------------------------------------------------- |
-| Architecture   | Freeze decisions and ownership                      | Research assessment complete  | Foundational ADRs accepted                              |
-| Baseline       | Characterize the current public surface             | None                          | Compile fixtures and blast-radius evidence stored       |
-| Core           | Build and converge the runtime kernel               | Architecture decisions frozen | Old contracts removed and full CI passes                |
-| Capabilities   | Add context, artifacts, evaluation and conformance  | Core converged                | Provenance and runtime-neutral conformance proven       |
-| Language       | Settle and roll out the public language atomically  | Capabilities complete         | Packed common journeys use no internal vocabulary       |
-| Specifications | Add specification contracts, compiler and authority | Language rollout complete     | Packed specification API and authority checks pass      |
-| Adapters       | Add qualified framework integrations                | Specification API complete    | Versioned support declarations and packed adapters pass |
+| Stage          | Purpose                                                     | Entry gate                    | Exit gate                                               |
+| -------------- | ----------------------------------------------------------- | ----------------------------- | ------------------------------------------------------- |
+| Architecture   | Freeze decisions and ownership                              | Research assessment complete  | Foundational ADRs accepted                              |
+| Baseline       | Characterize the current public surface                     | None                          | Compile fixtures and blast-radius evidence stored       |
+| Core           | Build and converge the runtime kernel                       | Architecture decisions frozen | Old contracts removed and full CI passes                |
+| Capabilities   | Add context, artifacts, evaluation and conformance          | Core converged                | Provenance and runtime-neutral conformance proven       |
+| Language       | Settle and roll out the public language atomically          | Capabilities complete         | Packed common journeys use no internal vocabulary       |
+| Specifications | Add specification contracts, compiler and authority         | Language rollout complete     | Packed specification API and authority checks pass      |
+| Qualification  | Harden context/eval/evidence/state boundaries and runners   | Language rollout, ADR-013     | Per-capability conformance and known-loss reports       |
+| Integrations   | Add connector contracts and authorization lifecycle         | Language rollout, ADR-014     | Secret-safe connector conformance passes                |
+| Adapters       | Add qualified framework, protocol and connector adapters    | Relevant capability gate      | Versioned support declarations and packed adapters pass |
+| Applications   | Add shared client, desktop and mobile delivery applications | Client/application gates met  | Platform security, sync and release evidence passes     |
 
 ## Dependency graph
 
@@ -285,6 +310,16 @@ adapter-pydantic-ai + ADR-010 ────────────────�
 adapter-ai-sdlc + ADR-010 ────────────────────> adapter-ai-sdlc-release
 adapter-spec-kit + ADR-010 ────────────────────> adapter-spec-kit-release
 adapter-bmad + ADR-010 ────────────────────> adapter-bmad-release
+language-rollout + ADR-013 ───────────────────> capabilities-context-qualification + capabilities-evaluation-qualification + capabilities-operational-evidence
+core-tool-control-events + core-state-interventions + language-rollout + ADR-013 ──> runtime-receipt-reconciliation
+runtime-receipt-reconciliation + capabilities-runtime-conformance ──> runtime-temporal-reference
+runtime-receipt-reconciliation ───────────────> capabilities-workspace-sandbox
+language-rollout + ADR-014 ──────────────────> integrations-connector-contracts ──> integrations-authorization-lifecycle
+runtime-receipt-reconciliation + capabilities-operational-evidence + integrations-authorization-lifecycle ──> adapters-protocol-qualification
+capabilities-operational-evidence + capabilities-evaluation-qualification + ADR-014 ──> capabilities-cost-intelligence
+capabilities-operational-evidence + capabilities-runtime-conformance ──> adapter-strands-runtime ──> adapter-strands-runtime-release
+specification-api + integrations-authorization-lifecycle + capabilities-cost-intelligence ──> applications-client-contract
+applications-client-contract ────────────────> applications-desktop + applications-mobile
 ```
 
 The WPKernel Pipeline release gate is complete. `llm-core` pins the published
@@ -304,6 +339,37 @@ pnpm --filter @wpkernel/pipeline qualify:packed
 Run-wide rollback and exactly-once commit are implemented upstream but are not
 semantic requirements for the initial pure compiler. Process-local suspension
 is not an `llm-core` durable-checkpoint dependency.
+
+## Qualification and adapter roadmap
+
+The immediate next task is `specification-contracts`. The following proposed
+work preserves the remaining evidence from the 19 assessed repositories. It is
+not a mandate to import every framework or to delay the specification path.
+
+| Capability or framework evidence                                                  | Planned disposition                                                                | Task or decision                                                |
+| --------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------- | --------------------------------------------------------------- |
+| Context authorization, freshness, safety, selection evidence                      | Portable compiler boundary; no vector/memory authority                             | `capabilities-context-qualification`                            |
+| Dataset/split identity, trajectory/safety checks, promotion and optimizer lineage | Provider-neutral qualification; no hosted eval service                             | `capabilities-evaluation-qualification`                         |
+| Usage attribution and observability                                               | Redacted receipts plus optional OTel projection; no price/audit backend            | `capabilities-operational-evidence`                             |
+| Cost estimates, provider reconciliation, budgets and routing recommendations      | Provenance-bearing facts and eval gates; price/billing services remain external    | `capabilities-cost-intelligence`                                |
+| Started/indeterminate effects                                                     | Fence and reconcile before durable qualification                                   | `runtime-receipt-reconciliation`                                |
+| Service-backed timers, signals, replay and recovery                               | One Temporal reference behind `DurableExecutionHandle`                             | `runtime-temporal-reference`                                    |
+| Coding-agent command execution                                                    | Explicit workspace/sandbox port; never imply isolation                             | `capabilities-workspace-sandbox`                                |
+| MCP, A2A and SaaS connector lifecycle                                             | Typed connector families, secret references and explicit reliability declarations  | `integrations-connector-contracts` and authorization lifecycle  |
+| MCP tools and A2A peers                                                           | Qualified protocol adapters through existing control and identity paths            | `adapters-protocol-qualification`                               |
+| Desktop and mobile end-user products                                              | Shared client contract, then platform-specific security/sync/release gates         | `applications-client-contract`, desktop and mobile tasks        |
+| Vercel AI SDK                                                                     | Existing provider/UI baseline; keep its support version-pinned and conformance-led | Completed core adapter and `capabilities-runtime-conformance`   |
+| Second independent TypeScript agent runtime                                       | Strands conformance proof, then a separately serialized release task               | `adapter-strands-runtime` and `adapter-strands-runtime-release` |
+| Haystack context and DSPy optimization                                            | Demand-led adapters after their corresponding qualification task                   | ADR-013 boundary; no task claim yet                             |
+| OpenAI Agents, Claude Agent SDK, OpenHands and LangGraph                          | Demand-led runtime/workspace adapters with native session/state loss reports       | ADR-013 boundary; no task claim yet                             |
+| Microsoft Agent Framework, Google ADK, Mastra, Agno and CrewAI                    | Later ecosystem adapters only when support demand warrants their conformance cost  | ADR-013 boundary; no task claim yet                             |
+| Spec Kit, OpenSpec, AI-SDLC, BMAD and PydanticAI specifications                   | Existing qualified specification adapter sequence                                  | ADR-009 and ADR-010                                             |
+
+The roadmap deliberately excludes a hosted control plane, approval service,
+secret manager, vector database, universal team/crew API, provider-native
+session/checkpoint portability, and claims of exactly-once external effects.
+Those are delivery products or runtime-owned guarantees, not missing kernel
+components.
 
 ## Parallelization rules
 

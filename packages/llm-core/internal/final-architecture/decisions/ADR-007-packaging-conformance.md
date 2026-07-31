@@ -37,3 +37,9 @@ The package does not carry dual-module complexity speculatively. A Node
 baseline increase is an explicit, evidence-backed packaging change rather than
 an accidental adapter side effect. Python-runtime selection remains a
 coordinator decision, not a worker-local architecture choice.
+
+## Later extension
+
+ADR-014 applies this versioned conformance and serialized publication posture
+to protocol/connector adapters and any shared client package. Integration
+breadth does not relax this decision.

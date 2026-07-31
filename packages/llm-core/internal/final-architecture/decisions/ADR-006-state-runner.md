@@ -63,3 +63,9 @@ The local and fake-remote runners must pass the same lifecycle suite covering
 discovery, preparation, start, event ordering, terminal uniqueness,
 cancellation acknowledgement, typed intervention, resume compatibility, and
 parent/child causality. Resume must not repeat a recorded completed effect.
+
+## Later extension
+
+ADR-014 classifies desktop/mobile processes and connector sessions under these
+state lifetimes. Neither is a durable execution handle or portable checkpoint.
+It does not supersede this decision.

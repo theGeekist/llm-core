@@ -18,5 +18,11 @@ superseding architecture version says otherwise.
   journey contracts and language rollout gate.
 - [`SPECIFICATIONS.md`](SPECIFICATIONS.md) defines the specification model,
   eight interoperability seams and Pipeline adoption gates.
+- [`decisions/ADR-013`](decisions/ADR-013-operational-qualification-boundaries.md)
+  records the post-language qualification boundary for operational evidence,
+  durable recovery, context safety, workspaces and protocol adapters.
+- [`decisions/ADR-014`](decisions/ADR-014-integration-cost-client-application-boundaries.md)
+  defines connector authorization, cost intelligence and the shared-client,
+  desktop and mobile product boundary.
 - [`decisions/`](decisions/) contains accepted Architecture v2 ADRs.
 - [`tasks/`](tasks/) contains Architecture v2 implementation briefs.

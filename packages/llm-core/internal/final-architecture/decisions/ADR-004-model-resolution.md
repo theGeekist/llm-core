@@ -46,3 +46,9 @@ implementation selection uses `CapabilityBinding`.
 
 The current selector is deleted. Adapters own provider edge cases; core owns
 requirements, resolution semantics and conformance claims.
+
+## Later extension
+
+ADR-014 applies the same credential-ownership rule to connector authorization:
+portable connection and grant references never contain credential values. It
+does not supersede this decision.

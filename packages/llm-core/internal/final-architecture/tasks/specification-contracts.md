@@ -3,7 +3,7 @@ architecture_version: 2
 id: specification-contracts
 title: Specification model and conversion
 stage: specifications
-status: blocked
+status: ready
 priority: high
 preferred_owner_kind: coordinator
 owner:
@@ -31,7 +31,7 @@ read_scope:
   - packages/llm-core/src/features/artifacts/**
   - packages/llm-core/src/features/evidence/**
 review_owner: coordinator
-updated_at: 2026-07-31
+updated_at: 2026-08-01
 ---
 
 # specification-contracts — Specification model and conversion
@@ -89,6 +89,9 @@ bun run lint
 - 2026-07-30 — Blocked behind the language stage so exact public terminology is
   settled before
   the specification contracts are created.
+- 2026-08-01 — Promoted to ready after `language-rollout` completed at
+  `71b21de`. ADR-012 now fixes the public specification vocabulary; no
+  language-stage decision remains unresolved.
 
 ## Handoff
 

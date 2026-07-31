@@ -3,13 +3,13 @@ architecture_version: 2
 id: language-rollout
 title: Atomic public-language rollout
 stage: language
-status: review
+status: done
 priority: critical
 preferred_owner_kind: coordinator
 owner: codex-root
 owner_kind: codex
 lease_started_at: 2026-07-31T06:00:00+08:00
-lease_expires_at: 2026-08-01T06:00:00+08:00
+lease_expires_at:
 base_sha: 17d2b38a
 branch: main
 worktree: /Users/jasonnathan/Repos/@theGeekist/llm-core
@@ -35,7 +35,7 @@ read_scope:
   - packages/llm-core/**
   - docs/**
 review_owner: coordinator
-updated_at: 2026-07-31
+updated_at: 2026-08-01
 ---
 
 # language-rollout — Atomic public-language rollout
@@ -99,10 +99,21 @@ runtime check skipped; schema freshness; release build; 41-page production
 documentation build; 22 Mermaid diagrams rendered in Chromium; and all 29 ESM
 runtime and declaration exports loaded from an isolated packed consumer.
 
+2026-07-31 — The coordinator committed the completed rollout to `main` as
+`71b21dea722df6bfae87eae7f7c6465281987d4c`. The commit includes the final
+workflow-definition ownership remediation: every step and nested retry record
+is snapshotted and frozen while executable callback identity is retained.
+
+2026-08-01 — Architecture audit reran the focused workflow suite: 11 pass,
+0 fail. It verified post-definition mutation of the caller-owned step key,
+callback, and retry record cannot change the ready workflow. Review finding
+closed; task marked done.
+
 ## Handoff
 
-Ready for coordinator review. The rollout is deliberately breaking: stale
-aliases and the `./functional` subpath were removed. The package root now
-contains only the four implemented common journeys—Agent, Tool, Workflow and
-Conversation—while runtime, capability and adapter contracts use explicit
-qualified fronts.
+Complete at `71b21de`. The rollout is deliberately breaking: stale aliases and
+the `./functional` subpath were removed. The package root now contains only the
+four implemented common journeys—Agent, Tool, Workflow and Conversation—while
+runtime, capability and adapter contracts use explicit qualified fronts. The
+Specification journey remains intentionally unimplemented and is the next
+stage.
