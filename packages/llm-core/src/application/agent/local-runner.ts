@@ -7,26 +7,26 @@ import {
   type AgentProgressFacts,
   type AgentResumeRequest,
   type AgentRun,
-  type AgentRunEvent,
-  type AgentRunEventKind,
+  type AgentEvent,
+  type AgentEventKind,
   type AgentRunIdentity,
   type AgentRunner,
-  type AgentRunnerCapabilities,
-  type AgentRunRequest,
-  type AgentSpec,
-  type PreparedAgentSpec,
-  type RunResult,
-  createPreparedAgentSpec,
+  type AgentRunnerProfile,
+  type AgentStartRequest,
+  type AgentDefinition,
+  type PreparedAgentDefinition,
+  type AgentResult,
+  createPreparedAgentDefinition,
 } from "../../features/agent/public";
 import {
   authenticateIntervention,
   checkResumeCompatibility,
   createInterventionRequest,
-  isRegisteredResumableCheckpoint,
   type InterventionDecision,
   type InterventionRequest,
-  type RegisteredResumableCheckpoint,
 } from "../../features/state/public";
+import { isRegisteredResumableCheckpoint } from "../../features/state/runtime";
+import type { RegisteredResumableCheckpoint } from "../../features/state/runtime";
 import type {
   CreateLocalAgentRunnerOptions,
   LocalAgentExecutionContext,
@@ -38,9 +38,9 @@ import { guardResumeToolExecution } from "./resume-effects";
 import { resultFacts } from "./run-event";
 import {
   isCanonicalTimestamp,
-  validateAgentRunRequest,
+  validateAgentStartRequest,
   validateAgentCancellationRequest,
-  validateAgentRunEventFacts,
+  validateAgentEventFacts,
   validateLocalAgentExecutionResult,
 } from "./validation";
 
@@ -58,12 +58,12 @@ const deepFreeze = <T>(value: T): T => {
 
 const frozenPortable = <T>(value: T): T => deepFreeze(clonePortable(value));
 
-class AgentEventLog {
-  readonly #events: AgentRunEvent[] = [];
+class AgentRunEventLog {
+  readonly #events: AgentEvent[] = [];
   readonly #waiters = new Set<() => void>();
   #closed = false;
 
-  append(event: AgentRunEvent): void {
+  append(event: AgentEvent): void {
     if (this.#closed) {
       return;
     }
@@ -82,7 +82,7 @@ class AgentEventLog {
     this.#waiters.clear();
   }
 
-  stream(): AsyncIterable<AgentRunEvent> {
+  stream(): AsyncIterable<AgentEvent> {
     const events = this.#events;
     const waiters = this.#waiters;
     const closed = () => this.#closed;
@@ -109,19 +109,19 @@ class AgentEventLog {
 
 interface RunState {
   readonly identity: AgentRunIdentity;
-  readonly log: AgentEventLog;
+  readonly log: AgentRunEventLog;
   readonly interventions: InterventionDecision[];
   readonly interventionRequests: Map<string, InterventionRequest>;
   readonly terminalEventId: EventId;
   sequence: number;
   cancellationRequested: boolean;
   lastOccurredAt: string;
-  terminal?: RunResult;
-  result: MaybePromise<RunResult>;
+  terminal?: AgentResult;
+  result: MaybePromise<AgentResult>;
 }
 
 interface CreateRunInput {
-  readonly request: AgentRunRequest;
+  readonly request: AgentStartRequest;
   readonly identity: AgentRunIdentity;
   readonly checkpoint?: RegisteredResumableCheckpoint;
   readonly deniedReason?: string;
@@ -129,20 +129,20 @@ interface CreateRunInput {
 
 interface BuildEventInput {
   readonly state: RunState;
-  readonly kind: AgentRunEventKind;
-  readonly facts: AgentRunEvent["facts"];
+  readonly kind: AgentEventKind;
+  readonly facts: AgentEvent["facts"];
   readonly eventId?: EventId;
   readonly occurredAt?: string;
   readonly sequence?: number;
 }
 
-const terminalKind = (status: RunResult["status"]): AgentRunEventKind =>
-  `agent.run.${status}` as AgentRunEventKind;
+const terminalKind = (status: AgentResult["status"]): AgentEventKind =>
+  `agent.run.${status}` as AgentEventKind;
 
 export const createLocalAgentRunner = (options: CreateLocalAgentRunnerOptions): AgentRunner => {
   const interventionAuthentication = readInterventionAuthentication(options);
-  const runnerPreparedSpecs = new WeakSet<object>();
-  const capabilities = deepFreeze<AgentRunnerCapabilities>({
+  const runnerPreparedDefinitions = new WeakSet<object>();
+  const capabilities = deepFreeze<AgentRunnerProfile>({
     runnerId: options.runnerId,
     runnerVersion: options.runnerVersion,
     controlledEffects: Boolean(options.controlledToolExecution),
@@ -154,9 +154,9 @@ export const createLocalAgentRunner = (options: CreateLocalAgentRunnerOptions): 
     childRuns: true,
   });
 
-  const buildEvent = (input: BuildEventInput): AgentRunEvent => {
+  const buildEvent = (input: BuildEventInput): AgentEvent => {
     const { state, kind, facts } = input;
-    validateAgentRunEventFacts(kind, facts);
+    validateAgentEventFacts(kind, facts);
     return frozenPortable({
       eventId: input.eventId ?? readEventId(),
       kind,
@@ -164,17 +164,17 @@ export const createLocalAgentRunner = (options: CreateLocalAgentRunnerOptions): 
       sequence: input.sequence ?? state.sequence,
       identity: state.identity,
       facts,
-    }) as AgentRunEvent;
+    }) as AgentEvent;
   };
 
-  const emit = (state: RunState, kind: AgentRunEventKind, facts: AgentRunEvent["facts"]): void => {
+  const emit = (state: RunState, kind: AgentEventKind, facts: AgentEvent["facts"]): void => {
     const event = buildEvent({ state, kind, facts });
     state.log.append(event);
     state.lastOccurredAt = event.occurredAt;
     state.sequence += 1;
   };
 
-  const appendBuiltEvent = (state: RunState, event: AgentRunEvent): void => {
+  const appendBuiltEvent = (state: RunState, event: AgentEvent): void => {
     state.log.append(event);
     state.lastOccurredAt = event.occurredAt;
     state.sequence += 1;
@@ -204,12 +204,12 @@ export const createLocalAgentRunner = (options: CreateLocalAgentRunnerOptions): 
     return value;
   };
 
-  const settle = (state: RunState, draft: LocalAgentExecutionResult): RunResult => {
+  const settle = (state: RunState, draft: LocalAgentExecutionResult): AgentResult => {
     if (state.terminal) {
       return state.terminal;
     }
     validateLocalAgentExecutionResult(draft);
-    const result = frozenPortable<RunResult>({
+    const result = frozenPortable<AgentResult>({
       identity: state.identity,
       status: draft.status,
       ...(draft.output !== undefined ? { output: draft.output } : {}),
@@ -239,11 +239,9 @@ export const createLocalAgentRunner = (options: CreateLocalAgentRunnerOptions): 
     return result;
   };
 
-  const failed = (state: RunState): RunResult =>
+  const failed = (state: RunState): AgentResult =>
     settle(state, { status: "failed", reasonCode: "local-execution-threw" });
 
-  // The factory initializes different terminal paths but deliberately returns
-  // the same stable run handle for every path.
   // eslint-disable-next-line sonarjs/no-invariant-returns
   const createRun = (input: CreateRunInput): AgentRun => {
     const { request, identity, checkpoint, deniedReason } = input;
@@ -257,14 +255,14 @@ export const createLocalAgentRunner = (options: CreateLocalAgentRunnerOptions): 
     const initialTimestamp = readNow();
     const state: RunState = {
       identity: frozenPortable(identity),
-      log: new AgentEventLog(),
+      log: new AgentRunEventLog(),
       interventions: [],
       interventionRequests: new Map(),
       terminalEventId: readEventId(),
       sequence: 0,
       cancellationRequested: false,
       lastOccurredAt: initialTimestamp,
-      result: undefined as unknown as MaybePromise<RunResult>,
+      result: undefined as unknown as MaybePromise<AgentResult>,
     };
 
     const events = () => state.log.stream();
@@ -366,7 +364,7 @@ export const createLocalAgentRunner = (options: CreateLocalAgentRunnerOptions): 
       intervene,
     });
 
-    const startChild = (child: AgentRunRequest): AgentRun => {
+    const startChild = (child: AgentStartRequest): AgentRun => {
       validateForRunner(child);
       return startWithIdentity(child, {
         runId: readRunId(),
@@ -374,7 +372,7 @@ export const createLocalAgentRunner = (options: CreateLocalAgentRunnerOptions): 
         causalRunId: state.identity.causalRunId ?? state.identity.runId,
       });
     };
-    const contextRequest: AgentRunRequest = Object.freeze({
+    const contextRequest: AgentStartRequest = Object.freeze({
       agent: request.agent,
       invocationContext: frozenPortable({
         ...request.invocationContext,
@@ -468,29 +466,29 @@ export const createLocalAgentRunner = (options: CreateLocalAgentRunnerOptions): 
     return run;
   };
 
-  const startWithIdentity = (request: AgentRunRequest, identity: AgentRunIdentity): AgentRun =>
+  const startWithIdentity = (request: AgentStartRequest, identity: AgentRunIdentity): AgentRun =>
     createRun({ request, identity });
 
-  const validateForRunner = (request: AgentRunRequest): void => {
-    validateAgentRunRequest(request);
-    if (!runnerPreparedSpecs.has(request.agent)) {
-      throw new TypeError("Agent specs must be prepared by this runner instance.");
+  const validateForRunner = (request: AgentStartRequest): void => {
+    validateAgentStartRequest(request);
+    if (!runnerPreparedDefinitions.has(request.agent)) {
+      throw new TypeError("Agent definitions must be prepared by this runner instance.");
     }
     if (request.agent.effectRequirement === "controlled" && !capabilities.controlledEffects) {
       throw new TypeError("This runner cannot establish a controlled path for meaningful effects.");
     }
   };
 
-  const prepare = (spec: AgentSpec): PreparedAgentSpec => {
-    const prepared = createPreparedAgentSpec(spec);
+  const prepare = (definition: AgentDefinition): PreparedAgentDefinition => {
+    const prepared = createPreparedAgentDefinition(definition);
     if (prepared.effectRequirement === "controlled" && !capabilities.controlledEffects) {
       throw new TypeError("This runner cannot establish a controlled path for meaningful effects.");
     }
-    runnerPreparedSpecs.add(prepared);
+    runnerPreparedDefinitions.add(prepared);
     return prepared;
   };
 
-  const start = (request: AgentRunRequest): AgentRun => {
+  const start = (request: AgentStartRequest): AgentRun => {
     validateForRunner(request);
     const requestedRunId = request.invocationContext.runId;
     return startWithIdentity(request, {
@@ -500,7 +498,7 @@ export const createLocalAgentRunner = (options: CreateLocalAgentRunnerOptions): 
 
   const resume = capabilities.checkpointResume
     ? (request: AgentResumeRequest): AgentRun => {
-        if (!runnerPreparedSpecs.has(request.agent)) {
+        if (!runnerPreparedDefinitions.has(request.agent)) {
           throw new TypeError("AgentResumeRequest.agent must be prepared by this runner.");
         }
         if (!isRegisteredResumableCheckpoint(request.checkpoint)) {
@@ -511,7 +509,7 @@ export const createLocalAgentRunner = (options: CreateLocalAgentRunnerOptions): 
           options.resumeCompatibility!,
         );
         const runId: RunId = request.invocationContext.runId ?? readRunId();
-        const runRequest: AgentRunRequest = {
+        const runRequest: AgentStartRequest = {
           agent: request.agent,
           invocationContext: request.invocationContext,
           input: request.checkpoint.state,

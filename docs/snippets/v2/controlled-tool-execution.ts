@@ -1,4 +1,7 @@
-import { executeControlledTool, type ExecuteControlledToolInput } from "@geekist/llm-core/control";
+import {
+  executeControlledTool,
+  type ExecuteControlledToolInput,
+} from "@geekist/llm-core/tools/runtime";
 
 declare const input: ExecuteControlledToolInput;
 

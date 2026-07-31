@@ -1,4 +1,4 @@
-export { createContextEntry, createContextManifest } from "./manifest";
+export { createContextEntry, selectContext } from "./manifest";
 export type {
   ContextBudget,
   ContextBudgetUsage,
@@ -7,8 +7,8 @@ export type {
   ContextEntryInput,
   ContextEntryPriority,
   ContextEntrySource,
-  ContextManifest,
-  ContextManifestInput,
+  ContextSelection,
+  ContextSelectionInput,
   ContextProvenance,
   ContextScope,
 } from "./types";

@@ -17,8 +17,8 @@ import {
   createLiveContinuation,
   createProviderSessionRef,
   createSnapshot,
-  registerResumableCheckpoint,
 } from "../../../src/features/state/public";
+import { registerResumableCheckpoint } from "../../../src/features/state/runtime";
 import { maybeToAsyncIterable } from "../../../src/shared/maybe";
 import { checkpoint, durableJobId, providerSessionId } from "../../state/helpers";
 import { passingClaim, runtimeBinding, verificationDependencies } from "./helpers";

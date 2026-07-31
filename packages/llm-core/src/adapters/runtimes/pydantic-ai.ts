@@ -4,15 +4,15 @@ import type {
   AgentCancellationRequest,
   AgentInterventionAcknowledgement,
   AgentRun,
-  AgentRunEvent,
-  AgentRunRequest,
+  AgentEvent,
+  AgentStartRequest,
   AgentRunner,
-  AgentRunnerCapabilities,
-  AgentSpec,
-  PreparedAgentSpec,
-  RunResult,
+  AgentRunnerProfile,
+  AgentDefinition,
+  PreparedAgentDefinition,
+  AgentResult,
 } from "../../features/agent/public";
-import { createPreparedAgentSpec } from "../../features/agent/public";
+import { createPreparedAgentDefinition } from "../../features/agent/public";
 import type { InterventionDecision } from "../../features/state/public";
 import {
   PYDANTIC_AI_BRIDGE_PROTOCOL,
@@ -154,7 +154,7 @@ const stringField = (value: JsonValue | undefined, field: string, operation: str
   return value;
 };
 
-const capabilities: AgentRunnerCapabilities = Object.freeze({
+const capabilities: AgentRunnerProfile = Object.freeze({
   runnerId: "llm-core.runtime.pydantic-ai",
   runnerVersion: contractVersion("1.0.0"),
   controlledEffects: false,
@@ -166,7 +166,7 @@ const capabilities: AgentRunnerCapabilities = Object.freeze({
   childRuns: false,
 });
 
-const EVENT_KINDS = new Set<AgentRunEvent["kind"]>([
+const EVENT_KINDS = new Set<AgentEvent["kind"]>([
   "agent.run.started",
   "agent.run.progress",
   "agent.run.completed",
@@ -175,17 +175,14 @@ const EVENT_KINDS = new Set<AgentRunEvent["kind"]>([
   "agent.run.cancelled",
 ]);
 
-const TERMINAL_EVENT_KINDS = new Set<AgentRunEvent["kind"]>([
+const TERMINAL_EVENT_KINDS = new Set<AgentEvent["kind"]>([
   "agent.run.completed",
   "agent.run.failed",
   "agent.run.denied",
   "agent.run.cancelled",
 ]);
 
-const validEventFacts = (
-  kind: AgentRunEvent["kind"],
-  facts: Record<string, JsonValue>,
-): boolean => {
+const validEventFacts = (kind: AgentEvent["kind"], facts: Record<string, JsonValue>): boolean => {
   switch (kind) {
     case "agent.run.started":
       return typeof facts.agentId === "string" && typeof facts.agentVersion === "string";
@@ -204,13 +201,9 @@ const validEventFacts = (
   }
 };
 
-const validateEvent = (
-  value: JsonValue,
-  runId: string,
-  expectedSequence: number,
-): AgentRunEvent => {
+const validateEvent = (value: JsonValue, runId: string, expectedSequence: number): AgentEvent => {
   const record = payloadRecord(value, "events");
-  const kind = record.kind as AgentRunEvent["kind"];
+  const kind = record.kind as AgentEvent["kind"];
   if (
     !isUuidV7(record.eventId) ||
     !EVENT_KINDS.has(kind) ||
@@ -239,10 +232,10 @@ const validateEvent = (
       "PydanticAI emitted an event for a different run.",
     );
   }
-  return clonePortable(record) as unknown as AgentRunEvent;
+  return clonePortable(record) as unknown as AgentEvent;
 };
 
-const validateResult = (value: JsonValue | undefined, runId: string): RunResult => {
+const validateResult = (value: JsonValue | undefined, runId: string): AgentResult => {
   const record = payloadRecord(value, "result");
   const identity = payloadRecord(record.identity, "result");
   if (
@@ -254,10 +247,10 @@ const validateResult = (value: JsonValue | undefined, runId: string): RunResult 
       "PydanticAI returned an invalid terminal result.",
     );
   }
-  return clonePortable(record) as unknown as RunResult;
+  return clonePortable(record) as unknown as AgentResult;
 };
 
-const validatePydanticAiSpec = (spec: AgentSpec): void => {
+const validatePydanticAiSpec = (spec: AgentDefinition): void => {
   if (spec.effectRequirement === "controlled") {
     throw new PydanticAiCompatibilityError(
       "controlled-effects-unsupported",
@@ -425,7 +418,7 @@ const createBridgeRunner = (
       await ensureHandshake();
       return capabilities;
     },
-    prepare: async (spec: AgentSpec): Promise<PreparedAgentSpec> => {
+    prepare: async (spec: AgentDefinition): Promise<PreparedAgentDefinition> => {
       await ensureHandshake();
       validatePydanticAiSpec(spec);
       const payload = payloadRecord(
@@ -433,11 +426,11 @@ const createBridgeRunner = (
         "prepare",
       );
       const token = stringField(payload.token, "token", "prepare");
-      const prepared = createPreparedAgentSpec(clonePortable(spec));
+      const prepared = createPreparedAgentDefinition(clonePortable(spec));
       tokens.set(prepared, token);
       return prepared;
     },
-    start: async (request: AgentRunRequest): Promise<AgentRun> => {
+    start: async (request: AgentStartRequest): Promise<AgentRun> => {
       await ensureHandshake();
       const token = tokens.get(request.agent);
       if (!token) {

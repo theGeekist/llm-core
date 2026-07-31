@@ -1,37 +1,63 @@
-import type { ExecutableWorkflowStep, WorkflowDefinition, WorkflowRegistry } from "./runtime-types";
+import { resumeWorkflow, runWorkflow } from "./runtime";
+import type {
+  Workflow,
+  WorkflowConfig,
+  WorkflowPause,
+  WorkflowRegistry,
+  WorkflowStep,
+} from "./runtime-types";
 
-const assertDefinition = <TState, TPause, TResumeInput>(
-  definition: WorkflowDefinition<TState, TPause, TResumeInput>,
+const assertConfig = <TState, TPause, TResumeInput>(
+  config: WorkflowConfig<TState, TPause, TResumeInput>,
 ): void => {
-  if (definition.workflowId.length === 0 || definition.version.length === 0) {
+  if (config.workflowId === "" || config.version === "") {
     throw new TypeError("Workflow identity and version must be non-empty.");
   }
-  const keys = definition.steps.map((step) => step.key);
+  const keys = config.steps.map((step) => step.key);
   if (keys.some((key) => key.length === 0) || new Set(keys).size !== keys.length) {
     throw new TypeError("Workflow step keys must be non-empty and unique.");
   }
 };
 
-export const defineWorkflow = <TState, TPause, TResumeInput = unknown>(
-  definition: WorkflowDefinition<TState, TPause, TResumeInput>,
-): WorkflowDefinition<TState, TPause, TResumeInput> => {
-  assertDefinition(definition);
-  return Object.freeze({
-    ...definition,
-    steps: Object.freeze([...definition.steps]),
+const snapshotStep = <TState, TPause, TResumeInput>(
+  step: WorkflowStep<TState, TPause, TResumeInput>,
+): WorkflowStep<TState, TPause, TResumeInput> =>
+  Object.freeze({
+    ...step,
+    ...(step.retry === undefined ? {} : { retry: Object.freeze({ ...step.retry }) }),
   });
+
+export const defineWorkflow = <TState, TPause, TResumeInput = unknown>(
+  config: WorkflowConfig<TState, TPause, TResumeInput>,
+): Workflow<TState, TPause, TResumeInput> => {
+  assertConfig(config);
+  const workflowId = config.workflowId ?? crypto.randomUUID();
+  const version = config.version ?? "1";
+  const steps = Object.freeze(config.steps.map(snapshotStep));
+  const workflow: Workflow<TState, TPause, TResumeInput> = Object.freeze({
+    workflowId,
+    version,
+    steps,
+    run: (initialState: TState) => runWorkflow(workflow, initialState),
+    resume: (pause: WorkflowPause<TState, TPause>, input: TResumeInput) =>
+      resumeWorkflow(workflow, {
+        snapshot: pause,
+        resumeInput: input,
+      }),
+  });
+  return workflow;
 };
 
 export const composeWorkflow = <TState, TPause, TResumeInput = unknown>(input: {
-  readonly workflowId: string;
-  readonly version: string;
-  readonly definitions: readonly WorkflowDefinition<TState, TPause, TResumeInput>[];
-  readonly steps?: readonly ExecutableWorkflowStep<TState, TPause, TResumeInput>[];
-}): WorkflowDefinition<TState, TPause, TResumeInput> =>
+  readonly workflowId?: string;
+  readonly version?: string;
+  readonly workflows: readonly Workflow<TState, TPause, TResumeInput>[];
+  readonly steps?: readonly WorkflowStep<TState, TPause, TResumeInput>[];
+}): Workflow<TState, TPause, TResumeInput> =>
   defineWorkflow({
-    workflowId: input.workflowId,
-    version: input.version,
-    steps: [...input.definitions.flatMap((definition) => definition.steps), ...(input.steps ?? [])],
+    ...(input.workflowId === undefined ? {} : { workflowId: input.workflowId }),
+    ...(input.version === undefined ? {} : { version: input.version }),
+    steps: [...input.workflows.flatMap((workflow) => workflow.steps), ...(input.steps ?? [])],
   });
 
 export const createWorkflowRegistry = <TState, TPause, TResumeInput = unknown>(): WorkflowRegistry<
@@ -39,23 +65,19 @@ export const createWorkflowRegistry = <TState, TPause, TResumeInput = unknown>()
   TPause,
   TResumeInput
 > => {
-  const definitions = new Map<string, WorkflowDefinition<TState, TPause, TResumeInput>>();
+  const workflows = new Map<string, Workflow<TState, TPause, TResumeInput>>();
   return {
-    register({ definition, replace }) {
-      const accepted =
-        Object.isFrozen(definition) && Object.isFrozen(definition.steps)
-          ? definition
-          : defineWorkflow(definition);
-      if (definitions.has(accepted.workflowId) && replace !== true) {
-        throw new TypeError(`Workflow "${accepted.workflowId}" is already registered.`);
+    register({ workflow, replace }) {
+      if (workflows.has(workflow.workflowId) && replace !== true) {
+        throw new TypeError(`Workflow "${workflow.workflowId}" is already registered.`);
       }
-      definitions.set(accepted.workflowId, accepted);
+      workflows.set(workflow.workflowId, workflow);
     },
     resolve(workflowId) {
-      return definitions.get(workflowId);
+      return workflows.get(workflowId);
     },
     list() {
-      return Object.freeze([...definitions.values()]);
+      return Object.freeze([...workflows.values()]);
     },
   };
 };

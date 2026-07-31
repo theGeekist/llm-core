@@ -1,11 +1,8 @@
 import { afterEach, describe, expect, test } from "bun:test";
 import { newCoreId } from "#contracts";
 import type { InvocationContext, InvocationId } from "#contracts";
-import {
-  BUILTIN_PROVIDER,
-  createBuiltinModel,
-  type ModelRequest,
-} from "../../src/features/model/public";
+import { BUILTIN_PROVIDER } from "../../src/features/model/builtin";
+import { createBuiltinModel, type ModelRequest } from "../../src/features/model/public";
 
 const CONTEXT: InvocationContext = {
   invocationId: newCoreId<InvocationId>("0190bd0c-0000-7000-8000-0000000000c1"),

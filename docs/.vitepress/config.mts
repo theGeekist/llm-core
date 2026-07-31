@@ -6,7 +6,7 @@ export default defineConfig({
   description: "Portable contracts and controlled orchestration for LLM applications.",
   base: "/",
   appearance: "dark",
-  srcExclude: ["**/.internal/**"],
+  srcExclude: ["**/.internal/**", "**/handoffs/**"],
   head: [
     ["link", { rel: "icon", href: "/favicon.ico" }],
     ["link", { rel: "icon", type: "image/png", sizes: "32x32", href: "/favicon-32.png" }],
@@ -53,7 +53,7 @@ export default defineConfig({
       { text: "Guide", link: "/guide/hello-world" },
       { text: "Capabilities", link: "/capabilities/" },
       { text: "Orchestration", link: "/orchestration/" },
-      { text: "Interaction", link: "/interaction/" },
+      { text: "Conversations", link: "/interaction/" },
       { text: "Adapters", link: "/adapters/" },
       { text: "Reference", link: "/reference/vocabulary" },
     ],
@@ -119,7 +119,7 @@ export default defineConfig({
       ],
       "/interaction/": [
         {
-          text: "Interaction",
+          text: "Conversations and interaction",
           items: [
             { text: "Overview", link: "/interaction/" },
             { text: "Events and projections", link: "/interaction/events" },
@@ -145,7 +145,6 @@ export default defineConfig({
           items: [
             { text: "Vocabulary", link: "/reference/vocabulary" },
             { text: "API by subpath", link: "/reference/api" },
-            { text: "Functional helpers", link: "/reference/functional" },
             { text: "Failures and diagnostics", link: "/reference/failures" },
             { text: "Contract catalogue", link: "/reference/contracts" },
             { text: "Package exports", link: "/reference/package-exports" },

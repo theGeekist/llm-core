@@ -22,7 +22,7 @@ export interface ModelProfile {
 declare const registeredModelProfileBrand: unique symbol;
 
 /**
- * A profile that has passed {@link registerModelProfile}: fully validated,
+ * A profile that has passed {@link createModelProfile}: fully validated,
  * defensively deep-cloned, and deep-frozen. Only registered profiles may back a
  * binding, so resolution evidence cannot be forged or mutated through a
  * caller-retained reference.
@@ -43,7 +43,7 @@ export const isRegisteredModelProfile = (value: unknown): value is RegisteredMod
  * a getter on the source cannot return one shape to the validator and another
  * to callers. A non-cloneable source (functions, etc.) is rejected outright.
  */
-export const registerModelProfile = (profile: ModelProfile): RegisteredModelProfile => {
+export const createModelProfile = (profile: ModelProfile): ModelProfile => {
   let copy: ModelProfile;
   try {
     copy = structuredClone(profile);

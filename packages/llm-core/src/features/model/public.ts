@@ -1,18 +1,40 @@
-/**
- * Public front door for the model capability (ADR-001).
- *
- * This is the only surface other features, the application layer, and adapters
- * may import. Deep imports into the module files above are prohibited.
- */
-export * from "./references";
-export * from "./content";
-export * from "./request";
-export * from "./response";
-export * from "./profile";
-export * from "./resolver";
-export * from "./model";
-export * from "./builtin";
-export * from "./schema-resolution";
-export * from "./prompting";
-// ADR-008 publishes media capability contracts through the curated ./model front.
-export * from "../media/public";
+export { createBuiltinModel } from "./builtin";
+export type {
+  ModelContentPart,
+  ModelMessage,
+  ModelRole,
+  ReasoningPart,
+  ToolCallPart,
+  ToolResultPart,
+} from "./content";
+export type { Model, ModelGenerateInput, ModelStreamEvent, ModelStreamInput } from "./model";
+export { preparePromptTemplate } from "./prompting";
+export type {
+  ModelOutputParser,
+  ParsedModelOutput,
+  PromptInputField,
+  PromptTemplate,
+  PromptValueType,
+} from "./prompting";
+export { deploymentRef, providerRef } from "./references";
+export type { DeploymentRef, ProviderRef } from "./references";
+export type {
+  ModelRequest,
+  ProviderRequestMetadata,
+  ResponseFormat,
+  SamplingParams,
+  ToolChoice,
+  ToolDeclaration,
+} from "./request";
+export type {
+  FinishReason,
+  ModelCompletion,
+  ModelError,
+  ModelErrorCode,
+  ModelErrorResponse,
+  ModelResponse,
+  ModelUsage,
+  ModelWarning,
+  ProviderResponseMetadata,
+  WarningSeverity,
+} from "./response";

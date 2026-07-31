@@ -70,7 +70,7 @@ const validatePolicy = <TResult>(input: ExecuteWithQualifiedRetryInput<TResult>)
   }
   if (input.binding.kind === "tool") {
     const toolEffect =
-      input.binding.port.spec.effect.class === "read-only" ? "read-only" : "meaningful";
+      input.binding.port.definition.effect.class === "read-only" ? "read-only" : "meaningful";
     if (input.effect !== toolEffect) {
       throw new TypeError("Tool retry qualification must match the registered tool effect.");
     }
@@ -108,7 +108,7 @@ const validatePolicy = <TResult>(input: ExecuteWithQualifiedRetryInput<TResult>)
     throw new TypeError("Meaningful effects cannot use a read-only retry guarantee.");
   }
   const operationProvenReadOnly =
-    input.binding.kind === "tool" && input.binding.port.spec.effect.class === "read-only";
+    input.binding.kind === "tool" && input.binding.port.definition.effect.class === "read-only";
   if (
     !operationProvenReadOnly &&
     policy.guarantee !== "idempotent" &&

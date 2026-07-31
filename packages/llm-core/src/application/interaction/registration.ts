@@ -11,11 +11,11 @@ import {
 import { createSnapshot } from "../../features/state/public";
 import { isCanonicalInteractionTimestamp, isSafeInteractionCode } from "./content-registration";
 import { registerInteractionProviderSession } from "./provider-session-registration";
-import { registerInteractionUiEvent } from "./ui-event-registration";
+import { registerConversationEvent } from "./ui-event-registration";
 import type {
-  ConversationSessionSnapshot,
-  ConversationSessionValue,
-  ConversationTurn,
+  ConversationSnapshot,
+  ConversationState,
+  ConversationRunRecord,
   InteractionProjection,
   InteractionRunStatus,
 } from "./types";
@@ -96,7 +96,7 @@ const normalizeProjection = (
     throw new TypeError("Conversation snapshots require a closed interaction projection.");
   }
   const ids = value.eventIds.map(eventId);
-  const events = value.events.map(registerInteractionUiEvent);
+  const events = value.events.map(registerConversationEvent);
   const projectedIds = events.map((event) => event.eventId);
   if (
     Object.keys(value.eventFingerprints).length > 0 ||
@@ -207,7 +207,7 @@ const normalizeProjection = (
   };
 };
 
-const normalizeTurn = (value: unknown): ConversationTurn => {
+const normalizeTurn = (value: unknown): ConversationRunRecord => {
   if (
     !isRecord(value) ||
     !hasOnlyKeys(value, ["runId", "input", "status", "output", "reasonCode"]) ||
@@ -230,7 +230,7 @@ const normalizeTurn = (value: unknown): ConversationTurn => {
 const normalizeValue = (
   value: unknown,
   expectedConversationId: ConversationId,
-): ConversationSessionValue => {
+): ConversationState => {
   if (
     !isRecord(value) ||
     !hasOnlyKeys(value, ["conversationId", "revision", "turns", "projection", "providerSession"]) ||
@@ -254,10 +254,10 @@ const normalizeValue = (
   };
 };
 
-export const registerConversationSessionSnapshot = (
+export const registerConversationSnapshot = (
   input: unknown,
   expectedConversationId: ConversationId,
-): ConversationSessionSnapshot => {
+): ConversationSnapshot => {
   if (
     !isRecord(input) ||
     !hasOnlyKeys(input, ["kind", "snapshotId", "createdAt", "schema", "value"]) ||
@@ -273,5 +273,5 @@ export const registerConversationSessionSnapshot = (
     createdAt: input.createdAt,
     ...(input.schema === undefined ? {} : { schema: input.schema as never }),
     value: value as unknown as JsonValue,
-  }) as unknown as ConversationSessionSnapshot;
+  }) as unknown as ConversationSnapshot;
 };

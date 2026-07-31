@@ -1,5 +1,5 @@
 import { isCanonicalUuid } from "#contracts";
-import type { ActionDigest } from "../tooling/public";
+import type { ActionDigest } from "../tooling/runtime";
 
 declare const policyEvaluationIdBrand: unique symbol;
 declare const approvalIdBrand: unique symbol;

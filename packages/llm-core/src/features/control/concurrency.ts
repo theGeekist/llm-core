@@ -1,5 +1,5 @@
 import type { RunId, ToolCallId } from "#contracts";
-import type { ExecutionConcurrency } from "../tooling/public";
+import type { ExecutionConcurrency } from "../tooling/runtime";
 import type { ControlMaybePromise } from "./shared";
 
 export interface ConcurrencyRequest {

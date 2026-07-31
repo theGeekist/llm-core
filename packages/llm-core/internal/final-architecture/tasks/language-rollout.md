@@ -3,7 +3,7 @@ architecture_version: 2
 id: language-rollout
 title: Atomic public-language rollout
 stage: language
-status: in_progress
+status: review
 priority: critical
 preferred_owner_kind: coordinator
 owner: codex-root
@@ -87,6 +87,22 @@ bun run typecheck:examples
 Implementation was divided into disjoint Agent/Tool, Workflow and Conversation
 workstreams; the coordinator owns root/package/build integration.
 
+2026-07-31 — Converged all common journeys, qualified runtime and capability
+fronts, internal call sites, tests, examples, snippets, both READMEs and the
+published documentation. The coordinator removed accidental capability
+aggregation from `agent/runtime` and preserved the 731-export inventory as
+explicit pre-rollout evidence at `17d2b38`.
+
+2026-07-31 — Verification passed: lint and format checks; package, test,
+example and snippet typechecks; 522 tests with one optional live PydanticAI
+runtime check skipped; schema freshness; release build; 41-page production
+documentation build; 22 Mermaid diagrams rendered in Chromium; and all 29 ESM
+runtime and declaration exports loaded from an isolated packed consumer.
+
 ## Handoff
 
-Pending.
+Ready for coordinator review. The rollout is deliberately breaking: stale
+aliases and the `./functional` subpath were removed. The package root now
+contains only the four implemented common journeys—Agent, Tool, Workflow and
+Conversation—while runtime, capability and adapter contracts use explicit
+qualified fronts.

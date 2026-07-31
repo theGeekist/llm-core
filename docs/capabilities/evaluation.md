@@ -13,7 +13,7 @@ evaluator identity and case identity. A judgement can report `pass`, `fail`, or
 
 ```mermaid
 flowchart TB
-  Context["ContextManifest"] --> Run["Agent or workflow execution"]
+  Context["ContextSelection"] --> Run["Agent or workflow execution"]
   Run --> Artifact["Artifact"]
   Run --> Receipt["Execution receipt"]
   Artifact --> Evidence["EvidenceRef"]

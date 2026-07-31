@@ -4,7 +4,7 @@ import type { JsonValue } from "#contracts";
 import {
   projectInteractionEvent,
   type InteractionEvent,
-  type InteractionUiEvent,
+  type ConversationEvent,
 } from "../../application/interaction/public";
 import type { UiProjectionMapper } from "./types";
 
@@ -61,7 +61,7 @@ export const createAssistantUiProjectionMapper = (
     return created;
   };
 
-  const mapProjection = (event: InteractionUiEvent): readonly AssistantUiProjectionCommand[] => {
+  const mapProjection = (event: ConversationEvent): readonly AssistantUiProjectionCommand[] => {
     switch (event.kind) {
       case "message-started":
         buffers.set(event.messageId, { text: "", reasoning: "" });

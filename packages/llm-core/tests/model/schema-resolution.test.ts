@@ -9,7 +9,8 @@ import {
   fromLangChainPromptTemplate,
 } from "../../src/adapters/frameworks/langchain/model-support/public";
 import { fromLlamaIndexPromptTemplate } from "../../src/adapters/frameworks/llamaindex/model-support/public";
-import { isRegisteredSchemaDocument, resolveSchemaDocument } from "../../src/features/model/public";
+import { isRegisteredSchemaDocument } from "../../src/features/model/schema-resolution";
+import { resolveSchemaDocument } from "../../src/features/model/runtime";
 
 const DOCUMENT = { type: "object", additionalProperties: false };
 const DOCUMENT_BYTES = new TextEncoder().encode(JSON.stringify(DOCUMENT));

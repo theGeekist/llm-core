@@ -16,10 +16,10 @@ sequenceDiagram
   participant Policy as PolicyEvaluationPort
   participant Approval as ToolApprovalPort
   participant Gate as ConcurrencyGate
-  participant Tool as ToolBinding
+  participant Tool as ExecutableTool
   participant Events as EventSink
 
-  Host->>Control: binding, call, security domain, ports
+  Host->>Control: tool, call, security domain, ports
   Control->>Control: bind action and compute digest
   Control->>Journal: reserve idempotency identity
   Journal-->>Control: authoritative receipt
@@ -36,7 +36,7 @@ sequenceDiagram
   Control->>Journal: append started
   Control-->>Events: schedule started event
   Control->>Tool: execute once
-  Tool-->>Control: ToolResult
+  Tool-->>Control: ToolExecutionResult
   Control->>Journal: append terminal disposition
   Control-->>Events: schedule terminal event
   Control-->>Host: ControlledToolExecutionOutcome
@@ -53,7 +53,7 @@ evidence, but it is neither persistence nor execution authority.
 
 | Status                                     | Meaning                                                                 |
 | ------------------------------------------ | ----------------------------------------------------------------------- |
-| `succeeded`, `failed`                      | The binding returned a terminal `ToolResult`.                           |
+| `succeeded`, `failed`                      | The executable tool returned a terminal `ToolExecutionResult`.          |
 | `awaiting-approval`, `cancelled`, `denied` | Control stopped before execution or followed an authoritative decision. |
 | `existing`                                 | The reservation resolved to an existing terminal receipt.               |
 | `indeterminate`                            | Execution may have started, but completion is not authoritative.        |
@@ -65,16 +65,17 @@ or `not-configured`. Delivery failure does not erase a durable receipt.
 ## Redaction and native data
 
 Supply explicit `RedactionMetadata` for sensitive categories. Canonical
-`ExecutionEvent` values contain action digests, receipt state, safe control
+`ToolExecutionEvent` values contain action digests, receipt state, safe control
 facts, and optionally already-redacted extensions. They do not carry raw tool
 arguments or results.
 
 ## Durable intervention resume
 
-`resumeInterventionWorkflow` is the workflow-level path for an authenticated
-decision against a registered checkpoint. Its journal atomically consumes the
-decision, claims the checkpoint when execution will continue, records
-meaningful effects, and commits or quarantines the outcome.
+Runtime `resumeInterventionWorkflow` is the workflow-level path for an
+authenticated decision against a registered checkpoint. Its journal atomically
+consumes the decision, claims the checkpoint when execution will continue,
+records meaningful effects, and commits or quarantines the
+`ControlledWorkflowResult`.
 
 If an effect is `started` or its state is indeterminate, the outcome is
 `reconciliation-required`. Automatic replay is not authorized.

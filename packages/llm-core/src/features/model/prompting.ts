@@ -181,7 +181,7 @@ const isPortableContent = (value: unknown): value is PortableContent => {
   return isPortableMediaContent(value);
 };
 
-export const registerParsedModelOutput = (value: unknown): ParsedModelOutput => {
+export const createParsedModelOutput = (value: unknown): ParsedModelOutput => {
   if (typeof value !== "object" || value === null || Array.isArray(value)) {
     throw new TypeError("Parsed model output must use a closed portable result.");
   }

@@ -7,7 +7,7 @@ import type {
   ToolCallId,
 } from "#contracts";
 import { isContractVersion } from "#contracts";
-import type { ActionDigest } from "../tooling/public";
+import type { ActionDigest } from "../tooling/runtime";
 import {
   actionDigestsMatch,
   isCanonicalTimestamp,

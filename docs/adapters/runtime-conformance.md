@@ -31,7 +31,7 @@ framework compatibility.
 Apply the ladder to one adapter at a time. Require:
 
 1. exact runtime and dependency versions;
-2. the supported `AgentSpec` and input subset;
+2. the supported `AgentDefinition` and input subset;
 3. declared semantic loss;
 4. unsupported controls and state lifetimes;
 5. executable conformance evidence.

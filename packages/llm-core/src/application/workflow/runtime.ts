@@ -1,11 +1,11 @@
 import { maybeChain, maybeReduce, maybeTry, type MaybePromise } from "#shared/maybe";
 import type {
-  ExecutableWorkflowStep,
-  WorkflowDefinition,
-  WorkflowExecutionOutcome,
-  WorkflowPauseSnapshot,
+  Workflow,
+  WorkflowPause,
+  WorkflowResult,
   WorkflowRollbackFailure,
   WorkflowRuntimeOptions,
+  WorkflowStep,
   WorkflowTransition,
 } from "./runtime-types";
 
@@ -13,7 +13,7 @@ const defaultSleep = (delayMs: number): Promise<void> =>
   new Promise((resolve) => setTimeout(resolve, delayMs));
 
 const retryDelay = (
-  step: ExecutableWorkflowStep<unknown, unknown, unknown>,
+  step: WorkflowStep<unknown, unknown, unknown>,
   error: unknown,
   attempt: number,
 ): number => {
@@ -23,7 +23,7 @@ const retryDelay = (
 };
 
 const mayRetry = (
-  step: ExecutableWorkflowStep<unknown, unknown, unknown>,
+  step: WorkflowStep<unknown, unknown, unknown>,
   error: unknown,
   attempt: number,
 ): boolean => {
@@ -38,7 +38,7 @@ const mayRetry = (
 };
 
 type InvokeStepInput<TState, TPause, TResumeInput> = {
-  readonly step: ExecutableWorkflowStep<TState, TPause, TResumeInput>;
+  readonly step: WorkflowStep<TState, TPause, TResumeInput>;
   readonly state: TState;
   readonly resumeInput: TResumeInput | undefined;
   readonly options: WorkflowRuntimeOptions;
@@ -50,13 +50,11 @@ const invokeStep = <TState, TPause, TResumeInput>(
 ): MaybePromise<WorkflowTransition<TState, TPause>> =>
   maybeTry(
     (error) => {
-      if (
-        !mayRetry(input.step as ExecutableWorkflowStep<unknown, unknown, unknown>, error, attempt)
-      ) {
+      if (!mayRetry(input.step as WorkflowStep<unknown, unknown, unknown>, error, attempt)) {
         throw error;
       }
       const delayMs = retryDelay(
-        input.step as ExecutableWorkflowStep<unknown, unknown, unknown>,
+        input.step as WorkflowStep<unknown, unknown, unknown>,
         error,
         attempt,
       );
@@ -75,7 +73,7 @@ const invokeStep = <TState, TPause, TResumeInput>(
   );
 
 type CompletedStep<TState, TPause, TResumeInput> = {
-  readonly step: ExecutableWorkflowStep<TState, TPause, TResumeInput>;
+  readonly step: WorkflowStep<TState, TPause, TResumeInput>;
 };
 
 const runRollbacks = <TState, TPause, TResumeInput>(
@@ -104,7 +102,7 @@ const failedOutcome = <TState, TPause>(input: {
   readonly error: unknown;
   readonly rollbackFailures: readonly WorkflowRollbackFailure[];
   readonly stepKey?: string;
-}): WorkflowExecutionOutcome<TState, TPause> => ({
+}): WorkflowResult<TState, TPause> => ({
   status: "failed",
   ...(input.stepKey ? { stepKey: input.stepKey } : {}),
   error: input.error,
@@ -114,20 +112,20 @@ const failedOutcome = <TState, TPause>(input: {
 const completeOutcome = <TState, TPause>(
   state: TState,
   completed: readonly CompletedStep<TState, TPause, unknown>[],
-): WorkflowExecutionOutcome<TState, TPause> => ({
+): WorkflowResult<TState, TPause> => ({
   status: "completed",
   state,
   completedStepKeys: Object.freeze(completed.map(({ step }) => step.key)),
 });
 
 const nonPassiveStep = <TState, TPause, TResumeInput>(
-  definition: WorkflowDefinition<TState, TPause, TResumeInput>,
-): ExecutableWorkflowStep<TState, TPause, TResumeInput> | undefined =>
-  definition.steps.find((step) => (step as { readonly effect?: unknown }).effect !== "none");
+  workflow: Workflow<TState, TPause, TResumeInput>,
+): WorkflowStep<TState, TPause, TResumeInput> | undefined =>
+  workflow.steps.find((step) => (step as { readonly effect?: unknown }).effect !== "none");
 
 const passiveOnlyFailure = <TState, TPause>(
-  step: ExecutableWorkflowStep<TState, TPause, unknown>,
-): WorkflowExecutionOutcome<TState, TPause> =>
+  step: WorkflowStep<TState, TPause, unknown>,
+): WorkflowResult<TState, TPause> =>
   failedOutcome({
     error: new TypeError(
       `General workflow step "${step.key}" must declare effect "none"; meaningful effects require the durable intervention workflow.`,
@@ -137,7 +135,7 @@ const passiveOnlyFailure = <TState, TPause>(
   });
 
 type ExecutionCursor<TState, TPause, TResumeInput> = {
-  readonly definition: WorkflowDefinition<TState, TPause, TResumeInput>;
+  readonly workflow: Workflow<TState, TPause, TResumeInput>;
   readonly state: TState;
   readonly stepIndex: number;
   readonly completed: readonly CompletedStep<TState, TPause, TResumeInput>[];
@@ -147,8 +145,8 @@ type ExecutionCursor<TState, TPause, TResumeInput> = {
 const executeFrom = <TState, TPause, TResumeInput>(
   cursor: ExecutionCursor<TState, TPause, TResumeInput>,
   options: WorkflowRuntimeOptions,
-): MaybePromise<WorkflowExecutionOutcome<TState, TPause>> => {
-  const step = cursor.definition.steps[cursor.stepIndex];
+): MaybePromise<WorkflowResult<TState, TPause>> => {
+  const step = cursor.workflow.steps[cursor.stepIndex];
   if (!step) {
     return completeOutcome(
       cursor.state,
@@ -172,7 +170,7 @@ const executeFrom = <TState, TPause, TResumeInput>(
           if (transition.status === "continue") {
             return executeFrom(
               {
-                definition: cursor.definition,
+                workflow: cursor.workflow,
                 state: transition.state,
                 stepIndex: cursor.stepIndex + 1,
                 completed: [...cursor.completed, { step }],
@@ -188,8 +186,8 @@ const executeFrom = <TState, TPause, TResumeInput>(
                 kind: "workflow-pause-snapshot",
                 durability: "ephemeral",
                 checkpoint: false,
-                workflowId: cursor.definition.workflowId,
-                workflowVersion: cursor.definition.version,
+                workflowId: cursor.workflow.workflowId,
+                workflowVersion: cursor.workflow.version,
                 nextStepIndex: cursor.stepIndex,
                 state: transition.state,
                 completedStepKeys: Object.freeze(
@@ -200,7 +198,7 @@ const executeFrom = <TState, TPause, TResumeInput>(
             };
           }
           return maybeChain(
-            (rollbackFailures): WorkflowExecutionOutcome<TState, TPause> => {
+            (rollbackFailures): WorkflowResult<TState, TPause> => {
               if (rollbackFailures.length > 0) {
                 return failedOutcome({
                   error: new Error("Workflow restart rollback failed."),
@@ -214,8 +212,8 @@ const executeFrom = <TState, TPause, TResumeInput>(
                   kind: "workflow-pause-snapshot",
                   durability: "ephemeral",
                   checkpoint: false,
-                  workflowId: cursor.definition.workflowId,
-                  workflowVersion: cursor.definition.version,
+                  workflowId: cursor.workflow.workflowId,
+                  workflowVersion: cursor.workflow.version,
                   nextStepIndex: 0,
                   state: transition.state,
                   completedStepKeys: Object.freeze([]),
@@ -237,31 +235,31 @@ const executeFrom = <TState, TPause, TResumeInput>(
 };
 
 const completedFromSnapshot = <TState, TPause, TResumeInput>(
-  definition: WorkflowDefinition<TState, TPause, TResumeInput>,
-  snapshot: WorkflowPauseSnapshot<TState, TPause>,
+  workflow: Workflow<TState, TPause, TResumeInput>,
+  snapshot: WorkflowPause<TState, TPause>,
 ): readonly CompletedStep<TState, TPause, TResumeInput>[] => {
-  const expected = definition.steps.slice(0, snapshot.nextStepIndex).map((step) => step.key);
+  const expected = workflow.steps.slice(0, snapshot.nextStepIndex).map((step) => step.key);
   if (
     expected.length !== snapshot.completedStepKeys.length ||
     expected.some((key, index) => key !== snapshot.completedStepKeys[index])
   ) {
     throw new TypeError("Workflow pause snapshot does not match the definition.");
   }
-  return definition.steps.slice(0, snapshot.nextStepIndex).map((step) => ({ step }));
+  return workflow.steps.slice(0, snapshot.nextStepIndex).map((step) => ({ step }));
 };
 
 export const runWorkflow = <TState, TPause, TResumeInput = unknown>(
-  definition: WorkflowDefinition<TState, TPause, TResumeInput>,
+  workflow: Workflow<TState, TPause, TResumeInput>,
   initialState: TState,
   options: WorkflowRuntimeOptions = {},
-): MaybePromise<WorkflowExecutionOutcome<TState, TPause>> => {
-  const unsafe = nonPassiveStep(definition);
+): MaybePromise<WorkflowResult<TState, TPause>> => {
+  const unsafe = nonPassiveStep(workflow);
   if (unsafe) {
-    return passiveOnlyFailure(unsafe as ExecutableWorkflowStep<TState, TPause, unknown>);
+    return passiveOnlyFailure(unsafe as WorkflowStep<TState, TPause, unknown>);
   }
   return executeFrom(
     {
-      definition,
+      workflow,
       state: initialState,
       stepIndex: 0,
       completed: [],
@@ -272,23 +270,23 @@ export const runWorkflow = <TState, TPause, TResumeInput = unknown>(
 };
 
 export const resumeWorkflow = <TState, TPause, TResumeInput>(
-  definition: WorkflowDefinition<TState, TPause, TResumeInput>,
+  workflow: Workflow<TState, TPause, TResumeInput>,
   input: {
-    readonly snapshot: WorkflowPauseSnapshot<TState, TPause>;
+    readonly snapshot: WorkflowPause<TState, TPause>;
     readonly resumeInput: TResumeInput;
   },
   options: WorkflowRuntimeOptions = {},
-): MaybePromise<WorkflowExecutionOutcome<TState, TPause>> => {
-  const unsafe = nonPassiveStep(definition);
+): MaybePromise<WorkflowResult<TState, TPause>> => {
+  const unsafe = nonPassiveStep(workflow);
   if (unsafe) {
-    return passiveOnlyFailure(unsafe as ExecutableWorkflowStep<TState, TPause, unknown>);
+    return passiveOnlyFailure(unsafe as WorkflowStep<TState, TPause, unknown>);
   }
   if (
     input.snapshot.kind !== "workflow-pause-snapshot" ||
     input.snapshot.durability !== "ephemeral" ||
     input.snapshot.checkpoint !== false ||
-    input.snapshot.workflowId !== definition.workflowId ||
-    input.snapshot.workflowVersion !== definition.version
+    input.snapshot.workflowId !== workflow.workflowId ||
+    input.snapshot.workflowVersion !== workflow.version
   ) {
     return failedOutcome({
       error: new TypeError(
@@ -302,10 +300,10 @@ export const resumeWorkflow = <TState, TPause, TResumeInput>(
     () =>
       executeFrom(
         {
-          definition,
+          workflow,
           state: input.snapshot.state,
           stepIndex: input.snapshot.nextStepIndex,
-          completed: completedFromSnapshot(definition, input.snapshot),
+          completed: completedFromSnapshot(workflow, input.snapshot),
           resumeInput: input.resumeInput,
         },
         options,

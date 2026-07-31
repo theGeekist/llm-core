@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { canonicalizeJson, normalizeStrictJson } from "../../src/features/tooling/public";
+import { canonicalizeJson, normalizeStrictJson } from "../../src/features/tooling/runtime";
 
 describe("strict canonical JSON", () => {
   test("sorts object keys, preserves array order and normalizes negative zero", () => {

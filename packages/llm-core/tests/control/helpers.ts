@@ -11,15 +11,14 @@ import {
   type RunId,
   type ToolCallId,
 } from "#contracts";
-import { actionDigest, type ActionDigest } from "../../src/features/tooling/public";
+import { actionDigest, type ActionDigest } from "../../src/features/tooling/runtime";
+import { type ApprovalRef, type CancellationRef } from "../../src/features/control/public";
 import {
   approvalId,
   cancellationId,
   policyEvaluationId,
-  type ApprovalRef,
-  type CancellationRef,
   type PolicyEvaluationRef,
-} from "../../src/features/control/public";
+} from "../../src/features/control/runtime";
 
 export const RUN_ID = newCoreId<RunId>("018f0f4e-8c5b-7a91-8c3b-123456789abc");
 export const TOOL_CALL_ID = newCoreId<ToolCallId>("018f0f4e-8c5b-7a91-8c3b-123456789abd");

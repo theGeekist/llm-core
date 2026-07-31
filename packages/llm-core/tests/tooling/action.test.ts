@@ -15,15 +15,15 @@ import {
   actionDigest,
   bindAction,
   createActionDocument,
-  defineToolSpec,
+  defineToolDefinition,
   registerToolSchema,
   toolId,
   verifyActionDigest,
   type ActionDigestPort,
   type ToolCall,
   type ToolSchemaDigestPort,
-  type ToolSpec,
-} from "../../src/features/tooling/public";
+  type ToolDefinition,
+} from "../../src/features/tooling/runtime";
 
 const schemaDigestPort: ToolSchemaDigestPort = {
   digest: (canonicalSchema) => digest(createHash("sha256").update(canonicalSchema).digest("hex")),
@@ -56,8 +56,8 @@ const digestPort: ActionDigestPort = {
 const createSpec = async (
   schemaDocument: Record<string, unknown>,
   concurrency: "shared" | "exclusive" = "exclusive",
-): Promise<ToolSpec> =>
-  defineToolSpec({
+): Promise<ToolDefinition> =>
+  defineToolDefinition({
     id: toolId("billing.invoice.create"),
     version: contractVersion("1.0.0"),
     description: "Create an invoice",
@@ -102,14 +102,14 @@ describe("canonical tool actions", () => {
     const spec = await createSpec(inputSchema);
     const keyRef = secretRef("vault:action-signing/current");
     const first = await bindAction({
-      spec,
+      definition: spec,
       call: createCall({ amount: 100 }),
       securityDomain: "tenant:acme",
       keyRef,
       digestPort,
     });
     const changed = await bindAction({
-      spec,
+      definition: spec,
       call: createCall({ amount: 101 }),
       securityDomain: "tenant:acme",
       keyRef,
@@ -145,11 +145,11 @@ describe("canonical tool actions", () => {
     };
 
     expect(() =>
-      defineToolSpec({
+      defineToolDefinition({
         id: toolId("billing.invoice.create"),
         version: contractVersion("1.0.0"),
         description: "Create an invoice",
-        inputSchema: forged as unknown as ToolSpec["inputSchema"],
+        inputSchema: forged as unknown as ToolDefinition["inputSchema"],
         effect: {
           class: "external-write",
           targets: [{ kind: "service", id: "billing-api" }],
@@ -189,7 +189,7 @@ describe("canonical tool actions", () => {
     const call = createCall({ amount: 100 });
     const keyRef = secretRef("vault:action-signing/current");
     const bound = await bindAction({
-      spec,
+      definition: spec,
       call,
       securityDomain: "tenant:acme",
       keyRef,
@@ -198,7 +198,7 @@ describe("canonical tool actions", () => {
 
     expect(
       await verifyActionDigest({
-        spec,
+        definition: spec,
         call,
         securityDomain: "tenant:acme",
         keyRef,
@@ -208,7 +208,7 @@ describe("canonical tool actions", () => {
     ).toBe(true);
     expect(
       await verifyActionDigest({
-        spec,
+        definition: spec,
         call: createCall({ amount: 101 }),
         securityDomain: "tenant:acme",
         keyRef,
@@ -221,7 +221,7 @@ describe("canonical tool actions", () => {
   test("rejects meaningful effects without targets and mismatched calls", async () => {
     const spec = await createSpec(inputSchema);
     expect(() =>
-      defineToolSpec({
+      defineToolDefinition({
         ...spec,
         effect: { class: "destructive", targets: [] },
       }),

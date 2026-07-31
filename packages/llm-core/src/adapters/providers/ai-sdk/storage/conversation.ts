@@ -2,11 +2,11 @@ import type { JsonValue } from "#contracts";
 import { maybeMap, type MaybePromise } from "#shared/maybe";
 import {
   registerConversationRecord,
-  registerConversationTurn,
+  createConversationMessage,
   type ConversationRecord,
   type ConversationStateStore,
   type ConversationStore,
-  type ConversationTurn,
+  type ConversationMessage,
 } from "../../../../features/memory/public";
 import {
   isPortableJsonValue,
@@ -84,7 +84,7 @@ const readNativeText = (content: HostConversationMessage["content"]): string | n
   return content.map((part) => (part as { text: string }).text).join("");
 };
 
-const toTurn = (message: HostConversationMessage): ConversationTurn | null => {
+const toTurn = (message: HostConversationMessage): ConversationMessage | null => {
   const text = readNativeText(message.content);
   if (
     text === null ||
@@ -93,14 +93,14 @@ const toTurn = (message: HostConversationMessage): ConversationTurn | null => {
   ) {
     return null;
   }
-  return registerConversationTurn({
+  return createConversationMessage({
     role: message.role,
     content: [{ kind: "text", text }],
     occurredAt: message.timestamp.toISOString(),
   });
 };
 
-const readText = (turn: ConversationTurn): string | null => {
+const readText = (turn: ConversationMessage): string | null => {
   if (!turn.content.every((part) => part.kind === "text" || part.kind === "reasoning")) {
     return null;
   }
@@ -130,7 +130,7 @@ const projectMessages = (
   messages: HostConversationMessage[],
   notify: CreateHostConversationStoresInput["onProjectionIssue"],
 ): ConversationRecord | null => {
-  const turns: ConversationTurn[] = [];
+  const turns: ConversationMessage[] = [];
   let failed = false;
   messages.forEach((message, messageIndex) => {
     const turn = toTurn(message);
@@ -187,7 +187,7 @@ export const createHostConversationStores = ({
       if (!provider.saveMessage) {
         return null;
       }
-      const registered = registerConversationTurn(turn);
+      const registered = createConversationMessage(turn);
       const content = readText(registered);
       if (content === null) {
         return false;

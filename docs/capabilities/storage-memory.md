@@ -8,9 +8,12 @@ storage concerns.
 
 `CacheStore` is TTL-oriented, `KeyValueStore` is batched named storage, and
 `ResourceStore` owns live bytes behind portable `ResourceRef` values.
-`ConversationStore` owns ordered turns; `ConversationStateStore` owns
-application state derived for a conversation. None of these ports expose
-credentials, database handles or provider-native messages.
+The agent-memory `ConversationStore` owns ordered `ConversationMessage` values;
+its serialized append field remains `turn` for wire compatibility.
+`ConversationStateStore` owns application state derived for a conversation.
+These extension ports are distinct from the common durable conversation store
+used by `createConversation`. None of them expose credentials, database handles
+or provider-native messages.
 
 Validate values before persistence. Sensitive-looking portable keys and
 strings are rejected by the registration helpers, and native data must be

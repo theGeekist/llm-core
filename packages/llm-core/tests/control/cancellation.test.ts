@@ -1,9 +1,9 @@
 import { describe, expect, test } from "bun:test";
 import {
-  resolveCancellation,
   type CancellationAcknowledgement,
   type CancellationRequest,
 } from "../../src/features/control/public";
+import { resolveCancellation } from "../../src/features/control/runtime";
 import { cancellationRef, principal } from "./helpers";
 
 const request = (phase: CancellationRequest["phase"]): CancellationRequest => ({

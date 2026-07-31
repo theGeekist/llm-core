@@ -4,26 +4,28 @@ import {
   actionDigestInput,
   type ActionDigestPort,
   type BoundAction,
-} from "../../../src/features/tooling/public";
+} from "../../../src/features/tooling/runtime";
 import {
   createInterventionRequest,
   interventionId,
   interventionDecisionId,
-  registerResumableCheckpoint,
   type InterventionAuthenticationPort,
   type InterventionDecision,
   type InterventionRequest,
-  type RegisteredResumableCheckpoint,
 } from "../../../src/features/state/public";
 import {
+  registerResumableCheckpoint,
+  type RegisteredResumableCheckpoint,
+} from "../../../src/features/state/runtime";
+import {
   resumeInterventionWorkflow,
-  type MeaningfulWorkflowStep,
+  type ControlledWorkflowStep,
   type ResumableWorkflowStep,
   type WorkflowCheckpointClaim,
   type WorkflowCheckpointCommit,
   type WorkflowDecisionToken,
   type WorkflowResumeJournal,
-} from "../../../src/application/workflow/public";
+} from "../../../src/application/workflow/runtime-public";
 import {
   ACTION_DIGEST,
   COMPATIBILITY,
@@ -161,11 +163,11 @@ const passiveStep = (
 });
 
 const meaningfulStep = (
-  execute: MeaningfulWorkflowStep["execute"] = ({ started }) => ({
+  execute: ControlledWorkflowStep["execute"] = ({ started }) => ({
     state: { applied: true },
     recordedEffect: { ...started, status: "completed" },
   }),
-): MeaningfulWorkflowStep => ({
+): ControlledWorkflowStep => ({
   stepId: STEP_ONE,
   effect: "meaningful",
   action: ACTION,

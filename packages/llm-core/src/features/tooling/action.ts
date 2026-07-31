@@ -3,7 +3,7 @@ import type { SecretRef } from "#contracts";
 import { maybeMap, type MaybePromise } from "#shared/maybe";
 import { canonicalizeJson, freezeJsonValue, normalizeStrictJson } from "./canonical-json";
 import { isRegisteredToolSchema } from "./schema-registration";
-import type { ActionDocument, EffectTarget, ToolCall, ToolId, ToolSpec } from "./types";
+import type { ActionDocument, EffectTarget, ToolCall, ToolId, ToolDefinition } from "./types";
 
 declare const actionDigestValueBrand: unique symbol;
 
@@ -43,20 +43,20 @@ export interface BoundAction {
 }
 
 export interface BindActionInput {
-  spec: ToolSpec;
+  definition: ToolDefinition;
   call: ToolCall;
   securityDomain: string;
   keyRef: SecretRef;
   digestPort: ActionDigestPort;
 }
 
-const TOOL_ID_PATTERN = /^[a-z][a-z0-9]*(?:[._-][a-z0-9]+)+$/;
+const TOOL_ID_PATTERN = /^[a-z][a-z0-9]*(?:[._-][a-z0-9]+)*$/;
 const SAFE_IDENTIFIER_PATTERN = /^[!-~]{1,255}$/;
 const ACTION_DIGEST_PATTERN = /^[A-Za-z0-9_-]{43}$/;
 
 export function toolId(value: string): ToolId {
   if (!TOOL_ID_PATTERN.test(value)) {
-    throw new TypeError("Tool IDs must be stable lowercase namespaced identifiers.");
+    throw new TypeError("Tool IDs must be stable lowercase identifiers.");
   }
   return value as ToolId;
 }
@@ -87,28 +87,28 @@ const normalizeTargets = (targets: EffectTarget[]): EffectTarget[] =>
     })
     .sort(compareTargets);
 
-const assertToolSpec = (spec: ToolSpec): void => {
-  if (!TOOL_ID_PATTERN.test(spec.id) || !isContractVersion(spec.version)) {
-    throw new TypeError("Tool specs require a stable ID and immutable SemVer version.");
+const assertToolDefinition = (definition: ToolDefinition): void => {
+  if (!TOOL_ID_PATTERN.test(definition.id) || !isContractVersion(definition.version)) {
+    throw new TypeError("Tool definitions require a stable ID and immutable SemVer version.");
   }
-  if (!isRegisteredToolSchema(spec.inputSchema) || !isDigest(spec.inputSchema.digest)) {
-    throw new TypeError("Tool specs require a registered input-schema digest.");
+  if (!isRegisteredToolSchema(definition.inputSchema) || !isDigest(definition.inputSchema.digest)) {
+    throw new TypeError("Tool definitions require a registered input-schema digest.");
   }
-  if (spec.effect.class !== "read-only" && spec.effect.targets.length === 0) {
+  if (definition.effect.class !== "read-only" && definition.effect.targets.length === 0) {
     throw new TypeError("Meaningful effects require at least one explicit effect target.");
   }
 };
 
-export const defineToolSpec = (spec: ToolSpec): ToolSpec => {
-  assertToolSpec(spec);
+export const defineToolDefinition = (definition: ToolDefinition): ToolDefinition => {
+  assertToolDefinition(definition);
   const defined = {
-    ...spec,
-    inputSchema: spec.inputSchema,
+    ...definition,
+    inputSchema: definition.inputSchema,
     effect: {
-      class: spec.effect.class,
-      targets: normalizeTargets(spec.effect.targets),
+      class: definition.effect.class,
+      targets: normalizeTargets(definition.effect.targets),
     },
-    execution: { ...spec.execution },
+    execution: { ...definition.execution },
   };
   defined.effect.targets.forEach(Object.freeze);
   Object.freeze(defined.effect.targets);
@@ -117,9 +117,9 @@ export const defineToolSpec = (spec: ToolSpec): ToolSpec => {
   return Object.freeze(defined);
 };
 
-const assertCallMatchesSpec = (spec: ToolSpec, call: ToolCall): void => {
-  if (call.toolId !== spec.id || call.toolVersion !== spec.version) {
-    throw new TypeError("Tool call identity and version must match the bound tool spec.");
+const assertCallMatchesDefinition = (definition: ToolDefinition, call: ToolCall): void => {
+  if (call.toolId !== definition.id || call.toolVersion !== definition.version) {
+    throw new TypeError("Tool call identity and version must match the executable definition.");
   }
 };
 
@@ -139,22 +139,25 @@ const readAuthority = (call: ToolCall): ActionDocument["authority"] => {
   return authority;
 };
 
-export const createActionDocument = (spec: ToolSpec, call: ToolCall): ActionDocument => {
-  assertToolSpec(spec);
-  assertCallMatchesSpec(spec, call);
+export const createActionDocument = (
+  definition: ToolDefinition,
+  call: ToolCall,
+): ActionDocument => {
+  assertToolDefinition(definition);
+  assertCallMatchesDefinition(definition, call);
   const document: ActionDocument = {
     contractProfile: "llm-core.action/v1",
     tool: {
-      id: spec.id,
-      version: spec.version,
-      inputSchemaDigest: spec.inputSchema.digest,
+      id: definition.id,
+      version: definition.version,
+      inputSchemaDigest: definition.inputSchema.digest,
     },
     effect: {
-      class: spec.effect.class,
-      targets: normalizeTargets(spec.effect.targets),
+      class: definition.effect.class,
+      targets: normalizeTargets(definition.effect.targets),
     },
     authority: readAuthority(call),
-    execution: { ...spec.execution },
+    execution: { ...definition.execution },
     arguments: normalizeStrictJson(call.arguments),
   };
   return freezeJsonValue(normalizeStrictJson(document)) as unknown as ActionDocument;
@@ -194,7 +197,7 @@ const toBoundAction =
 
 export const bindAction = (input: BindActionInput): MaybePromise<BoundAction> => {
   assertDigestMaterial(input.securityDomain, input.keyRef);
-  const document = createActionDocument(input.spec, input.call);
+  const document = createActionDocument(input.definition, input.call);
   const canonicalDocument = canonicalizeJson(document);
   return maybeMap(
     toBoundAction(document, canonicalDocument, input.keyRef),
@@ -216,7 +219,7 @@ export const verifyActionDigest = (
   if (!isActionDigest(input.digest, input.keyRef)) {
     return false;
   }
-  const canonicalDocument = canonicalizeJson(createActionDocument(input.spec, input.call));
+  const canonicalDocument = canonicalizeJson(createActionDocument(input.definition, input.call));
   return input.digestPort.verify({
     canonicalDocument,
     securityDomain: input.securityDomain,

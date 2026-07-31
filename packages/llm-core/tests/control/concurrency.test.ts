@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { createConcurrencyGate, type ConcurrencyLease } from "../../src/features/control/public";
+import { createConcurrencyGate, type ConcurrencyLease } from "../../src/features/control/runtime";
 import { RUN_ID, TOOL_CALL_ID } from "./helpers";
 
 describe("concurrency gate", () => {

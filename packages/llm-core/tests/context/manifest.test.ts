@@ -9,8 +9,8 @@ import {
 } from "#contracts";
 import {
   createContextEntry,
-  createContextManifest,
-  type ContextManifestInput,
+  selectContext,
+  type ContextSelectionInput,
 } from "../../src/features/context/public";
 
 const invocationId = newCoreId<InvocationId>("0190bd0c-0000-7000-8000-000000002100");
@@ -23,7 +23,7 @@ const resource = {
   digest: digest("1".repeat(64)),
 };
 
-const input = (): ContextManifestInput => ({
+const input = (): ContextSelectionInput => ({
   scope: { kind: "step", invocationId, runId, stepId },
   budget: { maxEntries: 3, maxBytes: 128, maxTokens: 16 },
   entries: [
@@ -45,9 +45,9 @@ const input = (): ContextManifestInput => ({
   ],
 });
 
-describe("ContextManifest", () => {
+describe("ContextSelection", () => {
   test("constructs an explicit scoped manifest with computed budget usage", () => {
-    const manifest = createContextManifest(input());
+    const manifest = selectContext(input());
 
     expect(manifest.scope).toEqual({ kind: "step", invocationId, runId, stepId });
     expect(manifest.usage).toEqual({ entries: 2, bytes: 35, tokens: 7 });
@@ -57,22 +57,22 @@ describe("ContextManifest", () => {
   });
 
   test("derives canonical identities deterministically while preserving entry order", () => {
-    const first = createContextManifest(input());
+    const first = selectContext(input());
     const reorderedJson = input();
     const contentEntry = reorderedJson.entries[0];
     if (contentEntry?.source.kind !== "content") throw new Error("fixture");
     contentEntry.source.content = [{ kind: "json", value: { a: "stable", z: true } }];
 
-    expect(createContextManifest(reorderedJson).identity).toEqual(first.identity);
+    expect(selectContext(reorderedJson).identity).toEqual(first.identity);
 
     const reorderedEntries = input();
     reorderedEntries.entries.reverse();
-    expect(createContextManifest(reorderedEntries).identity).not.toEqual(first.identity);
+    expect(selectContext(reorderedEntries).identity).not.toEqual(first.identity);
   });
 
   test("clones and freezes caller input so later mutation cannot alter identity or provenance", () => {
     const mutable = input();
-    const manifest = createContextManifest(mutable);
+    const manifest = selectContext(mutable);
     const identity = manifest.identity;
     mutable.budget.maxBytes = 999;
     const first = mutable.entries[0];
@@ -89,25 +89,25 @@ describe("ContextManifest", () => {
   test("rejects duplicate identities and incomplete token accounting", () => {
     const duplicate = input();
     duplicate.entries = [duplicate.entries[0]!, structuredClone(duplicate.entries[0]!)];
-    expect(() => createContextManifest(duplicate)).toThrow("duplicate");
+    expect(() => selectContext(duplicate)).toThrow("duplicate");
 
     const missingTokens = input();
     delete missingTokens.entries[1]!.tokens;
-    expect(() => createContextManifest(missingTokens)).toThrow("explicit token cost");
+    expect(() => selectContext(missingTokens)).toThrow("explicit token cost");
   });
 
   test("fails closed for negative, unsafe, and exceeded budgets", () => {
     const negative = input();
     negative.budget.maxBytes = -1;
-    expect(() => createContextManifest(negative)).toThrow("budget");
+    expect(() => selectContext(negative)).toThrow("budget");
 
     const unsafe = input();
     unsafe.budget.maxEntries = Number.MAX_SAFE_INTEGER + 1;
-    expect(() => createContextManifest(unsafe)).toThrow("budget");
+    expect(() => selectContext(unsafe)).toThrow("budget");
 
     const exceeded = input();
     exceeded.budget.maxBytes = 1;
-    expect(() => createContextManifest(exceeded)).toThrow("exceeds");
+    expect(() => selectContext(exceeded)).toThrow("exceeds");
   });
 
   test("rejects unknown locators, secrets, native values, and cyclic JSON", () => {
@@ -116,7 +116,7 @@ describe("ContextManifest", () => {
       kind: "resource",
       resource: { ...resource, url: "https://signed.example/secret" },
     } as never;
-    expect(() => createContextManifest(locator)).toThrow("ResourceRef");
+    expect(() => selectContext(locator)).toThrow("ResourceRef");
 
     expect(() =>
       createContextEntry({
@@ -297,7 +297,7 @@ describe("ContextManifest", () => {
 
     const manifest = input();
     manifest.scope = withAccessorKind({ invocationId }, "invocation") as never;
-    expect(() => createContextManifest(manifest)).toThrow("scope");
+    expect(() => selectContext(manifest)).toThrow("scope");
     expect(reads).toBe(0);
   });
 
@@ -308,7 +308,7 @@ describe("ContextManifest", () => {
       operation: "summarize",
       sources: [{ algorithm: "sha-256", value: "bad" }],
     } as never;
-    expect(() => createContextManifest(spoofed)).toThrow("provenance");
+    expect(() => selectContext(spoofed)).toThrow("provenance");
 
     const source = digest("2".repeat(64));
     spoofed.entries[0]!.provenance = {
@@ -316,10 +316,10 @@ describe("ContextManifest", () => {
       operation: "merge",
       sources: [source, source],
     };
-    expect(() => createContextManifest(spoofed)).toThrow("provenance");
+    expect(() => selectContext(spoofed)).toThrow("provenance");
 
     const malformed = input();
     malformed.scope = { kind: "run", invocationId, runId, path: "/private/context" } as never;
-    expect(() => createContextManifest(malformed)).toThrow("scope");
+    expect(() => selectContext(malformed)).toThrow("scope");
   });
 });

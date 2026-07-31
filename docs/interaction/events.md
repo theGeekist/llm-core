@@ -10,8 +10,8 @@ pretending they are the same event type.
 
 | Wrapper kind     | Canonical source          | Typical projection                                              |
 | ---------------- | ------------------------- | --------------------------------------------------------------- |
-| `agent-run`      | `AgentRunEvent`           | Run status, progress, intervention, cancellation                |
-| `tool-execution` | `ExecutionEvent`          | Tool receipt status and safe reason code                        |
+| `agent-run`      | `AgentEvent`              | Run status, progress, intervention, cancellation                |
+| `tool-execution` | `ToolExecutionEvent`      | Tool receipt status and safe reason code                        |
 | `content`        | `InteractionContentEvent` | Message, text, reasoning, tool-call, and tool-result UI content |
 
 `interactionAgentEvent`, `interactionExecutionEvent`, and
@@ -51,6 +51,10 @@ presentation protocol.
 
 ## Projection is not evidence
 
-An `InteractionUiEvent` is a deterministic view. It is useful for interfaces
+A `ConversationEvent` is a deterministic view. It is useful for interfaces
 and stored conversation projections, but it does not replace the canonical
-`ExecutionEvent`, a durable receipt, or the terminal `RunResult`.
+`ToolExecutionEvent`, a durable receipt, or the terminal `AgentResult`.
+
+Common `Conversation.stream()` yields this projected event directly. Raw
+`InteractionEvent` values, registration helpers, and reducers remain extension
+APIs for runtime and adapter authors.

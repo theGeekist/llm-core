@@ -9,12 +9,12 @@ import {
 } from "#contracts";
 import type { AgentCancellationRequest } from "../../features/agent/public";
 import {
-  isPreparedAgentSpec,
-  type AgentRunEvent,
-  type AgentRunEventKind,
-  type AgentRunRequest,
+  isPreparedAgentDefinition,
+  type AgentEvent,
+  type AgentEventKind,
+  type AgentStartRequest,
 } from "../../features/agent/public";
-import { isRegisteredResumableCheckpoint } from "../../features/state/public";
+import { isRegisteredResumableCheckpoint } from "../../features/state/runtime";
 import type { LocalAgentExecutionResult } from "./types";
 
 const INVOCATION_KEYS = new Set([
@@ -94,7 +94,7 @@ const isBudget = (value: unknown): boolean => {
   );
 };
 
-const hasValidInvocationIdentity = (value: AgentRunRequest["invocationContext"]): boolean =>
+const hasValidInvocationIdentity = (value: AgentStartRequest["invocationContext"]): boolean =>
   isCanonicalUuid(value.invocationId) &&
   (value.runId === undefined || isCanonicalUuid(value.runId)) &&
   (value.stepId === undefined || isCanonicalUuid(value.stepId)) &&
@@ -102,7 +102,7 @@ const hasValidInvocationIdentity = (value: AgentRunRequest["invocationContext"])
   (value.conversationId === undefined || isCanonicalUuid(value.conversationId)) &&
   (value.correlationId === undefined || isExternalId(value.correlationId));
 
-const hasValidInvocationAuthority = (value: AgentRunRequest["invocationContext"]): boolean =>
+const hasValidInvocationAuthority = (value: AgentStartRequest["invocationContext"]): boolean =>
   (value.principal === undefined || exactRef(value.principal, "principalId")) &&
   (value.tenant === undefined || exactRef(value.tenant, "tenantId")) &&
   (value.delegationChain === undefined ||
@@ -112,7 +112,7 @@ const hasValidInvocationAuthority = (value: AgentRunRequest["invocationContext"]
     (Array.isArray(value.secretRefs) &&
       value.secretRefs.every((entry) => exactRef(entry, "secretId"))));
 
-const hasValidTrace = (value: AgentRunRequest["invocationContext"]["trace"]): boolean =>
+const hasValidTrace = (value: AgentStartRequest["invocationContext"]["trace"]): boolean =>
   value === undefined ||
   (isRecord(value) &&
     hasOnlyKeys(value, new Set(["traceId", "spanId", "traceFlags"])) &&
@@ -120,7 +120,7 @@ const hasValidTrace = (value: AgentRunRequest["invocationContext"]["trace"]): bo
     isSpanId(value.spanId) &&
     (value.traceFlags === undefined || isTraceFlags(value.traceFlags)));
 
-const isClosedInvocationContext = (value: AgentRunRequest["invocationContext"]): boolean =>
+const isClosedInvocationContext = (value: AgentStartRequest["invocationContext"]): boolean =>
   isRecord(value) &&
   isJsonValue(value) &&
   hasOnlyKeys(value, INVOCATION_KEYS) &&
@@ -148,14 +148,14 @@ export const isClosedDurableExecution = (value: unknown): boolean =>
   isExternalId(value.runtime.runtimeId) &&
   isContractVersion(value.runtime.runtimeVersion);
 
-export const validateAgentRunRequest = (request: AgentRunRequest): void => {
+export const validateAgentStartRequest = (request: AgentStartRequest): void => {
   if (
-    !isPreparedAgentSpec(request.agent) ||
+    !isPreparedAgentDefinition(request.agent) ||
     !isClosedInvocationContext(request.invocationContext) ||
     !isJsonValue(request.input) ||
     (request.providerSession !== undefined && !isClosedProviderSession(request.providerSession))
   ) {
-    throw new TypeError("AgentRunRequest must contain prepared, closed portable values.");
+    throw new TypeError("AgentStartRequest must contain prepared, closed portable values.");
   }
 };
 
@@ -170,10 +170,7 @@ export const validateAgentCancellationRequest = (request: AgentCancellationReque
   }
 };
 
-export const validateAgentRunEventFacts = (
-  kind: AgentRunEventKind,
-  facts: AgentRunEvent["facts"],
-): void => {
+export const validateAgentEventFacts = (kind: AgentEventKind, facts: AgentEvent["facts"]): void => {
   if (!isRecord(facts)) {
     throw new TypeError("Agent run event facts must use a closed safe projection.");
   }

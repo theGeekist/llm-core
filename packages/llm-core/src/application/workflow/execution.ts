@@ -1,16 +1,13 @@
 import type { JsonValue, StepId } from "#contracts";
-import type { ActionDigest } from "../../features/tooling/public";
-import {
-  portableState,
-  registerRecordedEffect,
-  type RecordedEffect,
-} from "../../features/state/public";
+import type { ActionDigest } from "../../features/tooling/runtime";
+import { portableState, type RecordedEffect } from "../../features/state/public";
+import { registerRecordedEffect } from "../../features/state/runtime";
 import type {
-  MeaningfulWorkflowStep,
+  ControlledWorkflowResult,
+  ControlledWorkflowStep,
   ResumableWorkflowStep,
   ResumeInterventionWorkflowInput,
   WorkflowCheckpointClaim,
-  WorkflowResumeOutcome,
 } from "./types";
 
 const digestsMatch = (left: ActionDigest, right: ActionDigest): boolean =>
@@ -22,9 +19,9 @@ const receiptsMatch = (left: RecordedEffect, right: RecordedEffect): boolean =>
   left.receipt.evidenceId === right.receipt.evidenceId;
 
 const fail = (
-  reason: Extract<WorkflowResumeOutcome, { status: "failed" }>["reason"],
+  reason: Extract<ControlledWorkflowResult, { status: "failed" }>["reason"],
   stepId?: StepId,
-): WorkflowResumeOutcome => ({ status: "failed", reason, ...(stepId ? { stepId } : {}) });
+): ControlledWorkflowResult => ({ status: "failed", reason, ...(stepId ? { stepId } : {}) });
 
 export const unsafeEffect = (
   effects: readonly RecordedEffect[],
@@ -66,7 +63,7 @@ const normalizeStepResult = (
 };
 
 const validateStarted = (
-  step: MeaningfulWorkflowStep,
+  step: ControlledWorkflowStep,
   value: { durable: "acknowledged"; effect: RecordedEffect },
 ): RecordedEffect | null => {
   try {
@@ -85,7 +82,7 @@ const validateStarted = (
 const startEffect = async (
   input: ResumeInterventionWorkflowInput,
   claim: WorkflowCheckpointClaim,
-  step: MeaningfulWorkflowStep,
+  step: ControlledWorkflowStep,
 ): Promise<RecordedEffect | null> => {
   try {
     const started = await input.journal.recordEffectStarted({
@@ -102,7 +99,7 @@ const startEffect = async (
 const completeEffect = async (input: {
   workflow: ResumeInterventionWorkflowInput;
   claim: WorkflowCheckpointClaim;
-  step: MeaningfulWorkflowStep;
+  step: ControlledWorkflowStep;
   started: RecordedEffect;
   completed: RecordedEffect;
   state: JsonValue;
@@ -179,7 +176,7 @@ const executeStep = async (input: {
 export const executeSteps = async (
   input: ResumeInterventionWorkflowInput,
   claim: WorkflowCheckpointClaim,
-): Promise<WorkflowResumeOutcome> => {
+): Promise<ControlledWorkflowResult> => {
   const completed = [...input.checkpoint.completedStepIds];
   const effects = [...input.checkpoint.recordedEffects];
   let state = input.checkpoint.state;

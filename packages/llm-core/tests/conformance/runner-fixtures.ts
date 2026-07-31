@@ -20,10 +20,10 @@ import {
 import type {
   AgentRun,
   AgentRunner,
-  AgentRunRequest,
-  PreparedAgentSpec,
+  AgentStartRequest,
+  PreparedAgentDefinition,
 } from "../../src/features/agent/public";
-import { registerResumableCheckpoint } from "../../src/features/state/public";
+import { registerResumableCheckpoint } from "../../src/features/state/runtime";
 import type { ExecuteControlledToolInput } from "../../src/application/tool-execution/public";
 import { COMPATIBILITY, STEP_ONE, checkpoint, receipt } from "../state/helpers";
 
@@ -151,7 +151,7 @@ export const resumeSafetyTarget = (remote: boolean): ResumeSafetyTarget => {
 export const prepare = async (
   runner: AgentRunner,
   effectRequirement: "read-only" | "controlled" = "read-only",
-): Promise<PreparedAgentSpec> =>
+): Promise<PreparedAgentDefinition> =>
   runner.prepare({
     agentId: "conformance-agent",
     version: contractVersion("2.0.0"),
@@ -160,9 +160,9 @@ export const prepare = async (
   });
 
 export const runRequest = (
-  agent: PreparedAgentSpec,
-  input: AgentRunRequest["input"] = { prompt: "hello" },
-): AgentRunRequest => ({
+  agent: PreparedAgentDefinition,
+  input: AgentStartRequest["input"] = { prompt: "hello" },
+): AgentStartRequest => ({
   agent,
   invocationContext: { invocationId: INVOCATION_ID },
   input,

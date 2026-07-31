@@ -24,13 +24,14 @@ This direction keeps three responsibilities separate:
 ## Two execution paths
 
 The general workflow runtime executes passive steps. Every
-`ExecutableWorkflowStep` declares `effect: "none"`, and `runWorkflow` rejects a
-definition that does not.
+`WorkflowStep` declares `effect: "none"`, and `Workflow.run` rejects a workflow
+that does not.
 
 Meaningful effects take the controlled path. `executeControlledTool` coordinates
 policy, approval, concurrency, durable receipts, execution, and redacted event
-delivery. A durable intervention resume uses `resumeInterventionWorkflow` and a
-`WorkflowResumeJournal`.
+delivery. A durable intervention resume uses runtime
+`resumeInterventionWorkflow`, a `WorkflowResumeJournal`, and returns a
+`ControlledWorkflowResult`.
 
 This is a deliberate split. An ephemeral workflow pause is useful for in-process
 coordination. It is not evidence that a side effect can be repeated safely.
@@ -42,4 +43,4 @@ coordination. It is not evidence that a side effect can be repeated safely.
 - [Controlled tool execution](/orchestration/controlled-tool-execution)
   explains the fail-closed path for meaningful effects.
 - [Composition patterns](/orchestration/composition-patterns) shows how to
-  assemble reusable definitions without creating hidden execution authority.
+  assemble reusable workflows without creating hidden execution authority.

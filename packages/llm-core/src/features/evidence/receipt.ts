@@ -8,8 +8,10 @@ import type {
   TenantId,
   ToolCallId,
 } from "#contracts";
-import type { ApprovalRef, CancellationRef, PolicyEvaluationRef } from "../control/public";
-import type { ActionDigest, EffectClass, ToolId, ToolVersion } from "../tooling/public";
+import type { ApprovalRef, CancellationRef } from "../control/public";
+import type { PolicyEvaluationRef } from "../control/runtime";
+import type { EffectClass, ToolId, ToolVersion } from "../tooling/public";
+import type { ActionDigest } from "../tooling/runtime";
 import type { RedactedNativeExtensions, RedactionMetadata } from "./redaction";
 
 /**

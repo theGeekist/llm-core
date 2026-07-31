@@ -11,19 +11,18 @@ import type {
   ApprovalAuthenticationPort,
   ConcurrencyGate,
   PolicyEvaluationPort,
-} from "../../features/control/public";
+} from "../../features/control/runtime";
 import type { EventSink, ToolReceiptJournal } from "../../features/evidence/public";
 import type { Indexer, VectorStore } from "../../features/indexing/public";
+import type { Model, ModelOutputParser } from "../../features/model/public";
+import type { SchemaDocumentResolver } from "../../features/model/runtime";
 import type {
   ImageGenerationPort,
   MediaOutputProjector,
   MediaResourceResolver,
-  Model,
-  ModelOutputParser,
-  SchemaDocumentResolver,
   SpeechGenerationPort,
   TranscriptionPort,
-} from "../../features/model/public";
+} from "../../features/media/public";
 import type { ConversationStateStore, ConversationStore } from "../../features/memory/public";
 import type {
   DocumentLoader,
@@ -39,9 +38,9 @@ import type { CacheStore, KeyValueStore, ResourceStore } from "../../features/st
 import type {
   ActionDigestPort,
   ToolArgumentValidationPort,
-  ToolBinding,
+  ExecutableTool,
   ToolSchemaDigestPort,
-} from "../../features/tooling/public";
+} from "../../features/tooling/runtime";
 
 /**
  * The closed set of live feature ports assembled by composition.
@@ -54,7 +53,7 @@ export interface CapabilityPortMap {
   model: Model;
   "model-output-parser": ModelOutputParser;
   "schema-document-resolver": SchemaDocumentResolver;
-  tool: ToolBinding;
+  tool: ExecutableTool;
   "action-digest": ActionDigestPort;
   "tool-schema-digest": ToolSchemaDigestPort;
   "tool-argument-validation": ToolArgumentValidationPort;

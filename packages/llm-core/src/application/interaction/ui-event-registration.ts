@@ -1,5 +1,5 @@
 import { coreId, isCanonicalUuid, isExternalId, type EventId, type RunId } from "#contracts";
-import type { InteractionUiEvent } from "./types";
+import type { ConversationEvent } from "./types";
 import {
   isCanonicalInteractionTimestamp,
   isSafeInteractionCode,
@@ -91,7 +91,7 @@ const allowedDecisions = (value: unknown): readonly string[] => {
 };
 
 // eslint-disable-next-line sonarjs/cognitive-complexity -- registers one exhaustive closed UI event union
-export const registerInteractionUiEvent = (value: unknown): InteractionUiEvent => {
+export const registerConversationEvent = (value: unknown): ConversationEvent => {
   if (!isRecord(value)) {
     throw new TypeError("Conversation projection events must be closed objects.");
   }

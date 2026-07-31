@@ -1,5 +1,6 @@
 import { describe, expect, test } from "bun:test";
-import { authorizePolicyDecision, type PolicyDecision } from "../../src/features/control/public";
+import type { PolicyDecision } from "../../src/features/control/public";
+import { authorizePolicyDecision } from "../../src/features/control/runtime";
 import { ACTION_DIGEST, OTHER_ACTION_DIGEST, VERSION, policyRef } from "./helpers";
 
 const decision = (

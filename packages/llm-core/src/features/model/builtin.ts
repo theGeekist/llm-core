@@ -2,8 +2,8 @@ import { contractVersion, digest, newCoreId } from "#contracts";
 import type { EvidenceId, ResourceId, SupportedCapabilityClaim } from "#contracts";
 import type { ModelContentPart, ModelMessage } from "./content";
 import type { Model } from "./model";
-import { registerModelProfile } from "./profile";
-import type { ModelProfile, RegisteredModelProfile } from "./profile";
+import { createModelProfile } from "./profile";
+import type { ModelProfile } from "./profile";
 import { deploymentRef, modelProfileId, modelRef, providerRef } from "./references";
 import type { ModelResponse, ModelUsage } from "./response";
 
@@ -52,8 +52,8 @@ const builtinTextClaim = (): SupportedCapabilityClaim => ({
   },
 });
 
-export const createBuiltinModelProfile = (): RegisteredModelProfile =>
-  registerModelProfile({
+export const createBuiltinModelProfile = (): ModelProfile =>
+  createModelProfile({
     profileId: modelProfileId("llm-core.builtin.echo"),
     version: contractVersion("1.0.0"),
     model: BUILTIN_MODEL,

@@ -6,7 +6,7 @@ import {
   validateToolArguments,
   type RegisteredToolSchema,
   type ToolSchemaDigestPort,
-} from "../../src/features/tooling/public";
+} from "../../src/features/tooling/runtime";
 
 const schemaDigestPort: ToolSchemaDigestPort = {
   digest: (canonicalSchema) => digest(createHash("sha256").update(canonicalSchema).digest("hex")),

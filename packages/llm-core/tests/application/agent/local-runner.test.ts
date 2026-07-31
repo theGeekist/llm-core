@@ -17,15 +17,15 @@ import type { ExecuteControlledToolInput } from "../../../src/application/tool-e
 import type {
   AgentRun,
   AgentRunner,
-  AgentRunRequest,
-  AgentSpec,
-  PreparedAgentSpec,
+  AgentStartRequest,
+  AgentDefinition,
+  PreparedAgentDefinition,
 } from "../../../src/features/agent/public";
 import {
-  registerResumableCheckpoint,
   type InterventionAuthenticationPort,
   type RecordedEffectStatus,
 } from "../../../src/features/state/public";
+import { registerResumableCheckpoint } from "../../../src/features/state/runtime";
 import {
   COMPATIBILITY,
   STEP_ONE,
@@ -75,7 +75,7 @@ const runner = (
 const prepare = async (
   target: AgentRunner,
   effectRequirement: "read-only" | "controlled" = "read-only",
-): Promise<PreparedAgentSpec> =>
+): Promise<PreparedAgentDefinition> =>
   target.prepare({
     agentId: "test-agent",
     version: contractVersion("2.0.0"),
@@ -83,7 +83,10 @@ const prepare = async (
     effectRequirement,
   });
 
-const request = (agent: PreparedAgentSpec, input: AgentRunRequest["input"]): AgentRunRequest => ({
+const request = (
+  agent: PreparedAgentDefinition,
+  input: AgentStartRequest["input"],
+): AgentStartRequest => ({
   agent,
   invocationContext: { invocationId: INVOCATION_ID },
   input,
@@ -227,7 +230,7 @@ describe("createLocalAgentRunner", () => {
           {
             ...agent,
             instructions: "forged",
-          } as PreparedAgentSpec,
+          } as PreparedAgentDefinition,
           null,
         ),
       ),
@@ -238,19 +241,19 @@ describe("createLocalAgentRunner", () => {
   test("rejects shaped or foreign prepared specs at every boundary", async () => {
     const target = runner(basicProgram());
     const other = runner(basicProgram());
-    const portable: AgentSpec = {
+    const portable: AgentDefinition = {
       agentId: "writer",
       version: contractVersion("2.0.0"),
       instructions: "Write.",
       effectRequirement: "read-only",
     };
-    const staticallyRejected: AgentRunRequest = {
+    const staticallyRejected: AgentStartRequest = {
       // @ts-expect-error Portable authoring data has no runner preparation provenance.
       agent: portable,
       invocationContext: { invocationId: INVOCATION_ID },
       input: null,
     };
-    const shaped = portable as PreparedAgentSpec;
+    const shaped = portable as PreparedAgentDefinition;
     const otherPrepared = await prepare(other);
 
     void staticallyRejected;
@@ -541,7 +544,7 @@ describe("createLocalAgentRunner", () => {
                   version: contractVersion("2.0.0"),
                   instructions: "Bypass.",
                   effectRequirement: "read-only",
-                } as PreparedAgentSpec,
+                } as PreparedAgentDefinition,
                 { kind: "child" },
               ),
             );

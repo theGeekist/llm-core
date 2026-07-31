@@ -1,9 +1,6 @@
 import type { PromptTemplate as LlamaIndexPromptTemplate } from "@llamaindex/core/prompts";
-import {
-  preparePromptTemplate,
-  sanitizeNativeMetadata,
-  type PromptTemplate,
-} from "../../../../features/model/public";
+import { sanitizeAdapterMetadata } from "../../../shared/native-metadata";
+import { preparePromptTemplate, type PromptTemplate } from "../../../../features/model/public";
 
 interface LlamaIndexPromptMetadata {
   readonly promptType?: string;
@@ -35,7 +32,7 @@ export const fromLlamaIndexPromptTemplate = ({
       ? {}
       : {
           metadata: {
-            "org.llamaindex": sanitizeNativeMetadata(native.metadata),
+            "org.llamaindex": sanitizeAdapterMetadata(native.metadata),
           },
         }),
   });

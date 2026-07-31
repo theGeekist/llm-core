@@ -5,24 +5,26 @@ import {
   BUILTIN_DEPLOYMENT,
   BUILTIN_PROVIDER,
   BUILTIN_TEXT_CAPABILITY,
+} from "../../src/features/model/builtin";
+import {
   createBuiltinModelProfile,
+  createModelProfile,
   createModelResolver,
   modelProfileId,
   modelRef,
-  providerRef,
-  registerModelProfile,
   type ModelBinding,
-  type RegisteredModelProfile,
-} from "../../src/features/model/public";
+  type ModelProfile,
+} from "../../src/features/model/runtime";
+import { providerRef } from "../../src/features/model/public";
 
 const M1 = modelRef("m1");
 const M2 = modelRef("m2");
 
-const withModel = (model = M1): RegisteredModelProfile =>
-  registerModelProfile({ ...createBuiltinModelProfile(), model });
+const withModel = (model = M1): ModelProfile =>
+  createModelProfile({ ...createBuiltinModelProfile(), model });
 
-const bareProfile = (model = M1): RegisteredModelProfile =>
-  registerModelProfile({
+const bareProfile = (model = M1): ModelProfile =>
+  createModelProfile({
     profileId: modelProfileId("bare"),
     version: contractVersion("1.0.0"),
     model,
@@ -34,7 +36,7 @@ const bareProfile = (model = M1): RegisteredModelProfile =>
 const binding = (
   bindingId: string,
   model = M1,
-  options: { aliases?: (typeof M1)[]; profile?: RegisteredModelProfile } = {},
+  options: { aliases?: (typeof M1)[]; profile?: ModelProfile } = {},
 ): ModelBinding => ({
   bindingId,
   model,
@@ -213,7 +215,7 @@ describe("model resolver — capabilities and constraints", () => {
 describe("model resolver — integrity and policy", () => {
   test("rejects a structurally valid profile that was not registered", () => {
     let evaluations = 0;
-    const forged = { ...withModel(M1) } as RegisteredModelProfile;
+    const forged = { ...withModel(M1) } as ModelProfile;
     const outcome = createModelResolver({
       constraintEvaluator: () => {
         evaluations += 1;

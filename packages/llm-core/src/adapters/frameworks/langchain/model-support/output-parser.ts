@@ -1,20 +1,17 @@
 import type { BaseOutputParser } from "@langchain/core/output_parsers";
 import { isJsonValue } from "#contracts";
-import {
-  registerParsedModelOutput,
-  type ModelOutputParser,
-  type ParsedModelOutput,
-} from "../../../../features/model/public";
+import type { ModelOutputParser, ParsedModelOutput } from "../../../../features/model/public";
+import { createParsedModelOutput } from "../../../../features/model/runtime";
 
 const projectNativeOutput = (value: unknown): ParsedModelOutput => {
   if (typeof value === "string") {
-    return registerParsedModelOutput({
+    return createParsedModelOutput({
       kind: "content",
       content: [{ kind: "text", text: value }],
     });
   }
   if (isJsonValue(value)) {
-    return registerParsedModelOutput({ kind: "json", value });
+    return createParsedModelOutput({ kind: "json", value });
   }
   throw new TypeError("LangChain parser returned non-portable output.");
 };

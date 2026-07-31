@@ -1,13 +1,31 @@
-export { createLocalAgentRunner } from "./src/application/agent/public";
+export { createAgent } from "./src/agent/index";
+export type { Agent, AgentConfig, AgentEvent, AgentResult, AgentRun } from "./src/agent/index";
 
+export { defineTool } from "./src/features/tooling/public";
 export type {
-  AgentRun,
-  AgentRunEvent,
-  AgentRunner,
-  AgentRunnerCapabilities,
-  AgentRunRequest,
-  AgentSpec,
-  PreparedAgentSpec,
-  RunResult,
-} from "./src/features/agent/public";
-export type { MaybeAsyncIterable, MaybePromise } from "./src/shared/maybe";
+  Tool,
+  ToolCall,
+  ToolConfig,
+  ToolExecutionFailure,
+  ToolExecutionResult,
+  ToolInput,
+} from "./src/features/tooling/public";
+
+export { defineWorkflow } from "./src/application/workflow/public";
+export type {
+  Workflow,
+  WorkflowConfig,
+  WorkflowPause,
+  WorkflowResult,
+  WorkflowStep,
+  WorkflowStepResult,
+} from "./src/application/workflow/public";
+
+export { createConversation } from "./src/conversation/index";
+export type {
+  Conversation,
+  ConversationConfig,
+  ConversationEvent,
+  ConversationResult,
+  ConversationRun,
+} from "./src/conversation/index";

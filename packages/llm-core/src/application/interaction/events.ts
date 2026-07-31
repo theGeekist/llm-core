@@ -1,6 +1,6 @@
 import { isJsonValue, type ConversationId, type EventId, type RunId } from "#contracts";
-import type { AgentRunEvent } from "../../features/agent/public";
-import type { ExecutionEvent } from "../../features/evidence/public";
+import type { AgentEvent } from "../../features/agent/public";
+import type { ToolExecutionEvent } from "../../features/evidence/public";
 import type {
   InteractionContentEvent,
   InteractionEvent,
@@ -23,7 +23,7 @@ const freezePortable = <T>(value: T): T => {
   return cloned;
 };
 
-const agentFacts = (event: AgentRunEvent): AgentRunEvent["facts"] => {
+const agentFacts = (event: AgentEvent): AgentEvent["facts"] => {
   switch (event.kind) {
     case "agent.run.started":
       return {
@@ -71,7 +71,7 @@ const agentFacts = (event: AgentRunEvent): AgentRunEvent["facts"] => {
 
 export const interactionAgentEvent = (
   conversationId: ConversationId,
-  source: AgentRunEvent,
+  source: AgentEvent,
 ): InteractionEvent => {
   const event = {
     eventId: source.eventId,
@@ -84,15 +84,15 @@ export const interactionAgentEvent = (
       ...(source.identity.causalRunId ? { causalRunId: source.identity.causalRunId } : {}),
     },
     facts: agentFacts(source),
-  } as AgentRunEvent;
+  } as AgentEvent;
   return freezePortable({ kind: "agent-run", conversationId, event });
 };
 
 export const interactionExecutionEvent = (
   conversationId: ConversationId,
-  source: ExecutionEvent,
+  source: ToolExecutionEvent,
 ): InteractionEvent => {
-  const event: ExecutionEvent = {
+  const event: ToolExecutionEvent = {
     eventId: source.eventId,
     kind: source.kind,
     occurredAt: source.occurredAt,

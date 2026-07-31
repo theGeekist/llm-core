@@ -10,10 +10,7 @@ export {
   createSnapshot,
   checkpointId,
   isLiveContinuation,
-  isRegisteredResumableCheckpoint,
   portableState,
-  registerRecordedEffect,
-  registerResumableCheckpoint,
 } from "./lifetimes";
 export {
   createInterventionDecision,
@@ -50,7 +47,6 @@ export type {
   ProviderSessionRef,
   RecordedEffect,
   RecordedEffectStatus,
-  RegisteredResumableCheckpoint,
   ResumableCheckpoint,
   ResumeCompatibility,
   ResumeStrategy,

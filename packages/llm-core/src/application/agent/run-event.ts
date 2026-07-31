@@ -1,6 +1,6 @@
-import type { AgentRunEvent, RunResult } from "../../features/agent/public";
+import type { AgentEvent, AgentResult } from "../../features/agent/public";
 
-export const resultFacts = (result: RunResult): AgentRunEvent["facts"] => ({
+export const resultFacts = (result: AgentResult): AgentEvent["facts"] => ({
   status: result.status,
   ...(result.reasonCode ? { reasonCode: result.reasonCode } : {}),
 });

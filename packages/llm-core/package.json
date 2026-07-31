@@ -139,11 +139,6 @@
       "import": "./dist/esm/index.js",
       "default": "./dist/esm/index.js"
     },
-    "./functional": {
-      "types": "./dist/types/src/functional/index.d.ts",
-      "import": "./dist/esm/src/functional/index.js",
-      "default": "./dist/esm/src/functional/index.js"
-    },
     "./contracts": {
       "types": "./dist/types/src/contracts/public.d.ts",
       "import": "./dist/esm/src/contracts/public.js",
@@ -154,15 +149,30 @@
       "import": "./dist/esm/src/features/model/public.js",
       "default": "./dist/esm/src/features/model/public.js"
     },
+    "./model/runtime": {
+      "types": "./dist/types/src/features/model/runtime.d.ts",
+      "import": "./dist/esm/src/features/model/runtime.js",
+      "default": "./dist/esm/src/features/model/runtime.js"
+    },
     "./tools": {
       "types": "./dist/types/src/features/tooling/public.d.ts",
       "import": "./dist/esm/src/features/tooling/public.js",
       "default": "./dist/esm/src/features/tooling/public.js"
     },
+    "./tools/runtime": {
+      "types": "./dist/types/src/features/tooling/runtime.d.ts",
+      "import": "./dist/esm/src/features/tooling/runtime.js",
+      "default": "./dist/esm/src/features/tooling/runtime.js"
+    },
     "./control": {
       "types": "./dist/types/src/control/index.d.ts",
       "import": "./dist/esm/src/control/index.js",
       "default": "./dist/esm/src/control/index.js"
+    },
+    "./control/runtime": {
+      "types": "./dist/types/src/control/runtime.d.ts",
+      "import": "./dist/esm/src/control/runtime.js",
+      "default": "./dist/esm/src/control/runtime.js"
     },
     "./evidence": {
       "types": "./dist/types/src/features/evidence/public.d.ts",
@@ -194,15 +204,55 @@
       "import": "./dist/esm/src/agent/index.js",
       "default": "./dist/esm/src/agent/index.js"
     },
+    "./agent/runtime": {
+      "types": "./dist/types/src/agent/runtime.d.ts",
+      "import": "./dist/esm/src/agent/runtime.js",
+      "default": "./dist/esm/src/agent/runtime.js"
+    },
     "./workflow": {
       "types": "./dist/types/src/workflow/index.d.ts",
       "import": "./dist/esm/src/workflow/index.js",
       "default": "./dist/esm/src/workflow/index.js"
     },
+    "./workflow/runtime": {
+      "types": "./dist/types/src/workflow/runtime.d.ts",
+      "import": "./dist/esm/src/workflow/runtime.js",
+      "default": "./dist/esm/src/workflow/runtime.js"
+    },
+    "./conversation": {
+      "types": "./dist/types/src/conversation/index.d.ts",
+      "import": "./dist/esm/src/conversation/index.js",
+      "default": "./dist/esm/src/conversation/index.js"
+    },
     "./interaction": {
       "types": "./dist/types/src/interaction/index.d.ts",
       "import": "./dist/esm/src/interaction/index.js",
       "default": "./dist/esm/src/interaction/index.js"
+    },
+    "./retrieval": {
+      "types": "./dist/types/src/features/retrieval/public.d.ts",
+      "import": "./dist/esm/src/features/retrieval/public.js",
+      "default": "./dist/esm/src/features/retrieval/public.js"
+    },
+    "./indexing": {
+      "types": "./dist/types/src/features/indexing/public.d.ts",
+      "import": "./dist/esm/src/features/indexing/public.js",
+      "default": "./dist/esm/src/features/indexing/public.js"
+    },
+    "./storage": {
+      "types": "./dist/types/src/features/storage/public.d.ts",
+      "import": "./dist/esm/src/features/storage/public.js",
+      "default": "./dist/esm/src/features/storage/public.js"
+    },
+    "./memory": {
+      "types": "./dist/types/src/features/memory/public.d.ts",
+      "import": "./dist/esm/src/features/memory/public.js",
+      "default": "./dist/esm/src/features/memory/public.js"
+    },
+    "./media": {
+      "types": "./dist/types/src/features/media/public.d.ts",
+      "import": "./dist/esm/src/features/media/public.js",
+      "default": "./dist/esm/src/features/media/public.js"
     },
     "./adapters/ai-sdk": {
       "types": "./dist/types/src/adapters/ai-sdk/index.d.ts",

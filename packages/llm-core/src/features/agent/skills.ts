@@ -12,7 +12,7 @@ export interface AgentSkillRef {
 }
 
 export interface LocalSkillCandidate extends AgentSkillRef {
-  /** Live host input. This path must never enter AgentSpec or a snapshot. */
+  /** Live host input. This path must never enter AgentDefinition or a snapshot. */
   readonly localPath: string;
 }
 

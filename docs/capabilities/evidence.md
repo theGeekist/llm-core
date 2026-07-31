@@ -2,12 +2,12 @@
 
 Evidence records what controlled execution established without coupling the
 contract to a database or telemetry vendor. `/evidence` exports redacted
-`ExecutionEvent` values, an `EventSink`, and the `ToolReceiptJournal` port.
+`ToolExecutionEvent` values, an `EventSink`, and the `ToolReceiptJournal` port.
 
 <<< @/snippets/v2/evidence-redaction.ts
 
-`ExecutionEvent` describes the controlled tool-execution lifecycle. It is not
-an `AgentRunEvent`, an `InteractionEvent`, or a general tracing event. Keeping
+`ToolExecutionEvent` describes the controlled tool-execution lifecycle. It is
+not an `AgentEvent`, an `InteractionEvent`, or a general tracing event. Keeping
 these families separate prevents one lifecycle from being interpreted as
 another.
 

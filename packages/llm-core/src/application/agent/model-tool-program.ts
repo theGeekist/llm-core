@@ -8,9 +8,9 @@ import {
 import { isPromiseLike, maybeChain, maybeReduce, type MaybePromise } from "#shared/maybe";
 import {
   registerConversationRecord,
-  registerConversationTurn,
+  createConversationMessage,
   type ConversationStore,
-  type ConversationTurn,
+  type ConversationMessage,
 } from "../../features/memory/public";
 import type {
   Model,
@@ -21,15 +21,15 @@ import type {
   ToolDeclaration,
 } from "../../features/model/public";
 import {
-  isRegisteredToolBinding,
-  type ToolBinding,
+  isRegisteredExecutableTool,
+  type ExecutableTool,
   type ToolCall,
-  type ToolResult,
-} from "../../features/tooling/public";
+  type ToolExecutionResult,
+} from "../../features/tooling/runtime";
 import {
-  isPreparedAgentSpec,
-  type PreparedAgentSpec,
-  type RunResult,
+  isPreparedAgentDefinition,
+  type PreparedAgentDefinition,
+  type AgentResult,
 } from "../../features/agent/public";
 import type {
   DeclaredSubagentBinding,
@@ -40,7 +40,7 @@ import type {
 
 export interface ModelToolAgentProgramOptions {
   readonly model: Model;
-  readonly tools?: readonly ToolBinding[];
+  readonly tools?: readonly ExecutableTool[];
   readonly conversation?: ConversationStore;
   readonly subagents?: readonly DeclaredSubagentBinding[];
   readonly maxModelCalls?: number;
@@ -51,7 +51,7 @@ export interface ModelToolAgentProgramOptions {
 }
 
 export interface ControlledToolInputFactoryInput {
-  readonly binding: ToolBinding;
+  readonly tool: ExecutableTool;
   readonly call: ToolCall;
   readonly context: LocalAgentExecutionContext;
 }
@@ -82,11 +82,11 @@ const textOutput = (content: readonly ModelContentPart[]): JsonValue => {
   return portable.length === 1 ? portable[0]! : portable;
 };
 
-const toolDeclarations = (bindings: readonly ToolBinding[]): ToolDeclaration[] =>
-  bindings.map(({ spec }) => ({
-    name: spec.id,
-    description: spec.description,
-    parameters: spec.inputSchema.document,
+const toolDeclarations = (tools: readonly ExecutableTool[]): ToolDeclaration[] =>
+  tools.map(({ definition }) => ({
+    name: definition.id,
+    description: definition.description,
+    parameters: definition.inputSchema.document,
   }));
 
 const freezeJson = <T extends JsonValue>(value: T): T => {
@@ -135,14 +135,17 @@ const composeSubagents = (
 
 const initialMessages = (
   context: LocalAgentExecutionContext,
-  history: readonly ConversationTurn[],
+  history: readonly ConversationMessage[],
 ): ModelMessage[] => [
   { role: "system", content: [{ kind: "text", text: context.request.agent.instructions }] },
   ...history.map((turn) => ({ role: turn.role, content: [...turn.content] })),
   { role: "user", content: [{ kind: "json", value: context.request.input }] },
 ];
 
-const asToolResultPart = (call: ToolCallPart, result: ToolResult): ModelContentPart => ({
+const asToolExecutionResultPart = (
+  call: ToolCallPart,
+  result: ToolExecutionResult,
+): ModelContentPart => ({
   kind: "tool-result",
   toolCallId: call.toolCallId,
   result:
@@ -152,7 +155,7 @@ const asToolResultPart = (call: ToolCallPart, result: ToolResult): ModelContentP
   ...(result.status === "failed" ? { isError: true } : {}),
 });
 
-const childToolResult = (call: ToolCallPart, result: RunResult): ModelContentPart => ({
+const childToolExecutionResult = (call: ToolCallPart, result: AgentResult): ModelContentPart => ({
   kind: "tool-result",
   toolCallId: call.toolCallId,
   result: [
@@ -170,7 +173,7 @@ const childToolResult = (call: ToolCallPart, result: RunResult): ModelContentPar
 });
 
 const unavailableChildResult = (call: ToolCallPart): ModelContentPart =>
-  asToolResultPart(call, {
+  asToolExecutionResultPart(call, {
     toolCallId: call.toolCallId,
     status: "failed",
     error: { code: "subagent-unavailable", retryable: false },
@@ -179,10 +182,10 @@ const unavailableChildResult = (call: ToolCallPart): ModelContentPart =>
 const runDeclaredSubagent = (
   state: LoopState,
   call: ToolCallPart,
-  child: PreparedAgentSpec,
+  child: PreparedAgentDefinition,
 ): MaybePromise<ModelContentPart> =>
   maybeChain(
-    (run) => maybeChain((result) => childToolResult(call, result), run.result()),
+    (run) => maybeChain((result) => childToolExecutionResult(call, result), run.result()),
     state.context.startChild({
       agent: child,
       invocationContext: state.context.request.invocationContext,
@@ -198,9 +201,9 @@ const appendConversation = (
   if (message.content.some((part) => part.kind === "binary")) {
     throw new TypeError("Conversation persistence cannot silently discard inline binary content.");
   }
-  const turn = registerConversationTurn({
+  const turn = createConversationMessage({
     role: message.role,
-    content: message.content as ConversationTurn["content"],
+    content: message.content as ConversationMessage["content"],
   });
   const conversationId = state.context.request.invocationContext.conversationId;
   if (!store || !conversationId) return undefined;
@@ -235,13 +238,13 @@ const validateLimit = (value: number | undefined): number => {
 export const createModelToolAgentProgram = (
   options: ModelToolAgentProgramOptions,
 ): LocalAgentProgramPort => {
-  const bindings = [...(options.tools ?? [])];
-  if (bindings.some((binding) => !isRegisteredToolBinding(binding))) {
-    throw new TypeError("Model tool programs require registered ToolBinding values.");
+  const tools = [...(options.tools ?? [])];
+  if (tools.some((tool) => !isRegisteredExecutableTool(tool))) {
+    throw new TypeError("Model tool programs require registered ExecutableTool values.");
   }
-  const byName = new Map(bindings.map((binding) => [binding.spec.id as string, binding]));
-  if (byName.size !== bindings.length) {
-    throw new TypeError("Agent tool bindings must use unique tool identities.");
+  const byName = new Map(tools.map((tool) => [tool.definition.id as string, tool]));
+  if (byName.size !== tools.length) {
+    throw new TypeError("Agent tools must use unique identities.");
   }
   const subagents = composeSubagents(options.subagents ?? []);
   const subagentsByName = new Map(subagents.map((binding) => [binding.declaration.name, binding]));
@@ -252,7 +255,7 @@ export const createModelToolAgentProgram = (
     throw new TypeError("Agent tool and subagent declarations cannot use the same name.");
   }
   const declarations = Object.freeze([
-    ...toolDeclarations(bindings),
+    ...toolDeclarations(tools),
     ...subagents.map((binding) => binding.declaration),
   ]);
   const maxModelCalls = validateLimit(options.maxModelCalls);
@@ -263,7 +266,7 @@ export const createModelToolAgentProgram = (
     if (subagent) {
       return maybeChain((child) => {
         if (
-          !isPreparedAgentSpec(child) ||
+          !isPreparedAgentDefinition(child) ||
           child.agentId !== subagent.agentId ||
           child.version !== subagent.agentVersion
         ) {
@@ -272,21 +275,21 @@ export const createModelToolAgentProgram = (
         return runDeclaredSubagent(state, callPart, child);
       }, subagent.resolve());
     }
-    const binding = byName.get(callPart.name);
-    if (!binding) {
-      return asToolResultPart(callPart, {
+    const tool = byName.get(callPart.name);
+    if (!tool) {
+      return asToolExecutionResultPart(callPart, {
         toolCallId: callPart.toolCallId,
         status: "failed",
         error: { code: "unknown-tool", retryable: false },
       });
     }
-    if (!isRegisteredToolBinding(binding)) {
-      throw new TypeError("Model tool execution requires a registered ToolBinding.");
+    if (!isRegisteredExecutableTool(tool)) {
+      throw new TypeError("Model tool execution requires a registered ExecutableTool.");
     }
     const call: ToolCall = {
       toolCallId: callPart.toolCallId as ToolCallId,
-      toolId: binding.spec.id,
-      toolVersion: binding.spec.version,
+      toolId: tool.definition.id,
+      toolVersion: tool.definition.version,
       arguments: callPart.arguments,
       invocation: {
         ...state.context.request.invocationContext,
@@ -294,9 +297,9 @@ export const createModelToolAgentProgram = (
         toolCallId: callPart.toolCallId,
       },
     };
-    if (binding.spec.effect.class !== "read-only") {
+    if (tool.definition.effect.class !== "read-only") {
       if (!state.context.controlledToolExecution || !options.controlledToolInput) {
-        return asToolResultPart(callPart, {
+        return asToolExecutionResultPart(callPart, {
           toolCallId: callPart.toolCallId,
           status: "failed",
           error: { code: "controlled-execution-unavailable", retryable: false },
@@ -305,20 +308,23 @@ export const createModelToolAgentProgram = (
       return maybeChain(
         (outcome) => {
           if (outcome.status === "succeeded" || outcome.status === "failed") {
-            return asToolResultPart(callPart, outcome.result);
+            return asToolExecutionResultPart(callPart, outcome.result);
           }
-          return asToolResultPart(callPart, {
+          return asToolExecutionResultPart(callPart, {
             toolCallId: callPart.toolCallId,
             status: "failed",
             error: { code: `controlled-${outcome.status}`, retryable: false },
           });
         },
         state.context.controlledToolExecution.execute(
-          options.controlledToolInput({ binding, call, context: state.context }),
+          options.controlledToolInput({ tool, call, context: state.context }),
         ),
       );
     }
-    return maybeChain((result) => asToolResultPart(callPart, result), binding.execute({ call }));
+    return maybeChain(
+      (result) => asToolExecutionResultPart(callPart, result),
+      tool.execute({ call }),
+    );
   };
 
   // The loop deliberately keeps the model response, tool fan-out and portable

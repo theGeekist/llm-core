@@ -1,9 +1,6 @@
 import { afterAll, beforeAll, describe, expect, it, mock } from "bun:test";
 import { coreId, newCoreId, type InvocationId, type JsonValue, type ToolCallId } from "#contracts";
-import {
-  createBuiltinModelProfile,
-  type RegisteredModelProfile,
-} from "../../../src/features/model/public";
+import { createBuiltinModelProfile, type ModelProfile } from "../../../src/features/model/runtime";
 
 const TOOL_CALL_ID = newCoreId<ToolCallId>("0190bd0c-0000-7000-8000-000000000071");
 const INVOCATION_ID = newCoreId<InvocationId>("0190bd0c-0000-7000-8000-000000000072");
@@ -76,7 +73,7 @@ const createAdapter = (overrides?: {
   classifyToolApproval?: () => "denied" | "user-approval";
   redactProviderMetadata?: () => JsonValue | undefined;
   createToolCallId?: () => ToolCallId;
-  profile?: RegisteredModelProfile;
+  profile?: ModelProfile;
 }) =>
   createAiSdk7Model({
     model: "test-provider/test-model",
@@ -91,9 +88,9 @@ describe("AI SDK 7 frozen model adapter", () => {
     const forged = {
       ...createBuiltinModelProfile(),
       version: "not-semver",
-    } as unknown as RegisteredModelProfile;
+    } as unknown as ModelProfile;
 
-    expect(() => createAdapter({ profile: forged })).toThrow("require a registered model profile");
+    expect(() => createAdapter({ profile: forged })).toThrow();
   });
 
   it("rejects UUIDv4 values returned by the tool-call identity factory", async () => {

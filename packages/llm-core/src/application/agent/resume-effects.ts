@@ -1,13 +1,13 @@
 import { maybeChain } from "#shared/maybe";
 import type { ExecuteControlledToolInput } from "../tool-execution/public";
-import { actionDigestsEqual } from "../../features/evidence/public";
-import { bindAction } from "../../features/tooling/public";
+import { actionDigestsEqual } from "../../features/evidence/runtime";
+import { bindAction } from "../../features/tooling/runtime";
 import type {
   ActionDigestMaterial,
   ActionDigestPort,
   ActionDigestVerification,
-} from "../../features/tooling/public";
-import type { RegisteredResumableCheckpoint } from "../../features/state/public";
+} from "../../features/tooling/runtime";
+import type { RegisteredResumableCheckpoint } from "../../features/state/runtime";
 import type { ControlledAgentToolExecutionPort } from "./types";
 
 export const guardResumeToolExecution = (
@@ -54,7 +54,7 @@ export const guardResumeToolExecution = (
           return port.execute({ ...input, digestPort: boundDigestPort });
         },
         bindAction({
-          spec: input.binding.spec,
+          definition: input.tool.definition,
           call: input.call,
           securityDomain: input.securityDomain,
           keyRef: input.digestKeyRef,

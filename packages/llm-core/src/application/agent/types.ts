@@ -8,19 +8,19 @@ import type {
   AgentRun,
   AgentProgressFacts,
   AgentRunIdentity,
-  AgentRunRequest,
-  AgentRunnerCapabilities,
-  PreparedAgentSpec,
-  RunResult,
+  AgentStartRequest,
+  AgentRunnerProfile,
+  PreparedAgentDefinition,
+  AgentResult,
 } from "../../features/agent/public";
 import type { ToolDeclaration } from "../../features/model/public";
 import type {
   InterventionDecision,
   InterventionAuthenticationPort,
   InterventionRequest,
-  RegisteredResumableCheckpoint,
   ResumeCompatibility,
 } from "../../features/state/public";
+import type { RegisteredResumableCheckpoint } from "../../features/state/runtime";
 
 export interface AgentRunIdentityPort {
   newRunId(): RunId;
@@ -37,21 +37,21 @@ export interface ControlledAgentToolExecutionPort {
 }
 
 export interface LocalAgentExecutionResult {
-  readonly status: RunResult["status"];
+  readonly status: AgentResult["status"];
   readonly output?: JsonValue;
   readonly reasonCode?: string;
-  readonly providerSession?: RunResult["providerSession"];
-  readonly checkpoint?: RunResult["checkpoint"];
-  readonly durableExecution?: RunResult["durableExecution"];
+  readonly providerSession?: AgentResult["providerSession"];
+  readonly checkpoint?: AgentResult["checkpoint"];
+  readonly durableExecution?: AgentResult["durableExecution"];
 }
 
 export interface LocalAgentExecutionContext {
   readonly identity: AgentRunIdentity;
-  readonly request: AgentRunRequest;
+  readonly request: AgentStartRequest;
   readonly cancellation: LocalAgentCancellationSignal;
   readonly controlledToolExecution?: ControlledAgentToolExecutionPort;
   emitProgress(facts: AgentProgressFacts): MaybePromise<void>;
-  startChild(request: AgentRunRequest): MaybePromise<AgentRun>;
+  startChild(request: AgentStartRequest): MaybePromise<AgentRun>;
   requestIntervention(request: InterventionRequest): MaybePromise<void>;
   receivedInterventions(): readonly InterventionDecision[];
 }
@@ -77,14 +77,14 @@ export interface DeclaredSubagentBinding {
   readonly declaration: Readonly<ToolDeclaration>;
   readonly agentId: string;
   readonly agentVersion: ContractVersion;
-  readonly resolve: () => MaybePromise<PreparedAgentSpec | undefined>;
+  readonly resolve: () => MaybePromise<PreparedAgentDefinition | undefined>;
 }
 
 export interface CreateLocalAgentRunnerOptions {
   readonly identity: AgentRunIdentityPort;
   readonly program: LocalAgentProgramPort;
   readonly runnerId: string;
-  readonly runnerVersion: AgentRunnerCapabilities["runnerVersion"];
+  readonly runnerVersion: AgentRunnerProfile["runnerVersion"];
   readonly controlledToolExecution?: ControlledAgentToolExecutionPort;
   readonly interventions?: {
     readonly authentication: InterventionAuthenticationPort;
@@ -93,5 +93,5 @@ export interface CreateLocalAgentRunnerOptions {
 }
 
 export interface LocalAgentPreparedRequest {
-  readonly agent: PreparedAgentSpec;
+  readonly agent: PreparedAgentDefinition;
 }

@@ -1,7 +1,7 @@
 import {
   resumeInterventionWorkflow,
   type ResumeInterventionWorkflowInput,
-} from "@geekist/llm-core/workflow";
+} from "@geekist/llm-core/workflow/runtime";
 
 declare const input: ResumeInterventionWorkflowInput;
 declare const reconciliationQueue: {

@@ -1,5 +1,5 @@
 import type { PrincipalRef, RunId, ToolCallId } from "#contracts";
-import type { ActionDigest } from "../tooling/public";
+import type { ActionDigest } from "../tooling/runtime";
 import { actionDigestsMatch, type CancellationId } from "./shared";
 
 /** @format date-time */

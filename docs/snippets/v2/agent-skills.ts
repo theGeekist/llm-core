@@ -2,7 +2,7 @@ import {
   loadAgentSkills,
   registerAgentSkill,
   type LocalSkillLoader,
-} from "@geekist/llm-core/agent";
+} from "@geekist/llm-core/agent/runtime";
 import {
   digest,
   newCoreId,

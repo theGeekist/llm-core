@@ -1,15 +1,16 @@
 # UI projections
 
-UI adapters consume canonical `InteractionEvent` values and emit a target
-library's presentation protocol. The input has already crossed llm-core's
-identity, ordering, and redaction boundaries.
+UI adapters consume projected `ConversationEvent` values and emit a target
+library's presentation protocol. Extension mappers may accept canonical
+`InteractionEvent` values and project them first. Either input has crossed
+llm-core's identity, ordering, and redaction boundaries.
 
 ```mermaid
 flowchart LR
-  agent["AgentRunEvent"] --> interaction["InteractionEvent"]
-  execution["ExecutionEvent"] --> interaction
+  agent["AgentEvent"] --> interaction["InteractionEvent"]
+  execution["ToolExecutionEvent"] --> interaction
   content["Registered content"] --> interaction
-  interaction --> projection["InteractionUiEvent"]
+  interaction --> projection["ConversationEvent"]
   projection --> aisdk["AI SDK UI chunks"]
   projection --> assistant["assistant-ui commands"]
   projection --> chatkit["ChatKit events"]
@@ -47,6 +48,9 @@ raw arguments or results.
 completion, or error signals. `createNluxChatAdapter` goes one step further: it
 starts an `InteractionSession` for NLUX batch and streaming calls, then
 delivers the projected text through the NLUX observer contract.
+
+`InteractionSession` here is the explicit extension API. Common application
+code uses `createConversation` and consumes `ConversationEvent` directly.
 
 ## Authority stays behind the projection
 

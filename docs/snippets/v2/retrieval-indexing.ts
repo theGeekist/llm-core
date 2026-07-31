@@ -1,10 +1,6 @@
-import {
-  textDocument,
-  textRetrievalQuery,
-  type Indexer,
-  type Retriever,
-} from "@geekist/llm-core/agent";
 import { newCoreId, type InvocationContext, type InvocationId } from "@geekist/llm-core/contracts";
+import type { Indexer } from "@geekist/llm-core/indexing";
+import { textDocument, textRetrievalQuery, type Retriever } from "@geekist/llm-core/retrieval";
 
 declare const indexer: Indexer;
 declare const retriever: Retriever;

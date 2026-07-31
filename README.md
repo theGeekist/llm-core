@@ -9,23 +9,29 @@ npm install @geekist/llm-core
 ```
 
 ```ts
-import type { AgentRunner, AgentSpec } from "@geekist/llm-core";
-import { contractVersion } from "@geekist/llm-core/contracts";
+import { createAgent } from "@geekist/llm-core";
+import type { Model } from "@geekist/llm-core/model";
 
-const spec: AgentSpec = {
-  agentId: "example.echo",
-  version: contractVersion("2.0.0"),
-  instructions: "Return a portable result.",
-  effectRequirement: "read-only",
-};
+declare const model: Model;
 
-declare const runner: AgentRunner;
-const agent = await runner.prepare(spec);
+const agent = createAgent({
+  model,
+  instructions: "Return a clear, portable answer.",
+});
+
+const result = await agent.run("Why is the sky blue?");
+console.log(result.status, result.output);
 ```
 
-The root export is deliberately small. Import contracts and capabilities from
-their explicit subpaths. Provider integrations live on qualified adapter
-subpaths such as `@geekist/llm-core/adapters/ai-sdk`.
+The root contains the common `createAgent`, `defineTool`, and
+`createConversation` journeys. Runtime implementers use explicit extension
+paths such as `@geekist/llm-core/agent/runtime` and
+`@geekist/llm-core/tools/runtime`. Provider integrations live on qualified
+adapter paths such as `@geekist/llm-core/adapters/ai-sdk`.
+
+Common application conversations start with `createConversation`. The
+`@geekist/llm-core/interaction` subpath is the extension surface for explicit
+runner sessions, raw events, projections, and live reconnect state.
 
 Provider-native data is accepted only through validated, namespaced, redacted
 extensions. Credentials and live provider objects remain outside portable

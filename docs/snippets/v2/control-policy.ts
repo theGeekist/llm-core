@@ -1,8 +1,8 @@
 import {
   authorizePolicyDecision,
-  type PolicyDecision,
   type PolicyEvaluationRef,
-} from "@geekist/llm-core/control";
+} from "@geekist/llm-core/control/runtime";
+import type { PolicyDecision } from "@geekist/llm-core/control";
 import { contractVersion } from "@geekist/llm-core/contracts";
 
 declare const evaluation: PolicyEvaluationRef;

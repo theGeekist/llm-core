@@ -2,7 +2,7 @@ import type { ChatKitEvents } from "@openai/chatkit";
 import {
   projectInteractionEvent,
   type InteractionEvent,
-  type InteractionUiEvent,
+  type ConversationEvent,
 } from "../../application/interaction/public";
 import type { UiProjectionMapper } from "./types";
 
@@ -17,7 +17,7 @@ const chatKitEvent = <K extends keyof ChatKitEvents>(
   detail: ChatKitEvents[K]["detail"],
 ): ChatKitEvents[K] => new CustomEvent(type, { detail }) as ChatKitEvents[K];
 
-const mapProjection = (event: InteractionUiEvent): readonly ChatKitProjectionEvent[] => {
+const mapProjection = (event: ConversationEvent): readonly ChatKitProjectionEvent[] => {
   switch (event.kind) {
     case "message-started":
       return [chatKitEvent("chatkit.response.start", undefined)];

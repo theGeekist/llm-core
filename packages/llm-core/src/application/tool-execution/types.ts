@@ -1,14 +1,13 @@
 import type { EvidenceId, EventId, PrincipalRef, SecretRef } from "#contracts";
 import type {
   ApprovalAuthenticationPort,
-  ApprovalDecision,
   ApprovalId,
-  ApprovalRequest,
   CancellationId,
   ConcurrencyGate,
   PolicyEvaluationId,
   PolicyEvaluationPort,
-} from "../../features/control/public";
+} from "../../features/control/runtime";
+import type { ApprovalDecision, ApprovalRequest } from "../../features/control/public";
 import type {
   EventSink,
   RedactionMetadata,
@@ -17,11 +16,11 @@ import type {
 } from "../../features/evidence/public";
 import type {
   ActionDigestPort,
-  ToolBinding,
+  ExecutableTool,
   ToolCall,
   ToolExecutionControl,
-  ToolResult,
-} from "../../features/tooling/public";
+  ToolExecutionResult,
+} from "../../features/tooling/orchestration";
 
 export interface ToolExecutionFactsPort {
   now(): string;
@@ -40,7 +39,7 @@ export interface ToolApprovalPort {
 }
 
 export interface ExecuteControlledToolInput {
-  binding: ToolBinding;
+  tool: ExecutableTool;
   call: ToolCall;
   securityDomain: string;
   digestKeyRef: SecretRef;
@@ -63,8 +62,14 @@ interface ReceiptOutcome {
 }
 
 export type ControlledToolExecutionOutcome =
-  | (ReceiptOutcome & { status: "succeeded"; result: Extract<ToolResult, { status: "succeeded" }> })
-  | (ReceiptOutcome & { status: "failed"; result: Extract<ToolResult, { status: "failed" }> })
+  | (ReceiptOutcome & {
+      status: "succeeded";
+      result: Extract<ToolExecutionResult, { status: "succeeded" }>;
+    })
+  | (ReceiptOutcome & {
+      status: "failed";
+      result: Extract<ToolExecutionResult, { status: "failed" }>;
+    })
   | (ReceiptOutcome & {
       status: "awaiting-approval" | "cancelled" | "denied" | "existing" | "indeterminate";
     })

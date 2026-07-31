@@ -10,7 +10,7 @@ import type { JsonValue } from "#contracts";
 import {
   projectInteractionEvent,
   type InteractionEvent,
-  type InteractionUiEvent,
+  type ConversationEvent,
 } from "../../application/interaction/public";
 import type { UiProjectionMapper } from "./types";
 
@@ -20,7 +20,7 @@ type LlmCoreUiData = {
 
 export type AiSdkUiProjectionChunk = UIMessageChunk<unknown, LlmCoreUiData>;
 
-const statusData = (event: InteractionUiEvent): JsonValue => ({
+const statusData = (event: ConversationEvent): JsonValue => ({
   kind: event.kind,
   runId: event.runId,
 });
@@ -40,7 +40,7 @@ export const createAiSdkUiProjectionMapper = (): UiProjectionMapper<AiSdkUiProje
     return chunks;
   };
 
-  const mapProjection = (event: InteractionUiEvent): AiSdkUiProjectionChunk[] => {
+  const mapProjection = (event: ConversationEvent): AiSdkUiProjectionChunk[] => {
     switch (event.kind) {
       case "message-started":
         return [{ type: "start", messageId: event.messageId }];

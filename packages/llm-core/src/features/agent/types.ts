@@ -5,16 +5,16 @@ import type {
   InterventionDecision,
   InterventionRequest,
   ProviderSessionRef,
-  RegisteredResumableCheckpoint,
   ResumeCompatibility,
 } from "../state/public";
+import type { RegisteredResumableCheckpoint } from "../state/runtime";
 import type { AgentSkillRef } from "./skills";
 
-declare const preparedAgentSpecBrand: unique symbol;
+declare const preparedAgentDefinitionBrand: unique symbol;
 
 export type AgentEffectRequirement = "read-only" | "controlled";
 
-export interface AgentSpec {
+export interface AgentDefinition {
   readonly agentId: string;
   readonly version: ContractVersion;
   readonly instructions: string;
@@ -23,11 +23,11 @@ export interface AgentSpec {
   readonly skills?: readonly AgentSkillRef[];
 }
 
-export interface PreparedAgentSpec extends AgentSpec {
-  readonly [preparedAgentSpecBrand]: true;
+export interface PreparedAgentDefinition extends AgentDefinition {
+  readonly [preparedAgentDefinitionBrand]: true;
 }
 
-export interface AgentRunnerCapabilities {
+export interface AgentRunnerProfile {
   readonly runnerId: string;
   readonly runnerVersion: ContractVersion;
   readonly controlledEffects: boolean;
@@ -45,22 +45,22 @@ export interface AgentRunIdentity {
   readonly causalRunId?: RunId;
 }
 
-export interface AgentRunRequest {
-  readonly agent: PreparedAgentSpec;
+export interface AgentStartRequest {
+  readonly agent: PreparedAgentDefinition;
   readonly invocationContext: InvocationContext;
   readonly input: JsonValue;
   readonly providerSession?: ProviderSessionRef;
 }
 
 export interface AgentResumeRequest {
-  readonly agent: PreparedAgentSpec;
+  readonly agent: PreparedAgentDefinition;
   readonly invocationContext: InvocationContext;
   readonly checkpoint: RegisteredResumableCheckpoint;
 }
 
 export type AgentRunTerminalStatus = "completed" | "failed" | "denied" | "cancelled";
 
-export interface RunResult {
+export interface AgentResult {
   readonly identity: AgentRunIdentity;
   readonly status: AgentRunTerminalStatus;
   readonly output?: JsonValue;
@@ -86,7 +86,7 @@ export interface AgentInterventionRequestFacts {
   readonly allowed: InterventionRequest["allowed"];
 }
 
-export interface AgentRunEventFactsByKind {
+export interface AgentEventFactsByKind {
   readonly "agent.run.started": {
     readonly agentId: string;
     readonly agentVersion: ContractVersion;
@@ -110,21 +110,21 @@ export interface AgentRunEventFactsByKind {
   readonly "agent.run.cancelled": { readonly status: "cancelled"; readonly reasonCode?: string };
 }
 
-export type AgentRunEventKind = keyof AgentRunEventFactsByKind;
+export type AgentEventKind = keyof AgentEventFactsByKind;
 
-interface AgentRunEventBase {
+interface AgentEventBase {
   readonly eventId: EventId;
   readonly occurredAt: string;
   readonly sequence: number;
   readonly identity: AgentRunIdentity;
 }
 
-export type AgentRunEvent = {
-  readonly [TKind in AgentRunEventKind]: AgentRunEventBase & {
+export type AgentEvent = {
+  readonly [TKind in AgentEventKind]: AgentEventBase & {
     readonly kind: TKind;
-    readonly facts: Readonly<AgentRunEventFactsByKind[TKind]>;
+    readonly facts: Readonly<AgentEventFactsByKind[TKind]>;
   };
-}[AgentRunEventKind];
+}[AgentEventKind];
 
 export interface AgentCancellationRequest {
   readonly requestedAt: string;
@@ -143,16 +143,16 @@ export interface AgentInterventionAcknowledgement {
 
 export interface AgentRun {
   readonly identity: AgentRunIdentity;
-  events(): AsyncIterable<AgentRunEvent>;
-  result(): MaybePromise<RunResult>;
+  events(): AsyncIterable<AgentEvent>;
+  result(): MaybePromise<AgentResult>;
   cancel(request: AgentCancellationRequest): MaybePromise<AgentCancellationAcknowledgement>;
   intervene(decision: InterventionDecision): MaybePromise<AgentInterventionAcknowledgement>;
 }
 
 export interface AgentRunner {
-  capabilities(): MaybePromise<AgentRunnerCapabilities>;
-  prepare(spec: AgentSpec): MaybePromise<PreparedAgentSpec>;
-  start(request: AgentRunRequest): MaybePromise<AgentRun>;
+  capabilities(): MaybePromise<AgentRunnerProfile>;
+  prepare(definition: AgentDefinition): MaybePromise<PreparedAgentDefinition>;
+  start(request: AgentStartRequest): MaybePromise<AgentRun>;
   resume?(request: AgentResumeRequest): MaybePromise<AgentRun>;
 }
 

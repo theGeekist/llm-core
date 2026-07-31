@@ -1,8 +1,22 @@
 import { readFileSync } from "node:fs";
+import { execFileSync } from "node:child_process";
 import { dirname, relative, resolve } from "node:path";
 import ts from "typescript";
 
 const packageRoot = resolve(import.meta.dirname, "../..");
+const baselineCommit = "17d2b38";
+const currentCommit = execFileSync("git", ["rev-parse", "--short=7", "HEAD"], {
+  cwd: packageRoot,
+  encoding: "utf8",
+}).trim();
+
+if (currentCommit !== baselineCommit) {
+  throw new Error(
+    `This inventory records the pre-rollout public surface at ${baselineCommit}; ` +
+      `run it from a clean checkout of that commit, not ${currentCommit}.`,
+  );
+}
+
 const entrypoints = new Map([
   ["root", "index.ts"],
   ["./functional", "src/functional/index.ts"],

@@ -1,18 +1,18 @@
 import { describe, expect, it } from "bun:test";
 import { contractVersion, coreId, externalId, secretRef } from "../../src/contracts/public";
 import type { EvidenceId, EventId, RunId, TenantId, ToolCallId } from "../../src/contracts/public";
+import { redactedNativeExtensions } from "../../src/features/evidence/public";
 import {
   actionDigestsEqual,
   classifyExistingReservation,
   isToolReceiptTransitionAllowed,
-  redactedNativeExtensions,
   reservationKeysEqual,
-} from "../../src/features/evidence/public";
+} from "../../src/features/evidence/runtime";
 import type {
   AppendToolReceiptTransition,
   AppendToolReceiptTransitionResult,
   EffectDisposition,
-  ExecutionEvent,
+  ToolExecutionEvent,
   LoadToolReceipt,
   LookupToolReceiptByIdempotency,
   ReserveToolReceipt,
@@ -22,8 +22,8 @@ import type {
   ToolReceiptState,
   ToolReceiptTransition,
 } from "../../src/features/evidence/public";
-import { toolId } from "../../src/features/tooling/public";
-import type { ActionDigest } from "../../src/features/tooling/public";
+import { toolId, type ActionDigest } from "../../src/features/tooling/runtime";
+import * as evidence from "../../src/features/evidence/public";
 
 const RECEIPT_ID = coreId<EvidenceId>("01890f3e-3e30-7cc4-98c8-4d1f3c35ca10");
 const RUN_ID = coreId<RunId>("01890f3e-3e30-7cc4-98c8-4d1f3c35ca11");
@@ -197,6 +197,13 @@ const appendSequence = async (
 };
 
 describe("ToolReceiptJournal contract", () => {
+  it("keeps receipt comparison and transition helpers internal", () => {
+    expect(evidence).not.toHaveProperty("actionDigestsEqual");
+    expect(evidence).not.toHaveProperty("classifyExistingReservation");
+    expect(evidence).not.toHaveProperty("isToolReceiptTransitionAllowed");
+    expect(evidence).not.toHaveProperty("reservationKeysEqual");
+  });
+
   it("returns the existing reservation for the same digest and a conflict for another digest", async () => {
     const journal = new MemoryToolReceiptJournal();
     const created = await journal.reserve(reservation());
@@ -319,7 +326,7 @@ describe("ToolReceiptJournal contract", () => {
       throw new Error("Expected a created receipt.");
     }
 
-    const event: ExecutionEvent = {
+    const event: ToolExecutionEvent = {
       eventId: eventId(9),
       kind: "tool.receipt.reserved",
       occurredAt: "2026-07-29T00:00:09.000Z",

@@ -26,7 +26,7 @@ export interface ModelStreamInput {
   readonly context: InvocationContext;
 }
 
-/** Streaming projection of a model response. `ExecutionEvent` remains canonical. */
+/** Streaming projection of a model response. `ToolExecutionEvent` remains canonical. */
 export type ModelStreamEvent =
   | { kind: "start" }
   | { kind: "delta"; part: ModelContentPart }

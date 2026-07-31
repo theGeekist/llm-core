@@ -9,7 +9,7 @@ import {
   type MediaResourceResolver,
   type PortableMediaContent,
 } from "../../../../features/media/public";
-import { safeNativeScalar } from "../../../../features/model/public";
+import { safeAdapterScalar } from "../../../shared/native-metadata";
 
 export interface AiSdkMediaAdapterOptions {
   readonly output: MediaOutputProjector;
@@ -87,8 +87,8 @@ export const safeAiSdkExtensions = (
   warnings: readonly unknown[],
 ) => ({
   "dev.vercel.ai-sdk": {
-    provider: safeNativeScalar(provider),
-    modelId: safeNativeScalar(modelId),
+    provider: safeAdapterScalar(provider),
+    modelId: safeAdapterScalar(modelId),
     warningCount: warnings.length,
   },
 });

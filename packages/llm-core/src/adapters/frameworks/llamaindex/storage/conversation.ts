@@ -1,9 +1,9 @@
 import { maybeMap } from "#shared/maybe";
 import {
   registerConversationRecord,
-  registerConversationTurn,
+  createConversationMessage,
   type ConversationStore,
-  type ConversationTurn,
+  type ConversationMessage,
 } from "../../../../features/memory/public";
 import type { LlamaIndexChatMessage, LlamaIndexMemory } from "./types";
 
@@ -17,7 +17,7 @@ export interface CreateLlamaIndexConversationStoreInput {
   readonly onProjectionIssue?: (issue: LlamaIndexConversationProjectionIssue) => void;
 }
 
-const toRole = (role: LlamaIndexChatMessage["role"]): ConversationTurn["role"] =>
+const toRole = (role: LlamaIndexChatMessage["role"]): ConversationMessage["role"] =>
   role === "developer" || role === "memory" ? "system" : role;
 
 const readNativeText = (content: LlamaIndexChatMessage["content"]): string | null => {
@@ -42,18 +42,18 @@ const readNativeText = (content: LlamaIndexChatMessage["content"]): string | nul
   return content.map((part) => (part as { text: string }).text).join("");
 };
 
-const toTurn = (message: LlamaIndexChatMessage): ConversationTurn | null => {
+const toTurn = (message: LlamaIndexChatMessage): ConversationMessage | null => {
   const text = readNativeText(message.content);
   if (text === null) {
     return null;
   }
-  return registerConversationTurn({
+  return createConversationMessage({
     role: toRole(message.role),
     content: [{ kind: "text", text }],
   });
 };
 
-const readText = (turn: ConversationTurn): string | null => {
+const readText = (turn: ConversationMessage): string | null => {
   if (!turn.content.every((part) => part.kind === "text" || part.kind === "reasoning")) {
     return null;
   }
@@ -85,7 +85,7 @@ export const createLlamaIndexConversationStore = (
   const adapter: ConversationStore = {
     read: ({ conversationId }) =>
       maybeMap((messages) => {
-        const turns: ConversationTurn[] = [];
+        const turns: ConversationMessage[] = [];
         let failed = false;
         messages.forEach((message, messageIndex) => {
           const turn = toTurn(message);
@@ -109,7 +109,7 @@ export const createLlamaIndexConversationStore = (
         });
       }, memory.getLLM()),
     append: ({ turn }) => {
-      const registered = registerConversationTurn(turn);
+      const registered = createConversationMessage(turn);
       const content = readText(registered);
       if (content === null) {
         return false;

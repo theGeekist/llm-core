@@ -1,13 +1,18 @@
 import {
   conversationId,
-  jsonStorageValue,
-  type CacheStore,
+  type ConversationMessage,
   type ConversationStore,
-} from "@geekist/llm-core/agent";
+} from "@geekist/llm-core/memory";
 import { newCoreId, type InvocationContext, type InvocationId } from "@geekist/llm-core/contracts";
+import { jsonStorageValue, type CacheStore } from "@geekist/llm-core/storage";
 
 declare const cache: CacheStore;
 declare const conversations: ConversationStore;
+const message: ConversationMessage = {
+  role: "user",
+  content: [{ kind: "text", text: "Remember this." }],
+  occurredAt: new Date().toISOString(),
+};
 
 const context: InvocationContext = {
   invocationId: newCoreId<InvocationId>("018f0f4e-8c5b-7a91-8c3b-123456789c01"),
@@ -24,9 +29,5 @@ await cache.set({
 await conversations.append({
   context,
   conversationId: id,
-  turn: {
-    role: "user",
-    content: [{ kind: "text", text: "Remember this." }],
-    occurredAt: new Date().toISOString(),
-  },
+  turn: message,
 });

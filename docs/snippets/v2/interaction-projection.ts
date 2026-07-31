@@ -1,17 +1,17 @@
 import { createInteractionSession } from "@geekist/llm-core/interaction";
 import { createAiSdkUiProjectionMapper } from "@geekist/llm-core/adapters/ai-sdk-ui";
 import type {
-  ConversationSessionStore,
+  ConversationStore,
   InteractionSessionIdentityPort,
 } from "@geekist/llm-core/interaction";
-import type { AgentRunner, PreparedAgentSpec } from "@geekist/llm-core";
+import type { AgentRunner, PreparedAgentDefinition } from "@geekist/llm-core/agent/runtime";
 import type { ConversationId, InvocationContext } from "@geekist/llm-core/contracts";
 import type { AiSdkUiProjectionChunk } from "@geekist/llm-core/adapters/ai-sdk-ui";
 
 declare const conversationId: ConversationId;
-declare const agent: PreparedAgentSpec;
+declare const agent: PreparedAgentDefinition;
 declare const runner: AgentRunner;
-declare const store: ConversationSessionStore;
+declare const store: ConversationStore;
 declare const identity: InteractionSessionIdentityPort;
 declare const invocationContext: InvocationContext;
 declare const uiStream: {

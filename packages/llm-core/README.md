@@ -9,23 +9,24 @@ npm install @geekist/llm-core
 ```
 
 ```ts
-import type { AgentRunner, AgentSpec } from "@geekist/llm-core";
-import { contractVersion } from "@geekist/llm-core/contracts";
+import { createAgent } from "@geekist/llm-core";
+import type { Model } from "@geekist/llm-core/model";
 
-const spec: AgentSpec = {
-  agentId: "example.echo",
-  version: contractVersion("2.0.0"),
-  instructions: "Return a portable result.",
-  effectRequirement: "read-only",
-};
+declare const model: Model;
 
-declare const runner: AgentRunner;
-const agent = await runner.prepare(spec);
+const agent = createAgent({
+  model,
+  instructions: "Return a clear, portable answer.",
+});
+
+const result = await agent.run("Why is the sky blue?");
+console.log(result.status, result.output);
 ```
 
-Use explicit capability subpaths for models, tools, control, evidence, state,
-agents, workflows, and interaction. Qualified adapter subpaths contain
-provider or UI integration code.
+The root exposes the common agent, tool, and conversation journeys. Runtime
+implementers use `/agent/runtime` and `/tools/runtime`. Use `/interaction` for
+explicit runner sessions, raw interaction events, projections, and reconnect
+state. Qualified adapter paths contain provider or UI integration code.
 
 Provider-native data is projected only as validated, namespaced, redacted JSON.
 Portable values never contain credentials, physical paths, or live framework

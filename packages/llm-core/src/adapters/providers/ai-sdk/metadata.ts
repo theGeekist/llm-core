@@ -5,11 +5,8 @@ import type {
   ProviderMetadata,
 } from "ai";
 import { nativeExtensions, type JsonValue } from "#contracts";
-import type {
-  ModelWarning,
-  ProviderResponseMetadata,
-  RegisteredModelProfile,
-} from "../../../features/model/public";
+import type { ModelWarning, ProviderResponseMetadata } from "../../../features/model/public";
+import type { ModelProfile } from "../../../features/model/runtime";
 import type { AiSdk7ProviderMetadataRedactor } from "./types";
 
 export const AI_SDK_SUPPORTED_VERSION = "7.0.37";
@@ -59,7 +56,7 @@ export const toModelWarnings = (warnings?: CallWarning[]): ModelWarning[] | unde
     : undefined;
 
 type MetadataInput = {
-  profile: RegisteredModelProfile;
+  profile: ModelProfile;
   response?: LanguageModelResponseMetadata;
   providerMetadata?: ProviderMetadata;
   redactProviderMetadata?: AiSdk7ProviderMetadataRedactor;

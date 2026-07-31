@@ -15,12 +15,12 @@ import {
   type ToolCallId,
 } from "#contracts";
 import {
-  isRegisteredModelProfile,
   type Model,
   type ModelContentPart,
   type ModelError,
   type ModelRequest,
 } from "../../../features/model/public";
+import { createModelProfile } from "../../../features/model/runtime";
 import {
   toAiSdk7Messages,
   toPortableReasoningPart,
@@ -125,9 +125,7 @@ const toToolChoice = (request: ModelRequest) =>
     : request.toolChoice?.kind;
 
 export const createAiSdk7Model = (input: CreateAiSdk7ModelInput): Model => {
-  if (!isRegisteredModelProfile(input.profile)) {
-    throw new TypeError("AI SDK adapters require a registered model profile.");
-  }
+  const profile = createModelProfile(input.profile);
   const correlationScopeFor = async (context: InvocationContext): Promise<CorrelationScope> => {
     const scope: AiSdk7ToolCallCorrelationScope = context.conversationId
       ? { kind: "conversation", conversationId: context.conversationId }
@@ -279,7 +277,7 @@ export const createAiSdk7Model = (input: CreateAiSdk7ModelInput): Model => {
         usage: toModelUsage(result.usage),
         warnings: toModelWarnings(result.warnings),
         metadata: toResponseMetadata({
-          profile: input.profile,
+          profile,
           response: result.response,
           providerMetadata: result.providerMetadata,
           redactProviderMetadata: input.redactProviderMetadata,
@@ -290,7 +288,7 @@ export const createAiSdk7Model = (input: CreateAiSdk7ModelInput): Model => {
       return {
         kind: "error",
         error: toError(error),
-        metadata: toResponseMetadata({ profile: input.profile }),
+        metadata: toResponseMetadata({ profile }),
       };
     }
   };
@@ -333,7 +331,7 @@ export const createAiSdk7Model = (input: CreateAiSdk7ModelInput): Model => {
   };
 
   return {
-    profile: input.profile,
+    profile,
     generate,
     stream,
   };

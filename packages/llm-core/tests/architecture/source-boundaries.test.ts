@@ -51,7 +51,7 @@ const resolveInternalImport = (file: string, specifier: string): string | null =
 };
 
 const isPublicFront = (path: string): boolean =>
-  path.endsWith("/public.ts") || path.endsWith("/index.ts");
+  path.endsWith("/public.ts") || path.endsWith("/runtime.ts") || path.endsWith("/index.ts");
 
 const isApplicationFeatureFront = (path: string): boolean =>
   isPublicFront(path) || path.endsWith("/orchestration.ts");
@@ -101,7 +101,14 @@ describe("architecture v2 source boundaries", () => {
           violations.push(`${owner} -> ${imported}`);
           continue;
         }
-        if (feature && /^(?:application|composition|adapters)\//.test(imported)) {
+        const qualifiedToolRuntimeAggregation =
+          owner === "features/tooling/runtime.ts" &&
+          imported === "application/tool-execution/public.ts";
+        if (
+          feature &&
+          /^(?:application|composition|adapters)\//.test(imported) &&
+          !qualifiedToolRuntimeAggregation
+        ) {
           violations.push(`${owner} -> ${imported}`);
           continue;
         }

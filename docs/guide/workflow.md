@@ -1,32 +1,32 @@
 # Build and resume a workflow
 
-A `WorkflowDefinition` describes ordered, author-defined steps. The general
-workflow runtime executes passive steps and returns a
-`WorkflowExecutionOutcome`.
+`defineWorkflow` turns an ordered `WorkflowConfig` into a ready `Workflow`.
+The workflow owns ordinary `run` and `resume` operations and returns a
+`WorkflowResult`.
 
 ## Choose the matching workflow path
 
-| Need                                    | API                          | State carried forward                      |
-| --------------------------------------- | ---------------------------- | ------------------------------------------ |
-| Run ordered passive steps               | `runWorkflow`                | State in a `completed` or `failed` outcome |
-| Pause passive orchestration             | `runWorkflow`                | Ephemeral `WorkflowPauseSnapshot`          |
-| Continue an ephemeral pause             | `resumeWorkflow`             | Snapshot plus resume input                 |
-| Resume after an authorized intervention | `resumeInterventionWorkflow` | Registered durable checkpoint and journal  |
+| Need                                    | API                                  | State carried forward                     |
+| --------------------------------------- | ------------------------------------ | ----------------------------------------- |
+| Run ordered passive steps               | `workflow.run`                       | State in a `completed` or `failed` result |
+| Pause passive orchestration             | `workflow.run`                       | Ephemeral `WorkflowPause`                 |
+| Continue an ephemeral pause             | `workflow.resume`                    | Pause plus resume input                   |
+| Resume after an authorized intervention | Runtime `resumeInterventionWorkflow` | Registered durable checkpoint and journal |
 
-`defineWorkflow` validates a definition. `composeWorkflow` combines ordinary
-definitions, and `createWorkflowRegistry` resolves registered definitions by identity.
-Every general-runtime step has `effect: "none"`. Meaningful effects use the
-controlled intervention path.
+`defineWorkflow` validates the config, allocates an identity when one is not
+supplied, and defaults the version to `1`. Every common `WorkflowStep` has
+`effect: "none"`. Runtime composition, registries, and meaningful-effect
+resume are explicit extension APIs on `@geekist/llm-core/workflow/runtime`.
 
 ## Follow the lifecycle
 
 ```mermaid
 stateDiagram-v2
-  [*] --> Running: runWorkflow
+  [*] --> Running: workflow.run
   Running --> Completed: completed
   Running --> Failed: failed
   Running --> Paused: paused
-  Paused --> Running: resumeWorkflow(snapshot, input)
+  Paused --> Running: workflow.resume(pause, input)
   Completed --> [*]
   Failed --> [*]
 ```

@@ -82,7 +82,7 @@ export interface ContextBudgetUsage {
   tokens?: number;
 }
 
-export interface ContextManifest {
+export interface ContextSelection {
   identity: Digest;
   scope: ContextScope;
   budget: ContextBudget;
@@ -97,7 +97,7 @@ export interface ContextEntryInput {
   tokens?: number;
 }
 
-export interface ContextManifestInput {
+export interface ContextSelectionInput {
   scope: ContextScope;
   budget: ContextBudget;
   entries: ContextEntryInput[];

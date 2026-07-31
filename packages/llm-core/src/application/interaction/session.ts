@@ -13,7 +13,7 @@ import {
   isLiveContinuation,
   type LiveContinuation,
 } from "../../features/state/public";
-import type { ExecutionEvent } from "../../features/evidence/public";
+import type { ToolExecutionEvent } from "../../features/evidence/public";
 import {
   interactionAgentEvent,
   interactionContentEvent,
@@ -21,12 +21,12 @@ import {
   interactionRunId,
 } from "./events";
 import { createInteractionProjection, reduceInteractionProjection } from "./projection";
-import { registerConversationSessionSnapshot } from "./registration";
+import { registerConversationSnapshot } from "./registration";
 import { registerInteractionProviderSession } from "./provider-session-registration";
 import type {
-  ConversationSessionReservation,
-  ConversationSessionSnapshot,
-  ConversationSessionValue,
+  ConversationStoreReservation,
+  ConversationSnapshot,
+  ConversationState,
   CreateInteractionSessionOptions,
   InteractionEvent,
   RegisteredInteractionContentEvent,
@@ -85,7 +85,7 @@ class InteractionEventLog {
   }
 }
 
-const emptyValue = (conversationId: ConversationId): ConversationSessionValue => ({
+const emptyValue = (conversationId: ConversationId): ConversationState => ({
   conversationId,
   revision: 0,
   turns: Object.freeze([]),
@@ -94,8 +94,8 @@ const emptyValue = (conversationId: ConversationId): ConversationSessionValue =>
 
 const asSnapshot = (
   options: CreateInteractionSessionOptions,
-  value: ConversationSessionValue,
-): ConversationSessionSnapshot => {
+  value: ConversationState,
+): ConversationSnapshot => {
   const events = [...value.projection.events];
   const terminalRunIds = events
     .filter((event) => event.kind === "run-finished")
@@ -109,7 +109,7 @@ const asSnapshot = (
   const seenToolCallKeys = events
     .filter((event) => event.kind === "tool-call")
     .map((event) => `${event.runId}:${event.toolCallId}`);
-  const persistedValue: ConversationSessionValue = {
+  const persistedValue: ConversationState = {
     ...value,
     projection: {
       ...value.projection,
@@ -127,7 +127,7 @@ const asSnapshot = (
     snapshotId: options.identity.newSnapshotId(),
     createdAt: options.identity.now(),
     value: persistedValue as unknown as JsonValue,
-  }) as unknown as ConversationSessionSnapshot;
+  }) as unknown as ConversationSnapshot;
 };
 
 export const createInteractionSession = (
@@ -141,14 +141,14 @@ export const createInteractionSession = (
     | {
         readonly runId: RunId;
         readonly log: InteractionEventLog;
-        projection: ConversationSessionValue["projection"];
+        projection: ConversationState["projection"];
       }
     | undefined;
   let busy = false;
   let startingEvents: InteractionEvent[] | undefined;
 
   const releaseReservation = async (
-    reservation: ConversationSessionReservation | undefined,
+    reservation: ConversationStoreReservation | undefined,
   ): Promise<void> => {
     if (!reservation) {
       return;
@@ -161,10 +161,10 @@ export const createInteractionSession = (
     }
   };
 
-  const load = async (): Promise<ConversationSessionSnapshot> => {
+  const load = async (): Promise<ConversationSnapshot> => {
     const loaded = await options.store.load({ conversationId: options.conversationId });
     if (loaded) {
-      current = registerConversationSessionSnapshot(loaded, options.conversationId);
+      current = registerConversationSnapshot(loaded, options.conversationId);
     }
     return current;
   };
@@ -182,7 +182,7 @@ export const createInteractionSession = (
   };
 
   const executionEventSink = Object.freeze({
-    emit: async (source: ExecutionEvent) => {
+    emit: async (source: ToolExecutionEvent) => {
       const event = interactionExecutionEvent(options.conversationId, source);
       await emitEvent(event);
     },
@@ -212,11 +212,11 @@ export const createInteractionSession = (
     }
     busy = true;
     startingEvents = [];
-    let loaded: ConversationSessionSnapshot;
+    let loaded: ConversationSnapshot;
     let agentRun: InteractionRun["agentRun"];
     let log: InteractionEventLog;
     let submittedInput: JsonValue;
-    let reservation: ConversationSessionReservation | undefined;
+    let reservation: ConversationStoreReservation | undefined;
     try {
       loaded = await load();
       if (
@@ -334,7 +334,7 @@ export const createInteractionSession = (
         const providerSession = run.providerSession
           ? registerInteractionProviderSession(run.providerSession)
           : loaded.value.providerSession;
-        const value: ConversationSessionValue = {
+        const value: ConversationState = {
           conversationId: options.conversationId,
           revision: loaded.value.revision + 1,
           turns: [

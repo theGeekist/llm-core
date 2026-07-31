@@ -58,13 +58,13 @@ responses throw `ToolExecutionCoordinationError`. See
 
 ## Resume and agent outcomes
 
-`WorkflowResumeOutcome` distinguishes `rejected`, `incompatible`,
+Runtime `ControlledWorkflowResult` distinguishes `rejected`, `incompatible`,
 `reconciliation-required`, and `failed` from completed intervention
 dispositions. A compatibility failure means the registered checkpoint cannot
 run under the expected runtime or workflow contract. Reconciliation is
 required when a meaningful effect is recorded as `started` or `indeterminate`.
 
-An agent `RunResult` terminates as `completed`, `failed`, `denied`, or
+An `AgentResult` terminates as `completed`, `failed`, `denied`, or
 `cancelled`. Its optional `reasonCode` is a safe machine-readable category, not
 provider-native error payload. See [State and durability](/capabilities/state)
 and [Run an agent](/guide/agent).

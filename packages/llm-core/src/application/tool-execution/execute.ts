@@ -9,33 +9,34 @@ import {
   cancellationId,
   policyEvaluationId,
   verifyApproval,
-  type ApprovalRef,
-  type ApprovalDecision,
-  type CancellationRef,
   type ConcurrencyLease,
   type ConcurrencyRequest,
   type PolicyEvaluationRef,
-  type PolicyFact,
+} from "../../features/control/runtime";
+import type {
+  ApprovalDecision,
+  ApprovalRef,
+  CancellationRef,
+  PolicyFact,
 } from "../../features/control/public";
 import {
-  actionDigestsEqual,
-  reservationKeysEqual,
   type EventSink,
-  type ExecutionEvent,
-  type ExecutionEventKind,
+  type ToolExecutionEvent,
+  type ToolExecutionEventKind,
   type RedactionMetadata,
   type ToolExecutionReceipt,
   type ToolReceiptState,
   type ToolReceiptTransition,
 } from "../../features/evidence/public";
+import { actionDigestsEqual, reservationKeysEqual } from "../../features/evidence/runtime";
 import {
   bindAction,
-  isRegisteredToolBinding,
+  isRegisteredExecutableTool,
+  rebindValidatedToolCall,
   type BoundAction,
   type EffectClass,
   type ToolExecutionControl,
-} from "../../features/tooling/public";
-import { rebindValidatedToolCall } from "../../features/tooling/orchestration";
+} from "../../features/tooling/orchestration";
 import type {
   ControlledToolExecutionOutcome,
   EventDelivery,
@@ -80,7 +81,7 @@ const requireRunId = (input: ExecuteControlledToolInput): RunId => {
   return runId;
 };
 
-const eventKind = (from: ToolReceiptState, to: ToolReceiptState): ExecutionEventKind => {
+const eventKind = (from: ToolReceiptState, to: ToolReceiptState): ToolExecutionEventKind => {
   if (to === "awaiting_policy") {
     return "tool.policy.requested";
   }
@@ -114,7 +115,7 @@ const eventKind = (from: ToolReceiptState, to: ToolReceiptState): ExecutionEvent
  * Receipt persistence is authoritative and an unavailable sink cannot delay
  * authorization, execution, or recovery.
  */
-const project = (sink: EventSink | undefined, event: ExecutionEvent): EventDelivery => {
+const project = (sink: EventSink | undefined, event: ToolExecutionEvent): EventDelivery => {
   if (!sink) {
     return "not-configured";
   }
@@ -153,7 +154,7 @@ const eventFacts = (receipt: ToolExecutionReceipt, reasonCode?: string) => ({
 const reservationEvent = (
   input: ExecuteControlledToolInput,
   receipt: ToolExecutionReceipt,
-): ExecutionEvent => ({
+): ToolExecutionEvent => ({
   eventId: mintedId(input.facts.newEventId(), "Tool execution event"),
   kind: "tool.receipt.reserved",
   occurredAt: input.facts.now(),
@@ -170,7 +171,7 @@ const transitionEvent = (
   input: ExecuteControlledToolInput,
   receipt: ToolExecutionReceipt,
   transition: ToolReceiptTransition,
-): ExecutionEvent => ({
+): ToolExecutionEvent => ({
   eventId: mintedId(input.facts.newEventId(), "Tool execution event"),
   kind: eventKind(transition.from, transition.to),
   occurredAt: transition.recordedAt,
@@ -394,13 +395,13 @@ const existingOutcome = (receipt: ToolExecutionReceipt): ControlledToolExecution
 export const executeControlledTool = async (
   originalInput: ExecuteControlledToolInput,
 ): Promise<ControlledToolExecutionOutcome> => {
-  if (!isRegisteredToolBinding(originalInput.binding)) {
-    throw new TypeError("Controlled tool execution requires a registered ToolBinding.");
+  if (!isRegisteredExecutableTool(originalInput.tool)) {
+    throw new TypeError("Controlled tool execution requires a registered ExecutableTool.");
   }
-  const validatedCall = await originalInput.binding.validate({ call: originalInput.call });
+  const validatedCall = await originalInput.tool.validate({ call: originalInput.call });
   let input = { ...originalInput, call: validatedCall };
   const requestedRunId = requireRunId(input);
-  const effectClass = input.binding.spec.effect.class;
+  const effectClass = input.tool.definition.effect.class;
   const isMeaningful = meaningfulEffect(effectClass);
   if (isMeaningful && !input.call.idempotencyKey) {
     throw new ToolExecutionCoordinationError(
@@ -409,7 +410,7 @@ export const executeControlledTool = async (
   }
 
   const bound = await bindAction({
-    spec: input.binding.spec,
+    definition: input.tool.definition,
     call: input.call,
     securityDomain: input.securityDomain,
     keyRef: input.digestKeyRef,
@@ -466,7 +467,7 @@ export const executeControlledTool = async (
     input = {
       ...input,
       call: rebindValidatedToolCall({
-        binding: input.binding,
+        tool: input.tool,
         call: input.call,
         toolCallId: reservation.receipt.toolCallId,
         runId: reservation.receipt.runId,
@@ -664,7 +665,7 @@ export const executeControlledTool = async (
   const concurrencyRequest: ConcurrencyRequest = {
     runId,
     toolCallId: input.call.toolCallId,
-    mode: input.binding.spec.execution.concurrency,
+    mode: input.tool.definition.execution.concurrency,
   };
   const lease = await acquireInterruptibly(input, concurrencyRequest, control);
   if (!lease) {
@@ -749,7 +750,7 @@ export const executeControlledTool = async (
     }
 
     try {
-      const result = await input.binding.execute({ call: input.call, control });
+      const result = await input.tool.execute({ call: input.call, control });
       stopCancellationObservation();
       await cancellationPersistence;
       if (result.toolCallId !== input.call.toolCallId) {

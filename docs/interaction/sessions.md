@@ -1,14 +1,16 @@
 # Sessions
 
 `createInteractionSession` gives one conversation exclusive execution and
-snapshot ownership around an `AgentRunner`.
+snapshot ownership around an `AgentRunner`. This is the extension API for hosts
+that need explicit lifecycle control; common application code starts with
+`createConversation`.
 
 ## Required ports
 
 | Option           | Responsibility                                               |
 | ---------------- | ------------------------------------------------------------ |
 | `conversationId` | Canonical conversation identity                              |
-| `agent`          | Prepared agent specification                                 |
+| `agent`          | Prepared `AgentDefinition`                                   |
 | `runner`         | Starts the agent run and reports capabilities                |
 | `store`          | Loads, reserves, saves, and releases conversation revisions  |
 | `identity`       | Supplies timestamps plus snapshot and reservation identities |
@@ -51,9 +53,9 @@ hosts.
 
 ## Stored value
 
-`ConversationSessionSnapshot` contains:
+`ConversationSnapshot` contains:
 
-- terminal conversation turns;
+- terminal `ConversationRunRecord` values;
 - the deterministic interaction projection;
 - an optional opaque `ProviderSessionRef`;
 - the conversation revision.

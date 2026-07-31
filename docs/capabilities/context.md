@@ -1,13 +1,13 @@
 # Context
 
-A `ContextManifest` records exactly what entered an invocation, run, or step.
+A `ContextSelection` records exactly what entered an invocation, run, or step.
 Each entry has portable content or a storage-neutral reference, provenance,
 priority, and cost. The manifest applies an explicit entry, byte, and optional
 token budget.
 
-<<< @/snippets/v2/context-manifest.ts
+<<< @/snippets/v2/context-selection.ts
 
-`createContextManifest` validates budget accounting, rejects duplicate entries,
+`selectContext` validates budget accounting, rejects duplicate entries,
 derives canonical digests, clones the input, and freezes the result. Entry
 order remains meaningful even though JSON object key order is canonicalized.
 
@@ -26,7 +26,7 @@ flowchart TB
   Source["Source ResourceRef"]
   Evidence["EvidenceRef"]
   Entry["ContextEntry<br/>content, provenance, cost"]
-  Manifest["ContextManifest<br/>ordered and budgeted"]
+  Manifest["ContextSelection<br/>ordered and budgeted"]
   Invocation["Invocation, run, or step"]
 
   Source -->|"retrieved or derived from"| Entry

@@ -11,7 +11,7 @@ import type {
   StepId,
 } from "#contracts";
 import type { MaybePromise } from "#shared/maybe";
-import type { ActionDigest } from "../tooling/public";
+import type { ActionDigest } from "../tooling/runtime";
 
 declare const checkpointIdBrand: unique symbol;
 declare const interventionIdBrand: unique symbol;

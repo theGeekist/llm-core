@@ -1,15 +1,15 @@
-import { createLocalAgentRunner } from "@geekist/llm-core";
 import {
+  createLocalAgentRunner,
   createModelToolAgentProgram,
   type AgentRunIdentityPort,
-  type ConversationStore,
-} from "@geekist/llm-core/agent";
+} from "@geekist/llm-core/agent/runtime";
 import type { ContractVersion } from "@geekist/llm-core/contracts";
+import type { ConversationStore } from "@geekist/llm-core/memory";
 import type { Model } from "@geekist/llm-core/model";
-import type { ToolBinding } from "@geekist/llm-core/tools";
+import type { ExecutableTool } from "@geekist/llm-core/tools/runtime";
 
 declare const model: Model;
-declare const readOnlyTools: readonly ToolBinding[];
+declare const readOnlyTools: readonly ExecutableTool[];
 declare const conversation: ConversationStore;
 declare const identity: AgentRunIdentityPort;
 declare const runnerVersion: ContractVersion;

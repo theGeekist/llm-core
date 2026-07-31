@@ -1,9 +1,4 @@
-import {
-  composeWorkflow,
-  defineWorkflow,
-  runWorkflow,
-  type WorkflowExecutionOutcome,
-} from "@geekist/llm-core/workflow";
+import { defineWorkflow, type WorkflowResult } from "@geekist/llm-core/workflow";
 
 type State = {
   readonly draft: string;
@@ -14,9 +9,7 @@ type Pause = {
   readonly reason: "review";
 };
 
-const draft = defineWorkflow<State, Pause>({
-  workflowId: "example.draft",
-  version: "2.0.0",
+const publishing = defineWorkflow<State, Pause>({
   steps: [
     {
       key: "draft",
@@ -26,13 +19,6 @@ const draft = defineWorkflow<State, Pause>({
         state: { ...state, draft: "A portable result." },
       }),
     },
-  ],
-});
-
-const review = defineWorkflow<State, Pause>({
-  workflowId: "example.review",
-  version: "2.0.0",
-  steps: [
     {
       key: "review",
       effect: "none",
@@ -48,13 +34,7 @@ const review = defineWorkflow<State, Pause>({
   ],
 });
 
-const workflow = composeWorkflow({
-  workflowId: "example.publish",
-  version: "2.0.0",
-  definitions: [draft, review],
-});
-
-const outcome: WorkflowExecutionOutcome<State, Pause> = await runWorkflow(workflow, {
+const outcome: WorkflowResult<State, Pause> = await publishing.run({
   draft: "",
   checked: false,
 });

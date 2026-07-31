@@ -4,7 +4,7 @@ layout: home
 hero:
   name: llm-core
   text: Orchestrate LLM logic instead of gluing it
-  tagline: Describe agents as portable data, execute them through typed runners, and project canonical events into application state.
+  tagline: Create ready agents and tools for common work, then reach for explicit runtime contracts when you implement an extension.
   image:
     src: /logo.png
     alt: llm-core logo
@@ -17,14 +17,14 @@ hero:
       link: /guide/core-concepts
 
 features:
-  - title: Specs describe agents
-    details: AgentSpec captures portable intent. A compatible AgentRunner prepares it and starts a live AgentRun.
+  - title: Agents start ready
+    details: createAgent returns an Agent that can run directly or start a live AgentRun.
   - title: Capabilities are ports
     details: Stable contracts keep model, tool, control, evidence, state, and storage concerns separate from adapters.
   - title: Effects follow one path
     details: Policy, approval, execution, and receipts remain distinct, so meaningful effects fail closed.
   - title: Events stay precise
-    details: AgentRunEvent, ExecutionEvent, and InteractionEvent each describe a different lifecycle.
+    details: AgentEvent, ToolExecutionEvent, and InteractionEvent each describe a different lifecycle.
 ---
 
 ## Install
@@ -37,15 +37,16 @@ npm install @geekist/llm-core
 
 ## The short version
 
-An [`AgentSpec`](/reference/vocabulary#agents) describes an agent. An
-[`AgentRunner`](/reference/vocabulary#agents) prepares that spec, starts an
-[`AgentRun`](/reference/vocabulary#agents), and produces one terminal
-`RunResult`. The live run emits typed `AgentRunEvent` values.
+[`createAgent`](/guide/agent) returns a ready
+[`Agent`](/reference/vocabulary#agents). Run it directly for one
+`AgentResult`, or start an [`AgentRun`](/reference/vocabulary#agents) that
+emits typed `AgentEvent` values.
 
-A `WorkflowDefinition` describes ordered application steps. The workflow
-runtime executes those steps and returns a `WorkflowExecutionOutcome`.
-Interactions reduce canonical `InteractionEvent` values into deterministic
-application state.
+`defineWorkflow` turns ordered application steps into a ready `Workflow`.
+Calling `Workflow.run` returns a `WorkflowResult`.
+`createConversation` sends input or streams projected `ConversationEvent`
+values. Runtime and adapter authors use `/interaction` to reduce raw
+`InteractionEvent` values into deterministic application state.
 
 These lifecycles share portable contracts, but they do not collapse into one
 generic event or result type.

@@ -11,22 +11,28 @@ export {
   projectInteractionEvent,
   reduceInteractionProjection,
 } from "./projection";
+export { createConversation } from "./conversation";
 export { createInteractionSession } from "./session";
-export { registerConversationSessionSnapshot } from "./registration";
+export { registerConversationSnapshot } from "./registration";
 export {
   isSafeInteractionProjectionJson,
   isRegisteredInteractionContentEvent,
   registerInteractionContentEvent,
 } from "./content-registration";
 export type {
-  ConversationSessionLoadRequest,
-  ConversationSessionSaveRequest,
-  ConversationSessionReservation,
-  ConversationSessionReservationRequest,
-  ConversationSessionSnapshot,
-  ConversationSessionStore,
-  ConversationSessionValue,
-  ConversationTurn,
+  Conversation,
+  ConversationConfig,
+  ConversationEvent,
+  ConversationResult,
+  ConversationRun,
+  ConversationStoreLoadRequest,
+  ConversationStoreSaveRequest,
+  ConversationStoreReservation,
+  ConversationStoreReservationRequest,
+  ConversationSnapshot,
+  ConversationStore,
+  ConversationState,
+  ConversationRunRecord,
   CreateInteractionSessionOptions,
   InteractionEvent,
   InteractionContentEvent,
@@ -41,5 +47,4 @@ export type {
   InteractionSendRequest,
   InteractionSession,
   InteractionSessionIdentityPort,
-  InteractionUiEvent,
 } from "./types";

@@ -2,10 +2,10 @@ import { describe, expect, test } from "bun:test";
 import { contractVersion, digest, schemaRef } from "#contracts";
 import {
   checkResumeCompatibility,
-  registerResumableCheckpoint,
   type ResumeCompatibility,
   type ResumeCompatibilityFailure,
 } from "../../src/features/state/public";
+import { registerResumableCheckpoint } from "../../src/features/state/runtime";
 import { COMPATIBILITY, checkpoint } from "./helpers";
 
 const cases: Array<{

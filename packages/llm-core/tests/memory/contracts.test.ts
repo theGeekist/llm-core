@@ -9,7 +9,7 @@ import {
 } from "#contracts";
 import {
   registerConversationRecord,
-  registerConversationTurn,
+  createConversationMessage,
 } from "../../src/features/memory/public";
 import { conversationId } from "../storage/helpers";
 
@@ -45,7 +45,7 @@ describe("conversation contracts", () => {
     const toolCallId = coreId<ToolCallId>("0190bd0c-0000-4000-8000-000000000104");
     const resourceId = coreId<ResourceId>("0190bd0c-0000-4000-8000-000000000105");
     const sha = digest("44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a");
-    const turn = registerConversationTurn({
+    const turn = createConversationMessage({
       role: "assistant",
       content: [
         { kind: "tool-call", toolCallId, name: "lookup", arguments: { query: "safe" } },
@@ -81,7 +81,7 @@ describe("conversation contracts", () => {
     };
 
     expect(
-      registerConversationTurn({
+      createConversationMessage({
         role: "assistant",
         content: [
           { kind: "json", value },
@@ -98,7 +98,7 @@ describe("conversation contracts", () => {
 
   test("rejects binary, native metadata, locators and non-canonical identity", () => {
     expect(() =>
-      registerConversationTurn({
+      createConversationMessage({
         role: "user",
         content: [
           {
@@ -113,7 +113,7 @@ describe("conversation contracts", () => {
       }),
     ).toThrow();
     expect(() =>
-      registerConversationTurn({
+      createConversationMessage({
         role: "user",
         content: [{ kind: "text", text: "safe", signedUrl: "https://secret" }],
       }),
@@ -140,19 +140,19 @@ describe("conversation contracts", () => {
 
     for (const value of sensitiveValues) {
       expect(() =>
-        registerConversationTurn({
+        createConversationMessage({
           role: "assistant",
           content: [{ kind: "json", value }],
         }),
       ).toThrow();
       expect(() =>
-        registerConversationTurn({
+        createConversationMessage({
           role: "assistant",
           content: [{ kind: "tool-call", toolCallId, name: "unsafe", arguments: value }],
         }),
       ).toThrow();
       expect(() =>
-        registerConversationTurn({
+        createConversationMessage({
           role: "assistant",
           content: [
             {
@@ -188,19 +188,19 @@ describe("conversation contracts", () => {
     for (const lookalike of lookalikes) {
       const value = { nested: [lookalike] };
       expect(() =>
-        registerConversationTurn({
+        createConversationMessage({
           role: "assistant",
           content: [{ kind: "json", value }],
         }),
       ).toThrow();
       expect(() =>
-        registerConversationTurn({
+        createConversationMessage({
           role: "assistant",
           content: [{ kind: "tool-call", toolCallId, name: "unsafe", arguments: value }],
         }),
       ).toThrow();
       expect(() =>
-        registerConversationTurn({
+        createConversationMessage({
           role: "assistant",
           content: [
             {

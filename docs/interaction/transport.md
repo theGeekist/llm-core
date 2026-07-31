@@ -5,7 +5,7 @@ Interaction has two separate continuity mechanisms:
 | Mechanism                                     | Lifetime                  | Purpose                                            |
 | --------------------------------------------- | ------------------------- | -------------------------------------------------- |
 | `LiveContinuation<InteractionLiveConnection>` | Process-local             | Reattach to the same active interaction connection |
-| `ConversationSessionSnapshot`                 | Portable and store-backed | Load completed conversation state for a later run  |
+| `ConversationSnapshot`                        | Portable and store-backed | Load completed conversation state for a later run  |
 
 Neither is a workflow checkpoint. A provider session, when available, remains
 an opaque `ProviderSessionRef` and is passed only to a runner that declares

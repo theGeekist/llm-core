@@ -1,25 +1,14 @@
-import {
-  type AgentSpec,
-  type AgentRun,
-  type AgentRunner,
-  type RunResult,
-} from "@geekist/llm-core/agent";
-import { contractVersion } from "@geekist/llm-core/contracts";
+import { createAgent, type Agent, type AgentResult, type AgentRun } from "@geekist/llm-core";
+import type { Model } from "@geekist/llm-core/model";
 
-const spec: AgentSpec = {
-  agentId: "example.support",
-  version: contractVersion("2.0.0"),
+declare const model: Model;
+
+const agent: Agent = createAgent({
+  model,
   instructions: "Answer from the supplied context.",
-  effectRequirement: "read-only",
-};
+});
 
-declare const runner: AgentRunner;
-const prepared = await runner.prepare(spec);
-declare const run: AgentRun;
-declare const result: RunResult;
+const run: AgentRun = agent.start({ question: "What changed?" });
+const result: AgentResult = await run.result();
 
-void spec;
-void prepared;
-void runner;
-void run;
-void result;
+console.log(result.status);

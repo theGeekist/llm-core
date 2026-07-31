@@ -1,5 +1,5 @@
 import type { EvidenceRef, PrincipalRef, RunId, ToolCallId } from "#contracts";
-import type { ActionDigest } from "../tooling/public";
+import type { ActionDigest } from "../tooling/runtime";
 import {
   actionDigestsMatch,
   isCanonicalTimestamp,

@@ -2,7 +2,7 @@ import { describe, expect, test } from "bun:test";
 import { createHostConversationStores } from "../../src/adapters/providers/ai-sdk/storage";
 import { createLangChainConversationStateStore } from "../../src/adapters/frameworks/langchain/storage";
 import { createLlamaIndexConversationStore } from "../../src/adapters/frameworks/llamaindex/storage";
-import { registerConversationTurn } from "../../src/features/memory/public";
+import { createConversationMessage } from "../../src/features/memory/public";
 import { context, conversationId } from "../storage/helpers";
 
 describe("qualified conversation adapters", () => {
@@ -57,7 +57,7 @@ describe("qualified conversation adapters", () => {
       await stores.conversations.append({
         context,
         conversationId,
-        turn: registerConversationTurn({
+        turn: createConversationMessage({
           role: "assistant",
           content: [{ kind: "text", text: "ok" }],
           occurredAt: "2026-07-29T10:32:00.000Z",
@@ -101,7 +101,7 @@ describe("qualified conversation adapters", () => {
       stores.conversations.append({
         context,
         conversationId,
-        turn: registerConversationTurn({
+        turn: createConversationMessage({
           role: "assistant",
           content: [{ kind: "json", value: { no: "text" } }],
         }),
@@ -116,7 +116,7 @@ describe("qualified conversation adapters", () => {
       writeOnly.conversations.append({
         context,
         conversationId,
-        turn: registerConversationTurn({
+        turn: createConversationMessage({
           role: "assistant",
           content: [{ kind: "json", value: { no: "text" } }],
         }),
@@ -205,7 +205,7 @@ describe("qualified conversation adapters", () => {
       stores.conversations.append({
         context,
         conversationId,
-        turn: registerConversationTurn({
+        turn: createConversationMessage({
           role: "assistant",
           content: [{ kind: "text", text: "timestamped" }],
         }),
@@ -296,7 +296,7 @@ describe("qualified conversation adapters", () => {
       await store.append({
         context,
         conversationId,
-        turn: registerConversationTurn({
+        turn: createConversationMessage({
           role: "tool",
           content: [{ kind: "text", text: "result" }],
         }),

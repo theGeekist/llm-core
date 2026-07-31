@@ -1,9 +1,9 @@
 export {
   conversationId,
   isConversationRecord,
-  isConversationTurn,
+  isConversationMessage,
   registerConversationRecord,
-  registerConversationTurn,
+  createConversationMessage,
 } from "./validation";
 export type {
   ConversationAppendInput,
@@ -17,5 +17,5 @@ export type {
   ConversationStateStore,
   ConversationStore,
   ConversationToolResultPart,
-  ConversationTurn,
+  ConversationMessage,
 } from "./types";

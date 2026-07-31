@@ -18,8 +18,8 @@ import type {
   ContextEntry,
   ContextEntryInput,
   ContextEntrySource,
-  ContextManifest,
-  ContextManifestInput,
+  ContextSelection,
+  ContextSelectionInput,
   ContextProvenance,
   ContextScope,
 } from "./types";
@@ -182,7 +182,7 @@ const budgetUsage = (entries: readonly ContextEntry[]): ContextBudgetUsage => {
 
 const assertWithinBudget = (usage: ContextBudgetUsage, budget: ContextBudget): void => {
   if (usage.entries > budget.maxEntries || usage.bytes > budget.maxBytes) {
-    throw new RangeError("Context manifest exceeds its entry or byte budget.");
+    throw new RangeError("Context selection exceeds its entry or byte budget.");
   }
   if (budget.maxTokens !== undefined && usage.tokens === undefined) {
     throw new TypeError("A token budget requires an explicit token cost for every context entry.");
@@ -192,25 +192,25 @@ const assertWithinBudget = (usage: ContextBudgetUsage, budget: ContextBudget): v
     usage.tokens !== undefined &&
     usage.tokens > budget.maxTokens
   ) {
-    throw new RangeError("Context manifest exceeds its token budget.");
+    throw new RangeError("Context selection exceeds its token budget.");
   }
 };
 
-export const createContextManifest = (input: ContextManifestInput): ContextManifest => {
+export const selectContext = (input: ContextSelectionInput): ContextSelection => {
   if (
     !isPlainRecord(input) ||
     !hasExactKeys(input, ["scope", "budget", "entries"]) ||
     !Array.isArray(input.entries) ||
     !isDenseArray(input.entries)
   ) {
-    throw new TypeError("Context manifest input must be a closed portable record.");
+    throw new TypeError("Context selection input must be a closed portable record.");
   }
   assertScope(input.scope);
   assertBudget(input.budget);
   const entries = input.entries.map(createContextEntry);
   const identities = new Set(entries.map((entry) => entry.identity.value));
   if (identities.size !== entries.length) {
-    throw new TypeError("Context manifests cannot contain duplicate entry identities.");
+    throw new TypeError("Context selections cannot contain duplicate entry identities.");
   }
   const usage = budgetUsage(entries);
   assertWithinBudget(usage, input.budget);

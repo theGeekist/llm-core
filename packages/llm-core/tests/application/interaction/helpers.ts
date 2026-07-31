@@ -11,10 +11,10 @@ import {
 } from "#contracts";
 import type {
   AgentRun,
-  AgentRunEvent,
-  AgentRunRequest,
-  PreparedAgentSpec,
-  RunResult,
+  AgentEvent,
+  AgentStartRequest,
+  PreparedAgentDefinition,
+  AgentResult,
 } from "../../../src/features/agent/public";
 import {
   registerInteractionContentEvent,
@@ -33,7 +33,7 @@ export const INVOCATION_ID = newCoreId<InvocationId>("018f0f4e-8c5b-7a91-8c3b-12
 export const PROVIDER_SESSION_ID = externalId<ProviderSessionId>("provider-session-1");
 export const NOW = "2026-07-29T15:00:00.000Z";
 
-export const AGENT: PreparedAgentSpec = prepareWithLocalRunner({
+export const AGENT: PreparedAgentDefinition = prepareWithLocalRunner({
   agentId: "interaction-test-agent",
   version: contractVersion("2.0.0"),
   instructions: "Test interaction orchestration.",
@@ -44,10 +44,10 @@ export const eventId = (suffix: string): EventId =>
   coreId<EventId>(`018f0f4e-8c5b-7a91-8c3b-123456789${suffix}`);
 
 export const agentEvent = (
-  kind: AgentRunEvent["kind"],
+  kind: AgentEvent["kind"],
   sequence: number,
-  facts: AgentRunEvent["facts"],
-): AgentRunEvent =>
+  facts: AgentEvent["facts"],
+): AgentEvent =>
   ({
     eventId: eventId(`e${String(sequence).padStart(2, "0")}`),
     kind,
@@ -55,7 +55,7 @@ export const agentEvent = (
     sequence,
     identity: { runId: RUN_ID },
     facts,
-  }) as AgentRunEvent;
+  }) as AgentEvent;
 
 export const contentEvent = (
   kind: InteractionContentEvent["kind"],
@@ -73,8 +73,8 @@ export const contentEvent = (
   } as InteractionContentEvent);
 
 export const completedRun = (
-  request: AgentRunRequest,
-  events?: readonly AgentRunEvent[],
+  request: AgentStartRequest,
+  events?: readonly AgentEvent[],
   runId: RunId = RUN_ID,
 ): AgentRun => {
   const sourceEvents = (
@@ -92,8 +92,8 @@ export const completedRun = (
       ? {}
       : { eventId: eventId(`d${String(event.sequence).padStart(2, "0")}`) }),
     identity: { ...event.identity, runId },
-  })) as AgentRunEvent[];
-  const resultDraft: RunResult = {
+  })) as AgentEvent[];
+  const resultDraft: AgentResult = {
     identity: { runId },
     status: "completed",
     output: { text: "done" },
@@ -103,7 +103,7 @@ export const completedRun = (
       sessionId: PROVIDER_SESSION_ID,
     },
   };
-  const result: RunResult = Object.freeze(resultDraft);
+  const result: AgentResult = Object.freeze(resultDraft);
   return Object.freeze({
     identity: result.identity,
     async *events() {

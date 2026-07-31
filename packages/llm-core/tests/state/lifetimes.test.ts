@@ -5,12 +5,21 @@ import {
   createProviderSessionRef,
   createSnapshot,
   isLiveContinuation,
+} from "../../src/features/state/public";
+import {
   isRegisteredResumableCheckpoint,
   registerResumableCheckpoint,
-} from "../../src/features/state/public";
+} from "../../src/features/state/runtime";
 import { COMPATIBILITY, NOW, checkpoint, durableJobId, providerSessionId } from "./helpers";
+import * as state from "../../src/features/state/public";
 
 describe("state lifetime boundaries", () => {
+  test("keeps checkpoint registration and recognition internal", () => {
+    expect(state).not.toHaveProperty("isRegisteredResumableCheckpoint");
+    expect(state).not.toHaveProperty("registerRecordedEffect");
+    expect(state).not.toHaveProperty("registerResumableCheckpoint");
+  });
+
   test("live continuations are process-local and cannot masquerade as JSON checkpoints", () => {
     const continuation = createLiveContinuation({ socket: new Map([["live", true]]) });
 

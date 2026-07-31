@@ -1,9 +1,5 @@
 import type { Digest, SchemaRef } from "#contracts";
-import type {
-  RegisteredResumableCheckpoint,
-  ResumeCompatibility,
-  RuntimeCompatibility,
-} from "./types";
+import type { ResumableCheckpoint, ResumeCompatibility, RuntimeCompatibility } from "./types";
 import { sortedNativeReferenceKeys } from "./validation";
 
 export type ResumeCompatibilityFailure =
@@ -38,7 +34,7 @@ const runtimeMismatch = (
 };
 
 export const checkResumeCompatibility = (
-  checkpoint: RegisteredResumableCheckpoint,
+  checkpoint: ResumableCheckpoint,
   expected: ResumeCompatibility,
 ): ResumeCompatibilityResult => {
   const actual = checkpoint.compatibility;

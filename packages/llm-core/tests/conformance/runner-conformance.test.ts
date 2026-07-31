@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import { createDeterministicFakeRemoteRunner } from "../../src/adapters/runtimes";
-import { registerResumableCheckpoint } from "../../src/features/state/public";
+import { registerResumableCheckpoint } from "../../src/features/state/runtime";
 import { isUuidV7 } from "#contracts";
 import {
   assertPortableRunnerConformance,

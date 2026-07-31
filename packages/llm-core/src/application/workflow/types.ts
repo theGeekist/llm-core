@@ -1,6 +1,6 @@
 import type { JsonValue, StepId } from "#contracts";
 import type { MaybePromise } from "#shared/maybe";
-import type { ActionDigest, ActionDigestPort, BoundAction } from "../../features/tooling/public";
+import type { ActionDigest, ActionDigestPort, BoundAction } from "../../features/tooling/runtime";
 import type {
   CheckpointId,
   InterventionAuthenticationPort,
@@ -9,10 +9,10 @@ import type {
   InterventionId,
   InterventionRequest,
   RecordedEffect,
-  RegisteredResumableCheckpoint,
   ResumeCompatibility,
   ResumeCompatibilityFailure,
 } from "../../features/state/public";
+import type { RegisteredResumableCheckpoint } from "../../features/state/runtime";
 
 export interface WorkflowDecisionToken {
   readonly decisionToken: string;
@@ -102,7 +102,7 @@ export interface WorkflowClock {
   now(): string;
 }
 
-export interface WorkflowStepResult {
+export interface ControlledWorkflowStepResult {
   readonly state: JsonValue;
   /** Required for a newly completed meaningful effect. */
   readonly recordedEffect?: RecordedEffect;
@@ -111,23 +111,23 @@ export interface WorkflowStepResult {
 export interface PassiveWorkflowStep {
   readonly stepId: StepId;
   readonly effect: "none";
-  execute(state: JsonValue): MaybePromise<WorkflowStepResult>;
+  execute(state: JsonValue): MaybePromise<ControlledWorkflowStepResult>;
 }
 
-export interface MeaningfulWorkflowStep {
+export interface ControlledWorkflowStep {
   readonly stepId: StepId;
   readonly effect: "meaningful";
   readonly action: BoundAction;
-  execute(input: MeaningfulWorkflowStepExecuteInput): MaybePromise<WorkflowStepResult>;
+  execute(input: ControlledWorkflowStepExecuteInput): MaybePromise<ControlledWorkflowStepResult>;
 }
 
-export interface MeaningfulWorkflowStepExecuteInput {
+export interface ControlledWorkflowStepExecuteInput {
   readonly state: JsonValue;
   readonly action: BoundAction;
   readonly started: RecordedEffect;
 }
 
-export type ResumableWorkflowStep = PassiveWorkflowStep | MeaningfulWorkflowStep;
+export type ResumableWorkflowStep = PassiveWorkflowStep | ControlledWorkflowStep;
 
 export interface ResumeInterventionWorkflowInput {
   readonly checkpoint: RegisteredResumableCheckpoint;
@@ -142,7 +142,7 @@ export interface ResumeInterventionWorkflowInput {
   readonly steps: readonly ResumableWorkflowStep[];
 }
 
-export type WorkflowResumeOutcome =
+export type ControlledWorkflowResult =
   | {
       readonly status: "completed";
       readonly state: JsonValue;

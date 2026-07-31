@@ -6,7 +6,8 @@ import type {
   JsonValue,
   ToolCallId,
 } from "#contracts";
-import type { ModelRequest, RegisteredModelProfile } from "../../../features/model/public";
+import type { ModelRequest } from "../../../features/model/public";
+import type { ModelProfile } from "../../../features/model/runtime";
 import type { MaybePromise } from "#shared/maybe";
 
 export type AiSdk7ToolCallCorrelationScope =
@@ -66,7 +67,7 @@ export type AiSdk7ProviderMetadataRedactor = (metadata: ProviderMetadata) => Jso
 
 export interface CreateAiSdk7ModelInput {
   model: import("ai").LanguageModel;
-  profile: RegisteredModelProfile;
+  profile: ModelProfile;
   toolCallCorrelationStore: AiSdk7ToolCallCorrelationStore;
   resolveAbortSignal?: AiSdk7AbortSignalResolver;
   classifyToolApproval?: AiSdk7ToolApprovalPort;

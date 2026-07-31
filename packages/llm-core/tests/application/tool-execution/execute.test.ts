@@ -17,20 +17,15 @@ import {
   type TenantId,
   type ToolCallId,
 } from "#contracts";
-import { executeControlledTool } from "../../../src/application/tool-execution/public";
-import type { ToolExecutionFactsPort } from "../../../src/application/tool-execution/public";
+import { type ApprovalDecision, type PolicyDecision } from "../../../src/features/control/public";
 import {
   approvalId,
   cancellationId,
   createConcurrencyGate,
   policyEvaluationId,
-  type ApprovalDecision,
-  type PolicyDecision,
   type PolicyEvaluationPort,
-} from "../../../src/features/control/public";
+} from "../../../src/features/control/runtime";
 import {
-  classifyExistingReservation,
-  isToolReceiptTransitionAllowed,
   type AppendToolReceiptTransition,
   type AppendToolReceiptTransitionResult,
   type EventSink,
@@ -41,15 +36,21 @@ import {
   type ToolReceiptJournal,
 } from "../../../src/features/evidence/public";
 import {
+  classifyExistingReservation,
+  isToolReceiptTransitionAllowed,
+} from "../../../src/features/evidence/runtime";
+import {
   actionDigest,
-  createToolBinding,
+  createExecutableTool,
+  executeControlledTool,
   registerToolSchema,
   toolId,
   type ActionDigestPort,
-  type ToolBinding,
+  type ExecutableTool,
   type ToolCall,
-  type ToolSpec,
-} from "../../../src/features/tooling/public";
+  type ToolDefinition,
+  type ToolExecutionFactsPort,
+} from "../../../src/features/tooling/runtime";
 
 const RUN_ID = coreId<RunId>("018f0f4e-8c5b-7a91-8c3b-123456789001");
 const CALL_ID = coreId<ToolCallId>("018f0f4e-8c5b-7a91-8c3b-123456789002");
@@ -83,7 +84,7 @@ const INPUT_SCHEMA = await registerToolSchema(
   { digest: () => digest("a".repeat(64)) },
 );
 
-const SPEC: ToolSpec = {
+const SPEC: ToolDefinition = {
   id: toolId("billing.invoice.create"),
   version: contractVersion("1.0.0"),
   description: "Create invoice",
@@ -232,10 +233,10 @@ const allowPolicy = {
 
 const baseInput = (
   journal: ToolReceiptJournal,
-  execute: NonNullable<Parameters<typeof createToolBinding>[0]["execute"]>,
+  execute: NonNullable<Parameters<typeof createExecutableTool>[0]["execute"]>,
 ) => ({
-  binding: createToolBinding({
-    spec: SPEC,
+  tool: createExecutableTool({
+    definition: SPEC,
     argumentValidator: { validate: () => ({ valid: true }) },
     execute,
   }),
@@ -250,7 +251,7 @@ const baseInput = (
 });
 
 describe("controlled tool execution", () => {
-  it("rejects shaped and cloned ToolBinding forgeries before controlled side effects", async () => {
+  it("rejects shaped and cloned ExecutableTool forgeries before controlled side effects", async () => {
     const journal = new MemoryJournal();
     let validations = 0;
     let executions = 0;
@@ -260,17 +261,17 @@ describe("controlled tool execution", () => {
       executions += 1;
       return { toolCallId: CALL_ID, status: "succeeded" as const, content: [] };
     });
-    const validate = input.binding.validate;
+    const validate = input.tool.validate;
     const forged = {
-      ...input.binding,
-      validate: (validationInput: Parameters<ToolBinding["validate"]>[0]) => {
+      ...input.tool,
+      validate: (validationInput: Parameters<ExecutableTool["validate"]>[0]) => {
         validations += 1;
         return validate(validationInput);
       },
-    } as ToolBinding;
+    } as ExecutableTool;
     const guardedInput = {
       ...input,
-      binding: forged,
+      tool: forged,
       facts: {
         ...input.facts,
         newReceiptId: () => {
@@ -287,7 +288,7 @@ describe("controlled tool execution", () => {
     };
 
     await expect(executeControlledTool(guardedInput)).rejects.toThrow(
-      "Controlled tool execution requires a registered ToolBinding.",
+      "Controlled tool execution requires a registered ExecutableTool.",
     );
     expect(validations).toBe(0);
     expect(executions).toBe(0);
@@ -365,18 +366,18 @@ describe("controlled tool execution", () => {
       executions += 1;
       return { toolCallId: CALL_ID, status: "succeeded", content: [] };
     });
-    const binding = createToolBinding({
-      spec: SPEC,
+    const binding = createExecutableTool({
+      definition: SPEC,
       argumentValidator: {
         validate: () => ({
           valid: false,
           issues: [{ path: "/amount", code: "not-an-integer" }],
         }),
       },
-      execute: input.binding.execute,
+      execute: input.tool.execute,
     });
 
-    await expect(executeControlledTool({ ...input, binding })).rejects.toThrow(
+    await expect(executeControlledTool({ ...input, tool: binding })).rejects.toThrow(
       "Tool arguments do not satisfy the registered input schema.",
     );
     expect(journal.byId.size).toBe(0);
@@ -389,8 +390,8 @@ describe("controlled tool execution", () => {
     let validations = 0;
     let executedCall: ToolCall | undefined;
     let canonicalDocument: string | undefined;
-    const binding = createToolBinding({
-      spec: SPEC,
+    const binding = createExecutableTool({
+      definition: SPEC,
       argumentValidator: {
         validate: () => {
           validations += 1;
@@ -420,7 +421,7 @@ describe("controlled tool execution", () => {
         status: "succeeded" as const,
         content: [],
       })),
-      binding,
+      tool: binding,
       call: originalCall,
       digestPort: capturingDigestPort,
       concurrency: {
@@ -513,7 +514,7 @@ describe("controlled tool execution", () => {
 
   it("uses the canonical policy lifecycle for read-only calls without a policy port", async () => {
     const journal = new MemoryJournal();
-    const readOnlySpec: ToolSpec = {
+    const readOnlySpec: ToolDefinition = {
       ...SPEC,
       effect: { class: "read-only", targets: [] },
       execution: {
@@ -529,10 +530,10 @@ describe("controlled tool execution", () => {
     }));
     const outcome = await executeControlledTool({
       ...input,
-      binding: createToolBinding({
-        spec: readOnlySpec,
+      tool: createExecutableTool({
+        definition: readOnlySpec,
         argumentValidator: { validate: () => ({ valid: true }) },
-        execute: input.binding.execute,
+        execute: input.tool.execute,
       }),
       policy: undefined,
     });
@@ -772,8 +773,8 @@ describe("controlled tool execution", () => {
     });
     const input = {
       ...base,
-      binding: createToolBinding({
-        spec: SPEC,
+      tool: createExecutableTool({
+        definition: SPEC,
         argumentValidator: {
           validate: () => {
             validations += 1;
@@ -783,7 +784,7 @@ describe("controlled tool execution", () => {
             return { valid: true };
           },
         },
-        execute: base.binding.execute,
+        execute: base.tool.execute,
       }),
     };
     input.call = {

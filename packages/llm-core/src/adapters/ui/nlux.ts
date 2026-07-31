@@ -4,7 +4,7 @@ import {
   projectInteractionEvent,
   type InteractionEvent,
   type InteractionSession,
-  type InteractionUiEvent,
+  type ConversationEvent,
 } from "../../application/interaction/public";
 import type { UiProjectionMapper } from "./types";
 
@@ -19,7 +19,7 @@ export interface NluxInteractionAdapterOptions {
   readonly mapInput?: (message: string, extras: ChatAdapterExtras<string>) => JsonValue;
 }
 
-const mapProjection = (event: InteractionUiEvent): readonly NluxProjectionSignal[] => {
+const mapProjection = (event: ConversationEvent): readonly NluxProjectionSignal[] => {
   switch (event.kind) {
     case "text-delta":
       return [{ type: "next", chunk: event.text }];

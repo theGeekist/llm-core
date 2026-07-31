@@ -2,22 +2,6 @@ import type { MaybePromise } from "#shared/maybe";
 
 export type WorkflowRollbackMode = "retain" | "restart";
 
-export type WorkflowTransition<TState, TPause> =
-  | {
-      readonly status: "continue";
-      readonly state: TState;
-    }
-  | {
-      readonly status: "paused";
-      readonly state: TState;
-      readonly pause: TPause;
-      /**
-       * `retain` resumes the paused step with the supplied resume input.
-       * `restart` first rolls back completed steps and resumes from step zero.
-       */
-      readonly rollback?: WorkflowRollbackMode;
-    };
-
 export interface WorkflowStepContext<TState, TResumeInput> {
   readonly state: TState;
   readonly resumeInput: TResumeInput | undefined;
@@ -46,7 +30,25 @@ export interface WorkflowRetryDelayInput {
   readonly attempt: number;
 }
 
-export interface ExecutableWorkflowStep<TState, TPause, TResumeInput = unknown> {
+export type WorkflowStepResult<TState, TPause> =
+  | {
+      readonly status: "continue";
+      readonly state: TState;
+    }
+  | {
+      readonly status: "paused";
+      readonly state: TState;
+      readonly pause: TPause;
+      /**
+       * `retain` resumes the paused step with the supplied resume input.
+       * `restart` first rolls back completed steps and resumes from step zero.
+       */
+      readonly rollback?: WorkflowRollbackMode;
+    };
+
+export type WorkflowTransition<TState, TPause> = WorkflowStepResult<TState, TPause>;
+
+export interface WorkflowStep<TState, TPause, TResumeInput = unknown> {
   readonly key: string;
   /**
    * The general workflow runtime is passive-only. Meaningful effects require
@@ -56,17 +58,22 @@ export interface ExecutableWorkflowStep<TState, TPause, TResumeInput = unknown> 
   readonly retry?: WorkflowRetryPolicy;
   execute(
     context: WorkflowStepContext<TState, TResumeInput>,
-  ): MaybePromise<WorkflowTransition<TState, TPause>>;
+  ): MaybePromise<WorkflowStepResult<TState, TPause>>;
   rollback?(context: WorkflowRollbackContext<TState>): MaybePromise<void>;
 }
 
-export interface WorkflowDefinition<TState, TPause, TResumeInput = unknown> {
-  readonly workflowId: string;
-  readonly version: string;
-  readonly steps: readonly ExecutableWorkflowStep<TState, TPause, TResumeInput>[];
+export interface WorkflowConfig<TState, TPause, TResumeInput = unknown> {
+  /**
+   * Optional stable identity for persisted pause values. A fresh identity is
+   * allocated when omitted.
+   */
+  readonly workflowId?: string;
+  /** Defaults to `1`. */
+  readonly version?: string;
+  readonly steps: readonly WorkflowStep<TState, TPause, TResumeInput>[];
 }
 
-export interface WorkflowPauseSnapshot<TState, TPause> {
+export interface WorkflowPause<TState, TPause> {
   readonly kind: "workflow-pause-snapshot";
   readonly durability: "ephemeral";
   readonly checkpoint: false;
@@ -83,7 +90,7 @@ export interface WorkflowRollbackFailure {
   readonly error: unknown;
 }
 
-export type WorkflowExecutionOutcome<TState, TPause> =
+export type WorkflowResult<TState, TPause> =
   | {
       readonly status: "completed";
       readonly state: TState;
@@ -91,7 +98,7 @@ export type WorkflowExecutionOutcome<TState, TPause> =
     }
   | {
       readonly status: "paused";
-      readonly snapshot: WorkflowPauseSnapshot<TState, TPause>;
+      readonly snapshot: WorkflowPause<TState, TPause>;
     }
   | {
       readonly status: "failed";
@@ -100,17 +107,28 @@ export type WorkflowExecutionOutcome<TState, TPause> =
       readonly rollbackFailures: readonly WorkflowRollbackFailure[];
     };
 
+export interface Workflow<TState, TPause, TResumeInput = unknown> {
+  readonly workflowId: string;
+  readonly version: string;
+  readonly steps: readonly WorkflowStep<TState, TPause, TResumeInput>[];
+  run(initialState: TState): MaybePromise<WorkflowResult<TState, TPause>>;
+  resume(
+    pause: WorkflowPause<TState, TPause>,
+    input: TResumeInput,
+  ): MaybePromise<WorkflowResult<TState, TPause>>;
+}
+
 export interface WorkflowRuntimeOptions {
   readonly sleep?: (delayMs: number) => MaybePromise<void>;
 }
 
 export interface WorkflowRegistry<TState, TPause, TResumeInput = unknown> {
   register(input: WorkflowRegistryRegisterInput<TState, TPause, TResumeInput>): void;
-  resolve(workflowId: string): WorkflowDefinition<TState, TPause, TResumeInput> | undefined;
-  list(): readonly WorkflowDefinition<TState, TPause, TResumeInput>[];
+  resolve(workflowId: string): Workflow<TState, TPause, TResumeInput> | undefined;
+  list(): readonly Workflow<TState, TPause, TResumeInput>[];
 }
 
 export interface WorkflowRegistryRegisterInput<TState, TPause, TResumeInput = unknown> {
-  readonly definition: WorkflowDefinition<TState, TPause, TResumeInput>;
+  readonly workflow: Workflow<TState, TPause, TResumeInput>;
   readonly replace?: boolean;
 }

@@ -1,34 +1,34 @@
 import { isProxy } from "node:util/types";
 import { isUuidV7, type RunId, type StepId, type ToolCallId } from "#contracts";
 import { maybeChain, type MaybePromise } from "#shared/maybe";
-import { defineToolSpec } from "./action";
+import { defineToolDefinition } from "./action";
 import { freezeJsonValue, normalizeStrictJson } from "./canonical-json";
 import type {
-  ToolBinding,
-  ToolBindingValidationInput,
+  ExecutableTool,
+  ExecutableToolValidationInput,
   ToolCall,
   ToolExecutionInput,
-  ToolResult,
-  ToolSpec,
+  ToolExecutionResult,
+  ToolDefinition,
 } from "./types";
 import { validateToolArguments, type ToolArgumentValidationPort } from "./validation";
 
-interface RegisteredToolBindingState {
+interface RegisteredExecutableToolState {
   validatedCalls: WeakSet<object>;
 }
 
-const registeredToolBindings = new WeakMap<object, RegisteredToolBindingState>();
+const registeredExecutableTools = new WeakMap<object, RegisteredExecutableToolState>();
 
-export type ToolExecutor = (input: ToolExecutionInput) => MaybePromise<ToolResult>;
+export type ToolExecutor = (input: ToolExecutionInput) => MaybePromise<ToolExecutionResult>;
 
-export interface CreateToolBindingInput {
-  spec: ToolSpec;
+export interface CreateExecutableToolInput {
+  definition: ToolDefinition;
   argumentValidator: ToolArgumentValidationPort;
   execute: ToolExecutor;
 }
 
 export interface RebindValidatedToolCallInput {
-  binding: ToolBinding;
+  tool: ExecutableTool;
   call: ToolCall;
   toolCallId: ToolCallId;
   runId: RunId;
@@ -47,9 +47,9 @@ const captureRebindInput = (input: RebindValidatedToolCallInput): RebindValidate
     }
     const descriptors = Object.getOwnPropertyDescriptors(input);
     const keys = Reflect.ownKeys(descriptors);
-    const allowed = new Set(["binding", "call", "toolCallId", "runId", "stepId"]);
+    const allowed = new Set(["tool", "call", "toolCallId", "runId", "stepId"]);
     if (
-      !["binding", "call", "toolCallId", "runId"].every((key) => Object.hasOwn(descriptors, key)) ||
+      !["tool", "call", "toolCallId", "runId"].every((key) => Object.hasOwn(descriptors, key)) ||
       keys.some((key) => typeof key !== "string" || !allowed.has(key)) ||
       keys.some((key) => {
         const descriptor = descriptors[key as string];
@@ -59,7 +59,7 @@ const captureRebindInput = (input: RebindValidatedToolCallInput): RebindValidate
       throw new TypeError();
     }
     const captured = Object.freeze({
-      binding: descriptors.binding!.value as ToolBinding,
+      tool: descriptors.tool!.value as ExecutableTool,
       call: descriptors.call!.value as ToolCall,
       toolCallId: descriptors.toolCallId!.value as ToolCallId,
       runId: descriptors.runId!.value as RunId,
@@ -83,21 +83,21 @@ const captureRebindInput = (input: RebindValidatedToolCallInput): RebindValidate
   }
 };
 
-/** Returns true only for the exact facade returned by `createToolBinding`. */
-export const isRegisteredToolBinding = (value: unknown): value is ToolBinding =>
+/** Returns true only for the exact facade returned by `createExecutableTool`. */
+export const isRegisteredExecutableTool = (value: unknown): value is ExecutableTool =>
   value !== null &&
   (typeof value === "object" || typeof value === "function") &&
-  registeredToolBindings.has(value);
+  registeredExecutableTools.has(value);
 
 /**
- * Rebinds only durable lifecycle identity while preserving a binding's
+ * Rebinds only durable lifecycle identity while preserving an executable tool's
  * one-shot proof that the call's external arguments were already validated.
  */
 export const rebindValidatedToolCall = (input: RebindValidatedToolCallInput): ToolCall => {
   const captured = captureRebindInput(input);
-  const state = registeredToolBindings.get(captured.binding);
+  const state = registeredExecutableTools.get(captured.tool);
   if (!state?.validatedCalls.has(captured.call)) {
-    throw new TypeError("Only a call validated by this tool binding can be rebound.");
+    throw new TypeError("Only a call validated by this executable tool can be rebound.");
   }
   const invocation = { ...captured.call.invocation };
   delete invocation.stepId;
@@ -120,18 +120,18 @@ export const rebindValidatedToolCall = (input: RebindValidatedToolCallInput): To
 };
 
 /**
- * Creates a binding whose executable path cannot bypass strict registered
+ * Creates a tool whose executable path cannot bypass strict registered
  * schema validation. The executor receives the normalized input that was
  * checked; the validator cannot substitute coerced/defaulted arguments.
  */
-export const createToolBinding = (input: CreateToolBindingInput): ToolBinding => {
-  const spec = defineToolSpec(input.spec);
+export const createExecutableTool = (input: CreateExecutableToolInput): ExecutableTool => {
+  const definition = defineToolDefinition(input.definition);
   const argumentValidator = input.argumentValidator;
   const executor = input.execute;
   const validatedCalls = new WeakSet<object>();
-  const validate = ({ call }: ToolBindingValidationInput): MaybePromise<ToolCall> => {
-    if (call.toolId !== spec.id || call.toolVersion !== spec.version) {
-      throw new TypeError("Tool call identity and version must match the binding.");
+  const validate = ({ call }: ExecutableToolValidationInput): MaybePromise<ToolCall> => {
+    if (call.toolId !== definition.id || call.toolVersion !== definition.version) {
+      throw new TypeError("Tool call identity and version must match the executable tool.");
     }
     return maybeChain(
       (argumentsValue): ToolCall => {
@@ -146,15 +146,15 @@ export const createToolBinding = (input: CreateToolBindingInput): ToolBinding =>
         return validatedCall;
       },
       validateToolArguments({
-        schema: spec.inputSchema,
+        schema: definition.inputSchema,
         arguments: call.arguments,
         port: argumentValidator,
       }),
     );
   };
 
-  const binding: ToolBinding = Object.freeze({
-    spec,
+  const tool: ExecutableTool = Object.freeze({
+    definition,
     validate,
     execute: (executionInput: ToolExecutionInput) =>
       validatedCalls.delete(executionInput.call)
@@ -168,6 +168,6 @@ export const createToolBinding = (input: CreateToolBindingInput): ToolBinding =>
             validate({ call: executionInput.call }),
           ),
   });
-  registeredToolBindings.set(binding, { validatedCalls });
-  return binding;
+  registeredExecutableTools.set(tool, { validatedCalls });
+  return tool;
 };

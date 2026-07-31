@@ -3,14 +3,13 @@ import { contractVersion } from "#contracts";
 import type { CapabilityClaim, ContractVersion } from "#contracts";
 import {
   createBuiltinModelProfile,
-  deploymentRef,
-  isRegisteredModelProfile,
+  createModelProfile,
   modelProfileId,
   modelRef,
-  providerRef,
-  registerModelProfile,
   type ModelProfile,
-} from "../../src/features/model/public";
+} from "../../src/features/model/runtime";
+import { isRegisteredModelProfile } from "../../src/features/model/profile";
+import { deploymentRef, providerRef } from "../../src/features/model/public";
 
 const baseProfile = (): ModelProfile => {
   const builtin = createBuiltinModelProfile();
@@ -72,7 +71,7 @@ describe("model profile registration", () => {
       deployment: deploymentRef("d"),
       claims,
     };
-    const registered = registerModelProfile(source);
+    const registered = createModelProfile(source);
     expect(isRegisteredModelProfile(source)).toBe(false);
     expect(isRegisteredModelProfile(registered)).toBe(true);
     expect(isRegisteredModelProfile({ ...registered })).toBe(false);
@@ -84,7 +83,7 @@ describe("model profile registration", () => {
 
   test("rejects a profile with an invalid version", () => {
     expect(() =>
-      registerModelProfile({
+      createModelProfile({
         profileId: modelProfileId("bad"),
         version: "not-semver" as unknown as ContractVersion,
         model: modelRef("m"),
@@ -102,7 +101,7 @@ describe("model profile registration", () => {
       status: "supported",
       evidence: {},
     } as unknown as CapabilityClaim;
-    expect(() => registerModelProfile({ ...baseProfile(), claims: [malformed] })).toThrow();
+    expect(() => createModelProfile({ ...baseProfile(), claims: [malformed] })).toThrow();
   });
 
   test("rejects contradictory additional evidence through the canonical claim validator", () => {
@@ -119,7 +118,7 @@ describe("model profile registration", () => {
       ],
     } as unknown as CapabilityClaim;
 
-    expect(() => registerModelProfile({ ...baseProfile(), claims: [contradictory] })).toThrow(
+    expect(() => createModelProfile({ ...baseProfile(), claims: [contradictory] })).toThrow(
       TypeError,
     );
   });
@@ -128,12 +127,12 @@ describe("model profile registration", () => {
     const [good] = baseProfile().claims;
     if (!good) throw new Error("expected a builtin claim");
     const badId = { ...good, capabilityId: "InvalidID" } as unknown as CapabilityClaim;
-    expect(() => registerModelProfile({ ...baseProfile(), claims: [badId] })).toThrow();
+    expect(() => createModelProfile({ ...baseProfile(), claims: [badId] })).toThrow();
   });
 
   test("rejects extensions containing a non-JSON value", () => {
     expect(() =>
-      registerModelProfile({
+      createModelProfile({
         ...baseProfile(),
         extensions: { "com.example.vendor": { when: new Date() } } as never,
       }),
@@ -142,7 +141,7 @@ describe("model profile registration", () => {
 
   test("rejects extensions with an invalid namespace key", () => {
     expect(() =>
-      registerModelProfile({
+      createModelProfile({
         ...baseProfile(),
         extensions: { NotReverseDNS: { a: 1 } } as never,
       }),
@@ -151,7 +150,7 @@ describe("model profile registration", () => {
 
   test("rejects an undeclared root key such as a stray credential", () => {
     expect(() =>
-      registerModelProfile({ ...baseProfile(), credential: "raw-secret" } as never),
+      createModelProfile({ ...baseProfile(), credential: "raw-secret" } as never),
     ).toThrow();
   });
 
@@ -162,7 +161,7 @@ describe("model profile registration", () => {
       ...good,
       evidence: { ...good.evidence, signedUrl: "https://example.com/token" },
     } as unknown as CapabilityClaim;
-    expect(() => registerModelProfile({ ...baseProfile(), claims: [leaky] })).toThrow();
+    expect(() => createModelProfile({ ...baseProfile(), claims: [leaky] })).toThrow();
   });
 
   test("rejects malformed media types in conformance evidence", () => {
@@ -187,7 +186,7 @@ describe("model profile registration", () => {
         },
       } as unknown as CapabilityClaim;
 
-      expect(() => registerModelProfile({ ...baseProfile(), claims: [malformed] })).toThrow(
+      expect(() => createModelProfile({ ...baseProfile(), claims: [malformed] })).toThrow(
         TypeError,
       );
     }
@@ -208,7 +207,7 @@ describe("model profile registration", () => {
         ...good,
         evidence: { ...good.evidence, observedAt },
       } as unknown as CapabilityClaim;
-      expect(() => registerModelProfile({ ...baseProfile(), claims: [malformed] })).toThrow(
+      expect(() => createModelProfile({ ...baseProfile(), claims: [malformed] })).toThrow(
         TypeError,
       );
     }
@@ -232,7 +231,7 @@ describe("model profile registration", () => {
       },
     } as unknown as CapabilityClaim;
 
-    expect(() => registerModelProfile({ ...baseProfile(), claims: [valid] })).not.toThrow();
+    expect(() => createModelProfile({ ...baseProfile(), claims: [valid] })).not.toThrow();
   });
 
   test("accepts RFC 3339 lowercase separators and possible leap seconds", () => {
@@ -244,7 +243,7 @@ describe("model profile registration", () => {
         ...good,
         evidence: { ...good.evidence, observedAt },
       } as unknown as CapabilityClaim;
-      expect(() => registerModelProfile({ ...baseProfile(), claims: [valid] })).not.toThrow();
+      expect(() => createModelProfile({ ...baseProfile(), claims: [valid] })).not.toThrow();
     }
   });
 });

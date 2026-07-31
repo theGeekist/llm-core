@@ -2,7 +2,7 @@ import { describe, expect, test } from "bun:test";
 import { contractVersion } from "#contracts";
 import { prepareWithLocalRunner } from "./helpers";
 
-describe("AgentSpec", () => {
+describe("AgentDefinition", () => {
   test("defensively clones and freezes portable specifications", () => {
     const source = {
       agentId: "researcher",

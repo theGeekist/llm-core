@@ -1,8 +1,8 @@
 import { isContractVersion, isExternalId, isJsonValue } from "#contracts";
-import type { AgentSpec, PreparedAgentSpec } from "./types";
+import type { AgentDefinition, PreparedAgentDefinition } from "./types";
 import { registerAgentSkill } from "./skills";
 
-const preparedAgentSpecs = new WeakSet<object>();
+const preparedAgentDefinitions = new WeakSet<object>();
 
 const clone = <T>(value: T): T => structuredClone(value);
 
@@ -53,42 +53,47 @@ const isSafeMetadata = (value: unknown): boolean => {
 
 /**
  * Internal constructor used only by AgentRunner.prepare implementations.
- * Public callers submit portable AgentSpec values to a runner.
+ * Public callers submit portable AgentDefinition values to a runner.
  */
-export const createPreparedAgentSpec = (spec: AgentSpec): PreparedAgentSpec => {
+export const createPreparedAgentDefinition = (
+  definition: AgentDefinition,
+): PreparedAgentDefinition => {
   if (
-    Object.keys(spec).every((key) =>
+    Object.keys(definition).every((key) =>
       ["agentId", "version", "instructions", "effectRequirement", "metadata", "skills"].includes(
         key,
       ),
     ) === false ||
-    !isExternalId(spec.agentId) ||
-    !isContractVersion(spec.version) ||
-    typeof spec.instructions !== "string" ||
-    spec.instructions.length === 0 ||
-    (spec.effectRequirement !== "read-only" && spec.effectRequirement !== "controlled") ||
-    (spec.metadata !== undefined &&
-      (!isJsonValue(spec.metadata) || !isSafeMetadata(spec.metadata))) ||
-    (spec.skills !== undefined && !Array.isArray(spec.skills))
+    !isExternalId(definition.agentId) ||
+    !isContractVersion(definition.version) ||
+    typeof definition.instructions !== "string" ||
+    definition.instructions.length === 0 ||
+    (definition.effectRequirement !== "read-only" &&
+      definition.effectRequirement !== "controlled") ||
+    (definition.metadata !== undefined &&
+      (!isJsonValue(definition.metadata) || !isSafeMetadata(definition.metadata))) ||
+    (definition.skills !== undefined && !Array.isArray(definition.skills))
   ) {
-    throw new TypeError("AgentSpec must be portable and use explicit execution requirements.");
+    throw new TypeError(
+      "AgentDefinition must be portable and use explicit execution requirements.",
+    );
   }
-  const skills = spec.skills?.map(registerAgentSkill);
+  const skills = definition.skills?.map(registerAgentSkill);
   if (
     skills !== undefined &&
     new Set(skills.map((skill) => `${skill.scope}:${skill.skillId}`)).size !== skills.length
   ) {
-    throw new TypeError("AgentSpec skills must use unique scope and skill identities.");
+    throw new TypeError("AgentDefinition skills must use unique scope and skill identities.");
   }
   const prepared = deepFreeze(
     clone({
-      ...spec,
+      ...definition,
       ...(skills === undefined ? {} : { skills }),
     }),
-  ) as PreparedAgentSpec;
-  preparedAgentSpecs.add(prepared);
+  ) as PreparedAgentDefinition;
+  preparedAgentDefinitions.add(prepared);
   return prepared;
 };
 
-export const isPreparedAgentSpec = (value: unknown): value is PreparedAgentSpec =>
-  typeof value === "object" && value !== null && preparedAgentSpecs.has(value);
+export const isPreparedAgentDefinition = (value: unknown): value is PreparedAgentDefinition =>
+  typeof value === "object" && value !== null && preparedAgentDefinitions.has(value);

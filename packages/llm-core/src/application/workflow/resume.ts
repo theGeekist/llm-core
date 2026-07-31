@@ -3,24 +3,24 @@ import {
   actionDigestInput,
   type ActionDigest,
   type BoundAction,
-} from "../../features/tooling/public";
+} from "../../features/tooling/runtime";
 import {
   authenticateIntervention,
   checkResumeCompatibility,
   createInterventionDecision,
   createInterventionRequest,
-  isRegisteredResumableCheckpoint,
   resolveIntervention,
   type InterventionResolution,
 } from "../../features/state/public";
+import { isRegisteredResumableCheckpoint } from "../../features/state/runtime";
 import type {
-  MeaningfulWorkflowStep,
+  ControlledWorkflowResult,
+  ControlledWorkflowStep,
   ResumeInterventionWorkflowInput,
   WorkflowCheckpointClaim,
   WorkflowCheckpointCommit,
   WorkflowDecisionToken,
   WorkflowResumeBeginResult,
-  WorkflowResumeOutcome,
 } from "./types";
 import { executeSteps, unsafeEffect } from "./execution";
 
@@ -48,13 +48,13 @@ const snapshotResumeInput = (
 };
 
 const reject = (
-  reason: Extract<WorkflowResumeOutcome, { status: "rejected" }>["reason"],
-): WorkflowResumeOutcome => ({ status: "rejected", reason });
+  reason: Extract<ControlledWorkflowResult, { status: "rejected" }>["reason"],
+): ControlledWorkflowResult => ({ status: "rejected", reason });
 
 const fail = (
-  reason: Extract<WorkflowResumeOutcome, { status: "failed" }>["reason"],
+  reason: Extract<ControlledWorkflowResult, { status: "failed" }>["reason"],
   stepId?: StepId,
-): WorkflowResumeOutcome => ({ status: "failed", reason, ...(stepId ? { stepId } : {}) });
+): ControlledWorkflowResult => ({ status: "failed", reason, ...(stepId ? { stepId } : {}) });
 
 const digestsMatch = (left: ActionDigest, right: ActionDigest): boolean =>
   left.algorithm === right.algorithm &&
@@ -63,7 +63,7 @@ const digestsMatch = (left: ActionDigest, right: ActionDigest): boolean =>
 
 const findAuthorizedStep = (
   input: ResumeInterventionWorkflowInput,
-): MeaningfulWorkflowStep | null => {
+): ControlledWorkflowStep | null => {
   const step = input.steps.find(
     (candidate) => candidate.stepId === input.intervention.intervention.stepId,
   );
@@ -72,7 +72,7 @@ const findAuthorizedStep = (
 
 const workflowShapeIsValid = (
   input: ResumeInterventionWorkflowInput,
-  authorized: MeaningfulWorkflowStep,
+  authorized: ControlledWorkflowStep,
 ): boolean => {
   const stepIds = input.steps.map((step) => step.stepId);
   if (new Set(stepIds).size !== stepIds.length) {
@@ -164,7 +164,9 @@ const beginMatches = (
 const beginResume = async (
   input: ResumeInterventionWorkflowInput,
   resolution: InterventionResolution,
-): Promise<Extract<WorkflowResumeBeginResult, { status: "accepted" }> | WorkflowResumeOutcome> => {
+): Promise<
+  Extract<WorkflowResumeBeginResult, { status: "accepted" }> | ControlledWorkflowResult
+> => {
   const claimCheckpoint = shouldClaimCheckpoint(resolution);
   try {
     const result = await input.journal.begin({
@@ -196,7 +198,7 @@ const beginResume = async (
 
 const nonApprovalOutcome = (
   resolution: Exclude<InterventionResolution, { status: "approved" | "rejected" }>,
-): WorkflowResumeOutcome => {
+): ControlledWorkflowResult => {
   switch (resolution.status) {
     case "denied":
       return { status: "denied", reason: resolution.reason };
@@ -245,10 +247,10 @@ const completeRetainedDecision = async (
   input: ResumeInterventionWorkflowInput,
   decision: WorkflowDecisionToken,
   outcome: Extract<
-    WorkflowResumeOutcome,
+    ControlledWorkflowResult,
     { status: "deferred" | "edit-requires-new-binding" | "escalated" }
   >,
-): Promise<WorkflowResumeOutcome> => {
+): Promise<ControlledWorkflowResult> => {
   try {
     if ((await input.journal.completeDecision({ decision, outcome: outcome.status })) === true) {
       return outcome;
@@ -266,7 +268,7 @@ const completeRetainedDecision = async (
 
 const checkpointCommit = (
   input: ResumeInterventionWorkflowInput,
-  outcome: Extract<WorkflowResumeOutcome, { status: "completed" | "denied" | "cancelled" }>,
+  outcome: Extract<ControlledWorkflowResult, { status: "completed" | "denied" | "cancelled" }>,
 ): WorkflowCheckpointCommit => ({
   disposition: outcome.status,
   state: outcome.status === "completed" ? outcome.state : input.checkpoint.state,
@@ -280,8 +282,8 @@ const completeClaimedCheckpoint = async (input: {
   workflow: ResumeInterventionWorkflowInput;
   decision: WorkflowDecisionToken;
   claim: WorkflowCheckpointClaim;
-  outcome: Extract<WorkflowResumeOutcome, { status: "completed" | "denied" | "cancelled" }>;
-}): Promise<WorkflowResumeOutcome> => {
+  outcome: Extract<ControlledWorkflowResult, { status: "completed" | "denied" | "cancelled" }>;
+}): Promise<ControlledWorkflowResult> => {
   try {
     if (
       (await input.workflow.journal.completeCheckpoint({
@@ -308,7 +310,7 @@ const persistResolution = async (
   input: ResumeInterventionWorkflowInput,
   begun: Extract<WorkflowResumeBeginResult, { status: "accepted" }>,
   resolution: Exclude<InterventionResolution, { status: "approved" | "rejected" }>,
-): Promise<WorkflowResumeOutcome> => {
+): Promise<ControlledWorkflowResult> => {
   const outcome = nonApprovalOutcome(resolution);
   if (
     outcome.status === "deferred" ||
@@ -337,7 +339,7 @@ const persistResolution = async (
 /** One authenticated, exact-action-bound workflow intervention/resume path. */
 export const resumeInterventionWorkflow = async (
   candidate: ResumeInterventionWorkflowInput,
-): Promise<WorkflowResumeOutcome> => {
+): Promise<ControlledWorkflowResult> => {
   const input = snapshotResumeInput(candidate);
   if (!input) {
     return reject("intervention-rejected");

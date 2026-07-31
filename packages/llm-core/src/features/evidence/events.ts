@@ -7,12 +7,13 @@ import type {
   StepId,
   ToolCallId,
 } from "#contracts";
-import type { ApprovalRef, CancellationRef, PolicyEvaluationRef } from "../control/public";
-import type { ActionDigest } from "../tooling/public";
+import type { ApprovalRef, CancellationRef } from "../control/public";
+import type { PolicyEvaluationRef } from "../control/runtime";
+import type { ActionDigest } from "../tooling/runtime";
 import type { EffectDisposition, ToolReceiptState } from "./receipt";
 import type { RedactedNativeExtensions, RedactionMetadata } from "./redaction";
 
-export type ExecutionEventKind =
+export type ToolExecutionEventKind =
   | "tool.receipt.reserved"
   | "tool.receipt.transitioned"
   | "tool.policy.requested"
@@ -31,7 +32,7 @@ export type ExecutionEventKind =
  * only. Raw arguments, results, native payloads and error messages have no
  * representable field.
  */
-export interface ExecutionEventFacts {
+export interface ToolExecutionEventFacts {
   receiptId: EvidenceId;
   receiptRevision: number;
   receiptState: ToolReceiptState;
@@ -45,16 +46,16 @@ export interface ExecutionEventFacts {
   reasonCode?: string;
 }
 
-export interface ExecutionEvent {
+export interface ToolExecutionEvent {
   eventId: EventId;
-  kind: ExecutionEventKind;
+  kind: ToolExecutionEventKind;
   occurredAt: string;
   sequence: number;
   runId: RunId;
   stepId?: StepId;
   toolCallId: ToolCallId;
   causalParentId?: EventId;
-  facts: ExecutionEventFacts;
+  facts: ToolExecutionEventFacts;
   redaction: RedactionMetadata;
   authorizedEvidence?: EvidenceRef;
   /** Already-redacted portable facts only; never raw provider payloads. */
@@ -68,6 +69,6 @@ export interface ExecutionEvent {
  * a durable receipt acknowledgement and cannot authorize execution or retry.
  */
 export interface EventSink {
-  emit(event: ExecutionEvent): Promise<void>;
-  emitMany?(events: ExecutionEvent[]): Promise<void>;
+  emit(event: ToolExecutionEvent): Promise<void>;
+  emitMany?(events: ToolExecutionEvent[]): Promise<void>;
 }

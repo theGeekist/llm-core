@@ -1,7 +1,7 @@
 import { contractVersion } from "#contracts";
 import { isPromiseLike } from "#shared/maybe";
 import { createLocalAgentRunner } from "../../src/application/agent/public";
-import type { AgentSpec, PreparedAgentSpec } from "../../src/features/agent/public";
+import type { AgentDefinition, PreparedAgentDefinition } from "../../src/features/agent/public";
 
 const validatingRunner = createLocalAgentRunner({
   runnerId: "tests.agent-validation",
@@ -24,8 +24,8 @@ const validatingRunner = createLocalAgentRunner({
   },
 });
 
-export const prepareWithLocalRunner = (spec: AgentSpec): PreparedAgentSpec => {
-  const prepared = validatingRunner.prepare(spec);
+export const prepareWithLocalRunner = (definition: AgentDefinition): PreparedAgentDefinition => {
+  const prepared = validatingRunner.prepare(definition);
   if (isPromiseLike(prepared)) {
     throw new TypeError("The local validation runner must prepare synchronously.");
   }

@@ -7,7 +7,7 @@ import {
   registerInteractionContentEvent,
   reduceInteractionProjection,
 } from "../../../src/application/interaction/public";
-import type { ExecutionEvent } from "../../../src/features/evidence/public";
+import type { ToolExecutionEvent } from "../../../src/features/evidence/public";
 import { coreId, type EvidenceId, type ToolCallId } from "#contracts";
 import { AGENT, CONVERSATION_ID, NOW, RUN_ID, agentEvent, contentEvent, eventId } from "./helpers";
 
@@ -81,7 +81,7 @@ describe("interaction event projection", () => {
       },
       redaction: { kind: "redacted", categories: ["arguments", "result"] },
       secret: "signed-url",
-    } as unknown as ExecutionEvent;
+    } as unknown as ToolExecutionEvent;
 
     const projected = interactionExecutionEvent(CONVERSATION_ID, source);
     const encoded = JSON.stringify(projected);

@@ -9,7 +9,7 @@ import type {
   ConversationContentPart,
   ConversationPortableContent,
   ConversationRecord,
-  ConversationTurn,
+  ConversationMessage,
 } from "./types";
 
 const TIMESTAMP_PATTERN = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{3})?Z$/;
@@ -119,7 +119,7 @@ export const conversationId = (value: string): ConversationId => {
   return value as ConversationId;
 };
 
-export const isConversationTurn = (value: unknown): value is ConversationTurn =>
+export const isConversationMessage = (value: unknown): value is ConversationMessage =>
   isPlainRecord(value) &&
   hasOnlyKeys(value, ["role", "content"], ["occurredAt"]) &&
   ROLES.has(value.role as string) &&
@@ -131,8 +131,8 @@ export const isConversationTurn = (value: unknown): value is ConversationTurn =>
       TIMESTAMP_PATTERN.test(value.occurredAt) &&
       !Number.isNaN(Date.parse(value.occurredAt))));
 
-export const registerConversationTurn = (value: unknown): ConversationTurn => {
-  if (!isConversationTurn(value)) {
+export const createConversationMessage = (value: unknown): ConversationMessage => {
+  if (!isConversationMessage(value)) {
     throw new TypeError(
       "Conversation turns must be closed, portable model content without inline bytes.",
     );
@@ -147,7 +147,7 @@ export const isConversationRecord = (value: unknown): value is ConversationRecor
   Number.isSafeInteger(value.revision) &&
   (value.revision as number) >= 0 &&
   Array.isArray(value.turns) &&
-  value.turns.every(isConversationTurn);
+  value.turns.every(isConversationMessage);
 
 export const registerConversationRecord = (value: unknown): ConversationRecord => {
   if (!isConversationRecord(value)) {

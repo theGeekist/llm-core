@@ -3,16 +3,16 @@ import type {
   AgentCancellationRequest,
   AgentResumeRequest,
   AgentRun,
-  AgentRunEvent,
-  AgentRunRequest,
+  AgentEvent,
+  AgentStartRequest,
   AgentRunner,
-  AgentSpec,
-  PreparedAgentSpec,
-  RunResult,
+  AgentDefinition,
+  PreparedAgentDefinition,
+  AgentResult,
 } from "../../features/agent/public";
-import { createPreparedAgentSpec } from "../../features/agent/public";
+import { createPreparedAgentDefinition } from "../../features/agent/public";
 import type { InterventionDecision } from "../../features/state/public";
-import { registerResumableCheckpoint } from "../../features/state/public";
+import { registerResumableCheckpoint } from "../../features/state/runtime";
 
 export type FakeRemoteOperation =
   | "capabilities"
@@ -69,12 +69,12 @@ const invoke = <T>(
 const projectEvents = async function* (
   remote: AgentRun,
   options: DeterministicFakeRemoteOptions,
-): AsyncGenerator<AgentRunEvent> {
+): AsyncGenerator<AgentEvent> {
   const replaySequences = new Set(options.replayEventSequences ?? []);
   const dropSequences = new Set(options.dropEventSequences ?? []);
-  const buffered: AgentRunEvent[] = [];
+  const buffered: AgentEvent[] = [];
   for await (const event of remote.events()) {
-    const projected = portableClone<AgentRunEvent>(event);
+    const projected = portableClone<AgentEvent>(event);
     if (dropSequences.has(projected.sequence)) {
       continue;
     }
@@ -100,12 +100,12 @@ export const createDeterministicFakeRemoteRunner = (
   server: AgentRunner,
   options: DeterministicFakeRemoteOptions = {},
 ): AgentRunner => {
-  const preparedTokens = new WeakMap<object, PreparedAgentSpec>();
+  const preparedTokens = new WeakMap<object, PreparedAgentDefinition>();
 
-  const prepare = async (spec: AgentSpec): Promise<PreparedAgentSpec> =>
+  const prepare = async (spec: AgentDefinition): Promise<PreparedAgentDefinition> =>
     invoke("prepare", options, async () => {
       const remote = await server.prepare(portableClone(spec));
-      const client = createPreparedAgentSpec(portableClone(spec));
+      const client = createPreparedAgentDefinition(portableClone(spec));
       preparedTokens.set(client, remote);
       return client;
     });
@@ -114,7 +114,7 @@ export const createDeterministicFakeRemoteRunner = (
     return Object.freeze({
       identity: portableClone(remote.identity),
       events: () => invoke("events", options, () => projectEvents(remote, options)),
-      result: async (): Promise<RunResult> =>
+      result: async (): Promise<AgentResult> =>
         invoke("result", options, async () => portableClone(await remote.result())),
       cancel: async (request: AgentCancellationRequest) =>
         invoke("cancel", options, async () =>
@@ -127,13 +127,13 @@ export const createDeterministicFakeRemoteRunner = (
     });
   };
 
-  const start = async (request: AgentRunRequest): Promise<AgentRun> =>
+  const start = async (request: AgentStartRequest): Promise<AgentRun> =>
     invoke("start", options, async () => {
       const remoteAgent = preparedTokens.get(request.agent);
       if (!remoteAgent) {
         throw new TypeError("Fake remote runner only accepts specs prepared by this boundary.");
       }
-      const wire = portableClone<Omit<AgentRunRequest, "agent">>({
+      const wire = portableClone<Omit<AgentStartRequest, "agent">>({
         invocationContext: request.invocationContext,
         input: request.input,
         ...(request.providerSession ? { providerSession: request.providerSession } : {}),

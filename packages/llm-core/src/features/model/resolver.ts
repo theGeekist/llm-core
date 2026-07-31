@@ -8,7 +8,7 @@ import type {
   PortableImplementationId,
 } from "#contracts";
 import { deepFreeze } from "./freeze";
-import { isRegisteredModelProfile, type RegisteredModelProfile } from "./profile";
+import { isRegisteredModelProfile, type ModelProfile } from "./profile";
 import type { DeploymentRef, ModelRef, ProviderRef } from "./references";
 
 /**
@@ -33,7 +33,7 @@ export interface ModelBinding {
   readonly model: ModelRef;
   readonly provider: ProviderRef;
   readonly deployment: DeploymentRef;
-  readonly profile: RegisteredModelProfile;
+  readonly profile: ModelProfile;
   /** Policy aliases that also select this binding. Exact model match wins. */
   readonly aliases?: readonly ModelRef[];
 }
@@ -112,7 +112,7 @@ export interface ModelResolution {
   model: ModelRef;
   provider: ProviderRef;
   deployment: DeploymentRef;
-  profile: RegisteredModelProfile;
+  profile: ModelProfile;
   matchedBy: ResolutionMatch;
   diagnostics: ResolutionDiagnostic[];
 }

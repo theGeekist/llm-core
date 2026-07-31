@@ -2,15 +2,15 @@
 
 The smallest complete agent run has three parts:
 
-1. Describe the agent as portable data.
-2. Create a runner with explicit live dependencies.
-3. Start a run and read its events and terminal result.
+1. Choose a model.
+2. Create an agent with instructions and optional tools.
+3. Run it directly or start a live run.
 
 <<< @/snippets/v2/local-agent.ts
 
-`AgentSpec` contains intent, not provider clients or credentials. The local
-runner receives live implementation ports at composition time. A different
-runner can prepare the same spec when it declares compatible capabilities.
+`createAgent` hides preparation and invocation identity. Runtime implementers
+who need explicit ports, portable definitions, or resume support use the
+qualified `/agent/runtime` extension.
 
 The example is read-only. Meaningful tool effects must pass through the
 controlled tool-execution path, where policy, approval, execution, and receipt

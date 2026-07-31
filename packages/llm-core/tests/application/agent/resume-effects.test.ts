@@ -14,22 +14,22 @@ import type { ExecuteControlledToolInput } from "../../../src/application/tool-e
 import {
   actionDigest,
   bindAction,
-  createToolBinding,
-  defineToolSpec,
+  createExecutableTool,
+  defineToolDefinition,
   registerToolSchema,
   toolId,
   type ActionDigestPort,
   type ToolCall,
   type ToolSchemaDigestPort,
-} from "../../../src/features/tooling/public";
-import { registerResumableCheckpoint } from "../../../src/features/state/public";
+} from "../../../src/features/tooling/runtime";
+import { registerResumableCheckpoint } from "../../../src/features/state/runtime";
 import { ACTION_DIGEST, STEP_ONE, STEP_TWO, checkpoint, receipt } from "../../state/helpers";
 
 const schemaDigestPort: ToolSchemaDigestPort = {
   digest: (canonicalSchema) => digest(createHash("sha256").update(canonicalSchema).digest("hex")),
 };
 
-const spec = defineToolSpec({
+const spec = defineToolDefinition({
   id: toolId("billing.invoice.create"),
   version: contractVersion("1.0.0"),
   description: "Create an invoice.",
@@ -85,7 +85,7 @@ describe("resume effect digest binding", () => {
       {
         async execute(input) {
           const rebound = await bindAction({
-            spec: input.binding.spec,
+            definition: input.tool.definition,
             call: input.call,
             securityDomain: input.securityDomain,
             keyRef: input.digestKeyRef,
@@ -106,8 +106,8 @@ describe("resume effect digest binding", () => {
       ),
     );
     const input = {
-      binding: createToolBinding({
-        spec,
+      tool: createExecutableTool({
+        definition: spec,
         argumentValidator: { validate: () => ({ valid: true }) },
         execute: () => ({ toolCallId: call.toolCallId, status: "succeeded", content: [] }),
       }),

@@ -1,7 +1,7 @@
-import { createContextManifest } from "@geekist/llm-core/context";
+import { selectContext } from "@geekist/llm-core/context";
 import { newCoreId, type InvocationId } from "@geekist/llm-core/contracts";
 
-const manifest = createContextManifest({
+const selection = selectContext({
   scope: {
     kind: "invocation",
     invocationId: newCoreId<InvocationId>("0190bd0c-0000-7000-8000-000000002420"),
@@ -20,4 +20,4 @@ const manifest = createContextManifest({
   ],
 });
 
-console.log(manifest.identity, manifest.usage);
+console.log(selection.identity, selection.usage);

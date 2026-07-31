@@ -1,7 +1,14 @@
-# Interaction
+# Conversations and interaction
 
-Interaction sessions connect an `AgentRunner` to store-backed portable
-conversation state and project canonical events into deterministic UI state.
+`createConversation` is the common application API. It accepts a ready `Agent`
+and an optional `ConversationStore`, then exposes `send` for one result and
+`stream` for projected `ConversationEvent` values.
+
+<<< @/snippets/v2/conversation.ts
+
+Use the `./interaction` extension API when the host must supply an
+`AgentRunner`, prepared definition, explicit identity allocation, controlled
+execution evidence, registered content events, or live reconnection.
 
 <<< @/snippets/v2/interaction-projection.ts
 
@@ -9,7 +16,7 @@ conversation state and project canonical events into deterministic UI state.
 sequenceDiagram
   participant Client
   participant Session as InteractionSession
-  participant Store as ConversationSessionStore
+  participant Store as ConversationStore
   participant Runner as AgentRunner
   participant Projection as InteractionProjection
   participant UI as Qualified UI adapter
@@ -19,12 +26,12 @@ sequenceDiagram
   Session->>Store: reserve current revision
   Session->>Runner: start prepared agent
   loop canonical events
-    Runner-->>Session: AgentRunEvent
+    Runner-->>Session: AgentEvent
     Session->>Projection: reduce InteractionEvent
     Session-->>Client: InteractionEvent
     Client->>UI: project event
   end
-  Runner-->>Session: RunResult
+  Runner-->>Session: AgentResult
   Session->>Store: save next snapshot
   Session-->>Client: InteractionRunResult
 ```
@@ -37,17 +44,17 @@ repeat.
 
 An `InteractionEvent` wraps exactly one canonical family:
 
-- `agent-run` carries an `AgentRunEvent`;
-- `tool-execution` carries redacted `ExecutionEvent` evidence;
+- `agent-run` carries an `AgentEvent`;
+- `tool-execution` carries redacted `ToolExecutionEvent` evidence;
 - `content` carries a registered `InteractionContentEvent`.
 
-The reducer projects these families into `InteractionUiEvent` values. UI
+The reducer projects these families into `ConversationEvent` values. UI
 adapters consume that projection. They do not become execution, receipt, or
 persistence authorities.
 
 ## State and continuity
 
-The completed interaction result contains a portable conversation snapshot.
+The completed interaction result contains a portable `ConversationSnapshot`.
 That snapshot is a point-in-time value, not a resumable workflow checkpoint.
 Provider continuity remains an opaque `ProviderSessionRef`.
 

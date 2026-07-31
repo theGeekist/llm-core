@@ -37,8 +37,8 @@ to the neutral contracts themselves.
 Observability should not depend on capturing every native payload. The package
 uses precise event families for precise purposes:
 
-- `AgentRunEvent` reports agent lifecycle;
-- `ExecutionEvent` carries redacted controlled-execution evidence;
+- `AgentEvent` reports agent lifecycle;
+- `ToolExecutionEvent` carries redacted controlled-execution evidence;
 - `InteractionEvent` drives deterministic projections.
 
 This model makes useful evidence representable while excluding credentials,
@@ -48,7 +48,7 @@ application choice through explicit ports.
 ## Control before convenience
 
 Read-only work can stay lightweight. Meaningful effects take the controlled
-path through binding, policy, approval when required, execution, and receipt
+path through validation, policy, approval when required, execution, and receipt
 recording.
 
 That path fails closed when a required guarantee is missing. After an

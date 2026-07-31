@@ -1,6 +1,6 @@
 import { afterAll, beforeAll, describe, expect, it, mock } from "bun:test";
 import { newCoreId, type ConversationId, type InvocationId, type ToolCallId } from "#contracts";
-import { createBuiltinModelProfile } from "../../../src/features/model/public";
+import { createBuiltinModelProfile } from "../../../src/features/model/runtime";
 
 const TOOL_CALL_ID = newCoreId<ToolCallId>("0190bd0c-0000-7000-8000-000000000081");
 const TOOL_CALL_ID_2 = newCoreId<ToolCallId>("0190bd0c-0000-7000-8000-000000000082");

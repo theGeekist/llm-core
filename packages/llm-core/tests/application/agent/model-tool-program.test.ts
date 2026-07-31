@@ -16,19 +16,19 @@ import {
   type DeclaredSubagentBinding,
 } from "../../../src/application/agent/public";
 import type { Model, ModelRequest } from "../../../src/features/model/public";
-import type { AgentRunner, PreparedAgentSpec } from "../../../src/features/agent/public";
-import type { ConversationStore, ConversationTurn } from "../../../src/features/memory/public";
+import type { AgentRunner, PreparedAgentDefinition } from "../../../src/features/agent/public";
+import type { ConversationStore, ConversationMessage } from "../../../src/features/memory/public";
 import type {
   ControlledToolExecutionOutcome,
   ExecuteControlledToolInput,
 } from "../../../src/application/tool-execution/public";
 import {
-  createToolBinding,
+  createExecutableTool,
   registerToolSchema,
   toolId,
-  type ToolBinding,
+  type ExecutableTool,
   type ToolCall,
-} from "../../../src/features/tooling/public";
+} from "../../../src/features/tooling/runtime";
 
 const RUN_ID = coreId<RunId>("00000000-0000-7000-8000-000000000001");
 const INVOCATION_ID = coreId<InvocationId>("00000000-0000-4000-8000-000000000002");
@@ -45,11 +45,11 @@ const model = (generate: Model["generate"]): Model => ({
 });
 
 const binding = (
-  effect: ToolBinding["spec"]["effect"]["class"],
-  execute: ToolBinding["execute"],
-): ToolBinding =>
-  createToolBinding({
-    spec: {
+  effect: ExecutableTool["definition"]["effect"]["class"],
+  execute: ExecutableTool["execute"],
+): ExecutableTool =>
+  createExecutableTool({
+    definition: {
       id: toolId("test.lookup"),
       version: contractVersion("1.0.0"),
       description: "Lookup a value",
@@ -90,7 +90,7 @@ const runnerWith = (
   });
 };
 
-const request = (agent: PreparedAgentSpec, input: unknown = { question: "hello" }) => ({
+const request = (agent: PreparedAgentDefinition, input: unknown = { question: "hello" }) => ({
   agent,
   invocationContext: { invocationId: INVOCATION_ID },
   input: input as never,
@@ -100,7 +100,7 @@ const prepare = async (
   runner: AgentRunner,
   instructions: string,
   agentId = "agent",
-): Promise<PreparedAgentSpec> =>
+): Promise<PreparedAgentDefinition> =>
   runner.prepare({
     agentId,
     version: contractVersion("1.0.0"),
@@ -124,7 +124,7 @@ const declaredSubagent = (
 
 const run = async (
   runner: AgentRunner,
-  agent: PreparedAgentSpec,
+  agent: PreparedAgentDefinition,
   invocationContext?: ReturnType<typeof request>["invocationContext"] & {
     conversationId?: ConversationId;
   },
@@ -137,7 +137,7 @@ const run = async (
   ).result();
 
 describe("model/tool agent program", () => {
-  test("rejects shaped and cloned ToolBinding forgeries before model declaration", () => {
+  test("rejects shaped and cloned ExecutableTool forgeries before model declaration", () => {
     let modelCalls = 0;
     const valid = binding("read-only", () => ({
       toolCallId: TOOL_CALL_ID,
@@ -154,13 +154,13 @@ describe("model/tool agent program", () => {
     };
     const forgeries = [
       { ...valid },
-      { spec: valid.spec, validate: valid.validate, execute: valid.execute },
-    ] as ToolBinding[];
+      { definition: valid.definition, validate: valid.validate, execute: valid.execute },
+    ] as ExecutableTool[];
 
     for (const forged of forgeries) {
       expect(() =>
         createModelToolAgentProgram({ model: model(generate), tools: [forged] }),
-      ).toThrow("Model tool programs require registered ToolBinding values.");
+      ).toThrow("Model tool programs require registered ExecutableTool values.");
     }
     expect(modelCalls).toBe(0);
   });
@@ -347,7 +347,7 @@ describe("model/tool agent program", () => {
   });
 
   test("declares subagents to the model and preserves the prepared child identity", async () => {
-    const childRef: { current?: PreparedAgentSpec } = {};
+    const childRef: { current?: PreparedAgentDefinition } = {};
     const seenInstructions: string[] = [];
     const requests: ModelRequest[] = [];
     const declaration = {
@@ -498,7 +498,7 @@ describe("model/tool agent program", () => {
               version: contractVersion("1.0.0"),
               instructions: "Forged.",
               effectRequirement: "read-only",
-            }) as PreparedAgentSpec,
+            }) as PreparedAgentDefinition,
         ),
       ],
       model: model(() => {
@@ -565,7 +565,7 @@ describe("model/tool agent program", () => {
   });
 
   test("loads and appends portable conversation turns around the model loop", async () => {
-    const appended: ConversationTurn[] = [];
+    const appended: ConversationMessage[] = [];
     let observed: ModelRequest | undefined;
     const conversation: ConversationStore = {
       read: () => ({

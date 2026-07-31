@@ -1,19 +1,22 @@
 # Public export classification baseline
 
-ADR-012 classifies the current 731 compiler-resolved exports across 19
-entrypoints. Inventory must use the TypeScript checker so wildcard barrels and
-aliases resolve to their declarations.
+ADR-012 classifies the 731 compiler-resolved exports that existed at the
+pre-rollout baseline commit `17d2b38` across 19 entrypoints. This is historical
+decision evidence, not a description of the post-rollout package surface.
+Inventory must use the TypeScript checker so wildcard barrels and aliases
+resolve to their declarations.
 
 ## Reproduce the inventory
 
-Run:
+Run from a clean checkout or temporary worktree at `17d2b38`:
 
 ```sh
 node packages/llm-core/tests/language/inventory-public-exports.mjs
 ```
 
-The script emits a stable JSON inventory containing every exported name and
-its declaration source, then verifies these entrypoint counts:
+The script refuses to run at any other commit. At the baseline it emits a
+stable JSON inventory containing every exported name and its declaration
+source, then verifies these entrypoint counts:
 
 | Entrypoint                  | Count |
 | --------------------------- | ----: |
@@ -41,8 +44,8 @@ Total: 731.
 
 ## Classification rule
 
-The executable inventory is authoritative. Every current `(entrypoint, name)`
-row contains:
+The executable baseline inventory is authoritative for ADR-012's migration
+decision. Every historical `(entrypoint, name)` row contains:
 
 - `kind`: runtime, type, or both;
 - `classification`: common, extension, internal, or split;

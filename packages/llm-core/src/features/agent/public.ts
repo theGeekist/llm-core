@@ -1,5 +1,5 @@
 /** @internal Runner implementations only; omitted from supported package fronts. */
-export { createPreparedAgentSpec, isPreparedAgentSpec } from "./spec";
+export { createPreparedAgentDefinition, isPreparedAgentDefinition } from "./definition";
 export { loadAgentSkills, registerAgentSkill } from "./skills";
 export type {
   AgentSkillRef,
@@ -21,15 +21,15 @@ export type {
   AgentResumeConfiguration,
   AgentResumeRequest,
   AgentRun,
-  AgentRunEvent,
-  AgentRunEventKind,
-  AgentRunEventFactsByKind,
+  AgentEvent,
+  AgentEventKind,
+  AgentEventFactsByKind,
   AgentRunIdentity,
   AgentRunner,
-  AgentRunnerCapabilities,
-  AgentRunRequest,
+  AgentRunnerProfile,
+  AgentStartRequest,
   AgentRunTerminalStatus,
-  AgentSpec,
-  PreparedAgentSpec,
-  RunResult,
+  AgentDefinition,
+  PreparedAgentDefinition,
+  AgentResult,
 } from "./types";

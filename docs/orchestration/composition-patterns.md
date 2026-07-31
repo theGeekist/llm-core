@@ -3,11 +3,11 @@
 Composition should make execution order obvious while keeping capability rules
 inside their own ports.
 
-## Compose definitions, not hidden authority
+## Compose workflows, not hidden authority
 
-`composeWorkflow` concatenates the steps from existing definitions, followed by
-any explicitly supplied steps. It validates the resulting identity and step
-keys through `defineWorkflow`.
+The runtime-level `composeWorkflow` concatenates the steps from existing ready
+workflows, followed by any explicitly supplied steps. It validates the result
+through `defineWorkflow`.
 
 Use it when several applications share an ordered passive sequence. Keep policy,
 receipt persistence, credentials, and provider clients in the composition root,
@@ -17,9 +17,9 @@ then pass them through explicit ports to the controlled path that needs them.
 flowchart TB
   root["Composition root"]
   registry["WorkflowRegistry"]
-  first["Definition A"]
-  second["Definition B"]
-  composed["Composed WorkflowDefinition"]
+  first["Workflow A"]
+  second["Workflow B"]
+  composed["Composed Workflow"]
   ports["Live ports"]
 
   first --> composed
@@ -52,7 +52,7 @@ Choose a small pause type that tells the caller what input is needed to resume.
 
 An application may call a recurring composition a recipe. `Recipe` is not a
 public llm-core type, and the package does not export a `/recipes` subpath. Use
-`WorkflowDefinition`, capability ports, and your own application-level name.
+`Workflow`, capability ports, and your own application-level name.
 
 ## Preserve sync-or-async composition
 

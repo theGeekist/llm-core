@@ -13,13 +13,15 @@ import {
   createProviderSessionRef,
   createSnapshot,
   isLiveContinuation,
-  isRegisteredResumableCheckpoint,
   type DurableExecutionHandle,
   type LiveContinuation,
   type ProviderSessionRef,
-  type RegisteredResumableCheckpoint,
   type Snapshot,
 } from "../../features/state/public";
+import {
+  isRegisteredResumableCheckpoint,
+  type RegisteredResumableCheckpoint,
+} from "../../features/state/runtime";
 
 const INVOCATION_KEYS = new Set([
   "invocationId",

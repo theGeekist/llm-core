@@ -11,15 +11,15 @@ import {
 } from "#contracts";
 import {
   ToolArgumentValidationError,
-  createToolBinding,
-  defineToolSpec,
-  isRegisteredToolBinding,
+  createExecutableTool,
+  defineToolDefinition,
+  isRegisteredExecutableTool,
   registerToolSchema,
   toolId,
   validateToolArguments,
-  type ToolBinding,
+  type ExecutableTool,
   type ToolArgumentValidationPort,
-} from "../../src/features/tooling/public";
+} from "../../src/features/tooling/runtime";
 import { rebindValidatedToolCall } from "../../src/features/tooling/orchestration";
 
 const schemaDigestPort = {
@@ -100,7 +100,7 @@ describe("strict tool argument validation", () => {
       },
       schemaDigestPort,
     );
-    const spec = defineToolSpec({
+    const spec = defineToolDefinition({
       id: toolId("math.count.read"),
       version: contractVersion("1.0.0"),
       description: "Read count",
@@ -116,8 +116,8 @@ describe("strict tool argument validation", () => {
     let executions = 0;
     let validations = 0;
     let receivedCancellation = false;
-    const binding = createToolBinding({
-      spec,
+    const binding = createExecutableTool({
+      definition: spec,
       argumentValidator: {
         validate: (input) => {
           validations += 1;
@@ -134,15 +134,15 @@ describe("strict tool argument validation", () => {
         };
       },
     });
-    expect(isRegisteredToolBinding(binding)).toBe(true);
+    expect(isRegisteredExecutableTool(binding)).toBe(true);
     expect(Object.isFrozen(binding)).toBe(true);
-    expect(isRegisteredToolBinding({ ...binding })).toBe(false);
+    expect(isRegisteredExecutableTool({ ...binding })).toBe(false);
     expect(
-      isRegisteredToolBinding({
-        spec: binding.spec,
+      isRegisteredExecutableTool({
+        definition: binding.definition,
         validate: binding.validate,
         execute: binding.execute,
-      } as ToolBinding),
+      } as ExecutableTool),
     ).toBe(false);
     const call = {
       toolCallId: coreId<ToolCallId>("018f0c7a-4d2b-7abc-8def-0123456789ab"),
@@ -189,7 +189,7 @@ describe("strict tool argument validation", () => {
       },
       schemaDigestPort,
     );
-    const spec = defineToolSpec({
+    const spec = defineToolDefinition({
       id: toolId("math.count.rebind"),
       version: contractVersion("1.0.0"),
       description: "Rebind a validated count call.",
@@ -204,8 +204,8 @@ describe("strict tool argument validation", () => {
     });
     let validations = 0;
     let executions = 0;
-    const binding = createToolBinding({
-      spec,
+    const binding = createExecutableTool({
+      definition: spec,
       argumentValidator: {
         validate: (input) => {
           validations += 1;
@@ -229,7 +229,7 @@ describe("strict tool argument validation", () => {
       },
     });
     const replacement = {
-      binding,
+      tool: binding,
       call: validatedCall,
       toolCallId: coreId<ToolCallId>("018f0c7a-4d2b-7abc-8def-4123456789ab"),
       runId: coreId<RunId>("018f0c7a-4d2b-7abc-8def-5123456789ab"),
@@ -238,7 +238,7 @@ describe("strict tool argument validation", () => {
     let accessorReads = 0;
     const hostile = Object.create(null) as Record<string, unknown>;
     Object.defineProperties(hostile, {
-      binding: { enumerable: true, value: binding },
+      tool: { enumerable: true, value: binding },
       call: {
         enumerable: true,
         get: () => {
@@ -264,7 +264,7 @@ describe("strict tool argument validation", () => {
     ).toThrow("UUIDv7");
 
     const rebound = rebindValidatedToolCall(replacement);
-    expect(() => rebindValidatedToolCall(replacement)).toThrow("validated by this tool binding");
+    expect(() => rebindValidatedToolCall(replacement)).toThrow("validated by this executable tool");
     await binding.execute({ call: rebound });
 
     expect(rebound.arguments).toEqual({ count: 1 });

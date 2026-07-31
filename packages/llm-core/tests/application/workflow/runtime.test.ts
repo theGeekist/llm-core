@@ -1,21 +1,23 @@
 import { describe, expect, test } from "bun:test";
 import { isPromiseLike } from "../../../src/shared/maybe";
-import { isRegisteredResumableCheckpoint } from "../../../src/features/state/public";
+import { isRegisteredResumableCheckpoint } from "../../../src/features/state/runtime";
+import {
+  defineWorkflow,
+  type Workflow,
+  type WorkflowResult,
+  type WorkflowStep,
+} from "../../../src/application/workflow/public";
 import {
   composeWorkflow,
   createWorkflowRegistry,
-  defineWorkflow,
   resumeWorkflow,
   runWorkflow,
-  type ExecutableWorkflowStep,
-  type WorkflowDefinition,
-  type WorkflowExecutionOutcome,
-} from "../../../src/application/workflow/public";
+} from "../../../src/application/workflow/runtime-public";
 
 type State = { readonly values: readonly string[] };
 type Pause = { readonly question: string };
 type Resume = { readonly answer: string };
-type Step = ExecutableWorkflowStep<State, Pause, Resume>;
+type Step = WorkflowStep<State, Pause, Resume>;
 
 const append = (value: string): Step => ({
   key: value,
@@ -27,8 +29,8 @@ const append = (value: string): Step => ({
 });
 
 const completed = (
-  outcome: WorkflowExecutionOutcome<State, Pause>,
-): Extract<WorkflowExecutionOutcome<State, Pause>, { status: "completed" }> => {
+  outcome: WorkflowResult<State, Pause>,
+): Extract<WorkflowResult<State, Pause>, { status: "completed" }> => {
   expect(outcome.status).toBe("completed");
   if (outcome.status !== "completed") {
     throw new Error("Expected a completed workflow.");
@@ -37,15 +39,59 @@ const completed = (
 };
 
 describe("workflow application runtime", () => {
+  test("snapshots and freezes step definitions without wrapping callbacks", () => {
+    const retry = { maxAttempts: 1 };
+    const execute: Step["execute"] = ({ state }) => ({
+      status: "continue",
+      state: { values: [...state.values, "original"] },
+    });
+    const step: {
+      key: string;
+      effect: "none";
+      retry: { maxAttempts: number };
+      execute: Step["execute"];
+    } = {
+      key: "original",
+      effect: "none",
+      retry,
+      execute,
+    };
+    const workflow = defineWorkflow<State, Pause, Resume>({
+      workflowId: "definition-snapshot",
+      version: "1",
+      steps: [step],
+    });
+
+    step.key = "changed";
+    step.execute = ({ state }) => ({
+      status: "continue",
+      state: { values: [...state.values, "changed"] },
+    });
+    retry.maxAttempts = 0;
+
+    const snapshot = workflow.steps[0];
+    if (snapshot === undefined) {
+      throw new Error("Expected the workflow step snapshot.");
+    }
+    expect(Object.isFrozen(snapshot)).toBe(true);
+    expect(Object.isFrozen(snapshot.retry)).toBe(true);
+    expect(snapshot.key).toBe("original");
+    expect(snapshot.execute).toBe(execute);
+    expect(snapshot.retry).toEqual({ maxAttempts: 1 });
+    expect(
+      completed(workflow.run({ values: [] }) as WorkflowResult<State, Pause>).state.values,
+    ).toEqual(["original"]);
+  });
+
   test("preserves synchronous execution until a step becomes asynchronous", async () => {
     const sync = defineWorkflow({
       workflowId: "sync",
       version: "1",
       steps: [append("one"), append("two")],
     });
-    const syncResult = runWorkflow(sync, { values: [] });
+    const syncResult = sync.run({ values: [] });
     expect(isPromiseLike(syncResult)).toBe(false);
-    expect(completed(syncResult as WorkflowExecutionOutcome<State, Pause>).state.values).toEqual([
+    expect(completed(syncResult as WorkflowResult<State, Pause>).state.values).toEqual([
       "one",
       "two",
     ]);
@@ -65,7 +111,7 @@ describe("workflow application runtime", () => {
         },
       ],
     });
-    const asyncResult = runWorkflow(asynchronous, { values: [] });
+    const asyncResult = asynchronous.run({ values: [] });
     expect(isPromiseLike(asyncResult)).toBe(true);
     expect(completed(await asyncResult).state.values).toEqual(["one", "two"]);
   });
@@ -92,9 +138,7 @@ describe("workflow application runtime", () => {
     });
 
     const result = runWorkflow(workflow, { values: [] });
-    expect(completed(result as WorkflowExecutionOutcome<State, Pause>).completedStepKeys).toEqual([
-      "flaky",
-    ]);
+    expect(completed(result as WorkflowResult<State, Pause>).completedStepKeys).toEqual(["flaky"]);
     expect(attempts).toEqual([1, 2, 3]);
   });
 
@@ -167,7 +211,7 @@ describe("workflow application runtime", () => {
           },
         },
       ],
-    } as unknown as WorkflowDefinition<State, Pause, Resume>;
+    } as unknown as Workflow<State, Pause, Resume>;
 
     const outcome = runWorkflow(
       unsafe,
@@ -269,11 +313,8 @@ describe("workflow application runtime", () => {
       throw new Error("Expected a synchronous pause.");
     }
     expect(isRegisteredResumableCheckpoint(paused.snapshot)).toBe(false);
-    const resumed = resumeWorkflow(workflow, {
-      snapshot: paused.snapshot,
-      resumeInput: { answer: "approved" },
-    });
-    expect(completed(resumed as WorkflowExecutionOutcome<State, Pause>).state.values).toEqual([
+    const resumed = workflow.resume(paused.snapshot, { answer: "approved" });
+    expect(completed(resumed as WorkflowResult<State, Pause>).state.values).toEqual([
       "before",
       "approved",
       "after",
@@ -316,7 +357,7 @@ describe("workflow application runtime", () => {
           },
         },
       ],
-    } as unknown as WorkflowDefinition<State, Pause, Resume>;
+    } as unknown as Workflow<State, Pause, Resume>;
     const outcome = resumeWorkflow(unsafe, {
       snapshot: paused.snapshot,
       resumeInput: { answer: "yes" },
@@ -344,21 +385,33 @@ describe("workflow application runtime", () => {
     const composed = composeWorkflow({
       workflowId: "composed",
       version: "1",
-      definitions: [first, second],
+      workflows: [first, second],
       steps: [append("three")],
     });
     const registry = createWorkflowRegistry<State, Pause, Resume>();
-    registry.register({ definition: composed });
+    registry.register({ workflow: composed });
 
     expect(registry.resolve("composed")).toBe(composed);
     expect(registry.resolve("first")).toBeUndefined();
     const result = runWorkflow(registry.resolve("composed")!, { values: [] });
-    expect(completed(result as WorkflowExecutionOutcome<State, Pause>).state.values).toEqual([
+    expect(completed(result as WorkflowResult<State, Pause>).state.values).toEqual([
       "one",
       "two",
       "three",
     ]);
-    expect(() => registry.register({ definition: composed })).toThrow("already registered");
+    expect(() => registry.register({ workflow: composed })).toThrow("already registered");
+  });
+
+  test("allocates identity and a default version for the common facade", () => {
+    const workflow = defineWorkflow<State, Pause, Resume>({
+      steps: [append("one")],
+    });
+
+    expect(workflow.workflowId).not.toHaveLength(0);
+    expect(workflow.version).toBe("1");
+    expect(
+      completed(workflow.run({ values: [] }) as WorkflowResult<State, Pause>).state.values,
+    ).toEqual(["one"]);
   });
 
   test("rejects duplicate composition keys and mismatched resume snapshots", () => {
@@ -371,7 +424,7 @@ describe("workflow application runtime", () => {
       composeWorkflow({
         workflowId: "invalid",
         version: "1",
-        definitions: [first, first],
+        workflows: [first, first],
       }),
     ).toThrow("unique");
 

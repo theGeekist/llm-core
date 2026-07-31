@@ -1,10 +1,9 @@
 import { describe, expect, test } from "bun:test";
-import type {
-  ApprovalAuthenticationPort,
-  ApprovalDecision,
-  ApprovalRequest,
-} from "../../src/features/control/public";
-import { verifyApproval } from "../../src/features/control/public";
+import type { ApprovalDecision, ApprovalRequest } from "../../src/features/control/public";
+import {
+  verifyApproval,
+  type ApprovalAuthenticationPort,
+} from "../../src/features/control/runtime";
 import { OTHER_ACTION_DIGEST, approvalRef, authenticationEvidence, principal } from "./helpers";
 
 const APPROVER = principal("user:approver");

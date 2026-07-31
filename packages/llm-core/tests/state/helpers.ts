@@ -13,7 +13,7 @@ import {
   type RunId,
   type StepId,
 } from "#contracts";
-import { actionDigest } from "../../src/features/tooling/public";
+import { actionDigest } from "../../src/features/tooling/runtime";
 import {
   checkpointId,
   createInterventionRequest,

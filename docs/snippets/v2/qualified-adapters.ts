@@ -3,11 +3,11 @@ import {
   createInMemoryAiSdk7ToolCallCorrelationStore,
 } from "@geekist/llm-core/adapters/ai-sdk";
 import { createAiSdkUiProjectionMapper } from "@geekist/llm-core/adapters/ai-sdk-ui";
-import type { RegisteredModelProfile } from "@geekist/llm-core/model";
+import type { ModelProfile } from "@geekist/llm-core/model/runtime";
 import type { LanguageModel } from "ai";
 
 declare const providerModel: LanguageModel;
-declare const profile: RegisteredModelProfile;
+declare const profile: ModelProfile;
 
 // Process-local example. Use a durable store implementation when conversation
 // replay must survive process reconstruction.

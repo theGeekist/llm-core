@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import { secretRef } from "#contracts";
-import { actionDigest } from "../../src/features/tooling/public";
+import { actionDigest } from "../../src/features/tooling/runtime";
 import { createInterventionRequest, resolveIntervention } from "../../src/features/state/public";
 import {
   CHECKPOINT_ID,

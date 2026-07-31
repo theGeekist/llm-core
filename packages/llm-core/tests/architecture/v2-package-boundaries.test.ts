@@ -33,7 +33,8 @@ describe("v2 package boundaries", () => {
         const targetOwner = target.split("/").slice(0, 2).join("/");
         const applicationFront =
           owner.startsWith("application/") && target.endsWith("/orchestration");
-        if (owner !== targetOwner && !target.endsWith("/public") && !applicationFront) {
+        const qualifiedFront = target.endsWith("/public") || target.endsWith("/runtime");
+        if (owner !== targetOwner && !qualifiedFront && !applicationFront) {
           violations.push(`${relative(root, file)} -> ${specifier}`);
         }
       }

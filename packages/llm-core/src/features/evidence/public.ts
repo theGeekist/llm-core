@@ -1,12 +1,11 @@
-export type { EventSink, ExecutionEvent, ExecutionEventFacts, ExecutionEventKind } from "./events";
+export type {
+  EventSink,
+  ToolExecutionEvent,
+  ToolExecutionEventFacts,
+  ToolExecutionEventKind,
+} from "./events";
 export { redactedNativeExtensions } from "./redaction";
 export type { RedactedNativeExtensions, RedactionCategory, RedactionMetadata } from "./redaction";
-export {
-  actionDigestsEqual,
-  classifyExistingReservation,
-  isToolReceiptTransitionAllowed,
-  reservationKeysEqual,
-} from "./receipt";
 export type {
   AppendToolReceiptTransition,
   AppendToolReceiptTransitionResult,

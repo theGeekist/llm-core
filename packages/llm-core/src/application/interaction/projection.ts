@@ -3,7 +3,7 @@ import type {
   InteractionEvent,
   InteractionProjection,
   InteractionRunStatus,
-  InteractionUiEvent,
+  ConversationEvent,
 } from "./types";
 import { interactionEventId, interactionRunId, interactionSequenceKey } from "./events";
 
@@ -41,7 +41,7 @@ export const createInteractionProjection = (
     seenToolCallKeys: Object.freeze([]),
   });
 
-export const projectInteractionEvent = (event: InteractionEvent): InteractionUiEvent | null => {
+export const projectInteractionEvent = (event: InteractionEvent): ConversationEvent | null => {
   const eventId = interactionEventId(event);
   const runId = interactionRunId(event);
   if (event.kind === "content") {

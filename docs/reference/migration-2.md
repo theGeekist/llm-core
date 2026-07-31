@@ -5,9 +5,9 @@ together; do not add compatibility aliases.
 
 | 1.x                                           | 2.0                                                             |
 | --------------------------------------------- | --------------------------------------------------------------- |
-| `AgentRuntime`, `createAgentRuntime`          | `AgentRunner`, `createLocalAgentRunner`                         |
-| `AgentRuntimeInput`                           | `AgentRunRequest`                                               |
-| agent execution returning workflow `Outcome`  | live `AgentRun`, then `RunResult`                               |
+| `AgentRuntime`, `createAgentRuntime`          | common `Agent`, created with `createAgent`                      |
+| `AgentRuntimeInput`                           | portable input passed to `Agent.run` or `Agent.start`           |
+| agent execution returning workflow `Outcome`  | `AgentResult`, directly or through a live `AgentRun`            |
 | `AdapterBundle`                               | typed capability bindings and explicit ports                    |
 | `createAdapterRegistry`                       | deterministic capability binding resolution                     |
 | `AdapterCallContext`                          | `InvocationContext`                                             |
@@ -16,7 +16,7 @@ together; do not add compatibility aliases.
 | adapter-owned storage and retrieval contracts | curated `@geekist/llm-core/agent` ports                         |
 | adapter-owned media contracts                 | curated `@geekist/llm-core/model` ports                         |
 | `EventStream`                                 | `EventSink` for evidence or `AgentRun.events()` for consumption |
-| `TraceEvent` history                          | `ExecutionEvent`, `AgentRunEvent`, or `InteractionEvent`        |
+| `TraceEvent` history                          | `ToolExecutionEvent`, `AgentEvent`, or `InteractionEvent`       |
 | `artefact`                                    | `artifact`                                                      |
 | broad adapter import                          | a qualified adapter subpath                                     |
 | recipe catalogue import                       | explicit workflow or agent composition                          |
@@ -42,24 +42,24 @@ const outcome = await createAgentRuntime(options).run({
 After:
 
 ```ts
-import { createLocalAgentRunner } from "@geekist/llm-core";
+import { createAgent } from "@geekist/llm-core";
 
-const runner = createLocalAgentRunner(options);
-const agent = await runner.prepare(spec);
-const run = await runner.start({
-  agent,
-  invocationContext,
-  input: { prompt: "hello" },
+const agent = createAgent({
+  model,
+  instructions: "Answer clearly.",
 });
 
+const run = agent.start({ prompt: "hello" });
 for await (const event of run.events()) {
   consume(event);
 }
 const result = await run.result();
 ```
 
-Preparation is runner-owned. A run is a live control/event handle, while
-`RunResult` is its one terminal value.
+The common facade owns preparation and invocation identity. Runtime authors use
+`@geekist/llm-core/agent/runtime` for `AgentDefinition`,
+`PreparedAgentDefinition`, `AgentRunner`, `AgentRunnerProfile`, and
+`AgentStartRequest`.
 
 ## Adapter bundle to typed bindings
 
@@ -77,7 +77,7 @@ const runtime = createAgentRuntime({ adapters });
 After:
 
 ```ts
-import { createCapabilityBindingCatalog } from "@geekist/llm-core/agent";
+import { createCapabilityBindingCatalog } from "@geekist/llm-core/agent/runtime";
 
 const catalog = createCapabilityBindingCatalog({
   verifyEvidence,
@@ -134,8 +134,9 @@ const run = await runner.start({
 const result = await run.result();
 ```
 
-Use `@geekist/llm-core/workflow` for authenticated checkpoint resume. There is
-no global recipe catalogue in 2.0.
+Use a common `Workflow` for ordinary orchestration and
+`@geekist/llm-core/workflow/runtime` for authenticated checkpoint resume.
+There is no global recipe catalogue in 2.0.
 
 ## Removed diagnostics and composition helpers
 
@@ -146,9 +147,9 @@ by the capability that produces them; do not recreate a generic cross-domain
 diagnostic bag.
 
 The V1 recipe `Pack` and workflow `Plugin` abstractions are also removed.
-Compose ordinary definitions and ports at the application boundary:
+Compose ordinary workflows and ports at the application boundary:
 
-- use `composeWorkflow` for reusable passive workflow definitions;
+- use runtime `composeWorkflow` for reusable passive workflows;
 - use `createModelToolAgentProgram` for the model/tool agent loop;
 - wrap a runner, model, or workflow explicitly when the application needs
   hooks;
@@ -185,7 +186,7 @@ After:
 import { executeControlledTool } from "@geekist/llm-core/control";
 
 const outcome = await executeControlledTool({
-  binding,
+  tool,
   call,
   securityDomain,
   digestKeyRef,
@@ -215,7 +216,7 @@ const outcome = await runtime.resume(resumeToken, input);
 After:
 
 ```ts
-import { resumeInterventionWorkflow } from "@geekist/llm-core/workflow";
+import { resumeInterventionWorkflow } from "@geekist/llm-core/workflow/runtime";
 
 const outcome = await resumeInterventionWorkflow({
   checkpoint,
@@ -246,30 +247,19 @@ const transport = createUiSdkAdapter(session);
 After:
 
 ```ts
-import { createInteractionSession } from "@geekist/llm-core/interaction";
-import { createAiSdkUiProjectionMapper } from "@geekist/llm-core/adapters/ai-sdk-ui";
+import { createConversation } from "@geekist/llm-core";
 
-const session = createInteractionSession({
-  conversationId,
-  agent,
-  runner,
-  store,
-  identity,
-});
-const interactionRun = await session.send({
-  input: { prompt: "hello" },
-  invocationContext,
-});
-const project = createAiSdkUiProjectionMapper();
+const conversation = createConversation({ agent, store });
 
-for await (const event of interactionRun.events()) {
-  for (const chunk of project(event)) {
-    await uiStream.write(chunk);
-  }
+for await (const event of conversation.stream({ prompt: "hello" })) {
+  render(event);
 }
-await interactionRun.result();
 ```
 
-The session store atomically reserves a conversation revision before the
-runner executes. UI projection consumes canonical, redacted events and is not
-an execution or persistence authority.
+The common facade reserves a conversation revision before the agent starts and
+yields projected `ConversationEvent` values.
+
+Hosts that need an explicit `AgentRunner`, prepared definition, invocation
+context, registered content events, or live reconnect state use
+`createInteractionSession` from `/interaction`. That extension surface keeps
+raw `InteractionEvent` and `InteractionRun` machinery explicit.

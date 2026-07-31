@@ -49,7 +49,7 @@ export interface ToolExecutionSemantics {
   retryAfterStart: RetryAfterStartSemantics;
 }
 
-export interface ToolSpec {
+export interface ToolDefinition {
   id: ToolId;
   version: ToolVersion;
   description: string;
@@ -67,13 +67,13 @@ export interface ToolCall {
   idempotencyKey?: string;
 }
 
-export interface ToolFailure {
+export interface ToolExecutionFailure {
   code: string;
   safeMessage?: string;
   retryable: boolean;
 }
 
-export type ToolResult =
+export type ToolExecutionResult =
   | {
       toolCallId: ToolCallId;
       status: "succeeded";
@@ -82,10 +82,10 @@ export type ToolResult =
   | {
       toolCallId: ToolCallId;
       status: "failed";
-      error: ToolFailure;
+      error: ToolExecutionFailure;
     };
 
-export interface ToolBindingValidationInput {
+export interface ExecutableToolValidationInput {
   call: ToolCall;
 }
 
@@ -94,10 +94,10 @@ export interface ToolExecutionInput {
   control?: ToolExecutionControl;
 }
 
-export interface ToolBinding {
-  spec: ToolSpec;
-  validate(input: ToolBindingValidationInput): MaybePromise<ToolCall>;
-  execute(input: ToolExecutionInput): MaybePromise<ToolResult>;
+export interface ExecutableTool {
+  definition: ToolDefinition;
+  validate(input: ExecutableToolValidationInput): MaybePromise<ToolCall>;
+  execute(input: ToolExecutionInput): MaybePromise<ToolExecutionResult>;
 }
 
 /**

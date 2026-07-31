@@ -26,7 +26,7 @@ export type ConversationContentPart =
   | ToolCallPart
   | ConversationToolResultPart;
 
-export interface ConversationTurn {
+export interface ConversationMessage {
   readonly role: ModelRole;
   readonly content: ConversationContentPart[];
   readonly occurredAt?: string;
@@ -34,7 +34,7 @@ export interface ConversationTurn {
 
 export interface ConversationRecord {
   readonly conversationId: ConversationId;
-  readonly turns: ConversationTurn[];
+  readonly turns: ConversationMessage[];
   readonly revision: number;
 }
 
@@ -50,7 +50,7 @@ export interface ConversationReadInput {
 }
 
 export interface ConversationAppendInput extends ConversationReadInput {
-  readonly turn: ConversationTurn;
+  readonly turn: ConversationMessage;
 }
 
 export interface ConversationResetInput {

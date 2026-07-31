@@ -1,15 +1,16 @@
 import type { ConversationId, EventId, InvocationContext, JsonValue, RunId } from "#contracts";
 import type { MaybePromise } from "#shared/maybe";
+import type { Agent } from "../../agent";
 import type {
   AgentRun,
-  AgentRunEvent,
+  AgentEvent,
   AgentRunner,
-  PreparedAgentSpec,
-  RunResult,
+  PreparedAgentDefinition,
+  AgentResult,
 } from "../../features/agent/public";
 import type {
   EventSink,
-  ExecutionEvent,
+  ToolExecutionEvent,
   RedactionMetadata,
   ToolReceiptState,
 } from "../../features/evidence/public";
@@ -76,12 +77,12 @@ export type InteractionEvent =
   | {
       readonly kind: "agent-run";
       readonly conversationId: ConversationId;
-      readonly event: AgentRunEvent;
+      readonly event: AgentEvent;
     }
   | {
       readonly kind: "tool-execution";
       readonly conversationId: ConversationId;
-      readonly event: ExecutionEvent;
+      readonly event: ToolExecutionEvent;
     }
   | {
       readonly kind: "content";
@@ -94,9 +95,9 @@ export type InteractionRunStatus =
   | "running"
   | "awaiting-intervention"
   | "cancellation-requested"
-  | RunResult["status"];
+  | AgentResult["status"];
 
-export type InteractionUiEvent =
+export type ConversationEvent =
   | {
       readonly kind: "run-started";
       readonly eventId: EventId;
@@ -134,7 +135,7 @@ export type InteractionUiEvent =
       readonly kind: "run-finished";
       readonly eventId: EventId;
       readonly runId: RunId;
-      readonly status: RunResult["status"];
+      readonly status: AgentResult["status"];
       readonly reasonCode?: string;
     }
   | {
@@ -189,7 +190,7 @@ export interface InteractionProjection {
   readonly runId?: RunId;
   readonly eventIds: readonly EventId[];
   readonly eventFingerprints: Readonly<Record<string, string>>;
-  readonly events: readonly InteractionUiEvent[];
+  readonly events: readonly ConversationEvent[];
   readonly lastSequences: Readonly<Record<string, number>>;
   readonly terminalRunIds: readonly RunId[];
   readonly terminalMessageKeys: readonly string[];
@@ -197,51 +198,51 @@ export interface InteractionProjection {
   readonly seenToolCallKeys: readonly string[];
 }
 
-export interface ConversationTurn {
+export interface ConversationRunRecord {
   readonly runId: RunId;
   readonly input: JsonValue;
-  readonly status: RunResult["status"];
+  readonly status: AgentResult["status"];
   readonly output?: JsonValue;
   readonly reasonCode?: string;
 }
 
-export interface ConversationSessionValue {
+export interface ConversationState {
   readonly conversationId: ConversationId;
   readonly revision: number;
-  readonly turns: readonly ConversationTurn[];
+  readonly turns: readonly ConversationRunRecord[];
   readonly projection: InteractionProjection;
   readonly providerSession?: ProviderSessionRef;
 }
 
-export type ConversationSessionSnapshot = Omit<Snapshot, "value"> & {
-  readonly value: ConversationSessionValue;
+export type ConversationSnapshot = Omit<Snapshot, "value"> & {
+  readonly value: ConversationState;
 };
 
-export interface ConversationSessionLoadRequest {
+export interface ConversationStoreLoadRequest {
   readonly conversationId: ConversationId;
 }
 
-export interface ConversationSessionSaveRequest {
-  readonly conversationId: ConversationId;
-  readonly expectedRevision: number;
-  readonly reservationId: string;
-  readonly snapshot: ConversationSessionSnapshot;
-}
-
-export interface ConversationSessionReservationRequest {
+export interface ConversationStoreSaveRequest {
   readonly conversationId: ConversationId;
   readonly expectedRevision: number;
   readonly reservationId: string;
+  readonly snapshot: ConversationSnapshot;
 }
 
-export interface ConversationSessionReservation {
+export interface ConversationStoreReservationRequest {
   readonly conversationId: ConversationId;
   readonly expectedRevision: number;
   readonly reservationId: string;
 }
 
-export interface ConversationSessionStore {
-  load(request: ConversationSessionLoadRequest): MaybePromise<ConversationSessionSnapshot | null>;
+export interface ConversationStoreReservation {
+  readonly conversationId: ConversationId;
+  readonly expectedRevision: number;
+  readonly reservationId: string;
+}
+
+export interface ConversationStore {
+  load(request: ConversationStoreLoadRequest): MaybePromise<ConversationSnapshot | null>;
   /**
    * Atomically acquires exclusive ownership of `expectedRevision`.
    *
@@ -250,17 +251,39 @@ export interface ConversationSessionStore {
    * called; implementations must not emulate this with a post-execution CAS.
    */
   reserve(
-    request: ConversationSessionReservationRequest,
-  ): MaybePromise<ConversationSessionReservation | null>;
+    request: ConversationStoreReservationRequest,
+  ): MaybePromise<ConversationStoreReservation | null>;
   /**
    * Commits the next snapshot only for the still-held reservation.
    *
    * `conflict` means the reservation was lost or invalid and is never a normal
    * optimistic race after runner execution.
    */
-  save(request: ConversationSessionSaveRequest): MaybePromise<"saved" | "conflict">;
+  save(request: ConversationStoreSaveRequest): MaybePromise<"saved" | "conflict">;
   /** Idempotently releases an uncommitted or consumed reservation. */
-  release(reservation: ConversationSessionReservation): MaybePromise<void>;
+  release(reservation: ConversationStoreReservation): MaybePromise<void>;
+}
+
+export interface ConversationConfig {
+  readonly agent: Agent;
+  readonly store?: ConversationStore;
+}
+
+export interface ConversationResult {
+  readonly conversationId: ConversationId;
+  readonly status: AgentResult["status"];
+  readonly output?: JsonValue;
+  readonly reasonCode?: string;
+}
+
+export interface ConversationRun extends AsyncIterable<ConversationEvent> {
+  result(): Promise<ConversationResult>;
+}
+
+export interface Conversation {
+  readonly conversationId: ConversationId;
+  send(input: JsonValue): Promise<ConversationResult>;
+  stream(input: JsonValue): ConversationRun;
 }
 
 export interface InteractionSendRequest {
@@ -270,8 +293,8 @@ export interface InteractionSendRequest {
 
 export interface InteractionRunResult {
   readonly conversationId: ConversationId;
-  readonly run: RunResult;
-  readonly snapshot: ConversationSessionSnapshot;
+  readonly run: AgentResult;
+  readonly snapshot: ConversationSnapshot;
 }
 
 export interface InteractionLiveConnection {
@@ -290,7 +313,7 @@ export interface InteractionSession {
   readonly conversationId: ConversationId;
   readonly executionEventSink: EventSink;
   emitContent(event: RegisteredInteractionContentEvent): Promise<void>;
-  load(): Promise<ConversationSessionSnapshot>;
+  load(): Promise<ConversationSnapshot>;
   send(request: InteractionSendRequest): Promise<InteractionRun>;
   reconnect(continuation: LiveContinuation<InteractionLiveConnection>): InteractionLiveConnection;
 }
@@ -303,8 +326,8 @@ export interface InteractionSessionIdentityPort {
 
 export interface CreateInteractionSessionOptions {
   readonly conversationId: ConversationId;
-  readonly agent: PreparedAgentSpec;
+  readonly agent: PreparedAgentDefinition;
   readonly runner: AgentRunner;
-  readonly store: ConversationSessionStore;
+  readonly store: ConversationStore;
   readonly identity: InteractionSessionIdentityPort;
 }
