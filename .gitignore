@@ -13,6 +13,7 @@ coverage/
 pipeline
 pipeline/
 docs/.vitepress/cache/
+docs/handoffs/
 /assistant-ui/
 copilot-sdk
 SKILLS.md
