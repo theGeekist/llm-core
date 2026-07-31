@@ -3,7 +3,7 @@ architecture_version: 2
 id: specification-contracts
 title: Specification model and conversion
 stage: specifications
-status: review
+status: done
 priority: high
 preferred_owner_kind: coordinator
 owner: codex-specification-contracts-review
@@ -104,10 +104,12 @@ bun run lint
 - 2026-08-01 — Remediation committed at `5714059`: closed adapter support now
   declares ownership, write-back, fixtures and evidence; graph-attached reports
   reject unknown source/document and node bindings. All specified gates passed.
+- 2026-08-01 — Coordinator integrated the reviewed remediation at `608843d`.
+  The receiving focused specification-contract test passed.
 
 ## Handoff
 
-Remediation ready for coordinator review.
+Remediation completed and integrated by the coordinator.
 
 - Commit: `5714059869ed30883276d2482b662fa89d244315`
 - Worktree: clean at the remediation commit before this review-state record.
