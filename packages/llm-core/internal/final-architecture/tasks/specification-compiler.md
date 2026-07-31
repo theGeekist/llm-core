@@ -3,7 +3,7 @@ architecture_version: 2
 id: specification-compiler
 title: Specification review and compilation
 stage: specifications
-status: review
+status: done
 priority: high
 preferred_owner_kind: coordinator
 owner: codex-specification-compiler
@@ -127,10 +127,12 @@ entrypoints.
   process-local accepted provenance, authority-bound compilation, final async
   revalidation, and a fresh WPKernel Pipeline per invocation. Independent
   review found and confirmed fixes for three P1 authority/scope gaps.
+- 2026-08-01 — Coordinator integrated the reviewed task at `7c68f6f`; the
+  receiving focused compiler test passed.
 
 ## Handoff
 
-Ready for coordinator review.
+Completed and integrated by the coordinator.
 
 - Commit: `a54c4cd95185af7f36d2ba7d9ba2e3dae148739c`
 - Worktree: clean at the implementation commit before this review-state record.

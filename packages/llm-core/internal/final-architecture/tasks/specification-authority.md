@@ -3,7 +3,7 @@ architecture_version: 2
 id: specification-authority
 title: Recheck specification decision before execution
 stage: specifications
-status: proposed
+status: ready
 priority: high
 preferred_owner_kind: coordinator
 owner:
@@ -104,7 +104,8 @@ bun run lint
 
 ## Work log
 
-Not started.
+- 2026-08-01 — Promoted to ready after `specification-compiler` completed at
+  `7c68f6f`. No recorded authority-enforcement blocker remains.
 
 ## Handoff
 
