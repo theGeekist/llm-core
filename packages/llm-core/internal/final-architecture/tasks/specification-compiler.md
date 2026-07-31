@@ -3,16 +3,16 @@ architecture_version: 2
 id: specification-compiler
 title: Specification review and compilation
 stage: specifications
-status: ready
+status: claimed
 priority: high
 preferred_owner_kind: coordinator
-owner:
+owner: codex-specification-compiler
 owner_kind: codex
-lease_started_at:
-lease_expires_at:
-base_sha:
-branch:
-worktree:
+lease_started_at: 2026-08-01T07:15:23+08:00
+lease_expires_at: 2026-08-02T07:15:23+08:00
+base_sha: d95ab3d35b0aabd0914a34c79ce20e5a75d7d258
+branch: task/specification-compiler
+worktree: /Users/jasonnathan/Repos/@theGeekist/llm-core/.worktrees/specification-compiler
 depends_on:
   - specification-contracts
 decision_dependencies:
@@ -121,6 +121,7 @@ entrypoints.
 
 - 2026-08-01 — Promoted to ready after `specification-contracts` completed at
   `74863b4`. No recorded compiler blocker remains.
+- 2026-08-01 — Claimed on `task/specification-compiler` from `d95ab3d`.
 
 ## Handoff
 
