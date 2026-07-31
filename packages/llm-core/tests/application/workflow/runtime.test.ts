@@ -414,6 +414,21 @@ describe("workflow application runtime", () => {
     ).toEqual(["one"]);
   });
 
+  test("rejects explicitly empty workflow identities and versions", () => {
+    expect(() =>
+      defineWorkflow<State, Pause, Resume>({
+        workflowId: "",
+        steps: [append("one")],
+      }),
+    ).toThrow("identity and version must be non-empty");
+    expect(() =>
+      defineWorkflow<State, Pause, Resume>({
+        version: "",
+        steps: [append("one")],
+      }),
+    ).toThrow("identity and version must be non-empty");
+  });
+
   test("rejects duplicate composition keys and mismatched resume snapshots", () => {
     const first = defineWorkflow<State, Pause, Resume>({
       workflowId: "first",

@@ -46,8 +46,6 @@ export type WorkflowStepResult<TState, TPause> =
       readonly rollback?: WorkflowRollbackMode;
     };
 
-export type WorkflowTransition<TState, TPause> = WorkflowStepResult<TState, TPause>;
-
 export interface WorkflowStep<TState, TPause, TResumeInput = unknown> {
   readonly key: string;
   /**

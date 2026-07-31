@@ -43,6 +43,7 @@ import {
   validateAgentEventFacts,
   validateLocalAgentExecutionResult,
 } from "./validation";
+import { AsyncEventLog } from "../async-event-log";
 
 const clonePortable = <T>(value: T): T => structuredClone(value);
 
@@ -58,58 +59,9 @@ const deepFreeze = <T>(value: T): T => {
 
 const frozenPortable = <T>(value: T): T => deepFreeze(clonePortable(value));
 
-class AgentRunEventLog {
-  readonly #events: AgentEvent[] = [];
-  readonly #waiters = new Set<() => void>();
-  #closed = false;
-
-  append(event: AgentEvent): void {
-    if (this.#closed) {
-      return;
-    }
-    this.#events.push(event);
-    for (const wake of this.#waiters) {
-      wake();
-    }
-    this.#waiters.clear();
-  }
-
-  close(): void {
-    this.#closed = true;
-    for (const wake of this.#waiters) {
-      wake();
-    }
-    this.#waiters.clear();
-  }
-
-  stream(): AsyncIterable<AgentEvent> {
-    const events = this.#events;
-    const waiters = this.#waiters;
-    const closed = () => this.#closed;
-    return {
-      async *[Symbol.asyncIterator]() {
-        let index = 0;
-        while (true) {
-          while (index < events.length) {
-            const event = events[index];
-            index += 1;
-            if (event) {
-              yield event;
-            }
-          }
-          if (closed()) {
-            return;
-          }
-          await new Promise<void>((resolve) => waiters.add(resolve));
-        }
-      },
-    };
-  }
-}
-
 interface RunState {
   readonly identity: AgentRunIdentity;
-  readonly log: AgentRunEventLog;
+  readonly log: AsyncEventLog<AgentEvent>;
   readonly interventions: InterventionDecision[];
   readonly interventionRequests: Map<string, InterventionRequest>;
   readonly terminalEventId: EventId;
@@ -255,7 +207,7 @@ export const createLocalAgentRunner = (options: CreateLocalAgentRunnerOptions): 
     const initialTimestamp = readNow();
     const state: RunState = {
       identity: frozenPortable(identity),
-      log: new AgentRunEventLog(),
+      log: new AsyncEventLog<AgentEvent>(),
       interventions: [],
       interventionRequests: new Map(),
       terminalEventId: readEventId(),

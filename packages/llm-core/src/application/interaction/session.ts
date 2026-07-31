@@ -22,6 +22,7 @@ import {
 } from "./events";
 import { createInteractionProjection, reduceInteractionProjection } from "./projection";
 import { registerConversationSnapshot } from "./registration";
+import { AsyncEventLog } from "../async-event-log";
 import { registerInteractionProviderSession } from "./provider-session-registration";
 import type {
   ConversationStoreReservation,
@@ -36,54 +37,6 @@ import type {
   InteractionSession,
 } from "./types";
 import { isSafeInteractionCode } from "./content-registration";
-
-class InteractionEventLog {
-  readonly #events: InteractionEvent[] = [];
-  readonly #waiters = new Set<() => void>();
-  #closed = false;
-
-  append(event: InteractionEvent): void {
-    if (this.#closed) {
-      return;
-    }
-    this.#events.push(event);
-    for (const wake of this.#waiters) {
-      wake();
-    }
-    this.#waiters.clear();
-  }
-
-  close(): void {
-    this.#closed = true;
-    for (const wake of this.#waiters) {
-      wake();
-    }
-    this.#waiters.clear();
-  }
-
-  stream(): AsyncIterable<InteractionEvent> {
-    const events = this.#events;
-    const waiters = this.#waiters;
-    const closed = () => this.#closed;
-    return {
-      async *[Symbol.asyncIterator]() {
-        let index = 0;
-        while (true) {
-          while (index < events.length) {
-            const event = events[index++];
-            if (event) {
-              yield event;
-            }
-          }
-          if (closed()) {
-            return;
-          }
-          await new Promise<void>((resolve) => waiters.add(resolve));
-        }
-      },
-    };
-  }
-}
 
 const emptyValue = (conversationId: ConversationId): ConversationState => ({
   conversationId,
@@ -140,7 +93,7 @@ export const createInteractionSession = (
   let active:
     | {
         readonly runId: RunId;
-        readonly log: InteractionEventLog;
+        readonly log: AsyncEventLog<InteractionEvent>;
         projection: ConversationState["projection"];
       }
     | undefined;
@@ -214,7 +167,7 @@ export const createInteractionSession = (
     startingEvents = [];
     let loaded: ConversationSnapshot;
     let agentRun: InteractionRun["agentRun"];
-    let log: InteractionEventLog;
+    let log: AsyncEventLog<InteractionEvent>;
     let submittedInput: JsonValue;
     let reservation: ConversationStoreReservation | undefined;
     try {
@@ -263,7 +216,7 @@ export const createInteractionSession = (
       if (!isUuidV7(agentRun.identity.runId)) {
         throw new TypeError("New interaction agent runs must use UUIDv7 run IDs.");
       }
-      log = new InteractionEventLog();
+      log = new AsyncEventLog<InteractionEvent>();
       active = {
         runId: agentRun.identity.runId,
         log,

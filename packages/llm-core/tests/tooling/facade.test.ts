@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import { newCoreId, type InvocationId, type JsonValue, type ToolCallId } from "#contracts";
-import { defineTool } from "../../src/features/tooling/public";
+import { defineTool, type ToolConfig } from "../../src/features/tooling/public";
 import {
   readExecutableTool,
   type ToolArgumentValidationResult,
@@ -95,6 +95,93 @@ describe("common Tool facade", () => {
       status: "succeeded",
       content: [{ kind: "text", text: "Found sky" }],
     });
+  });
+
+  test("rejects invalid arguments before the executor runs", () => {
+    let executions = 0;
+    const tool = defineTool({
+      name: "validated",
+      description: "Reject invalid input before execution.",
+      input: {
+        schema: { type: "object" },
+        validate: (): ToolArgumentValidationResult => ({
+          valid: false,
+          issues: [{ path: "input", code: "invalid" }],
+        }),
+      },
+      effect: "read-only",
+      execute: () => {
+        executions += 1;
+        return null;
+      },
+    });
+    const executable = readExecutableTool(tool);
+
+    expect(() =>
+      executable.execute({
+        call: {
+          toolCallId: TOOL_CALL_ID,
+          toolId: executable.definition.id,
+          toolVersion: executable.definition.version,
+          arguments: {},
+          invocation: { invocationId: INVOCATION_ID },
+        },
+      }),
+    ).toThrow("Tool arguments do not satisfy");
+    expect(executions).toBe(0);
+  });
+
+  test("rejects non-portable executor results for an explicit effect target", () => {
+    const tool = defineTool({
+      name: "write",
+      description: "Reject non-portable output.",
+      input: { schema: {}, validate: () => ({ valid: true }) },
+      effect: { class: "external-write", targets: [{ kind: "service", id: "billing-api" }] },
+      execute: () => new Date() as unknown as JsonValue,
+    });
+    const executable = readExecutableTool(tool);
+
+    expect(() =>
+      executable.execute({
+        call: {
+          toolCallId: TOOL_CALL_ID,
+          toolId: executable.definition.id,
+          toolVersion: executable.definition.version,
+          arguments: {},
+          invocation: { invocationId: INVOCATION_ID },
+        },
+      }),
+    ).toThrow("portable JSON");
+  });
+
+  test("fails closed for malformed runtime definitions", () => {
+    const invalidDefinitions: readonly unknown[] = [
+      {
+        name: "missing-input",
+        description: "Reject missing input.",
+        input: undefined,
+        effect: "read-only",
+        execute: () => null,
+      },
+      {
+        name: "invalid-schema",
+        description: "Reject non-JSON schemas.",
+        input: { schema: new Date(), validate: () => ({ valid: true }) },
+        effect: "read-only",
+        execute: () => null,
+      },
+      {
+        name: "missing-executor",
+        description: "Reject missing executors.",
+        input: { schema: {}, validate: () => ({ valid: true }) },
+        effect: "read-only",
+        execute: undefined,
+      },
+    ];
+
+    for (const definition of invalidDefinitions) {
+      expect(() => defineTool(definition as ToolConfig)).toThrow("Tool definitions require");
+    }
   });
 
   test("fails closed when a meaningful effect omits targets", () => {

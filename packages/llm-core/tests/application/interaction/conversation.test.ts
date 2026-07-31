@@ -3,6 +3,7 @@ import type { JsonValue } from "#contracts";
 import type { Agent } from "../../../src/agent";
 import {
   createConversation,
+  type ConversationEvent,
   type ConversationSnapshot,
   type ConversationStore,
 } from "../../../src/application/interaction/public";
@@ -90,5 +91,30 @@ describe("common conversation facade", () => {
     expect(memory.snapshot()?.value.revision).toBe(2);
     expect(memory.snapshot()?.value.turns).toHaveLength(2);
     expect(memory.snapshot()?.value.turns.map((turn) => turn.input)).toEqual(["hello", "again"]);
+  });
+
+  test("propagates terminal failures through the event stream", async () => {
+    const failure = new Error("conversation store unavailable");
+    const memory = conversationStore();
+    const conversation = createConversation({
+      agent: readyAgent(),
+      store: {
+        ...memory.store,
+        load: () => {
+          throw failure;
+        },
+      },
+    });
+    const run = conversation.stream("hello");
+    const observed: ConversationEvent[] = [];
+    const events = (async () => {
+      for await (const event of run) {
+        observed.push(event);
+      }
+    })();
+
+    await expect(events).rejects.toBe(failure);
+    await expect(run.result()).rejects.toBe(failure);
+    expect(observed).toEqual([]);
   });
 });

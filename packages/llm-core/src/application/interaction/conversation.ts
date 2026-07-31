@@ -8,6 +8,7 @@ import {
   reduceInteractionProjection,
 } from "./projection";
 import { registerConversationSnapshot } from "./registration";
+import { AsyncEventLog } from "../async-event-log";
 import type {
   Conversation,
   ConversationConfig,
@@ -19,57 +20,6 @@ import type {
   ConversationStore,
   ConversationStoreReservation,
 } from "./types";
-
-const NO_FAILURE = Symbol("no-conversation-failure");
-
-class ConversationEventLog {
-  readonly #events: ConversationEvent[] = [];
-  readonly #waiters = new Set<() => void>();
-  #closed = false;
-  #error: unknown;
-  #hasError = false;
-
-  append(event: ConversationEvent): void {
-    if (this.#closed) return;
-    this.#events.push(event);
-    for (const wake of this.#waiters) wake();
-    this.#waiters.clear();
-  }
-
-  close(error: unknown | typeof NO_FAILURE = NO_FAILURE): void {
-    if (error !== NO_FAILURE) {
-      this.#error = error;
-      this.#hasError = true;
-    }
-    this.#closed = true;
-    for (const wake of this.#waiters) wake();
-    this.#waiters.clear();
-  }
-
-  stream(): AsyncIterable<ConversationEvent> {
-    const events = this.#events;
-    const waiters = this.#waiters;
-    const closed = () => this.#closed;
-    const failure = () => ({ hasError: this.#hasError, error: this.#error });
-    return {
-      async *[Symbol.asyncIterator]() {
-        let index = 0;
-        while (true) {
-          while (index < events.length) {
-            const event = events[index++];
-            if (event) yield event;
-          }
-          if (closed()) {
-            const terminal = failure();
-            if (terminal.hasError) throw terminal.error;
-            return;
-          }
-          await new Promise<void>((resolve) => waiters.add(resolve));
-        }
-      },
-    };
-  }
-}
 
 const createMemoryConversationStore = (): ConversationStore => {
   let snapshot: ConversationSnapshot | null = null;
@@ -151,7 +101,7 @@ export const createConversation = (config: ConversationConfig): Conversation => 
       throw new TypeError("Conversation input must be strict portable JSON.");
     }
     busy = true;
-    const log = new ConversationEventLog();
+    const log = new AsyncEventLog<ConversationEvent>();
     // eslint-disable-next-line sonarjs/cognitive-complexity -- reservation, event projection and persistence form one atomic run lifecycle
     const result = (async (): Promise<ConversationResult> => {
       let reservation: ConversationStoreReservation | null = null;

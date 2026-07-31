@@ -13,5 +13,4 @@ export type {
   WorkflowStep,
   WorkflowStepContext,
   WorkflowStepResult,
-  WorkflowTransition,
 } from "./runtime-types";

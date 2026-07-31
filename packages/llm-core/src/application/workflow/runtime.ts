@@ -6,7 +6,7 @@ import type {
   WorkflowRollbackFailure,
   WorkflowRuntimeOptions,
   WorkflowStep,
-  WorkflowTransition,
+  WorkflowStepResult,
 } from "./runtime-types";
 
 const defaultSleep = (delayMs: number): Promise<void> =>
@@ -47,7 +47,7 @@ type InvokeStepInput<TState, TPause, TResumeInput> = {
 const invokeStep = <TState, TPause, TResumeInput>(
   input: InvokeStepInput<TState, TPause, TResumeInput>,
   attempt = 1,
-): MaybePromise<WorkflowTransition<TState, TPause>> =>
+): MaybePromise<WorkflowStepResult<TState, TPause>> =>
   maybeTry(
     (error) => {
       if (!mayRetry(input.step as WorkflowStep<unknown, unknown, unknown>, error, attempt)) {

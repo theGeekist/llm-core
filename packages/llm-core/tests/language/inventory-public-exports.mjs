@@ -159,7 +159,6 @@ const commonByEntrypoint = new Map([
       "WorkflowShouldRetryInput",
       "WorkflowStepContext",
       "WorkflowStepResult",
-      "WorkflowTransition",
     ]),
   ],
 ]);
@@ -276,6 +275,7 @@ const exactReplacements = new Map([
   ["./workflow:ExecutableWorkflowStep", ["common", "./workflow", "rename:WorkflowStep"]],
   ["./workflow:WorkflowExecutionOutcome", ["common", "./workflow", "rename:WorkflowResult"]],
   ["./workflow:WorkflowPauseSnapshot", ["common", "./workflow", "rename:WorkflowPause"]],
+  ["./workflow:WorkflowTransition", ["internal", null, "remove-export"]],
   [
     "./workflow:WorkflowStepResult",
     [

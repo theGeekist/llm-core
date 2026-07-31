@@ -5,7 +5,7 @@ import {
   type JsonValue,
   type ToolCallId,
 } from "#contracts";
-import { isPromiseLike, maybeChain, maybeReduce, type MaybePromise } from "#shared/maybe";
+import { maybeChain, maybeReduce, type MaybePromise } from "#shared/maybe";
 import {
   registerConversationRecord,
   createConversationMessage,
@@ -425,7 +425,7 @@ export const createModelToolAgentProgram = (
       const user = messages[messages.length - 1]!;
       return maybeChain(() => loop(state), appendConversation(options.conversation, state, user));
     };
-    return isPromiseLike(loaded) ? Promise.resolve(loaded).then(start) : start(loaded);
+    return maybeChain(start, loaded);
   };
 
   return Object.freeze({ execute });
