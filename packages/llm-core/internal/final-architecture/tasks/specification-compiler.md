@@ -3,7 +3,7 @@ architecture_version: 2
 id: specification-compiler
 title: Specification review and compilation
 stage: specifications
-status: claimed
+status: in_progress
 priority: high
 preferred_owner_kind: coordinator
 owner: codex-specification-compiler
@@ -122,6 +122,7 @@ entrypoints.
 - 2026-08-01 — Promoted to ready after `specification-contracts` completed at
   `74863b4`. No recorded compiler blocker remains.
 - 2026-08-01 — Claimed on `task/specification-compiler` from `d95ab3d`.
+- 2026-08-01 — Implementation started after the task claim was recorded.
 
 ## Handoff
 
