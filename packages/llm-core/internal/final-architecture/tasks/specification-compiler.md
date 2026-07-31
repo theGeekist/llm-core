@@ -3,7 +3,7 @@ architecture_version: 2
 id: specification-compiler
 title: Specification review and compilation
 stage: specifications
-status: in_progress
+status: review
 priority: high
 preferred_owner_kind: coordinator
 owner: codex-specification-compiler
@@ -123,7 +123,32 @@ entrypoints.
   `74863b4`. No recorded compiler blocker remains.
 - 2026-08-01 — Claimed on `task/specification-compiler` from `d95ab3d`.
 - 2026-08-01 — Implementation started after the task claim was recorded.
+- 2026-08-01 — Implemented at `a54c4cd`: deterministic review/resolution,
+  process-local accepted provenance, authority-bound compilation, final async
+  revalidation, and a fresh WPKernel Pipeline per invocation. Independent
+  review found and confirmed fixes for three P1 authority/scope gaps.
 
 ## Handoff
 
-Pending.
+Ready for coordinator review.
+
+- Commit: `a54c4cd95185af7f36d2ba7d9ba2e3dae148739c`
+- Worktree: clean at the implementation commit before this review-state record.
+- Changed files:
+  - `packages/llm-core/src/application/specification-compiler/compiler.ts`
+  - `packages/llm-core/src/application/specification-compiler/public.ts`
+  - `packages/llm-core/src/application/specification-compiler/resolution.ts`
+  - `packages/llm-core/src/application/specification-compiler/runtime.ts`
+  - `packages/llm-core/src/application/specification-compiler/types.ts`
+  - `packages/llm-core/tests/specification-compiler/compiler.test.ts`
+  - this task file
+- Verification (all exit 0): `bun test packages/llm-core/tests/specification-compiler`
+  (6 pass); `bun run typecheck:packages` (including
+  `contracts:schema:check`); `bun run typecheck:tests`; `bun run lint`; the
+  task-file Prettier check; and `git diff --check`.
+- Applied ADRs: ADR-005, ADR-006, ADR-009, ADR-011 and ADR-012. WPKernel uses
+  the pinned, packed-qualified `@wpkernel/pipeline@1.2.0` root public API.
+- Remaining boundary: this slice does not publish package metadata or integrate
+  compilation authority into agent/workflow preparation, execution or resume;
+  `specification-authority` owns those enforcement points.
+- No shared-file changes are requested from the integration owner.
