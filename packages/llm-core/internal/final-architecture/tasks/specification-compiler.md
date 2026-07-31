@@ -3,7 +3,7 @@ architecture_version: 2
 id: specification-compiler
 title: Specification review and compilation
 stage: specifications
-status: blocked
+status: ready
 priority: high
 preferred_owner_kind: coordinator
 owner:
@@ -117,7 +117,10 @@ without invoking the target compiler or adapter.
 WPKernel Pipeline 1.2.0 is published, pinned exactly and packed-qualified by
 `llm-core`: the release build passed 515 tests with one optional compatibility
 skip, and the isolated consumer verified all 19 ESM runtime and declaration
-entrypoints. The remaining blocker is `specification-contracts`.
+entrypoints.
+
+- 2026-08-01 — Promoted to ready after `specification-contracts` completed at
+  `74863b4`. No recorded compiler blocker remains.
 
 ## Handoff
 

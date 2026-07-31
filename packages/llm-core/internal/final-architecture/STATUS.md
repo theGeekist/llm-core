@@ -31,7 +31,7 @@ Swarm claiming and integration follow [`COORDINATION.md`](COORDINATION.md).
 | language-vocabulary                   | language       | done     | coordinator   | codex-root                | language-audit, ADR-011                                                                                                   |
 | language-rollout                      | language       | done     | coordinator   | codex-root                | language-vocabulary, ADR-012                                                                                              |
 | specification-contracts               | specifications | done     | coordinator   | codex-specification-contracts | language-rollout, ADR-009                                                                                                 |
-| specification-compiler                | specifications | blocked  | coordinator   | —                         | specification-contracts                                                                                                   |
+| specification-compiler                | specifications | ready    | coordinator   | —                         | specification-contracts                                                                                                   |
 | specification-authority               | specifications | proposed | coordinator   | —                         | specification-compiler                                                                                                    |
 | specification-api                     | specifications | proposed | coordinator   | —                         | specification-authority                                                                                                   |
 | adapter-openspec                      | adapters       | proposed | Codex         | —                         | specification-api                                                                                                         |
@@ -62,11 +62,10 @@ Swarm claiming and integration follow [`COORDINATION.md`](COORDINATION.md).
 
 ## Next action
 
-Claim `specification-contracts`: its only language-stage blocker is complete at
-`71b21de`. It starts the planned sequence of specification contracts,
-compiler, authority enforcement, API and qualified adapters. The proposed
-qualification tasks are independent follow-on work; they do not block the
-specification sequence.
+Claim `specification-compiler`: `specification-contracts` is complete at
+`74863b4`. It continues the planned sequence through compilation, authority
+enforcement, API and qualified adapters. The proposed qualification tasks are
+independent follow-on work; they do not block the specification sequence.
 
 Pipeline 1.2.0 is published, pinned and packed-qualified. The
-`specification-compiler` now waits only for `specification-contracts`.
+`specification-compiler` now has no remaining recorded blocker.
