@@ -3,7 +3,7 @@ architecture_version: 2
 id: specification-contracts
 title: Specification model and conversion
 stage: specifications
-status: in_progress
+status: review
 priority: high
 preferred_owner_kind: coordinator
 owner: codex-specification-contracts
@@ -92,7 +92,29 @@ bun run lint
 - 2026-08-01 — Promoted to ready after `language-rollout` completed at
   `71b21de`. ADR-012 now fixes the public specification vocabulary; no
   language-stage decision remains unresolved.
+- 2026-08-01 — Implemented the portable contracts in `a40a939` on
+  `task/specification-contracts`: detached source snapshots, semantic graph,
+  conversion/support declarations, portable decision records and pure change
+  proposals. The graph validates reference integrity while preserving cycles.
 
 ## Handoff
 
-Pending.
+Ready for coordinator review.
+
+- Commit: `a40a9391af2d3a9c6cecc1511d82d238a56fc0e1`
+- Worktree: clean at the implementation commit before this review-state record.
+- Changed implementation files:
+  - `packages/llm-core/src/features/specifications/factory.ts`
+  - `packages/llm-core/src/features/specifications/public.ts`
+  - `packages/llm-core/src/features/specifications/types.ts`
+  - `packages/llm-core/src/features/specifications/validation.ts`
+  - `packages/llm-core/tests/specifications/contracts.test.ts`
+- Verification (all exit 0): `bun test packages/llm-core/tests/specifications`;
+  `bun run typecheck:packages`; `bun run typecheck:tests`; `bun run lint`; and
+  `git diff --check`.
+- Applied ADRs: ADR-001, ADR-003, ADR-009, ADR-011 and ADR-012. No deviations.
+- Remaining boundary: `SpecificationGraph` stays feature-internal, and no
+  `./specifications` package export, runtime registration, compiler or source
+  write-back is included. Those belong to the later compiler, authority and
+  API tasks.
+- No shared-file changes are requested from the integration owner.
