@@ -6,6 +6,25 @@ export type {
 } from "./events";
 export { redactedNativeExtensions } from "./redaction";
 export type { RedactedNativeExtensions, RedactionCategory, RedactionMetadata } from "./redaction";
+export {
+  createBudgetDecisionEvidence,
+  createObservedModelUsageReceipt,
+  createUsageReceipt,
+} from "./usage";
+export type {
+  BudgetDecision,
+  BudgetDecisionEvidence,
+  BudgetDecisionPhase,
+  BudgetLimit,
+  CreateObservedModelUsageReceiptInput,
+  UnavailableUsagePricing,
+  UsageAttributionDisposition,
+  UsageInvocation,
+  UsageMetric,
+  UsagePricingDisposition,
+  UsageReceipt,
+  UsageReceiptInput,
+} from "./usage";
 export type {
   AppendToolReceiptTransition,
   AppendToolReceiptTransitionResult,

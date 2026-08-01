@@ -52,6 +52,18 @@ The adapter receives live provider dependencies during composition. Provider
 metadata crosses the boundary only after a trusted redactor projects safe JSON
 into a namespaced extension.
 
+## Preserve resolved identity for usage evidence
+
+`createResolvedModelIdentity` snapshots the exact model, provider, deployment,
+profile ID, and profile version selected for an invocation. When a live
+`Model` is already available, `resolvedModelIdentityFromProfile(model.profile)`
+derives the same identity without copying profile claims, extensions, or a
+provider client.
+
+Pass that identity to the evidence capability when recording observed usage.
+This binds a usage receipt to what was actually resolved while keeping model
+selection, credentials, and pricing outside the receipt.
+
 ## Media ports
 
 `ImageGenerationPort`, `SpeechGenerationPort`, and `TranscriptionPort` accept

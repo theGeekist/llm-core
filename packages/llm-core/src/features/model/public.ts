@@ -1,4 +1,6 @@
 export { createBuiltinModel } from "./builtin";
+export { createResolvedModelIdentity, resolvedModelIdentityFromProfile } from "./resolved-identity";
+export type { ResolvedModelIdentity, ResolvedModelIdentityInput } from "./resolved-identity";
 export type {
   ModelContentPart,
   ModelMessage,

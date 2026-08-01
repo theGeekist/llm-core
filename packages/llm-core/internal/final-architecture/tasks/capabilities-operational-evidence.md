@@ -3,7 +3,7 @@ architecture_version: 2
 id: capabilities-operational-evidence
 title: Usage receipts and observability projection
 stage: qualification
-status: claimed
+status: done
 priority: high
 preferred_owner_kind: codex
 owner: codex-operational-evidence
@@ -36,7 +36,7 @@ read_scope:
   - packages/llm-core/src/features/control/**
   - packages/llm-core/src/application/**
 review_owner: coordinator
-updated_at: 2026-08-01T06:56:05Z
+updated_at: 2026-08-01T12:56:01Z
 ---
 
 # capabilities-operational-evidence — Usage receipts and observability projection
@@ -89,7 +89,29 @@ bun run lint
 
 - 2026-08-01 — Coordinator claimed this task on `main`. It does not overlap
   the separate specification-api work, so no dedicated worktree is needed.
+- 2026-08-01 — Implemented immutable resolved-model identities, closed usage
+  receipts and budget-decision evidence, plus a private, redacted,
+  failure-isolated OpenTelemetry projection port. No SDK, collector, pricing
+  catalogue, billing record, or package entrypoint was added.
+- 2026-08-01 — Focused evidence/observability tests, package and test
+  typechecks, and lint passed before concurrent specification work introduced
+  unrelated source-boundary and specification test failures. Awaiting review.
+- 2026-08-01 — Addressed review feedback: complete attribution now requires
+  every portable usage metric, while partial attribution must state the exact
+  absent metric set. Added regressions for both overstatement cases.
+- 2026-08-01 — Review passed. Completed and integrated on `main`.
 
 ## Handoff
 
-In progress.
+Completed and integrated on `main`.
+
+- Added exact model/profile attribution, provider request IDs when available,
+  explicit partial/unavailable attribution, and explicit unavailable pricing.
+- The projection exports only fixed canonical receipt/event facts and optional
+  trace correlation. It omits extensions, authorized evidence, action digests,
+  and provider/native payloads, schedules at most once, and ignores delivery
+  failure.
+- No public adapter front was added; ADR-013 reserves that publication for a
+  dedicated release task.
+- Verification: evidence/observability tests, source build typecheck, lint,
+  formatting, schema freshness, and diff check passed.

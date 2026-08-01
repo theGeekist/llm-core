@@ -86,3 +86,45 @@ provider objects.
 
 An `EvidenceRef` identifies evidence held behind authorized storage. It carries
 integrity metadata, not a locator or permission to disclose the content.
+
+## Model usage is an observed receipt
+
+`createUsageReceipt` snapshots observed provider or adapter token usage against
+the exact invocation and resolved model/profile identity. It can record a
+provider request ID when one is available, but it accepts neither a native
+response object nor provider credentials. The receipt makes attribution
+explicit: it is attributed, partially attributed with named missing metrics, or
+unavailable with a bounded reason. `attributed` requires every portable usage
+metric; `partial.missing` must name exactly the metrics the receipt does not
+contain, so a provider response cannot overstate its coverage.
+
+For a completed portable `ModelResponse`, `createObservedModelUsageReceipt`
+derives that identity from `model.profile`, records the response's observed
+usage and request ID, and drops its content, warnings, errors, and native
+metadata. A response without usage becomes an explicit `not-reported`
+attribution rather than an inferred zero.
+
+The receipt always carries an explicit pricing disposition. This capability
+records only `unavailable` pricing (`not-provided`, `stale`, or
+`unverified-source`), so it cannot accidentally create a cost claim. A later
+cost-intelligence capability may add versioned pricing, currency, estimate, and
+provider-reconciliation facts; it must not reinterpret a usage receipt as any
+of those facts.
+
+`createBudgetDecisionEvidence` records a composition-owned allow, warn, stop,
+or overrun decision for a known invocation and budget limit. It is evidence of
+the decision, not a budget controller and not a rewrite of observed usage.
+
+## Observability is a one-way projection
+
+The internal OpenTelemetry projection adapter accepts a canonical
+`ToolExecutionEvent`, projects a fixed safe subset of its facts, and schedules
+one best-effort span or log export. It declares its sampling, redaction,
+delivery, and retention behavior. Native extensions, authorized evidence
+references, action digests, provider request metadata, and credentials are
+never projected.
+
+An exporter failure is ignored after scheduling and is never retried by the
+adapter. It cannot acknowledge, gate, or replay a model or tool effect. Trace
+context only correlates the projection with an external trace; the canonical
+event and receipt remain the source of truth.

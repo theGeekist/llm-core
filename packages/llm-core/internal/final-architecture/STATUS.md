@@ -2,7 +2,7 @@
 
 Architecture version: v2
 Updated: 1 August 2026
-Active tasks: 2
+Active tasks: 1
 
 This is a projection. Task files under [`tasks/`](tasks/) are authoritative.
 Swarm claiming and integration follow [`COORDINATION.md`](COORDINATION.md).
@@ -46,7 +46,7 @@ Swarm claiming and integration follow [`COORDINATION.md`](COORDINATION.md).
 | adapter-bmad-release                  | adapters       | proposed | coordinator   | —                              | adapter-bmad, ADR-010                                                                                                     |
 | capabilities-context-qualification    | qualification  | done     | Codex         | codex-context-qualification    | language-rollout, ADR-013                                                                                                 |
 | capabilities-evaluation-qualification | qualification  | done     | Codex         | codex-evaluation-qualification | capabilities-evaluation, language-rollout, ADR-013                                                                        |
-| capabilities-operational-evidence     | qualification  | claimed  | Codex         | codex-operational-evidence     | language-rollout, ADR-013                                                                                                 |
+| capabilities-operational-evidence     | qualification  | done     | Codex         | codex-operational-evidence     | language-rollout, ADR-013                                                                                                 |
 | runtime-receipt-reconciliation        | qualification  | proposed | Codex         | —                              | core-tool-control-events, core-state-interventions, language-rollout, ADR-013                                             |
 | runtime-temporal-reference            | qualification  | proposed | Codex         | —                              | runtime-receipt-reconciliation, capabilities-runtime-conformance, ADR-013                                                 |
 | capabilities-workspace-sandbox        | qualification  | proposed | Codex         | —                              | runtime-receipt-reconciliation, ADR-013                                                                                   |
@@ -62,9 +62,9 @@ Swarm claiming and integration follow [`COORDINATION.md`](COORDINATION.md).
 
 ## Next action
 
-Implement `capabilities-operational-evidence` on `main`. The separate coding
-agent owns the specification sequence; this task establishes usage receipts and
-failure-isolated observability projection without overlapping it.
+The separate coding agent owns the active `specification-api` sequence. The
+completed operational-evidence slice establishes usage receipts and
+failure-isolated observability projection without overlapping that work.
 
 Pipeline 1.2.0 is published, pinned and packed-qualified. The
 `specification-authority` is complete at `a1b4191`; `specification-api` is
