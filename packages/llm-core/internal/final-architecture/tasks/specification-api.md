@@ -3,7 +3,7 @@ architecture_version: 2
 id: specification-api
 title: Specification API and format compatibility
 stage: specifications
-status: review
+status: done
 priority: high
 preferred_owner_kind: coordinator
 owner: codex-root
@@ -125,6 +125,8 @@ bun run --cwd packages/llm-core format:check
 - 2026-08-01 — Reverification passed: focused type/specification/compiler/
   architecture suites; `release:build` (574 passed, 1 intentional skip);
   packed 30-entrypoint consumer; documentation check; and formatting.
+- 2026-08-01 — Coordinator review passed. Marked done; no follow-on task is
+  claimed.
 
 ## Handoff
 
