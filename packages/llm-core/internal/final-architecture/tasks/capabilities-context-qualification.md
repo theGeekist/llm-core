@@ -3,7 +3,7 @@ architecture_version: 2
 id: capabilities-context-qualification
 title: Context eligibility and compiler boundary
 stage: qualification
-status: in_progress
+status: review
 priority: high
 preferred_owner_kind: codex
 owner: codex-context-qualification
@@ -31,7 +31,7 @@ read_scope:
   - packages/llm-core/src/features/evidence/**
   - packages/llm-core/src/features/retrieval/**
 review_owner: coordinator
-updated_at: 2026-08-01T03:14:57Z
+updated_at: 2026-08-01T04:01:00Z
 ---
 
 # capabilities-context-qualification — Context eligibility and compiler boundary
@@ -82,7 +82,36 @@ bun run lint
   `language-rollout` and ADR-001, ADR-003, and ADR-013 are complete. Work is
   isolated on `task/capabilities-context-qualification` from `a4ceb81`.
 - 2026-08-01 — Implementation started in the assigned worktree.
+- 2026-08-01 — Completed at `f426841`. The compiler accepts only closed,
+  evidence-bearing eligibility facts, requires an explicit evaluation instant,
+  and emits immutable inclusion, redaction, and exclusion evidence.
 
 ## Handoff
 
-In progress.
+Ready for coordinator review.
+
+- Commit: `f426841` (`feat(context): add eligibility compiler`)
+- Worktree: clean at the implementation commit.
+- Changed files:
+  - `docs/capabilities/context.md`
+  - `packages/llm-core/src/features/context/compiler.ts`
+  - `packages/llm-core/src/features/context/public.ts`
+  - `packages/llm-core/src/features/context/types.ts`
+  - `packages/llm-core/tests/context/compiler.test.ts`
+  - this task record
+- Verification passed:
+  - `bun test tests/context` — 16 passed.
+  - `bun run typecheck` and `bun run typecheck:tests` — passed.
+  - `bun run lint`, changed-file Prettier check, and `git diff --check` — passed.
+  - `bun run contracts:schema:check`, `bun run build`, and `bun run test:package`
+    — passed; the packed consumer verified 29 entrypoints.
+- Known baseline issue: full `bun test` ran 548 passing tests and one intentional
+  skip, but two architecture-boundary tests fail on the same
+  `application/specification-compiler` deep imports at `main`. They are outside
+  this task's write scope and owned by the active specification work.
+- ADRs applied: ADR-001, ADR-003, ADR-013. No deviations.
+- Remaining risk: eligibility facts are composition-supplied declarations, not
+  a policy service or automatic prompt-injection classifier. The compiler
+  validates and records those facts but deliberately does not claim an
+  independent authorization decision.
+- Shared-file requests: none.
