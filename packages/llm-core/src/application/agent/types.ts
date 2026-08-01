@@ -9,6 +9,7 @@ import type {
   AgentProgressFacts,
   AgentRunIdentity,
   AgentStartRequest,
+  AgentDefinition,
   AgentRunnerProfile,
   PreparedAgentDefinition,
   AgentResult,
@@ -21,6 +22,10 @@ import type {
   ResumeCompatibility,
 } from "../../features/state/public";
 import type { RegisteredResumableCheckpoint } from "../../features/state/runtime";
+import type {
+  CompiledSpecification,
+  SpecificationAuthorityDependencies,
+} from "../specification-compiler/types";
 
 export interface AgentRunIdentityPort {
   newRunId(): RunId;
@@ -90,6 +95,18 @@ export interface CreateLocalAgentRunnerOptions {
     readonly authentication: InterventionAuthenticationPort;
   };
   readonly resumeCompatibility?: ResumeCompatibility;
+  /** Binds this runner's Agent definition to one compiled specification. */
+  readonly specification?: LocalAgentSpecificationAuthority;
+}
+
+/** Declarative runner target that must match the prepared Agent definition. */
+export interface LocalAgentExecutionPlan {
+  readonly agent: AgentDefinition;
+}
+
+export interface LocalAgentSpecificationAuthority {
+  readonly compiled: CompiledSpecification<LocalAgentExecutionPlan>;
+  readonly authority: SpecificationAuthorityDependencies;
 }
 
 export interface LocalAgentPreparedRequest {

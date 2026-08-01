@@ -37,6 +37,7 @@ import {
   type EffectClass,
   type ToolExecutionControl,
 } from "../../features/tooling/orchestration";
+import { verifyCompilationAuthority } from "../specification-compiler/runtime";
 import type {
   ControlledToolExecutionOutcome,
   EventDelivery,
@@ -79,6 +80,67 @@ const requireRunId = (input: ExecuteControlledToolInput): RunId => {
     );
   }
   return runId;
+};
+
+const sameDigest = (
+  left: {
+    readonly algorithm: string;
+    readonly keyRef: { readonly secretId: string };
+    readonly value: string;
+  },
+  right: typeof left,
+): boolean =>
+  left.algorithm === right.algorithm &&
+  left.keyRef.secretId === right.keyRef.secretId &&
+  left.value === right.value;
+
+const sameToolTarget = (
+  left: NonNullable<ExecuteControlledToolInput["specification"]>["compiled"]["value"]["tool"],
+  right: ExecuteControlledToolInput["tool"]["definition"],
+): boolean =>
+  left.id === right.id &&
+  left.version === right.version &&
+  left.effect.class === right.effect.class &&
+  left.effect.targets.length === right.effect.targets.length &&
+  left.effect.targets.every(
+    (target, index) =>
+      target.kind === right.effect.targets[index]?.kind &&
+      target.id === right.effect.targets[index]?.id,
+  ) &&
+  left.execution.concurrency === right.execution.concurrency &&
+  left.execution.cancellation === right.execution.cancellation &&
+  left.execution.idempotency === right.execution.idempotency &&
+  left.execution.retryAfterStart === right.execution.retryAfterStart;
+
+const specificationMatchesAction = (
+  input: ExecuteControlledToolInput,
+  bound: BoundAction,
+): boolean => {
+  const plan = input.specification?.compiled.value;
+  if (plan === undefined) return true;
+  try {
+    return (
+      sameToolTarget(plan.tool, input.tool.definition) &&
+      plan.action.canonicalDocument === bound.canonicalDocument &&
+      sameDigest(plan.action.digest, bound.digest)
+    );
+  } catch {
+    return false;
+  }
+};
+
+const verifySpecification = async (
+  input: ExecuteControlledToolInput,
+  bound?: BoundAction,
+): Promise<void> => {
+  if (input.specification === undefined) return;
+  await verifyCompilationAuthority({
+    compiled: input.specification.compiled,
+    authority: input.specification.authority,
+  });
+  if (bound && !specificationMatchesAction(input, bound)) {
+    throw new TypeError("Compiled specification does not authorize this controlled tool action.");
+  }
 };
 
 const eventKind = (from: ToolReceiptState, to: ToolReceiptState): ToolExecutionEventKind => {
@@ -395,6 +457,7 @@ const existingOutcome = (receipt: ToolExecutionReceipt): ControlledToolExecution
 export const executeControlledTool = async (
   originalInput: ExecuteControlledToolInput,
 ): Promise<ControlledToolExecutionOutcome> => {
+  await verifySpecification(originalInput);
   if (!isRegisteredExecutableTool(originalInput.tool)) {
     throw new TypeError("Controlled tool execution requires a registered ExecutableTool.");
   }
@@ -416,6 +479,7 @@ export const executeControlledTool = async (
     keyRef: input.digestKeyRef,
     digestPort: input.digestPort,
   });
+  await verifySpecification(input, bound);
   const reserveRequest = {
     receiptId: mintedId(input.facts.newReceiptId(), "Tool receipt"),
     key: {
@@ -733,6 +797,19 @@ export const executeControlledTool = async (
       };
     }
 
+    try {
+      await verifySpecification(input);
+    } catch {
+      const denied = await append(input, receipt, "denied", "not-started", {
+        reasonCode: "specification-authority-invalid",
+      });
+      return {
+        status: "denied",
+        receipt: denied.receipt,
+        eventDelivery: mergeDelivery(delivery, denied.delivery),
+      };
+    }
+
     const started = await append(input, receipt, "started", isMeaningful ? "unknown" : "none");
     receipt = started.receipt;
     delivery = mergeDelivery(delivery, started.delivery);
@@ -746,6 +823,19 @@ export const executeControlledTool = async (
         status: "cancelled",
         receipt: cancelled.receipt,
         eventDelivery: mergeDelivery(delivery, cancelled.delivery),
+      };
+    }
+
+    try {
+      await verifySpecification(input, bound);
+    } catch {
+      const denied = await append(input, receipt, "failed_after_start", "none", {
+        reasonCode: "specification-authority-invalid-before-invocation",
+      });
+      return {
+        status: "denied",
+        receipt: denied.receipt,
+        eventDelivery: mergeDelivery(delivery, denied.delivery),
       };
     }
 

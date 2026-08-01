@@ -251,6 +251,24 @@ const baseInput = (
 });
 
 describe("controlled tool execution", () => {
+  it("rejects an unregistered compiled authority before reserving or invoking a tool", async () => {
+    const journal = new MemoryJournal();
+    let executions = 0;
+    const input = baseInput(journal, () => {
+      executions += 1;
+      return { toolCallId: CALL_ID, status: "succeeded" as const, content: [] };
+    });
+
+    await expect(
+      executeControlledTool({
+        ...input,
+        specification: { compiled: {} as never, authority: {} as never },
+      }),
+    ).rejects.toThrow("registered compiled specification");
+    expect(executions).toBe(0);
+    expect(journal.byId.size).toBe(0);
+  });
+
   it("rejects shaped and cloned ExecutableTool forgeries before controlled side effects", async () => {
     const journal = new MemoryJournal();
     let validations = 0;

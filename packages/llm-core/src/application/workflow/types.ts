@@ -13,6 +13,10 @@ import type {
   ResumeCompatibilityFailure,
 } from "../../features/state/public";
 import type { RegisteredResumableCheckpoint } from "../../features/state/runtime";
+import type {
+  CompiledSpecification,
+  SpecificationAuthorityDependencies,
+} from "../specification-compiler/types";
 
 export interface WorkflowDecisionToken {
   readonly decisionToken: string;
@@ -94,7 +98,8 @@ export interface WorkflowResumeJournal {
       | "authentication-failed"
       | "effect-state-unsafe"
       | "execution-failed"
-      | "persistence-failed";
+      | "persistence-failed"
+      | "specification-authority-invalid";
   }): MaybePromise<void>;
 }
 
@@ -129,6 +134,28 @@ export interface ControlledWorkflowStepExecuteInput {
 
 export type ResumableWorkflowStep = PassiveWorkflowStep | ControlledWorkflowStep;
 
+/** Portable projection of one approved workflow step. */
+export type WorkflowExecutionPlanStep =
+  | {
+      readonly stepId: StepId;
+      readonly effect: "none";
+    }
+  | {
+      readonly stepId: StepId;
+      readonly effect: "meaningful";
+      readonly action: Pick<BoundAction, "canonicalDocument" | "digest">;
+    };
+
+/** Declarative workflow target carried by a registered compiled specification. */
+export interface WorkflowExecutionPlan {
+  readonly steps: readonly WorkflowExecutionPlanStep[];
+}
+
+export interface WorkflowSpecificationAuthority {
+  readonly compiled: CompiledSpecification<WorkflowExecutionPlan>;
+  readonly authority: SpecificationAuthorityDependencies;
+}
+
 export interface ResumeInterventionWorkflowInput {
   readonly checkpoint: RegisteredResumableCheckpoint;
   readonly intervention: InterventionRequest;
@@ -140,6 +167,8 @@ export interface ResumeInterventionWorkflowInput {
   readonly clock: WorkflowClock;
   readonly journal: WorkflowResumeJournal;
   readonly steps: readonly ResumableWorkflowStep[];
+  /** When present, runtime steps must match the compiled declarative target. */
+  readonly specification?: WorkflowSpecificationAuthority;
 }
 
 export type ControlledWorkflowResult =
@@ -173,7 +202,8 @@ export type ControlledWorkflowResult =
         | "intervention-rejected"
         | "checkpoint-already-claimed"
         | "checkpoint-already-consumed"
-        | "resume-coordination-failed";
+        | "resume-coordination-failed"
+        | "specification-authority-invalid";
     }
   | {
       readonly status: "incompatible";
@@ -190,6 +220,7 @@ export type ControlledWorkflowResult =
         | "execution-failed"
         | "effect-record-required"
         | "invalid-step-result"
-        | "resume-persistence-failed";
+        | "resume-persistence-failed"
+        | "specification-authority-invalid";
       readonly stepId?: StepId;
     };

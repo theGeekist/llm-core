@@ -10,17 +10,37 @@ import {
 } from "#contracts";
 import { isPromiseLike, type MaybePromise } from "#shared/maybe";
 import { createLocalAgentRunner, createModelToolAgentProgram } from "../application/agent/public";
+import { verifyCompilationAuthority } from "../application/specification-compiler/runtime";
+import type {
+  CompiledSpecification,
+  SpecificationAuthorityDependencies,
+} from "../application/specification-compiler/types";
+import type { AgentDefinition } from "../features/agent/public";
 import type { Model } from "../features/model/public";
-import { readExecutableTool } from "../features/tooling/runtime";
+import { readExecutableTool, type ToolDefinition } from "../features/tooling/runtime";
 import type { Tool } from "../features/tooling/public";
 import type { AgentResult, AgentRun } from "../features/agent/public";
 
+/** A target-neutral plan that can authorize the common Agent journey. */
+export interface ExecutionPlan {
+  readonly agent: AgentDefinition;
+  readonly model: {
+    readonly profileId: Model["profile"]["profileId"];
+    readonly version: Model["profile"]["version"];
+  };
+  readonly tools: readonly Pick<ToolDefinition, "id" | "version">[];
+}
+
 export interface AgentConfig {
   readonly model: Model;
-  readonly instructions: string;
+  readonly instructions?: string;
   readonly tools?: readonly Tool[];
   readonly id?: string;
   readonly version?: ContractVersion;
+  /** A registered compilation; its raw value is never accepted on its own. */
+  readonly specification?: CompiledSpecification<ExecutionPlan>;
+  /** Required with specification so current authority can be rechecked. */
+  readonly specificationAuthority?: SpecificationAuthorityDependencies;
 }
 
 export interface Agent {
@@ -37,13 +57,78 @@ const uuidV7 = <TId extends EventId | InvocationId | RunId>(): TId => {
   );
 };
 
-const generatedAgentId = (config: AgentConfig): string =>
+const generatedAgentId = (instructions: string, model: Model): string =>
   `agent.${createHash("sha256")
-    .update(config.instructions, "utf8")
+    .update(instructions, "utf8")
     .update("\0")
-    .update(config.model.profile.profileId, "utf8")
+    .update(model.profile.profileId, "utf8")
     .digest("hex")
     .slice(0, 16)}`;
+
+const sameToolIdentity = (
+  expected: readonly Pick<ToolDefinition, "id" | "version">[],
+  actual: readonly Pick<ToolDefinition, "id" | "version">[],
+): boolean =>
+  expected.length === actual.length &&
+  expected.every(
+    (tool, index) => tool.id === actual[index]?.id && tool.version === actual[index]?.version,
+  );
+
+const verifiedExecutionPlan = (config: AgentConfig): ExecutionPlan | undefined => {
+  const specification = config.specification;
+  let plan: ExecutionPlan | undefined;
+  if (specification !== undefined) {
+    if (config.specificationAuthority === undefined) {
+      throw new TypeError("Compiled Agent specifications require current authority dependencies.");
+    }
+    const verified = verifyCompilationAuthority({
+      compiled: specification,
+      authority: config.specificationAuthority,
+    });
+    if (isPromiseLike(verified)) {
+      throw new TypeError("The common Agent facade requires synchronous specification authority.");
+    }
+    plan = specification.value;
+  }
+  return plan;
+};
+
+const definitionFor = (input: {
+  readonly config: AgentConfig;
+  readonly plan: ExecutionPlan | undefined;
+  readonly tools: readonly ToolDefinition[];
+}): AgentDefinition => {
+  const { config, plan, tools } = input;
+  if (plan === undefined) {
+    if (typeof config.instructions !== "string" || config.instructions.length === 0) {
+      throw new TypeError("Agents require a model and non-empty instructions.");
+    }
+    return {
+      agentId: config.id ?? generatedAgentId(config.instructions, config.model),
+      version: config.version ?? contractVersion("1.0.0"),
+      instructions: config.instructions,
+      effectRequirement: "read-only",
+    };
+  }
+  if (
+    plan.agent === undefined ||
+    plan.model?.profileId !== config.model.profile.profileId ||
+    plan.model.version !== config.model.profile.version ||
+    !sameToolIdentity(plan.tools ?? [], tools)
+  ) {
+    throw new TypeError(
+      "Compiled Agent specifications must match the configured execution inputs.",
+    );
+  }
+  if (
+    (config.instructions !== undefined && config.instructions !== plan.agent.instructions) ||
+    (config.id !== undefined && config.id !== plan.agent.agentId) ||
+    (config.version !== undefined && config.version !== plan.agent.version)
+  ) {
+    throw new TypeError("Agent configuration cannot substitute compiled specification inputs.");
+  }
+  return plan.agent;
+};
 
 /**
  * Creates the common ready Agent facade.
@@ -52,12 +137,8 @@ const generatedAgentId = (config: AgentConfig): string =>
  * selected explicitly through `./agent/runtime`.
  */
 export const createAgent = (config: AgentConfig): Agent => {
-  if (
-    typeof config.instructions !== "string" ||
-    config.instructions.length === 0 ||
-    typeof config.model?.generate !== "function"
-  ) {
-    throw new TypeError("Agents require a model and non-empty instructions.");
+  if (typeof config.model?.generate !== "function") {
+    throw new TypeError("Agents require a model.");
   }
   const tools = (config.tools ?? []).map(readExecutableTool);
   if (tools.some((tool) => tool.definition.effect.class !== "read-only")) {
@@ -65,6 +146,8 @@ export const createAgent = (config: AgentConfig): Agent => {
       "Common agents accept read-only tools; meaningful effects require an explicit controlled runtime.",
     );
   }
+  const plan = verifiedExecutionPlan(config);
+  const definition = definitionFor({ config, plan, tools: tools.map((tool) => tool.definition) });
   const runner = createLocalAgentRunner({
     identity: {
       newRunId: uuidV7,
@@ -74,13 +157,16 @@ export const createAgent = (config: AgentConfig): Agent => {
     program: createModelToolAgentProgram({ model: config.model, tools }),
     runnerId: "llm-core.agent.local",
     runnerVersion: contractVersion("1.0.0"),
+    ...(config.specification === undefined || config.specificationAuthority === undefined
+      ? {}
+      : {
+          specification: {
+            compiled: config.specification,
+            authority: config.specificationAuthority,
+          },
+        }),
   });
-  const prepared = runner.prepare({
-    agentId: config.id ?? generatedAgentId(config),
-    version: config.version ?? contractVersion("1.0.0"),
-    instructions: config.instructions,
-    effectRequirement: "read-only",
-  });
+  const prepared = runner.prepare(definition);
   if (isPromiseLike(prepared)) {
     throw new TypeError("The common local agent must prepare synchronously.");
   }

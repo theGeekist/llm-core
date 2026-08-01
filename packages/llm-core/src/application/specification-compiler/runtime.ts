@@ -248,9 +248,18 @@ export const registerCompiledSpecification = <T>(input: {
   if (!isAcceptedSpecificationHandle(input.accepted)) {
     throw new TypeError("Compiled specifications require registered accepted provenance.");
   }
+  if (!isJsonValue(input.value)) {
+    throw new TypeError("Compiled specification targets must be portable declarative data.");
+  }
+  let value: T;
+  try {
+    value = cloneFrozen(input.value);
+  } catch {
+    throw new TypeError("Compiled specification targets must be cloneable declarative data.");
+  }
   const compiled = Object.freeze({
     compilationId: crypto.randomUUID(),
-    value: input.value,
+    value,
     accepted: input.accepted,
     authority: cloneFrozen(input.authority),
   }) as CompiledSpecification<T>;

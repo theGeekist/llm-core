@@ -2,6 +2,7 @@ import type { JsonValue, StepId } from "#contracts";
 import type { ActionDigest } from "../../features/tooling/runtime";
 import { portableState, type RecordedEffect } from "../../features/state/public";
 import { registerRecordedEffect } from "../../features/state/runtime";
+import { workflowSpecificationMatches } from "./authority";
 import type {
   ControlledWorkflowResult,
   ControlledWorkflowStep,
@@ -33,7 +34,10 @@ export const unsafeEffect = (
 
 type NormalizedStepResult =
   | { valid: true; state: JsonValue; recordedEffect?: RecordedEffect }
-  | { valid: false; reason: "effect-record-required" | "invalid-step-result" };
+  | {
+      valid: false;
+      reason: "effect-record-required" | "invalid-step-result" | "specification-authority-invalid";
+    };
 
 const normalizeStepResult = (
   step: ResumableWorkflowStep,
@@ -144,6 +148,9 @@ const executeStep = async (input: {
   const started = await startEffect(input.workflow, input.claim, input.step);
   if (!started) {
     return { valid: false, reason: "effect-record-required" };
+  }
+  if (!(await workflowSpecificationMatches(input.workflow))) {
+    return { valid: false, reason: "specification-authority-invalid" };
   }
   let result;
   try {

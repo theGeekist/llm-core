@@ -23,6 +23,7 @@ import type {
   WorkflowResumeBeginResult,
 } from "./types";
 import { executeSteps, unsafeEffect } from "./execution";
+import { workflowSpecificationMatches } from "./authority";
 
 const snapshotResumeInput = (
   input: ResumeInterventionWorkflowInput,
@@ -41,6 +42,7 @@ const snapshotResumeInput = (
       clock: input.clock,
       journal: input.journal,
       steps: input.steps,
+      ...(input.specification === undefined ? {} : { specification: input.specification }),
     });
   } catch {
     return null;
@@ -336,10 +338,19 @@ const persistResolution = async (
   return reject("resume-coordination-failed");
 };
 
-/** One authenticated, exact-action-bound workflow intervention/resume path. */
-export const resumeInterventionWorkflow = async (
+const interventionMatchesCheckpoint = (input: ResumeInterventionWorkflowInput): boolean =>
+  input.intervention.intervention.checkpointId === input.checkpoint.checkpointId &&
+  input.intervention.intervention.checkpointRevision === input.checkpoint.revision &&
+  input.intervention.intervention.runId === input.checkpoint.runId;
+
+type PreparedWorkflowResume = {
+  readonly input: ResumeInterventionWorkflowInput;
+  readonly acceptanceResolution: Exclude<InterventionResolution, { status: "rejected" }>;
+};
+
+const prepareWorkflowResume = async (
   candidate: ResumeInterventionWorkflowInput,
-): Promise<ControlledWorkflowResult> => {
+): Promise<ControlledWorkflowResult | PreparedWorkflowResume> => {
   const input = snapshotResumeInput(candidate);
   if (!input) {
     return reject("intervention-rejected");
@@ -351,12 +362,13 @@ export const resumeInterventionWorkflow = async (
   if (!compatibility.compatible) {
     return { status: "incompatible", reason: compatibility.reason };
   }
+  if (!(await workflowSpecificationMatches(input))) {
+    return reject("specification-authority-invalid");
+  }
   const authorized = findAuthorizedStep(input);
   if (
     !authorized ||
-    input.intervention.intervention.checkpointId !== input.checkpoint.checkpointId ||
-    input.intervention.intervention.checkpointRevision !== input.checkpoint.revision ||
-    input.intervention.intervention.runId !== input.checkpoint.runId ||
+    !interventionMatchesCheckpoint(input) ||
     !workflowShapeIsValid(input, authorized)
   ) {
     return { status: "incompatible", reason: "workflow-shape-mismatch" };
@@ -375,6 +387,21 @@ export const resumeInterventionWorkflow = async (
   if (!acceptanceResolution || acceptanceResolution.status === "rejected") {
     return reject("intervention-rejected");
   }
+  if (!(await workflowSpecificationMatches(input))) {
+    return reject("specification-authority-invalid");
+  }
+  return { input, acceptanceResolution };
+};
+
+/** One authenticated, exact-action-bound workflow intervention/resume path. */
+export const resumeInterventionWorkflow = async (
+  candidate: ResumeInterventionWorkflowInput,
+): Promise<ControlledWorkflowResult> => {
+  const prepared = await prepareWorkflowResume(candidate);
+  if ("status" in prepared) {
+    return prepared;
+  }
+  const { input, acceptanceResolution } = prepared;
   const begun = await beginResume(input, acceptanceResolution);
   if (begun.status !== "accepted") {
     return begun;
@@ -404,13 +431,25 @@ export const resumeInterventionWorkflow = async (
     });
     return reject("resume-coordination-failed");
   }
+  if (!(await workflowSpecificationMatches(input))) {
+    await safelyQuarantine({
+      workflow: input,
+      decision: begun.decision,
+      claim: begun.checkpoint,
+      reason: "specification-authority-invalid",
+    });
+    return reject("specification-authority-invalid");
+  }
   const outcome = await executeSteps(input, begun.checkpoint);
   if (outcome.status !== "completed") {
     await safelyQuarantine({
       workflow: input,
       decision: begun.decision,
       claim: begun.checkpoint,
-      reason: "execution-failed",
+      reason:
+        outcome.status === "failed" && outcome.reason === "specification-authority-invalid"
+          ? "specification-authority-invalid"
+          : "execution-failed",
     });
     return outcome;
   }

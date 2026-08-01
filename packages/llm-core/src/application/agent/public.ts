@@ -7,10 +7,12 @@ export type {
   DeclaredSubagentBinding,
   LocalAgentCancellationSignal,
   LocalAgentExecutionContext,
+  LocalAgentExecutionPlan,
   LocalAgentExecutionResult,
   LocalAgentPreparedRequest,
   LocalAgentProgramPort,
   LocalAgentProgramResumeInput,
+  LocalAgentSpecificationAuthority,
 } from "./types";
 export type {
   ControlledToolInputFactoryInput,

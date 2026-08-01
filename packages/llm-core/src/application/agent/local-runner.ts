@@ -1,5 +1,5 @@
 import { isCanonicalUuid, isUuidV7, type EventId, type RunId } from "#contracts";
-import { isPromiseLike, maybeChain, type MaybePromise } from "#shared/maybe";
+import { isPromiseLike, maybeChain, maybeMap, type MaybePromise } from "#shared/maybe";
 import {
   type AgentCancellationAcknowledgement,
   type AgentCancellationRequest,
@@ -44,6 +44,7 @@ import {
   validateLocalAgentExecutionResult,
 } from "./validation";
 import { AsyncEventLog } from "../async-event-log";
+import { verifyCompilationAuthority } from "../specification-compiler/runtime";
 
 const clonePortable = <T>(value: T): T => structuredClone(value);
 
@@ -93,6 +94,8 @@ const terminalKind = (status: AgentResult["status"]): AgentEventKind =>
 
 export const createLocalAgentRunner = (options: CreateLocalAgentRunnerOptions): AgentRunner => {
   const interventionAuthentication = readInterventionAuthentication(options);
+  const specification =
+    options.specification === undefined ? undefined : Object.freeze({ ...options.specification });
   const runnerPreparedDefinitions = new WeakSet<object>();
   const capabilities = deepFreeze<AgentRunnerProfile>({
     runnerId: options.runnerId,
@@ -155,6 +158,34 @@ export const createLocalAgentRunner = (options: CreateLocalAgentRunnerOptions): 
     }
     return value;
   };
+
+  const specificationMatches = (definition: AgentDefinition): boolean => {
+    const planned = specification?.compiled.value.agent;
+    return (
+      planned === undefined ||
+      (planned.agentId === definition.agentId &&
+        planned.version === definition.version &&
+        planned.instructions === definition.instructions &&
+        planned.effectRequirement === definition.effectRequirement)
+    );
+  };
+
+  const verifySpecification = (definition?: AgentDefinition): MaybePromise<void> =>
+    specification === undefined
+      ? undefined
+      : maybeMap(
+          () => {
+            if (definition && !specificationMatches(definition)) {
+              throw new TypeError(
+                "Compiled specification does not authorize this Agent definition.",
+              );
+            }
+          },
+          verifyCompilationAuthority({
+            compiled: specification.compiled,
+            authority: specification.authority,
+          }),
+        );
 
   const settle = (state: RunState, draft: LocalAgentExecutionResult): AgentResult => {
     if (state.terminal) {
@@ -316,13 +347,17 @@ export const createLocalAgentRunner = (options: CreateLocalAgentRunnerOptions): 
       intervene,
     });
 
-    const startChild = (child: AgentStartRequest): AgentRun => {
+    const startChild = (child: AgentStartRequest): MaybePromise<AgentRun> => {
       validateForRunner(child);
-      return startWithIdentity(child, {
-        runId: readRunId(),
-        parentRunId: state.identity.runId,
-        causalRunId: state.identity.causalRunId ?? state.identity.runId,
-      });
+      return maybeMap(
+        () =>
+          startWithIdentity(child, {
+            runId: readRunId(),
+            parentRunId: state.identity.runId,
+            causalRunId: state.identity.causalRunId ?? state.identity.runId,
+          }),
+        verifySpecification(child.agent),
+      );
     };
     const contextRequest: AgentStartRequest = Object.freeze({
       agent: request.agent,
@@ -431,25 +466,32 @@ export const createLocalAgentRunner = (options: CreateLocalAgentRunnerOptions): 
     }
   };
 
-  const prepare = (definition: AgentDefinition): PreparedAgentDefinition => {
-    const prepared = createPreparedAgentDefinition(definition);
-    if (prepared.effectRequirement === "controlled" && !capabilities.controlledEffects) {
-      throw new TypeError("This runner cannot establish a controlled path for meaningful effects.");
-    }
-    runnerPreparedDefinitions.add(prepared);
-    return prepared;
-  };
+  const prepare = (definition: AgentDefinition): MaybePromise<PreparedAgentDefinition> =>
+    maybeMap(() => {
+      const prepared = createPreparedAgentDefinition(definition);
+      if (prepared.effectRequirement === "controlled" && !capabilities.controlledEffects) {
+        throw new TypeError(
+          "This runner cannot establish a controlled path for meaningful effects.",
+        );
+      }
+      runnerPreparedDefinitions.add(prepared);
+      return prepared;
+    }, verifySpecification(definition));
 
-  const start = (request: AgentStartRequest): AgentRun => {
+  const start = (request: AgentStartRequest): MaybePromise<AgentRun> => {
     validateForRunner(request);
     const requestedRunId = request.invocationContext.runId;
-    return startWithIdentity(request, {
-      runId: requestedRunId ?? readRunId(),
-    });
+    return maybeMap(
+      () =>
+        startWithIdentity(request, {
+          runId: requestedRunId ?? readRunId(),
+        }),
+      verifySpecification(request.agent),
+    );
   };
 
   const resume = capabilities.checkpointResume
-    ? (request: AgentResumeRequest): AgentRun => {
+    ? (request: AgentResumeRequest): MaybePromise<AgentRun> => {
         if (!runnerPreparedDefinitions.has(request.agent)) {
           throw new TypeError("AgentResumeRequest.agent must be prepared by this runner.");
         }
@@ -467,12 +509,16 @@ export const createLocalAgentRunner = (options: CreateLocalAgentRunnerOptions): 
           input: request.checkpoint.state,
         };
         validateForRunner(runRequest);
-        return createRun({
-          request: runRequest,
-          identity: { runId },
-          checkpoint: request.checkpoint,
-          deniedReason: compatibility.compatible ? undefined : `resume-${compatibility.reason}`,
-        });
+        return maybeMap(
+          () =>
+            createRun({
+              request: runRequest,
+              identity: { runId },
+              checkpoint: request.checkpoint,
+              deniedReason: compatibility.compatible ? undefined : `resume-${compatibility.reason}`,
+            }),
+          verifySpecification(request.agent),
+        );
       }
     : undefined;
 

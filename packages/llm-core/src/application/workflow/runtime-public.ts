@@ -9,6 +9,8 @@ export type {
   PassiveWorkflowStep,
   ResumableWorkflowStep,
   ResumeInterventionWorkflowInput,
+  WorkflowExecutionPlan,
+  WorkflowExecutionPlanStep,
   WorkflowCheckpointClaim,
   WorkflowCheckpointCommit,
   WorkflowClock,
@@ -16,6 +18,7 @@ export type {
   WorkflowResumeBeginResult,
   WorkflowResumeDisposition,
   WorkflowResumeJournal,
+  WorkflowSpecificationAuthority,
 } from "./types";
 export type {
   WorkflowRegistry,

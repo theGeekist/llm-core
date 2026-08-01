@@ -1,3 +1,4 @@
+/* eslint-disable max-lines -- durable workflow authority regressions extend the resumable lifecycle suite */
 import { describe, expect, test } from "bun:test";
 import type { JsonValue } from "#contracts";
 import {
@@ -21,6 +22,7 @@ import {
   resumeInterventionWorkflow,
   type ControlledWorkflowStep,
   type ResumableWorkflowStep,
+  type ResumeInterventionWorkflowInput,
   type WorkflowCheckpointClaim,
   type WorkflowCheckpointCommit,
   type WorkflowDecisionToken,
@@ -190,6 +192,7 @@ const run = (input: {
   authentication?: InterventionAuthenticationPort;
   clockThrows?: boolean;
   now?: () => string;
+  specification?: ResumeInterventionWorkflowInput["specification"];
 }) =>
   resumeInterventionWorkflow({
     checkpoint: input.registered ?? registerResumableCheckpoint(checkpoint()),
@@ -214,6 +217,7 @@ const run = (input: {
     },
     journal: input.journal ?? new MemoryResumeJournal(),
     steps: input.steps ?? [meaningfulStep()],
+    ...(input.specification === undefined ? {} : { specification: input.specification }),
   });
 
 const nextIntervention = (): InterventionRequest => {
@@ -234,6 +238,27 @@ const nextDecision = (request = intervention()): InterventionDecision => ({
 });
 
 describe("intervention workflow resume", () => {
+  test("rejects unregistered compiled authority before claiming or executing a workflow", async () => {
+    const journal = new MemoryResumeJournal();
+    let executions = 0;
+    const steps = [
+      meaningfulStep(() => {
+        executions += 1;
+        return { state: { applied: true } };
+      }),
+    ];
+
+    expect(
+      await run({
+        journal,
+        steps,
+        specification: { compiled: {} as never, authority: {} as never },
+      }),
+    ).toEqual({ status: "rejected", reason: "specification-authority-invalid" });
+    expect(journal.checkpointState).toBe("available");
+    expect(executions).toBe(0);
+  });
+
   test("authenticates and cryptographically verifies the exact bound action before execution", async () => {
     const journal = new MemoryResumeJournal();
     let executions = 0;
