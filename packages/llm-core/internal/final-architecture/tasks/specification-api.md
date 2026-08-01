@@ -3,7 +3,7 @@ architecture_version: 2
 id: specification-api
 title: Specification API and format compatibility
 stage: specifications
-status: claimed
+status: in_progress
 priority: high
 preferred_owner_kind: coordinator
 owner: codex-root
@@ -22,10 +22,19 @@ decision_dependencies:
   - ADR-012
 conflicts_with: []
 write_scope:
+  - packages/llm-core/index.ts
   - packages/llm-core/src/specifications/**
+  - packages/llm-core/src/application/specification-compiler/**
+  - packages/llm-core/src/application/tool-execution/types.ts
+  - packages/llm-core/src/features/specifications/runtime.ts
+  - packages/llm-core/src/agent/facade.ts
+  - packages/llm-core/src/application/workflow/authority.ts
+  - packages/llm-core/tests/specifications/**
+  - packages/llm-core/tests/specification-compiler/compiler.test.ts
   - packages/llm-core/tests/architecture/**
   - packages/llm-core/package.json
   - packages/llm-core/scripts/build.ts
+  - packages/llm-core/scripts/smoke-package.mjs
   - packages/llm-core/tsconfig.json
   - packages/llm-core/tsconfig.build.json
   - packages/llm-core/internal/final-architecture/tasks/specification-api.md
@@ -89,6 +98,9 @@ bun run --cwd packages/llm-core format:check
 - 2026-08-01 — Claimed on shared `main` after user accepted the
   `specification-authority` review. The direct-main assignment is deliberate:
   no active task overlaps this task's API/package write scope.
+- 2026-08-01 — Reviewed `SPECIFICATIONS.md`, `LANGUAGE.md`, task protocol and
+  ADR-007, ADR-009, ADR-011 and ADR-012 before implementation. The task will
+  publish only the approved common journey and explicit specification front.
 
 ## Handoff
 

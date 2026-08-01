@@ -148,9 +148,9 @@ describe("specification compiler", () => {
 
     expect(calls).toBe(1);
     expect(compiled.value).toEqual({ dependencyOrder: [firstNodeId, secondNodeId] });
-    expect(compiled.authority.checkedAt).toBe("2026-08-01T12:00:00.000Z");
     expect(isAcceptedSpecificationHandle(accepted)).toBe(true);
-    expect(Object.isFrozen(compiled.authority)).toBe(true);
+    expect(Object.hasOwn(compiled, "authority")).toBe(false);
+    expect(Object.hasOwn(compiled, "accepted")).toBe(false);
     expect(sync(verifyCompilationAuthority({ compiled, authority }))).toBeUndefined();
   });
 

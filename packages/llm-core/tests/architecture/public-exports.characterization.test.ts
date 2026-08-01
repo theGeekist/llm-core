@@ -50,12 +50,15 @@ type _CommonRootTypes = [
 ];
 
 describe("ADR-012 curated exports", () => {
-  test("keeps the root on the four implemented common journeys", () => {
+  test("keeps the root on the five implemented common journeys", () => {
     expect(Object.keys(root).sort()).toEqual([
+      "compileSpecification",
       "createAgent",
       "createConversation",
       "defineTool",
       "defineWorkflow",
+      "loadSpecification",
+      "reviewSpecification",
     ]);
   });
 

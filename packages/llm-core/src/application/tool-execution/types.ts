@@ -22,7 +22,7 @@ import type {
   ToolExecutionControl,
   ToolExecutionResult,
 } from "../../features/tooling/orchestration";
-import type { ToolDefinition } from "../../features/tooling/types";
+import type { ToolDefinition } from "../../features/tooling/runtime";
 import type {
   CompiledSpecification,
   SpecificationAuthorityDependencies,

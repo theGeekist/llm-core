@@ -29,3 +29,18 @@ export type {
   ConversationResult,
   ConversationRun,
 } from "./src/conversation/index";
+
+export {
+  compileSpecification,
+  loadSpecification,
+  reviewSpecification,
+} from "./src/specifications/index";
+export type {
+  CompiledSpecification,
+  CompileSpecificationOptions,
+  ReviewSpecificationOptions,
+  Specification,
+  SpecificationDecision,
+  SpecificationPolicy,
+  SpecificationPolicyCurrentState,
+} from "./src/specifications/index";

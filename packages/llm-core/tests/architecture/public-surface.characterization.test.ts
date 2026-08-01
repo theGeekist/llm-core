@@ -24,6 +24,7 @@ import * as indexing from "../../src/features/indexing/public";
 import * as storage from "../../src/features/storage/public";
 import * as memory from "../../src/features/memory/public";
 import * as media from "../../src/features/media/public";
+import * as specifications from "../../src/specifications/index";
 import * as aiSdk from "../../src/adapters/ai-sdk/index";
 import * as aiSdkUi from "../../src/adapters/ai-sdk-ui/index";
 import * as assistantUi from "../../src/adapters/assistant-ui/index";
@@ -55,6 +56,7 @@ const PUBLIC_SURFACE = {
   "./storage": storage,
   "./memory": memory,
   "./media": media,
+  "./specifications": specifications,
   "./adapters/ai-sdk": aiSdk,
   "./adapters/ai-sdk-ui": aiSdkUi,
   "./adapters/assistant-ui": assistantUi,
@@ -68,11 +70,22 @@ const packageJson = (await Bun.file(new URL("../../package.json", import.meta.ur
 };
 
 describe("ADR-012 public package surface", () => {
-  test("publishes exactly the twenty-nine language-rollout subpaths", () => {
+  test("publishes exactly the thirty language-rollout subpaths", () => {
     expect(packageJson.version).toBe("2.0.0");
     expect(Object.keys(packageJson.exports)).toEqual(Object.keys(PUBLIC_SURFACE));
     expect(Object.values(PUBLIC_SURFACE).every(Boolean)).toBe(true);
     expect("rebindValidatedToolCall" in tools).toBe(false);
+  });
+
+  test("keeps specification graph and authority internals private", () => {
+    for (const name of [
+      "SpecificationGraph",
+      "AcceptedSpecificationHandle",
+      "CompilationAuthoritySnapshot",
+      "verifyCompilationAuthority",
+    ]) {
+      expect(name in specifications).toBe(false);
+    }
   });
 
   test("does not retain legacy public subpaths", () => {

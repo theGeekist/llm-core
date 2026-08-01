@@ -10,7 +10,7 @@ import type {
   SpecificationQuestion,
   SpecificationRelationshipId,
   SpecificationSourceRevisionBinding,
-} from "../../features/specifications/types";
+} from "../../features/specifications/runtime";
 
 declare const acceptedSpecificationHandleBrand: unique symbol;
 declare const compiledSpecificationBrand: unique symbol;
@@ -104,8 +104,6 @@ export interface SpecificationTargetCompiler<T> {
 export interface CompiledSpecification<T> {
   readonly compilationId: SpecificationCompilationId;
   readonly value: T;
-  readonly accepted: AcceptedSpecificationHandle;
-  readonly authority: CompilationAuthoritySnapshot;
   readonly [compiledSpecificationBrand]: true;
 }
 
@@ -117,5 +115,10 @@ export interface CompileSpecificationInput<T> {
 
 export interface VerifyCompilationAuthorityInput<T> {
   readonly compiled: CompiledSpecification<T>;
-  readonly authority: SpecificationAuthorityDependencies;
+  /**
+   * Explicit runtime integrations supply their current authority here. Values
+   * produced through the common specification facade retain this binding in
+   * the module-private provenance registry instead.
+   */
+  readonly authority?: SpecificationAuthorityDependencies;
 }

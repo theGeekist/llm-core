@@ -4,13 +4,13 @@ import { cloneFrozen, hasOnlyKeys, isPortableRecord } from "#shared/portable-dat
 import {
   createSpecificationDecision,
   createSpecificationGraph,
-} from "../../features/specifications/factory";
+} from "../../features/specifications/runtime";
 import type {
   SpecificationDecisionRecord,
   SpecificationGraph,
   SpecificationPolicyVersion,
   SpecificationSourceRevisionBinding,
-} from "../../features/specifications/types";
+} from "../../features/specifications/runtime";
 import { reviewSpecificationGraph } from "./resolution";
 import type {
   AcceptedSpecificationHandle,
@@ -24,6 +24,14 @@ import type {
 
 const acceptedHandles = new WeakSet<object>();
 const compiledSpecifications = new WeakSet<object>();
+
+interface CompiledSpecificationProvenance {
+  readonly accepted: AcceptedSpecificationHandle;
+  readonly authority: CompilationAuthoritySnapshot;
+  readonly dependencies?: SpecificationAuthorityDependencies;
+}
+
+const compiledSpecificationProvenance = new WeakMap<object, CompiledSpecificationProvenance>();
 
 const canonicalTimestamp = (value: unknown): value is string =>
   typeof value === "string" &&
@@ -260,33 +268,70 @@ export const registerCompiledSpecification = <T>(input: {
   const compiled = Object.freeze({
     compilationId: crypto.randomUUID(),
     value,
-    accepted: input.accepted,
-    authority: cloneFrozen(input.authority),
   }) as CompiledSpecification<T>;
   compiledSpecifications.add(compiled);
+  compiledSpecificationProvenance.set(compiled, {
+    accepted: input.accepted,
+    authority: cloneFrozen(input.authority),
+  });
   return compiled;
 };
+
+const compiledProvenanceFor = <T>(
+  compiled: CompiledSpecification<T>,
+): CompiledSpecificationProvenance => {
+  if (typeof compiled !== "object" || compiled === null || !compiledSpecifications.has(compiled)) {
+    throw new TypeError("Compilation authority requires a registered compiled specification.");
+  }
+  const provenance = compiledSpecificationProvenance.get(compiled);
+  if (provenance === undefined || !isAcceptedSpecificationHandle(provenance.accepted)) {
+    throw new TypeError("Compilation authority requires registered compiled provenance.");
+  }
+  return provenance;
+};
+
+/** Associates the common facade's review authority without exposing it on the value. */
+export const bindCompiledSpecificationAuthority = <T>(
+  compiled: CompiledSpecification<T>,
+  dependencies: SpecificationAuthorityDependencies,
+): void => {
+  const provenance = compiledProvenanceFor(compiled);
+  compiledSpecificationProvenance.set(compiled, { ...provenance, dependencies });
+};
+
+/** Retrieves the private verifier binding retained by the common facade. */
+export const readCompiledSpecificationAuthority = <T>(
+  compiled: CompiledSpecification<T>,
+): SpecificationAuthorityDependencies => {
+  const dependencies = compiledProvenanceFor(compiled).dependencies;
+  if (dependencies === undefined) {
+    throw new TypeError("Compilation authority requires current authority dependencies.");
+  }
+  return dependencies;
+};
+
+/** Reads the accepted portable record for durable internal checkpoint bindings. */
+export const readCompiledSpecificationDecisionRecord = <T>(
+  compiled: CompiledSpecification<T>,
+): SpecificationDecisionRecord => compiledProvenanceFor(compiled).accepted.record;
 
 export const verifyCompilationAuthority = <T>(
   input: VerifyCompilationAuthorityInput<T>,
 ): MaybePromise<void> => {
-  if (
-    typeof input.compiled !== "object" ||
-    input.compiled === null ||
-    !compiledSpecifications.has(input.compiled) ||
-    !isAcceptedSpecificationHandle(input.compiled.accepted)
-  ) {
-    throw new TypeError("Compilation authority requires a registered compiled specification.");
+  const provenance = compiledProvenanceFor(input.compiled);
+  const dependencies = input.authority ?? provenance.dependencies;
+  if (dependencies === undefined) {
+    throw new TypeError("Compilation authority requires current authority dependencies.");
   }
   return maybeMap(
     (value) => {
       const current = captureCurrentState(value);
-      checkAccepted(input.compiled.accepted, current, input.authority);
-      assertCurrentSnapshot(input.compiled.authority, current);
+      checkAccepted(provenance.accepted, current, dependencies);
+      assertCurrentSnapshot(provenance.authority, current);
     },
-    input.authority.currentState.current({
-      record: input.compiled.accepted.record,
-      graph: input.compiled.accepted.graph,
+    dependencies.currentState.current({
+      record: provenance.accepted.record,
+      graph: provenance.accepted.graph,
     }),
   );
 };

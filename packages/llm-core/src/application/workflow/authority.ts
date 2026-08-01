@@ -1,4 +1,7 @@
-import { verifyCompilationAuthority } from "../specification-compiler/runtime";
+import {
+  readCompiledSpecificationDecisionRecord,
+  verifyCompilationAuthority,
+} from "../specification-compiler/runtime";
 import { cloneFrozen } from "#shared/portable-data";
 import type { SpecificationDecisionBinding } from "../../features/state/public";
 import type {
@@ -15,7 +18,7 @@ const bindingMatches = (
   binding: SpecificationDecisionBinding,
   specification: WorkflowSpecificationAuthority,
 ): boolean => {
-  const record = specification.compiled.accepted.record;
+  const record = readCompiledSpecificationDecisionRecord(specification.compiled);
   return (
     binding.recordId === record.recordId &&
     binding.authority === record.authority &&
@@ -41,7 +44,7 @@ const bindingMatches = (
 export const createWorkflowSpecificationBinding = (
   specification: WorkflowSpecificationAuthority,
 ): SpecificationDecisionBinding => {
-  const record = specification.compiled.accepted.record;
+  const record = readCompiledSpecificationDecisionRecord(specification.compiled);
   return cloneFrozen({
     recordId: record.recordId,
     authority: record.authority,

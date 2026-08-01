@@ -28,6 +28,7 @@
       "@geekist/llm-core/storage": ["./src/features/storage/public.ts"],
       "@geekist/llm-core/memory": ["./src/features/memory/public.ts"],
       "@geekist/llm-core/media": ["./src/features/media/public.ts"],
+      "@geekist/llm-core/specifications": ["./src/specifications/index.ts"],
       "@geekist/llm-core/adapters/ai-sdk": ["./src/adapters/ai-sdk/index.ts"],
       "@geekist/llm-core/adapters/ai-sdk-ui": ["./src/adapters/ai-sdk-ui/index.ts"],
       "@geekist/llm-core/adapters/assistant-ui": ["./src/adapters/assistant-ui/index.ts"],

@@ -254,6 +254,11 @@
       "import": "./dist/esm/src/features/media/public.js",
       "default": "./dist/esm/src/features/media/public.js"
     },
+    "./specifications": {
+      "types": "./dist/types/src/specifications/index.d.ts",
+      "import": "./dist/esm/src/specifications/index.js",
+      "default": "./dist/esm/src/specifications/index.js"
+    },
     "./adapters/ai-sdk": {
       "types": "./dist/types/src/adapters/ai-sdk/index.d.ts",
       "import": "./dist/esm/src/adapters/ai-sdk/index.js",

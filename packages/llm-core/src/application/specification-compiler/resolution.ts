@@ -1,7 +1,7 @@
 import {
   createSpecificationDecision,
   createSpecificationSourceSnapshot,
-} from "../../features/specifications/factory";
+} from "../../features/specifications/runtime";
 import type {
   ConversionIssue,
   SpecificationDecision,
@@ -9,7 +9,7 @@ import type {
   SpecificationNodeId,
   SpecificationQuestion,
   SpecificationRelationship,
-} from "../../features/specifications/types";
+} from "../../features/specifications/runtime";
 import type {
   SpecificationDependencyPlan,
   SpecificationReview,

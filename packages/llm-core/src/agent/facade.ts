@@ -10,7 +10,10 @@ import {
 } from "#contracts";
 import { isPromiseLike, type MaybePromise } from "#shared/maybe";
 import { createLocalAgentRunner, createModelToolAgentProgram } from "../application/agent/public";
-import { verifyCompilationAuthority } from "../application/specification-compiler/runtime";
+import {
+  readCompiledSpecificationAuthority,
+  verifyCompilationAuthority,
+} from "../application/specification-compiler/runtime";
 import type {
   CompiledSpecification,
   SpecificationAuthorityDependencies,
@@ -74,23 +77,24 @@ const sameToolIdentity = (
     (tool, index) => tool.id === actual[index]?.id && tool.version === actual[index]?.version,
   );
 
-const verifiedExecutionPlan = (config: AgentConfig): ExecutionPlan | undefined => {
+const verifiedExecutionPlan = (
+  config: AgentConfig,
+): {
+  readonly plan: ExecutionPlan;
+  readonly authority: SpecificationAuthorityDependencies;
+} | null => {
   const specification = config.specification;
-  let plan: ExecutionPlan | undefined;
-  if (specification !== undefined) {
-    if (config.specificationAuthority === undefined) {
-      throw new TypeError("Compiled Agent specifications require current authority dependencies.");
-    }
-    const verified = verifyCompilationAuthority({
-      compiled: specification,
-      authority: config.specificationAuthority,
-    });
-    if (isPromiseLike(verified)) {
-      throw new TypeError("The common Agent facade requires synchronous specification authority.");
-    }
-    plan = specification.value;
+  if (specification === undefined) return null;
+  const authority =
+    config.specificationAuthority ?? readCompiledSpecificationAuthority(specification);
+  const verified = verifyCompilationAuthority({
+    compiled: specification,
+    authority,
+  });
+  if (isPromiseLike(verified)) {
+    throw new TypeError("The common Agent facade requires synchronous specification authority.");
   }
-  return plan;
+  return { plan: specification.value, authority };
 };
 
 const definitionFor = (input: {
@@ -146,8 +150,12 @@ export const createAgent = (config: AgentConfig): Agent => {
       "Common agents accept read-only tools; meaningful effects require an explicit controlled runtime.",
     );
   }
-  const plan = verifiedExecutionPlan(config);
-  const definition = definitionFor({ config, plan, tools: tools.map((tool) => tool.definition) });
+  const verified = verifiedExecutionPlan(config);
+  const definition = definitionFor({
+    config,
+    plan: verified?.plan,
+    tools: tools.map((tool) => tool.definition),
+  });
   const runner = createLocalAgentRunner({
     identity: {
       newRunId: uuidV7,
@@ -157,12 +165,12 @@ export const createAgent = (config: AgentConfig): Agent => {
     program: createModelToolAgentProgram({ model: config.model, tools }),
     runnerId: "llm-core.agent.local",
     runnerVersion: contractVersion("1.0.0"),
-    ...(config.specification === undefined || config.specificationAuthority === undefined
+    ...(config.specification === undefined || verified === null
       ? {}
       : {
           specification: {
             compiled: config.specification,
-            authority: config.specificationAuthority,
+            authority: verified.authority,
           },
         }),
   });

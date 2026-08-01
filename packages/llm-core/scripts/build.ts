@@ -153,6 +153,7 @@ const PUBLIC_ENTRY_POINTS = [
   "src/features/storage/public.ts",
   "src/features/memory/public.ts",
   "src/features/media/public.ts",
+  "src/specifications/index.ts",
   "src/adapters/ai-sdk/index.ts",
   "src/adapters/ai-sdk-ui/index.ts",
   "src/adapters/assistant-ui/index.ts",
