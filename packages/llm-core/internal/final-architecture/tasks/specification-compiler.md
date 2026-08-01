@@ -3,7 +3,7 @@ architecture_version: 2
 id: specification-compiler
 title: Specification review and compilation
 stage: specifications
-status: review
+status: done
 priority: high
 preferred_owner_kind: coordinator
 owner: codex-specification-compiler-review
@@ -134,12 +134,15 @@ entrypoints.
 - 2026-08-01 — Remediated at `57b705a`: dependency cycles now block only the
   accepted scope, and rejected conversion semantics remain visible and block
   the scope they affect. All task verification gates passed.
+- 2026-08-01 — Coordinator integrated the reviewed remediation at `06ac306`;
+  the receiving focused compiler test passed.
 
 ## Handoff
 
-Awaiting coordinator review and integration of the P1 remediation.
+Completed and integrated by the coordinator.
 
-- Commit: `57b705a` (`fix(specifications): scope review blockers`)
+- Implementation: `57b705a` (`fix(specifications): scope review blockers`)
+- Main integration: `06ac306`
 - Worktree: clean at the implementation commit before this review-state record.
 - Changed files:
   - `packages/llm-core/src/application/specification-compiler/resolution.ts`
