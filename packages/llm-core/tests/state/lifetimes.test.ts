@@ -1,4 +1,5 @@
 import { describe, expect, test } from "bun:test";
+import { contractVersion, digest } from "#contracts";
 import {
   createDurableExecutionHandle,
   createLiveContinuation,
@@ -74,5 +75,35 @@ describe("state lifetime boundaries", () => {
     expect(() => registerResumableCheckpoint({ ...source, credential: "sk-secret" })).toThrow(
       "valid, closed",
     );
+  });
+
+  test("retains a closed portable specification decision binding in checkpoints", () => {
+    const specification = {
+      recordId: "decision.checkpoint",
+      authority: "authority.checkpoint",
+      resolvedDigest: digest("a".repeat(64)),
+      acceptedScope: ["requirement.checkpoint"],
+      policyVersions: [{ policyId: "policy.checkpoint", version: contractVersion("1.0.0") }],
+      sources: [
+        {
+          sourceId: "source.checkpoint",
+          revision: "revision.1",
+          contentDigest: digest("b".repeat(64)),
+        },
+      ],
+    };
+    const registered = registerResumableCheckpoint(checkpoint({ specification }));
+    specification.acceptedScope.push("requirement.mutated");
+
+    expect(registered.specification).toEqual({
+      ...specification,
+      acceptedScope: ["requirement.checkpoint"],
+    });
+    expect(Object.isFrozen(registered.specification)).toBe(true);
+    expect(() =>
+      registerResumableCheckpoint(
+        checkpoint({ specification: { ...specification, unexpected: true } as never }),
+      ),
+    ).toThrow("valid, closed");
   });
 });

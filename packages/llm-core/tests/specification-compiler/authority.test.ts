@@ -18,6 +18,7 @@ import {
   type LocalAgentProgramPort,
 } from "../../src/application/agent/public";
 import { workflowSpecificationMatches } from "../../src/application/workflow/authority";
+import { createWorkflowSpecificationBinding } from "../../src/application/workflow/runtime-public";
 import type {
   ResumeInterventionWorkflowInput,
   ResumableWorkflowStep,
@@ -268,6 +269,36 @@ describe("specification execution authority", () => {
     ).toThrow("does not authorize this Agent definition");
   });
 
+  test("rejects a registered compilation that does not contain an Agent plan", () => {
+    const fixture = authorityFixture({ target: "not-an-agent" });
+    const runner = createLocalAgentRunner({
+      identity: identity(),
+      program: { execute: () => ({ status: "completed", output: null }) },
+      runnerId: "runner.authority",
+      runnerVersion: contractVersion("1.0.0"),
+      specification: {
+        compiled: fixture.compiled as unknown as CompiledSpecification<{
+          readonly agent: {
+            readonly agentId: string;
+            readonly version: ReturnType<typeof contractVersion>;
+            readonly instructions: string;
+            readonly effectRequirement: "read-only" | "controlled";
+          };
+        }>,
+        authority: fixture.authority,
+      },
+    });
+
+    expect(() =>
+      runner.prepare({
+        agentId: "agent.substituted",
+        version: contractVersion("1.0.0"),
+        instructions: "Must not be prepared.",
+        effectRequirement: "read-only",
+      }),
+    ).toThrow("does not authorize this Agent definition");
+  });
+
   test("binds workflow runtime steps to the frozen declarative target", async () => {
     const stepId = coreId<StepId>("018f0f4e-8c5b-7a91-8c3b-123456789912");
     const fixture = authorityFixture({ steps: [{ stepId, effect: "none" as const }] });
@@ -277,11 +308,23 @@ describe("specification execution authority", () => {
       execute: (state) => ({ state }),
     };
     const input = {
+      checkpoint: {
+        specification: createWorkflowSpecificationBinding({
+          compiled: fixture.compiled,
+          authority: fixture.authority,
+        }),
+      },
       specification: { compiled: fixture.compiled, authority: fixture.authority },
       steps: [step],
     } as unknown as ResumeInterventionWorkflowInput;
 
     expect(await workflowSpecificationMatches(input)).toBe(true);
+    expect(
+      await workflowSpecificationMatches({
+        ...input,
+        specification: undefined,
+      }),
+    ).toBe(false);
     (step as { stepId: StepId }).stepId = coreId<StepId>("018f0f4e-8c5b-7a91-8c3b-123456789913");
     expect(await workflowSpecificationMatches(input)).toBe(false);
   });

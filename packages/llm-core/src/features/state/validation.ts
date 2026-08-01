@@ -11,6 +11,7 @@ import type {
   RecordedEffect,
   ResumableCheckpoint,
   ResumeCompatibility,
+  SpecificationDecisionBinding,
 } from "./types";
 
 const DATE_TIME = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/;
@@ -133,6 +134,52 @@ export const isRecordedEffect = (value: unknown): value is RecordedEffect =>
     value.status === "indeterminate") &&
   isEvidenceRef(value.receipt);
 
+const isSpecificationDecisionBinding = (value: unknown): value is SpecificationDecisionBinding => {
+  if (
+    !isRecord(value) ||
+    !hasOnlyKeys(value, [
+      "recordId",
+      "authority",
+      "resolvedDigest",
+      "acceptedScope",
+      "policyVersions",
+      "sources",
+    ]) ||
+    !isSafeId(value.recordId) ||
+    !isSafeId(value.authority) ||
+    !isDigest(value.resolvedDigest) ||
+    !Array.isArray(value.acceptedScope) ||
+    !value.acceptedScope.every(isSafeId) ||
+    new Set(value.acceptedScope).size !== value.acceptedScope.length ||
+    !Array.isArray(value.policyVersions) ||
+    !value.policyVersions.every(
+      (policy) =>
+        isRecord(policy) &&
+        hasOnlyKeys(policy, ["policyId", "version"]) &&
+        isSafeId(policy.policyId) &&
+        isContractVersion(policy.version),
+    ) ||
+    !Array.isArray(value.sources) ||
+    !value.sources.every(
+      (source) =>
+        isRecord(source) &&
+        hasOnlyKeys(source, ["sourceId", "revision", "contentDigest"]) &&
+        isSafeId(source.sourceId) &&
+        isSafeId(source.revision) &&
+        isDigest(source.contentDigest),
+    )
+  ) {
+    return false;
+  }
+  const policyKeys = value.policyVersions.map((policy) => `${policy.policyId}:${policy.version}`);
+  const sourceKeys = value.sources.map(
+    (source) => `${source.sourceId}:${source.revision}:${source.contentDigest.value}`,
+  );
+  return (
+    new Set(policyKeys).size === policyKeys.length && new Set(sourceKeys).size === sourceKeys.length
+  );
+};
+
 const isUniqueStrings = (value: unknown): value is readonly string[] =>
   Array.isArray(value) &&
   value.every((item) => typeof item === "string") &&
@@ -153,6 +200,7 @@ export const validateCheckpoint: (value: unknown) => asserts value is ResumableC
       "completedStepIds",
       "recordedEffects",
       "state",
+      "specification",
     ]) ||
     value.kind !== "resumable-checkpoint" ||
     !isCanonicalUuid(value.checkpointId) ||
@@ -166,7 +214,8 @@ export const validateCheckpoint: (value: unknown) => asserts value is ResumableC
     !value.completedStepIds.every(isCanonicalUuid) ||
     !Array.isArray(value.recordedEffects) ||
     !value.recordedEffects.every(isRecordedEffect) ||
-    !isJsonValue(value.state)
+    !isJsonValue(value.state) ||
+    (value.specification !== undefined && !isSpecificationDecisionBinding(value.specification))
   ) {
     throw new TypeError("ResumableCheckpoint must be a valid, closed portable checkpoint.");
   }

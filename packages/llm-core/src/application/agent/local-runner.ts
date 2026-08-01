@@ -44,7 +44,7 @@ import {
   validateLocalAgentExecutionResult,
 } from "./validation";
 import { AsyncEventLog } from "../async-event-log";
-import { verifyCompilationAuthority } from "../specification-compiler/runtime";
+import { verifyLocalAgentSpecification } from "./authority";
 
 const clonePortable = <T>(value: T): T => structuredClone(value);
 
@@ -159,33 +159,8 @@ export const createLocalAgentRunner = (options: CreateLocalAgentRunnerOptions): 
     return value;
   };
 
-  const specificationMatches = (definition: AgentDefinition): boolean => {
-    const planned = specification?.compiled.value.agent;
-    return (
-      planned === undefined ||
-      (planned.agentId === definition.agentId &&
-        planned.version === definition.version &&
-        planned.instructions === definition.instructions &&
-        planned.effectRequirement === definition.effectRequirement)
-    );
-  };
-
   const verifySpecification = (definition?: AgentDefinition): MaybePromise<void> =>
-    specification === undefined
-      ? undefined
-      : maybeMap(
-          () => {
-            if (definition && !specificationMatches(definition)) {
-              throw new TypeError(
-                "Compiled specification does not authorize this Agent definition.",
-              );
-            }
-          },
-          verifyCompilationAuthority({
-            compiled: specification.compiled,
-            authority: specification.authority,
-          }),
-        );
+    verifyLocalAgentSpecification(specification, definition);
 
   const settle = (state: RunState, draft: LocalAgentExecutionResult): AgentResult => {
     if (state.terminal) {

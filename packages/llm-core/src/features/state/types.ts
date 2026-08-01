@@ -84,6 +84,23 @@ export interface RecordedEffect {
   readonly receipt: EvidenceRef;
 }
 
+/** Portable accepted-decision binding retained by a specification-derived checkpoint. */
+export interface SpecificationDecisionBinding {
+  readonly recordId: string;
+  readonly authority: string;
+  readonly resolvedDigest: Digest;
+  readonly acceptedScope: readonly string[];
+  readonly policyVersions: readonly {
+    readonly policyId: string;
+    readonly version: ContractVersion;
+  }[];
+  readonly sources: readonly {
+    readonly sourceId: string;
+    readonly revision: string;
+    readonly contentDigest: Digest;
+  }[];
+}
+
 export interface ResumableCheckpoint {
   readonly kind: "resumable-checkpoint";
   readonly checkpointId: CheckpointId;
@@ -94,6 +111,8 @@ export interface ResumableCheckpoint {
   readonly completedStepIds: readonly StepId[];
   readonly recordedEffects: readonly RecordedEffect[];
   readonly state: JsonValue;
+  /** Requires a matching registered compilation before durable workflow resume. */
+  readonly specification?: SpecificationDecisionBinding;
 }
 
 export interface RegisteredResumableCheckpoint extends ResumableCheckpoint {

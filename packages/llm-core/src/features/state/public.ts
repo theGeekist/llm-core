@@ -52,4 +52,5 @@ export type {
   ResumeStrategy,
   RuntimeCompatibility,
   Snapshot,
+  SpecificationDecisionBinding,
 } from "./types";
