@@ -73,6 +73,8 @@ describe("evaluation domain", () => {
       digest: digest("3".repeat(64)),
       evidence: [evidence[0]!],
     });
+    const baselineReference = identity("dev.llm-core.candidate.baseline");
+    const baseline = { ...baselineReference, lineage: { kind: "manual" as const } };
     const qualification = createEvaluationQualification({
       dataset: identity("dev.llm-core.dataset.release"),
       split: {
@@ -80,13 +82,13 @@ describe("evaluation domain", () => {
         kind: "held-out",
         datasetId: "dev.llm-core.dataset.release",
       },
-      baseline: { ...identity("dev.llm-core.candidate.baseline"), lineage: { kind: "manual" } },
+      baseline,
       candidate: {
         ...identity("dev.llm-core.candidate.optimized"),
         lineage: {
           kind: "optimizer",
           optimizer: identity("dev.llm-core.optimizer.search"),
-          baseCandidateId: "dev.llm-core.candidate.baseline",
+          baseCandidate: baselineReference,
         },
       },
       evaluator: evaluator("dev.llm-core.evaluator.gate", () => pass()).descriptor,
@@ -137,6 +139,12 @@ describe("evaluation domain", () => {
         decision: "promote",
       }),
     ).toThrow("held-out");
+    expect(() =>
+      createEvaluationQualification({
+        ...qualification,
+        baseline: { ...baseline, digest: digest("4".repeat(64)) },
+      }),
+    ).toThrow("closed, reproducible");
   });
   test("creates immutable evidence-only cases without runtime or provider values", () => {
     const source = {

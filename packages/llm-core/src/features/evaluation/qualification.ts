@@ -52,18 +52,16 @@ const candidate = (value: unknown): EvaluationCandidate | null => {
       ? undefined
       : { id: snapshot.id, digest: snapshot.digest, evidence: snapshot.evidence },
   );
-  const lineage = snapshotExactRecord(
-    snapshot?.lineage,
-    ["kind"],
-    ["optimizer", "baseCandidateId"],
-  );
+  const lineage = snapshotExactRecord(snapshot?.lineage, ["kind"], ["optimizer", "baseCandidate"]);
   if (base === null || lineage === null || !["manual", "optimizer"].includes(String(lineage.kind)))
     return null;
   const optimizer = lineage.optimizer === undefined ? undefined : qualifiedInput(lineage.optimizer);
+  const baseCandidate =
+    lineage.baseCandidate === undefined ? undefined : qualifiedInput(lineage.baseCandidate);
   if (
     (lineage.kind === "optimizer") !== (optimizer !== undefined) ||
-    (lineage.kind === "optimizer" && !qualified(lineage.baseCandidateId)) ||
-    (lineage.kind === "manual" && lineage.baseCandidateId !== undefined)
+    (lineage.kind === "optimizer" && baseCandidate === null) ||
+    (lineage.kind === "manual" && lineage.baseCandidate !== undefined)
   )
     return null;
   return {
@@ -71,9 +69,7 @@ const candidate = (value: unknown): EvaluationCandidate | null => {
     lineage: {
       kind: lineage.kind as EvaluationCandidateLineage["kind"],
       ...(optimizer === null ? {} : { optimizer }),
-      ...(lineage.baseCandidateId === undefined
-        ? {}
-        : { baseCandidateId: lineage.baseCandidateId as string }),
+      ...(baseCandidate === undefined || baseCandidate === null ? {} : { baseCandidate }),
     },
   };
 };
@@ -227,7 +223,12 @@ export const createEvaluationQualification = (
       new Set(thresholds.map((item) => item!.criterionId)).size !== thresholds.length
     )
       throw new TypeError("Qualification facts are invalid.");
-    if (next.lineage.kind === "optimizer" && next.lineage.baseCandidateId !== baseline.id)
+    if (
+      next.lineage.kind === "optimizer" &&
+      (next.lineage.baseCandidate?.id !== baseline.id ||
+        next.lineage.baseCandidate?.digest.algorithm !== baseline.digest.algorithm ||
+        next.lineage.baseCandidate?.digest.value !== baseline.digest.value)
+    )
       throw new TypeError("Optimizer candidate lineage must bind the qualification baseline.");
     const normalizedResults = results as EvaluationMeasuredResult[];
     const normalizedThresholds = thresholds as EvaluationThreshold[];

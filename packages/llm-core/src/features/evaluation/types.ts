@@ -101,8 +101,8 @@ export interface EvaluationSlice extends EvaluationQualifiedInput {
 export interface EvaluationCandidateLineage {
   readonly kind: "manual" | "optimizer";
   readonly optimizer?: EvaluationQualifiedInput;
-  /** Required for optimizer output and bound to the qualification baseline. */
-  readonly baseCandidateId?: string;
+  /** Required for optimizer output and bound to the exact qualification baseline revision. */
+  readonly baseCandidate?: EvaluationQualifiedInput;
 }
 
 export interface EvaluationCandidate extends EvaluationQualifiedInput {
