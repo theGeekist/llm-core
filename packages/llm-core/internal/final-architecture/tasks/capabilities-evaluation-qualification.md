@@ -3,7 +3,7 @@ architecture_version: 2
 id: capabilities-evaluation-qualification
 title: Evaluation qualification and promotion
 stage: qualification
-status: claimed
+status: done
 priority: high
 preferred_owner_kind: codex
 owner: codex-evaluation-qualification
@@ -31,7 +31,7 @@ read_scope:
   - packages/llm-core/src/features/evidence/**
   - packages/llm-core/src/features/artifacts/**
 review_owner: coordinator
-updated_at: 2026-08-01T04:02:25Z
+updated_at: 2026-08-01T06:56:05Z
 ---
 
 # capabilities-evaluation-qualification — Evaluation qualification and promotion
@@ -80,7 +80,16 @@ bun run lint
 - 2026-08-01 — Coordinator claimed this independent task on `main` from
   `df7c34c`. No active task has an overlapping write scope, so a separate
   worktree is unnecessary.
+- 2026-08-01 — Completed at `effad3c`, documented at `3ec4e39`, and corrected
+  after review at `62ebab8`. Focused evaluation tests and both typechecks pass.
 
 ## Handoff
 
-In progress.
+Completed and integrated on `main`.
+
+- Commits: `effad3c`, `3ec4e39`, `62ebab8`.
+- Scope: immutable dataset/split/baseline/candidate identities, validated
+  results and optional uncertainty, threshold qualification, held-out
+  promotion, and exact optimizer baseline revision lineage.
+- Verification: focused evaluation tests and package/test typechecks passed.
+- No shared-file requests.
