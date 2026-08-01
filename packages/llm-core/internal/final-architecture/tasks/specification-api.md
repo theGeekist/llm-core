@@ -3,16 +3,16 @@ architecture_version: 2
 id: specification-api
 title: Specification API and format compatibility
 stage: specifications
-status: proposed
+status: claimed
 priority: high
 preferred_owner_kind: coordinator
-owner:
-owner_kind: codex
-lease_started_at:
-lease_expires_at:
-base_sha:
-branch:
-worktree:
+owner: codex-root
+owner_kind: coordinator
+lease_started_at: 2026-08-01T00:00:00.000Z
+lease_expires_at: 2026-08-01T08:00:00.000Z
+base_sha: fc64195
+branch: main
+worktree: /Users/jasonnathan/Repos/@theGeekist/llm-core
 depends_on:
   - specification-authority
 decision_dependencies:
@@ -86,7 +86,9 @@ bun run --cwd packages/llm-core format:check
 
 ## Work log
 
-Pending passing review of `specification-authority` at `a1b4191`.
+- 2026-08-01 — Claimed on shared `main` after user accepted the
+  `specification-authority` review. The direct-main assignment is deliberate:
+  no active task overlaps this task's API/package write scope.
 
 ## Handoff
 

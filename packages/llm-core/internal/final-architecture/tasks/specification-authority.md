@@ -3,7 +3,7 @@ architecture_version: 2
 id: specification-authority
 title: Recheck specification decision before execution
 stage: specifications
-status: review
+status: done
 priority: high
 preferred_owner_kind: coordinator
 owner: codex-root
@@ -116,10 +116,12 @@ bun run lint
   and a transient-only workflow authority binding.
 - 2026-08-01 — Remediated at `a1b4191`; awaiting user review before task
   completion or dependent-task allocation.
+- 2026-08-01 — User review passed. Marked done after the verified remediation
+  integrated on `main` at `a1b4191`.
 
 ## Handoff
 
-Awaiting review of `a1b4191` (`fix(specifications): persist execution
+Review passed for `a1b4191` (`fix(specifications): persist execution
 authority`), following the original implementation at `a68502f`.
 
 - Enforcement points: Agent creation/preparation/start/run and child/resume
@@ -149,5 +151,4 @@ authority`), following the original implementation at `a68502f`.
   coordination-process deviation noted above.
 - Remaining risks: revocation remains a trusted authority-port concern outside
   the final synchronous pre-invocation check. No shared-file follow-up is
-  requested. Do not mark this task done or allocate `specification-api` until
-  the user accepts this review candidate.
+  requested.
