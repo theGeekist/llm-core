@@ -3,7 +3,7 @@ architecture_version: 2
 id: specification-api
 title: Specification API and format compatibility
 stage: specifications
-status: in_progress
+status: review
 priority: high
 preferred_owner_kind: coordinator
 owner: codex-root
@@ -116,10 +116,20 @@ bun run --cwd packages/llm-core format:check
 - 2026-08-01 — Review returned the task to implementation for two P1 fixes:
   common Agent authority must always use the bound private verifier, and a
   policy needs a graph-free public review view from which it can derive scope.
+- 2026-08-01 — Addressed both P1 findings in `ce4f5b0`
+  (`fix(specifications): bind common review authority`). `AgentConfig` no
+  longer accepts an authority override; common execution reads only the bound
+  private verifier. Review policy now receives an immutable view of scope IDs,
+  reviewable items, relationships, dependency/workflow selections, questions,
+  and conversion diagnostics without exposing `SpecificationGraph`.
+- 2026-08-01 — Reverification passed: focused type/specification/compiler/
+  architecture suites; `release:build` (574 passed, 1 intentional skip);
+  packed 30-entrypoint consumer; documentation check; and formatting.
 
 ## Handoff
 
-Ready for coordinator review. Review the root and `./specifications` runtime
-surfaces, then inspect the private provenance registry regression: compiled
-values expose only `compilationId` and `value`, while controlled Agent and
-workflow paths retain current-authority validation internally.
+Ready for coordinator review. Confirm the common `AgentConfig` has no
+authority override and that a supplied runtime lookalike cannot replace the
+facade-bound verifier after source-revision drift. Confirm policy scope is
+derived solely from the frozen `SpecificationReviewView`, while the canonical
+graph, accepted handle, authority snapshot, and verification remain private.
