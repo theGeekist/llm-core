@@ -3,7 +3,7 @@ architecture_version: 2
 id: specification-api
 title: Specification API and format compatibility
 stage: specifications
-status: in_progress
+status: review
 priority: high
 preferred_owner_kind: coordinator
 owner: codex-root
@@ -101,7 +101,21 @@ bun run --cwd packages/llm-core format:check
 - 2026-08-01 — Reviewed `SPECIFICATIONS.md`, `LANGUAGE.md`, task protocol and
   ADR-007, ADR-009, ADR-011 and ADR-012 before implementation. The task will
   publish only the approved common journey and explicit specification front.
+- 2026-08-01 — Implemented and committed `fa767d9`
+  (`feat(specifications): publish specification API`). The root now publishes
+  only load/review/compile; `./specifications` is the thirtieth explicit
+  package front. Loaded graphs, accepted handles, authority snapshots and
+  verification remain module-private. The task's source-oriented and
+  runtime-oriented tests cover the two required adapter-neutral dialects.
+- 2026-08-01 — Verification passed: focused specification and architecture
+  suites; package/test typechecks; `release:build` (573 passed, 1 intentional
+  skip); packed 30-entrypoint consumer; documentation check; and formatting.
+  Shared compiler, Agent, workflow, and internal runtime-front changes are
+  included in `fa767d9`; no external adapter was published or claimed.
 
 ## Handoff
 
-Pending.
+Ready for coordinator review. Review the root and `./specifications` runtime
+surfaces, then inspect the private provenance registry regression: compiled
+values expose only `compilationId` and `value`, while controlled Agent and
+workflow paths retain current-authority validation internally.
