@@ -11,6 +11,8 @@ import { isPromiseLike } from "#shared/maybe";
 import {
   createEvaluationCase,
   createEvaluationComposition,
+  createEvaluationPromotion,
+  createEvaluationQualification,
   evaluationCaseId,
   evaluationCriterionId,
   evaluationEvaluatorId,
@@ -65,6 +67,77 @@ const pass = (source: EvidenceRef = evidence[0]!): EvaluationJudgement => ({
 });
 
 describe("evaluation domain", () => {
+  test("binds promotion to validated held-out measurements, thresholds, and lineage", () => {
+    const identity = (id: string) => ({
+      id,
+      digest: digest("3".repeat(64)),
+      evidence: [evidence[0]!],
+    });
+    const qualification = createEvaluationQualification({
+      dataset: identity("dev.llm-core.dataset.release"),
+      split: {
+        ...identity("dev.llm-core.split.heldout"),
+        kind: "held-out",
+        datasetId: "dev.llm-core.dataset.release",
+      },
+      baseline: { ...identity("dev.llm-core.candidate.baseline"), lineage: { kind: "manual" } },
+      candidate: {
+        ...identity("dev.llm-core.candidate.optimized"),
+        lineage: {
+          kind: "optimizer",
+          optimizer: identity("dev.llm-core.optimizer.search"),
+          baseCandidateId: "dev.llm-core.candidate.baseline",
+        },
+      },
+      evaluator: evaluator("dev.llm-core.evaluator.gate", () => pass()).descriptor,
+      results: [
+        {
+          result: {
+            ...pass(),
+            caseId: evaluationCase().caseId,
+            evaluator: evaluator("dev.llm-core.evaluator.gate", () => pass()).descriptor,
+          },
+          uncertainty: 0.1,
+        },
+      ],
+      assertions: [
+        { assertionId: "dev.llm-core.assertion.safety", kind: "safety", evidence: [evidence[0]!] },
+      ],
+      thresholds: [{ criterionId: correctness, minimum: 0.9 }],
+    });
+    expect(qualification.thresholdStatus).toBe("qualified");
+    expect(
+      createEvaluationPromotion({
+        qualification,
+        policy: evidence[0]!,
+        decisionMaker: "dev.llm-core.release.owner",
+        decision: "promote",
+      }).decision,
+    ).toBe("promote");
+    expect(() =>
+      createEvaluationQualification({
+        ...qualification,
+        results: [
+          {
+            ...qualification.results[0]!,
+            result: {
+              ...qualification.results[0]!.result,
+              scores: [{ notACriterion: "accepted" }],
+              explanations: [42],
+            },
+          },
+        ],
+      } as never),
+    ).toThrow("closed, reproducible");
+    expect(() =>
+      createEvaluationPromotion({
+        qualification: { ...qualification, split: { ...qualification.split, kind: "validation" } },
+        policy: evidence[0]!,
+        decisionMaker: "dev.llm-core.release.owner",
+        decision: "promote",
+      }),
+    ).toThrow("held-out");
+  });
   test("creates immutable evidence-only cases without runtime or provider values", () => {
     const source = {
       caseId: evaluationCaseId("dev.llm-core.case.portability"),

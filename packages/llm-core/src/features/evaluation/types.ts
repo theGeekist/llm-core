@@ -77,3 +77,69 @@ export interface EvaluationComposition {
   readonly evaluators: readonly EvaluationEvaluatorDescriptor[];
   evaluate(evaluationCase: EvaluationCase): MaybePromise<readonly EvaluationResult[]>;
 }
+
+/** Immutable, evidence-addressed input used for a reproducible qualification. */
+export interface EvaluationQualifiedInput {
+  readonly id: string;
+  readonly digest: import("#contracts").Digest;
+  readonly evidence: readonly EvidenceRef[];
+}
+
+export type EvaluationAssertionKind = "final-output" | "safety" | "tool-use" | "trajectory";
+
+export interface EvaluationAssertion {
+  readonly assertionId: string;
+  readonly kind: EvaluationAssertionKind;
+  readonly evidence: readonly EvidenceRef[];
+}
+
+export interface EvaluationSlice extends EvaluationQualifiedInput {
+  readonly kind: "training" | "validation" | "held-out";
+  readonly datasetId: string;
+}
+
+export interface EvaluationCandidateLineage {
+  readonly kind: "manual" | "optimizer";
+  readonly optimizer?: EvaluationQualifiedInput;
+  /** Required for optimizer output and bound to the qualification baseline. */
+  readonly baseCandidateId?: string;
+}
+
+export interface EvaluationCandidate extends EvaluationQualifiedInput {
+  readonly lineage: EvaluationCandidateLineage;
+}
+
+export interface EvaluationThreshold {
+  readonly criterionId: EvaluationCriterionId;
+  readonly minimum: number;
+}
+
+export interface EvaluationMeasuredResult {
+  readonly result: EvaluationResult;
+  /** Present only when this evaluator defines a normalized uncertainty value. */
+  readonly uncertainty?: number;
+}
+
+export interface EvaluationQualificationInput {
+  readonly dataset: EvaluationQualifiedInput;
+  readonly split: EvaluationSlice;
+  readonly baseline: EvaluationCandidate;
+  readonly candidate: EvaluationCandidate;
+  readonly evaluator: EvaluationEvaluatorDescriptor;
+  readonly results: readonly EvaluationMeasuredResult[];
+  readonly assertions: readonly EvaluationAssertion[];
+  readonly thresholds: readonly EvaluationThreshold[];
+}
+
+export interface EvaluationQualification extends EvaluationQualificationInput {
+  readonly thresholdStatus: "not-qualified" | "qualified";
+}
+
+export interface EvaluationPromotionInput {
+  readonly qualification: EvaluationQualification;
+  readonly policy: EvidenceRef;
+  readonly decisionMaker: string;
+  readonly decision: "promote" | "reject";
+}
+
+export interface EvaluationPromotion extends EvaluationPromotionInput {}
