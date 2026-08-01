@@ -3,7 +3,7 @@ architecture_version: 2
 id: specification-api
 title: Specification API and format compatibility
 stage: specifications
-status: ready
+status: proposed
 priority: high
 preferred_owner_kind: coordinator
 owner:
@@ -86,8 +86,7 @@ bun run --cwd packages/llm-core format:check
 
 ## Work log
 
-- 2026-08-01 — Promoted to ready after `specification-authority` completed at
-  `a68502f`. No recorded API-publication blocker remains.
+Pending passing review of `specification-authority` at `a1b4191`.
 
 ## Handoff
 

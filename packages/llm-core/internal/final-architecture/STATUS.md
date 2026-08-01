@@ -2,7 +2,7 @@
 
 Architecture version: v2
 Updated: 1 August 2026
-Active tasks: 1
+Active tasks: 2
 
 This is a projection. Task files under [`tasks/`](tasks/) are authoritative.
 Swarm claiming and integration follow [`COORDINATION.md`](COORDINATION.md).
@@ -32,8 +32,8 @@ Swarm claiming and integration follow [`COORDINATION.md`](COORDINATION.md).
 | language-rollout                      | language       | done     | coordinator   | codex-root                     | language-vocabulary, ADR-012                                                                                              |
 | specification-contracts               | specifications | done     | coordinator   | codex-specification-contracts  | language-rollout, ADR-009                                                                                                 |
 | specification-compiler                | specifications | done     | coordinator   | codex-specification-compiler   | specification-contracts                                                                                                   |
-| specification-authority               | specifications | done     | coordinator   | codex-root                     | specification-compiler                                                                                                    |
-| specification-api                     | specifications | ready    | coordinator   | —                              | specification-authority                                                                                                   |
+| specification-authority               | specifications | review   | coordinator   | codex-root                     | specification-compiler                                                                                                    |
+| specification-api                     | specifications | proposed | coordinator   | —                              | specification-authority                                                                                                   |
 | adapter-openspec                      | adapters       | proposed | Codex         | —                              | specification-api                                                                                                         |
 | adapter-openspec-release              | adapters       | proposed | coordinator   | —                              | adapter-openspec, ADR-010                                                                                                 |
 | adapter-pydantic-ai                   | adapters       | proposed | Codex         | —                              | specification-api                                                                                                         |
@@ -62,9 +62,9 @@ Swarm claiming and integration follow [`COORDINATION.md`](COORDINATION.md).
 
 ## Next action
 
-Implement `capabilities-evaluation-qualification` on `main`. The
-`specification-api` task is also ready once its coordinator allocation begins.
+Await user review of `specification-authority` at `a1b4191` before allocating
+the dependent `specification-api` task.
 
 Pipeline 1.2.0 is published, pinned and packed-qualified. The
-`specification-authority` is complete at `a68502f`; `specification-api` is
-unblocked.
+`specification-authority` is awaiting review at `a1b4191`; its dependent API
+task remains proposed.
