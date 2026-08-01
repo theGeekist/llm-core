@@ -3,7 +3,7 @@ architecture_version: 2
 id: specification-compiler
 title: Specification review and compilation
 stage: specifications
-status: in_progress
+status: review
 priority: high
 preferred_owner_kind: coordinator
 owner: codex-specification-compiler-review
@@ -131,23 +131,22 @@ entrypoints.
   receiving focused compiler test passed.
 - 2026-08-01 — Reopened for scoped dependency-cycle review and conversion-report
   loss-accounting remediation from `89cd572`.
+- 2026-08-01 — Remediated at `57b705a`: dependency cycles now block only the
+  accepted scope, and rejected conversion semantics remain visible and block
+  the scope they affect. All task verification gates passed.
 
 ## Handoff
 
-Completed and integrated by the coordinator.
+Awaiting coordinator review and integration of the P1 remediation.
 
-- Commit: `a54c4cd95185af7f36d2ba7d9ba2e3dae148739c`
+- Commit: `57b705a` (`fix(specifications): scope review blockers`)
 - Worktree: clean at the implementation commit before this review-state record.
 - Changed files:
-  - `packages/llm-core/src/application/specification-compiler/compiler.ts`
-  - `packages/llm-core/src/application/specification-compiler/public.ts`
   - `packages/llm-core/src/application/specification-compiler/resolution.ts`
-  - `packages/llm-core/src/application/specification-compiler/runtime.ts`
-  - `packages/llm-core/src/application/specification-compiler/types.ts`
   - `packages/llm-core/tests/specification-compiler/compiler.test.ts`
   - this task file
 - Verification (all exit 0): `bun test packages/llm-core/tests/specification-compiler`
-  (6 pass); `bun run typecheck:packages` (including
+  (8 pass); `bun run typecheck:packages` (including
   `contracts:schema:check`); `bun run typecheck:tests`; `bun run lint`; the
   task-file Prettier check; and `git diff --check`.
 - Applied ADRs: ADR-005, ADR-006, ADR-009, ADR-011 and ADR-012. WPKernel uses
