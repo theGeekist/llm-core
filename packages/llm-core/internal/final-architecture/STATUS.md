@@ -32,8 +32,8 @@ Swarm claiming and integration follow [`COORDINATION.md`](COORDINATION.md).
 | language-rollout                      | language       | done     | coordinator   | codex-root                     | language-vocabulary, ADR-012                                                                                              |
 | specification-contracts               | specifications | done     | coordinator   | codex-specification-contracts  | language-rollout, ADR-009                                                                                                 |
 | specification-compiler                | specifications | done     | coordinator   | codex-specification-compiler   | specification-contracts                                                                                                   |
-| specification-authority               | specifications | ready    | coordinator   | —                              | specification-compiler                                                                                                    |
-| specification-api                     | specifications | proposed | coordinator   | —                              | specification-authority                                                                                                   |
+| specification-authority               | specifications | done     | coordinator   | codex-root                     | specification-compiler                                                                                                    |
+| specification-api                     | specifications | ready    | coordinator   | —                              | specification-authority                                                                                                   |
 | adapter-openspec                      | adapters       | proposed | Codex         | —                              | specification-api                                                                                                         |
 | adapter-openspec-release              | adapters       | proposed | coordinator   | —                              | adapter-openspec, ADR-010                                                                                                 |
 | adapter-pydantic-ai                   | adapters       | proposed | Codex         | —                              | specification-api                                                                                                         |
@@ -62,9 +62,9 @@ Swarm claiming and integration follow [`COORDINATION.md`](COORDINATION.md).
 
 ## Next action
 
-Implement `capabilities-evaluation-qualification` on `main`. Its evaluation
-feature scope is disjoint from the separate specification work already in
-progress.
+Implement `capabilities-evaluation-qualification` on `main`. The
+`specification-api` task is also ready once its coordinator allocation begins.
 
 Pipeline 1.2.0 is published, pinned and packed-qualified. The
-`specification-authority` now has no remaining recorded blocker.
+`specification-authority` is complete at `a68502f`; `specification-api` is
+unblocked.
