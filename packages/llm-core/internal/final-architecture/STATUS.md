@@ -2,7 +2,7 @@
 
 Architecture version: v2
 Updated: 1 August 2026
-Active tasks: 0
+Active tasks: 1
 
 This is a projection. Task files under [`tasks/`](tasks/) are authoritative.
 Swarm claiming and integration follow [`COORDINATION.md`](COORDINATION.md).
@@ -44,7 +44,7 @@ Swarm claiming and integration follow [`COORDINATION.md`](COORDINATION.md).
 | adapter-spec-kit-release              | adapters       | proposed | coordinator   | —                         | adapter-spec-kit, ADR-010                                                                                                 |
 | adapter-bmad                          | adapters       | proposed | Codex         | —                         | specification-api                                                                                                         |
 | adapter-bmad-release                  | adapters       | proposed | coordinator   | —                         | adapter-bmad, ADR-010                                                                                                     |
-| capabilities-context-qualification    | qualification  | proposed | Codex         | —                         | language-rollout, ADR-013                                                                                                 |
+| capabilities-context-qualification    | qualification  | claimed  | Codex         | codex-context-qualification | language-rollout, ADR-013                                                                                              |
 | capabilities-evaluation-qualification | qualification  | proposed | Codex         | —                         | capabilities-evaluation, language-rollout, ADR-013                                                                        |
 | capabilities-operational-evidence     | qualification  | proposed | Codex         | —                         | language-rollout, ADR-013                                                                                                 |
 | runtime-receipt-reconciliation        | qualification  | proposed | Codex         | —                         | core-tool-control-events, core-state-interventions, language-rollout, ADR-013                                             |
@@ -62,10 +62,9 @@ Swarm claiming and integration follow [`COORDINATION.md`](COORDINATION.md).
 
 ## Next action
 
-Claim `specification-authority`: `specification-compiler` is complete at
-`7c68f6f`. It continues the planned sequence through authority enforcement,
-API and qualified adapters. The proposed qualification tasks are independent
-follow-on work; they do not block the specification sequence.
+Implement `capabilities-context-qualification` in its isolated worktree. It
+is independent of the active specification sequence and establishes the
+provider-neutral context eligibility/compiler boundary.
 
 Pipeline 1.2.0 is published, pinned and packed-qualified. The
 `specification-authority` now has no remaining recorded blocker.

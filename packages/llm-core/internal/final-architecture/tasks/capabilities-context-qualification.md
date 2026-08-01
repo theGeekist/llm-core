@@ -3,16 +3,16 @@ architecture_version: 2
 id: capabilities-context-qualification
 title: Context eligibility and compiler boundary
 stage: qualification
-status: proposed
+status: claimed
 priority: high
 preferred_owner_kind: codex
-owner:
-owner_kind:
-lease_started_at:
-lease_expires_at:
-base_sha:
-branch:
-worktree:
+owner: codex-context-qualification
+owner_kind: coordinator
+lease_started_at: 2026-08-01T03:14:57Z
+lease_expires_at: 2026-08-01T11:14:57Z
+base_sha: a4ceb81f78a5b8c1fea495d90a511113ed40426b
+branch: task/capabilities-context-qualification
+worktree: .worktrees/capabilities-context-qualification
 depends_on:
   - language-rollout
 decision_dependencies:
@@ -31,7 +31,7 @@ read_scope:
   - packages/llm-core/src/features/evidence/**
   - packages/llm-core/src/features/retrieval/**
 review_owner: coordinator
-updated_at: 2026-08-01
+updated_at: 2026-08-01T03:14:57Z
 ---
 
 # capabilities-context-qualification — Context eligibility and compiler boundary
@@ -78,8 +78,10 @@ bun run lint
 
 ## Work log
 
-Planned from ADR-013; not claimed.
+- 2026-08-01 — Coordinator claimed this task after verifying that
+  `language-rollout` and ADR-001, ADR-003, and ADR-013 are complete. Work is
+  isolated on `task/capabilities-context-qualification` from `a4ceb81`.
 
 ## Handoff
 
-Pending.
+In progress.
