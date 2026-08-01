@@ -3,7 +3,7 @@ architecture_version: 2
 id: capabilities-context-qualification
 title: Context eligibility and compiler boundary
 stage: qualification
-status: review
+status: done
 priority: high
 preferred_owner_kind: codex
 owner: codex-context-qualification
@@ -31,7 +31,7 @@ read_scope:
   - packages/llm-core/src/features/evidence/**
   - packages/llm-core/src/features/retrieval/**
 review_owner: coordinator
-updated_at: 2026-08-01T04:01:00Z
+updated_at: 2026-08-01T04:15:00Z
 ---
 
 # capabilities-context-qualification — Context eligibility and compiler boundary
@@ -85,10 +85,12 @@ bun run lint
 - 2026-08-01 — Completed at `f426841`. The compiler accepts only closed,
   evidence-bearing eligibility facts, requires an explicit evaluation instant,
   and emits immutable inclusion, redaction, and exclusion evidence.
+- 2026-08-01 — Coordinator fast-forwarded the reviewed task commits to `main`
+  at `0acd4f7`; the receiving context test/type/lint gate passed.
 
 ## Handoff
 
-Ready for coordinator review.
+Completed and integrated by the coordinator.
 
 - Commit: `f426841` (`feat(context): add eligibility compiler`)
 - Worktree: clean at the implementation commit.
@@ -115,3 +117,5 @@ Ready for coordinator review.
   validates and records those facts but deliberately does not claim an
   independent authorization decision.
 - Shared-file requests: none.
+- Main integration: `0acd4f7` (fast-forwarded after review).
+- Coordinator status: completed.
