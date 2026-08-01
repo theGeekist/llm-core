@@ -14,10 +14,7 @@ import {
   readCompiledSpecificationAuthority,
   verifyCompilationAuthority,
 } from "../application/specification-compiler/runtime";
-import type {
-  CompiledSpecification,
-  SpecificationAuthorityDependencies,
-} from "../application/specification-compiler/types";
+import type { CompiledSpecification } from "../application/specification-compiler/types";
 import type { AgentDefinition } from "../features/agent/public";
 import type { Model } from "../features/model/public";
 import { readExecutableTool, type ToolDefinition } from "../features/tooling/runtime";
@@ -42,8 +39,6 @@ export interface AgentConfig {
   readonly version?: ContractVersion;
   /** A registered compilation; its raw value is never accepted on its own. */
   readonly specification?: CompiledSpecification<ExecutionPlan>;
-  /** Required with specification so current authority can be rechecked. */
-  readonly specificationAuthority?: SpecificationAuthorityDependencies;
 }
 
 export interface Agent {
@@ -81,12 +76,11 @@ const verifiedExecutionPlan = (
   config: AgentConfig,
 ): {
   readonly plan: ExecutionPlan;
-  readonly authority: SpecificationAuthorityDependencies;
+  readonly authority: ReturnType<typeof readCompiledSpecificationAuthority>;
 } | null => {
   const specification = config.specification;
   if (specification === undefined) return null;
-  const authority =
-    config.specificationAuthority ?? readCompiledSpecificationAuthority(specification);
+  const authority = readCompiledSpecificationAuthority(specification);
   const verified = verifyCompilationAuthority({
     compiled: specification,
     authority,

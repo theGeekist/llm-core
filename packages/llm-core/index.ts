@@ -43,4 +43,8 @@ export type {
   SpecificationDecision,
   SpecificationPolicy,
   SpecificationPolicyCurrentState,
+  SpecificationReviewItem,
+  SpecificationReviewRelationship,
+  SpecificationReviewView,
+  SpecificationScopeId,
 } from "./src/specifications/index";

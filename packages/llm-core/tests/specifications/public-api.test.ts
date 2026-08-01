@@ -29,14 +29,38 @@ const source = () =>
     extensions: { "org.example.runtime": { unsupported: "retained" } },
   });
 
-const acceptedPolicy = (): SpecificationPolicy => ({
-  decide: () =>
-    createSpecificationDecision({
+const acceptedPolicy = (current = { revision: "revision.1" }): SpecificationPolicy => ({
+  decide: ({ review }) => {
+    expect(Object.isFrozen(review)).toBe(true);
+    expect(Object.isFrozen(review.items)).toBe(true);
+    const acceptedScope = review.items
+      .filter((item) => item.kind === "requirement")
+      .map((item) => item.scopeId);
+    expect(acceptedScope.map(String)).toEqual(["requirement.prerequisite", "requirement.runtime"]);
+    expect(
+      review.relationships.map((relationship) => ({
+        kind: relationship.kind,
+        from: String(relationship.from),
+        to: String(relationship.to),
+      })),
+    ).toEqual([
+      {
+        kind: "depends-on",
+        from: "requirement.runtime",
+        to: "requirement.prerequisite",
+      },
+    ]);
+    expect(review.dependency.orderedScopeIds.map(String)).toEqual([
+      "requirement.prerequisite",
+      "requirement.runtime",
+    ]);
+    expect(review.issues.map((issue) => issue.code)).toContain("source-extension");
+    return createSpecificationDecision({
       status: "accepted",
       record: createSpecificationDecisionRecord({
         recordId: "decision.runtime" as never,
         resolvedDigest,
-        acceptedScope: ["requirement.runtime"] as never,
+        acceptedScope,
         decision: { kind: "policy", summary: "Runtime target is approved." },
         evidence: [{ evidenceId: "evidence.runtime", digest: evidenceDigest }],
         authority: "authority.runtime",
@@ -50,19 +74,17 @@ const acceptedPolicy = (): SpecificationPolicy => ({
         ],
         validity: { invalidatedBy: ["source-revision", "policy-version"] },
       }),
-    }),
-  current: () => ({
-    authority: "authority.runtime",
-    resolvedDigest,
-    acceptedScope: ["requirement.runtime"],
-    policyVersions: [{ policyId: "policy.runtime", version }],
-    sources: [
-      {
-        sourceId: "source.runtime",
-        revision: "revision.1",
-        contentDigest: sourceDigest,
-      },
-    ],
+    });
+  },
+  current: ({ record }) => ({
+    authority: record.authority,
+    resolvedDigest: record.resolvedDigest,
+    acceptedScope: record.acceptedScope,
+    policyVersions: record.policyVersions,
+    sources: record.sources.map((sourceBinding) => ({
+      ...sourceBinding,
+      revision: current.revision,
+    })),
   }),
   now: () => "2026-08-01T12:00:00.000Z",
 });
@@ -80,12 +102,18 @@ describe("specification public API", () => {
     expect(decision.status).toBe("needs-input");
   });
 
-  test("reviews and compiles a runtime-oriented target without leaking graph or authority state", async () => {
+  test("lets policy derive accepted scope from an adapter-produced public review view", async () => {
     const specification = loadSpecification({
       graphId: "graph.runtime",
       version,
       sources: [source()],
       nodes: [
+        {
+          nodeId: "requirement.prerequisite",
+          kind: "requirement",
+          title: "Prepare the agent",
+          source: { sourceId: "source.runtime", documentId: "root" },
+        },
         {
           nodeId: "requirement.runtime",
           kind: "requirement",
@@ -93,7 +121,27 @@ describe("specification public API", () => {
           source: { sourceId: "source.runtime", documentId: "root" },
         },
       ],
-      relationships: [],
+      relationships: [
+        {
+          relationshipId: "relationship.runtime-dependency",
+          kind: "depends-on",
+          from: "requirement.runtime",
+          to: "requirement.prerequisite",
+          source: { sourceId: "source.runtime", documentId: "root" },
+        },
+      ],
+      report: {
+        fidelity: "partial",
+        issues: [
+          {
+            code: "source-extension",
+            severity: "warning",
+            disposition: "degraded",
+            explanation: "The source extension remains namespaced portable data.",
+            nodeId: "requirement.runtime",
+          },
+        ],
+      },
     });
     const decision = await reviewSpecification(specification, {
       policy: acceptedPolicy(),
@@ -126,6 +174,83 @@ describe("specification public API", () => {
         specification: compiled,
       }),
     ).not.toThrow();
+  });
+
+  test("does not let a caller replace the facade-bound authority after revocation", async () => {
+    const current = { revision: "revision.1" };
+    const specification = loadSpecification({
+      graphId: "graph.revocation",
+      version,
+      sources: [source()],
+      nodes: [
+        {
+          nodeId: "requirement.prerequisite",
+          kind: "requirement",
+          title: "Prepare the agent",
+          source: { sourceId: "source.runtime", documentId: "root" },
+        },
+        {
+          nodeId: "requirement.runtime",
+          kind: "requirement",
+          title: "Run the prepared agent",
+          source: { sourceId: "source.runtime", documentId: "root" },
+        },
+      ],
+      relationships: [
+        {
+          relationshipId: "relationship.revocation-dependency",
+          kind: "depends-on",
+          from: "requirement.runtime",
+          to: "requirement.prerequisite",
+          source: { sourceId: "source.runtime", documentId: "root" },
+        },
+      ],
+      report: {
+        fidelity: "partial",
+        issues: [
+          {
+            code: "source-extension",
+            severity: "warning",
+            disposition: "degraded",
+            explanation: "The source extension remains namespaced portable data.",
+            nodeId: "requirement.runtime",
+          },
+        ],
+      },
+    });
+    const decision = await reviewSpecification(specification, { policy: acceptedPolicy(current) });
+    if (decision.status !== "accepted") throw new TypeError("Expected an accepted decision.");
+    const compiled = await compileSpecification(decision, { target: { not: "an-agent-plan" } });
+    current.revision = "revision.2";
+
+    const forgedAuthority = {
+      currentState: {
+        current: () => ({
+          authority: "authority.runtime",
+          resolvedDigest,
+          acceptedScope: ["requirement.prerequisite", "requirement.runtime"],
+          policyVersions: [{ policyId: "policy.runtime", version }],
+          sources: [
+            {
+              sourceId: "source.runtime",
+              revision: "revision.1",
+              contentDigest: sourceDigest,
+            },
+          ],
+        }),
+      },
+      clock: { now: () => "2026-08-01T12:00:00.000Z" },
+    };
+    expect(() =>
+      createAgent({
+        model: {
+          profile: { profileId: "model.runtime", version },
+          generate: () => ({}) as never,
+        } as never,
+        specification: compiled,
+        specificationAuthority: forgedAuthority,
+      } as never),
+    ).toThrow("no longer matches");
   });
 
   test("requires a review-bound accepted decision before compilation", () => {

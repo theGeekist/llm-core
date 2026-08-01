@@ -1,9 +1,10 @@
-import type { ContractVersion, Digest } from "#contracts";
+import type { ContractVersion, Digest, JsonValue, NativeExtensions } from "#contracts";
 import { maybeChain, maybeMap, type MaybePromise } from "#shared/maybe";
+import { cloneFrozen } from "#shared/portable-data";
 import {
   createSpecificationGraph,
   createSpecificationSourceSnapshot,
-} from "../features/specifications/factory";
+} from "../features/specifications/runtime";
 import type { SpecificationAuthorityState } from "../application/specification-compiler/types";
 import {
   bindCompiledSpecificationAuthority,
@@ -96,6 +97,9 @@ export type {
   SpecificationSourceSnapshot,
 };
 
+/** A stable, reviewable ID that can be selected in an accepted decision scope. */
+export type SpecificationScopeId = SpecificationDecisionRecord["acceptedScope"][number];
+
 /**
  * A loaded portable specification. Its reconciled graph stays private so
  * callers cannot bypass review by reconstructing compiler state.
@@ -105,11 +109,64 @@ export interface Specification {
   readonly report?: ConversionReport;
 }
 
+/** One portable item a review policy may select into an accepted scope. */
+export interface SpecificationReviewItem {
+  readonly scopeId: SpecificationScopeId;
+  readonly kind:
+    | "requirement"
+    | "decision"
+    | "question"
+    | "plan"
+    | "workflow"
+    | "artifact"
+    | "other";
+  readonly title: string;
+  readonly source: SpecificationSourceBinding;
+  readonly content?: JsonValue;
+  readonly extensions?: NativeExtensions;
+}
+
+/** A traced relationship between reviewable scope items. */
+export interface SpecificationReviewRelationship {
+  readonly relationshipId: string;
+  readonly kind:
+    | "depends-on"
+    | "relates"
+    | "refines"
+    | "conflicts"
+    | "supersedes"
+    | "implements"
+    | "blocks";
+  readonly from: SpecificationScopeId;
+  readonly to: SpecificationScopeId;
+  readonly source: SpecificationSourceBinding;
+  readonly extensions?: NativeExtensions;
+}
+
+/**
+ * Immutable selection material derived by core before a policy decides. It
+ * intentionally describes the graph without exporting its canonical runtime
+ * representation or any authority-bearing compiler state.
+ */
+export interface SpecificationReviewView {
+  readonly items: readonly SpecificationReviewItem[];
+  readonly relationships: readonly SpecificationReviewRelationship[];
+  readonly dependency: {
+    readonly orderedScopeIds: readonly SpecificationScopeId[];
+    readonly blockedScopeIds: readonly SpecificationScopeId[];
+  };
+  readonly workflow: {
+    readonly scopeIds: readonly SpecificationScopeId[];
+  };
+  readonly issues: readonly ConversionIssue[];
+  readonly questions: readonly SpecificationQuestion[];
+}
+
 /** The current state a review policy attests before acceptance or compilation. */
 export interface SpecificationPolicyCurrentState {
   readonly authority: string;
   readonly resolvedDigest: Digest;
-  readonly acceptedScope: readonly string[];
+  readonly acceptedScope: readonly SpecificationScopeId[];
   readonly policyVersions: readonly {
     readonly policyId: string;
     readonly version: ContractVersion;
@@ -129,6 +186,7 @@ export interface SpecificationPolicyCurrentState {
 export interface SpecificationPolicy {
   decide(input: {
     readonly specification: Specification;
+    readonly review: SpecificationReviewView;
     readonly evidence: readonly SpecificationEvidenceBinding[];
   }): MaybePromise<SpecificationDecision>;
   current(input: {
@@ -154,6 +212,7 @@ interface ReviewBinding {
 }
 
 const loadedGraphs = new WeakMap<Specification, ReturnType<typeof createSpecificationGraph>>();
+const loadedReviewViews = new WeakMap<Specification, SpecificationReviewView>();
 const reviewBindings = new WeakMap<SpecificationDecision, ReviewBinding>();
 
 const graphFor = (specification: Specification): ReturnType<typeof createSpecificationGraph> => {
@@ -162,6 +221,45 @@ const graphFor = (specification: Specification): ReturnType<typeof createSpecifi
     throw new TypeError("Specifications must be loaded by loadSpecification before review.");
   }
   return graph;
+};
+
+const reviewViewForGraph = (
+  graph: ReturnType<typeof createSpecificationGraph>,
+): SpecificationReviewView => {
+  const review = reviewSpecificationGraph(graph);
+  return cloneFrozen({
+    items: graph.nodes.map((node) => ({
+      scopeId: node.nodeId,
+      kind: node.kind,
+      title: node.title,
+      source: node.source,
+      ...(node.content === undefined ? {} : { content: node.content }),
+      ...(node.extensions === undefined ? {} : { extensions: node.extensions }),
+    })),
+    relationships: graph.relationships.map((relationship) => ({
+      relationshipId: relationship.relationshipId,
+      kind: relationship.kind,
+      from: relationship.from,
+      to: relationship.to,
+      source: relationship.source,
+      ...(relationship.extensions === undefined ? {} : { extensions: relationship.extensions }),
+    })),
+    dependency: {
+      orderedScopeIds: review.dependency.orderedNodeIds,
+      blockedScopeIds: review.dependency.blockedNodeIds,
+    },
+    workflow: { scopeIds: review.workflow.nodeIds },
+    issues: review.issues,
+    questions: review.questions,
+  });
+};
+
+const reviewViewFor = (specification: Specification): SpecificationReviewView => {
+  const review = loadedReviewViews.get(specification);
+  if (review === undefined) {
+    throw new TypeError("Specifications must be loaded by loadSpecification before review.");
+  }
+  return review;
 };
 
 const graphFromSource = (input: unknown): ReturnType<typeof createSpecificationGraph> => {
@@ -194,6 +292,7 @@ export const loadSpecification = (source: unknown): Specification => {
     ...(graph.report === undefined ? {} : { report: graph.report }),
   });
   loadedGraphs.set(specification, graph);
+  loadedReviewViews.set(specification, reviewViewForGraph(graph));
   return specification;
 };
 
@@ -250,7 +349,11 @@ export const reviewSpecification = (
   const authority = policyAuthority(options.policy, specification);
   return maybeChain(
     (decision) => recordDecision({ decision, graph, authority }),
-    options.policy.decide({ specification, evidence: options.evidence ?? [] }),
+    options.policy.decide({
+      specification,
+      review: reviewViewFor(specification),
+      evidence: options.evidence ?? [],
+    }),
   );
 };
 

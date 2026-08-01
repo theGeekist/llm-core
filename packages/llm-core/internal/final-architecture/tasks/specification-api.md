@@ -3,7 +3,7 @@ architecture_version: 2
 id: specification-api
 title: Specification API and format compatibility
 stage: specifications
-status: review
+status: in_progress
 priority: high
 preferred_owner_kind: coordinator
 owner: codex-root
@@ -31,6 +31,7 @@ write_scope:
   - packages/llm-core/src/application/workflow/authority.ts
   - packages/llm-core/tests/specifications/**
   - packages/llm-core/tests/specification-compiler/compiler.test.ts
+  - packages/llm-core/tests/specification-compiler/authority.test.ts
   - packages/llm-core/tests/architecture/**
   - packages/llm-core/package.json
   - packages/llm-core/scripts/build.ts
@@ -112,6 +113,9 @@ bun run --cwd packages/llm-core format:check
   skip); packed 30-entrypoint consumer; documentation check; and formatting.
   Shared compiler, Agent, workflow, and internal runtime-front changes are
   included in `fa767d9`; no external adapter was published or claimed.
+- 2026-08-01 — Review returned the task to implementation for two P1 fixes:
+  common Agent authority must always use the bound private verifier, and a
+  policy needs a graph-free public review view from which it can derive scope.
 
 ## Handoff
 

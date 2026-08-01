@@ -33,7 +33,7 @@ Swarm claiming and integration follow [`COORDINATION.md`](COORDINATION.md).
 | specification-contracts               | specifications | done        | coordinator   | codex-specification-contracts  | language-rollout, ADR-009                                                                                                 |
 | specification-compiler                | specifications | done        | coordinator   | codex-specification-compiler   | specification-contracts                                                                                                   |
 | specification-authority               | specifications | done        | coordinator   | codex-root                     | specification-compiler                                                                                                    |
-| specification-api                     | specifications | review      | coordinator   | codex-root                     | specification-authority                                                                                                   |
+| specification-api                     | specifications | in_progress | coordinator   | codex-root                     | specification-authority                                                                                                   |
 | adapter-openspec                      | adapters       | proposed    | Codex         | —                              | specification-api                                                                                                         |
 | adapter-openspec-release              | adapters       | proposed    | coordinator   | —                              | adapter-openspec, ADR-010                                                                                                 |
 | adapter-pydantic-ai                   | adapters       | proposed    | Codex         | —                              | specification-api                                                                                                         |
@@ -68,4 +68,4 @@ failure-isolated observability projection without overlapping it.
 
 Pipeline 1.2.0 is published, pinned and packed-qualified. The
 `specification-authority` is complete at `a1b4191`; `specification-api` is
-ready for coordinator review at `fa767d9`.
+addressing review feedback on `main`.

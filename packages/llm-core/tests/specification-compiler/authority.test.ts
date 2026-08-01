@@ -25,6 +25,7 @@ import type {
 } from "../../src/application/workflow/runtime-public";
 import { compileSpecification } from "../../src/application/specification-compiler/public";
 import {
+  bindCompiledSpecificationAuthority,
   registerAcceptedSpecification,
   verifyCompilationAuthority,
 } from "../../src/application/specification-compiler/runtime";
@@ -121,6 +122,7 @@ const authorityFixture = <T>(value: T) => {
   const compiled = synchronous(
     compileSpecification({ accepted, authority, compiler: { compile: () => value } }),
   );
+  bindCompiledSpecificationAuthority(compiled, authority);
   return {
     compiled,
     authority,
@@ -169,7 +171,6 @@ describe("specification execution authority", () => {
     const agent = createAgent({
       model,
       specification: fixture.compiled,
-      specificationAuthority: fixture.authority,
     });
     expect(await agent.run({ prompt: "first" })).toMatchObject({
       status: "completed",
@@ -184,7 +185,6 @@ describe("specification execution authority", () => {
       createAgent({
         model,
         specification: fixture.compiled,
-        specificationAuthority: fixture.authority,
       }),
     ).toThrow("no longer matches");
     expect(generations).toBe(1);

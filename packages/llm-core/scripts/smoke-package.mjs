@@ -221,7 +221,7 @@ try {
     join(consumer, "consumer.ts"),
     [
       'import { compileSpecification, createAgent, createConversation, defineTool, defineWorkflow, loadSpecification, reviewSpecification } from "@geekist/llm-core";',
-      'import type { Agent, AgentConfig, AgentEvent, AgentResult, AgentRun, CompiledSpecification, Conversation, ConversationConfig, ConversationEvent, ConversationResult, ConversationRun, Specification, SpecificationDecision, Tool, ToolCall, ToolConfig, ToolExecutionFailure, ToolExecutionResult, Workflow, WorkflowConfig, WorkflowPause, WorkflowResult, WorkflowStep, WorkflowStepResult } from "@geekist/llm-core";',
+      'import type { Agent, AgentConfig, AgentEvent, AgentResult, AgentRun, CompiledSpecification, Conversation, ConversationConfig, ConversationEvent, ConversationResult, ConversationRun, Specification, SpecificationDecision, SpecificationReviewView, Tool, ToolCall, ToolConfig, ToolExecutionFailure, ToolExecutionResult, Workflow, WorkflowConfig, WorkflowPause, WorkflowResult, WorkflowStep, WorkflowStepResult } from "@geekist/llm-core";',
       'import { createLocalAgentRunner, createCapabilityBindingCatalog } from "@geekist/llm-core/agent/runtime";',
       'import type { AgentDefinition, PreparedAgentDefinition, AgentRunner, AgentRunnerProfile, AgentStartRequest } from "@geekist/llm-core/agent/runtime";',
       'import { createExecutableTool } from "@geekist/llm-core/tools/runtime";',
@@ -240,7 +240,7 @@ try {
       'import type { AssistantUiProjectionCommand, AssistantUiProjectionOptions } from "@geekist/llm-core/adapters/assistant-ui";',
       'import type { ChatKitProjectionEvent } from "@geekist/llm-core/adapters/openai-chatkit";',
       'import type { NluxInteractionAdapterOptions, NluxProjectionSignal } from "@geekist/llm-core/adapters/nlux-ui";',
-      'import type { ConversionReport, SpecificationAdapterSupport, SpecificationPolicy, SpecificationSourceSnapshot } from "@geekist/llm-core/specifications";',
+      'import type { ConversionReport, SpecificationAdapterSupport, SpecificationPolicy, SpecificationReviewItem, SpecificationReviewRelationship, SpecificationScopeId, SpecificationSourceSnapshot } from "@geekist/llm-core/specifications";',
       ...specifiers
         .slice(1)
         .map(
@@ -254,7 +254,7 @@ try {
       "void createEvaluationCase; void createEvaluationComposition; void evaluationEvaluatorId;",
       "type RootTypes = [Agent, AgentConfig, AgentRun, AgentEvent, AgentResult, Tool, ToolConfig, ToolCall, ToolExecutionResult, ToolExecutionFailure, Workflow<unknown, unknown>, WorkflowConfig<unknown, unknown>, WorkflowStep<unknown, unknown, unknown>, WorkflowStepResult<unknown, unknown>, WorkflowResult<unknown, unknown>, WorkflowPause<unknown, unknown>, Conversation, ConversationConfig, ConversationRun, ConversationEvent, ConversationResult];",
       "declare const rootTypes: RootTypes; void rootTypes;",
-      "type SpecificationTypes = [Specification, SpecificationDecision, CompiledSpecification<unknown>, SpecificationPolicy, SpecificationSourceSnapshot, SpecificationAdapterSupport, ConversionReport];",
+      "type SpecificationTypes = [Specification, SpecificationDecision, CompiledSpecification<unknown>, SpecificationPolicy, SpecificationReviewView, SpecificationReviewItem, SpecificationReviewRelationship, SpecificationScopeId, SpecificationSourceSnapshot, SpecificationAdapterSupport, ConversionReport];",
       "declare const specificationTypes: SpecificationTypes; void specificationTypes;",
       "type AgentRuntimeTypes = [AgentDefinition, PreparedAgentDefinition, AgentRunner, AgentRunnerProfile, AgentStartRequest, ExecutableTool, ToolDefinition];",
       "declare const agentRuntimeTypes: AgentRuntimeTypes; void agentRuntimeTypes;",
