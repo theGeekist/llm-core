@@ -28,6 +28,9 @@ import type {
 const sourceId = "source.product" as SpecificationSourceId;
 const firstNodeId = "requirement.one" as SpecificationNodeId;
 const secondNodeId = "requirement.two" as SpecificationNodeId;
+const safeNodeId = "requirement.safe" as SpecificationNodeId;
+const cycleFirstNodeId = "cycle.a" as SpecificationNodeId;
+const cycleSecondNodeId = "cycle.b" as SpecificationNodeId;
 const sourceDigest = digest("1".repeat(64));
 const resolvedDigest = digest("2".repeat(64));
 const evidenceDigest = digest("3".repeat(64));
@@ -44,26 +47,31 @@ const source = () =>
     documents: [{ documentId: "root.document", content: { title: "Launch" } }],
   } as never);
 
-const graph = (relationships: readonly unknown[] = []): SpecificationGraph =>
+const graph = (
+  relationships: readonly unknown[] = [],
+  nodes: readonly unknown[] = [
+    {
+      nodeId: firstNodeId,
+      kind: "requirement",
+      title: "First requirement",
+      source: { sourceId, documentId: "root.document" },
+    },
+    {
+      nodeId: secondNodeId,
+      kind: "requirement",
+      title: "Second requirement",
+      source: { sourceId, documentId: "root.document" },
+    },
+  ],
+  report?: unknown,
+): SpecificationGraph =>
   createSpecificationGraph({
     graphId: "graph.product",
     version: contractVersion("1.0.0"),
     sources: [source()],
-    nodes: [
-      {
-        nodeId: firstNodeId,
-        kind: "requirement",
-        title: "First requirement",
-        source: { sourceId, documentId: "root.document" },
-      },
-      {
-        nodeId: secondNodeId,
-        kind: "requirement",
-        title: "Second requirement",
-        source: { sourceId, documentId: "root.document" },
-      },
-    ],
+    nodes,
     relationships,
+    ...(report === undefined ? {} : { report }),
   } as never);
 
 const acceptedDecision = (): SpecificationDecision => ({
@@ -80,6 +88,14 @@ const acceptedDecision = (): SpecificationDecision => ({
     validity: { expiresAt: "2026-08-02T00:00:00.000Z", invalidatedBy: ["source-revision"] },
   } as unknown as SpecificationDecisionRecord,
 });
+
+const acceptedDecisionForScope = (
+  acceptedScope: readonly SpecificationNodeId[],
+): SpecificationDecision => {
+  const decision = acceptedDecision();
+  if (decision.status !== "accepted") throw new TypeError("Test decision must be accepted.");
+  return { status: "accepted", record: { ...decision.record, acceptedScope } };
+};
 
 const current = (): SpecificationAuthorityState => {
   const decision = acceptedDecision();
@@ -343,5 +359,92 @@ describe("specification compiler", () => {
       }),
     ).toThrow("unresolved dependency prerequisites");
     expect(partialCalls).toBe(0);
+  });
+
+  test("does not let an unrelated dependency cycle reject an accepted safe scope", () => {
+    const nodes = [
+      {
+        nodeId: safeNodeId,
+        kind: "requirement",
+        title: "Safe requirement",
+        source: { sourceId, documentId: "root.document" },
+      },
+      {
+        nodeId: cycleFirstNodeId,
+        kind: "requirement",
+        title: "Cycle first requirement",
+        source: { sourceId, documentId: "root.document" },
+      },
+      {
+        nodeId: cycleSecondNodeId,
+        kind: "requirement",
+        title: "Cycle second requirement",
+        source: { sourceId, documentId: "root.document" },
+      },
+    ];
+    const cycleGraph = graph(
+      [
+        {
+          relationshipId: "cycle.first",
+          kind: "depends-on",
+          from: cycleFirstNodeId,
+          to: cycleSecondNodeId,
+          source: { sourceId, documentId: "root.document" },
+        },
+        {
+          relationshipId: "cycle.second",
+          kind: "depends-on",
+          from: cycleSecondNodeId,
+          to: cycleFirstNodeId,
+          source: { sourceId, documentId: "root.document" },
+        },
+      ],
+      nodes,
+    );
+    const noScope = reviewSpecification({ graph: cycleGraph });
+    expect(noScope.decision.status).toBe("needs-input");
+
+    const review = reviewSpecification({
+      graph: cycleGraph,
+      decision: acceptedDecisionForScope([safeNodeId]),
+    });
+
+    expect(review.decision.status).toBe("accepted");
+    expect(review.dependency.blockedNodeIds).toEqual([cycleFirstNodeId, cycleSecondNodeId]);
+    expect(review.issues.map((issue) => issue.nodeId)).toEqual([
+      cycleFirstNodeId,
+      cycleSecondNodeId,
+    ]);
+  });
+
+  test("rejects accepted scope with rejected conversion semantics while retaining out-of-scope diagnostics", () => {
+    const rejectedIssue = {
+      code: "unsupported-semantics",
+      severity: "error",
+      disposition: "rejected",
+      explanation: "This requirement cannot be represented.",
+      nodeId: firstNodeId,
+    } as const;
+    const graphWithRejectedSemantics = graph([], undefined, {
+      fidelity: "rejected",
+      issues: [rejectedIssue],
+    });
+
+    const rejected = reviewSpecification({
+      graph: graphWithRejectedSemantics,
+      decision: acceptedDecisionForScope([firstNodeId]),
+    });
+    expect(rejected.decision.status).toBe("rejected");
+    if (rejected.decision.status === "rejected") {
+      expect(rejected.decision.issues).toEqual([rejectedIssue]);
+    }
+    expect(rejected.issues).toEqual([rejectedIssue]);
+
+    const accepted = reviewSpecification({
+      graph: graphWithRejectedSemantics,
+      decision: acceptedDecisionForScope([secondNodeId]),
+    });
+    expect(accepted.decision.status).toBe("accepted");
+    expect(accepted.issues).toEqual([rejectedIssue]);
   });
 });

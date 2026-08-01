@@ -81,6 +81,21 @@ const dependencyIssues = (blockedNodeIds: readonly SpecificationNodeId[]): Conve
     nodeId,
   }));
 
+const issueAffectsScope = (
+  graph: SpecificationGraph,
+  acceptedScope: readonly SpecificationNodeId[],
+  issue: ConversionIssue,
+): boolean => {
+  if (issue.nodeId !== undefined) return acceptedScope.includes(issue.nodeId);
+  if (issue.source === undefined) return false;
+  return graph.nodes.some(
+    (node) =>
+      acceptedScope.includes(node.nodeId) &&
+      node.source.sourceId === issue.source?.sourceId &&
+      node.source.documentId === issue.source?.documentId,
+  );
+};
+
 const missingDecisionQuestion = (graph: SpecificationGraph): SpecificationQuestion => {
   const node = sorted(graph.nodes, (candidate) => candidate.nodeId)[0];
   if (node !== undefined) {
@@ -98,25 +113,82 @@ const missingDecisionQuestion = (graph: SpecificationGraph): SpecificationQuesti
   };
 };
 
+const acceptedScopeOf = (
+  decision: SpecificationDecision | undefined,
+): readonly SpecificationNodeId[] | undefined =>
+  decision?.status === "accepted" ? decision.record.acceptedScope : undefined;
+
+const blockingIssuesForScope = (input: {
+  readonly graph: SpecificationGraph;
+  readonly dependency: SpecificationDependencyPlan;
+  readonly reportIssues: readonly ConversionIssue[];
+  readonly acceptedScope: readonly SpecificationNodeId[] | undefined;
+}): ConversionIssue[] => {
+  const { acceptedScope, dependency, graph, reportIssues } = input;
+  if (acceptedScope === undefined) return [];
+  return [
+    ...reportIssues.filter(
+      (issue) => issue.disposition === "rejected" && issueAffectsScope(graph, acceptedScope, issue),
+    ),
+    ...dependencyIssues(
+      dependency.blockedNodeIds.filter((nodeId) => acceptedScope.includes(nodeId)),
+    ),
+  ];
+};
+
+const questionsForScope = (
+  questions: readonly SpecificationQuestion[],
+  acceptedScope: readonly SpecificationNodeId[] | undefined,
+): readonly SpecificationQuestion[] => {
+  if (acceptedScope === undefined) return questions;
+  return questions.filter((question) =>
+    acceptedScope.includes(question.questionId as SpecificationNodeId),
+  );
+};
+
+const reviewDecision = (input: {
+  readonly graph: SpecificationGraph;
+  readonly supplied: SpecificationDecision | undefined;
+  readonly questions: readonly SpecificationQuestion[];
+  readonly scopedQuestions: readonly SpecificationQuestion[];
+  readonly blockingIssues: readonly ConversionIssue[];
+}): SpecificationDecision => {
+  const { blockingIssues, graph, questions, scopedQuestions, supplied } = input;
+  if (supplied === undefined) {
+    return createSpecificationDecision({
+      status: "needs-input",
+      questions: questions.length > 0 ? questions : [missingDecisionQuestion(graph)],
+    });
+  }
+  if (supplied.status !== "accepted") return supplied;
+  if (blockingIssues.length > 0) {
+    return createSpecificationDecision({ status: "rejected", issues: blockingIssues });
+  }
+  if (scopedQuestions.length > 0) {
+    return createSpecificationDecision({ status: "needs-input", questions: scopedQuestions });
+  }
+  return supplied;
+};
+
 export const reviewSpecificationGraph = (
   graph: SpecificationGraph,
   suppliedDecision?: SpecificationDecision,
 ): SpecificationReview => {
   const dependency = deriveDependencyPlan(graph);
   const workflow = deriveWorkflowPlan(graph);
-  const issues = dependencyIssues(dependency.blockedNodeIds);
+  const reportIssues = graph.report?.issues ?? [];
+  const issues = [...reportIssues, ...dependencyIssues(dependency.blockedNodeIds)];
   const questions = questionNodes(graph);
-  const decision =
-    issues.length > 0
-      ? createSpecificationDecision({ status: "rejected", issues })
-      : questions.length > 0
-        ? createSpecificationDecision({ status: "needs-input", questions })
-        : suppliedDecision === undefined
-          ? createSpecificationDecision({
-              status: "needs-input",
-              questions: [missingDecisionQuestion(graph)],
-            })
-          : createSpecificationDecision(suppliedDecision);
+  const supplied =
+    suppliedDecision === undefined ? undefined : createSpecificationDecision(suppliedDecision);
+  const acceptedScope = acceptedScopeOf(supplied);
+  const decision = reviewDecision({
+    graph,
+    supplied,
+    questions,
+    scopedQuestions: questionsForScope(questions, acceptedScope),
+    blockingIssues: blockingIssuesForScope({ graph, dependency, reportIssues, acceptedScope }),
+  });
   return { graph, dependency, workflow, decision, issues, questions };
 };
 

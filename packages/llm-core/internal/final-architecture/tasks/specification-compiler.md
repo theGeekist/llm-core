@@ -3,16 +3,16 @@ architecture_version: 2
 id: specification-compiler
 title: Specification review and compilation
 stage: specifications
-status: done
+status: in_progress
 priority: high
 preferred_owner_kind: coordinator
-owner: codex-specification-compiler
+owner: codex-specification-compiler-review
 owner_kind: codex
-lease_started_at: 2026-08-01T07:15:23+08:00
-lease_expires_at: 2026-08-02T07:15:23+08:00
-base_sha: d95ab3d35b0aabd0914a34c79ce20e5a75d7d258
-branch: task/specification-compiler
-worktree: /Users/jasonnathan/Repos/@theGeekist/llm-core/.worktrees/specification-compiler
+lease_started_at: 2026-08-01T08:01:21+08:00
+lease_expires_at: 2026-08-02T08:01:21+08:00
+base_sha: 89cd5720256969917750a9b72cba03894fde77d2
+branch: task/specification-compiler-review
+worktree: /Users/jasonnathan/Repos/@theGeekist/llm-core/.worktrees/specification-compiler-review
 depends_on:
   - specification-contracts
 decision_dependencies:
@@ -32,7 +32,7 @@ read_scope:
   - packages/llm-core/src/features/evidence/**
   - /Users/jasonnathan/Repos/@wpkernel/docs/packages/pipeline/**
 review_owner: coordinator
-updated_at: 2026-07-31
+updated_at: 2026-08-01
 ---
 
 # specification-compiler — Specification review and compilation
@@ -129,6 +129,8 @@ entrypoints.
   review found and confirmed fixes for three P1 authority/scope gaps.
 - 2026-08-01 — Coordinator integrated the reviewed task at `7c68f6f`; the
   receiving focused compiler test passed.
+- 2026-08-01 — Reopened for scoped dependency-cycle review and conversion-report
+  loss-accounting remediation from `89cd572`.
 
 ## Handoff
 
