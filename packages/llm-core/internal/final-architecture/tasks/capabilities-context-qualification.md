@@ -3,7 +3,7 @@ architecture_version: 2
 id: capabilities-context-qualification
 title: Context eligibility and compiler boundary
 stage: qualification
-status: claimed
+status: in_progress
 priority: high
 preferred_owner_kind: codex
 owner: codex-context-qualification
@@ -81,6 +81,7 @@ bun run lint
 - 2026-08-01 — Coordinator claimed this task after verifying that
   `language-rollout` and ADR-001, ADR-003, and ADR-013 are complete. Work is
   isolated on `task/capabilities-context-qualification` from `a4ceb81`.
+- 2026-08-01 — Implementation started in the assigned worktree.
 
 ## Handoff
 
