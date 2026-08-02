@@ -3,13 +3,13 @@ architecture_version: 2
 id: adapter-ai-sdlc
 title: AI-SDLC JSON resource adapter
 stage: adapters
-status: in_progress
+status: done
 priority: normal
 preferred_owner_kind: codex
 owner: codex-root
 owner_kind: coordinator
-lease_started_at: 2026-08-02T06:07:24.000Z
-lease_expires_at: 2026-08-02T14:07:24.000Z
+lease_started_at:
+lease_expires_at:
 base_sha: 9920425
 branch: main
 worktree: /Users/jasonnathan/Repos/@theGeekist/llm-core
@@ -81,9 +81,13 @@ bun run lint
   llm-core authority. Unknown relationship targets receive explicit degraded
   diagnostics. Focused tests, package/test typechecks, lint, and package
   formatting pass.
+- 2026-08-02 — Coordinator review passed after all remediation rounds. The
+  reviewed implementation was committed on `main` at `cf3347d`; the full
+  package baseline passed with 666 tests, 4 environment-gated skips, and no
+  failures. Marked done; conditional publication remains separately gated.
 
 ## Handoff
 
-Uncommitted implementation is ready for coordinator review. No package,
-build, documentation, root-export, or packed-consumer file changed. Conditional
-publication remains the separate `adapter-ai-sdlc-release` task.
+Review passed for `cf3347d` (`feat(specifications): qualify framework
+adapters`). AI-SDLC remains unpublished; conditional publication is owned by
+the separate `adapter-ai-sdlc-release` task.
