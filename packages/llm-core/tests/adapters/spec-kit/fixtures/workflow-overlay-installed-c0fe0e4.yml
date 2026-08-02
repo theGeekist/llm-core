@@ -1,0 +1,12 @@
+id: review-hardening
+extends: speckit
+priority: 5
+enabled: true
+edits:
+- insert_after: review-spec
+  step:
+    id: security-review
+    type: prompt
+    prompt: Review the specification for security risks.
+- operation: remove
+  anchor: review-plan

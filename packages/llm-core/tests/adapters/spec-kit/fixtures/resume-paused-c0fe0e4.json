@@ -1,0 +1,13 @@
+{
+  "run_id": "run-paused",
+  "workflow_id": "control-flow-proof",
+  "status": "paused",
+  "current_step_id": "review",
+  "current_step_index": 1,
+  "gate": {
+    "step_id": "review",
+    "message": "Review generated changes",
+    "options": ["approve", "edit", "reject"],
+    "choice": null
+  }
+}

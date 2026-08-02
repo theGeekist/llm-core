@@ -1,0 +1,7 @@
+{
+  "run_id": "run-failed",
+  "workflow_id": "control-flow-proof",
+  "status": "failed",
+  "current_step_id": "verify",
+  "current_step_index": 3
+}

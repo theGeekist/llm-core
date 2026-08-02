@@ -1,0 +1,19 @@
+{
+  "run_id": "run-aborted",
+  "workflow_id": "control-flow-proof",
+  "status": "aborted",
+  "current_step_id": "review",
+  "current_step_index": 1,
+  "created_at": "2026-07-24T10:00:00.123456+00:00",
+  "updated_at": "2026-07-24T10:05:00.654321+00:00",
+  "steps": {
+    "choose": "completed",
+    "review": "failed"
+  },
+  "gate": {
+    "step_id": "review",
+    "message": "Review generated changes",
+    "options": ["approve", "edit", "reject"],
+    "choice": "reject"
+  }
+}

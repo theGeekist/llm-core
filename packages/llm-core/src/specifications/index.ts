@@ -10,6 +10,11 @@ import {
   bindCompiledSpecificationAuthority,
   registerAcceptedSpecification,
 } from "../application/specification-compiler/runtime";
+import { prepareSpecificationExecution } from "../application/specification-compiler/public";
+import type {
+  PreparedSpecificationExecution,
+  SpecificationExecutionOperations,
+} from "../application/specification-compiler/public";
 import { compileSpecification as compileRegisteredSpecification } from "../application/specification-compiler/compiler";
 import { reviewSpecificationGraph } from "../application/specification-compiler/resolution";
 import {
@@ -95,7 +100,10 @@ export type {
   SpecificationSourceRevisionBinding,
   SpecificationSourceRole,
   SpecificationSourceSnapshot,
+  PreparedSpecificationExecution,
+  SpecificationExecutionOperations,
 };
+export { prepareSpecificationExecution };
 
 /** A stable, reviewable ID that can be selected in an accepted decision scope. */
 export type SpecificationScopeId = SpecificationDecisionRecord["acceptedScope"][number];
@@ -206,9 +214,31 @@ export interface CompileSpecificationOptions<T> {
   readonly target: T;
 }
 
+/**
+ * Defers adapter projection until the accepted decision has passed a fresh
+ * current-authority check inside the application compiler.
+ */
+export interface ProjectSpecificationOptions<T, TResult> {
+  readonly project: (view: SpecificationProjectionView) => MaybePromise<{
+    readonly target: T;
+    readonly result: TResult;
+  }>;
+}
+
+/** Frozen, public review material limited to the exact accepted scope. */
+export interface SpecificationProjectionView {
+  readonly acceptedItems: readonly SpecificationReviewItem[];
+}
+
+export interface ProjectSpecificationResult<T, TResult> {
+  readonly compiled: CompiledSpecification<T>;
+  readonly result: TResult;
+}
+
 interface ReviewBinding {
   readonly graph: ReturnType<typeof createSpecificationGraph>;
   readonly authority: SpecificationAuthorityDependencies;
+  readonly projection: SpecificationProjectionView;
 }
 
 const loadedGraphs = new WeakMap<Specification, ReturnType<typeof createSpecificationGraph>>();
@@ -310,6 +340,7 @@ const policyAuthority = (
 const recordDecision = (input: {
   readonly decision: SpecificationDecision;
   readonly graph: ReturnType<typeof createSpecificationGraph>;
+  readonly review: SpecificationReviewView;
   readonly authority?: SpecificationAuthorityDependencies;
 }): MaybePromise<SpecificationDecision> => {
   const reviewed = reviewSpecificationGraph(input.graph, input.decision).decision;
@@ -319,7 +350,14 @@ const recordDecision = (input: {
   }
   return maybeMap(
     () => {
-      reviewBindings.set(reviewed, { graph: input.graph, authority: input.authority! });
+      const acceptedScope = new Set(reviewed.record.acceptedScope);
+      reviewBindings.set(reviewed, {
+        graph: input.graph,
+        authority: input.authority!,
+        projection: cloneFrozen({
+          acceptedItems: input.review.items.filter((item) => acceptedScope.has(item.scopeId)),
+        }),
+      });
       return reviewed;
     },
     registerAcceptedSpecification({
@@ -340,15 +378,17 @@ export const reviewSpecification = (
   options: ReviewSpecificationOptions = {},
 ): MaybePromise<SpecificationDecision> => {
   const graph = graphFor(specification);
+  const review = reviewViewFor(specification);
   if (options.policy === undefined) {
     return recordDecision({
       decision: reviewSpecificationGraph(graph).decision,
       graph,
+      review,
     });
   }
   const authority = policyAuthority(options.policy, specification);
   return maybeChain(
-    (decision) => recordDecision({ decision, graph, authority }),
+    (decision) => recordDecision({ decision, graph, review, authority }),
     options.policy.decide({
       specification,
       review: reviewViewFor(specification),
@@ -388,6 +428,58 @@ export const compileSpecification = <T>(
           compiler: { compile: () => options.target },
         }),
       ),
+    registerAcceptedSpecification({
+      graph: binding.graph,
+      decision,
+      authority: binding.authority,
+    }),
+  );
+};
+
+/**
+ * Runs an adapter projector only after current acceptance authority has been
+ * validated. Async projection is revalidated again before its target is
+ * registered as a compiled specification.
+ */
+export const projectSpecification = <T, TResult>(
+  decision: SpecificationDecision,
+  options: ProjectSpecificationOptions<T, TResult>,
+): MaybePromise<ProjectSpecificationResult<T, TResult>> => {
+  if (decision.status !== "accepted") {
+    throw new TypeError("Only accepted specification decisions can be projected.");
+  }
+  const binding = reviewBindings.get(decision);
+  if (binding === undefined) {
+    throw new TypeError(
+      "Specifications must complete review with current authority before projection.",
+    );
+  }
+  return maybeChain(
+    (accepted) => {
+      let projectionResult!: TResult;
+      let projected = false;
+      return maybeMap(
+        (compiled) => {
+          if (!projected) {
+            throw new TypeError("Specification projector did not produce a result.");
+          }
+          bindCompiledSpecificationAuthority(compiled, binding.authority);
+          return Object.freeze({ compiled, result: projectionResult });
+        },
+        compileRegisteredSpecification({
+          accepted,
+          authority: binding.authority,
+          compiler: {
+            compile: () =>
+              maybeMap((projection) => {
+                projectionResult = projection.result;
+                projected = true;
+                return projection.target;
+              }, options.project(binding.projection)),
+          },
+        }),
+      );
+    },
     registerAcceptedSpecification({
       graph: binding.graph,
       decision,

@@ -1,0 +1,18 @@
+// Set up main program
+program.version(packageJson.version).description('BMAD Core CLI - Universal AI agent framework');
+
+// Register all commands
+for (const [name, cmd] of Object.entries(commands)) {
+  const command = program.command(name).description(cmd.description);
+
+  // Add options
+  for (const option of cmd.options || []) {
+    command.option(...option);
+  }
+
+  // Set action
+  command.action(cmd.action);
+}
+
+// Parse arguments
+program.parse(process.argv);

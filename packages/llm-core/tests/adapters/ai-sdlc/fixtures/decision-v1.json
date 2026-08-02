@@ -1,0 +1,49 @@
+{
+  "apiVersion": "ai-sdlc.io/v1alpha1",
+  "kind": "Decision",
+  "metadata": {
+    "id": "DEC-1001",
+    "source": "ad-hoc",
+    "scope": "workspace",
+    "created": "2026-08-01T00:00:00.000Z",
+    "updated": "2026-08-01T00:00:00.000Z"
+  },
+  "spec": {
+    "summary": "Choose the authentication boundary",
+    "body": "The operator must select one reviewed option.",
+    "reversible": true,
+    "options": [
+      {
+        "id": "service-boundary",
+        "description": "Keep authentication behind the service boundary.",
+        "consequences": ["Centralises credential handling."],
+        "dependents": ["issue:AISDLC-1001"],
+        "subDecisions": []
+      }
+    ],
+    "dependsOn": ["DEC-1000"],
+    "timebox": "P1D",
+    "priority": "high",
+    "impactScore": 80,
+    "autonomousFallbackOptionId": "service-boundary",
+    "contextRef": "issue:AISDLC-1001"
+  },
+  "status": {
+    "lifecycle": "open",
+    "answeredOptionId": null,
+    "answeredBy": null,
+    "answeredAt": null,
+    "supersededBy": null,
+    "routing": {
+      "assignedActor": "operator@example.com",
+      "actorRationale": "Security ownership",
+      "llmEligible": false
+    },
+    "priority": 0.8,
+    "capacity": {
+      "tier": "m"
+    },
+    "deadline": "2026-08-03T00:00:00.000Z",
+    "timeboxExpiresAt": "2026-08-02T00:00:00.000Z"
+  }
+}

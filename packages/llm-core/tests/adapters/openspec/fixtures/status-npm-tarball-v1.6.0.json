@@ -1,0 +1,78 @@
+{
+  "changeName": "add-auth",
+  "schemaName": "spec-driven",
+  "planningHome": {
+    "kind": "repo",
+    "root": "/private/tmp/openspec-npm-status-capture",
+    "changesDir": "/private/tmp/openspec-npm-status-capture/openspec/changes",
+    "defaultSchema": "spec-driven"
+  },
+  "changeRoot": "/private/tmp/openspec-npm-status-capture/openspec/changes/add-auth",
+  "artifactPaths": {
+    "proposal": {
+      "outputPath": "proposal.md",
+      "resolvedOutputPath": "/private/tmp/openspec-npm-status-capture/openspec/changes/add-auth/proposal.md",
+      "existingOutputPaths": []
+    },
+    "specs": {
+      "outputPath": "specs/**/*.md",
+      "resolvedOutputPath": "/private/tmp/openspec-npm-status-capture/openspec/changes/add-auth/specs/**/*.md",
+      "existingOutputPaths": []
+    },
+    "design": {
+      "outputPath": "design.md",
+      "resolvedOutputPath": "/private/tmp/openspec-npm-status-capture/openspec/changes/add-auth/design.md",
+      "existingOutputPaths": []
+    },
+    "tasks": {
+      "outputPath": "tasks.md",
+      "resolvedOutputPath": "/private/tmp/openspec-npm-status-capture/openspec/changes/add-auth/tasks.md",
+      "existingOutputPaths": []
+    }
+  },
+  "isComplete": false,
+  "applyRequires": ["tasks"],
+  "nextSteps": [
+    "Run openspec instructions proposal --change \"add-auth\" --json before writing that artifact."
+  ],
+  "actionContext": {
+    "mode": "repo-local",
+    "sourceOfTruth": "repo",
+    "planningArtifacts": ["proposal", "design", "specs", "tasks"],
+    "linkedContext": [],
+    "allowedEditRoots": ["/private/tmp/openspec-npm-status-capture"],
+    "requiresAffectedAreaSelection": false,
+    "constraints": [
+      "Repo-local change artifacts and implementation edits are scoped to this project."
+    ]
+  },
+  "artifacts": [
+    {
+      "id": "proposal",
+      "outputPath": "proposal.md",
+      "status": "ready"
+    },
+    {
+      "id": "design",
+      "outputPath": "design.md",
+      "status": "blocked",
+      "missingDeps": ["proposal"]
+    },
+    {
+      "id": "specs",
+      "outputPath": "specs/**/*.md",
+      "status": "blocked",
+      "missingDeps": ["proposal"]
+    },
+    {
+      "id": "tasks",
+      "outputPath": "tasks.md",
+      "status": "blocked",
+      "missingDeps": ["design", "specs"]
+    }
+  ],
+  "root": {
+    "path": "/private/tmp/openspec-npm-status-capture",
+    "source": "nearest"
+  }
+}

@@ -145,6 +145,29 @@ describe("PydanticAI compatibility declaration", () => {
     },
   );
 
+  test.skipIf(!exactPython)(
+    "validates the qualified AgentSpec fixture with exact PydanticAI 2.19.0",
+    () => {
+      const fixtureRoot = new URL("../adapters/pydantic-ai-spec/fixtures/", import.meta.url);
+      const validation = Bun.spawnSync([
+        exactPython!,
+        new URL("validate_agent_spec.py", fixtureRoot).pathname,
+        new URL("safe-agent-spec-v2.19.0.json", fixtureRoot).pathname,
+      ]);
+      expect(validation.stderr.toString()).toBe("");
+      expect(validation.exitCode).toBe(0);
+      expect(JSON.parse(validation.stdout.toString())).toMatchObject({
+        model: "test",
+        retries: { tools: 2, output: 1 },
+        capabilities: [
+          "IncludeToolReturnSchemas",
+          "RaiseContentFilterError",
+          "ReinjectSystemPrompt",
+        ],
+      });
+    },
+  );
+
   test("rejects malformed and unknown handshake variants", async () => {
     const transport: PydanticAiBridgeTransport = {
       async exchange(request) {

@@ -1,0 +1,57 @@
+schema_version: "1.0"
+workflow:
+  id: "control-flow-proof"
+  name: "Control Flow Proof"
+  version: "1.0.0"
+steps:
+  - id: choose
+    type: if
+    condition: "{{ inputs.repair }}"
+    then:
+      - id: retry
+        type: while
+        condition: "{{ steps.check.output.exit_code != 0 }}"
+        max_iterations: 4
+        steps:
+          - id: check
+            type: shell
+            run: "bun test"
+    else:
+      - id: route
+        type: switch
+        expression: "{{ inputs.scope }}"
+        cases:
+          full:
+            - id: full
+              type: prompt
+              prompt: "Implement all scopes"
+        default:
+          - id: narrow
+            type: prompt
+            prompt: "Implement the selected scope"
+  - id: review
+    type: gate
+    message: "Review generated changes"
+    options: [approve, edit, reject]
+    on_reject: retry
+  - id: settle
+    type: do-while
+    condition: "{{ steps.verify.output.exit_code != 0 }}"
+    max_iterations: 3
+    steps:
+      - id: verify
+        type: shell
+        run: "bun test"
+  - id: parallel
+    type: fan-out
+    items: "{{ inputs.packages }}"
+    max_concurrency: 2
+    step:
+      id: inspect
+      type: prompt
+      prompt: "Inspect {{ item }}"
+  - id: collect
+    type: fan-in
+    wait_for: [parallel]
+    output:
+      reports: "{{ fan_in.results }}"

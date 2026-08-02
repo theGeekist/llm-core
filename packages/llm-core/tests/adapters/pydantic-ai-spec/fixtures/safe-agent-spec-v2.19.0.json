@@ -1,0 +1,12 @@
+{
+  "model": "test",
+  "name": "agent.pydantic",
+  "instructions": "Follow the accepted specification.",
+  "retries": {
+    "tools": 2,
+    "output": 1
+  },
+  "end_strategy": "graceful",
+  "tool_timeout": 30,
+  "capabilities": ["IncludeToolReturnSchemas", "RaiseContentFilterError", "ReinjectSystemPrompt"]
+}

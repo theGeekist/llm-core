@@ -1,0 +1,16 @@
+{
+  "runs": [
+    {
+      "run_id": "run-created",
+      "workflow_id": "control-flow-proof",
+      "status": "created",
+      "updated_at": "2026-07-24T10:00:00.123456+00:00"
+    },
+    {
+      "run_id": "run-aborted",
+      "workflow_id": "control-flow-proof",
+      "status": "aborted",
+      "updated_at": "2026-07-24T10:05:00.654321+00:00"
+    }
+  ]
+}

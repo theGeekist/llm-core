@@ -76,6 +76,21 @@ describe("architecture v2 source boundaries", () => {
     expect(offenders).toEqual([]);
   });
 
+  test("keeps adapters out of private application modules", () => {
+    const adapterRoot = resolve(sourceRoot, "adapters");
+    const violations = walkTypeScript(adapterRoot).flatMap((file) =>
+      importSpecifiers(readFileSync(file, "utf8")).flatMap((specifier) => {
+        const target = resolveInternalImport(file, specifier);
+        if (!target || !target.startsWith(sourceRoot)) return [];
+        const imported = sourcePath(target);
+        return imported.startsWith("application/") && !imported.endsWith("/public.ts")
+          ? [`${sourcePath(file)} -> ${imported}`]
+          : [];
+      }),
+    );
+    expect(violations).toEqual([]);
+  });
+
   // One exhaustive scan keeps the dependency rules and their diagnostics atomic.
   // eslint-disable-next-line sonarjs/cognitive-complexity
   test("keeps contracts dependency-light and cross-slice imports on public fronts", () => {
@@ -128,8 +143,8 @@ describe("architecture v2 source boundaries", () => {
 
         if (
           owner.startsWith("adapters/") &&
-          /^(?:features|application)\//.test(imported) &&
-          !isPublicFront(imported)
+          ((imported.startsWith("features/") && !isPublicFront(imported)) ||
+            (imported.startsWith("application/") && !imported.endsWith("/public.ts")))
         ) {
           violations.push(`${owner} -> ${imported}`);
         }

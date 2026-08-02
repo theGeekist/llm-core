@@ -1,0 +1,82 @@
+{
+  "changeName": "skip-specs-change",
+  "schemaName": "spec-driven",
+  "planningHome": {
+    "kind": "repo",
+    "root": "/private/tmp/openspec-v1.6.0-skip-fixture",
+    "changesDir": "/private/tmp/openspec-v1.6.0-skip-fixture/openspec/changes",
+    "defaultSchema": "spec-driven"
+  },
+  "changeRoot": "/private/tmp/openspec-v1.6.0-skip-fixture/openspec/changes/skip-specs-change",
+  "artifactPaths": {
+    "proposal": {
+      "outputPath": "proposal.md",
+      "resolvedOutputPath": "/private/tmp/openspec-v1.6.0-skip-fixture/openspec/changes/skip-specs-change/proposal.md",
+      "existingOutputPaths": [
+        "/private/tmp/openspec-v1.6.0-skip-fixture/openspec/changes/skip-specs-change/proposal.md"
+      ]
+    },
+    "specs": {
+      "outputPath": "specs/**/*.md",
+      "resolvedOutputPath": "/private/tmp/openspec-v1.6.0-skip-fixture/openspec/changes/skip-specs-change/specs/**/*.md",
+      "existingOutputPaths": []
+    },
+    "design": {
+      "outputPath": "design.md",
+      "resolvedOutputPath": "/private/tmp/openspec-v1.6.0-skip-fixture/openspec/changes/skip-specs-change/design.md",
+      "existingOutputPaths": []
+    },
+    "tasks": {
+      "outputPath": "tasks.md",
+      "resolvedOutputPath": "/private/tmp/openspec-v1.6.0-skip-fixture/openspec/changes/skip-specs-change/tasks.md",
+      "existingOutputPaths": []
+    }
+  },
+  "isComplete": false,
+  "applyRequires": ["tasks"],
+  "nextSteps": [
+    "Run openspec instructions design --change \"skip-specs-change\" --json before writing that artifact."
+  ],
+  "actionContext": {
+    "mode": "repo-local",
+    "sourceOfTruth": "repo",
+    "planningArtifacts": ["proposal", "design", "specs", "tasks"],
+    "linkedContext": [],
+    "allowedEditRoots": ["/private/tmp/openspec-v1.6.0-skip-fixture"],
+    "requiresAffectedAreaSelection": false,
+    "constraints": [
+      "Repo-local change artifacts and implementation edits are scoped to this project."
+    ]
+  },
+  "artifacts": [
+    {
+      "id": "proposal",
+      "outputPath": "proposal.md",
+      "status": "done",
+      "requires": []
+    },
+    {
+      "id": "design",
+      "outputPath": "design.md",
+      "status": "ready",
+      "requires": ["proposal"]
+    },
+    {
+      "id": "specs",
+      "outputPath": "specs/**/*.md",
+      "status": "skipped",
+      "requires": ["proposal"]
+    },
+    {
+      "id": "tasks",
+      "outputPath": "tasks.md",
+      "status": "blocked",
+      "requires": ["specs", "design"],
+      "missingDeps": ["design"]
+    }
+  ],
+  "root": {
+    "path": "/private/tmp/openspec-v1.6.0-skip-fixture",
+    "source": "nearest"
+  }
+}

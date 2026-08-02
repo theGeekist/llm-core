@@ -137,10 +137,7 @@ export type SpecificationAdapterDirection = "import" | "export" | "both";
 /** Who retains authority over the source after the adapter has observed it. */
 export type SpecificationAdapterSourceOwnership = "source-owned" | "adapter-owned";
 /** Explicitly states whether the adapter can write a change back to its source. */
-export type SpecificationAdapterWriteBack =
-  | "unsupported"
-  | "proposal-only"
-  | "source-authorized";
+export type SpecificationAdapterWriteBack = "unsupported" | "proposal-only" | "source-authorized";
 export type SpecificationConformanceLevel =
   | "syntax"
   | "semantic"

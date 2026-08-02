@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { contractVersion, digest, extensionNamespace } from "#contracts";
+import { contractVersion, digest, extensionNamespace, type JsonValue } from "#contracts";
 import { createAgent } from "../../src/agent/index";
 import {
   compileSpecification,
@@ -7,6 +7,8 @@ import {
   createSpecificationDecisionRecord,
   createSpecificationSourceSnapshot,
   loadSpecification,
+  prepareSpecificationExecution,
+  projectSpecification,
   reviewSpecification,
   type SpecificationPolicy,
 } from "../../src/specifications/index";
@@ -88,6 +90,58 @@ const acceptedPolicy = (current = { revision: "revision.1" }): SpecificationPoli
   }),
   now: () => "2026-08-01T12:00:00.000Z",
 });
+
+const reviewedFixture = async (current = { revision: "revision.1" }, content?: JsonValue) => {
+  const specification = loadSpecification({
+    graphId: "graph.projection",
+    version,
+    sources: [source()],
+    nodes: [
+      {
+        nodeId: "requirement.projection",
+        kind: "requirement",
+        title: "Project only while authority is current",
+        source: { sourceId: "source.runtime", documentId: "root" },
+        ...(content === undefined ? {} : { content }),
+      },
+    ],
+    relationships: [],
+  });
+  const policy: SpecificationPolicy = {
+    decide: ({ review }) =>
+      createSpecificationDecision({
+        status: "accepted",
+        record: createSpecificationDecisionRecord({
+          recordId: "decision.projection" as never,
+          resolvedDigest,
+          acceptedScope: review.items.map((item) => item.scopeId),
+          decision: { kind: "policy", summary: "Projection is approved." },
+          evidence: [{ evidenceId: "evidence.runtime", digest: evidenceDigest }],
+          authority: "authority.runtime",
+          policyVersions: [{ policyId: "policy.runtime", version }],
+          sources: [
+            {
+              sourceId: "source.runtime" as never,
+              revision: "revision.1",
+              contentDigest: sourceDigest,
+            },
+          ],
+          validity: { invalidatedBy: ["source-revision"] },
+        }),
+      }),
+    current: ({ record }) => ({
+      authority: record.authority,
+      resolvedDigest: record.resolvedDigest,
+      acceptedScope: record.acceptedScope,
+      policyVersions: record.policyVersions,
+      sources: record.sources.map((binding) => ({ ...binding, revision: current.revision })),
+    }),
+    now: () => "2026-08-01T12:00:00.000Z",
+  };
+  const decision = await reviewSpecification(specification, { policy });
+  if (decision.status !== "accepted") throw new TypeError("Expected an accepted decision.");
+  return { current, decision };
+};
 
 describe("specification public API", () => {
   test("loads a source-oriented import without implying a framework adapter or acceptance", async () => {
@@ -269,5 +323,101 @@ describe("specification public API", () => {
     expect(() => compileSpecification(forged, { target: { value: "forged" } })).toThrow(
       "Only accepted specification decisions",
     );
+  });
+
+  test("projects lazily after authority and preserves synchronous MaybePromise results", async () => {
+    const value = await reviewedFixture();
+    let projections = 0;
+    const projected = projectSpecification(value.decision, {
+      project: (view) => {
+        projections += 1;
+        expect(Object.isFrozen(view)).toBe(true);
+        expect(Object.isFrozen(view.acceptedItems)).toBe(true);
+        expect(view.acceptedItems.map((item) => String(item.scopeId))).toEqual([
+          "requirement.projection",
+        ]);
+        return { target: { model: "test" }, result: "exact" };
+      },
+    });
+    expect(projected).not.toBeInstanceOf(Promise);
+    if (projected instanceof Promise) throw new TypeError("Expected synchronous projection.");
+    expect(projections).toBe(1);
+    expect(projected.compiled.value).toEqual({ model: "test" });
+    expect(projected.result).toBe("exact");
+
+    const stale = await reviewedFixture();
+    stale.current.revision = "revision.2";
+    expect(() =>
+      projectSpecification(stale.decision, {
+        project: () => {
+          projections += 1;
+          return { target: { model: "never" }, result: "never" };
+        },
+      }),
+    ).toThrow("no longer matches");
+    expect(projections).toBe(1);
+  });
+
+  test("projects frozen accepted content, not only accepted scope identifiers", async () => {
+    const semanticContent = {
+      modelRequirements: [{ capabilityId: "llm-core.model.streaming", required: true }],
+      prompt: { name: "prompt.accepted", template: "Answer", inputs: [] },
+      tools: [{ name: "lookup", parameters: { type: "object" } }],
+      context: { identity: sourceDigest },
+      evaluation: { thresholdStatus: "qualified" },
+    } satisfies JsonValue;
+    const value = await reviewedFixture(undefined, semanticContent);
+    const projected = await projectSpecification(value.decision, {
+      project: (view) => {
+        expect(view.acceptedItems).toHaveLength(1);
+        expect(view.acceptedItems[0]?.content).toEqual(semanticContent);
+        expect(Object.isFrozen(view.acceptedItems[0]?.content)).toBe(true);
+        expect(Object.isFrozen((view.acceptedItems[0]?.content as { tools: unknown }).tools)).toBe(
+          true,
+        );
+        return { target: { model: "test" }, result: "content-bound" };
+      },
+    });
+    expect(projected.result).toBe("content-bound");
+  });
+
+  test("rechecks async projection and native execution at application-owned boundaries", async () => {
+    const projectedFixture = await reviewedFixture();
+    let releaseProjection!: (value: {
+      readonly target: { readonly model: string };
+      readonly result: string;
+    }) => void;
+    const pendingProjection = projectSpecification(projectedFixture.decision, {
+      project: () =>
+        new Promise<{ readonly target: { readonly model: string }; readonly result: string }>(
+          (resolve) => (releaseProjection = resolve),
+        ),
+    });
+    projectedFixture.current.revision = "revision.2";
+    releaseProjection({ target: { model: "test" }, result: "partial" });
+    await expect(pendingProjection).rejects.toThrow("no longer matches");
+
+    const executionFixture = await reviewedFixture();
+    const projected = await projectSpecification(executionFixture.decision, {
+      project: () => ({ target: { model: "test" }, result: "exact" }),
+    });
+    let executions = 0;
+    const prepared = await prepareSpecificationExecution({
+      compiled: projected.compiled,
+      operations: {
+        prepare: (definition) => ({ definition }),
+        execute: ({ input }) => {
+          executions += 1;
+          return `executed:${input}`;
+        },
+        resume: ({ input }) => `resumed:${input}`,
+      },
+    });
+    expect(prepared.execute("first")).toBe("executed:first");
+    executionFixture.current.revision = "revision.2";
+    await expect(Promise.resolve().then(() => prepared.execute("blocked"))).rejects.toThrow(
+      "no longer matches",
+    );
+    expect(executions).toBe(1);
   });
 });

@@ -1,0 +1,82 @@
+{
+  "changeName": "add-auth",
+  "schemaName": "spec-driven",
+  "planningHome": {
+    "kind": "repo",
+    "root": "/private/tmp/openspec-v1.6.0-fixture",
+    "changesDir": "/private/tmp/openspec-v1.6.0-fixture/openspec/changes",
+    "defaultSchema": "spec-driven"
+  },
+  "changeRoot": "/private/tmp/openspec-v1.6.0-fixture/openspec/changes/add-auth",
+  "artifactPaths": {
+    "proposal": {
+      "outputPath": "proposal.md",
+      "resolvedOutputPath": "/private/tmp/openspec-v1.6.0-fixture/openspec/changes/add-auth/proposal.md",
+      "existingOutputPaths": [
+        "/private/tmp/openspec-v1.6.0-fixture/openspec/changes/add-auth/proposal.md"
+      ]
+    },
+    "specs": {
+      "outputPath": "specs/**/*.md",
+      "resolvedOutputPath": "/private/tmp/openspec-v1.6.0-fixture/openspec/changes/add-auth/specs/**/*.md",
+      "existingOutputPaths": []
+    },
+    "design": {
+      "outputPath": "design.md",
+      "resolvedOutputPath": "/private/tmp/openspec-v1.6.0-fixture/openspec/changes/add-auth/design.md",
+      "existingOutputPaths": []
+    },
+    "tasks": {
+      "outputPath": "tasks.md",
+      "resolvedOutputPath": "/private/tmp/openspec-v1.6.0-fixture/openspec/changes/add-auth/tasks.md",
+      "existingOutputPaths": []
+    }
+  },
+  "isComplete": false,
+  "applyRequires": ["tasks"],
+  "nextSteps": [
+    "Run openspec instructions design --change \"add-auth\" --json before writing that artifact."
+  ],
+  "actionContext": {
+    "mode": "repo-local",
+    "sourceOfTruth": "repo",
+    "planningArtifacts": ["proposal", "design", "specs", "tasks"],
+    "linkedContext": [],
+    "allowedEditRoots": ["/private/tmp/openspec-v1.6.0-fixture"],
+    "requiresAffectedAreaSelection": false,
+    "constraints": [
+      "Repo-local change artifacts and implementation edits are scoped to this project."
+    ]
+  },
+  "artifacts": [
+    {
+      "id": "proposal",
+      "outputPath": "proposal.md",
+      "status": "done",
+      "requires": []
+    },
+    {
+      "id": "design",
+      "outputPath": "design.md",
+      "status": "ready",
+      "requires": ["proposal"]
+    },
+    {
+      "id": "specs",
+      "outputPath": "specs/**/*.md",
+      "status": "ready",
+      "requires": ["proposal"]
+    },
+    {
+      "id": "tasks",
+      "outputPath": "tasks.md",
+      "status": "blocked",
+      "requires": ["specs", "design"],
+      "missingDeps": ["design", "specs"]
+    }
+  ],
+  "root": {
+    "path": "/private/tmp/openspec-v1.6.0-fixture",
+    "source": "nearest"
+  }
+}
