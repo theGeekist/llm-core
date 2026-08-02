@@ -22,6 +22,11 @@ conflicts_with: []
 write_scope:
   - packages/llm-core/src/adapters/pydantic-ai-spec/**
   - packages/llm-core/tests/adapters/pydantic-ai-spec/**
+  - packages/llm-core/src/application/specification-compiler/public.ts
+  - packages/llm-core/src/specifications/index.ts
+  - packages/llm-core/tests/specifications/public-api.test.ts
+  - packages/llm-core/tests/architecture/source-boundaries.test.ts
+  - packages/llm-core/tests/conformance/pydantic-ai-compatibility.test.ts
   - packages/llm-core/internal/final-architecture/tasks/adapter-pydantic-ai.md
 read_scope:
   - packages/llm-core/src/specifications/**
@@ -81,6 +86,14 @@ bun run typecheck:packages
 bun run typecheck:tests
 bun run lint
 ```
+
+## Coordinator integration authorization
+
+- 2026-08-02 — During remediation review, the user explicitly confirmed
+  coordinator authorization for the application-owned projection/preparation
+  front and its shared specification, architecture, and conformance coverage.
+  These shared paths are coordinator integration work; delegated adapter work
+  remained confined to the adapter source/test paths.
 
 ## Work log
 
