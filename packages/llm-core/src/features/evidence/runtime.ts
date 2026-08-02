@@ -5,6 +5,8 @@
 export {
   actionDigestsEqual,
   classifyExistingReservation,
+  isToolReceiptFenceActive,
   isToolReceiptTransitionAllowed,
   reservationKeysEqual,
+  toolReceiptFencesEqual,
 } from "./receipt";

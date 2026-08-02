@@ -92,6 +92,12 @@ export interface ExecutableToolValidationInput {
 export interface ToolExecutionInput {
   call: ToolCall;
   control?: ToolExecutionControl;
+  /** Durable ownership token that qualified mutating providers must enforce. */
+  receiptFence?: Readonly<{
+    receiptId: string;
+    ownerId: string;
+    token: number;
+  }>;
 }
 
 export interface ExecutableTool {

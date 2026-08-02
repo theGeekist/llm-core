@@ -6,6 +6,7 @@ import {
   coreId,
   digest,
   externalId,
+  schemaRef,
   secretRef,
   type EventId,
   type EvidenceId,
@@ -28,16 +29,21 @@ import {
 import {
   type AppendToolReceiptTransition,
   type AppendToolReceiptTransitionResult,
+  type ClaimToolReceiptExecution,
+  type ClaimToolReceiptExecutionResult,
   type EventSink,
   type LookupToolReceiptByIdempotency,
   type ReserveToolReceipt,
   type ReserveToolReceiptResult,
   type ToolExecutionReceipt,
+  type ToolReceiptFence,
   type ToolReceiptJournal,
 } from "../../../src/features/evidence/public";
 import {
   classifyExistingReservation,
+  isToolReceiptFenceActive,
   isToolReceiptTransitionAllowed,
+  toolReceiptFencesEqual,
 } from "../../../src/features/evidence/runtime";
 import {
   actionDigest,
@@ -51,6 +57,7 @@ import {
   type ToolDefinition,
   type ToolExecutionFactsPort,
 } from "../../../src/features/tooling/runtime";
+import { reconcileControlledToolReceipt } from "../../../src/application/tool-execution/public";
 
 const RUN_ID = coreId<RunId>("018f0f4e-8c5b-7a91-8c3b-123456789001");
 const CALL_ID = coreId<ToolCallId>("018f0f4e-8c5b-7a91-8c3b-123456789002");
@@ -121,6 +128,7 @@ const keyOf = (request: ReserveToolReceipt | LookupToolReceiptByIdempotency): st
 class MemoryJournal implements ToolReceiptJournal {
   readonly byId = new Map<EvidenceId, ToolExecutionReceipt>();
   readonly byKey = new Map<string, EvidenceId>();
+  now = "2026-07-29T00:00:00.000Z";
 
   async reserve(request: ReserveToolReceipt): Promise<ReserveToolReceiptResult> {
     const existingId = this.byKey.get(keyOf(request));
@@ -161,6 +169,19 @@ class MemoryJournal implements ToolReceiptJournal {
       };
     }
     if (
+      current.executionFence &&
+      (!request.transition.fence ||
+        !toolReceiptFencesEqual(current.executionFence, request.transition.fence) ||
+        !isToolReceiptFenceActive(current.executionFence, this.now))
+    ) {
+      return {
+        kind: "fence-conflict",
+        receipt: current,
+        expectedFence: request.transition.fence,
+        actualFence: current.executionFence,
+      };
+    }
+    if (
       request.transition.from !== current.state ||
       !isToolReceiptTransitionAllowed(current.state, request.transition.to)
     ) {
@@ -182,10 +203,73 @@ class MemoryJournal implements ToolReceiptJournal {
       approvalRequestedAt: entry.approvalRequestedAt ?? current.approvalRequestedAt,
       approvalExpiresAt: entry.approvalExpiresAt ?? current.approvalExpiresAt,
       approvalRequiredApprover: entry.approvalRequiredApprover ?? current.approvalRequiredApprover,
+      executionFence: entry.fence ?? current.executionFence,
+      reconciliation: entry.reconciliation ?? current.reconciliation,
       history: [...current.history, entry],
     };
     this.byId.set(receipt.receiptId, receipt);
     return { kind: "appended", receipt, entry, durable: "acknowledged" };
+  }
+
+  async claim(request: ClaimToolReceiptExecution): Promise<ClaimToolReceiptExecutionResult> {
+    const current = this.byId.get(request.receiptId);
+    if (!current) {
+      return { kind: "not-found", receiptId: request.receiptId };
+    }
+    if (current.revision !== request.expectedRevision) {
+      return {
+        kind: "revision-conflict",
+        receipt: current,
+        expectedRevision: request.expectedRevision,
+        actualRevision: current.revision,
+      };
+    }
+    if (
+      current.state !== "ready" &&
+      current.state !== "started" &&
+      current.state !== "indeterminate"
+    ) {
+      return { kind: "not-eligible", receipt: current };
+    }
+    if (current.executionFence && isToolReceiptFenceActive(current.executionFence, this.now)) {
+      return { kind: "held", receipt: current, fence: current.executionFence };
+    }
+    const fence: ToolReceiptFence = {
+      owner: request.owner,
+      token: (current.executionFence?.token ?? 0) + 1,
+      acquiredAt: this.now,
+      expiresAt: new Date(Date.parse(this.now) + request.leaseDurationMs).toISOString(),
+    };
+    const entry = {
+      transitionId: request.transitionId,
+      from: current.state,
+      to: current.state,
+      recordedAt: this.now,
+      effectDisposition: current.effectDisposition,
+      reasonCode: "receipt-execution-claimed",
+      fence,
+      redaction: request.redaction,
+      revision: current.revision + 1,
+      durable: "acknowledged" as const,
+    };
+    const receipt: ToolExecutionReceipt = {
+      ...current,
+      revision: entry.revision,
+      executionFence: fence,
+      history: [...current.history, entry],
+    };
+    this.byId.set(receipt.receiptId, receipt);
+    return { kind: "claimed", receipt, fence, entry, durable: "acknowledged" };
+  }
+
+  async verifyFence({ receiptId, fence }: { receiptId: EvidenceId; fence: ToolReceiptFence }) {
+    const receipt = this.byId.get(receiptId) ?? null;
+    return receipt &&
+      receipt.executionFence &&
+      toolReceiptFencesEqual(receipt.executionFence, fence) &&
+      isToolReceiptFenceActive(receipt.executionFence, this.now)
+      ? { kind: "active" as const, receipt }
+      : { kind: "inactive" as const, receipt };
   }
 
   async load({ receiptId }: { receiptId: EvidenceId }): Promise<ToolExecutionReceipt | null> {
@@ -246,6 +330,8 @@ const baseInput = (
   digestPort,
   policy: allowPolicy as PolicyEvaluationPort,
   journal,
+  receiptOwner: { ownerId: "worker:one" },
+  receiptLeaseDurationMs: 60_000,
   concurrency: createConcurrencyGate(),
   facts: facts(),
 });
@@ -496,6 +582,7 @@ describe("controlled tool execution", () => {
     expect("receipt" in outcome && outcome.receipt.history.map(({ to }) => to)).toEqual([
       "awaiting_policy",
       "ready",
+      "ready",
       "started",
       "succeeded",
     ]);
@@ -559,6 +646,7 @@ describe("controlled tool execution", () => {
     expect(outcome.status).toBe("succeeded");
     expect("receipt" in outcome && outcome.receipt.history.map(({ to }) => to)).toEqual([
       "awaiting_policy",
+      "ready",
       "ready",
       "started",
       "succeeded",
@@ -1023,5 +1111,377 @@ describe("controlled tool execution", () => {
     const replay = await executeControlledTool({ ...input, facts: facts() });
     expect(replay.status).toBe("indeterminate");
     expect(executions).toBe(1);
+  });
+
+  it("fails closed when a receipt fence changes after started and before invocation", async () => {
+    const journal = new MemoryJournal();
+    const append = journal.append.bind(journal);
+    journal.append = async (request) => {
+      const result = await append(request);
+      if (result.kind === "appended" && request.transition.to === "started") {
+        const fence = result.receipt.executionFence;
+        if (fence) {
+          journal.byId.set(result.receipt.receiptId, {
+            ...result.receipt,
+            executionFence: {
+              ...fence,
+              owner: { ownerId: "worker:replacement" },
+              token: fence.token + 1,
+            },
+          });
+        }
+      }
+      return result;
+    };
+    let executions = 0;
+    const outcome = await executeControlledTool(
+      baseInput(journal, () => {
+        executions += 1;
+        return { toolCallId: CALL_ID, status: "succeeded", content: [] };
+      }),
+    );
+
+    expect(outcome.status).toBe("indeterminate");
+    expect(executions).toBe(0);
+    expect("receipt" in outcome && outcome.receipt.state).toBe("started");
+  });
+
+  it("propagates the fence so a qualified provider rejects takeover after verification", async () => {
+    const journal = new MemoryJournal();
+    const verifyFence = journal.verifyFence.bind(journal);
+    let replaced = false;
+    journal.verifyFence = async (request) => {
+      const verification = await verifyFence(request);
+      if (!replaced && verification.kind === "active") {
+        replaced = true;
+        journal.now = "2026-07-29T00:02:00.000Z";
+        await journal.claim({
+          receiptId: verification.receipt.receiptId,
+          expectedRevision: verification.receipt.revision,
+          owner: { ownerId: "worker:replacement" },
+          leaseDurationMs: 60_000,
+          transitionId: coreId<EventId>(id(97)),
+          redaction: { kind: "not-required" },
+        });
+      }
+      return verification;
+    };
+    let externalEffects = 0;
+    const outcome = await executeControlledTool(
+      baseInput(journal, ({ receiptFence }) => {
+        const currentReceipt = [...journal.byId.values()][0];
+        const current = currentReceipt?.executionFence;
+        if (
+          !receiptFence ||
+          !currentReceipt ||
+          !current ||
+          receiptFence.receiptId !== currentReceipt.receiptId ||
+          receiptFence.token !== current.token ||
+          receiptFence.ownerId !== current.owner.ownerId
+        ) {
+          throw new Error("qualified provider rejected stale receipt fence");
+        }
+        externalEffects += 1;
+        return { toolCallId: CALL_ID, status: "succeeded", content: [] };
+      }),
+    );
+
+    expect(replaced).toBe(true);
+    expect(externalEffects).toBe(0);
+    expect(outcome.status).toBe("indeterminate");
+  });
+
+  it("reconciles a stale indeterminate receipt from authoritative evidence without rerunning", async () => {
+    const journal = new MemoryJournal();
+    let executions = 0;
+    const initial = await executeControlledTool(
+      baseInput(journal, () => {
+        executions += 1;
+        throw new Error("provider outcome unavailable");
+      }),
+    );
+    if (!("receipt" in initial)) throw new Error("Expected a durable receipt.");
+    const evidence = {
+      evidenceId: coreId<EvidenceId>(id(98)),
+      kind: "execution-receipt" as const,
+      content: {
+        resourceId: coreId<ResourceId>(id(99)),
+        mediaType: "application/json; charset=utf-8",
+        byteLength: 2,
+        digest: digest("e".repeat(64)),
+      },
+      schema: schemaRef({
+        schemaId: "https://schemas.example.test/tool-reconciliation",
+        version: "1.0.0",
+        digest: digest("f".repeat(64)),
+      }),
+    };
+    const providerResult = {
+      kind: "known" as const,
+      disposition: "applied" as const,
+      observedAt: "2026-07-29T00:02:00.000Z",
+      evidence,
+    };
+    journal.now = "2026-07-29T00:02:00.000Z";
+    const recovery = await reconcileControlledToolReceipt({
+      receiptId: initial.receipt.receiptId,
+      journal,
+      receiptOwner: { ownerId: "worker:recovery" },
+      receiptLeaseDurationMs: 60_000,
+      facts: { ...facts(), now: () => "2026-07-29T00:02:00.000Z" },
+      reconciler: {
+        reconcile: () => Promise.resolve(providerResult),
+      },
+    });
+    providerResult.evidence.content.mediaType = "text/plain";
+    providerResult.evidence.schema.schemaId = "https://attacker.example.test/replaced";
+
+    expect(recovery.status).toBe("reconciled");
+    expect("receipt" in recovery && recovery.receipt.state).toBe("succeeded");
+    expect("receipt" in recovery && recovery.receipt.effectDisposition).toBe("applied");
+    expect("receipt" in recovery && recovery.receipt.reconciliation?.result).toMatchObject({
+      kind: "known",
+      disposition: "applied",
+      evidence: {
+        content: { mediaType: "application/json; charset=utf-8" },
+        schema: { schemaId: "https://schemas.example.test/tool-reconciliation" },
+      },
+    });
+    expect(executions).toBe(1);
+  });
+
+  it("keeps a fresh ambiguous receipt fenced and requires explicit unresolved recovery", async () => {
+    const journal = new MemoryJournal();
+    const initial = await executeControlledTool(
+      baseInput(journal, () => {
+        throw new Error("provider outcome unavailable");
+      }),
+    );
+    if (!("receipt" in initial)) throw new Error("Expected a durable receipt.");
+    let reconciliations = 0;
+    const held = await reconcileControlledToolReceipt({
+      receiptId: initial.receipt.receiptId,
+      journal,
+      receiptOwner: { ownerId: "worker:recovery" },
+      receiptLeaseDurationMs: 60_000,
+      facts: facts(),
+      reconciler: {
+        reconcile: () => {
+          reconciliations += 1;
+          return Promise.resolve({
+            kind: "unresolved" as const,
+            observedAt: "2026-07-29T00:00:00.000Z",
+            reasonCode: "not-used",
+          });
+        },
+      },
+    });
+    journal.now = "2026-07-29T00:02:00.000Z";
+    const unresolved = await reconcileControlledToolReceipt({
+      receiptId: initial.receipt.receiptId,
+      journal,
+      receiptOwner: { ownerId: "worker:recovery" },
+      receiptLeaseDurationMs: 60_000,
+      facts: { ...facts(), now: () => "2026-07-29T00:02:00.000Z" },
+      reconciler: {
+        reconcile: () => {
+          reconciliations += 1;
+          return Promise.resolve({
+            kind: "unresolved" as const,
+            observedAt: "2026-07-29T00:02:00.000Z",
+            reasonCode: "provider-outcome-unknown",
+          });
+        },
+      },
+    });
+
+    expect(held.status).toBe("held");
+    expect(unresolved.status).toBe("reconciliation-required");
+    expect("receipt" in unresolved && unresolved.receipt.state).toBe("reconciliation_required");
+    expect(reconciliations).toBe(1);
+  });
+
+  it("rejects malformed reconciliation evidence and secret-bearing reason text", async () => {
+    const journal = new MemoryJournal();
+    const initial = await executeControlledTool(
+      baseInput(journal, () => {
+        throw new Error("provider outcome unavailable");
+      }),
+    );
+    if (!("receipt" in initial)) throw new Error("Expected a durable receipt.");
+    journal.now = "2026-07-29T00:02:00.000Z";
+    const outcome = await reconcileControlledToolReceipt({
+      receiptId: initial.receipt.receiptId,
+      journal,
+      receiptOwner: { ownerId: "worker:recovery" },
+      receiptLeaseDurationMs: 60_000,
+      facts: { ...facts(), now: () => "2026-07-29T00:02:00.000Z" },
+      reconciler: {
+        reconcile: () =>
+          Promise.resolve({
+            kind: "known",
+            disposition: "applied",
+            observedAt: "2026-07-29T00:02:00.000Z",
+            evidence: {},
+            reasonCode: "provider-secret-token",
+          } as never),
+      },
+    });
+
+    expect(outcome.status).toBe("reconciliation-required");
+    expect("receipt" in outcome && outcome.receipt.reconciliation?.result).toEqual({
+      kind: "unresolved",
+      observedAt: "2026-07-29T00:02:00.000Z",
+      reasonCode: "reconciliation-result-invalid",
+    });
+    expect(JSON.stringify(outcome)).not.toContain("provider-secret-token");
+  });
+
+  it("rejects a secret-bearing unresolved reason instead of persisting provider text", async () => {
+    const journal = new MemoryJournal();
+    const initial = await executeControlledTool(
+      baseInput(journal, () => {
+        throw new Error("provider outcome unavailable");
+      }),
+    );
+    if (!("receipt" in initial)) throw new Error("Expected a durable receipt.");
+    journal.now = "2026-07-29T00:02:00.000Z";
+    const outcome = await reconcileControlledToolReceipt({
+      receiptId: initial.receipt.receiptId,
+      journal,
+      receiptOwner: { ownerId: "worker:recovery" },
+      receiptLeaseDurationMs: 60_000,
+      facts: { ...facts(), now: () => "2026-07-29T00:02:00.000Z" },
+      reconciler: {
+        reconcile: () =>
+          Promise.resolve({
+            kind: "unresolved",
+            observedAt: "2026-07-29T00:02:00.000Z",
+            reasonCode: "provider-secret-token",
+          } as never),
+      },
+    });
+
+    expect(outcome.status).toBe("reconciliation-required");
+    expect("receipt" in outcome && outcome.receipt.reconciliation?.result).toEqual({
+      kind: "unresolved",
+      observedAt: "2026-07-29T00:02:00.000Z",
+      reasonCode: "reconciliation-result-invalid",
+    });
+    expect(JSON.stringify(outcome)).not.toContain("provider-secret-token");
+  });
+
+  it("turns hostile proxy and accessor reconciliation values into generic unresolved results", async () => {
+    const hostileValues: unknown[] = [
+      new Proxy(
+        {},
+        {
+          getPrototypeOf: () => {
+            throw new Error("provider-secret-from-proxy");
+          },
+        },
+      ),
+      Object.defineProperty(
+        {
+          observedAt: "2026-07-29T00:02:00.000Z",
+          reasonCode: "provider-outcome-unknown",
+        },
+        "kind",
+        {
+          enumerable: true,
+          get: () => {
+            throw new Error("provider-secret-from-accessor");
+          },
+        },
+      ),
+      {
+        kind: "known",
+        disposition: {
+          [Symbol.toPrimitive]: () => {
+            throw new Error("provider-secret-from-coercion");
+          },
+        },
+        observedAt: "2026-07-29T00:02:00.000Z",
+        evidence: {},
+      },
+      {
+        kind: "unresolved",
+        observedAt: "2026-07-29T00:02:00.000Z",
+        reasonCode: "provider-outcome-unknown",
+        evidence: undefined,
+      },
+    ];
+
+    for (const hostileValue of hostileValues) {
+      const journal = new MemoryJournal();
+      const initial = await executeControlledTool(
+        baseInput(journal, () => {
+          throw new Error("provider outcome unavailable");
+        }),
+      );
+      if (!("receipt" in initial)) throw new Error("Expected a durable receipt.");
+      journal.now = "2026-07-29T00:02:00.000Z";
+      const outcome = await reconcileControlledToolReceipt({
+        receiptId: initial.receipt.receiptId,
+        journal,
+        receiptOwner: { ownerId: "worker:recovery" },
+        receiptLeaseDurationMs: 60_000,
+        facts: { ...facts(), now: () => "2026-07-29T00:02:00.000Z" },
+        reconciler: { reconcile: () => Promise.resolve(hostileValue as never) },
+      });
+
+      expect(outcome.status).toBe("reconciliation-required");
+      expect("receipt" in outcome && outcome.receipt.reconciliation?.result).toEqual({
+        kind: "unresolved",
+        observedAt: "2026-07-29T00:02:00.000Z",
+        reasonCode: "reconciliation-result-invalid",
+      });
+      expect(JSON.stringify(outcome)).not.toContain("provider-secret");
+    }
+  });
+
+  it("preserves a post-start cancellation request through unresolved recovery", async () => {
+    const journal = new MemoryJournal();
+    let requested = false;
+    const handlers = new Set<() => void>();
+    const control = {
+      isCancellationRequested: () => requested,
+      onCancellationRequested: (handler: () => void) => {
+        handlers.add(handler);
+        return () => handlers.delete(handler);
+      },
+    };
+    const initial = await executeControlledTool({
+      ...baseInput(journal, () => {
+        requested = true;
+        handlers.forEach((handler) => handler());
+        throw new Error("provider outcome unavailable");
+      }),
+      executionControl: control,
+    });
+    if (!("receipt" in initial)) throw new Error("Expected a durable receipt.");
+    journal.now = "2026-07-29T00:02:00.000Z";
+    const recovered = await reconcileControlledToolReceipt({
+      receiptId: initial.receipt.receiptId,
+      journal,
+      receiptOwner: { ownerId: "worker:recovery" },
+      receiptLeaseDurationMs: 60_000,
+      facts: { ...facts(), now: () => "2026-07-29T00:02:00.000Z" },
+      reconciler: {
+        reconcile: () =>
+          Promise.resolve({
+            kind: "unresolved" as const,
+            observedAt: "2026-07-29T00:02:00.000Z",
+            reasonCode: "provider-outcome-unknown",
+          }),
+      },
+    });
+
+    expect(recovered.status).toBe("reconciliation-required");
+    expect("receipt" in recovered && recovered.receipt.cancellation).toMatchObject({
+      runId: RUN_ID,
+      toolCallId: CALL_ID,
+    });
+    expect("receipt" in recovered && recovered.receipt.effectDisposition).toBe("unknown");
   });
 });

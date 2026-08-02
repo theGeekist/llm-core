@@ -377,6 +377,8 @@ describe("specification execution authority", () => {
         digestKeyRef: keyRef,
         digestPort,
         journal: {} as never,
+        receiptOwner: { ownerId: "authority-test" },
+        receiptLeaseDurationMs: 60_000,
         concurrency: {} as never,
         facts: {} as never,
         specification: {

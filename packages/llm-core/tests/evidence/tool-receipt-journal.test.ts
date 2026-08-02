@@ -5,12 +5,16 @@ import { redactedNativeExtensions } from "../../src/features/evidence/public";
 import {
   actionDigestsEqual,
   classifyExistingReservation,
+  isToolReceiptFenceActive,
   isToolReceiptTransitionAllowed,
   reservationKeysEqual,
+  toolReceiptFencesEqual,
 } from "../../src/features/evidence/runtime";
 import type {
   AppendToolReceiptTransition,
   AppendToolReceiptTransitionResult,
+  ClaimToolReceiptExecution,
+  ClaimToolReceiptExecutionResult,
   EffectDisposition,
   ToolExecutionEvent,
   LoadToolReceipt,
@@ -18,6 +22,7 @@ import type {
   ReserveToolReceipt,
   ReserveToolReceiptResult,
   ToolExecutionReceipt,
+  ToolReceiptFence,
   ToolReceiptJournal,
   ToolReceiptState,
   ToolReceiptTransition,
@@ -74,6 +79,7 @@ const keyOf = (request: ReserveToolReceipt | LookupToolReceiptByIdempotency): st
 class MemoryToolReceiptJournal implements ToolReceiptJournal {
   readonly #byId = new Map<EvidenceId, ToolExecutionReceipt>();
   readonly #byKey = new Map<string, EvidenceId>();
+  now = "2026-07-29T00:00:00.000Z";
 
   async reserve(request: ReserveToolReceipt): Promise<ReserveToolReceiptResult> {
     const existingId = this.#byKey.get(keyOf(request));
@@ -116,6 +122,19 @@ class MemoryToolReceiptJournal implements ToolReceiptJournal {
       };
     }
     if (
+      current.executionFence &&
+      (!request.transition.fence ||
+        !toolReceiptFencesEqual(current.executionFence, request.transition.fence) ||
+        !isToolReceiptFenceActive(current.executionFence, this.now))
+    ) {
+      return {
+        kind: "fence-conflict",
+        receipt: current,
+        expectedFence: request.transition.fence,
+        actualFence: current.executionFence,
+      };
+    }
+    if (
       request.transition.from !== current.state ||
       !isToolReceiptTransitionAllowed(request.transition.from, request.transition.to)
     ) {
@@ -138,10 +157,73 @@ class MemoryToolReceiptJournal implements ToolReceiptJournal {
       approvalRequestedAt: entry.approvalRequestedAt ?? current.approvalRequestedAt,
       approvalExpiresAt: entry.approvalExpiresAt ?? current.approvalExpiresAt,
       approvalRequiredApprover: entry.approvalRequiredApprover ?? current.approvalRequiredApprover,
+      executionFence: entry.fence ?? current.executionFence,
+      reconciliation: entry.reconciliation ?? current.reconciliation,
       history: [...current.history, entry],
     };
     this.#byId.set(receipt.receiptId, receipt);
     return { kind: "appended", receipt, entry, durable: "acknowledged" };
+  }
+
+  async claim(request: ClaimToolReceiptExecution): Promise<ClaimToolReceiptExecutionResult> {
+    const current = this.#byId.get(request.receiptId);
+    if (!current) {
+      return { kind: "not-found", receiptId: request.receiptId };
+    }
+    if (current.revision !== request.expectedRevision) {
+      return {
+        kind: "revision-conflict",
+        receipt: current,
+        expectedRevision: request.expectedRevision,
+        actualRevision: current.revision,
+      };
+    }
+    if (
+      current.state !== "ready" &&
+      current.state !== "started" &&
+      current.state !== "indeterminate"
+    ) {
+      return { kind: "not-eligible", receipt: current };
+    }
+    if (current.executionFence && isToolReceiptFenceActive(current.executionFence, this.now)) {
+      return { kind: "held", receipt: current, fence: current.executionFence };
+    }
+    const fence: ToolReceiptFence = {
+      owner: request.owner,
+      token: (current.executionFence?.token ?? 0) + 1,
+      acquiredAt: this.now,
+      expiresAt: new Date(Date.parse(this.now) + request.leaseDurationMs).toISOString(),
+    };
+    const entry = {
+      transitionId: request.transitionId,
+      from: current.state,
+      to: current.state,
+      recordedAt: this.now,
+      effectDisposition: current.effectDisposition,
+      reasonCode: "receipt-execution-claimed",
+      fence,
+      redaction: request.redaction,
+      revision: current.revision + 1,
+      durable: "acknowledged" as const,
+    };
+    const receipt: ToolExecutionReceipt = {
+      ...current,
+      revision: entry.revision,
+      executionFence: fence,
+      history: [...current.history, entry],
+    };
+    this.#byId.set(receipt.receiptId, receipt);
+    return { kind: "claimed", receipt, fence, entry, durable: "acknowledged" };
+  }
+
+  async verifyFence({ receiptId, fence }: { receiptId: EvidenceId; fence: ToolReceiptFence }) {
+    const receipt = this.#byId.get(receiptId) ?? null;
+    return receipt &&
+      receipt.executionFence &&
+      toolReceiptFencesEqual(receipt.executionFence, fence) &&
+      isToolReceiptFenceActive(receipt.executionFence, this.now)
+      ? { kind: "active" as const, receipt }
+      : { kind: "inactive" as const, receipt };
   }
 
   async load(request: LoadToolReceipt): Promise<ToolExecutionReceipt | null> {
@@ -314,6 +396,67 @@ describe("ToolReceiptJournal contract", () => {
     expect(compensated.state).toBe("compensated");
     expect(compensated.effectDisposition).toBe("compensated");
     expect(compensated.history).toHaveLength(7);
+  });
+
+  it("fences execution ownership and permits stale recovery only with a newer token", async () => {
+    const journal = new MemoryToolReceiptJournal();
+    await journal.reserve(reservation());
+    const ready = await appendSequence(journal, RECEIPT_ID, [
+      ["reserved", "awaiting_policy", "not-started"],
+      ["awaiting_policy", "ready", "not-started"],
+    ]);
+    const ownerOne = await journal.claim({
+      receiptId: RECEIPT_ID,
+      expectedRevision: ready.revision,
+      owner: { ownerId: "worker:one" },
+      leaseDurationMs: 60_000,
+      transitionId: eventId(30),
+      redaction: { kind: "not-required" },
+    });
+    expect(ownerOne.kind).toBe("claimed");
+    if (ownerOne.kind !== "claimed") throw new Error("Expected an execution claim.");
+    journal.now = "2026-07-29T00:00:30.000Z";
+    const held = await journal.claim({
+      receiptId: RECEIPT_ID,
+      expectedRevision: ownerOne.receipt.revision,
+      owner: { ownerId: "worker:two" },
+      leaseDurationMs: 60_000,
+      transitionId: eventId(31),
+      redaction: { kind: "not-required" },
+    });
+    expect(held).toMatchObject({ kind: "held", fence: ownerOne.fence });
+    journal.now = "2026-07-29T00:01:00.000Z";
+    const staleAppend = await journal.append({
+      receiptId: RECEIPT_ID,
+      expectedRevision: ownerOne.receipt.revision,
+      transition: {
+        ...transition(32, ["ready", "started"], "unknown"),
+        recordedAt: "2026-07-29T00:01:00.000Z",
+        fence: ownerOne.fence,
+      },
+    });
+    expect(staleAppend.kind).toBe("fence-conflict");
+    const ownerTwo = await journal.claim({
+      receiptId: RECEIPT_ID,
+      expectedRevision: ownerOne.receipt.revision,
+      owner: { ownerId: "worker:two" },
+      leaseDurationMs: 60_000,
+      transitionId: eventId(33),
+      redaction: { kind: "not-required" },
+    });
+    expect(ownerTwo.kind).toBe("claimed");
+    if (ownerTwo.kind !== "claimed") throw new Error("Expected stale recovery claim.");
+    expect(ownerTwo.fence.token).toBe(ownerOne.fence.token + 1);
+    expect(isToolReceiptFenceActive(ownerTwo.fence, "2026-07-29T00:01:30.000Z")).toBe(true);
+    const staleOwner = await journal.append({
+      receiptId: RECEIPT_ID,
+      expectedRevision: ownerTwo.receipt.revision,
+      transition: {
+        ...transition(34, ["ready", "started"], "unknown"),
+        fence: ownerOne.fence,
+      },
+    });
+    expect(staleOwner.kind).toBe("fence-conflict");
   });
 
   it("keeps raw arguments, results, credentials and native payloads out of receipts and events", async () => {

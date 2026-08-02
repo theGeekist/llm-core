@@ -2,7 +2,14 @@
  * This is the auditable application state machine. Its branches deliberately
  * mirror durable receipt states and fail-closed recovery paths.
  */
-import { isUuidV7, type JsonValue, type RunId } from "#contracts";
+import {
+  isCanonicalUuid,
+  isSchemaRef,
+  isUuidV7,
+  type EvidenceRef,
+  type JsonValue,
+  type RunId,
+} from "#contracts";
 import {
   approvalId,
   authorizePolicyDecision,
@@ -25,10 +32,17 @@ import {
   type ToolExecutionEventKind,
   type RedactionMetadata,
   type ToolExecutionReceipt,
+  type ToolReceiptFence,
+  type ToolReceiptReconciliationRecord,
+  type ToolReceiptReconciliationResult,
   type ToolReceiptState,
   type ToolReceiptTransition,
 } from "../../features/evidence/public";
-import { actionDigestsEqual, reservationKeysEqual } from "../../features/evidence/runtime";
+import {
+  actionDigestsEqual,
+  reservationKeysEqual,
+  toolReceiptFencesEqual,
+} from "../../features/evidence/runtime";
 import {
   bindAction,
   isRegisteredExecutableTool,
@@ -40,8 +54,10 @@ import {
 import { verifyCompilationAuthority } from "../specification-compiler/runtime";
 import type {
   ControlledToolExecutionOutcome,
+  ControlledToolReceiptReconciliationOutcome,
   EventDelivery,
   ExecuteControlledToolInput,
+  ReconcileControlledToolReceiptInput,
 } from "./types";
 import { ToolExecutionCoordinationError } from "./types";
 
@@ -169,6 +185,9 @@ const eventKind = (from: ToolReceiptState, to: ToolReceiptState): ToolExecutionE
   ) {
     return "tool.execution.settled";
   }
+  if (to === "reconciliation_required") {
+    return "tool.reconciliation.required";
+  }
   return "tool.receipt.transitioned";
 };
 
@@ -213,8 +232,12 @@ const eventFacts = (receipt: ToolExecutionReceipt, reasonCode?: string) => ({
   reasonCode,
 });
 
+type ReceiptEventInput = Pick<ExecuteControlledToolInput, "facts" | "eventSink">;
+type ReceiptPersistenceInput = ReceiptEventInput &
+  Pick<ExecuteControlledToolInput, "journal" | "redaction">;
+
 const reservationEvent = (
-  input: ExecuteControlledToolInput,
+  input: Pick<ExecuteControlledToolInput, "facts">,
   receipt: ToolExecutionReceipt,
 ): ToolExecutionEvent => ({
   eventId: mintedId(input.facts.newEventId(), "Tool execution event"),
@@ -230,7 +253,7 @@ const reservationEvent = (
 });
 
 const transitionEvent = (
-  input: ExecuteControlledToolInput,
+  input: Pick<ExecuteControlledToolInput, "facts">,
   receipt: ToolExecutionReceipt,
   transition: ToolReceiptTransition,
 ): ToolExecutionEvent => ({
@@ -278,12 +301,13 @@ type TransitionDetails = Partial<
     | "authorizedEvidence"
     | "cancellation"
     | "policy"
+    | "reconciliation"
     | "reasonCode"
   >
 >;
 
 const append = async (
-  input: ExecuteControlledToolInput,
+  input: ReceiptPersistenceInput,
   receipt: ToolExecutionReceipt,
   to: ToolReceiptState,
   effectDisposition: ToolReceiptTransition["effectDisposition"],
@@ -296,6 +320,7 @@ const append = async (
     recordedAt: input.facts.now(),
     effectDisposition,
     ...details,
+    ...(receipt.executionFence === undefined ? {} : { fence: receipt.executionFence }),
     redaction: input.redaction ?? DEFAULT_REDACTION,
   };
   const result = await input.journal.append({
@@ -329,6 +354,70 @@ const append = async (
     receipt: result.receipt,
     delivery: project(input.eventSink, transitionEvent(input, result.receipt, transition)),
   };
+};
+
+const fenceIsCurrent = async (
+  journal: ExecuteControlledToolInput["journal"],
+  receipt: ToolExecutionReceipt,
+  fence: ToolReceiptFence,
+): Promise<boolean> => {
+  const current = await journal.verifyFence({ receiptId: receipt.receiptId, fence });
+  return (
+    current.kind === "active" &&
+    current.receipt.executionFence !== undefined &&
+    toolReceiptFencesEqual(current.receipt.executionFence, fence)
+  );
+};
+
+const claimExecutionFence = async (
+  input: Pick<
+    ExecuteControlledToolInput,
+    "facts" | "journal" | "receiptLeaseDurationMs" | "receiptOwner" | "redaction"
+  >,
+  receipt: ToolExecutionReceipt,
+): Promise<
+  | { kind: "claimed"; receipt: ToolExecutionReceipt; fence: ToolReceiptFence }
+  | { kind: "held"; receipt: ToolExecutionReceipt }
+  | { kind: "not-eligible"; receipt: ToolExecutionReceipt }
+  | { kind: "not-found" }
+> => {
+  if (!Number.isSafeInteger(input.receiptLeaseDurationMs) || input.receiptLeaseDurationMs <= 0) {
+    throw new ToolExecutionCoordinationError(
+      "Receipt lease duration must be a positive safe integer.",
+    );
+  }
+  const result = await input.journal.claim({
+    receiptId: receipt.receiptId,
+    expectedRevision: receipt.revision,
+    owner: input.receiptOwner,
+    leaseDurationMs: input.receiptLeaseDurationMs,
+    transitionId: mintedId(input.facts.newEventId(), "Tool receipt ownership transition"),
+    redaction: input.redaction ?? DEFAULT_REDACTION,
+  });
+  if (result.kind === "claimed") {
+    assertReceiptIdentity(result.receipt, {
+      receiptId: receipt.receiptId,
+      runId: receipt.runId,
+      toolCallId: receipt.toolCallId,
+      actionDigest: receipt.actionDigest,
+    });
+    if (
+      result.receipt.executionFence === undefined ||
+      !toolReceiptFencesEqual(result.receipt.executionFence, result.fence)
+    ) {
+      throw new ToolExecutionCoordinationError(
+        "Receipt journal acknowledged an invalid execution fence.",
+      );
+    }
+    return { kind: "claimed", receipt: result.receipt, fence: result.fence };
+  }
+  if (result.kind === "held" || result.kind === "not-eligible") {
+    return { kind: result.kind, receipt: result.receipt };
+  }
+  if (result.kind === "not-found") {
+    return { kind: "not-found" };
+  }
+  return { kind: "held", receipt: result.receipt };
 };
 
 const createExecutionControl = (supplied?: ToolExecutionControl): ToolExecutionControl =>
@@ -452,6 +541,308 @@ const existingOutcome = (receipt: ToolExecutionReceipt): ControlledToolExecution
     return { status: "existing", receipt, eventDelivery: "not-configured" };
   }
   return null;
+};
+
+const unresolvedReconciliation = (
+  observedAt: string,
+  reasonCode: string,
+): ToolReceiptReconciliationResult => ({
+  kind: "unresolved",
+  observedAt,
+  reasonCode,
+});
+
+const MEDIA_TYPE =
+  // eslint-disable-next-line sonarjs/regex-complexity -- mirrors the canonical contract media type syntax
+  /^[A-Za-z0-9!#$&^_.+-]+\/[A-Za-z0-9!#$&^_.+-]+(?:\s*;\s*[A-Za-z0-9!#$&^_.+-]+=(?:[A-Za-z0-9!#$&^_.+-]+|"[^"]*"))*$/;
+const SHA_256 = /^[0-9a-f]{64}$/;
+
+const snapshotRecord = (
+  value: unknown,
+  required: readonly string[],
+  optional: readonly string[] = [],
+): Record<string, unknown> | null => {
+  try {
+    if (typeof value !== "object" || value === null || Array.isArray(value)) return null;
+    const prototype = Object.getPrototypeOf(value);
+    if (prototype !== Object.prototype && prototype !== null) return null;
+    if (Object.getOwnPropertySymbols(value).length > 0) return null;
+    const descriptors = Object.getOwnPropertyDescriptors(value);
+    const keys = Object.keys(descriptors);
+    if (
+      required.some((key) => !(key in descriptors)) ||
+      keys.some((key) => !required.includes(key) && !optional.includes(key))
+    ) {
+      return null;
+    }
+    const snapshot: Record<string, unknown> = {};
+    for (const key of keys) {
+      const descriptor = descriptors[key];
+      if (!descriptor || !("value" in descriptor) || descriptor.enumerable !== true) return null;
+      snapshot[key] = descriptor.value;
+    }
+    return snapshot;
+  } catch {
+    return null;
+  }
+};
+
+const isCanonicalTimestamp = (value: unknown): value is string =>
+  typeof value === "string" &&
+  Number.isFinite(Date.parse(value)) &&
+  new Date(value).toISOString() === value;
+
+const snapshotEvidenceRef = (value: unknown): EvidenceRef | null => {
+  const evidence = snapshotRecord(value, ["evidenceId", "kind", "content"], ["schema"]);
+  if (!evidence) return null;
+  const content = snapshotRecord(evidence.content, [
+    "resourceId",
+    "mediaType",
+    "byteLength",
+    "digest",
+  ]);
+  const digest = snapshotRecord(content?.digest, ["algorithm", "value"]);
+  if (
+    !content ||
+    !digest ||
+    !isCanonicalUuid(evidence.evidenceId) ||
+    typeof evidence.kind !== "string" ||
+    ![
+      "artifact",
+      "checkpoint",
+      "evaluation",
+      "event-payload",
+      "execution-receipt",
+      "other",
+      "tool-arguments",
+      "tool-result",
+    ].includes(evidence.kind) ||
+    !isCanonicalUuid(content.resourceId) ||
+    typeof content.mediaType !== "string" ||
+    !MEDIA_TYPE.test(content.mediaType) ||
+    !Number.isSafeInteger(content.byteLength) ||
+    (content.byteLength as number) < 0 ||
+    digest.algorithm !== "sha-256" ||
+    typeof digest.value !== "string" ||
+    !SHA_256.test(digest.value)
+  ) {
+    return null;
+  }
+  const hasSchema = Object.hasOwn(evidence, "schema");
+  const schemaValue = evidence.schema;
+  let schema: EvidenceRef["schema"];
+  if (hasSchema) {
+    const schemaRecord = snapshotRecord(schemaValue, ["schemaId", "version", "digest"]);
+    const schemaDigest = snapshotRecord(schemaRecord?.digest, ["algorithm", "value"]);
+    if (!schemaRecord || !schemaDigest) return null;
+    const candidate = {
+      schemaId: schemaRecord.schemaId,
+      version: schemaRecord.version,
+      digest: {
+        algorithm: schemaDigest.algorithm,
+        value: schemaDigest.value,
+      },
+    };
+    if (
+      typeof candidate.schemaId !== "string" ||
+      typeof candidate.version !== "string" ||
+      candidate.digest.algorithm !== "sha-256" ||
+      typeof candidate.digest.value !== "string" ||
+      !SHA_256.test(candidate.digest.value) ||
+      !isSchemaRef(candidate)
+    ) {
+      return null;
+    }
+    schema = Object.freeze({ ...candidate, digest: Object.freeze({ ...candidate.digest }) });
+  }
+  return Object.freeze({
+    evidenceId: evidence.evidenceId,
+    kind: evidence.kind,
+    content: Object.freeze({ ...content, digest: Object.freeze({ ...digest }) }),
+    ...(schema === undefined ? {} : { schema }),
+  }) as EvidenceRef;
+};
+
+const SAFE_RECONCILIATION_REASONS = new Set(["provider-outcome-unknown"]);
+
+const isSafeReconciliationReason = (value: unknown): value is string =>
+  typeof value === "string" && SAFE_RECONCILIATION_REASONS.has(value);
+
+const validateReconciliationResult = (
+  value: unknown,
+  fallbackObservedAt: string,
+): ToolReceiptReconciliationResult => {
+  const header = snapshotRecord(
+    value,
+    ["kind", "observedAt"],
+    ["disposition", "evidence", "reasonCode"],
+  );
+  if (!header || typeof header.kind !== "string") {
+    return unresolvedReconciliation(fallbackObservedAt, "reconciliation-result-invalid");
+  }
+  if (header.kind === "known") {
+    const record = snapshotRecord(value, ["kind", "disposition", "observedAt", "evidence"]);
+    if (
+      !record ||
+      typeof record.disposition !== "string" ||
+      !["applied", "partial", "none"].includes(record.disposition) ||
+      !isCanonicalTimestamp(record.observedAt)
+    ) {
+      return unresolvedReconciliation(fallbackObservedAt, "reconciliation-result-invalid");
+    }
+    const evidence = snapshotEvidenceRef(record.evidence);
+    if (evidence) {
+      return Object.freeze({
+        kind: "known",
+        disposition: record.disposition,
+        observedAt: record.observedAt,
+        evidence,
+      }) as ToolReceiptReconciliationResult;
+    }
+  }
+  if (header.kind === "unresolved") {
+    const record = snapshotRecord(value, ["kind", "observedAt", "reasonCode"], ["evidence"]);
+    if (
+      !record ||
+      !isCanonicalTimestamp(record.observedAt) ||
+      !isSafeReconciliationReason(record.reasonCode)
+    ) {
+      return unresolvedReconciliation(fallbackObservedAt, "reconciliation-result-invalid");
+    }
+    if (!Object.hasOwn(record, "evidence")) {
+      return Object.freeze({
+        kind: "unresolved",
+        observedAt: record.observedAt,
+        reasonCode: record.reasonCode,
+      });
+    }
+    const evidence = snapshotEvidenceRef(record.evidence);
+    if (evidence) {
+      return Object.freeze({
+        kind: "unresolved",
+        observedAt: record.observedAt,
+        reasonCode: record.reasonCode,
+        evidence,
+      });
+    }
+  }
+  return unresolvedReconciliation(fallbackObservedAt, "reconciliation-result-invalid");
+};
+
+/**
+ * Reconcile an ambiguous durable effect without ever invoking its tool again.
+ * A journal claim is required even for recovery so an expired worker cannot
+ * overwrite a newer owner's evidence or outcome.
+ */
+export const reconcileControlledToolReceipt = async (
+  input: ReconcileControlledToolReceiptInput,
+): Promise<ControlledToolReceiptReconciliationOutcome> => {
+  const loaded = await input.journal.load({ receiptId: input.receiptId });
+  if (loaded === null) {
+    return { status: "not-found", receiptId: input.receiptId };
+  }
+  if (loaded.state !== "started" && loaded.state !== "indeterminate") {
+    return { status: "not-eligible", receipt: loaded, eventDelivery: "not-configured" };
+  }
+
+  const claim = await claimExecutionFence(input, loaded);
+  if (claim.kind === "not-found") {
+    return { status: "not-found", receiptId: input.receiptId };
+  }
+  if (claim.kind === "held") {
+    return { status: "held", receipt: claim.receipt, eventDelivery: "not-configured" };
+  }
+  if (claim.kind === "not-eligible") {
+    return { status: "not-eligible", receipt: claim.receipt, eventDelivery: "not-configured" };
+  }
+
+  let receipt = claim.receipt;
+  let delivery: EventDelivery = "not-configured";
+  if (receipt.state === "started") {
+    const indeterminate = await append(input, receipt, "indeterminate", "unknown", {
+      reasonCode: "recovery-owner-observed-started",
+    });
+    receipt = indeterminate.receipt;
+    delivery = mergeDelivery(delivery, indeterminate.delivery);
+  }
+
+  const request = {
+    reconciliationId: mintedId(input.facts.newEventId(), "Tool receipt reconciliation"),
+    receiptId: receipt.receiptId,
+    actionDigest: receipt.actionDigest,
+    key: receipt.key,
+    effectClass: receipt.effectClass,
+    requestedAt: input.facts.now(),
+    fence: claim.fence,
+  };
+  const requestedRecord: ToolReceiptReconciliationRecord = { request };
+  const requested = await append(input, receipt, "indeterminate", "unknown", {
+    reasonCode: "reconciliation-requested",
+    reconciliation: requestedRecord,
+  });
+  receipt = requested.receipt;
+  delivery = mergeDelivery(delivery, requested.delivery);
+
+  if (!(await fenceIsCurrent(input.journal, receipt, claim.fence))) {
+    return { status: "indeterminate", receipt, eventDelivery: delivery };
+  }
+
+  let externalResult: unknown;
+  try {
+    externalResult = await input.reconciler.reconcile(request);
+  } catch {
+    externalResult = undefined;
+  }
+  const result = validateReconciliationResult(externalResult, input.facts.now());
+  const reconciliation: ToolReceiptReconciliationRecord = { request, result };
+  try {
+    const recorded = await append(input, receipt, "indeterminate", "unknown", {
+      reasonCode: "reconciliation-result-recorded",
+      authorizedEvidence: result.evidence,
+      reconciliation,
+    });
+    receipt = recorded.receipt;
+    delivery = mergeDelivery(delivery, recorded.delivery);
+  } catch {
+    return { status: "indeterminate", receipt, eventDelivery: delivery };
+  }
+  if (result.kind === "known") {
+    const resolution =
+      result.disposition === "applied"
+        ? { state: "succeeded" as const, disposition: "applied" as const }
+        : {
+            state: "failed_after_start" as const,
+            disposition: result.disposition,
+          };
+    try {
+      const settled = await append(input, receipt, resolution.state, resolution.disposition, {
+        reasonCode: `reconciliation-known-${result.disposition}`,
+        authorizedEvidence: result.evidence,
+        reconciliation,
+      });
+      return {
+        status: "reconciled",
+        receipt: settled.receipt,
+        eventDelivery: mergeDelivery(delivery, settled.delivery),
+      };
+    } catch {
+      return { status: "indeterminate", receipt, eventDelivery: delivery };
+    }
+  }
+  try {
+    const unresolved = await append(input, receipt, "reconciliation_required", "unknown", {
+      reasonCode: result.reasonCode,
+      authorizedEvidence: result.evidence,
+      reconciliation,
+    });
+    return {
+      status: "reconciliation-required",
+      receipt: unresolved.receipt,
+      eventDelivery: mergeDelivery(delivery, unresolved.delivery),
+    };
+  } catch {
+    return { status: "indeterminate", receipt, eventDelivery: delivery };
+  }
 };
 
 export const executeControlledTool = async (
@@ -744,6 +1135,32 @@ export const executeControlledTool = async (
     throw new ToolExecutionCoordinationError("Concurrency gate returned a mismatched lease.");
   }
 
+  const executionClaim = await claimExecutionFence(input, receipt);
+  if (executionClaim.kind === "not-found") {
+    await lease.release();
+    throw new ToolExecutionCoordinationError(
+      "Receipt disappeared before execution ownership was claimed.",
+    );
+  }
+  if (executionClaim.kind === "held") {
+    await lease.release();
+    return {
+      status: "held",
+      receipt: executionClaim.receipt,
+      eventDelivery: delivery,
+    };
+  }
+  if (executionClaim.kind === "not-eligible") {
+    await lease.release();
+    return {
+      status: "existing",
+      receipt: executionClaim.receipt,
+      eventDelivery: delivery,
+    };
+  }
+  receipt = executionClaim.receipt;
+  const executionFence = executionClaim.fence;
+
   let cancellationObserved = control.isCancellationRequested();
   let acceptingCancellation = true;
   let executionStarted = false;
@@ -839,8 +1256,24 @@ export const executeControlledTool = async (
       };
     }
 
+    if (!(await fenceIsCurrent(input.journal, receipt, executionFence))) {
+      return {
+        status: "indeterminate",
+        receipt,
+        eventDelivery: delivery,
+      };
+    }
+
     try {
-      const result = await input.tool.execute({ call: input.call, control });
+      const result = await input.tool.execute({
+        call: input.call,
+        control,
+        receiptFence: Object.freeze({
+          receiptId: receipt.receiptId,
+          ownerId: executionFence.owner.ownerId,
+          token: executionFence.token,
+        }),
+      });
       stopCancellationObservation();
       await cancellationPersistence;
       if (result.toolCallId !== input.call.toolCallId) {
@@ -888,23 +1321,29 @@ export const executeControlledTool = async (
     } catch {
       stopCancellationObservation();
       await cancellationPersistence;
-      const indeterminate = await append(
-        input,
-        receipt,
-        "indeterminate",
-        isMeaningful ? "unknown" : "none",
-        {
-          cancellation: cancellationObserved ? cancellationRef(input, receipt) : undefined,
-          reasonCode: cancellationObserved
-            ? "cancellation-requested-execution-indeterminate"
-            : "executor-threw-after-start",
-        },
-      );
-      return {
-        status: "indeterminate",
-        receipt: indeterminate.receipt,
-        eventDelivery: mergeDelivery(delivery, indeterminate.delivery),
-      };
+      try {
+        const indeterminate = await append(
+          input,
+          receipt,
+          "indeterminate",
+          isMeaningful ? "unknown" : "none",
+          {
+            cancellation: cancellationObserved ? cancellationRef(input, receipt) : undefined,
+            reasonCode: cancellationObserved
+              ? "cancellation-requested-execution-indeterminate"
+              : "executor-threw-after-start",
+          },
+        );
+        return {
+          status: "indeterminate",
+          receipt: indeterminate.receipt,
+          eventDelivery: mergeDelivery(delivery, indeterminate.delivery),
+        };
+      } catch {
+        // The durable started record is still authoritative. A lost/expired
+        // fence cannot be overwritten by this worker; recovery must reconcile.
+        return { status: "indeterminate", receipt, eventDelivery: delivery };
+      }
     }
   } finally {
     stopCancellationObservation();

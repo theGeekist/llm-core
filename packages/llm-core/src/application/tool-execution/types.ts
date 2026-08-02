@@ -12,6 +12,8 @@ import type {
   EventSink,
   RedactionMetadata,
   ToolExecutionReceipt,
+  ToolReceiptOwner,
+  ToolReceiptReconciler,
   ToolReceiptJournal,
 } from "../../features/evidence/public";
 import type {
@@ -69,12 +71,28 @@ export interface ExecuteControlledToolInput {
   policy?: PolicyEvaluationPort;
   approval?: ToolApprovalPort;
   journal: ToolReceiptJournal;
+  /** One process/worker incarnation; journal fencing makes it durable authority. */
+  receiptOwner: ToolReceiptOwner;
+  /** Positive duration evaluated by the receipt journal's authoritative clock. */
+  receiptLeaseDurationMs: number;
   concurrency: ConcurrencyGate;
   facts: ToolExecutionFactsPort;
   eventSink?: EventSink;
   executionControl?: ToolExecutionControl;
   redaction?: RedactionMetadata;
   specification?: ControlledToolSpecificationAuthority;
+}
+
+/** Explicit recovery entrypoint for a durable post-start receipt. */
+export interface ReconcileControlledToolReceiptInput {
+  receiptId: EvidenceId;
+  journal: ToolReceiptJournal;
+  receiptOwner: ToolReceiptOwner;
+  receiptLeaseDurationMs: number;
+  reconciler: ToolReceiptReconciler;
+  facts: ToolExecutionFactsPort;
+  eventSink?: EventSink;
+  redaction?: RedactionMetadata;
 }
 
 export type EventDelivery = "failed" | "not-configured" | "scheduled";
@@ -94,12 +112,18 @@ export type ControlledToolExecutionOutcome =
       result: Extract<ToolExecutionResult, { status: "failed" }>;
     })
   | (ReceiptOutcome & {
-      status: "awaiting-approval" | "cancelled" | "denied" | "existing" | "indeterminate";
+      status: "awaiting-approval" | "cancelled" | "denied" | "existing" | "held" | "indeterminate";
     })
   | {
       status: "conflict";
       existingReceiptId: EvidenceId;
     };
+
+export type ControlledToolReceiptReconciliationOutcome =
+  | (ReceiptOutcome & { status: "reconciled" })
+  | (ReceiptOutcome & { status: "reconciliation-required" })
+  | (ReceiptOutcome & { status: "held" | "not-eligible" | "indeterminate" })
+  | { status: "not-found"; receiptId: EvidenceId };
 
 export class ToolExecutionCoordinationError extends Error {
   constructor(message: string) {
