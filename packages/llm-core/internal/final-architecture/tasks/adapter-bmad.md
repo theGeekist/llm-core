@@ -3,16 +3,16 @@ architecture_version: 2
 id: adapter-bmad
 title: BMAD file and CLI adapter
 stage: adapters
-status: proposed
+status: in_progress
 priority: normal
 preferred_owner_kind: codex
-owner:
-owner_kind:
-lease_started_at:
-lease_expires_at:
-base_sha:
-branch:
-worktree:
+owner: codex-root
+owner_kind: coordinator
+lease_started_at: 2026-08-02T06:07:24.000Z
+lease_expires_at: 2026-08-02T14:07:24.000Z
+base_sha: 9920425
+branch: main
+worktree: /Users/jasonnathan/Repos/@theGeekist/llm-core
 depends_on:
   - specification-api
 decision_dependencies:
@@ -26,7 +26,7 @@ read_scope:
   - packages/llm-core/src/specifications/**
   - /Users/jasonnathan/Repos/aifsd-agent-framework-research/profiles/bmad-method.md
 review_owner: coordinator
-updated_at: 2026-07-30
+updated_at: 2026-08-02
 ---
 
 # adapter-bmad — BMAD file and CLI adapter
@@ -68,8 +68,19 @@ bun run lint
 
 ## Work log
 
-Not started.
+- 2026-08-02 — User explicitly authorized parallel adapter implementation.
+  `codex-root` owns the task lease and delegates research/design while retaining
+  the adapter source/test integration; package publication remains out of scope.
+- 2026-08-02 — Implemented the uncommitted BMAD 6.10.0 file/CLI observation
+  slice in `src/adapters/bmad/` with focused fixtures in
+  `tests/adapters/bmad/`. Stable artifact and append-only memory-record
+  identities are preserved; `partial`, `blocked`, and `done` remain distinct
+  source outcomes. The adapter does not parse arbitrary frontmatter, restore
+  runtime state, write back, or claim a comprehensive runtime schema. Focused
+  tests, package/test typechecks, lint, and package formatting pass.
 
 ## Handoff
 
-Pending.
+Uncommitted implementation is ready for coordinator review. No package,
+build, documentation, root-export, or packed-consumer file changed. Conditional
+publication remains the separate `adapter-bmad-release` task.

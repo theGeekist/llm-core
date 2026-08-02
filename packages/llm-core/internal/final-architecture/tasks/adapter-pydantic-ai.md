@@ -3,16 +3,16 @@ architecture_version: 2
 id: adapter-pydantic-ai
 title: PydanticAI AgentSpec compilation adapter
 stage: adapters
-status: proposed
+status: in_progress
 priority: normal
 preferred_owner_kind: codex
-owner:
-owner_kind:
-lease_started_at:
-lease_expires_at:
-base_sha:
-branch:
-worktree:
+owner: codex-root
+owner_kind: coordinator
+lease_started_at: 2026-08-02T06:07:24.000Z
+lease_expires_at: 2026-08-02T14:07:24.000Z
+base_sha: 9920425
+branch: main
+worktree: /Users/jasonnathan/Repos/@theGeekist/llm-core
 depends_on:
   - specification-api
 decision_dependencies:
@@ -35,7 +35,7 @@ read_scope:
   - packages/llm-core/src/features/model/**
   - /Users/jasonnathan/Repos/aifsd-agent-framework-research/profiles/pydantic-ai.md
 review_owner: coordinator
-updated_at: 2026-07-30
+updated_at: 2026-08-02
 ---
 
 # adapter-pydantic-ai — PydanticAI AgentSpec compilation adapter
@@ -97,8 +97,23 @@ bun run lint
 
 ## Work log
 
-Not started.
+- 2026-08-02 — User explicitly authorized parallel adapter implementation.
+  `codex-root` owns the task lease and delegates only the adapter source/test
+  paths to a child worker; package publication remains out of scope.
+- 2026-08-02 — Implemented the uncommitted PydanticAI `AgentSpec` 2.19.0
+  qualification slice in `src/adapters/pydantic-ai-spec/` with focused
+  fixtures in `tests/adapters/pydantic-ai-spec/`. Compilation takes the exact
+  review-bound accepted decision through the public specification facade, which
+  retains the registered handle and revalidates source, policy, and expiry
+  authority before projection. Controlled effects reject; unsupported
+  declarative semantics are reported. Native preparation remains application
+  owned: the adapter deliberately does not expose a raw `AgentSpec` as runtime
+  authority. Focused and conformance tests, package/test typechecks, lint, and
+  package formatting pass (the pre-existing optional live PydanticAI test
+  remains skipped).
 
 ## Handoff
 
-Pending.
+Uncommitted implementation is ready for coordinator review. No package,
+build, documentation, root-export, or packed-consumer file changed. Conditional
+publication remains the separate `adapter-pydantic-ai-release` task.
