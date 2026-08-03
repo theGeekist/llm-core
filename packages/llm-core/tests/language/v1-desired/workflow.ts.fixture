@@ -1,0 +1,8 @@
+// Historical ADR-012 desired-language evidence, superseded by ADR-016.
+import { defineWorkflow } from "@geekist/llm-core";
+
+const publishing = defineWorkflow({
+  steps: [draft, review, publish],
+});
+
+const result = await publishing.run(initialState);

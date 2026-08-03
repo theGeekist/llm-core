@@ -1,7 +1,7 @@
 # ADR-014 — Integration Runtime, Cost Intelligence and Client Applications
 
 Architecture version: v2
-Status: accepted
+Status: accepted; client-product priority superseded by ADR-016
 Date: 2026-08-01
 Owners: architecture coordinator
 Affected tasks: integrations-connector-characterization, integrations-connector-contracts, integrations-authorization-lifecycle, cost-facts, cost-budget-control, cost-budget-enforcement, model-routing-qualification, applications-client-characterization, applications-client-contract, applications-client-platform-qualification, applications-client-subpath-release, applications-desktop, applications-mobile, adapters-protocol-qualification

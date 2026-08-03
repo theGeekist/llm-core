@@ -1,0 +1,10 @@
+// Historical ADR-012 desired-language evidence, superseded by ADR-016.
+import { defineTool } from "@geekist/llm-core";
+
+const search = defineTool({
+  name: "search",
+  description: "Search the knowledge base.",
+  input: searchInput,
+  effect: "read-only",
+  execute: async ({ query }) => knowledge.search(query),
+});

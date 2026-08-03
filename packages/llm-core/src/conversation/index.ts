@@ -1,8 +1,12 @@
-export { createConversation } from "../application/interaction/conversation";
+export { registerConversationSnapshot } from "../application/interaction/registration";
 export type {
-  Conversation,
-  ConversationConfig,
   ConversationEvent,
-  ConversationResult,
-  ConversationRun,
+  ConversationRunRecord,
+  ConversationSnapshot,
+  ConversationState,
+  ConversationStore,
+  ConversationStoreLoadRequest,
+  ConversationStoreReservation,
+  ConversationStoreReservationRequest,
+  ConversationStoreSaveRequest,
 } from "../application/interaction/types";

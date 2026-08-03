@@ -9,7 +9,7 @@ import {
   type StepId,
   type ToolCallId,
 } from "#contracts";
-import { guardResumeToolExecution } from "../../../src/application/agent/resume-effects";
+import { guardResumeToolExecution } from "../../support/local-agent/resume-effects";
 import type { ExecuteControlledToolInput } from "../../../src/application/tool-execution/public";
 import {
   actionDigest,

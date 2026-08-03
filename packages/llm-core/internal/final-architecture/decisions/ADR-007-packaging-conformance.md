@@ -1,7 +1,7 @@
 # ADR-007 — AI SDK 7 Packaging, Conformance and Second Runtime
 
 Architecture version: v2
-Status: accepted
+Status: accepted; reference-runner clause superseded by ADR-016
 Date: 2026-07-29
 Owners: architecture coordinator
 Affected tasks: core-ai-sdk-packaging, core-ai-sdk-adapter, capabilities-context-artifacts, capabilities-evaluation, capabilities-runtime-conformance
@@ -22,8 +22,10 @@ that neutral contracts are not an AI SDK facade.
   and evidence.
 - Define conformance levels for model/content, tools/control, events, state and
   runner behavior.
-- Use the local runner plus one Python runtime adapter as the first two
-  reference implementations.
+- Use the local runner as private conformance evidence and qualified external
+  runtime adapters as the supported reference implementations. ADR-016
+  supersedes the original treatment of the local runner as a runtime
+  implementation in the supported architecture.
 - The architecture coordinator selects the first Python runtime when capabilities-runtime-conformance is
   made ready, using the conformance requirements then in force.
 - Record framework/package versions and known semantic loss with every support

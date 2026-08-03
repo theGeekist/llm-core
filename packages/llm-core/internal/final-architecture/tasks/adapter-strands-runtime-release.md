@@ -14,12 +14,14 @@ base_sha:
 branch:
 worktree:
 depends_on:
+  - architecture-runtime-ownership-correction
   - architecture-source-layout-normalization
   - adapter-strands-runtime
 decision_dependencies:
   - ADR-007
   - ADR-013
   - ADR-015
+  - ADR-016
 conflicts_with:
   - adapter-openspec-release
   - adapter-pydantic-ai-release
@@ -54,7 +56,7 @@ read_scope:
   - packages/llm-core/tests/adapters/runtimes/strands/**
   - packages/llm-core/tests/conformance/strands/**
 review_owner: coordinator
-updated_at: 2026-08-03
+updated_at: 2026-08-04
 ---
 
 # adapter-strands-runtime-release — Publish qualified Strands runtime adapter
@@ -114,7 +116,8 @@ bun run release:qualify:llm-core
 
 ## Work log
 
-Planned from ADR-013; not claimed.
+Planned from ADR-013; publication boundary reconciled with ADR-016; not
+claimed.
 
 ## Handoff
 

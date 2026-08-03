@@ -6,6 +6,13 @@ export {
   createSpecificationDecisionRecord,
   createSpecificationSourceSnapshot,
 } from "./factory";
+export { createPortableIntegrationReference } from "./portable-target";
+export type {
+  PortableIntegrationReference,
+  PortableIntegrationReferenceInput,
+  PortableSpecificationTarget,
+} from "./portable-target";
+export type * from "./semantic-types";
 export type {
   ConversionFidelity,
   ConversionIssue,
@@ -25,10 +32,14 @@ export type {
   SpecificationDecisionRecordId,
   SpecificationDecisionSummary,
   SpecificationDecisionValidity,
+  SpecificationDocumentNodeKind,
   SpecificationEvidenceBinding,
   SpecificationFormat,
   SpecificationPolicyVersion,
   SpecificationQuestion,
+  SpecificationNodeKind,
+  SpecificationNode,
+  SpecificationSemanticNodeKind,
   SpecificationSourceAuthority,
   SpecificationSourceBinding,
   SpecificationSourceDocument,

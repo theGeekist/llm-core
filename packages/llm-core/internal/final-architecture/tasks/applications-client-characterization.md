@@ -3,7 +3,9 @@ architecture_version: 2
 id: applications-client-characterization
 title: Characterize desktop and mobile client journeys
 stage: applications
-status: proposed
+status: cancelled
+replaced_by:
+  - aifsd-delivery-characterization
 priority: normal
 preferred_owner_kind: codex
 owner:
@@ -24,6 +26,7 @@ decision_dependencies:
   - ADR-006
   - ADR-014
   - ADR-015
+  - ADR-016
 conflicts_with:
   - adapter-strands-runtime-release
   - adapter-strands-runtime
@@ -48,10 +51,13 @@ read_scope:
   - packages/llm-core/src/workflow/runtime.ts
   - packages/llm-core/package.json
 review_owner: coordinator
-updated_at: 2026-08-03
+updated_at: 2026-08-04
 ---
 
 # applications-client-characterization — Characterize desktop and mobile client journeys
+
+Cancelled by ADR-016 before implementation. Operator-client characterization
+may be proposed again only after delivery and runtime-substitution evidence.
 
 ## Objective
 

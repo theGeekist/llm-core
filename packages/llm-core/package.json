@@ -2,7 +2,7 @@
   "name": "@geekist/llm-core",
   "version": "2.0.0",
   "license": "Apache-2.0",
-  "description": "A compact, vendor-neutral runtime for building and shipping LLM workflows (agents, RAG, ingest, HITL) with deterministic structure, strong typing, and test-first semantics.",
+  "description": "A vendor-neutral contract, conformance, authority, and evidence kernel for AI-first software delivery and agentic runtime integrations.",
   "keywords": [
     "typescript",
     "javascript",
@@ -213,11 +213,6 @@
       "types": "./dist/types/src/workflow/index.d.ts",
       "import": "./dist/esm/src/workflow/index.js",
       "default": "./dist/esm/src/workflow/index.js"
-    },
-    "./workflow/runtime": {
-      "types": "./dist/types/src/workflow/runtime.d.ts",
-      "import": "./dist/esm/src/workflow/runtime.js",
-      "default": "./dist/esm/src/workflow/runtime.js"
     },
     "./conversation": {
       "types": "./dist/types/src/conversation/index.d.ts",

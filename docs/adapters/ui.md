@@ -49,8 +49,9 @@ completion, or error signals. `createNluxChatAdapter` goes one step further: it
 starts an `InteractionSession` for NLUX batch and streaming calls, then
 delivers the projected text through the NLUX observer contract.
 
-`InteractionSession` here is the explicit extension API. Common application
-code uses `createConversation` and consumes `ConversationEvent` directly.
+`InteractionSession` is the explicit application API. The host injects a
+qualified `AgentRunner` and consumes projected `ConversationEvent` values; no
+UI adapter or convenience facade selects a runtime.
 
 ## Authority stays behind the projection
 

@@ -3,6 +3,8 @@ export {
   loadAgentSkills,
   registerAgentSkill,
 } from "../features/agent/public";
+export * from "../application/capability-bindings/public";
+export * from "../composition/capability-bindings/public";
 export type {
   AgentCancellationAcknowledgement,
   AgentCancellationRequest,
@@ -31,6 +33,3 @@ export type {
   SkillId,
   SkillScope,
 } from "../features/agent/public";
-export * from "../application/agent/public";
-export * from "../application/capability-bindings/public";
-export * from "../composition/capability-bindings/public";

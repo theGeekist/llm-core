@@ -33,7 +33,6 @@ const expectedSubpaths = [
   "./agent",
   "./agent/runtime",
   "./workflow",
-  "./workflow/runtime",
   "./conversation",
   "./interaction",
   "./retrieval",
@@ -220,16 +219,14 @@ try {
   writeFileSync(
     join(consumer, "consumer.ts"),
     [
-      'import { compileSpecification, createAgent, createConversation, defineTool, defineWorkflow, loadSpecification, reviewSpecification } from "@geekist/llm-core";',
-      'import type { Agent, AgentConfig, AgentEvent, AgentResult, AgentRun, CompiledSpecification, Conversation, ConversationConfig, ConversationEvent, ConversationResult, ConversationRun, Specification, SpecificationDecision, SpecificationReviewView, Tool, ToolCall, ToolConfig, ToolExecutionFailure, ToolExecutionResult, Workflow, WorkflowConfig, WorkflowPause, WorkflowResult, WorkflowStep, WorkflowStepResult } from "@geekist/llm-core";',
-      'import { createLocalAgentRunner, createCapabilityBindingCatalog } from "@geekist/llm-core/agent/runtime";',
-      'import type { AgentDefinition, PreparedAgentDefinition, AgentRunner, AgentRunnerProfile, AgentStartRequest } from "@geekist/llm-core/agent/runtime";',
+      'import { compileSpecification, defineTool, loadSpecification, reviewSpecification } from "@geekist/llm-core";',
+      'import type { AgentDefinition, AgentEvent, AgentResult, CompiledSpecification, ConversationEvent, ConversationSnapshot, ConversationState, ConversationStore, Specification, SpecificationDecision, SpecificationReviewView, Tool, ToolCall, ToolConfig, ToolExecutionFailure, ToolExecutionResult, WorkflowExecutionPlan } from "@geekist/llm-core";',
+      'import type { PreparedAgentDefinition, AgentRunner, AgentRunnerProfile, AgentStartRequest } from "@geekist/llm-core/agent/runtime";',
       'import { createExecutableTool } from "@geekist/llm-core/tools/runtime";',
       'import type { ExecutableTool, ToolDefinition } from "@geekist/llm-core/tools/runtime";',
       'import { executeControlledTool } from "@geekist/llm-core/tools/runtime";',
       'import type { ExecuteControlledToolInput, ControlledToolExecutionOutcome } from "@geekist/llm-core/tools/runtime";',
-      'import type { ConversationStore, ConversationSnapshot, InteractionSession, InteractionSessionIdentityPort } from "@geekist/llm-core/interaction";',
-      'import type { ResumeInterventionWorkflowInput, ControlledWorkflowResult } from "@geekist/llm-core/workflow/runtime";',
+      'import type { InteractionSession, InteractionSessionIdentityPort } from "@geekist/llm-core/interaction";',
       'import { createContextEntry, selectContext } from "@geekist/llm-core/context";',
       'import type { ContextEntry, ContextSelection } from "@geekist/llm-core/context";',
       'import { createArtifact, createArtifactRef } from "@geekist/llm-core/artifacts";',
@@ -246,13 +243,13 @@ try {
         .map(
           (specifier, index) => `import * as surface${index} from ${JSON.stringify(specifier)};`,
         ),
-      "void compileSpecification; void createAgent; void createConversation; void defineTool; void defineWorkflow; void loadSpecification; void reviewSpecification;",
-      "void createLocalAgentRunner; void createCapabilityBindingCatalog; void createExecutableTool;",
+      "void compileSpecification; void defineTool; void loadSpecification; void reviewSpecification;",
+      "void createExecutableTool;",
       "void executeControlledTool;",
       "void createContextEntry; void selectContext;",
       "void createArtifact; void createArtifactRef;",
       "void createEvaluationCase; void createEvaluationComposition; void evaluationEvaluatorId;",
-      "type RootTypes = [Agent, AgentConfig, AgentRun, AgentEvent, AgentResult, Tool, ToolConfig, ToolCall, ToolExecutionResult, ToolExecutionFailure, Workflow<unknown, unknown>, WorkflowConfig<unknown, unknown>, WorkflowStep<unknown, unknown, unknown>, WorkflowStepResult<unknown, unknown>, WorkflowResult<unknown, unknown>, WorkflowPause<unknown, unknown>, Conversation, ConversationConfig, ConversationRun, ConversationEvent, ConversationResult];",
+      "type RootTypes = [AgentDefinition, AgentEvent, AgentResult, Tool, ToolConfig, ToolCall, ToolExecutionResult, ToolExecutionFailure, WorkflowExecutionPlan, ConversationEvent, ConversationSnapshot, ConversationState, ConversationStore];",
       "declare const rootTypes: RootTypes; void rootTypes;",
       "type SpecificationTypes = [Specification, SpecificationDecision, CompiledSpecification<unknown>, SpecificationPolicy, SpecificationReviewView, SpecificationReviewItem, SpecificationReviewRelationship, SpecificationScopeId, SpecificationSourceSnapshot, SpecificationAdapterSupport, ConversionReport];",
       "declare const specificationTypes: SpecificationTypes; void specificationTypes;",
@@ -262,8 +259,6 @@ try {
       "declare const controlTypes: ControlTypes; void controlTypes;",
       "type InteractionTypes = [ConversationStore, ConversationSnapshot, InteractionSession, InteractionSessionIdentityPort];",
       "declare const interactionTypes: InteractionTypes; void interactionTypes;",
-      "type WorkflowTypes = [ResumeInterventionWorkflowInput, ControlledWorkflowResult];",
-      "declare const workflowTypes: WorkflowTypes; void workflowTypes;",
       "type ContextArtifactTypes = [ContextEntry, ContextSelection, Artifact, ArtifactRef];",
       "declare const contextArtifactTypes: ContextArtifactTypes; void contextArtifactTypes;",
       "type EvaluationTypes = [EvaluationCase, EvaluationComposition, EvaluationResult];",
@@ -301,5 +296,5 @@ try {
 }
 
 console.log(
-  "Verified 30 ESM-only language-rollout exports from an isolated packed runtime and declaration consumer.",
+  "Verified 29 ESM-only ADR-016 exports from an isolated packed runtime and declaration consumer.",
 );

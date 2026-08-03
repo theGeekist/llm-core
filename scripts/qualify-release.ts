@@ -45,7 +45,6 @@ const sealedUnconditionalSurfaces = new Set([
   "./agent",
   "./agent/runtime",
   "./workflow",
-  "./workflow/runtime",
   "./conversation",
   "./interaction",
   "./retrieval",

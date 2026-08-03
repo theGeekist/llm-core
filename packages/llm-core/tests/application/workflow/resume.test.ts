@@ -27,7 +27,7 @@ import {
   type WorkflowCheckpointCommit,
   type WorkflowDecisionToken,
   type WorkflowResumeJournal,
-} from "../../../src/application/workflow/runtime-public";
+} from "../../support/workflow/runtime-public";
 import {
   ACTION_DIGEST,
   COMPATIBILITY,

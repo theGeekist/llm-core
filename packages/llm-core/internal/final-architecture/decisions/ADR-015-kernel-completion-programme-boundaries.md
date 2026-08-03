@@ -1,7 +1,7 @@
 # ADR-015 — Kernel Completion and Continuing Programme Boundaries
 
 Architecture version: v2
-Status: accepted
+Status: accepted; runtime and product priority clauses superseded by ADR-016
 Date: 2026-08-02
 Owners: architecture coordinator
 Affected tasks: all post-kernel remediation and continuing-programme tasks
@@ -100,6 +100,12 @@ Architecture v2 has a stable completion point. Continuing work can add evidence,
 ecosystem support and products without widening the kernel by inertia. Shared
 contracts are earned, publication is a maintenance commitment, and package
 splits remain evidence-driven.
+
+ADR-016 later removed the runnable local Agent, Workflow and Conversation
+fronts from that completion surface and placed real runtime adapters plus an
+AIFSD delivery slice ahead of desktop/mobile product foundations. This
+correction narrows ownership; it does not invalidate the conformance,
+publication or evidence-before-abstraction rules above.
 
 ## Rejected alternatives
 

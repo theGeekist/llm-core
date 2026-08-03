@@ -14,7 +14,7 @@ import {
   createLocalAgentRunner,
   createModelToolAgentProgram,
   type DeclaredSubagentBinding,
-} from "../../../src/application/agent/public";
+} from "../../support/local-agent/public";
 import type { Model, ModelRequest } from "../../../src/features/model/public";
 import type { AgentRunner, PreparedAgentDefinition } from "../../../src/features/agent/public";
 import type { ConversationStore, ConversationMessage } from "../../../src/features/memory/public";

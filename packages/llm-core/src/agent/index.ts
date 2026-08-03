@@ -1,3 +1,12 @@
-export { createAgent } from "./facade";
-export type { Agent, AgentConfig, ExecutionPlan } from "./facade";
-export type { AgentEvent, AgentResult, AgentRun } from "../features/agent/public";
+export type {
+  AgentDefinition,
+  AgentEffectRequirement,
+  AgentEvent,
+  AgentEventFactsByKind,
+  AgentEventKind,
+  AgentResult,
+  AgentRunTerminalStatus,
+  AgentSkillRef,
+  SkillId,
+  SkillScope,
+} from "../features/agent/public";

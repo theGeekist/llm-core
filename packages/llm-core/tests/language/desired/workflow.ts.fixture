@@ -1,7 +1,0 @@
-import { defineWorkflow } from "@geekist/llm-core";
-
-const publishing = defineWorkflow({
-  steps: [draft, review, publish],
-});
-
-const result = await publishing.run(initialState);

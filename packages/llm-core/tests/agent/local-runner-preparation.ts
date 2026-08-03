@@ -1,6 +1,6 @@
 import { contractVersion } from "#contracts";
 import { isPromiseLike } from "#shared/maybe";
-import { createLocalAgentRunner } from "../../src/application/agent/public";
+import { createLocalAgentRunner } from "../support/local-agent/public";
 import type { AgentDefinition, PreparedAgentDefinition } from "../../src/features/agent/public";
 
 const validatingRunner = createLocalAgentRunner({

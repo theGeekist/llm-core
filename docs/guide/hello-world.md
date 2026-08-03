@@ -1,20 +1,19 @@
 # Get started
 
-The smallest complete agent run has three parts:
+Begin with a portable contract or specification, then choose the integration
+that owns execution. `llm-core` deliberately has no hello-world local agent
+loop.
 
-1. Choose a model.
-2. Create an agent with instructions and optional tools.
-3. Run it directly or start a live run.
+<<< @/snippets/v2/agent-capabilities.ts
 
-<<< @/snippets/v2/local-agent.ts
+The `runner` in this example is supplied by a qualified runtime integration.
+It may represent LangGraph, PydanticAI, Strands, or another supported runtime.
+Its native session, graph, checkpoint, and workspace state do not become
+portable merely because it implements `AgentRunner`.
 
-`createAgent` hides preparation and invocation identity. Runtime implementers
-who need explicit ports, portable definitions, or resume support use the
-qualified `/agent/runtime` extension.
+For specification-driven work, load and review external intent, then compile it
+through an explicit adapter target. Compilation does not execute the result.
 
-The example is read-only. Meaningful tool effects must pass through the
-controlled tool-execution path, where policy, approval, execution, and receipt
-recording remain distinct.
-
-Next, read [Core concepts](/guide/core-concepts) and
-[Package exports](/reference/package-exports).
+Continue with [agents and runners](/guide/agent),
+[workflow intent](/guide/workflow), or the
+[architecture boundary](/guide/core-concepts).

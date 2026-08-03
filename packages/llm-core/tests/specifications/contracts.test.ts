@@ -116,6 +116,113 @@ const proposal = (): ProposedSpecificationChange =>
   }) as unknown as ProposedSpecificationChange;
 
 describe("specification contracts", () => {
+  test("validates the complete typed semantic waist and its node references", () => {
+    const binding = { sourceId, documentId: "root.document" };
+    const nodes = [
+      {
+        nodeId: "capability.answer",
+        kind: "capability",
+        title: "Answer questions",
+        source: binding,
+        content: { capabilityId: "answer", mode: "required" },
+      },
+      {
+        nodeId: "context.session",
+        kind: "context",
+        title: "Session context",
+        source: binding,
+        content: { lifetime: "session", schema: { type: "object" } },
+      },
+      {
+        nodeId: "tool.lookup",
+        kind: "tool",
+        title: "Lookup",
+        source: binding,
+        content: { capability: "capability.answer", effect: "read" },
+      },
+      {
+        nodeId: "agent.support",
+        kind: "agent",
+        title: "Support agent",
+        source: binding,
+        content: {
+          role: "Answer support questions",
+          capabilities: ["capability.answer"],
+          tools: ["tool.lookup"],
+          contexts: ["context.session"],
+        },
+      },
+      {
+        nodeId: "workflow.support",
+        kind: "workflow-intent",
+        title: "Support workflow",
+        source: binding,
+        content: {
+          steps: [{ stepId: "answer", invokes: "agent.support", dependsOn: [] }],
+        },
+      },
+      {
+        nodeId: "evaluation.support",
+        kind: "evaluation",
+        title: "Support quality",
+        source: binding,
+        content: {
+          subject: "workflow.support",
+          criteria: [{ criterionId: "correct", description: "The answer is correct." }],
+        },
+      },
+      {
+        nodeId: "approval.lookup",
+        kind: "approval",
+        title: "Lookup approval",
+        source: binding,
+        content: { subject: "tool.lookup", authority: "support.owner", timing: "before" },
+      },
+      {
+        nodeId: "application.support",
+        kind: "application",
+        title: "Support application",
+        source: binding,
+        content: {
+          capabilities: ["capability.answer"],
+          entrypoints: ["workflow.support"],
+        },
+      },
+    ];
+
+    const graph = createSpecificationGraph({
+      graphId: "graph.semantic" as never,
+      version: contractVersion("1.0.0"),
+      sources: [snapshot()],
+      nodes: nodes as never,
+      relationships: [],
+    });
+
+    expect(graph.nodes.map((node) => node.kind)).toEqual([
+      "capability",
+      "context",
+      "tool",
+      "agent",
+      "workflow-intent",
+      "evaluation",
+      "approval",
+      "application",
+    ]);
+    expect(() =>
+      createSpecificationGraph({
+        graphId: "graph.invalid-semantic" as never,
+        version: contractVersion("1.0.0"),
+        sources: [snapshot()],
+        nodes: nodes.map((node) =>
+          node.kind === "tool"
+            ? { ...node, content: { capability: "context.session", effect: "read" } }
+            : node,
+        ) as never,
+        relationships: [],
+      }),
+    ).toThrow("tool capability references to declared capability nodes");
+  });
+
   test("detaches and freezes source snapshots while preserving strict native extensions", () => {
     const input = sourceInput();
     const captured = createSpecificationSourceSnapshot(

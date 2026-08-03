@@ -16,7 +16,6 @@ import * as evaluation from "../../src/features/evaluation/public";
 import * as agent from "../../src/agent/index";
 import * as agentRuntime from "../../src/agent/runtime";
 import * as workflow from "../../src/workflow/index";
-import * as workflowRuntime from "../../src/workflow/runtime";
 import * as conversation from "../../src/conversation/index";
 import * as interaction from "../../src/interaction/index";
 import * as retrieval from "../../src/features/retrieval/public";
@@ -48,7 +47,6 @@ const PUBLIC_SURFACE = {
   "./agent": agent,
   "./agent/runtime": agentRuntime,
   "./workflow": workflow,
-  "./workflow/runtime": workflowRuntime,
   "./conversation": conversation,
   "./interaction": interaction,
   "./retrieval": retrieval,
@@ -69,8 +67,8 @@ const packageJson = (await Bun.file(new URL("../../package.json", import.meta.ur
   version: string;
 };
 
-describe("ADR-012 public package surface", () => {
-  test("publishes exactly the thirty language-rollout subpaths", () => {
+describe("ADR-016 public package surface", () => {
+  test("publishes the corrected contract and integration fronts", () => {
     expect(packageJson.version).toBe("2.0.0");
     expect(Object.keys(packageJson.exports)).toEqual(Object.keys(PUBLIC_SURFACE));
     expect(Object.values(PUBLIC_SURFACE).every(Boolean)).toBe(true);

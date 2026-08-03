@@ -1,6 +1,5 @@
 import type { ConversationId, EventId, InvocationContext, JsonValue, RunId } from "#contracts";
 import type { MaybePromise } from "#shared/maybe";
-import type { Agent } from "../../agent";
 import type {
   AgentRun,
   AgentEvent,
@@ -262,28 +261,6 @@ export interface ConversationStore {
   save(request: ConversationStoreSaveRequest): MaybePromise<"saved" | "conflict">;
   /** Idempotently releases an uncommitted or consumed reservation. */
   release(reservation: ConversationStoreReservation): MaybePromise<void>;
-}
-
-export interface ConversationConfig {
-  readonly agent: Agent;
-  readonly store?: ConversationStore;
-}
-
-export interface ConversationResult {
-  readonly conversationId: ConversationId;
-  readonly status: AgentResult["status"];
-  readonly output?: JsonValue;
-  readonly reasonCode?: string;
-}
-
-export interface ConversationRun extends AsyncIterable<ConversationEvent> {
-  result(): Promise<ConversationResult>;
-}
-
-export interface Conversation {
-  readonly conversationId: ConversationId;
-  send(input: JsonValue): Promise<ConversationResult>;
-  stream(input: JsonValue): ConversationRun;
 }
 
 export interface InteractionSendRequest {

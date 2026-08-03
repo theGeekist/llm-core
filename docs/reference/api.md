@@ -1,42 +1,30 @@
 # API by subpath
 
-Version 2 publishes a small root and explicit capability and integration
-subpaths. Import from the owner of the contract you use.
+Version 2 publishes a contract-oriented root and explicit capability and
+integration subpaths.
 
-| Subpath                    | Responsibility              | Representative exports                                              |
-| -------------------------- | --------------------------- | ------------------------------------------------------------------- |
-| `@geekist/llm-core`        | Common application journeys | `createAgent`, `defineTool`, `defineWorkflow`, `createConversation` |
-| `/contracts`               | Portable primitives         | identity, invocation, schema, versioning, capability claims         |
-| `/model`                   | Common model values         | model requests, responses, content, prompts and references          |
-| `/model/runtime`           | Model runtime extension     | profiles, resolution, schema resolution and runtime constructors    |
-| `/tools`                   | Common tools                | `defineTool`, `Tool`, `ToolConfig`, calls and results               |
-| `/tools/runtime`           | Tool runtime extension      | definitions, executable tools, validation, canonical actions        |
-| `/control`                 | Common control decisions    | policy, approval and cancellation values                            |
-| `/control/runtime`         | Control runtime extension   | authentication, verification, concurrency and policy ports          |
-| `/evidence`                | Events and receipts         | `ToolExecutionEvent`, redaction, `ToolReceiptJournal`               |
-| `/state`                   | State lifetimes             | snapshots, checkpoints, interventions, compatibility                |
-| `/context`                 | Context selection           | `createContextEntry`, `selectContext`                               |
-| `/artifacts`               | Outputs and provenance      | `createArtifact`, `createArtifactRef`                               |
-| `/evaluation`              | Evidence-bound evaluation   | cases, evaluators, composition, results                             |
-| `/agent`                   | Common agents               | `createAgent`, `Agent`, runs, events, results                       |
-| `/agent/runtime`           | Agent runtime extension     | definitions, runners, profiles, skills, composition                 |
-| `/workflow`                | Common workflow use         | `defineWorkflow`, `Workflow`, steps, results, ephemeral pause       |
-| `/workflow/runtime`        | Workflow runtime extension  | composition, registry, controlled resume, journals                  |
-| `/conversation`            | Common conversations        | `createConversation`, runs, events and results                      |
-| `/interaction`             | Interaction extension APIs  | raw events, projections, explicit runner sessions, reconnect state  |
-| `/retrieval`               | Retrieval extension         | loaders, splitters, embedders, retrievers and query values          |
-| `/indexing`                | Indexing extension          | indexing requests, results and vector stores                        |
-| `/storage`                 | Storage extension           | cache, key-value and resource stores                                |
-| `/memory`                  | Memory extension            | conversation messages and persistent memory stores                  |
-| `/media`                   | Media extension             | image, speech and transcription ports and values                    |
-| `/adapters/ai-sdk`         | AI SDK 7 model integration  | qualified model adapter                                             |
-| `/adapters/ai-sdk-ui`      | AI SDK UI projection        | canonical event mapper                                              |
-| `/adapters/assistant-ui`   | assistant-ui projection     | command mapper                                                      |
-| `/adapters/openai-chatkit` | ChatKit projection          | custom event mapper                                                 |
-| `/adapters/nlux-ui`        | NLUX projection             | chat adapter                                                        |
+| Subpath             | Responsibility                               | Representative exports                                                           |
+| ------------------- | -------------------------------------------- | -------------------------------------------------------------------------------- |
+| `@geekist/llm-core` | Portable contracts and specification journey | `defineTool`, `loadSpecification`, `reviewSpecification`, `compileSpecification` |
+| `/contracts`        | Portable primitives                          | identity, invocation, schema, versioning, capability claims                      |
+| `/model`            | Model contracts                              | requests, responses, content, prompts and references                             |
+| `/model/runtime`    | Model extension contracts                    | profiles, resolution and schema resolution                                       |
+| `/tools`            | Tool declarations                            | `defineTool`, `Tool`, calls and results                                          |
+| `/tools/runtime`    | Controlled tool execution                    | executable bindings, validation and canonical actions                            |
+| `/control`          | Portable decisions                           | policy, approval and cancellation values                                         |
+| `/control/runtime`  | Control extension ports                      | authentication, verification and concurrency                                     |
+| `/evidence`         | Events and receipts                          | redaction, execution events and journals                                         |
+| `/state`            | State lifetimes                              | snapshots, native checkpoints and compatibility                                  |
+| `/agent`            | Portable agent intent and facts              | definitions, events, results and skills                                          |
+| `/agent/runtime`    | Runtime-integration SPI                      | `AgentRunner`, preparation, capability bindings                                  |
+| `/workflow`         | Portable workflow intent                     | `WorkflowExecutionPlan`                                                          |
+| `/conversation`     | Portable conversation state                  | events, snapshots and store contracts                                            |
+| `/interaction`      | Explicit interaction orchestration           | injected-runner sessions and projections                                         |
+| `/specifications`   | Specification interoperability               | load, review, project, compile and authority-bound results                       |
 
-The package exposes no broad adapter barrel and no global recipe catalogue.
-Deep feature imports are implementation details.
+The remaining context, artifact, evaluation, retrieval, indexing, storage,
+memory, media, UI, and qualified provider subpaths retain their documented
+capability ownership.
 
-See the capability pages for behavior and guarantees, and
-[Package exports](/reference/package-exports) for packaging constraints.
+There is no `./workflow/runtime`, broad adapter barrel, local runner export, or
+root runnable Agent/Workflow/Conversation facade.

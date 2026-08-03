@@ -3,8 +3,8 @@ layout: home
 
 hero:
   name: llm-core
-  text: Orchestrate LLM logic instead of gluing it
-  tagline: Create ready agents and tools for common work, then reach for explicit runtime contracts when you implement an extension.
+  text: Portable contracts for AI delivery and agent runtimes
+  tagline: Govern intent, authority, evidence, and runtime interoperability without hiding a home-grown execution engine.
   image:
     src: /logo.png
     alt: llm-core logo
@@ -13,18 +13,18 @@ hero:
       text: Get started
       link: /guide/hello-world
     - theme: alt
-      text: Understand the design
+      text: Understand the boundary
       link: /guide/core-concepts
 
 features:
-  - title: Agents start ready
-    details: createAgent returns an Agent that can run directly or start a live AgentRun.
-  - title: Capabilities are ports
-    details: Stable contracts keep model, tool, control, evidence, state, and storage concerns separate from adapters.
+  - title: Runtimes stay native
+    details: AgentRunner is implemented by qualified integrations; native graphs, sessions, and checkpoints remain runtime-owned.
+  - title: Delivery stays governed
+    details: Specifications, authority, evaluation, provenance, and evidence connect AI-first delivery to the software it produces.
   - title: Effects follow one path
-    details: Policy, approval, execution, and receipts remain distinct, so meaningful effects fail closed.
-  - title: Events stay precise
-    details: AgentEvent, ToolExecutionEvent, and InteractionEvent each describe a different lifecycle.
+    details: Policy, approval, execution, and receipts remain distinct, so consequential effects fail closed.
+  - title: Interoperability is qualified
+    details: Versioned adapters declare capabilities and semantic loss instead of promising universal behavior.
 ---
 
 ## Install
@@ -37,20 +37,17 @@ npm install @geekist/llm-core
 
 ## The short version
 
-[`createAgent`](/guide/agent) returns a ready
-[`Agent`](/reference/vocabulary#agents). Run it directly for one
-`AgentResult`, or start an [`AgentRun`](/reference/vocabulary#agents) that
-emits typed `AgentEvent` values.
+`llm-core` is not an agent SDK or workflow engine. It supplies the portable
+contract, authority, conformance, and evidence layer used by:
 
-`defineWorkflow` turns ordered application steps into a ready `Workflow`.
-Calling `Workflow.run` returns a `WorkflowResult`.
-`createConversation` sends input or streams projected `ConversationEvent`
-values. Runtime and adapter authors use `/interaction` to reduce raw
-`InteractionEvent` values into deterministic application state.
+1. AI-first software delivery tools that understand, specify, build, review,
+   evaluate, approve, and release software; and
+2. qualified runtime integrations that execute agentic behavior inside the
+   delivered product.
 
-These lifecycles share portable contracts, but they do not collapse into one
-generic event or result type.
+The package does not select a default runner. Runtime authors implement
+`AgentRunner`; applications import an explicit qualified adapter.
 
-Start with [Get started](/guide/hello-world), then explore
+Start with [Get started](/guide/hello-world), then read
 [Core concepts](/guide/core-concepts) and
 [Package exports](/reference/package-exports).

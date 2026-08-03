@@ -1,0 +1,82 @@
+# Version 1 public export classification baseline
+
+> Historical ADR-012 language-rollout evidence. ADR-016 supersedes its runnable
+> Agent, Workflow and Conversation fronts and removes `./workflow/runtime`.
+> Consult the current package manifest and ADR-016 for supported exports.
+
+ADR-012 classifies the 731 compiler-resolved exports that existed at the
+pre-rollout baseline commit `17d2b38` across 19 entrypoints. This is historical
+decision evidence, not a description of the post-rollout package surface.
+Inventory must use the TypeScript checker so wildcard barrels and aliases
+resolve to their declarations.
+
+## Reproduce the inventory
+
+Run from a clean checkout or temporary worktree at `17d2b38`:
+
+```sh
+node packages/llm-core/tests/language/v1-inventory-public-exports.mjs
+```
+
+The script refuses to run at any other commit. At the baseline it emits a
+stable JSON inventory containing every exported name and its declaration
+source, then verifies these entrypoint counts:
+
+| Entrypoint                  | Count |
+| --------------------------- | ----: |
+| root                        |    11 |
+| `./functional`              |    14 |
+| `./contracts`               |    96 |
+| `./model`                   |   106 |
+| `./tools`                   |    50 |
+| `./control`                 |    41 |
+| `./evidence`                |    25 |
+| `./state`                   |    51 |
+| `./context`                 |    13 |
+| `./artifacts`               |     6 |
+| `./evaluation`              |    18 |
+| `./agent`                   |   190 |
+| `./workflow`                |    35 |
+| `./interaction`             |    37 |
+| `./adapters/ai-sdk`         |    20 |
+| `./adapters/ai-sdk-ui`      |     7 |
+| `./adapters/assistant-ui`   |     5 |
+| `./adapters/openai-chatkit` |     2 |
+| `./adapters/nlux-ui`        |     4 |
+
+Total: 731.
+
+## Classification rule
+
+The executable baseline inventory is authoritative for ADR-012's migration
+decision. Every historical `(entrypoint, name)` row contains:
+
+- `kind`: runtime, type, or both;
+- `classification`: common, extension, internal, or split;
+- `target`: the exact post-rollout front, or `null` when removed; and
+- `action`: keep, move, remove, rename, replace, or add-and-keep.
+
+The script uses exact exception sets and exact replacement rows. Only exports
+not named by those sets default to extension placement derived from their
+declaration source. This makes all 731 decisions machine-verifiable while
+keeping uncertain lifecycle machinery out of common fronts.
+
+Notable split outcomes are explicit: `InteractionUiEvent` remains available to
+extension users while the common facade adds `ConversationEvent`. Portable
+`AgentSpec`, `PreparedAgentSpec` and `ToolSpec` become extension definitions;
+their new common facades are separate additions rather than aliases.
+
+## Superseded target ownership
+
+- Common: root, `./agent`, `./tools`, `./workflow`, `./conversation`,
+  `./model`, `./control`, `./context`, `./artifacts`, `./evaluation`.
+- Runtime extension: `./agent/runtime`, `./tools/runtime`,
+  `./workflow/runtime`, `./model/runtime`, `./control/runtime`.
+- Capability extension: `./contracts`, `./evidence`, `./state`,
+  `./interaction`, `./retrieval`, `./indexing`, `./storage`, `./memory`,
+  `./media`.
+- Qualified extension: every `./adapters/*`.
+
+These targets record the ADR-012 proposal only. In particular,
+`./workflow/runtime` and the runnable Agent, Workflow, and Conversation facades
+are not part of the current package surface. ADR-016 is authoritative.

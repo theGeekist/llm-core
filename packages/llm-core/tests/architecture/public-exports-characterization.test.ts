@@ -10,67 +10,51 @@ import * as agent from "../../src/agent/index";
 import * as agentRuntime from "../../src/agent/runtime";
 import * as control from "../../src/control/index";
 import * as toolRuntime from "../../src/features/tooling/runtime";
-import * as workflowRuntime from "../../src/workflow/runtime";
+import * as workflow from "../../src/workflow/index";
 import type {
-  Agent,
-  AgentConfig,
+  AgentDefinition,
   AgentEvent,
   AgentResult,
-  AgentRun,
-  Conversation,
   ConversationEvent,
-  ConversationResult,
-  ConversationRun,
+  ConversationSnapshot,
+  ConversationState,
+  ConversationStore,
   Tool,
   ToolCall,
   ToolConfig,
-  Workflow,
-  WorkflowConfig,
-  WorkflowPause,
-  WorkflowResult,
+  WorkflowExecutionPlan,
 } from "../../index";
 
-type _CommonRootTypes = [
-  Agent,
-  AgentConfig,
-  AgentRun,
+type _PortableRootTypes = [
+  AgentDefinition,
   AgentEvent,
   AgentResult,
   Tool,
   ToolConfig,
   ToolCall,
-  Workflow<unknown, unknown>,
-  WorkflowConfig<unknown, unknown>,
-  WorkflowResult<unknown, unknown>,
-  WorkflowPause<unknown, unknown>,
-  Conversation,
-  ConversationRun,
+  WorkflowExecutionPlan,
   ConversationEvent,
-  ConversationResult,
+  ConversationSnapshot,
+  ConversationState,
+  ConversationStore,
 ];
 
-describe("ADR-012 curated exports", () => {
-  test("keeps the root on the five implemented common journeys", () => {
+describe("ADR-016 curated exports", () => {
+  test("keeps the root contract and specification oriented", () => {
     expect(Object.keys(root).sort()).toEqual([
       "compileSpecification",
-      "createAgent",
-      "createConversation",
       "defineTool",
-      "defineWorkflow",
       "loadSpecification",
       "reviewSpecification",
     ]);
   });
 
-  test("keeps runtime machinery on qualified fronts", () => {
-    expect(Object.keys(agent).sort()).toEqual(["createAgent"]);
-    expect(agentRuntime).toHaveProperty("createLocalAgentRunner");
+  test("does not publish a concrete runner or workflow executor", () => {
+    expect(Object.keys(agent)).toEqual([]);
+    expect(Object.keys(workflow)).toEqual([]);
+    expect(agentRuntime).not.toHaveProperty("createLocalAgentRunner");
+    expect(agentRuntime).not.toHaveProperty("createModelToolAgentProgram");
     expect(agentRuntime).toHaveProperty("createCapabilityBindingCatalog");
-    expect(agentRuntime).not.toHaveProperty("createCacheStoreAdapter");
-    expect(agentRuntime).not.toHaveProperty("createConversationMessage");
-    expect(agentRuntime).not.toHaveProperty("textDocument");
-    expect(toolRuntime).toHaveProperty("createExecutableTool");
-    expect(workflowRuntime).toHaveProperty("runWorkflow");
   });
 
   test("publishes only the qualified AI SDK provider front", () => {

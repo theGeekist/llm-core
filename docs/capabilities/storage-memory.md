@@ -11,9 +11,9 @@ storage concerns.
 The agent-memory `ConversationStore` owns ordered `ConversationMessage` values;
 its serialized append field remains `turn` for wire compatibility.
 `ConversationStateStore` owns application state derived for a conversation.
-These extension ports are distinct from the common durable conversation store
-used by `createConversation`. None of them expose credentials, database handles
-or provider-native messages.
+These extension ports are distinct from the reservation-capable
+`ConversationStore` used by an explicit `InteractionSession`. None of them
+expose credentials, database handles or provider-native messages.
 
 Validate values before persistence. Sensitive-looking portable keys and
 strings are rejected by the registration helpers, and native data must be

@@ -3,7 +3,9 @@ architecture_version: 2
 id: applications-client-contract
 title: Shared end-user client application contract
 stage: applications
-status: proposed
+status: cancelled
+replaced_by:
+  - aifsd-delivery-toolchain
 priority: high
 preferred_owner_kind: codex
 owner:
@@ -26,6 +28,7 @@ decision_dependencies:
   - ADR-012
   - ADR-014
   - ADR-015
+  - ADR-016
 conflicts_with:
 write_scope:
   - packages/llm-core/src/client/**
@@ -45,10 +48,13 @@ read_scope:
   - packages/llm-core/package.json
   - packages/llm-core/tests/**
 review_owner: coordinator
-updated_at: 2026-08-03
+updated_at: 2026-08-04
 ---
 
 # applications-client-contract — Shared end-user client application contract
+
+Cancelled by ADR-016 before implementation. A client contract must be derived
+from demonstrated operator consumers after the AIFSD delivery toolchain exists.
 
 ## Objective
 

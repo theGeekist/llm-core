@@ -2,12 +2,14 @@
 
 Architecture version: v2
 Decision authority:
-[`ADR-009`](decisions/ADR-009-specification-interoperability.md)
+[`ADR-009`](decisions/ADR-009-specification-interoperability.md) and
+[`ADR-016`](decisions/ADR-016-integration-owned-execution.md)
 Implementation stage: specifications
 
-ADR-012 ratified the public names used by this completed specification stage.
-The internal authority boundaries remain required even when the common API
-hides their machinery.
+ADR-012 ratified the original public names used by this completed
+specification stage. ADR-016 supersedes its built-in executable Agent gateway.
+Authority remains explicit when a qualified delivery or runtime integration
+consumes compiled intent.
 
 ## Outcome
 
@@ -15,17 +17,19 @@ hides their machinery.
 software-delivery platform and without treating any external framework as the
 canonical model.
 
-The layer serves two distinct AI-first software delivery use cases:
+The layer serves two interoperability axes within the larger AIFSD
+architecture:
 
 1. **Delivery-method interoperability** — observe, import and reconcile
    requirements, plans, decisions and work artifacts from systems such as
    OpenSpec, Spec Kit, AI-SDLC and BMAD.
-2. **Runtime-specification interoperability** — compile accepted intent into
-   portable agent, workflow, tool, context, evaluation and execution contracts,
-   including runtime-oriented formats such as PydanticAI `AgentSpec`.
+2. **Runtime-specification interoperability** — compile accepted intent through
+   an explicit target supplied by a qualified runtime integration, including
+   runtime-oriented formats such as PydanticAI `AgentSpec`.
 
-These use cases share identity, provenance, loss accounting and review, but
-they do not share one universal source schema.
+These axes share identity, provenance, loss accounting and review, but they do
+not replace the two complete system use cases: AI-first software delivery and
+agentic behavior inside the delivered product.
 
 ## Package shape
 
@@ -60,16 +64,16 @@ cohesive capability.
 
 ## The eight boundaries
 
-| Reader-facing boundary    | Internal responsibility | Input                                                         | Output                                                       | Authority                                                                    |
-| ------------------------- | ----------------------- | ------------------------------------------------------------- | ------------------------------------------------------------ | ---------------------------------------------------------------------------- |
-| 1. Load source            | Observe                 | External files, CLI output, API resources or runtime specs    | Detached source snapshot                                     | Adapter records what existed; it does not interpret or authorize             |
-| 2. Read format            | Import                  | Versioned snapshot                                            | Imported nodes, relationships and conversion report          | Format adapter owns parsing and source-version compatibility                 |
-| 3. Combine specifications | Reconcile               | One or more imports                                           | Canonical specification graph                                | Core owns identity, provenance, source authority and conflict representation |
-| 4. Check specification    | Resolve                 | Canonical semantic graph                                      | Checked specification plus diagnostics                       | Core derives references, requirements and unresolved questions               |
-| 5. Build plans            | Derive views            | Checked graph                                                 | Dependency plan and workflow program                         | Each view declares which relationship kinds it interprets                    |
-| 6. Decide                 | Admit                   | Checked specification, policy decisions and evidence          | Specification decision and, when accepted, a portable record | Application policy or authenticated human authority; never the importer      |
-| 7. Compile                | Project                 | Runtime-verified accepted specification plus target           | Target-neutral execution plan or framework-native value      | Compiler reports exact, changed and unsupported semantics                    |
-| 8. Propose changes        | Reconcile feedback      | Execution receipts, evaluations, drift and produced artifacts | Proposed specification change with lineage                   | Evidence may propose a change; only the source owner may accept it           |
+| Reader-facing boundary    | Internal responsibility | Input                                                         | Output                                                        | Authority                                                                    |
+| ------------------------- | ----------------------- | ------------------------------------------------------------- | ------------------------------------------------------------- | ---------------------------------------------------------------------------- |
+| 1. Load source            | Observe                 | External files, CLI output, API resources or runtime specs    | Detached source snapshot                                      | Adapter records what existed; it does not interpret or authorize             |
+| 2. Read format            | Import                  | Versioned snapshot                                            | Imported nodes, relationships and conversion report           | Format adapter owns parsing and source-version compatibility                 |
+| 3. Combine specifications | Reconcile               | One or more imports                                           | Canonical specification graph                                 | Core owns identity, provenance, source authority and conflict representation |
+| 4. Check specification    | Resolve                 | Canonical semantic graph                                      | Checked specification plus diagnostics                        | Core derives references, requirements and unresolved questions               |
+| 5. Build plans            | Derive views            | Checked graph                                                 | Dependency plan and workflow program                          | Each view declares which relationship kinds it interprets                    |
+| 6. Decide                 | Admit                   | Checked specification, policy decisions and evidence          | Specification decision and, when accepted, a portable record  | Application policy or authenticated human authority; never the importer      |
+| 7. Compile                | Project                 | Runtime-verified accepted specification plus explicit target  | Portable declarative data or serialized integration reference | Target integration reports exact, changed and unsupported semantics          |
+| 8. Propose changes        | Reconcile feedback      | Execution receipts, evaluations, drift and produced artifacts | Proposed specification change with lineage                    | Evidence may propose a change; only the source owner may accept it           |
 
 The eighth boundary closes the lifecycle without creating an unsafe write-back
 loop. Runtime evidence can show that intent and implementation diverged, but
@@ -155,30 +159,32 @@ or a process restart discards runtime authority and requires the portable
 record to be verified again.
 
 Every compilation enters through the application-owned
-`compileSpecification` path. That path verifies runtime provenance,
+`compileSpecification` path. That path verifies acceptance provenance,
 obtains one consistent `CompilationAuthoritySnapshot` from trusted authority,
 policy and source-revision ports, then checks expiry with a trusted clock at the
 final synchronous boundary before invoking a compiler or adapter. Adapters implement
 translation; they do not duplicate or bypass decision validity.
 
-The result is a `CompiledSpecification<T>` that binds the native or
-target-neutral compiled value to the exact authority snapshot used. Compilation
-is pure, so a concurrent change after that snapshot creates a stale result
-rather than an unauthorized effect.
+The result is a `CompiledSpecification<T>` that binds portable declarative data
+or a serialized opaque integration reference to the exact authority snapshot
+used. Compilation never captures a live framework graph, callback, client,
+provider or process. A qualified integration resolves a serialized reference
+and owns the resulting native state. Compilation is pure, so a
+concurrent change after that snapshot creates a stale result rather than an
+unauthorized effect.
 
 specification-compiler owns the internal `verifyCompilationAuthority`.
-specification-authority integrates it into
-every `llm-core`-controlled agent/workflow preparation, execution and resume
-gateway capable of consuming a compiled specification. Preparation validates immediately
-before creating a runtime object; execution and resume validate again
-immediately before effects. Durable state retains the compilation identity and
-authority snapshot needed for revalidation.
+specification-authority makes the verifier available to controlled integration
+gateways that consume a compiled specification. A qualified runtime adapter
+validates immediately before preparing native runtime state and again before
+execution, resume or effects. Durable integrations retain the compilation
+identity and authority snapshot needed for revalidation.
 
-Extracting `T` from `CompiledSpecification<T>` removes `llm-core` execution
-authority. A raw native value may be used by an external framework under that
-framework's controls, but it cannot enter an `llm-core` preparation or
-execution gateway without its authority-bound wrapper and successful current
-validation.
+Extracting `T` from `CompiledSpecification<T>` removes `llm-core` authority. A
+resolved native value remains entirely inside its owning integration and may be
+used under that framework's controls, but it cannot make an `llm-core`
+conformance or governed-execution claim without the authority-bound portable
+target and successful current validation.
 
 ## Graph, DAG and workflow semantics
 
@@ -357,9 +363,8 @@ completion boundary.
   accepted value rather than mutating it.
 - Compiled results bind their `CompilationAuthoritySnapshot`; preparation or
   execution rejects them after authority drift.
-- Controlled preparation, execution and resume accept a
-  `CompiledSpecification<T>`, never a raw native value as evidence of
-  acceptance.
+- Qualified controlled integrations accept a `CompiledSpecification<T>`, never
+  a raw native value as evidence of acceptance.
 - Execution receipts and evaluations retain lineage to the accepted
   specification and compiled result.
 - Evidence and drift may derive a `ProposedSpecificationChange` without
@@ -369,8 +374,9 @@ completion boundary.
 
 ## Completed implementation sequence
 
-1. The language stage settled the public language and proved the common
-   journeys.
+1. The language stage settled the original public language and proved its
+   fixtures. ADR-016 later removed the runnable Agent, Workflow and Conversation
+   facades because they assigned execution to the kernel.
 2. `specification-contracts` defined and validated snapshots, semantic graphs,
    conversion reports, portable specification decision records, change
    proposals and adapter capabilities.
@@ -378,11 +384,12 @@ completion boundary.
    review and the pure Pipeline-backed compiler after the WPKernel release gate.
    It owns runtime registration of accepted specifications and authority-bound
    compiled results; its authority-snapshot verifier remains internal.
-4. `specification-authority` integrated post-compilation authority verification
-   into controlled preparation, execution and resume paths and proved rejection
-   before effects.
-5. `specification-api` published `./specifications`, added the common
-   specification journey to the root and verified the 30-entry packed package.
+4. `specification-authority` implemented post-compilation authority verification
+   and proved rejection before effects in internal controlled fixtures. Runtime
+   adapters must invoke the same boundary to claim governed execution.
+5. `specification-api` published `./specifications` and the root specification
+   journey. Its former built-in `ExecutionPlan -> createAgent` path is
+   superseded by explicit integration targets under ADR-016.
 6. `adapter-openspec`, `adapter-pydantic-ai`, `adapter-ai-sdlc`,
    `adapter-spec-kit` and `adapter-bmad` implemented independent adapter mappings
    and verification fixtures.

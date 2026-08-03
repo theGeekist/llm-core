@@ -1,61 +1,19 @@
 # Composition patterns
 
-Composition should make execution order obvious while keeping capability rules
-inside their own ports.
+Compose capabilities in the host application, AIFSD toolchain, or runtime
+adapter that owns the use case. Keep `llm-core` focused on portable contracts,
+authority, evidence, and conformance.
 
-## Compose workflows, not hidden authority
+Use explicit construction:
 
-The runtime-level `composeWorkflow` concatenates the steps from existing ready
-workflows, followed by any explicitly supplied steps. It validates the result
-through `defineWorkflow`.
-
-Use it when several applications share an ordered passive sequence. Keep policy,
-receipt persistence, credentials, and provider clients in the composition root,
-then pass them through explicit ports to the controlled path that needs them.
-
-```mermaid
-flowchart TB
-  root["Composition root"]
-  registry["WorkflowRegistry"]
-  first["Workflow A"]
-  second["Workflow B"]
-  composed["Composed Workflow"]
-  ports["Live ports"]
-
-  first --> composed
-  second --> composed
-  composed --> registry
-  root --> registry
-  root --> ports
-  ports -. "injected at execution" .-> composed
+```text
+portable intent + reviewed authority
+  -> selected target adapter
+  -> native runtime definition
+  -> selected runner
+  -> normalized events and evidence
 ```
 
-## Prefer small step contracts
-
-A step should:
-
-1. read the workflow state;
-2. call one passive capability or make one local decision;
-3. return a new state or a named pause.
-
-If a step begins to own policy, provider translation, persistence, and
-presentation together, split those responsibilities and keep the step as the
-sequencer.
-
-## Keep state meaningful
-
-Use a named state type when values travel across multiple steps. This makes
-transitions reviewable and keeps provider-native objects out of snapshots.
-Choose a small pause type that tells the caller what input is needed to resume.
-
-## Treat recipes as application vocabulary
-
-An application may call a recurring composition a recipe. `Recipe` is not a
-public llm-core type, and the package does not export a `/recipes` subpath. Use
-`Workflow`, capability ports, and your own application-level name.
-
-## Preserve sync-or-async composition
-
-Workflow steps return `MaybePromise`. Do not wrap a synchronous capability in a
-promise merely to fit the workflow. The runtime composes synchronous and
-asynchronous steps while preserving the behavior each port already provides.
+Avoid service locators, hidden default runners, and kernel-owned workflow
+registries. A composition root may select integrations, credentials, stores,
+policies, and transports without making those choices portable contracts.

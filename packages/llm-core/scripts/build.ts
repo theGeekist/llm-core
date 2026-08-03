@@ -145,7 +145,6 @@ const PUBLIC_ENTRY_POINTS = [
   "src/agent/index.ts",
   "src/agent/runtime.ts",
   "src/workflow/index.ts",
-  "src/workflow/runtime.ts",
   "src/conversation/index.ts",
   "src/interaction/index.ts",
   "src/features/retrieval/public.ts",

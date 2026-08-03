@@ -1,7 +1,0 @@
-import { createConversation } from "@geekist/llm-core";
-
-const conversation = createConversation({ agent, store });
-
-for await (const event of conversation.stream("Hello")) {
-  render(event);
-}

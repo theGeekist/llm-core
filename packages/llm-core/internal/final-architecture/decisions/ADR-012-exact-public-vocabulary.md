@@ -1,7 +1,7 @@
 # ADR-012 — Exact Public Vocabulary and Package Surfaces
 
 Architecture version: v2
-Status: accepted
+Status: accepted; runnable Agent, Workflow and Conversation fronts superseded by ADR-016
 Date: 2026-07-31
 Owners: architecture coordinator
 Affected tasks: language-vocabulary, language-rollout, specification-contracts
@@ -20,6 +20,12 @@ This decision fixes one exact vocabulary before the breaking rollout and before
 specification contracts ship.
 
 ## Decision
+
+> **Later correction:** ADR-016 supersedes every part of this decision that
+> assigns agent, workflow or conversation execution to `llm-core`. The tables
+> below remain historical evidence for the language rollout, not authority for
+> runnable kernel facades. Tool and Specification vocabulary remains accepted
+> where it does not imply kernel-owned execution.
 
 ### Common journeys
 
@@ -73,8 +79,9 @@ The current controlled `WorkflowStepResult` becomes
 `WorkflowStepResult`. `WorkflowResumeOutcome` becomes
 `ControlledWorkflowResult`.
 
-`createLocalAgentRunner` remains an explicit runtime constructor on
-`./agent/runtime`; it is not the implementation of common `createAgent`.
+`createLocalAgentRunner` was intended to remain distinct from common
+`createAgent`, but the rollout violated that boundary. ADR-016 removes the
+public local constructor and the runnable common Agent facade.
 
 ### Conversation and interaction
 
@@ -116,7 +123,8 @@ target-neutral compiler, `T` is `ExecutionPlan`. `CompiledSpecification<T>` is
 the authority-bound value accepted by controlled execution; extracting `T`
 removes that authority.
 
-The common Agent gateway is exact:
+The following common Agent gateway was implemented and is now superseded by
+ADR-016:
 
 ```ts
 const compiled = await compileSpecification(decision, {
@@ -173,9 +181,9 @@ registration brands, canonicalizers, provenance constructors, receipt
 comparison helpers and internal reducers are not exported.
 
 The complete current-export inventory is produced by
-[`inventory-public-exports.mjs`](../../../tests/language/inventory-public-exports.mjs);
+[`v1-inventory-public-exports.mjs`](../../../tests/language/v1-inventory-public-exports.mjs);
 its common/internal exception policy is recorded in
-[`public-export-classification.md`](../../../tests/language/public-export-classification.md).
+[`v1-public-export-classification.md`](../../../tests/language/v1-public-export-classification.md).
 Every export not in its common or internal exception set is an extension
 export and moves to the extension front owned by its declaration source.
 

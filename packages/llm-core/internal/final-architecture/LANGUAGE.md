@@ -1,158 +1,89 @@
-# Public Language Review
+# Public Language and Ownership Review
 
 Architecture version: v2
-Status: complete
+Status: corrected by ADR-016
 Decisions:
-[`ADR-011`](decisions/ADR-011-accessible-public-language.md) and
-[`ADR-012`](decisions/ADR-012-exact-public-vocabulary.md)
-Implementation stage: complete at `71b21de`
+[`ADR-011`](decisions/ADR-011-accessible-public-language.md),
+[`ADR-012`](decisions/ADR-012-exact-public-vocabulary.md) and
+[`ADR-016`](decisions/ADR-016-integration-owned-execution.md)
 
 ## Outcome
 
-`llm-core` keeps its rigorous internal lifecycle and presents a much smaller
-public mental model.
+`llm-core` uses ordinary language for portable contracts without presenting
+itself as an agent SDK, workflow engine or conversation runtime.
 
-Common usage should read in familiar application language:
+The common kernel journey is:
 
 ```text
-create an agent -> run it -> read the result
-define a tool -> give it to an agent
-define a workflow -> run or resume it
-open a conversation -> send a message
-load a specification -> review it -> compile it -> run the plan
+define portable intent
+  -> import or reconcile specifications
+  -> review and bind authority
+  -> compile through an explicit integration target
+  -> retain evidence, provenance and conversion loss
 ```
 
-Preparation provenance, capability bindings, registration, authority
-snapshots, projection envelopes, durable claims and storage reservations remain
-available where an extension author must implement them. They are not steps in
-the ordinary journey.
+Execution is always visibly owned by a qualified runtime integration. There is
+no common `createAgent(...).run(...)`, `defineWorkflow(...).run(...)` or
+`createConversation(...).send(...)` path backed by a hidden local executor.
 
-## Why the pass is required
+## Why the correction was required
 
-The architecture is coherent, but its implementation vocabulary has escaped
-into common usage:
+ADR-011 correctly identified that internal lifecycle terminology had escaped
+into ordinary use. ADR-012 attempted to repair that usability problem with
+ready-to-run Agent, Workflow and Conversation facades. The implementation then
+made `createAgent` construct `createLocalAgentRunner`, even though ADR-012 said
+the local runner was not its implementation.
 
-- the package README constructs an `AgentSpec`, requires a version brand,
-  declares an external `AgentRunner` and stops at `prepare()`;
-- the smallest complete local run requires identity generation, invocation
-  context and a program port;
-- a small tool requires schema registration, hashing, validation, execution
-  semantics and a binding;
-- the agent subpath also exposes capability resolution, retrieval, indexing,
-  storage and memory;
-- the workflow subpath combines ordinary authoring with durable claims,
-  journals, clocks and coordinator tokens; and
-- the proposed specification API names every internal transition from source
-  observation to execution authority.
-
-Each term can be defended in isolation. Together they make the package appear
-harder to use than it should be.
-
-## Industry baseline
-
-Current agent libraries differ internally but converge on a small common
-vocabulary:
-
-- agent;
-- tool;
-- run or invoke;
-- result or output;
-- workflow;
-- message or conversation;
-- approval; and
-- model.
-
-OpenAI Agents, PydanticAI and LangChain all let a user create an agent and run
-it without first naming preparation provenance or capability registration.
-AI SDK tools similarly place schema and `execute` on one tool value. `llm-core`
-should follow those familiar entry concepts while retaining its stronger
-portable-contract and controlled-effect guarantees beneath them.
-
-Primary references:
-
-- [OpenAI Agents SDK: running agents](https://openai.github.io/openai-agents-js/guides/running-agents/)
-- [PydanticAI: agents](https://pydantic.dev/docs/ai/core-concepts/agent/)
-- [LangChain JavaScript: agents](https://docs.langchain.com/oss/javascript/langchain/agents)
-- [AI SDK: tools and tool calling](https://ai-sdk.dev/docs/ai-sdk-core/tools-and-tool-calling)
+That was not merely a naming simplification. It reassigned execution from
+runtime integrations to the kernel and revived the pre-v2 recipe product.
+ADR-016 therefore removes the runnable facades rather than renaming them again.
 
 ## Three language levels
 
-| Level     | Audience                  | Examples                                                                                          |
-| --------- | ------------------------- | ------------------------------------------------------------------------------------------------- |
-| Common    | Application author        | `Agent`, `Tool`, `Workflow`, `Conversation`, `Specification`, `run`, `result`, `approval`, `plan` |
-| Extension | Runtime or adapter author | runner, store, policy, receipt, checkpoint, compatibility, conversion report                      |
-| Internal  | Core implementation       | binding provenance, registration token, authority snapshot, envelope, claim, coordinator journal  |
+| Level       | Audience                              | Examples                                                                                         |
+| ----------- | ------------------------------------- | ------------------------------------------------------------------------------------------------ |
+| Common      | Application and delivery authors      | specification, agent definition, tool definition, workflow intent, requirement, evidence, result |
+| Integration | Runtime and adapter authors           | runner, prepare, checkpoint, native session, capability profile, conversion report               |
+| Internal    | Kernel implementation and conformance | registration token, authority snapshot, binding provenance, local proof runner, fake runner      |
 
-A type may remain publicly importable for host implementations without
-belonging to the common journey. Package placement and documentation must make
-that distinction visible.
+Common language describes intent and evidence. It does not promise that a
+common object is executable.
 
 ## Naming rules
 
-1. Start with the user action, not the internal lifecycle.
-2. Use one ordinary noun for one concept.
-3. Put lifecycle state in a discriminated result instead of a chain of branded
-   nouns where possible.
-4. Use `Definition` for portable user-authored behavior only when the authored
-   value needs to be named separately from its ready-to-use object.
-5. Use `Run` for one live execution and `Result` for its terminal value.
-6. Use `Store` for a persistence contract and `Adapter` for external
-   translation.
-7. Use `Approval` only for an authenticated human decision. Use `Policy` for
-   machine-evaluated rules. A broader decision that may use either must receive
-   its own domain name.
-8. Reserve `Profile` for observed or declared capability metadata.
-9. Keep `Binding`, `Registered`, `Prepared`, `Port`, `Projection`,
-   `Disposition`, `Semantics` and provenance terminology out of common
-   examples.
-10. Prefer `external effect` or `side effect` in reader-facing prose.
-    `Meaningful effect` remains an internal policy classification only if the
-    distinction is still required.
-11. Prefer `conversation` or `chat` for messaging. Keep `interaction` for the
-    broader event and UI integration capability.
-12. Reserve `Specification` for the specification-interoperability capability.
-    A PydanticAI `AgentSpec` remains a native adapter term.
+1. Start with the user-owned intent or artifact, not an internal lifecycle.
+2. Use `Definition` or `Spec` for portable declared behavior.
+3. Use `Runner` only for the port implemented by a concrete runtime
+   integration.
+4. Use `Run`, `Result` and `Event` for normalized execution facts produced by a
+   runtime integration.
+5. Use `Workflow` for portable workflow intent only when the type cannot be
+   mistaken for a kernel-owned workflow engine.
+6. Use `Conversation` for portable conversational identity, state or events;
+   execution and provider continuity remain runtime-owned.
+7. Use `Adapter` for translation and `Target` for explicit compilation.
+8. Keep native graphs, sessions, checkpoints and workspaces visibly native.
+9. Use `Approval` only for an authenticated human decision and `Policy` for a
+   machine-evaluated rule.
+10. Do not make convenience erase ownership. If an operation executes, its
+    concrete integration must be explicit in construction or import.
 
-### Suffix grammar
+## Supported public journeys
 
-| Suffix       | Reserved meaning                                  |
-| ------------ | ------------------------------------------------- |
-| `Config`     | User-authored options                             |
-| `Definition` | Portable declared behavior                        |
-| `Request`    | Input to one operation                            |
-| `Result`     | Output from one operation                         |
-| `Ref`        | Structured portable reference                     |
-| `Id`         | Scalar identity                                   |
-| `Handle`     | Live or runtime-owned object                      |
-| `Event`      | Emitted fact                                      |
-| `Record`     | Stored durable value                              |
-| `Store`      | Read/write behavior                               |
-| `Adapter`    | External integration                              |
-| `Port`       | Extension-author contract, absent from common use |
-
-`Outcome`, `Resolution`, `Verification`, `Authorization`,
-`Acknowledgement`, `Judgement` and `Disposition` are not interchangeable
-generic result suffixes. Keep one only when it names a distinct domain concept;
-otherwise return a scoped `Result`.
-
-## Journey contracts
-
-These examples express the target experience. language-vocabulary owns the exact signatures
-and compile fixtures.
-
-### Agent
+### Portable agent intent
 
 ```ts
-const agent = createAgent({
-  model,
-  instructions: "Answer clearly.",
-  tools,
-});
+import type { AgentDefinition } from "@geekist/llm-core/agent";
 
-const result = await agent.run("Why is the sky blue?");
+const definition: AgentDefinition = {
+  // portable identity, requirements and declared behavior
+};
 ```
 
-### Tool
+The exact definition schema remains governed by its feature contract. This
+example establishes ownership, not a second handwritten shape.
+
+### Tool definition
 
 ```ts
 const search = defineTool({
@@ -164,182 +95,63 @@ const search = defineTool({
 });
 ```
 
-### Streaming run
+Tools may be portable declarations or host bindings. A runtime adapter decides
+how its native runtime receives them; controlled effects still pass through the
+kernel policy, authority, receipt and evidence contracts.
 
-```ts
-const run = agent.start("Research this topic.");
-
-for await (const event of run.events()) {
-  render(event);
-}
-
-const result = await run.result();
-```
-
-### Workflow
-
-```ts
-const publishing = defineWorkflow({
-  steps: [draft, review, publish],
-});
-
-const result = await publishing.run(initialState);
-```
-
-### Conversation
-
-```ts
-const conversation = createConversation({ agent, store });
-
-for await (const event of conversation.stream("Hello")) {
-  render(event);
-}
-```
-
-### Specification
+### Specification compilation
 
 ```ts
 const specification = await loadSpecification(source);
 const review = await reviewSpecification(specification, { policy, evidence });
 
 if (review.status === "accepted") {
-  const plan = await compileSpecification(review, { target: agentTarget });
-  const agent = createAgent({ specification: plan });
-  await agent.run(input);
+  const compiled = await compileSpecification(review, {
+    target: langGraphTarget,
+  });
+
+  await langGraphRunner.run(compiled, input);
 }
 ```
 
-`source` is detached input produced by any compatible framework adapter. The
-common journey is not owned by OpenSpec or any other source format. When a
-human decision is required, an `ApprovalDecision` may appear in the review
-evidence. The portable object is not verified authority by itself: admission
-must authenticate it and bind the authenticated actor, scope and decision
-before relying on it.
+`langGraphTarget` and `langGraphRunner` are illustrative values supplied by a
+qualified integration. Import is not authorization, and compilation does not
+silently execute anything.
 
-The implementation may provide a safe convenience operation combining review
-and compilation. It must not make import itself an authorization step.
+### Runtime integration
 
-## Exact term disposition
+```ts
+import type { AgentRunner } from "@geekist/llm-core/agent/runtime";
+import { createLangGraphRunner } from "@geekist/llm-core/adapters/langgraph-runtime";
 
-ADR-012 proposes this exact replacement map:
-
-| Current term                        | Exact disposition                                                        |
-| ----------------------------------- | ------------------------------------------------------------------------ |
-| `AgentSpec`                         | Extension `AgentDefinition`; common ready object `Agent`                 |
-| `PreparedAgentSpec`                 | Extension `PreparedAgentDefinition`                                      |
-| `createLocalAgentRunner`            | Stays on `./agent/runtime`; common facade is `createAgent`               |
-| `RunResult`                         | Common `AgentResult`                                                     |
-| `ToolSpec` / `defineToolSpec`       | Extension `ToolDefinition` / `defineToolDefinition`                      |
-| `ToolBinding`                       | Common ready object `Tool`; binding machinery moves to `./tools/runtime` |
-| `ToolResult` / `ToolFailure`        | `ToolExecutionResult` / `ToolExecutionFailure`                           |
-| `ExecutableWorkflowStep`            | Common `WorkflowStep`                                                    |
-| `WorkflowExecutionOutcome`          | Common `WorkflowResult`                                                  |
-| `WorkflowPauseSnapshot`             | Common `WorkflowPause`                                                   |
-| `MeaningfulWorkflowStep`            | Runtime extension `ControlledWorkflowStep`                               |
-| `InteractionUiEvent`                | Common `ConversationEvent`                                               |
-| raw `Interaction*` machinery        | Extension `./interaction`; not mechanically renamed                      |
-| capability binding resolution types | Extension surface, not common `./agent` vocabulary                       |
-| `ContextManifest`                   | Common `ContextSelection`; factory `selectContext`                       |
-| `SpecificationSet`                  | Public `Specification`; internal `SpecificationGraph`                    |
-| `ResolvedSpecification`             | Internal `CheckedSpecification`                                          |
-| admission / admit                   | Public specification review and decision                                 |
-| specification review outcome        | `SpecificationDecision`: accepted, rejected or needs-input               |
-| `AcceptedSpecificationRecord`       | `SpecificationDecisionRecord` on the accepted decision branch            |
-| `RegisteredAcceptedSpecification`   | Internal `AcceptedSpecificationHandle`                                   |
-| projection / project                | Public compile or convert                                                |
-| `ProjectionEnvelope<T>`             | `CompiledSpecification<T>`; target-neutral payload `ExecutionPlan`       |
-| `ProjectionAuthoritySnapshot`       | Internal `CompilationAuthoritySnapshot`                                  |
-| `SpecificationChangeProposal`       | `ProposedSpecificationChange`                                            |
-| conformance                         | Public supported features, versions or compatibility                     |
-| qualified adapter                   | Public framework or provider adapter                                     |
-
-## Specification lifecycle language
-
-The detailed architecture retains eight distinct boundaries. Reader-facing
-labels use ordinary verbs:
-
-```text
-Load source
--> Read format
--> Combine specifications
--> Check specification
--> Build plans
--> Decide
--> Compile
--> Propose changes
+const runner: AgentRunner = createLangGraphRunner(nativeGraph, controls);
 ```
 
-Reconciliation, resolution, runtime registration and authority-snapshot
-verification remain exact internal responsibilities.
+The adapter subpath exists only after exact-version qualification and
+publication. The kernel does not provide a fallback runner.
 
-## Surface findings
+## AIFSD product language
 
-- The root needs a complete useful journey, not only a low-level runner
-  constructor.
-- `./agent` must stop aggregating retrieval, indexing, storage, memory and
-  capability-binding internals.
-- `./tools` must distinguish tool authoring from canonical action and
-  controlled-execution machinery.
-- `./workflow` must distinguish ordinary workflow authoring from durable
-  controlled resume.
-- `./interaction` must distinguish conversation use from event-reducer and
-  reservation implementation.
-- Wildcard feature barrels must not determine the user-facing language.
-- Advanced contracts may remain explicit subpath exports where hosts genuinely
-  need to implement them.
+The complete AI-first delivery journey—understand, specify, build, independently
+review, evaluate, approve, collect evidence and release—belongs to an AIFSD
+SDK, CLI or application above `llm-core`. That product composes kernel contracts
+and delivery integrations such as OpenSpec, Codex, Claude or OpenHands. It is
+not named or implemented as a kernel runtime.
 
-### Capability fronts
+The second journey is agentic behavior inside the delivered product. It uses a
+qualified native runtime integration and shares the kernel's contracts,
+authority and evidence vocabulary with the delivery journey.
 
-- `./model` should expose ordinary model use separately from routing,
-  registration, schema loading, sanitization and media adapter helpers.
-- `./control` should keep the natural policy, approval and cancellation
-  concepts while moving authentication ports and orchestration helpers to an
-  extension surface.
-- `ExecutionEvent` should be reviewed as `ToolExecutionEvent`; the existing
-  generic name collides with agent and interaction events.
-- `Snapshot` should be qualified by its owner or lifetime.
-- `ContextManifest` should be reviewed as selected context rather than making a
-  manifest part of the common agent path.
-- `Artifact`, `ArtifactRef`, `EvaluationCase`, `EvaluationCriterion` and
-  `EvaluationResult` are already approachable.
-- Repeated scoped names such as `EvaluationEvaluator`,
-  `EmbedderEmbedInput` and `RetrieverRetrieveInput` should use their subpath and
-  method context instead of restating the whole sentence in one type.
-- Capability binding, registration brands and retry guarantee plumbing belong
-  to an adapter or capability-author surface, not `./agent`.
+## Superseded language
 
-## Usability gate
+The following are retained only in git history and ADR-012's historical record:
 
-Every common journey receives a typechecked README-sized fixture. A common
-fixture fails the language gate if it requires any of these words:
+- common `createAgent` returning a ready local Agent;
+- common `defineWorkflow` returning a locally executable Workflow;
+- common `createConversation` bound to that Agent;
+- built-in target-neutral `ExecutionPlan` as the privileged path from
+  specifications to execution; and
+- `createLocalAgentRunner` as a supported package export.
 
-```text
-port
-binding
-registry
-provenance
-envelope
-snapshot
-admission
-projection
-disposition
-conformance
-```
-
-An advanced extension fixture may use those terms when it implements the
-corresponding guarantee.
-
-## Stage boundary
-
-The language stage runs before the specifications stage:
-
-1. language-audit records this audit and the five journey contracts.
-2. language-vocabulary ratifies the exact term map, export classification and desired API
-   fixtures.
-3. `language-rollout` changes source, root entrypoints, exports, tests,
-   examples and documentation as one atomic integration, then verifies the
-   packed package and common-journey usability.
-
-`specification-contracts` remains blocked until `language-rollout` is complete.
-This prevents specification work from cementing a second layer of inaccessible
-public terms.
+No aliases or deprecation bridges are added because the project has no
+compatibility obligation for these pre-user surfaces.

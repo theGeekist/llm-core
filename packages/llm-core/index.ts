@@ -1,5 +1,10 @@
-export { createAgent } from "./src/agent/index";
-export type { Agent, AgentConfig, AgentEvent, AgentResult, AgentRun } from "./src/agent/index";
+export type {
+  AgentDefinition,
+  AgentEffectRequirement,
+  AgentEvent,
+  AgentResult,
+  AgentSkillRef,
+} from "./src/agent/index";
 
 export { defineTool } from "./src/features/tooling/public";
 export type {
@@ -11,24 +16,14 @@ export type {
   ToolInput,
 } from "./src/features/tooling/public";
 
-export { defineWorkflow } from "./src/application/workflow/public";
 export type {
-  Workflow,
-  WorkflowConfig,
-  WorkflowPause,
-  WorkflowResult,
-  WorkflowStep,
-  WorkflowStepResult,
-} from "./src/application/workflow/public";
-
-export { createConversation } from "./src/conversation/index";
-export type {
-  Conversation,
-  ConversationConfig,
   ConversationEvent,
-  ConversationResult,
-  ConversationRun,
+  ConversationSnapshot,
+  ConversationState,
+  ConversationStore,
 } from "./src/conversation/index";
+
+export type { WorkflowExecutionPlan, WorkflowExecutionPlanStep } from "./src/workflow/index";
 
 export {
   compileSpecification,

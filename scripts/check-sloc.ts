@@ -52,8 +52,6 @@ const sealedLegacyEntries: Readonly<Record<string, string>> = {
     "5c48d596367f4f7d3a29eb898aaa9bdb5278d0c80409e4843f661da54b1d0663",
   "packages/llm-core/src/adapters/spec-kit/public.ts":
     "ead646c6212830167be8052505f38ce771355eb24a151a9ef40e8775a9a826b7",
-  "packages/llm-core/src/application/agent/local-runner.ts":
-    "2e549da5e323f894345f46fa4e6b041eb58480ab1db507a1164af193da97b452",
   "packages/llm-core/tests/application/agent/local-runner.test.ts":
     "4448a7cbf3201876d123942c8b6a29109a51faf1008815afceaba98b52b01f3b",
   "packages/llm-core/tests/application/agent/model-tool-program.test.ts":

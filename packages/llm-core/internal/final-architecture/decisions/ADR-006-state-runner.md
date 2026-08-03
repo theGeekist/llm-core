@@ -1,7 +1,7 @@
 # ADR-006 — State Lifetimes and Agent Runner Lifecycle
 
 Architecture version: v2
-Status: accepted
+Status: accepted; local-runner implementation clause superseded by ADR-016
 Date: 2026-07-29
 Owners: architecture coordinator
 Affected tasks: core-state-interventions, core-agent-runner, core-interactions
@@ -51,8 +51,9 @@ remain distinct even when correlated.
 - Native handles/events/checkpoints remain opaque and never become the portable
   `AgentRun`.
 
-The current implementation becomes `createLocalAgentRunner`; this is an
-adaptation to the richer port, not a type-only rename.
+The current implementation originally became `createLocalAgentRunner`. ADR-016
+later restricted that implementation to private conformance evidence: supported
+runners are qualified runtime integrations implementing this port.
 
 ## Verification implications
 

@@ -1,10 +1,7 @@
-import type { ContractVersion, Digest, JsonValue, NativeExtensions } from "#contracts";
+import type { ContractVersion, Digest, NativeExtensions } from "#contracts";
 import { maybeChain, maybeMap, type MaybePromise } from "#shared/maybe";
 import { cloneFrozen } from "#shared/portable-data";
-import {
-  createSpecificationGraph,
-  createSpecificationSourceSnapshot,
-} from "../features/specifications/runtime";
+import { createSpecificationGraph } from "../features/specifications/runtime";
 import type { SpecificationAuthorityState } from "../application/specification-compiler/types";
 import {
   bindCompiledSpecificationAuthority,
@@ -17,15 +14,22 @@ import type {
 } from "../application/specification-compiler/public";
 import { compileSpecification as compileRegisteredSpecification } from "../application/specification-compiler/compiler";
 import { reviewSpecificationGraph } from "../application/specification-compiler/resolution";
+import { graphFromSource } from "./loading";
 import {
   createConversionReport,
   createProposedSpecificationChange,
   createSpecificationAdapterSupport,
   createSpecificationDecision,
   createSpecificationDecisionRecord,
+  createPortableIntegrationReference,
   createSpecificationSourceSnapshot as createSourceSnapshot,
 } from "../features/specifications/public";
 import type {
+  AgentIntent,
+  ApplicationIntent,
+  ApprovalIntent,
+  CapabilityIntent,
+  ContextIntent,
   ConversionFidelity,
   ConversionIssue,
   ConversionIssueDisposition,
@@ -33,6 +37,10 @@ import type {
   ConversionReport,
   ProposedSpecificationChange,
   ProposedSpecificationChangeId,
+  EvaluationIntent,
+  PortableIntegrationReference,
+  PortableIntegrationReferenceInput,
+  PortableSpecificationTarget,
   SpecificationAdapterDirection,
   SpecificationAdapterFixture,
   SpecificationAdapterSourceOwnership,
@@ -44,10 +52,14 @@ import type {
   SpecificationDecisionRecordId,
   SpecificationDecisionSummary,
   SpecificationDecisionValidity,
+  SpecificationDocumentNodeKind,
   SpecificationEvidenceBinding,
   SpecificationFormat,
+  SpecificationNode,
+  SpecificationNodeKind,
   SpecificationPolicyVersion,
   SpecificationQuestion,
+  SpecificationSemanticNodeKind,
   SpecificationSourceAuthority,
   SpecificationSourceBinding,
   SpecificationSourceDocument,
@@ -55,6 +67,8 @@ import type {
   SpecificationSourceRevisionBinding,
   SpecificationSourceRole,
   SpecificationSourceSnapshot,
+  ToolIntent,
+  WorkflowIntent,
 } from "../features/specifications/public";
 import type {
   CompiledSpecification,
@@ -67,15 +81,25 @@ export {
   createSpecificationAdapterSupport,
   createSpecificationDecision,
   createSpecificationDecisionRecord,
+  createPortableIntegrationReference,
   createSourceSnapshot as createSpecificationSourceSnapshot,
 };
 export type {
+  AgentIntent,
+  ApplicationIntent,
+  ApprovalIntent,
+  CapabilityIntent,
   CompiledSpecification,
   ConversionFidelity,
   ConversionIssue,
   ConversionIssueDisposition,
   ConversionIssueSeverity,
   ConversionReport,
+  ContextIntent,
+  EvaluationIntent,
+  PortableIntegrationReference,
+  PortableIntegrationReferenceInput,
+  PortableSpecificationTarget,
   ProposedSpecificationChange,
   ProposedSpecificationChangeId,
   SpecificationAdapterDirection,
@@ -89,10 +113,13 @@ export type {
   SpecificationDecisionRecordId,
   SpecificationDecisionSummary,
   SpecificationDecisionValidity,
+  SpecificationDocumentNodeKind,
   SpecificationEvidenceBinding,
   SpecificationFormat,
+  SpecificationNodeKind,
   SpecificationPolicyVersion,
   SpecificationQuestion,
+  SpecificationSemanticNodeKind,
   SpecificationSourceAuthority,
   SpecificationSourceBinding,
   SpecificationSourceDocument,
@@ -100,6 +127,8 @@ export type {
   SpecificationSourceRevisionBinding,
   SpecificationSourceRole,
   SpecificationSourceSnapshot,
+  ToolIntent,
+  WorkflowIntent,
   PreparedSpecificationExecution,
   SpecificationExecutionOperations,
 };
@@ -117,22 +146,12 @@ export interface Specification {
   readonly report?: ConversionReport;
 }
 
-/** One portable item a review policy may select into an accepted scope. */
-export interface SpecificationReviewItem {
-  readonly scopeId: SpecificationScopeId;
-  readonly kind:
-    | "requirement"
-    | "decision"
-    | "question"
-    | "plan"
-    | "workflow"
-    | "artifact"
-    | "other";
-  readonly title: string;
-  readonly source: SpecificationSourceBinding;
-  readonly content?: JsonValue;
-  readonly extensions?: NativeExtensions;
-}
+/** One typed portable item a review policy may select into an accepted scope. */
+export type SpecificationReviewItem = SpecificationNode extends infer TNode
+  ? TNode extends SpecificationNode
+    ? Omit<TNode, "nodeId"> & { readonly scopeId: SpecificationScopeId }
+    : never
+  : never;
 
 /** A traced relationship between reviewable scope items. */
 export interface SpecificationReviewRelationship {
@@ -210,8 +229,8 @@ export interface ReviewSpecificationOptions {
 }
 
 export interface CompileSpecificationOptions<T> {
-  /** A portable declarative target, such as the common Agent ExecutionPlan. */
-  readonly target: T;
+  /** Portable declarative data or a serialized integration reference; never a live native object. */
+  readonly target: T & PortableSpecificationTarget<T>;
 }
 
 /**
@@ -220,7 +239,7 @@ export interface CompileSpecificationOptions<T> {
  */
 export interface ProjectSpecificationOptions<T, TResult> {
   readonly project: (view: SpecificationProjectionView) => MaybePromise<{
-    readonly target: T;
+    readonly target: T & PortableSpecificationTarget<T>;
     readonly result: TResult;
   }>;
 }
@@ -258,14 +277,17 @@ const reviewViewForGraph = (
 ): SpecificationReviewView => {
   const review = reviewSpecificationGraph(graph);
   return cloneFrozen({
-    items: graph.nodes.map((node) => ({
-      scopeId: node.nodeId,
-      kind: node.kind,
-      title: node.title,
-      source: node.source,
-      ...(node.content === undefined ? {} : { content: node.content }),
-      ...(node.extensions === undefined ? {} : { extensions: node.extensions }),
-    })),
+    items: graph.nodes.map(
+      (node): SpecificationReviewItem =>
+        ({
+          scopeId: node.nodeId,
+          kind: node.kind,
+          title: node.title,
+          source: node.source,
+          ...(node.content === undefined ? {} : { content: node.content }),
+          ...(node.extensions === undefined ? {} : { extensions: node.extensions }),
+        }) as SpecificationReviewItem,
+    ),
     relationships: graph.relationships.map((relationship) => ({
       relationshipId: relationship.relationshipId,
       kind: relationship.kind,
@@ -290,25 +312,6 @@ const reviewViewFor = (specification: Specification): SpecificationReviewView =>
     throw new TypeError("Specifications must be loaded by loadSpecification before review.");
   }
   return review;
-};
-
-const graphFromSource = (input: unknown): ReturnType<typeof createSpecificationGraph> => {
-  try {
-    return createSpecificationGraph(input as never);
-  } catch (graphError) {
-    try {
-      const source = createSpecificationSourceSnapshot(input as never);
-      return createSpecificationGraph({
-        graphId: `${source.sourceId}.loaded` as never,
-        version: source.format.version,
-        sources: [source],
-        nodes: [],
-        relationships: [],
-      });
-    } catch {
-      throw graphError;
-    }
-  }
 };
 
 /**

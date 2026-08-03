@@ -3,7 +3,9 @@ architecture_version: 2
 id: applications-client-subpath-release
 title: Qualify and publish the shared client subpath
 stage: applications
-status: proposed
+status: cancelled
+replaced_by:
+  - aifsd-delivery-toolchain
 priority: high
 preferred_owner_kind: coordinator
 owner:
@@ -21,6 +23,7 @@ decision_dependencies:
   - ADR-012
   - ADR-014
   - ADR-015
+  - ADR-016
 conflicts_with:
   - architecture-status-validation
   - runtime-tools-front-boundary
@@ -50,10 +53,13 @@ read_scope:
   - packages/llm-core/src/client/**
   - packages/llm-core/tests/client/**
 review_owner: coordinator
-updated_at: 2026-08-03
+updated_at: 2026-08-04
 ---
 
 # applications-client-subpath-release — Qualify and publish the shared client subpath
+
+Cancelled by ADR-016 before implementation. No shared client subpath is
+published until unlike real consumers establish a stable contract.
 
 ## Objective
 

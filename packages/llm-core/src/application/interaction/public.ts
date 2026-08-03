@@ -11,7 +11,6 @@ export {
   projectInteractionEvent,
   reduceInteractionProjection,
 } from "./projection";
-export { createConversation } from "./conversation";
 export { createInteractionSession } from "./session";
 export { registerConversationSnapshot } from "./registration";
 export {
@@ -20,11 +19,7 @@ export {
   registerInteractionContentEvent,
 } from "./content-registration";
 export type {
-  Conversation,
-  ConversationConfig,
   ConversationEvent,
-  ConversationResult,
-  ConversationRun,
   ConversationStoreLoadRequest,
   ConversationStoreSaveRequest,
   ConversationStoreReservation,

@@ -7,11 +7,11 @@ holds behavior or a handle to work executing now.
 This page describes the currently shipped contracts. Not every public type
 belongs to ordinary application usage:
 
-| Level     | When you need it                                       | Typical language                                 |
-| --------- | ------------------------------------------------------ | ------------------------------------------------ |
-| Common    | Build and run an application                           | agent, tool, workflow, run, result, conversation |
-| Extension | Implement a runtime, store, adapter or safety boundary | runner, port, policy, receipt, checkpoint        |
-| Internal  | Understand core implementation mechanics               | binding provenance, registration, coordinator    |
+| Level     | When you need it                                       | Typical language                                                    |
+| --------- | ------------------------------------------------------ | ------------------------------------------------------------------- |
+| Common    | Describe portable intent and evidence                  | agent definition, tool, workflow intent, result, conversation state |
+| Extension | Implement a runtime, store, adapter or safety boundary | runner, port, policy, receipt, checkpoint                           |
+| Internal  | Understand core implementation mechanics               | binding provenance, registration, coordinator                       |
 
 Current low-level composition APIs expose some extension types directly. Their
 presence here does not mean every application owns their implementation. The
@@ -20,28 +20,23 @@ runner, adapter and storage responsibilities differ.
 
 ## Agents
 
-| Term                      | Meaning                                                                                            |
-| ------------------------- | -------------------------------------------------------------------------------------------------- |
-| `Agent`                   | Ready common object created with `createAgent`; owns `run` and `start`.                            |
-| `AgentRun`                | Live handle exposing `AgentEvent` values, controls, and one terminal result.                       |
-| `AgentResult`             | Terminal result: `completed`, `failed`, `denied`, or `cancelled`.                                  |
-| `AgentEvent`              | Typed lifecycle event for one agent run. It is distinct from controlled-effect evidence.           |
-| `AgentDefinition`         | Extension contract containing portable identity, instructions, requirements, metadata, and skills. |
-| `PreparedAgentDefinition` | Definition prepared and provenanced by one compatible runner.                                      |
-| `AgentRunner`             | Extension port that reports a profile, prepares definitions, starts runs, and may support resume.  |
-| `AgentRunnerProfile`      | Supported runtime behavior and optional controls.                                                  |
-| `AgentStartRequest`       | Extension request containing a prepared definition, invocation context, and portable input.        |
+| Term                      | Meaning                                                                                           |
+| ------------------------- | ------------------------------------------------------------------------------------------------- |
+| `AgentRun`                | Live handle exposing `AgentEvent` values, controls, and one terminal result.                      |
+| `AgentResult`             | Terminal result: `completed`, `failed`, `denied`, or `cancelled`.                                 |
+| `AgentEvent`              | Typed lifecycle event for one agent run. It is distinct from controlled-effect evidence.          |
+| `AgentDefinition`         | Portable identity, instructions, requirements, metadata, and skills.                              |
+| `PreparedAgentDefinition` | Definition prepared and provenanced by one compatible runner.                                     |
+| `AgentRunner`             | Extension port that reports a profile, prepares definitions, starts runs, and may support resume. |
+| `AgentRunnerProfile`      | Supported runtime behavior and optional controls.                                                 |
+| `AgentStartRequest`       | Extension request containing a prepared definition, invocation context, and portable input.       |
 
 ## Workflows
 
 | Term                           | Meaning                                                                                 |
 | ------------------------------ | --------------------------------------------------------------------------------------- |
-| `WorkflowConfig`               | Common configuration containing ordered passive steps and optional identity/version.    |
-| `Workflow`                     | Ready common object that owns `run` and `resume`.                                       |
-| `WorkflowStep`                 | Passive step with an explicit key, `effect: "none"`, and execution behavior.            |
-| `WorkflowStepResult`           | A step transition carrying the next state or an ephemeral pause.                        |
-| `WorkflowResult`               | Result of ordinary run or resume: `completed`, `paused`, or `failed`.                   |
-| `WorkflowPause`                | Ephemeral workflow pause state accepted by `Workflow.resume`.                           |
+| `WorkflowExecutionPlan`        | Portable declarative workflow intent projected by an explicit runtime target.           |
+| Native workflow                | Graph or durable workflow owned and executed by a qualified integration.                |
 | `ControlledWorkflowStep`       | Meaningful runtime step executed only by authenticated durable intervention resume.     |
 | `ControlledWorkflowStepResult` | State and authoritative effect record returned by a controlled runtime step.            |
 | `ControlledWorkflowResult`     | Result of authenticated durable intervention resume, including reconciliation outcomes. |
@@ -104,8 +99,8 @@ code. It is not a public llm-core type or package export.
 | ----------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
 | Capability binding      | Evidence-backed portable descriptor paired with an exact immutable live port facade.                                         |
 | `InvocationContext`     | Portable identity and authority passed separately through a capability port.                                                 |
-| `Conversation`          | Common ready object created from an `Agent`; sends input or streams projected conversation events.                           |
 | `ConversationEvent`     | User-facing event projected from canonical interaction facts.                                                                |
+| `ConversationSnapshot`  | Portable point-in-time conversation state with no runtime-resume guarantee.                                                  |
 | `ConversationMessage`   | Portable role-and-content message stored by the memory capability.                                                           |
 | `ConversationRunRecord` | Terminal run history stored in a durable conversation snapshot.                                                              |
 | `InteractionEvent`      | Extension union of agent, controlled-execution, and registered content events accepted by interaction projection.            |

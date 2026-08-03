@@ -1,0 +1,9 @@
+export const deepFreeze = <T>(value: T): T => {
+  if (value && typeof value === "object" && !Object.isFrozen(value)) {
+    Object.freeze(value);
+    for (const child of Object.values(value)) deepFreeze(child);
+  }
+  return value;
+};
+
+export const frozenPortable = <T>(value: T): T => deepFreeze(structuredClone(value));

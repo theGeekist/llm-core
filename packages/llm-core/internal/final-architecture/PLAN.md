@@ -19,8 +19,9 @@ The supporting research assessment is:
 
 `/Users/jasonnathan/Repos/aifsd-agent-framework-research/profiles/llm-core-support-assessment.md`
 
-Historical `internal/stage-*.md` files remain evidence. This directory is the
-authority for Architecture v2 decisions, task briefs and status.
+Historical `internal/v1-*.md` files remain provenance and are explicitly
+non-authoritative. This directory is the authority for Architecture v2
+decisions, task briefs and status.
 
 ## Completed posture
 
@@ -35,8 +36,12 @@ authority for Architecture v2 decisions, task briefs and status.
 - Controlled effects use one policy, approval, digest, receipt and evidence
   path.
 - `ExecutionEvent` is canonical and redacted before projection.
-- `AgentRunner` is the runtime port; local execution is one implementation.
-- Public language expresses common intent without exposing lifecycle machinery.
+- `AgentRunner` is the runtime-integration port; concrete runners are qualified
+  adapter implementations.
+- The local TypeScript runner is private conformance evidence, not a supported
+  runtime, package front or common application journey.
+- Public language expresses portable intent without implying that the kernel
+  owns agent, workflow or conversation execution.
 - Specifications use a typed semantic graph, explicit preservation/loss
   reports, application-owned admission and authority snapshots.
 - Pipeline supplies domain-agnostic composition; `llm-core` owns specification
@@ -63,14 +68,14 @@ features do not import upward into application orchestration.
 
 ## Completed stages
 
-| Stage          | Outcome                                                      | Completion evidence |
-| -------------- | ------------------------------------------------------------ | ------------------- |
-| Architecture   | Contract, topology, control and ownership decisions accepted | ADR-001–ADR-008     |
-| Baseline       | Previous public surface and migration blast radius captured  | `api-baseline`      |
-| Core           | Runtime kernel and curated fronts converged                  | `core-convergence`  |
-| Capabilities   | Context, artifacts, evaluation and runtime conformance added | capability tasks    |
-| Language       | Common journeys and exact public vocabulary rolled out       | `language-rollout`  |
-| Specifications | Semantic graph, compiler, authority and public API completed | `specification-api` |
+| Stage          | Outcome                                                                                               | Completion evidence |
+| -------------- | ----------------------------------------------------------------------------------------------------- | ------------------- |
+| Architecture   | Contract, topology, control and ownership decisions accepted                                          | ADR-001–ADR-008     |
+| Baseline       | Previous public surface and migration blast radius captured                                           | `api-baseline`      |
+| Core           | Runtime kernel and curated fronts converged                                                           | `core-convergence`  |
+| Capabilities   | Context, artifacts, evaluation and runtime conformance added                                          | capability tasks    |
+| Language       | Public vocabulary rolled out; runnable facades later superseded by ADR-016                            | `language-rollout`  |
+| Specifications | Typed application/agent semantic waist, portable compiler targets, authority and public API completed | `specification-api` |
 
 The kernel dependency graph terminates at `specification-api`:
 
@@ -91,10 +96,12 @@ not move the completion boundary.
 
 ## Public surface baseline
 
-The completion baseline contains 30 ESM runtime and declaration entrypoints.
-The package root remains intentionally narrow. New root exports are denied by
-default, and a new subpath requires a task-specific qualification and
-coordinator-owned publication decision.
+The original completion baseline contained 30 ESM runtime and declaration
+entrypoints. ADR-016 removes the fronts that presented private proof executors
+as common product runtime. The package root is contract- and
+specification-oriented. New root exports are denied by default, and a new
+subpath requires a task-specific qualification and coordinator-owned
+publication decision.
 
 The Pipeline dependency is the published, pinned and packed-qualified
 `@wpkernel/pipeline@1.2.0`. Its typed replacement state, `next(output?)`, sync
@@ -104,8 +111,10 @@ contracts.
 ## Completion evidence
 
 - All kernel task dependencies are `done`.
-- The public vocabulary and common packed journeys passed without requiring
-  internal lifecycle terms.
+- The original public vocabulary and packed journeys passed their implementation
+  gates. ADR-016 records that runnable Agent, Workflow and Conversation journeys
+  were nevertheless the wrong ownership boundary and are not continuing
+  architecture authority.
 - Specification admission, provenance, projection and post-projection
   authority verification are represented in the public specification path.
 - Full release checks and isolated packed-consumer verification passed at the
@@ -125,8 +134,9 @@ task front matter owns their exact dependency graph:
 
 ADR-013 and ADR-014 bound that work. ADR-015 establishes the completion line,
 evidence-before-abstraction rules, publication lifecycle and package-split
-triggers. No roadmap item is an active claim merely because its dependencies
-are satisfied.
+triggers. ADR-016 restores integration-owned execution and places any AIFSD
+SDK, CLI or client product above the kernel. No roadmap item is an active claim
+merely because its dependencies are satisfied.
 
 ## Verification baseline
 

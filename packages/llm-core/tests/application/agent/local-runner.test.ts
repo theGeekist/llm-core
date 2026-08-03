@@ -12,7 +12,7 @@ import {
   createLocalAgentRunner,
   type AgentRunIdentityPort,
   type LocalAgentProgramPort,
-} from "../../../src/application/agent/public";
+} from "../../support/local-agent/public";
 import type { ExecuteControlledToolInput } from "../../../src/application/tool-execution/public";
 import type {
   AgentRun,

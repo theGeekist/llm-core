@@ -3,7 +3,9 @@ architecture_version: 2
 id: applications-client-platform-qualification
 title: Prequalify client platforms and build the packed-package gate
 stage: applications
-status: proposed
+status: cancelled
+replaced_by:
+  - aifsd-delivery-toolchain
 priority: high
 preferred_owner_kind: coordinator
 owner:
@@ -21,6 +23,7 @@ decision_dependencies:
   - ADR-007
   - ADR-014
   - ADR-015
+  - ADR-016
 conflicts_with:
   - adapter-strands-runtime-release
   - adapter-strands-runtime
@@ -38,10 +41,13 @@ read_scope:
   - packages/llm-core/src/client/**
   - packages/llm-core/tests/client/**
 review_owner: coordinator
-updated_at: 2026-08-03
+updated_at: 2026-08-04
 ---
 
 # applications-client-platform-qualification — Prequalify client platforms and build the packed-package gate
+
+Cancelled by ADR-016 before implementation. Platform qualification follows an
+evidence-backed product boundary rather than defining one in advance.
 
 ## Objective
 

@@ -1,6 +1,6 @@
 # @geekist/llm-core
 
-Portable contracts and controlled orchestration for LLM applications.
+Portable contracts, conformance, authority, and evidence for AI applications.
 
 Version 2 publishes ESM and requires Node.js 22 or newer.
 
@@ -9,29 +9,46 @@ npm install @geekist/llm-core
 ```
 
 ```ts
-import { createAgent } from "@geekist/llm-core";
-import type { Model } from "@geekist/llm-core/model";
+import { defineTool } from "@geekist/llm-core";
 
-declare const model: Model;
-
-const agent = createAgent({
-  model,
-  instructions: "Return a clear, portable answer.",
+const search = defineTool<{ query: string }>({
+  name: "search",
+  description: "Search the knowledge base.",
+  input: {
+    schema: {
+      type: "object",
+      properties: { query: { type: "string" } },
+      required: ["query"],
+      additionalProperties: false,
+    },
+    validate: (value) =>
+      typeof value === "object" &&
+      value !== null &&
+      !Array.isArray(value) &&
+      typeof value.query === "string"
+        ? { valid: true }
+        : { valid: false, issues: [{ path: "query", code: "required" }] },
+  },
+  effect: "read-only",
+  execute: ({ query }) => ({ matches: [`Result for ${query}`] }),
 });
-
-const result = await agent.run("Why is the sky blue?");
-console.log(result.status, result.output);
 ```
 
-The root exposes the common agent, tool, workflow, and conversation journeys.
-Runtime implementers use `/agent/runtime` and `/tools/runtime`. Use
-`/interaction` for explicit runner sessions, raw interaction events,
-projections, and reconnect state. Qualified adapter paths contain provider or
-UI integration code.
+The package does not provide a default agent loop, workflow engine, or
+conversation executor. Runtime integrations implement the `AgentRunner` port
+from `@geekist/llm-core/agent/runtime`; applications select an integration and
+pass it explicitly to the interaction APIs. `@geekist/llm-core/workflow`
+contains portable workflow intent, not a local runtime.
+
+The root contains the smallest common contract journey. Explicit subpaths
+provide specifications, runtime ports, controlled tool execution, interaction
+sessions, evidence, state, and qualified provider or UI adapters.
 
 Provider-native data is projected only as validated, namespaced, redacted JSON.
 Portable values never contain credentials, physical paths, or live framework
 objects.
 
-See the [full documentation](../../docs/index.md) and
-[migration map](../../docs/reference/migration-2.md).
+See the [documentation](https://llm-core.geekist.co/), the
+[architecture](https://github.com/theGeekist/llm-core/tree/main/packages/llm-core/internal/final-architecture),
+and the
+[version 2 migration guide](https://github.com/theGeekist/llm-core/blob/main/docs/reference/migration-2.md).

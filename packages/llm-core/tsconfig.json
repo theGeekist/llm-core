@@ -20,7 +20,6 @@
       "@geekist/llm-core/agent": ["./src/agent/index.ts"],
       "@geekist/llm-core/agent/runtime": ["./src/agent/runtime.ts"],
       "@geekist/llm-core/workflow": ["./src/workflow/index.ts"],
-      "@geekist/llm-core/workflow/runtime": ["./src/workflow/runtime.ts"],
       "@geekist/llm-core/conversation": ["./src/conversation/index.ts"],
       "@geekist/llm-core/interaction": ["./src/interaction/index.ts"],
       "@geekist/llm-core/retrieval": ["./src/features/retrieval/public.ts"],

@@ -14,6 +14,7 @@ base_sha:
 branch:
 worktree:
 depends_on:
+  - architecture-runtime-ownership-correction
   - architecture-source-layout-normalization
   - capabilities-operational-evidence
   - capabilities-runtime-conformance
@@ -25,6 +26,7 @@ decision_dependencies:
   - ADR-007
   - ADR-013
   - ADR-015
+  - ADR-016
 conflicts_with:
   - runtime-temporal-reference
   - adapters-protocol-qualification
@@ -54,7 +56,7 @@ read_scope:
   - packages/llm-core/src/application/**
   - packages/llm-core/src/adapters/runtimes/**
 review_owner: coordinator
-updated_at: 2026-08-03
+updated_at: 2026-08-04
 ---
 
 # adapter-strands-runtime — Strands TypeScript runtime qualification
@@ -116,7 +118,8 @@ bun run --cwd packages/llm-core release:build
 
 ## Work log
 
-Planned from ADR-013; not claimed.
+Planned from ADR-013; reconciled with the integration-owned execution boundary
+in ADR-016; not claimed.
 
 ## Handoff
 

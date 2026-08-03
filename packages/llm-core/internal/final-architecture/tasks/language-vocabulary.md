@@ -77,8 +77,8 @@ before implementation begins.
 ## Verification
 
 ```sh
-node packages/llm-core/tests/language/inventory-public-exports.mjs >/dev/null
-! rg -i '\b(port|binding|registry|provenance|envelope|snapshot|admission|projection|disposition|conformance)\b' packages/llm-core/tests/language/desired
+node packages/llm-core/tests/language/v1-inventory-public-exports.mjs >/dev/null
+! rg -i '\b(port|binding|registry|provenance|envelope|snapshot|admission|projection|disposition|conformance)\b' packages/llm-core/tests/language/v1-desired
 bunx prettier packages/llm-core/internal/final-architecture --check
 git diff --check
 ```

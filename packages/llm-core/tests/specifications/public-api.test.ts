@@ -1,8 +1,8 @@
 import { describe, expect, test } from "bun:test";
 import { contractVersion, digest, extensionNamespace, type JsonValue } from "#contracts";
-import { createAgent } from "../../src/agent/index";
 import {
   compileSpecification,
+  createPortableIntegrationReference,
   createSpecificationDecision,
   createSpecificationDecisionRecord,
   createSpecificationSourceSnapshot,
@@ -219,15 +219,15 @@ describe("specification public API", () => {
     expect(compiled.value.agent.agentId).toBe("agent.runtime");
     expect(Object.keys(compiled).sort()).toEqual(["compilationId", "value"]);
     expect(Object.isFrozen(compiled)).toBe(true);
-    expect(() =>
-      createAgent({
-        model: {
-          profile: { profileId: "model.runtime", version },
-          generate: () => ({}) as never,
-        } as never,
-        specification: compiled,
-      }),
-    ).not.toThrow();
+    const prepared = await prepareSpecificationExecution({
+      compiled,
+      operations: {
+        prepare: (definition) => ({ definition }),
+        execute: ({ input }) => input,
+        resume: ({ input }) => input,
+      },
+    });
+    expect(prepared.execute("explicit-integration")).toBe("explicit-integration");
   });
 
   test("does not let a caller replace the facade-bound authority after revocation", async () => {
@@ -296,15 +296,16 @@ describe("specification public API", () => {
       clock: { now: () => "2026-08-01T12:00:00.000Z" },
     };
     expect(() =>
-      createAgent({
-        model: {
-          profile: { profileId: "model.runtime", version },
-          generate: () => ({}) as never,
-        } as never,
-        specification: compiled,
-        specificationAuthority: forgedAuthority,
-      } as never),
+      prepareSpecificationExecution({
+        compiled,
+        operations: {
+          prepare: (definition) => ({ definition }),
+          execute: ({ input }) => input,
+          resume: ({ input }) => input,
+        },
+      }),
     ).toThrow("no longer matches");
+    expect(forgedAuthority.currentState.current()).toBeDefined();
   });
 
   test("requires a review-bound accepted decision before compilation", () => {
@@ -323,6 +324,31 @@ describe("specification public API", () => {
     expect(() => compileSpecification(forged, { target: { value: "forged" } })).toThrow(
       "Only accepted specification decisions",
     );
+  });
+
+  test("compiles serialized integration references but rejects live native objects", async () => {
+    const value = await reviewedFixture();
+    const reference = createPortableIntegrationReference({
+      integration: extensionNamespace("org.example.langgraph"),
+      reference: "graphs/support/v3",
+      version,
+      metadata: { environment: "test" },
+    });
+    const compiled = await compileSpecification(value.decision, { target: reference });
+    expect(compiled.value as JsonValue).toEqual({
+      kind: "integration-reference",
+      integration: "org.example.langgraph",
+      reference: "graphs/support/v3",
+      version: "1.0.0",
+      metadata: { environment: "test" },
+    });
+
+    const liveNativeGraph = { invoke: () => "not portable" };
+    expect(() =>
+      compileSpecification(value.decision, {
+        target: liveNativeGraph as never,
+      }),
+    ).toThrow("portable declarative data");
   });
 
   test("projects lazily after authority and preserves synchronous MaybePromise results", async () => {

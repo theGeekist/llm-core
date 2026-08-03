@@ -5,6 +5,7 @@ import type {
   JsonValue,
   NativeExtensions,
 } from "#contracts";
+import type { SpecificationSemanticNode, SpecificationSemanticNodeKind } from "./semantic-types";
 
 declare const specificationSourceIdBrand: unique symbol;
 declare const specificationNodeIdBrand: unique symbol;
@@ -69,7 +70,7 @@ export interface SpecificationSourceBinding {
   readonly location?: string;
 }
 
-export type SpecificationNodeKind =
+export type SpecificationDocumentNodeKind =
   | "requirement"
   | "decision"
   | "question"
@@ -78,14 +79,24 @@ export type SpecificationNodeKind =
   | "artifact"
   | "other";
 
-export interface SpecificationNode {
+export type SpecificationNodeKind = SpecificationDocumentNodeKind | SpecificationSemanticNodeKind;
+
+export interface SpecificationNodeShared {
   readonly nodeId: SpecificationNodeId;
-  readonly kind: SpecificationNodeKind;
   readonly title: string;
   readonly source: SpecificationSourceBinding;
-  readonly content?: JsonValue;
   readonly extensions?: NativeExtensions;
 }
+
+export type SpecificationDocumentNode = SpecificationNodeShared & {
+  readonly kind: SpecificationDocumentNodeKind;
+  readonly content?: JsonValue;
+};
+
+/** Typed portable intent; integrations project these nodes into their own runtimes. */
+export type SpecificationNode = SpecificationDocumentNode | SpecificationSemanticNode;
+
+export type * from "./semantic-types";
 
 export type SpecificationRelationshipKind =
   | "depends-on"

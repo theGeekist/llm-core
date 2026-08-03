@@ -11,11 +11,17 @@ import type {
   SpecificationFormat,
   SpecificationGraph,
   SpecificationNode,
+  SpecificationSemanticNode,
   SpecificationRelationship,
   SpecificationSourceBinding,
   SpecificationSourceSnapshot,
 } from "./types";
 import { assertKnownBinding, assertReportBindings } from "./graph-bindings";
+import {
+  assertSemanticNodeReferences,
+  assertSpecificationNode,
+  semanticNodeKinds,
+} from "./semantic-validation";
 import {
   fail,
   nonBlankId,
@@ -131,28 +137,6 @@ export function assertSpecificationSourceSnapshot(
   optionalExtensions(input);
 }
 
-function assertNode(value: unknown): asserts value is SpecificationNode {
-  const input = record(
-    value,
-    ["nodeId", "kind", "title", "source"],
-    ["content", "extensions"],
-    "closed specification nodes",
-  );
-  nonBlankId(valueOf(input, "nodeId"), "stable node identities");
-  if (
-    !["requirement", "decision", "question", "plan", "workflow", "artifact", "other"].includes(
-      String(valueOf(input, "kind")),
-    )
-  ) {
-    fail("known specification node kinds");
-  }
-  nonBlankText(valueOf(input, "title"), "non-blank specification node titles");
-  assertSourceBinding(valueOf(input, "source"));
-  const content = valueOf<unknown>(input, "content");
-  if (content !== undefined && !isJsonValue(content)) fail("strict JSON node content");
-  optionalExtensions(input);
-}
-
 function assertRelationship(value: unknown): asserts value is SpecificationRelationship {
   const input = record(
     value,
@@ -198,7 +182,7 @@ export function assertSpecificationGraph(value: unknown): asserts value is Speci
     "unique graph source identities",
   );
   const nodes = values(valueOf(input, "nodes"), "dense node arrays");
-  nodes.forEach(assertNode);
+  nodes.forEach(assertSpecificationNode);
   const typedNodes = nodes as SpecificationNode[];
   unique(
     typedNodes.map((node) => node.nodeId),
@@ -213,6 +197,12 @@ export function assertSpecificationGraph(value: unknown): asserts value is Speci
     "unique graph relationship identities",
   );
   const nodeIds = new Set(typedNodes.map((node) => node.nodeId));
+  const nodesById = new Map(typedNodes.map((node) => [node.nodeId, node] as const));
+  typedNodes.forEach((node) => {
+    if (semanticNodeKinds.includes(node.kind as never)) {
+      assertSemanticNodeReferences(node as SpecificationSemanticNode, nodesById);
+    }
+  });
   typedRelationships.forEach((relationship) => {
     if (!nodeIds.has(relationship.from) || !nodeIds.has(relationship.to)) {
       fail("relationship endpoints that reference declared nodes");

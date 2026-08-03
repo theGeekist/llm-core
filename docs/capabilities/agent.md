@@ -1,29 +1,15 @@
-# Agent capabilities
+# Agent contracts
 
-The `/agent` path contains the common `Agent` facade. Create one with
-`createAgent`, then call `run` for a terminal `AgentResult` or `start` for an
-`AgentRun` that streams `AgentEvent` values.
+The agent capability defines portable intent and normalized execution facts:
+
+- `AgentDefinition` identifies instructions, effect requirements, metadata, and
+  skill references;
+- `AgentRunner` is implemented by a qualified runtime integration;
+- `PreparedAgentDefinition` records preparation by one runner;
+- `AgentRun` exposes events, result, cancellation, and intervention controls;
+- `AgentResult` reports one terminal status and optional native references.
 
 <<< @/snippets/v2/agent-capabilities.ts
 
-## Runtime extensions
-
-Runtime implementers use `/agent/runtime` for `AgentDefinition`,
-`PreparedAgentDefinition`, `AgentRunner`, `AgentRunnerProfile`,
-`AgentStartRequest`, skills, and composition contracts. Ordinary applications
-do not need to allocate invocation identities or prepare definitions.
-
-## Keep lifecycle families separate
-
-`AgentEvent` reports agent-run progress and terminal state.
-`ToolExecutionEvent` reports controlled tool execution. `InteractionEvent`
-reduces into deterministic interaction state. A host may correlate these
-families, but one is never a substitute for another.
-
-For a complete run sequence, see [Run an agent](/guide/agent). Runtime
-implementers can continue with:
-
-- [Bindings and composition](./bindings)
-- [Agent skills](./agent-skills)
-- [Retrieval and indexing](./retrieval-indexing)
-- [Storage and memory](./storage-memory)
+Preparation by one runner does not authorize use by another. Resume remains
+runner-owned and compatibility-gated. The kernel supplies no concrete runner.

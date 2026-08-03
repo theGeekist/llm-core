@@ -11,18 +11,17 @@ import {
   type ToolCallId,
 } from "#contracts";
 import { isPromiseLike, type MaybePromise } from "#shared/maybe";
-import { createAgent, type ExecutionPlan } from "../../src/agent";
 import {
   createLocalAgentRunner,
   type AgentRunIdentityPort,
   type LocalAgentProgramPort,
-} from "../../src/application/agent/public";
-import { workflowSpecificationMatches } from "../../src/application/workflow/authority";
-import { createWorkflowSpecificationBinding } from "../../src/application/workflow/runtime-public";
+} from "../support/local-agent/public";
+import { workflowSpecificationMatches } from "../support/workflow/authority";
+import { createWorkflowSpecificationBinding } from "../support/workflow/runtime-public";
 import type {
   ResumeInterventionWorkflowInput,
   ResumableWorkflowStep,
-} from "../../src/application/workflow/runtime-public";
+} from "../support/workflow/runtime-public";
 import { compileSpecification } from "../../src/application/specification-compiler/public";
 import {
   bindCompiledSpecificationAuthority,
@@ -38,7 +37,6 @@ import {
   executeControlledTool,
   type ControlledToolExecutionPlan,
 } from "../../src/application/tool-execution/public";
-import { createBuiltinModel } from "../../src/features/model/public";
 import {
   actionDigest,
   createExecutableTool,
@@ -143,53 +141,6 @@ const identity = (): AgentRunIdentityPort => {
 };
 
 describe("specification execution authority", () => {
-  test("rechecks a compiled Agent plan at creation and every common execution boundary", async () => {
-    let generations = 0;
-    const builtin = createBuiltinModel();
-    const model = {
-      ...builtin,
-      generate: () => {
-        generations += 1;
-        return {
-          kind: "completion" as const,
-          content: [{ kind: "text" as const, text: "ok" }],
-          finishReason: "stop" as const,
-        };
-      },
-    };
-    const plan: ExecutionPlan = {
-      agent: {
-        agentId: "agent.authority",
-        version: contractVersion("1.0.0"),
-        instructions: "Follow the approved plan.",
-        effectRequirement: "read-only",
-      },
-      model: { profileId: model.profile.profileId, version: model.profile.version },
-      tools: [],
-    };
-    const fixture = authorityFixture(plan);
-    const agent = createAgent({
-      model,
-      specification: fixture.compiled,
-    });
-    expect(await agent.run({ prompt: "first" })).toMatchObject({
-      status: "completed",
-      output: "ok",
-    });
-    expect(generations).toBe(1);
-
-    fixture.invalidate();
-    expect(() => agent.start({ prompt: "second" })).toThrow("no longer matches");
-    expect(() => agent.run({ prompt: "third" })).toThrow("no longer matches");
-    expect(() =>
-      createAgent({
-        model,
-        specification: fixture.compiled,
-      }),
-    ).toThrow("no longer matches");
-    expect(generations).toBe(1);
-  });
-
   test("rejects a reconstructed compiled value before runner preparation or execution", () => {
     let executions = 0;
     const fixture = authorityFixture({ target: "runner" });

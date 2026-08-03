@@ -3,7 +3,9 @@ architecture_version: 2
 id: applications-desktop
 title: Desktop application foundation
 stage: applications
-status: proposed
+status: cancelled
+replaced_by:
+  - aifsd-delivery-characterization
 priority: medium
 preferred_owner_kind: codex
 owner:
@@ -20,6 +22,7 @@ decision_dependencies:
   - ADR-006
   - ADR-014
   - ADR-015
+  - ADR-016
 conflicts_with:
   - applications-mobile
   - architecture-release-reproducibility
@@ -38,10 +41,13 @@ read_scope:
   - packages/llm-core/src/client/**
   - packages/llm-core/package.json
 review_owner: coordinator
-updated_at: 2026-08-03
+updated_at: 2026-08-04
 ---
 
 # applications-desktop — Desktop application foundation
+
+Cancelled by ADR-016 before implementation. Desktop is a downstream product
+choice after delivery and runtime use cases are proven.
 
 ## Objective
 
