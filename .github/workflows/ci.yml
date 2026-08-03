@@ -20,10 +20,16 @@ jobs:
       - name: Setup Bun
         uses: oven-sh/setup-bun@v2
         with:
-          bun-version: "1.2.21"
+          bun-version-file: ".bun-version"
 
       - name: Install
-        run: bun install
+        run: bun install --frozen-lockfile
+
+      - name: Check source size boundaries
+        run: bun run check:sloc
+
+      - name: Qualify external consumer fixtures
+        run: bun run qualify:external-fixtures
 
       - name: Lint
         run: bun run lint
@@ -64,7 +70,7 @@ jobs:
       - name: Setup Bun
         uses: oven-sh/setup-bun@v2
         with:
-          bun-version: "1.2.21"
+          bun-version-file: ".bun-version"
 
       - name: Setup Python
         uses: actions/setup-python@v5
@@ -100,10 +106,10 @@ jobs:
       - name: Setup Bun
         uses: oven-sh/setup-bun@v2
         with:
-          bun-version: "1.2.21"
+          bun-version-file: ".bun-version"
 
       - name: Install
-        run: bun install
+        run: bun install --frozen-lockfile
 
       - name: Debug
         run: ls -R packages

@@ -86,7 +86,7 @@ No task is active in the shared canonical checkout.
 | ------------------------------------------ | ------------- | -------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | architecture-source-layout-normalization   | architecture  | done     | architecture-decisions                                                                                                                                                                  |
 | architecture-status-validation             | architecture  | proposed | architecture-decisions, architecture-source-layout-normalization                                                                                                                        |
-| architecture-release-reproducibility       | architecture  | proposed | architecture-decisions, architecture-source-layout-normalization                                                                                                                        |
+| architecture-release-reproducibility       | architecture  | done     | architecture-decisions, architecture-source-layout-normalization                                                                                                                        |
 | architecture-legacy-functional-removal     | architecture  | proposed | architecture-source-layout-normalization, language-rollout                                                                                                                              |
 | runtime-tool-execution-decomposition       | qualification | done     | architecture-source-layout-normalization, runtime-receipt-reconciliation                                                                                                                |
 | runtime-tools-front-boundary               | qualification | proposed | architecture-source-layout-normalization, runtime-tool-execution-decomposition                                                                                                          |
@@ -136,9 +136,9 @@ architecture-source-layout-normalization
       -> runtime-tools-front-boundary
 ```
 
-`architecture-release-reproducibility` and `architecture-status-validation`
-are independently selectable but share root metadata, so execute them serially
-in the primary checkout; a worktree would not cure their overlapping ownership.
+`architecture-status-validation` is independently selectable. It shares root
+metadata with other architecture tasks, so execute overlapping ownership
+serially in the primary checkout; a worktree would not cure that overlap.
 Connector work begins with characterization, not contract implementation.
 OpenSpec and PydanticAI publication may be selected independently if the user
 wants those public support commitments now. See [`ROADMAP.md`](ROADMAP.md).

@@ -1,0 +1,57 @@
+{
+  "version": 1,
+  "limit": 500,
+  "excludedDirectories": [
+    ".git",
+    ".worktrees",
+    "__snapshots__",
+    "coverage",
+    "dist",
+    "generated",
+    "node_modules",
+    "vendor"
+  ],
+  "excludedSuffixes": [".generated.ts", ".generated.tsx", ".snap.ts", ".snap.tsx"],
+  "exceptions": {
+    "packages/llm-core/src/adapters/openspec/public.ts": {
+      "lines": 625,
+      "sha256": "d34007afda617b1e551541f212bc70db989c5a01814b5eddcaff47f3cef36a6c"
+    },
+    "packages/llm-core/src/adapters/pydantic-ai-spec/compiler.ts": {
+      "lines": 632,
+      "sha256": "6e9d4934a0cbc4cc61a1774885aff4905af0adbb86e7543d8fb8e5439daadf5f"
+    },
+    "packages/llm-core/src/adapters/spec-kit/public.ts": {
+      "lines": 823,
+      "sha256": "758f3b70adcfaab1975ddcd393b6c5d22356af036faebb80dee7a7afc13ccc62"
+    },
+    "packages/llm-core/src/application/agent/local-runner.ts": {
+      "lines": 506,
+      "sha256": "6d3d73905ceab719fbc8bbf54f549ef6ac50e6d5a043d24b2f2419e0e7bfbb35"
+    },
+    "packages/llm-core/tests/application/agent/local-runner.test.ts": {
+      "lines": 766,
+      "sha256": "71fcca899ffded1d4ffc0649283391d332be7f47eb1ff066ab9ecf60114d4660"
+    },
+    "packages/llm-core/tests/application/agent/model-tool-program.test.ts": {
+      "lines": 776,
+      "sha256": "dfb2e63387b2fa4daf7ccf4b113ffab20ccadd1be8245878b27204bd803e8384"
+    },
+    "packages/llm-core/tests/application/capability-bindings/bindings.test.ts": {
+      "lines": 503,
+      "sha256": "78bae19d5fb3132a1c321e9edada18be766918d6275a0ee3867929cb2d8a5f53"
+    },
+    "packages/llm-core/tests/application/interaction/session.test.ts": {
+      "lines": 564,
+      "sha256": "fafeec254bf92a32eff6a0811805a04f3bf9f8a65c58c4cf3a7119a72eec610b"
+    },
+    "packages/llm-core/tests/application/workflow/resume.test.ts": {
+      "lines": 558,
+      "sha256": "8ca9d0a89ba2b4253c858af34e6fc126fe9e213f714d9d087ccf4bb4b4830d1b"
+    },
+    "packages/llm-core/tests/evidence/tool-receipt-journal.test.ts": {
+      "lines": 521,
+      "sha256": "1b5da099aad43d3d7cc9f384d3f12435fe62dd106a60f903ee5d8ef7d69369d9"
+    }
+  }
+}

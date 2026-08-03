@@ -30,13 +30,10 @@ jobs:
       - name: Setup Bun
         uses: oven-sh/setup-bun@v2
         with:
-          bun-version: "1.2.21"
+          bun-version-file: ".bun-version"
 
       - name: Install
-        run: bun install
-
-      - name: Install core deps
-        run: bun install --cwd packages/llm-core
+        run: bun install --frozen-lockfile
 
       - name: Build core
         run: bun run build

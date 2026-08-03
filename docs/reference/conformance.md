@@ -2,7 +2,11 @@
 
 `@geekist/llm-core` 2 is ESM-only and declares Node.js 22 or newer. The package
 smoke test installs a packed artifact into an isolated consumer and verifies all
-19 runtime and declaration entry points.
+30 runtime and declaration entry points.
+
+The repository-owned Bun version is recorded in `.bun-version`. Local release
+qualification and every workflow use that exact version, and dependency
+installation is frozen against the root lockfile.
 
 ## Conformance levels
 
@@ -38,13 +42,33 @@ Transport success alone does not establish runtime conformance.
 
 ## Commands and evidence
 
-| Gate                       | Command                                            |
-| -------------------------- | -------------------------------------------------- |
-| Shared repository tests    | `bun test`                                         |
-| Package release checks     | `bun run --cwd packages/llm-core release:check`    |
-| Packed consumer validation | `bun run test:package`                             |
-| Documentation contracts    | `bun run docs:check`                               |
-| Documentation rendering    | `bun run docs:build && bun run docs:mermaid:check` |
+| Gate                            | Command                                            |
+| ------------------------------- | -------------------------------------------------- |
+| Canonical release qualification | `bun run release:qualify:llm-core`                 |
+| Shared repository tests         | `bun test`                                         |
+| Package release checks          | `bun run --cwd packages/llm-core release:check`    |
+| Packed consumer validation      | `bun run test:package`                             |
+| External consumer fixtures      | `bun run qualify:external-fixtures`                |
+| Source-size boundary            | `bun run check:sloc`                               |
+| Documentation contracts         | `bun run docs:check`                               |
+| Documentation rendering         | `bun run docs:build && bun run docs:mermaid:check` |
+
+`release:qualify:llm-core` is the only supported npm-publication gate. It runs
+the frozen install, package release build, packed consumer, external fixtures,
+documentation, formatting, SLOC check and every registered conditional-surface
+qualifier. Local `publish:npm` and tagged publication both delegate to it.
+
+Published conditional surfaces register their deterministic qualification in
+`scripts/release-qualifiers.json`. Any package export outside the sealed
+unconditional-export inventory must appear in its mandatory `requiredSurfaces`
+list and have exactly one registration, including the exact support window and
+maintenance owner. An absent, duplicate, skipped or failing registration makes
+release qualification fail closed.
+
+SLOC policy version 1 is code-owned: the limit is exactly 500 physical lines,
+the directory and suffix exclusions are canonical, and every legacy exception
+must match the sealed set. Editing the baseline cannot raise the enforced limit
+or hide source paths from measurement.
 
 The exact-runtime suite is
 `tests/conformance/pydantic-ai-compatibility.test.ts`. The process-transport
