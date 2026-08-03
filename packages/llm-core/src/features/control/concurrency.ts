@@ -1,6 +1,6 @@
 import type { RunId, ToolCallId } from "#contracts";
 import type { ExecutionConcurrency } from "../tooling/runtime";
-import type { ControlMaybePromise } from "./shared";
+import type { ControlMaybePromise } from "./control-values";
 
 export interface ConcurrencyRequest {
   runId: RunId;

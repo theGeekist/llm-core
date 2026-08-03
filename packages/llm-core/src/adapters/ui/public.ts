@@ -6,7 +6,7 @@ export {
   type AiSdkUiWebSocketData,
   type AiSdkUiWebSocketEvent,
   type AiSdkUiWebSocketTransportOptions,
-} from "./ai-sdk";
+} from "./ai-sdk-ui";
 export {
   createAssistantUiProjectionMapper,
   parseAssistantUiInboundEvents,

@@ -1,6 +1,6 @@
 import type { PrincipalRef, RunId, ToolCallId } from "#contracts";
 import type { ActionDigest } from "../tooling/runtime";
-import { actionDigestsMatch, type CancellationId } from "./shared";
+import { actionDigestsMatch, type CancellationId } from "./control-values";
 
 /** @format date-time */
 // eslint-disable-next-line sonarjs/redundant-type-aliases -- named control-contract type

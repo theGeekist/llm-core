@@ -6,4 +6,4 @@ export {
   type AiSdkUiWebSocketData,
   type AiSdkUiWebSocketEvent,
   type AiSdkUiWebSocketTransportOptions,
-} from "../ui/ai-sdk";
+} from "../ui/ai-sdk-ui";

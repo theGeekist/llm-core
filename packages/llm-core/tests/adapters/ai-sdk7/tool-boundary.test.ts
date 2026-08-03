@@ -19,8 +19,8 @@ const usage = {
 
 let generated: Record<string, unknown>;
 let capturedGenerateOptions: Record<string, unknown> | undefined;
-let createAiSdk7Model: typeof import("../../../src/adapters/providers/ai-sdk").createAiSdk7Model;
-let createInMemoryAiSdk7ToolCallCorrelationStore: typeof import("../../../src/adapters/providers/ai-sdk").createInMemoryAiSdk7ToolCallCorrelationStore;
+let createAiSdk7Model: typeof import("../../../src/adapters/ai-sdk").createAiSdk7Model;
+let createInMemoryAiSdk7ToolCallCorrelationStore: typeof import("../../../src/adapters/ai-sdk").createInMemoryAiSdk7ToolCallCorrelationStore;
 
 beforeAll(async () => {
   mock.module("ai", () => ({
@@ -36,7 +36,7 @@ beforeAll(async () => {
     Output: { json: () => ({ kind: "json-output" }) },
   }));
   ({ createAiSdk7Model, createInMemoryAiSdk7ToolCallCorrelationStore } = await import(
-    "../../../src/adapters/providers/ai-sdk"
+    "../../../src/adapters/ai-sdk"
   ));
 });
 

@@ -15,7 +15,7 @@ import {
   INVOCATION_ID,
   RUN_ID,
   contentEvent,
-} from "../../application/interaction/helpers";
+} from "../../application/interaction/interaction-run-fixtures";
 
 const content = (
   kind: Parameters<typeof contentEvent>[0],

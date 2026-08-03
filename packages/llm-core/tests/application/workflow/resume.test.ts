@@ -39,7 +39,7 @@ import {
   intervention,
   principal,
   receipt,
-} from "../../state/helpers";
+} from "../../state/resumable-checkpoint-fixtures";
 
 const ACTION_DOCUMENT = {
   contractProfile: "llm-core.action/v1",

@@ -34,7 +34,7 @@ import {
   intervention,
   principal,
   receipt,
-} from "../../state/helpers";
+} from "../../state/resumable-checkpoint-fixtures";
 
 const IDS = [
   "018f0f4e-8c5b-7a91-8c3b-123456789b01",

@@ -4,14 +4,9 @@ import { relative, resolve } from "node:path";
 
 const root = resolve(import.meta.dir, "../..");
 const sourceRoot = resolve(root, "src");
-const scannedRoots = [
-  "contracts",
-  "features",
-  "application",
-  "composition",
-  "adapters/providers",
-  "adapters/ui",
-].map((path) => resolve(sourceRoot, path));
+const scannedRoots = ["contracts", "features", "application", "composition", "adapters"].map(
+  (path) => resolve(sourceRoot, path),
+);
 
 const walk = (directory: string): string[] =>
   readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {

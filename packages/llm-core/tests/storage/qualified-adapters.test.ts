@@ -1,23 +1,23 @@
 import { describe, expect, test } from "bun:test";
 import { KVDocumentStore } from "@llamaindex/core/storage/doc-store";
 import { SimpleKVStore } from "@llamaindex/core/storage/kv-store";
-import { createHostBackedCacheStore } from "../../src/adapters/providers/ai-sdk/storage";
+import { createHostBackedCacheStore } from "../../src/adapters/ai-sdk/storage-cache";
 import {
   createLangChainCacheStore,
   createLangChainKeyValueStore,
-} from "../../src/adapters/frameworks/langchain/storage";
+} from "../../src/adapters/langchain/public";
+import { createLlamaIndexCacheStore } from "../../src/adapters/llamaindex/public";
 import {
-  createLlamaIndexCacheStore,
   createLlamaIndexDocumentKeyValueStore,
   createLlamaIndexKeyValueStore,
-} from "../../src/adapters/frameworks/llamaindex/storage";
+} from "../../src/adapters/llamaindex/public";
 import {
   jsonStorageValue,
   resourceStorageValue,
   type CacheRecord,
   type StorageValue,
 } from "../../src/features/storage/public";
-import { context, resource } from "./helpers";
+import { context, resource } from "./storage-fixtures";
 
 describe("qualified storage adapters", () => {
   test("maps a truthful host cache contract and default TTL", async () => {

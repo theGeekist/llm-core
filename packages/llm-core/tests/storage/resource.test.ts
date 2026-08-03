@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import type { ResourceStore } from "../../src/features/storage/public";
-import { context, resource } from "./helpers";
+import { context, resource } from "./storage-fixtures";
 
 describe("resource store", () => {
   test("keeps byte access on an explicitly live port", async () => {

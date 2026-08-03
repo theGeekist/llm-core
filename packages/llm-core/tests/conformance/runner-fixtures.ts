@@ -11,7 +11,7 @@ import {
   createNdjsonStdioTransport,
   createPythonTransportConformanceRunner,
   type ClosablePydanticAiBridgeTransport,
-} from "../../src/adapters/runtimes";
+} from "../../src/adapters/runtimes/public";
 import {
   createLocalAgentRunner,
   type AgentRunIdentityPort,
@@ -25,7 +25,12 @@ import type {
 } from "../../src/features/agent/public";
 import { registerResumableCheckpoint } from "../../src/features/state/runtime";
 import type { ExecuteControlledToolInput } from "../../src/application/tool-execution/public";
-import { COMPATIBILITY, STEP_ONE, checkpoint, receipt } from "../state/helpers";
+import {
+  COMPATIBILITY,
+  STEP_ONE,
+  checkpoint,
+  receipt,
+} from "../state/resumable-checkpoint-fixtures";
 
 const INVOCATION_ID = newCoreId<InvocationId>("018f0f4e-8c5b-7a91-8c3b-123456789d01");
 const IDS = [

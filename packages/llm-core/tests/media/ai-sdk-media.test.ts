@@ -10,7 +10,7 @@ import {
   fromAiSdkImageModel,
   fromAiSdkSpeechModel,
   fromAiSdkTranscriptionModel,
-} from "../../src/adapters/providers/ai-sdk/media/public";
+} from "../../src/adapters/ai-sdk";
 import type { MediaOutputProjector, MediaResourceResolver } from "../../src/features/media/public";
 
 const bytesDigest = (bytes: Uint8Array) => digest(createHash("sha256").update(bytes).digest("hex"));

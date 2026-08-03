@@ -22,7 +22,7 @@ import {
   completedRun,
   contentEvent,
   eventId,
-} from "./helpers";
+} from "./interaction-run-fixtures";
 
 const memoryStore = () => {
   let snapshot: ConversationSnapshot | null = null;

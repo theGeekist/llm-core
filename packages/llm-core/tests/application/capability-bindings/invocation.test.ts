@@ -20,8 +20,16 @@ import {
 } from "../../../src/features/state/public";
 import { registerResumableCheckpoint } from "../../../src/features/state/runtime";
 import { maybeToAsyncIterable } from "../../../src/shared/maybe";
-import { checkpoint, durableJobId, providerSessionId } from "../../state/helpers";
-import { passingClaim, runtimeBinding, verificationDependencies } from "./helpers";
+import {
+  checkpoint,
+  durableJobId,
+  providerSessionId,
+} from "../../state/resumable-checkpoint-fixtures";
+import {
+  passingClaim,
+  runtimeBinding,
+  verificationDependencies,
+} from "./capability-binding-fixtures";
 
 const invocationContext = (): InvocationContext => ({
   invocationId: coreId<InvocationId>("0190bd0c-0000-4000-8000-000000000301"),

@@ -18,5 +18,10 @@ export type {
   PolicyEvaluationRequest,
   PolicyTimestamp,
 } from "./policy";
-export { approvalId, cancellationId, policyEvaluationId } from "./shared";
-export type { ApprovalId, CancellationId, ControlMaybePromise, PolicyEvaluationId } from "./shared";
+export { approvalId, cancellationId, policyEvaluationId } from "./control-values";
+export type {
+  ApprovalId,
+  CancellationId,
+  ControlMaybePromise,
+  PolicyEvaluationId,
+} from "./control-values";

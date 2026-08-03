@@ -1,9 +1,9 @@
 import { describe, expect, test } from "bun:test";
-import { createHostConversationStores } from "../../src/adapters/providers/ai-sdk/storage";
-import { createLangChainConversationStateStore } from "../../src/adapters/frameworks/langchain/storage";
-import { createLlamaIndexConversationStore } from "../../src/adapters/frameworks/llamaindex/storage";
+import { createHostConversationStores } from "../../src/adapters/ai-sdk/storage-conversation";
+import { createLangChainConversationStateStore } from "../../src/adapters/langchain/public";
+import { createLlamaIndexConversationStore } from "../../src/adapters/llamaindex/public";
 import { createConversationMessage } from "../../src/features/memory/public";
-import { context, conversationId } from "../storage/helpers";
+import { context, conversationId } from "../storage/storage-fixtures";
 
 describe("qualified conversation adapters", () => {
   test("maps host messages and working memory with closed redaction", async () => {

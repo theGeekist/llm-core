@@ -9,7 +9,7 @@ import {
   PYDANTIC_AI_SEMANTICS,
   type PydanticAiBridgeHandshake,
   type PydanticAiBridgeTransport,
-} from "../../src/adapters/runtimes";
+} from "../../src/adapters/runtimes/public";
 import {
   contractVersion,
   externalId,

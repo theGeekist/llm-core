@@ -80,11 +80,11 @@ mean published or supported through a package front.
 
 ## Proposed continuing work
 
-No task is claimed, in progress or in review.
+No task is active in the shared canonical checkout.
 
 | Task                                       | Stage         | Status   | Depends on                                                                                                                                                                              |
 | ------------------------------------------ | ------------- | -------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| architecture-source-layout-normalization   | architecture  | proposed | architecture-decisions                                                                                                                                                                  |
+| architecture-source-layout-normalization   | architecture  | done     | architecture-decisions                                                                                                                                                                  |
 | architecture-status-validation             | architecture  | proposed | architecture-decisions, architecture-source-layout-normalization                                                                                                                        |
 | architecture-release-reproducibility       | architecture  | proposed | architecture-decisions, architecture-source-layout-normalization                                                                                                                        |
 | architecture-legacy-functional-removal     | architecture  | proposed | architecture-source-layout-normalization, language-rollout                                                                                                                              |

@@ -5,12 +5,12 @@ import type { BaseSynthesizer } from "@llamaindex/core/response-synthesizers";
 import { EngineResponse } from "@llamaindex/core/schema";
 import type { BaseVectorStore } from "@llamaindex/core/vector-store";
 import { collectStep, isPromiseLike, maybeToStep, type MaybeAsyncIterable } from "#shared/maybe";
-import { createLangChainVectorStore } from "../../src/adapters/frameworks/langchain/retrieval/public";
+import { createLangChainVectorStore } from "../../src/adapters/langchain/public";
 import {
   createLlamaIndexQueryEngine,
   createLlamaIndexResponseSynthesizer,
   createLlamaIndexVectorStore,
-} from "../../src/adapters/frameworks/llamaindex/retrieval/public";
+} from "../../src/adapters/llamaindex/public";
 import type { QueryStreamEvent } from "../../src/features/retrieval/public";
 import { textDocument, textRetrievalQuery } from "../../src/features/retrieval/public";
 

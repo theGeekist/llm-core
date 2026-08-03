@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import type { PolicyDecision } from "../../src/features/control/public";
 import { authorizePolicyDecision } from "../../src/features/control/runtime";
-import { ACTION_DIGEST, OTHER_ACTION_DIGEST, VERSION, policyRef } from "./helpers";
+import { ACTION_DIGEST, OTHER_ACTION_DIGEST, VERSION, policyRef } from "./control-fixtures";
 
 const decision = (
   value: PolicyDecision["decision"],

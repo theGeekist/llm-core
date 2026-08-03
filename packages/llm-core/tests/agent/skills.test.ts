@@ -6,7 +6,7 @@ import {
   type AgentSkillRef,
   type LocalSkillCandidate,
 } from "../../src/features/agent/public";
-import { prepareWithLocalRunner } from "./helpers";
+import { prepareWithLocalRunner } from "./local-runner-preparation";
 
 const SKILL: AgentSkillRef = registerAgentSkill({
   skillId: "skill:review",

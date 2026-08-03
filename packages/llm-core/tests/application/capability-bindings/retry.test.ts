@@ -10,7 +10,7 @@ import {
   passingClaim,
   runtimeBinding,
   verificationDependencies,
-} from "./helpers";
+} from "./capability-binding-fixtures";
 
 const retrieverBinding = (claims: CapabilityClaim[] = []) =>
   registerRuntimeCapabilityBinding(

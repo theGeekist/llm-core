@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import { contractVersion } from "#contracts";
-import { prepareWithLocalRunner } from "./helpers";
+import { prepareWithLocalRunner } from "./local-runner-preparation";
 
 describe("AgentDefinition", () => {
   test("defensively clones and freezes portable specifications", () => {

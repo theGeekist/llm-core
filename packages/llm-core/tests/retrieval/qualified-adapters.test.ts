@@ -6,16 +6,13 @@ import {
 } from "@langchain/core/structured_query";
 import { Document as LlamaDocument } from "@llamaindex/core/schema";
 import type { RerankingModelV3 } from "@ai-sdk/provider";
-import { createAiSdkReranker } from "../../src/adapters/providers/ai-sdk/retrieval/public";
+import { createAiSdkReranker } from "../../src/adapters/ai-sdk/retrieval";
 import {
   fromLangChainDocument,
   fromLangChainStructuredQuery,
   toLangChainDocument,
-} from "../../src/adapters/frameworks/langchain/retrieval/public";
-import {
-  fromLlamaIndexDocument,
-  toLlamaIndexDocument,
-} from "../../src/adapters/frameworks/llamaindex/retrieval/public";
+} from "../../src/adapters/langchain/public";
+import { fromLlamaIndexDocument, toLlamaIndexDocument } from "../../src/adapters/llamaindex/public";
 import {
   documentText,
   textDocument,

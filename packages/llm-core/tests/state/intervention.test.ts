@@ -13,7 +13,7 @@ import {
   decision,
   intervention,
   principal,
-} from "./helpers";
+} from "./resumable-checkpoint-fixtures";
 
 describe("action-bound interventions", () => {
   test("keeps all six intervention decisions semantically distinct", () => {

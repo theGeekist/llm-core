@@ -23,7 +23,13 @@ import {
   type ToolSchemaDigestPort,
 } from "../../../src/features/tooling/runtime";
 import { registerResumableCheckpoint } from "../../../src/features/state/runtime";
-import { ACTION_DIGEST, STEP_ONE, STEP_TWO, checkpoint, receipt } from "../../state/helpers";
+import {
+  ACTION_DIGEST,
+  STEP_ONE,
+  STEP_TWO,
+  checkpoint,
+  receipt,
+} from "../../state/resumable-checkpoint-fixtures";
 
 const schemaDigestPort: ToolSchemaDigestPort = {
   digest: (canonicalSchema) => digest(createHash("sha256").update(canonicalSchema).digest("hex")),

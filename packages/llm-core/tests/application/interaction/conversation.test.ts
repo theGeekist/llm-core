@@ -7,7 +7,13 @@ import {
   type ConversationSnapshot,
   type ConversationStore,
 } from "../../../src/application/interaction/public";
-import { AGENT, INVOCATION_ID, RUN_ID, SECOND_RUN_ID, completedRun } from "./helpers";
+import {
+  AGENT,
+  INVOCATION_ID,
+  RUN_ID,
+  SECOND_RUN_ID,
+  completedRun,
+} from "./interaction-run-fixtures";
 
 const readyAgent = (): Agent => {
   let sequence = 0;

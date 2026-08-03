@@ -19,7 +19,7 @@ import {
   passingClaim,
   runtimeBinding,
   verificationDependencies,
-} from "./helpers";
+} from "./capability-binding-fixtures";
 
 const retriever = { retrieve: () => ({ documents: [] }) };
 const cache: CacheStore = {

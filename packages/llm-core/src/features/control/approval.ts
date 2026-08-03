@@ -6,7 +6,7 @@ import {
   isExpired,
   type ApprovalId,
   type ControlMaybePromise,
-} from "./shared";
+} from "./control-values";
 
 /** @format date-time */
 // eslint-disable-next-line sonarjs/redundant-type-aliases -- named control-contract type

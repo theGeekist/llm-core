@@ -5,7 +5,7 @@ import {
   jsonStorageValue,
   type CacheRecord,
 } from "../../src/features/storage/public";
-import { context } from "./helpers";
+import { context } from "./storage-fixtures";
 
 describe("cache store policy", () => {
   test("preserves sync behavior, tri-state mutation results and TTL expiry", () => {

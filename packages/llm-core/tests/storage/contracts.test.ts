@@ -6,7 +6,7 @@ import {
   registerStorageValue,
   resourceStorageValue,
 } from "../../src/features/storage/public";
-import { resource } from "./helpers";
+import { resource } from "./storage-fixtures";
 
 describe("storage contracts", () => {
   test("registers deeply frozen closed JSON and resource values", () => {

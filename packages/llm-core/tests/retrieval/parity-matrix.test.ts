@@ -13,10 +13,7 @@ import {
 import type { BaseVectorStore } from "@llamaindex/core/vector-store";
 import type { EmbeddingModel } from "ai";
 import { collectStep, isPromiseLike, maybeToStep, type MaybeAsyncIterable } from "#shared/maybe";
-import {
-  createAiSdkEmbedder,
-  createAiSdkReranker,
-} from "../../src/adapters/providers/ai-sdk/retrieval/public";
+import { createAiSdkEmbedder, createAiSdkReranker } from "../../src/adapters/ai-sdk/retrieval";
 import {
   createLangChainDocumentLoader,
   createLangChainEmbedder,
@@ -25,7 +22,7 @@ import {
   createLangChainRetriever,
   createLangChainTextSplitter,
   createLangChainVectorStore,
-} from "../../src/adapters/frameworks/langchain/retrieval/public";
+} from "../../src/adapters/langchain/public";
 import {
   createLlamaIndexDocumentLoader,
   createLlamaIndexDocumentTransformer,
@@ -36,7 +33,7 @@ import {
   createLlamaIndexRetriever,
   createLlamaIndexTextSplitter,
   createLlamaIndexVectorStore,
-} from "../../src/adapters/frameworks/llamaindex/retrieval/public";
+} from "../../src/adapters/llamaindex/public";
 import type { QueryStreamEvent } from "../../src/features/retrieval/public";
 import {
   documentText,

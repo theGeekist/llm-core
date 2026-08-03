@@ -6,7 +6,7 @@ import {
   type ResumeCompatibilityFailure,
 } from "../../src/features/state/public";
 import { registerResumableCheckpoint } from "../../src/features/state/runtime";
-import { COMPATIBILITY, checkpoint } from "./helpers";
+import { COMPATIBILITY, checkpoint } from "./resumable-checkpoint-fixtures";
 
 const cases: Array<{
   name: string;

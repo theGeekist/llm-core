@@ -11,7 +11,13 @@ import {
   isRegisteredResumableCheckpoint,
   registerResumableCheckpoint,
 } from "../../src/features/state/runtime";
-import { COMPATIBILITY, NOW, checkpoint, durableJobId, providerSessionId } from "./helpers";
+import {
+  COMPATIBILITY,
+  NOW,
+  checkpoint,
+  durableJobId,
+  providerSessionId,
+} from "./resumable-checkpoint-fixtures";
 import * as state from "../../src/features/state/public";
 
 describe("state lifetime boundaries", () => {

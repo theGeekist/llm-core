@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import { contractVersion } from "#contracts";
 import { loadSpecification } from "../../../src/specifications/index";
-import { importBmadFiles, type BmadFileImportInput } from "../../../src/adapters/bmad/index";
+import { importBmadFiles, type BmadFileImportInput } from "../../../src/adapters/bmad/public";
 
 const observedAt = "2026-08-02T06:07:24.000Z";
 

@@ -4,7 +4,12 @@ import {
   verifyApproval,
   type ApprovalAuthenticationPort,
 } from "../../src/features/control/runtime";
-import { OTHER_ACTION_DIGEST, approvalRef, authenticationEvidence, principal } from "./helpers";
+import {
+  OTHER_ACTION_DIGEST,
+  approvalRef,
+  authenticationEvidence,
+  principal,
+} from "./control-fixtures";
 
 const APPROVER = principal("user:approver");
 

@@ -1,39 +1,21 @@
 import { afterAll, beforeAll, describe, expect, it, mock } from "bun:test";
-import { coreId, newCoreId, type InvocationId, type JsonValue, type ToolCallId } from "#contracts";
+import { coreId, type JsonValue, type ToolCallId } from "#contracts";
 import { createBuiltinModelProfile, type ModelProfile } from "../../../src/features/model/runtime";
-
-const TOOL_CALL_ID = newCoreId<ToolCallId>("0190bd0c-0000-7000-8000-000000000071");
-const INVOCATION_ID = newCoreId<InvocationId>("0190bd0c-0000-7000-8000-000000000072");
-
-const asAsyncIterable = <T>(values: T[]): AsyncIterable<T> => ({
-  async *[Symbol.asyncIterator]() {
-    for (const value of values) {
-      yield value;
-    }
-  },
-});
-
-const usage = {
-  inputTokens: 4,
-  inputTokenDetails: {
-    noCacheTokens: 2,
-    cacheReadTokens: 2,
-    cacheWriteTokens: 0,
-  },
-  outputTokens: 3,
-  outputTokenDetails: {
-    textTokens: 2,
-    reasoningTokens: 1,
-  },
-  totalTokens: 7,
-};
+import {
+  INVOCATION_ID,
+  TOOL_CALL_ID,
+  asAsyncIterable,
+  rejectUnexpectedEmbedding,
+  usage,
+  type ModelAdapterOverrides,
+} from "./model-fixtures";
 
 let generated: Record<string, unknown>;
 let streamed: Record<string, unknown>;
 let capturedGenerateOptions: Record<string, unknown> | undefined;
 let capturedStreamOptions: Record<string, unknown> | undefined;
-let createAiSdk7Model: typeof import("../../../src/adapters/providers/ai-sdk").createAiSdk7Model;
-let createInMemoryAiSdk7ToolCallCorrelationStore: typeof import("../../../src/adapters/providers/ai-sdk").createInMemoryAiSdk7ToolCallCorrelationStore;
+let createAiSdk7Model: typeof import("../../../src/adapters/ai-sdk").createAiSdk7Model;
+let createInMemoryAiSdk7ToolCallCorrelationStore: typeof import("../../../src/adapters/ai-sdk").createInMemoryAiSdk7ToolCallCorrelationStore;
 
 beforeAll(async () => {
   generated = {};
@@ -55,26 +37,20 @@ beforeAll(async () => {
     },
     jsonSchema: (schema: unknown) => schema,
     tool: (definition: Record<string, unknown>) => definition,
+    embed: rejectUnexpectedEmbedding,
+    embedMany: rejectUnexpectedEmbedding,
     Output: {
       json: () => ({ kind: "json-output" }),
     },
   }));
   ({ createAiSdk7Model, createInMemoryAiSdk7ToolCallCorrelationStore } = await import(
-    "../../../src/adapters/providers/ai-sdk"
+    "../../../src/adapters/ai-sdk"
   ));
 });
 
-afterAll(() => {
-  mock.restore();
-});
+afterAll(() => mock.restore());
 
-const createAdapter = (overrides?: {
-  resolveAbortSignal?: () => AbortSignal;
-  classifyToolApproval?: () => "denied" | "user-approval";
-  redactProviderMetadata?: () => JsonValue | undefined;
-  createToolCallId?: () => ToolCallId;
-  profile?: ModelProfile;
-}) =>
+const createAdapter = (overrides?: ModelAdapterOverrides) =>
   createAiSdk7Model({
     model: "test-provider/test-model",
     profile: createBuiltinModelProfile(),

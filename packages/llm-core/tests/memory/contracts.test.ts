@@ -11,7 +11,7 @@ import {
   registerConversationRecord,
   createConversationMessage,
 } from "../../src/features/memory/public";
-import { conversationId } from "../storage/helpers";
+import { conversationId } from "../storage/storage-fixtures";
 
 describe("conversation contracts", () => {
   test("reconstructs closed deeply frozen model content", () => {

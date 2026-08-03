@@ -4,7 +4,7 @@ import {
   type CancellationRequest,
 } from "../../src/features/control/public";
 import { resolveCancellation } from "../../src/features/control/runtime";
-import { cancellationRef, principal } from "./helpers";
+import { cancellationRef, principal } from "./control-fixtures";
 
 const request = (phase: CancellationRequest["phase"]): CancellationRequest => ({
   cancellation: cancellationRef(),

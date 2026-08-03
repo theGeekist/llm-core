@@ -9,7 +9,15 @@ import {
 } from "../../../src/application/interaction/public";
 import type { ToolExecutionEvent } from "../../../src/features/evidence/public";
 import { coreId, type EvidenceId, type ToolCallId } from "#contracts";
-import { AGENT, CONVERSATION_ID, NOW, RUN_ID, agentEvent, contentEvent, eventId } from "./helpers";
+import {
+  AGENT,
+  CONVERSATION_ID,
+  NOW,
+  RUN_ID,
+  agentEvent,
+  contentEvent,
+  eventId,
+} from "./interaction-run-fixtures";
 
 describe("interaction event projection", () => {
   test("reduces canonical runner facts idempotently", () => {

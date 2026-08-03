@@ -7,8 +7,8 @@ import { contractVersion, digest, newCoreId, schemaRef, type InvocationId } from
 import {
   fromLangChainOutputParser,
   fromLangChainPromptTemplate,
-} from "../../src/adapters/frameworks/langchain/model-support/public";
-import { fromLlamaIndexPromptTemplate } from "../../src/adapters/frameworks/llamaindex/model-support/public";
+} from "../../src/adapters/langchain/public";
+import { fromLlamaIndexPromptTemplate } from "../../src/adapters/llamaindex/public";
 import { isRegisteredSchemaDocument } from "../../src/features/model/schema-resolution";
 import { resolveSchemaDocument } from "../../src/features/model/runtime";
 
