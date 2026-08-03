@@ -1,7 +1,7 @@
 # Architecture v2 Continuing Programmes
 
 Architecture version: v2
-Status: proposed work; no active task
+Role: programme grouping and priority advice; task front matter owns lifecycle state
 Kernel baseline: `9920425`
 Pre-transition source baseline: `c041792`
 Decision authority: [ADR-013](decisions/ADR-013-operational-qualification-boundaries.md), [ADR-014](decisions/ADR-014-integration-cost-client-application-boundaries.md), [ADR-015](decisions/ADR-015-kernel-completion-programme-boundaries.md)
@@ -27,9 +27,9 @@ architecture-decisions
   -> architecture-source-layout-normalization
 
 architecture-source-layout-normalization
-  -> every other proposed code-producing task below
+  -> every other code-producing task below
 
-runtime-receipt-reconciliation (done)
+runtime-receipt-reconciliation
   -> runtime-tool-execution-decomposition
       -> runtime-tools-front-boundary
 
@@ -37,7 +37,7 @@ architecture-source-layout-normalization
   -> architecture-release-reproducibility
   -> architecture-status-validation
 
-language-rollout (done) + architecture-source-layout-normalization
+language-rollout + architecture-source-layout-normalization
   -> architecture-legacy-functional-removal
 ```
 
@@ -49,22 +49,22 @@ release qualification, validate STATUS and delete the retired functional alias.
 ## Qualification
 
 ```text
-runtime-receipt-reconciliation (done)
+runtime-receipt-reconciliation
   -> runtime-temporal-reference
 
 runtime-tools-front-boundary
   -> capabilities-workspace-sandbox
 
-capabilities-operational-evidence (done)
+capabilities-operational-evidence
   -> cost-facts
       -> cost-budget-control
           -> cost-budget-enforcement
 
-capabilities-evaluation-qualification (done) + cost-facts
+capabilities-evaluation-qualification + cost-facts
   -> model-routing-qualification
 
-capabilities-operational-evidence (done)
-+ capabilities-runtime-conformance (done)
+capabilities-operational-evidence
++ capabilities-runtime-conformance
   -> adapter-strands-runtime
       -> adapter-strands-runtime-release
 ```
@@ -76,13 +76,13 @@ services. External runtimes use exact direct dependencies and isolated fixtures.
 ## Integrations
 
 ```text
-language-rollout (done) + runtime-tools-front-boundary
+language-rollout + runtime-tools-front-boundary
   -> integrations-connector-characterization
       -> integrations-connector-contracts
           -> integrations-authorization-lifecycle
 
-runtime-receipt-reconciliation (done)
-+ capabilities-operational-evidence (done)
+runtime-receipt-reconciliation
++ capabilities-operational-evidence
 + integrations-authorization-lifecycle
   -> adapters-protocol-qualification
 ```
@@ -93,11 +93,11 @@ slices. They share no provisional connector base. A2A remains separately typed.
 ## Specification adapters
 
 ```text
-adapter-openspec (done)       -> adapter-openspec-release       [preferred]
-adapter-pydantic-ai (done)    -> adapter-pydantic-ai-release    [preferred]
-adapter-ai-sdlc (done)        -> adapter-ai-sdlc-release        [demand]
-adapter-spec-kit (done)       -> adapter-spec-kit-release       [demand]
-adapter-bmad (done)           -> adapter-bmad-release           [demand]
+adapter-openspec       -> adapter-openspec-release       [preferred]
+adapter-pydantic-ai   -> adapter-pydantic-ai-release    [preferred]
+adapter-ai-sdlc       -> adapter-ai-sdlc-release        [demand]
+adapter-spec-kit      -> adapter-spec-kit-release       [demand]
+adapter-bmad          -> adapter-bmad-release           [demand]
 ```
 
 All releases depend on `architecture-release-reproducibility`, run serially and
@@ -107,7 +107,7 @@ durable registered qualifier.
 ## Products
 
 ```text
-specification-api (done)
+specification-api
 + integrations-authorization-lifecycle
 + cost-facts
 + cost-budget-enforcement
@@ -142,8 +142,8 @@ a trigger.
 
 ## Priority
 
-When work resumes: complete source-layout normalization, then the runtime
-boundary remediation; publish OpenSpec
-and PydanticAI only if support is desired; characterize connectors before their
-contract; implement cost facts before budget/routing; defer client and platform
-work until their dependency gates pass. This is advice, not an active claim.
+Prioritize the runtime boundary remediation path before work that depends on
+its public front. Publish OpenSpec and PydanticAI only if support is desired;
+characterize connectors before defining their contract; implement cost facts
+before budget control and routing; defer client and platform work until their
+dependency gates pass. This is priority advice, not a lifecycle claim.
