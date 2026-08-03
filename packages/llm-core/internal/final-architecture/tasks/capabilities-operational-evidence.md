@@ -4,6 +4,7 @@ id: capabilities-operational-evidence
 title: Usage receipts and observability projection
 stage: qualification
 status: done
+evidence_milestone: pre-completion
 priority: high
 preferred_owner_kind: codex
 owner: codex-operational-evidence
@@ -63,8 +64,9 @@ store.
 
 - An OpenTelemetry SDK dependency in the core, a price catalogue, billing
   ledger, signed-evidence service, telemetry collector, or retention backend.
-  Provenance-bearing estimates, provider reconciliation and routing
-  recommendations are the dependent `capabilities-cost-intelligence` task.
+  Provenance-bearing estimates and provider reconciliation are the dependent
+  `cost-facts` task; budget control and routing qualification remain separate
+  ADR-015 successors.
 
 ## Acceptance criteria
 

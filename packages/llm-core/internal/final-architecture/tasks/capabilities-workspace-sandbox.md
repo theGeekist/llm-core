@@ -14,12 +14,15 @@ base_sha:
 branch:
 worktree:
 depends_on:
+  - architecture-source-layout-normalization
   - runtime-receipt-reconciliation
+  - runtime-tools-front-boundary
 decision_dependencies:
   - ADR-003
   - ADR-005
   - ADR-006
   - ADR-013
+  - ADR-015
 conflicts_with: []
 write_scope:
   - packages/llm-core/src/features/workspace/**
@@ -32,8 +35,9 @@ read_scope:
   - packages/llm-core/src/features/artifacts/**
   - packages/llm-core/src/features/evidence/**
   - packages/llm-core/src/features/tooling/**
+  - packages/llm-core/src/tools/**
 review_owner: coordinator
-updated_at: 2026-08-01
+updated_at: 2026-08-02
 ---
 
 # capabilities-workspace-sandbox — Execution workspace and sandbox port
@@ -72,6 +76,10 @@ bun test packages/llm-core/tests/workspace
 bun run typecheck:packages
 bun run typecheck:tests
 bun run lint
+bun run --cwd packages/llm-core release:build
+bun run test:package
+bun run docs:check
+bun run --cwd packages/llm-core format:check
 ```
 
 ## Work log

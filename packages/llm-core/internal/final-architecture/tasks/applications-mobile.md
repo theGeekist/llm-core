@@ -1,7 +1,7 @@
 ---
 architecture_version: 2
 id: applications-mobile
-title: Mobile companion application
+title: Mobile application foundation
 stage: applications
 status: proposed
 priority: medium
@@ -14,67 +14,88 @@ base_sha:
 branch:
 worktree:
 depends_on:
-  - applications-client-contract
+  - architecture-source-layout-normalization
+  - applications-client-subpath-release
 decision_dependencies:
   - ADR-006
   - ADR-014
+  - ADR-015
 conflicts_with:
+  - applications-desktop
+  - architecture-release-reproducibility
+  - adapter-strands-runtime-release
+  - adapter-strands-runtime
+  - runtime-temporal-reference
+  - adapters-protocol-qualification
+  - architecture-status-validation
 write_scope:
+  - package.json
+  - bun.lock
   - apps/mobile/**
   - docs/applications/mobile.md
   - packages/llm-core/internal/final-architecture/tasks/applications-mobile.md
 read_scope:
-  - packages/llm-client/**
+  - packages/llm-core/src/client/**
   - packages/llm-core/package.json
 review_owner: coordinator
-updated_at: 2026-08-01
+updated_at: 2026-08-03
 ---
 
-# applications-mobile — Mobile companion application
+# applications-mobile — Mobile application foundation
 
 ## Objective
 
-Deliver a secure companion for conversations, approvals, run status,
-notifications and cost visibility while remote infrastructure owns durable
-execution.
+Establish one production-shaped mobile application shell, framework decision
+and dependency/release baseline while remote infrastructure remains the only
+durable executor.
 
 ## In scope
 
-- Conversation/run views, approval decisions, cancellation requests,
-  connection status, budgets, cost summaries and evaluation-backed routing
-  explanations.
-- System-browser OAuth with universal/app links, OS secure storage, encrypted
-  offline cache, account/tenant switching and notification deep links.
-- Cursor-based resynchronization after suspension, connectivity loss, token
-  refresh or app upgrade.
-- Supported iOS/Android lifecycle, migration and release-security posture.
+- A recorded mobile framework/package choice with native security, background,
+  update, minimum-OS, dependency and supported-device implications.
+- A minimal executable app shell importing only `@geekist/llm-core/client`, with
+  one fake-host health/read journey and no product capability abstraction.
+- Package-local build, typecheck, unit/native smoke and dependency gates.
+- Root build/typecheck integration so the default repository gates cannot skip
+  the mobile workspace.
+- A follow-on decomposition for authentication/deep links, secure storage,
+  synchronization, notifications, companion surfaces and release qualification.
 
 ## Out of scope
 
-- Local durable workflows, unrestricted background execution, raw credential
-  synchronization, provider-session portability or a mobile-hosted connector
-  catalogue.
+- OAuth/deep-link implementation, secure-store implementation, offline
+  synchronization, notifications, conversation/approval/cost UI or app-store
+  release.
 
 ## Acceptance criteria
 
-- Resume and notification flows reconcile against authoritative run state and
-  cannot duplicate an approval or effect.
-- Secure-store loss, revocation, deep-link replay, tenant switching and offline
-  conflicts are tested.
-- The UI distinguishes cancellation requested from acknowledged/terminal
-  cancellation and estimates from reconciled provider cost.
-- Framework choice is recorded with native security, background, update and
-  minimum-OS implications before implementation is made ready.
+- The framework decision compares at least native security, background limits,
+  update model, minimum OS/device and test/release implications.
+- The shell runs and typechecks without importing kernel source or feature
+  internals; its native smoke uses the qualified client subpath.
+- Root `bun.lock` is updated by a frozen-installable dependency graph.
+- Root build and typecheck gates execute the mobile foundation.
+- Follow-on product tasks are bounded independently; this foundation task does
+  not become a full companion implementation task.
+- New hand-written source/test modules satisfy the 500-SLOC rule; inherited
+  exceptions require a coordinator waiver and named decomposition follow-up.
 
 ## Verification
 
-The implementation task records framework-specific unit, native integration,
-deep-link, secure-storage, upgrade and supported-device smoke commands before
-claiming review.
+```sh
+bun install --frozen-lockfile
+bun run --cwd apps/mobile release:build
+bun run --cwd apps/mobile test:native-smoke
+bun run build
+bun run typecheck
+bun run lint
+bun run docs:check
+bunx prettier "apps/mobile/**/*.{ts,tsx,js,jsx,json,md}" "docs/applications/mobile.md" --check
+```
 
 ## Work log
 
-Planned from ADR-014; not claimed.
+Narrowed from the mobile product epic identified by ADR-014; not claimed.
 
 ## Handoff
 

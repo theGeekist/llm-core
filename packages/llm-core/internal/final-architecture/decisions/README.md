@@ -19,6 +19,7 @@ authoritative unless superseded; substantive change requires a superseding ADR.
 | [ADR-012](ADR-012-exact-public-vocabulary.md)                        | Exact public vocabulary and package surfaces          | accepted |
 | [ADR-013](ADR-013-operational-qualification-boundaries.md)           | Operational qualification boundaries                  | accepted |
 | [ADR-014](ADR-014-integration-cost-client-application-boundaries.md) | Integration, cost and client application boundaries   | accepted |
+| [ADR-015](ADR-015-kernel-completion-programme-boundaries.md)         | Kernel completion and continuing programmes           | accepted |
 
 A later change uses a superseding ADR so another worker can reconstruct why the
 architecture moved.

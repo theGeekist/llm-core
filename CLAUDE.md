@@ -2,37 +2,22 @@
 
 Read and follow [`AGENTS.md`](AGENTS.md) first.
 
-## Project architecture skills
+For backend architecture work load `/backend-slice-architecture`; for frontend
+work load `/frontend-slice-architecture`; load both when a task crosses the
+boundary. Delegated architecture work follows the same requirement.
 
-Before reviewing, designing, or changing backend architecture, load and follow
-`/backend-slice-architecture`. Before reviewing, designing, or changing
-frontend architecture, load and follow `/frontend-slice-architecture`. Load
-both when a task crosses that boundary.
+For Architecture v2 work, start from the selected task brief, its named ADRs and
+its `read_scope`. Task front matter owns state and scope.
 
-Any Claude subagent delegated architecture work must load the applicable
-project skill before inspecting or editing code. Treat the repository-local
-skills under `.claude/skills/` as the shared architecture standard for this
-project.
+- Use [`ROADMAP.md`](packages/llm-core/internal/final-architecture/ROADMAP.md)
+  only to select continuing work.
+- Use [`COORDINATION.md`](packages/llm-core/internal/final-architecture/COORDINATION.md)
+  for claims, concurrency, delegation, review and integration.
+- [`PLAN.md`](packages/llm-core/internal/final-architecture/PLAN.md) is completed
+  history; [`STATUS.md`](packages/llm-core/internal/final-architecture/STATUS.md)
+  is a generated projection.
 
-The Architecture v2 implementation is coordinated through
-[`packages/llm-core/internal/final-architecture/PLAN.md`](packages/llm-core/internal/final-architecture/PLAN.md).
-Cross-swarm claiming, isolation, handoff, and integration follow
-[`packages/llm-core/internal/final-architecture/COORDINATION.md`](packages/llm-core/internal/final-architecture/COORDINATION.md).
-
-When assigned a task:
-
-1. open its file under `packages/llm-core/internal/final-architecture/tasks/`;
-2. verify its dependencies and decision dependencies are complete;
-3. edit only its declared write scope;
-4. update only that task file's ownership, status, work log and handoff;
-5. stop for any undecided cross-cutting architecture question; and
-6. leave root exports, package metadata, shared fixtures and legacy deletion to
-   the integration task unless the brief explicitly grants them.
-
-Do not self-assign a merely planned task. Wait until the coordinator has
-populated its owner, worktree, branch, base SHA, and lease. Do not rebase,
-merge, cherry-pick, or integrate task branches.
-
-Conversation state is not project state. Another worker must be able to resume
-from the task file, accepted ADRs, repository changes and verification evidence
-alone.
+Do not self-assign planned work or edit lifecycle state independently. Preserve
+unrelated changes, obey `write_scope`, and leave enough task evidence for a new
+worker to resume without conversation history. New code follows the shallow
+layout, kebab-case naming and 500-SLOC rules in `COORDINATION.md`.

@@ -3,7 +3,12 @@ architecture_version: 2
 id: capabilities-cost-intelligence
 title: Cost attribution, budgets and routing evidence
 stage: qualification
-status: proposed
+status: cancelled
+replaced_by:
+  - cost-facts
+  - cost-budget-control
+  - cost-budget-enforcement
+  - model-routing-qualification
 priority: high
 preferred_owner_kind: codex
 owner:
@@ -21,8 +26,8 @@ decision_dependencies:
   - ADR-005
   - ADR-013
   - ADR-014
+  - ADR-015
 conflicts_with:
-  - adapter-strands-runtime
 write_scope:
   - packages/llm-core/src/features/evidence/**
   - packages/llm-core/src/features/model/**
@@ -39,7 +44,7 @@ read_scope:
   - packages/llm-core/src/contracts/**
   - packages/llm-core/src/features/control/**
 review_owner: coordinator
-updated_at: 2026-08-01
+updated_at: 2026-08-03
 ---
 
 # capabilities-cost-intelligence — Cost attribution, budgets and routing evidence
@@ -89,8 +94,11 @@ bun run lint
 
 ## Work log
 
-Planned from ADR-014; not claimed.
+Cancelled by ADR-015 before implementation. Replaced by `cost-facts`,
+`cost-budget-control`, `cost-budget-enforcement` and
+`model-routing-qualification` so facts, policy, gateway enforcement and
+recommendation ownership do not share one broad application write scope.
 
 ## Handoff
 
-Pending.
+No implementation was started. Use the four replacement briefs.

@@ -5,9 +5,9 @@ Decision authority:
 [`ADR-009`](decisions/ADR-009-specification-interoperability.md)
 Implementation stage: specifications
 
-Public names in this document remain provisional until language-vocabulary ratifies the
-exact language. The internal authority boundaries remain required even when
-the common API hides their machinery.
+ADR-012 ratified the public names used by this completed specification stage.
+The internal authority boundaries remain required even when the common API
+hides their machinery.
 
 ## Outcome
 
@@ -322,11 +322,19 @@ reusable gate is:
 pnpm --filter @wpkernel/pipeline qualify:packed
 ```
 
-The release gate passed on 31 July 2026: the package release build passed 515
-tests with one optional compatibility skip, and the isolated packed consumer
-verified all 19 ESM runtime and declaration entrypoints against Pipeline
-1.2.0. `specification-compiler` is no longer blocked on WPKernel; its remaining
-gates are `specification-contracts` and the accepted vocabulary decisions.
+The 31 July 2026 release gate was the pre-specification baseline: the package
+release build passed 515 tests with one optional compatibility skip, and the
+isolated packed consumer verified the then-current 19 ESM runtime and
+declaration entrypoints against Pipeline 1.2.0. That result removed the
+WPKernel dependency blocker; the contract and vocabulary gates named at the
+time were subsequently completed.
+
+The final Architecture v2 qualification at commit `9920425` verified all 30
+ESM runtime and declaration entrypoints, including the completed specification
+contracts, compiler, authority enforcement and public API. There are no
+remaining specification-stage gates in the kernel. Later adapter qualification
+and publication decisions are continuing-programme work and do not reopen this
+completion boundary.
 
 ## Error and evidence posture
 
@@ -359,30 +367,32 @@ gates are `specification-contracts` and the accepted vocabulary decisions.
   requiring authenticated source authority, base-revision compare-and-swap,
   stale-proposal rejection and a durable application receipt.
 
-## Implementation sequence
+## Completed implementation sequence
 
-1. The language stage settles the public language and proves the common
+1. The language stage settled the public language and proved the common
    journeys.
-2. specification-contracts defines and validates snapshots, semantic graphs, conversion reports,
-   portable specification decision records, change proposals and adapter
-   capabilities.
-3. specification-compiler adds reconciliation, resolution, derived views,
-   review and the pure Pipeline-backed compiler after the completed WPKernel
-   release gate. The
-   required composition and typed custom-stage APIs are already implemented and
-   packed-qualified upstream. specification-compiler owns runtime registration of accepted
-   specifications and authority-bound compiled results. Its authority-snapshot
-   verifier remains internal.
-4. specification-authority integrates post-compilation authority verification
-   into controlled
-   preparation, execution and resume paths and proves rejection before effects.
-5. specification-api publishes `./specifications`, adds the common
-   specification journey to the root and verifies the 30-entry packed package.
-6. adapter-openspec, adapter-pydantic-ai, adapter-ai-sdlc, adapter-spec-kit and adapter-bmad implement independent adapter
-   mappings and verification fixtures.
-7. adapter-openspec-release, adapter-pydantic-ai-release, adapter-ai-sdlc-release, adapter-spec-kit-release and adapter-bmad-release are coordinator-owned publication
-   tasks that serialize package metadata and packed-consumer changes.
-8. A later source-application task may apply change proposals only after its
+2. `specification-contracts` defined and validated snapshots, semantic graphs,
+   conversion reports, portable specification decision records, change
+   proposals and adapter capabilities.
+3. `specification-compiler` added reconciliation, resolution, derived views,
+   review and the pure Pipeline-backed compiler after the WPKernel release gate.
+   It owns runtime registration of accepted specifications and authority-bound
+   compiled results; its authority-snapshot verifier remains internal.
+4. `specification-authority` integrated post-compilation authority verification
+   into controlled preparation, execution and resume paths and proved rejection
+   before effects.
+5. `specification-api` published `./specifications`, added the common
+   specification journey to the root and verified the 30-entry packed package.
+6. `adapter-openspec`, `adapter-pydantic-ai`, `adapter-ai-sdlc`,
+   `adapter-spec-kit` and `adapter-bmad` implemented independent adapter mappings
+   and verification fixtures.
+
+## Continuing specification work
+
+1. The five coordinator-owned adapter publication tasks may serialize package
+   metadata and packed-consumer changes after their exact-version support gates
+   pass.
+2. A later source-application task may apply change proposals only after its
    adapter proves authenticated ownership, optimistic concurrency, stale
    rejection, conversion-loss handling and durable receipts.
 

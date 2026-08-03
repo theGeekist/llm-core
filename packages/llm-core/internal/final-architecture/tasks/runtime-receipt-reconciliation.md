@@ -4,6 +4,7 @@ id: runtime-receipt-reconciliation
 title: Receipt fencing and ambiguous-effect recovery
 stage: qualification
 status: done
+evidence_milestone: bb7f7f7
 priority: high
 preferred_owner_kind: codex
 owner: codex-root

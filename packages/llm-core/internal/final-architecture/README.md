@@ -1,28 +1,26 @@
 # llm-core Architecture v2
 
-This directory is the canonical Architecture v2 programme for `llm-core`.
-It replaces the historical stage plans and v1 public posture with the accepted
-narrow-waist contracts, capability slices, control kernel, application
-orchestration, specification compilation, and qualified adapter boundaries
-defined here.
+The v2 kernel is complete at `9920425`. Later qualification, integration,
+adapter and product work is independently prioritizable under ADR-015.
 
-The `final-architecture` path is retained while active task branches converge;
-the explicit v2 marker is authoritative. Every ADR and task created from the
-templates in this directory belongs to Architecture v2 unless a later
-superseding architecture version says otherwise.
+## Document ownership
 
-- [`PLAN.md`](PLAN.md) defines the target posture and implementation stages.
-- [`STATUS.md`](STATUS.md) projects current task state.
-- [`COORDINATION.md`](COORDINATION.md) defines deterministic swarm execution.
-- [`LANGUAGE.md`](LANGUAGE.md) records the complete public-language audit,
-  journey contracts and language rollout gate.
-- [`SPECIFICATIONS.md`](SPECIFICATIONS.md) defines the specification model,
-  eight interoperability seams and Pipeline adoption gates.
-- [`decisions/ADR-013`](decisions/ADR-013-operational-qualification-boundaries.md)
-  records the post-language qualification boundary for operational evidence,
-  durable recovery, context safety, workspaces and protocol adapters.
-- [`decisions/ADR-014`](decisions/ADR-014-integration-cost-client-application-boundaries.md)
-  defines connector authorization, cost intelligence and the shared-client,
-  desktop and mobile product boundary.
-- [`decisions/`](decisions/) contains accepted Architecture v2 ADRs.
-- [`tasks/`](tasks/) contains Architecture v2 implementation briefs.
+- [`PLAN.md`](PLAN.md): completed kernel posture and evidence.
+- [`ROADMAP.md`](ROADMAP.md): continuing programme grouping, admission and
+  priority advice.
+- [`STATUS.md`](STATUS.md): generated task-state projection.
+- [`COORDINATION.md`](COORDINATION.md): claim, concurrency, review and
+  integration procedure.
+- [`tasks/`](tasks/): authoritative task state, exact dependencies, scope and
+  checks.
+- [`decisions/`](decisions/): accepted architecture rationale.
+- [`LANGUAGE.md`](LANGUAGE.md): completed public-language decisions.
+- [`SPECIFICATIONS.md`](SPECIFICATIONS.md): specification model and
+  interoperability seams.
+
+Read only the documents needed for the current action. Planning uses ROADMAP;
+implementation/review starts from the selected task and named ADRs;
+COORDINATION is required for claims or integration; PLAN is historical.
+
+The directory name `final-architecture` is historical. The explicit v2 marker
+and ADR-015 completion boundary are authoritative.

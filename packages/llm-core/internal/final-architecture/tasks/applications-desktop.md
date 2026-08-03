@@ -1,7 +1,7 @@
 ---
 architecture_version: 2
 id: applications-desktop
-title: Desktop operator and local-profiler application
+title: Desktop application foundation
 stage: applications
 status: proposed
 priority: medium
@@ -14,65 +14,87 @@ base_sha:
 branch:
 worktree:
 depends_on:
-  - applications-client-contract
+  - architecture-source-layout-normalization
+  - applications-client-subpath-release
 decision_dependencies:
   - ADR-006
   - ADR-014
+  - ADR-015
 conflicts_with:
+  - applications-mobile
+  - architecture-release-reproducibility
+  - adapter-strands-runtime-release
+  - adapter-strands-runtime
+  - runtime-temporal-reference
+  - adapters-protocol-qualification
+  - architecture-status-validation
 write_scope:
+  - package.json
+  - bun.lock
   - apps/desktop/**
   - docs/applications/desktop.md
   - packages/llm-core/internal/final-architecture/tasks/applications-desktop.md
 read_scope:
-  - packages/llm-client/**
+  - packages/llm-core/src/client/**
   - packages/llm-core/package.json
 review_owner: coordinator
-updated_at: 2026-08-01
+updated_at: 2026-08-03
 ---
 
-# applications-desktop — Desktop operator and local-profiler application
+# applications-desktop — Desktop application foundation
 
 ## Objective
 
-Deliver the full end-user operator surface for connections, runs, approvals and
-cost profiling, with explicit local-versus-remote execution and platform
-security boundaries.
+Establish one production-shaped desktop application shell, framework decision
+and dependency/release baseline before product capabilities are implemented.
 
 ## In scope
 
-- Conversations/runs, approval inbox, connector management, usage and cost
-  drill-down, budget controls and evaluation-backed model recommendations.
-- OS secure-storage and OAuth callback adapters, encrypted local app storage,
-  account/tenant switching and redacted diagnostic export.
-- A local profiler and optional local connector host using the shared client
-  contract; durable and long-running execution delegates to a qualified host.
-- Signed update, migration, crash recovery and supported-OS release posture.
+- A recorded desktop framework/package choice with supported-OS, update,
+  signing, sandbox, native-dependency and release implications.
+- A minimal executable app shell importing only `@geekist/llm-core/client`, with
+  one fake-host health/read journey and no product capability abstraction.
+- Package-local build, typecheck, unit test, pack and isolated smoke commands.
+- Root build/typecheck integration so the default repository gates cannot skip
+  the desktop workspace.
+- A follow-on decomposition for authentication/secure storage, synchronization,
+  operator surfaces, local profiling/hosting and release qualification.
 
 ## Out of scope
 
-- Storing raw credentials in shared app state, scraping consumer subscription
-  pages, claiming the UI process is durable, or adding desktop concerns to the
-  kernel root.
+- OAuth implementation, secure-store implementation, conversations, approvals,
+  connector management, cost/budget/routing UI, local hosting, signing or
+  production release.
 
 ## Acceptance criteria
 
-- The app survives restart without duplicating a submitted controlled action.
-- OAuth callback and secure-store tests cover replay, account switching,
-  revocation and unavailable vault state.
-- Cost views label observed usage, estimates, reconciliation and avoided usage
-  distinctly.
-- Framework and packaging choice is recorded with update/signing and minimum-OS
-  implications before implementation is made ready.
+- The framework decision compares at least runtime security, native dependency,
+  signing/update, minimum-OS and test/pack implications.
+- The shell runs and typechecks without importing kernel source or feature
+  internals and the isolated smoke consumes the packed local package.
+- Root `bun.lock` is updated by a frozen-installable dependency graph.
+- Root build and typecheck gates execute the desktop foundation.
+- Follow-on product tasks are bounded independently; this foundation task does
+  not become a full application implementation task.
+- New hand-written source/test modules satisfy the 500-SLOC rule; inherited
+  exceptions require a coordinator waiver and named decomposition follow-up.
 
 ## Verification
 
-The implementation task records framework-specific unit, integration,
-packaging, signing, update and supported-OS smoke commands before claiming
-review.
+```sh
+bun install --frozen-lockfile
+bun run --cwd apps/desktop release:build
+bun run --cwd apps/desktop test:package
+bun run build
+bun run typecheck
+bun run lint
+bun run docs:check
+bunx prettier "apps/desktop/**/*.{ts,tsx,js,jsx,json,md}" "docs/applications/desktop.md" --check
+```
 
 ## Work log
 
-Planned from ADR-014; not claimed.
+Narrowed from the desktop product epic identified by ADR-014; not claimed.
 
 ## Handoff
 

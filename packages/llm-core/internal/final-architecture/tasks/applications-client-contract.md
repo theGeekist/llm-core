@@ -14,52 +14,69 @@ base_sha:
 branch:
 worktree:
 depends_on:
-  - specification-api
+  - architecture-source-layout-normalization
+  - applications-client-characterization
   - integrations-authorization-lifecycle
-  - capabilities-cost-intelligence
+  - cost-facts
+  - cost-budget-enforcement
+  - model-routing-qualification
 decision_dependencies:
   - ADR-001
   - ADR-006
   - ADR-012
   - ADR-014
+  - ADR-015
 conflicts_with:
-  - applications-desktop
-  - applications-mobile
 write_scope:
-  - packages/llm-client/**
-  - docs/applications/**
+  - packages/llm-core/src/client/**
+  - packages/llm-core/tests/client/**
+  - docs/applications/client.md
   - packages/llm-core/internal/final-architecture/tasks/applications-client-contract.md
 read_scope:
+  - packages/llm-core/index.ts
   - packages/llm-core/src/**/public.ts
+  - packages/llm-core/src/agent/index.ts
+  - packages/llm-core/src/agent/runtime.ts
+  - packages/llm-core/src/control/index.ts
+  - packages/llm-core/src/control/runtime.ts
+  - packages/llm-core/src/tools/**
+  - packages/llm-core/src/workflow/index.ts
+  - packages/llm-core/src/workflow/runtime.ts
   - packages/llm-core/package.json
   - packages/llm-core/tests/**
 review_owner: coordinator
-updated_at: 2026-08-01
+updated_at: 2026-08-03
 ---
 
 # applications-client-contract — Shared end-user client application contract
 
 ## Objective
 
-Define the stable client-facing application and synchronization contract that
-desktop and mobile can share without importing kernel internals or assuming a
-particular UI/native framework.
+Derive the stable client-facing application and synchronization contract from
+the characterized desktop/mobile and local/fake-remote journeys without
+importing kernel internals or assuming a particular UI/native framework.
 
 ## In scope
 
 - Account/tenant selection, connection management, run submission/control,
-  event cursors, approvals, usage/cost projections, cache state and explicit
-  offline/conflict dispositions.
+  event cursors, approvals, usage/cost projections, budget decisions, advisory
+  routing recommendations, cache state and explicit offline/conflict
+  dispositions.
 - Local and remote host transports behind the same typed client boundary.
 - Redacted, versioned app persistence and migration fixtures.
-- Public-package consumption tests and a decision on package/workspace
-  placement before publication.
+- A package-local `src/client` implementation that remains unexported until its
+  coordinator-owned subpath-release task qualifies the package front.
+- Contract, transport and persistence tests that do not depend on root source
+  aliases or feature-internal imports.
+- A trace from every shared operation and state field to both characterized
+  consumers; platform-specific behavior remains outside the shared contract.
 
 ## Out of scope
 
 - UI components, OS credential storage, OAuth browser callbacks,
   notifications, analytics storage, app-store release or deep imports from
-  `llm-core` features.
+  `llm-core` features, a separate `llm-client` package, package-export changes
+  or public client-subpath support.
 
 ## Acceptance criteria
 
@@ -68,19 +85,33 @@ particular UI/native framework.
   non-portable runtime/credential references.
 - Offline mutation conflicts fail or reconcile explicitly; they never silently
   duplicate controlled effects.
-- Packed-consumer tests prove the client uses only curated public exports.
+- Client implementation remains under the package-level delivery boundary and
+  imports feature/application behavior only through curated fronts.
+- No package manifest, build entrypoint, TypeScript mapping or root/public
+  export is added by this task; successful implementation is not publication.
+- Budget and routing projections retain decision/evidence provenance and never
+  turn an advisory recommendation into execution authority.
+- Tests reject imports from feature internals and prove the local/fake-remote
+  contract without relying on the removed `./functional` surface.
 
 ## Verification
 
 ```sh
-bun test packages/llm-client
+bun install --frozen-lockfile
+bun test packages/llm-core/tests/client
 bun run typecheck:packages
+bun run typecheck:tests
 bun run lint
+bun run --cwd packages/llm-core release:build
+bun run docs:check
+bun run --cwd packages/llm-core format:check
 ```
 
 ## Work log
 
-Planned from ADR-014; not claimed.
+Planned from ADR-014 and narrowed by ADR-015; blocked on client
+characterization. The resulting implementation remains unexported until
+`applications-client-subpath-release`; not claimed.
 
 ## Handoff
 

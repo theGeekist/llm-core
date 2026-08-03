@@ -4,6 +4,7 @@ id: adapter-ai-sdlc
 title: AI-SDLC JSON resource adapter
 stage: adapters
 status: done
+evidence_milestone: cf3347d
 priority: normal
 preferred_owner_kind: codex
 owner: codex-root

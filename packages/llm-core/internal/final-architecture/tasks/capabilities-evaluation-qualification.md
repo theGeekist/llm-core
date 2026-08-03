@@ -4,6 +4,7 @@ id: capabilities-evaluation-qualification
 title: Evaluation qualification and promotion
 stage: qualification
 status: done
+evidence_milestone: pre-completion
 priority: high
 preferred_owner_kind: codex
 owner: codex-evaluation-qualification

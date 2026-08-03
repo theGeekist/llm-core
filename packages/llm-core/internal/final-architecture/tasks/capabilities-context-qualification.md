@@ -4,6 +4,7 @@ id: capabilities-context-qualification
 title: Context eligibility and compiler boundary
 stage: qualification
 status: done
+evidence_milestone: pre-completion
 priority: high
 preferred_owner_kind: codex
 owner: codex-context-qualification

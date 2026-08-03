@@ -4,7 +4,7 @@ Architecture version: v2
 Status: accepted
 Date: 2026-08-01
 Owners: architecture coordinator
-Affected tasks: integrations-connector-contracts, integrations-authorization-lifecycle, capabilities-cost-intelligence, applications-client-contract, applications-desktop, applications-mobile, adapters-protocol-qualification
+Affected tasks: integrations-connector-characterization, integrations-connector-contracts, integrations-authorization-lifecycle, cost-facts, cost-budget-control, cost-budget-enforcement, model-routing-qualification, applications-client-characterization, applications-client-contract, applications-client-platform-qualification, applications-client-subpath-release, applications-desktop, applications-mobile, adapters-protocol-qualification
 Supersedes: none
 
 ## Context
@@ -80,6 +80,11 @@ OS lifecycle behavior.
   usage is available, and after completion. Each allow, warn, reroute, stop or
   overrun outcome is recorded as evidence; interruption never rewrites
   observed usage.
+- Budget decision contracts and enforcement are separate deliverables. The
+  existing public `BudgetDecisionEvidence` and `UsageReceipt` binding evolve
+  atomically, then controlled model, tool and workflow gateways are required to
+  consult the decision before effects. `reroute` requests a new resolution; it
+  neither selects nor authorizes a target.
 - Routing considers required capabilities and quality gates before privacy,
   residency, latency and cost. “Which model should have answered this?” is an
   evaluation-backed counterfactual recommendation, not a live guess based only
@@ -122,6 +127,14 @@ OS lifecycle behavior.
   design.
 - Connector and client package exports require the same serialized publication
   and packed-consumer verification posture as ADR-007 and ADR-010.
+- The first shared-client implementation is package-local and unexported. A
+  platform-qualification task first prequalifies the source against Node,
+  browser and mobile and supplies a reusable tarball-driven harness. After the
+  coordinator-owned release task adds the export/build/package configuration,
+  that harness must pack the exact result and pass isolated Node,
+  browser-bundler and Metro consumers before `@geekist/llm-core/client` becomes
+  supported. A separate client package requires a measured split decision under
+  ADR-015.
 
 ## Relationship to earlier decisions
 
@@ -177,6 +190,11 @@ secret-portability claims.
 - Cost tests must prove estimate provenance, stale/missing price disposition,
   provider reconciliation, budget decisions, cache attribution and currency
   separation.
+- Budget enforcement tests must prove denial or stop is checked at controlled
+  model/tool/workflow gateways before any new effect begins.
 - Shared-client contract tests must work against local and remote fake hosts.
+  Source prequalification must exercise Node, browser and mobile, and the
+  post-export tarball must repeat those platforms through isolated public
+  subpath consumers before support begins.
   Desktop and mobile release gates must include platform callback, secure
   storage, offline/resume and update/migration fixtures appropriate to each OS.

@@ -14,13 +14,14 @@ base_sha:
 branch:
 worktree:
 depends_on:
+  - architecture-source-layout-normalization
   - integrations-connector-contracts
 decision_dependencies:
   - ADR-004
   - ADR-005
   - ADR-014
+  - ADR-015
 conflicts_with:
-  - adapters-protocol-qualification
 write_scope:
   - packages/llm-core/src/features/integrations/**
   - packages/llm-core/src/application/integrations/**
@@ -32,7 +33,7 @@ read_scope:
   - packages/llm-core/src/features/control/**
   - packages/llm-core/src/features/evidence/**
 review_owner: coordinator
-updated_at: 2026-08-01
+updated_at: 2026-08-02
 ---
 
 # integrations-authorization-lifecycle — Connector authorization and secret-reference lifecycle
@@ -74,6 +75,10 @@ bun test packages/llm-core/tests/integrations
 bun run typecheck:packages
 bun run typecheck:tests
 bun run lint
+bun run --cwd packages/llm-core release:build
+bun run test:package
+bun run docs:check
+bun run --cwd packages/llm-core format:check
 ```
 
 ## Work log

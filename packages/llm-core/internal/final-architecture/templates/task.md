@@ -5,6 +5,8 @@ title: Task title
 stage: STAGE
 status: proposed
 priority: critical
+evidence_milestone: null
+replaced_by: []
 preferred_owner_kind: codex
 owner: null
 owner_kind: null
@@ -24,6 +26,9 @@ updated_at: YYYY-MM-DD
 ---
 
 # TASK-ID — Task title
+
+Choose `stage`, `status`, `priority`, `preferred_owner_kind` and `owner_kind`
+only from the canonical vocabularies in [`../tasks/README.md`](../tasks/README.md).
 
 ## Objective
 
@@ -46,6 +51,12 @@ brief above the work log is immutable while claimed.
 
 ## Acceptance criteria
 
+- New or moved code follows the shallow layout and naming rules in
+  `COORDINATION.md`.
+- New or materially changed hand-written source/test modules satisfy the
+  500-SLOC rule, or the handoff records a coordinator-approved waiver and named
+  follow-up task.
+
 ## Verification
 
 ```sh
@@ -62,24 +73,20 @@ bun run typecheck:packages
 
 ## Claim protocol
 
-Claim only if dependencies are done, ADRs accepted and no active write scope
-overlaps. Set owner, owner kind, base SHA, lease and status. Independent
-Codex/Claude Code processes use separate worktrees. An expired lease requires
-coordinator review before reassignment.
-
-The coordinator creates the branch and worktree. Workers do not rebase, merge,
-cherry-pick, or integrate. Workers finish with a task commit at `review`; only
-the reviewer marks `done`.
-
-Allowed states:
-
-```text
-proposed -> ready -> claimed -> in_progress -> review -> done
-                               \-> blocked
-proposed/ready/blocked -> cancelled
-```
+Follow [`../COORDINATION.md`](../COORDINATION.md) and the metadata contract in
+[`../tasks/README.md`](../tasks/README.md). Do not restate those rules here.
 
 ## Work log
+
+Record replacements when cancelled. For active work use the canonical labels:
+
+```text
+Execution mode: shared-checkout | dedicated-worktree
+Execution rationale: <non-empty explanation>
+Concurrency evaluation: <ongoing task IDs or none; start alongside | wait | no concurrency; boundary rationale>
+Concurrent task scopes: none | <task IDs and disjoint scopes>
+Swarm delegation: none | <child owner and disjoint subpath/output>
+```
 
 ## Blocker
 

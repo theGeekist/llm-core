@@ -1,132 +1,115 @@
-# Architecture v2 — Codex swarm coordination
+# Architecture v2 — Task coordination
 
-This file defines how the Codex coordinator and delegated subagents execute the
-Architecture v2 program without relying on shared conversation state.
+This file owns claim, concurrency, review and integration procedure. Task front
+matter owns exact state, dependencies and scope; [`ROADMAP.md`](ROADMAP.md)
+owns programme grouping, admission and priority advice.
 
-## Allocation
+## Select and claim
 
-Claude Code's completed api-baseline and core-model-runtime contributions remain historical.
-After core-model-runtime, every remaining task is allocated to the Codex/coordinator swarm.
-The coordinator delegates disjoint subtasks to child agents while retaining the
-task lease, review responsibility and integration authority.
+Work is selected one candidate at a time with no preset serial or parallel
+preference. Before claiming, the coordinator:
 
-## Dependency-safe execution order
+1. verifies dependencies and decision gates;
+2. inspects `git status` and every active task;
+3. compares conflicts, write scopes, generated outputs and staging paths;
+4. records whether the candidate starts alongside current work or waits; and
+5. assigns one primary owner, lease, base SHA and execution location.
 
-- **Architecture and baseline:** `architecture-decisions` and `api-baseline`
-  may run concurrently.
-- **Core contracts:** `core-contracts` runs after `architecture-decisions`.
-- **Core runtime slices:** `core-tool-control-events` and `core-model-runtime`
-  run concurrently. `core-state-interventions` and `core-ai-sdk-packaging` may
-  then run concurrently after their gates. `core-agent-runner` follows the
-  state and model slices.
-- **Core adapters and interactions:** `core-ai-sdk-adapter` runs after the
-  packaging gate and establishes one green AI SDK 7 provider/UI compatibility
-  baseline. `core-interactions` follows the state, runner and AI SDK slices.
-- **Core convergence:** `core-convergence` integrates the core tasks in the
-  deterministic order below.
-- **Capabilities:** after `core-convergence`,
-  `capabilities-context-artifacts` and
-  `capabilities-runtime-conformance` may run concurrently.
-  `capabilities-evaluation` follows `capabilities-context-artifacts`.
-- **Language:** after capabilities, the language tasks audit, decide and
-  atomically replace the public language. Specification work remains blocked
-  until `language-rollout` passes.
-- **Specifications and adapters:** specification work begins after
-  `language-rollout`. Adapter implementations begin after the specification
-  API is published; their publication tasks remain serialized.
+DAG readiness alone does not authorize a claim. Overlap is serialized or
+repartitioned; a separate checkout never cures shared ownership.
 
-## Claim protocol
+The coordinator owns every lifecycle transition and is the only writer of
+`STATUS.md`. It changes task front matter and regenerates STATUS in the same
+logical edit. Workers request `in_progress`, `review` or `blocked`; they never
+change lifecycle fields themselves. The required metadata and work-log labels
+are defined in [`tasks/README.md`](tasks/README.md).
 
-The architecture coordinator is the only authority that changes a task from
-`proposed` to `ready` and the only writer of `STATUS.md`.
+## Execution boundaries
 
-For each assigned task, the coordinator:
+- One task has one accountable primary owner and logical write lease.
+- The primary checkout and current coordinator branch are the default.
+- Disjoint tasks may share that checkout; one writer per file is absolute.
+- Shared manifests, lockfiles, generated artifacts and staging paths count as
+  writes and must be included in the boundary check.
+- A dedicated worktree is a last resort for otherwise-disjoint risky or bulk
+  work, or clean final evidence that genuinely needs isolation. Record why.
+- A task-local swarm is optional. Children inherit the task scope, receive
+  disjoint subpaths/outputs and never claim, integrate or broaden work.
+- Workers edit only `write_scope`, do not switch branches, and do not rebase,
+  merge or cherry-pick.
+- Re-evaluate boundaries when another candidate is considered, scope changes or
+  an unexpected shared-file edit appears. Stop until ownership is disjoint.
+- Final repository-wide or publication evidence uses a quiescent shared
+  checkout or the task's justified dedicated worktree.
 
-1. verifies dependencies are `done` and ADRs are accepted;
-2. creates a dedicated worktree and task branch from the recorded base SHA;
-3. populates `owner`, `owner_kind`, lease, base SHA, branch, and worktree;
-4. changes the task to `claimed`; and
-5. gives the worker the task brief, accepted ADRs, this file, and no hidden
-   conversational requirements.
+## Size rule
 
-The worker then changes only its own task file from `claimed` to `in_progress`.
-An agent may not claim a second task while its first task is active unless the
-coordinator explicitly records the exception.
+New hand-written production and test modules must not exceed 500 physical source
+lines. Generated, vendored and snapshot exclusions are centrally configured. A
+legacy exception is pinned by ceiling and content digest; any content change
+requires reduction to the limit or a versioned coordinator waiver with a named
+follow-up. The threshold is a cohesion signal, not permission for arbitrary
+file splitting.
 
-A dependent task's base SHA must contain the integrated commits of every
-dependency marked `done`. On lease expiry or reassignment, the coordinator
-records the release and issues a new base SHA, worktree, and lease.
+## Source layout and names
 
-## Isolation rules
+- Use kebab-case and a descriptive noun or noun-role filename.
+- Prefer `src/<layer>/<capability-or-integration>/<file>`; add production
+  nesting only for a real independently owned boundary, not a category.
+- Prefix related filenames instead of adding classificatory folders: for
+  example `storage-cache.ts` and `media-transcription.ts`.
+- `public.ts` is an internal feature/application front. `index.ts` is reserved
+  for package or published-subpath entrypoints. `runtime.ts` denotes a
+  privileged live surface, not a generic implementation module.
+- Do not introduce vague `common`, `misc`, `shared`, `utils` or generic
+  `helpers` modules; name the owned concept. Tests mirror the source owner, with
+  extra depth normally limited to fixtures or generated data.
 
-- One task, one branch, one worktree, one accountable parent worker.
-- Workers edit only `write_scope`; `read_scope` grants no write authority.
-- Root exports, manifests, lockfiles, shared fixtures, canonical plans, and
-  legacy deletion remain integration-owned unless a brief explicitly grants
-  them.
-- Workers do not rebase, merge, cherry-pick, or modify another task branch.
-- A newly discovered cross-cutting decision blocks the task and becomes an ADR.
-- Subagents report to the task owner; they never integrate independently.
-- Nested swarms inherit the parent's write scope. The parent records disjoint
-  child subpaths before delegation, and only one worker may write a file.
+Architecture tests enforce the mechanically decidable subset. A justified
+exception is recorded in the owning task rather than normalized into a broader
+rule.
 
-## Handoff contract
+## Review and completion
 
-Every task presented for review must contain:
+Review begins from an uncommitted task-scoped diff. The submission records:
 
-- the commit SHA produced from the assigned worktree;
-- confirmation that the task worktree is clean at that SHA;
-- the exact changed-file list;
-- verification commands, exit codes, and concise results;
-- ADRs applied and any deviations;
-- remaining risks and known semantic loss; and
-- shared-file changes requested from the integration owner.
+- base SHA, execution mode and concurrent scopes;
+- changed files and shared-file requests;
+- verification commands and results;
+- ADRs, deviations, known loss and remaining risk; and
+- any task-local delegation.
 
-Every shared-file request names the exact path and intended change.
+After approval:
 
-The task owner stops at `review`. Only the coordinator marks it `done`, and
-only after its reviewed commit is integrated into the coordinator branch.
+- **Shared checkout:** the coordinator commits only approved task paths on the
+  current branch, leaving unrelated diffs untouched.
+- **Dedicated worktree:** the approved task commit is created on its isolated
+  ref and integrated by the coordinator.
 
-## Deterministic integration
+The coordinator runs receiving verification, records the approved SHA, then
+changes the task to `done` and regenerates STATUS. Task-frontmatter changes and
+STATUS form one governance set: if committed, it includes every source task
+needed for an exact projection. Pending governance state is excluded from an
+implementation commit unless the complete set is intentionally included.
 
-The coordinator integrates only reviewed task commits and never uncommitted
-worker directories. Ready commits are integrated in topological order; ties are
-resolved by ascending task ID.
+## Qualification gates
 
-For the core stage, the expected order is:
+Task-focused checks supplement, never replace, package gates.
 
-```text
-api-baseline
-core-contracts
-core-tool-control-events
-core-model-runtime
-core-state-interventions
-core-agent-runner
-core-ai-sdk-packaging
-core-ai-sdk-adapter
-core-interactions
-core-convergence
-```
+- Package behavior changes pass `packages/llm-core` `release:build`.
+- Export, build/declaration, TypeScript mapping, package-smoke or public-doc
+  changes also pass the packed consumer, documentation and formatting commands
+  named by the task.
+- `release:qualify:llm-core` is the only supported npm-publication gate. Both
+  local `publish:npm` and tagged release workflows delegate to it.
+- Every newly published conditional surface registers a durable, non-skipping
+  qualifier. Later releases rerun every active registration.
+- Private applications use equivalent package-local gates; packing is evidence,
+  not publication authority.
 
-After each integration, the coordinator runs the receiving task's focused
-verification. `core-convergence` runs the complete verification baseline. A failed
-integration returns to the originating task; the coordinator does not repair
-capability internals inside the integration commit.
+## Recoverability
 
-## Progress authority
-
-Project state is recoverable from, in order:
-
-1. accepted ADRs;
-2. task front matter and handoff;
-3. task branch commits;
-4. `STATUS.md` as the coordinator-maintained projection.
-
-Chat transcripts, model memory, and uncommitted worktree state are never
-required inputs.
-
-For renamed historical tasks, `legacy_id`, `branch` and `worktree` are
-immutable provenance. They retain the exact values used when the work ran,
-even when those values contain the retired numbering scheme. Terminology
-audits must exclude these provenance fields; current task IDs, dependencies
-and planning prose still use descriptive names.
+Project state is recoverable from accepted ADRs, task front matter, approved
+commits and the generated STATUS projection. Chat history and uncommitted
+worktree state are never required inputs. Historical `legacy_id`, `branch` and
+`worktree` values remain immutable provenance.

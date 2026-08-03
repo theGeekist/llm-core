@@ -1,73 +1,71 @@
-# Architecture v2 implementation task briefs
+# Architecture v2 task briefs
 
-Each file in this directory is the durable source of truth for one bounded implementation task.
+Each file here is the authoritative record for one bounded task, including its
+exact dependencies. Programme grouping and admission live in
+[`../ROADMAP.md`](../ROADMAP.md); execution procedure lives in
+[`../COORDINATION.md`](../COORDINATION.md); completed kernel history lives in
+[`../PLAN.md`](../PLAN.md).
 
-Cross-swarm allocation, claims, worktree isolation, handoffs, and deterministic
-integration are defined in [`../COORDINATION.md`](../COORDINATION.md).
+## Lifecycle and vocabulary
 
-## Lifecycle
+```text
+proposed -> ready -> claimed -> in_progress -> review -> done
+                         \-> blocked
+proposed | ready | blocked -> cancelled
+```
 
-`proposed` → `ready` → `claimed` → `in_progress` → `review` → `done`
+Use only these values:
 
-Use `blocked` when a named dependency or unresolved decision prevents progress. Use `cancelled` only when the coordinator removes the task.
+- `stage`: `architecture`, `baseline`, `core`, `capabilities`, `language`,
+  `specifications`, `qualification`, `integrations`, `adapters`, `applications`;
+- `status`: `proposed`, `ready`, `claimed`, `in_progress`, `review`, `blocked`,
+  `done`, `cancelled`;
+- `priority`: `critical`, `high`, `medium`, `normal`;
+- owner kinds: `coordinator`, `codex`, `claude-code`.
 
-## Language stage
+Empty YAML values and `null` are equivalent only for unassigned metadata.
+`proposed`, `ready` and never-started `cancelled` tasks have no assignment.
+`claimed`, `in_progress`, `review` and actively leased `blocked` tasks require
+owner, owner kind, lease start/expiry, base SHA, branch and `worktree`. The
+historical field name `worktree` records the selected checkout path, including
+the shared primary checkout.
 
-The language stage runs before specification work. Its common-journey fixtures
-and exact term map are architecture inputs, not a final documentation cleanup.
-New capability tasks must not invent public names while `language-vocabulary`
-is unresolved.
+`evidence_milestone` is optional structured STATUS evidence for completed work.
+`replaced_by` is an optional task-ID list required for superseded cancelled
+work; prose work logs are not projection inputs.
 
-## Qualification stage
+The coordinator owns lifecycle changes and updates task front matter plus
+`STATUS.md` together. Workers request transitions. A committed governance set
+must contain every task-frontmatter source needed for the exact STATUS
+projection; do not place a partial set in an implementation commit.
 
-ADR-013 preserves the remaining operational work exposed by the 19-framework
-assessment without turning `llm-core` into a hosted platform. Qualification
-tasks may proceed after the language rollout when their stated dependencies
-are done. They do not block the specification sequence unless a task declares
-that dependency explicitly. Every runtime, workspace, or protocol adapter
-must declare exact supported versions, semantic loss and its durable-state
-posture before a separate publication task adds a package entrypoint.
+## Active work log
 
-## Integrations stage
+Use these exact labels:
 
-ADR-014 adds a typed connector lifecycle without collapsing MCP, A2A, SaaS,
-authorization and usage-provider semantics into one plugin API. Connector
-contracts and authorization references precede concrete protocol/provider
-adapters. Credential values remain host/platform owned, and every meaningful
-connector action still enters the ADR-005 control path.
+```text
+Execution mode: shared-checkout | dedicated-worktree
+Execution rationale: <non-empty explanation>
+Concurrency evaluation: <ongoing task IDs or none; start alongside | wait | no concurrency; boundary rationale>
+Concurrent task scopes: none | <task IDs and disjoint scopes>
+Swarm delegation: none | <child owner and disjoint subpath/output>
+```
 
-## Applications stage
+`done` tasks retain assignment provenance and record the approved commit.
+Cancelled tasks remain in place and name their replacements. Renamed completed
+tasks may retain immutable `legacy_id`, branch and checkout values.
 
-Desktop and mobile are delivery applications over a shared client contract,
-not feature folders inside `llm-core`. The client task follows specification,
-authorization and cost-intelligence gates. Each platform task must record its
-own secure-storage, authorization callback, offline synchronization,
-background execution, signing/update and supported-OS posture before it can be
-made ready.
+## Brief contract
 
-## Claiming a task
+Every task defines:
 
-1. Confirm every `depends_on` task is `done`.
-2. Confirm every decision dependency is accepted.
-3. Change `status` to `claimed`.
-4. Add the owner and timestamp to the work log.
-5. Work only inside `write_scope`.
+- objective, scope and non-goals;
+- dependencies, ADRs and conflicts;
+- exact read/write authority;
+- acceptance criteria and verification; and
+- work log and handoff.
 
-Before editing a shared file, record the requested change in the handoff for the integration owner. A task may be reassigned when its work log shows no active lease or the coordinator explicitly releases it.
-
-The coordinator creates the task branch and worktree. Workers must not rebase,
-merge, cherry-pick, or integrate their own work.
-
-## Completing a task
-
-1. Record verification commands and outcomes.
-2. List files changed and shared-file requests.
-3. Commit the task work and record its SHA.
-4. Set `status` to `review`.
-5. The coordinator reviews it and changes the status to `done`.
-
-`STATUS.md` is a projection for humans. The task brief remains authoritative.
-
-Renamed completed tasks may contain `legacy_id` plus historical `branch` and
-`worktree` values. Those fields are immutable execution provenance, not active
-planning terminology.
+Task-specific text wins over summaries elsewhere. Common execution, 500-SLOC,
+review, release and publication rules are not repeated here; follow
+[`../COORDINATION.md`](../COORDINATION.md). Use
+[`../templates/task.md`](../templates/task.md) for new briefs.

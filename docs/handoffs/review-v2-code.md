@@ -1,62 +1,44 @@
-> **Credit & provenance:** Replaces the task-named and split review handoffs.
-> It carries forward Architecture v2 review evidence on curated public surfaces,
-> private authority, `MaybePromise`, controlled effects, evidence, state
-> lifetimes, adapters, credentials, and conformance. Prepared by `codex-root`
-> on 2026-08-01.
+> **Credit & provenance:** Continues the Architecture v2 review guidance prepared
+> by `codex-root` from accepted ADRs, implementation evidence and prior security
+> and correctness reviews. Last materially updated by `codex-root` on 2026-08-03
+> for source-layout governance and context pruning; Git retains earlier
+> snapshots.
 
 # Review Architecture v2 code
 
-## Role
+Review in `/Users/jasonnathan/Repos/@theGeekist/llm-core` unless the task names a
+dedicated checkout. The reviewer does not change task state.
 
-Use this durable reviewer brief for any Architecture v2 task. It is not tied to
-a task name: the user supplies the task and its uncommitted submission, then
-relays the result to the implementer. Read [the shared plan](./plan-v2-arch.md),
-the exact task brief, its ADRs, and the actual task-scoped diff against the
-task's recorded `base_sha` before accepting a completion summary. The reviewer
-does not claim, update, or complete task state.
+## Evidence to load
 
-## Architecture and public-boundary checks
+Read the selected task, its named ADRs and the task-scoped staged and unstaged
+diff against `base_sha`. Inspect nearby source and failure-path tests. Read
+[`COORDINATION.md`](../../packages/llm-core/internal/final-architecture/COORDINATION.md)
+only when checking concurrency, review or integration procedure.
 
-- Capability rules belong in `src/features`; cross-feature sequencing belongs
-  in `src/application`; framework/provider/protocol semantics belong in a
-  qualified `src/adapters` boundary. Reject deep feature imports.
-- Enforce curated root and explicit extension fronts. Reject wildcard/barrel
-  leakage, framework types crossing portable contracts, undocumented package
-  entrypoints, and qualification work that edits publication-owned files.
-- Portable data is not execution authority. Graph/registration/authority
-  internals stay private; controlled Agent/workflow/tool gateways must use
-  current private validation at preparation, execution, and resume.
-- Adapter claims name exact source/version, operation, support, loss, fixture,
-  and ownership/write-back posture. Unknown semantics are namespaced portable
-  data or explicit diagnostics—never silent flattening or guessed support.
+## Review
 
-## Runtime and behavioral checks
+- Enforce `write_scope`, dependency direction, curated fronts and no deep
+  feature imports.
+- Enforce shallow owner/file layout, descriptive kebab-case filenames and the
+  `public.ts`/`index.ts` front distinction.
+- Keep portable records separate from current authority, credentials,
+  framework-native values and durable runtime state.
+- Preserve `MaybePromise`, stream terminals, pause/resume, cancellation,
+  rollback, idempotency, fencing and reconciliation semantics.
+- Require controlled effects to retain policy, approval, receipt and evidence
+  checks; recovery must not guess ambiguous outcomes.
+- Verify exact adapter versions, declared loss, direct dependencies and isolated
+  fixtures. Publication must leave a durable, non-skipping registered qualifier.
+- For `./client`, Metro evidence supports only the pinned React Native/Metro
+  library window—not native modules or application lifecycle behavior.
+- Enforce the 500-SLOC rule and every task-specific release/package gate.
 
-- Preserve `MaybePromise`, stream terminal/error behavior, pause/resume,
-  cancellation, rollback, and external adapter contracts. Reject a
-  simplification that changes lifecycle semantics or forces always-async flow.
-- Controlled effects retain action digest, policy, approval, receipt,
-  idempotency, and cancellation checks. Recovery never silently repeats or
-  declares an ambiguous external effect complete.
-- Canonical evidence is not a trace; observed usage, estimates, reconciled
-  costs, and budget decisions are different facts. Trace exporters are redacted
-  failure-isolated projections; missing pricing/data has explicit posture.
-- Credentials remain host/platform owned and serialized values contain opaque
-  references/safe metadata only. Authorization never bypasses effect control.
-- Runtime/protocol adapters pin versions, prove conformance, declare loss, and
-  fail unsupported checkpoint/sandbox/delegation behavior explicitly.
+Run focused and adjacent checks, then the task-required type, lint, package and
+whitespace gates. Reject evidence polluted by overlapping writers or workspace
+fallback.
 
-## Evidence and report format
-
-Review the uncommitted task-scoped diff only, using the task's `base_sha` and
-`write_scope` to distinguish it from concurrent work. Inspect both unstaged
-and staged changes. Read source and failure-path tests, run the task's focused
-tests plus nearby architecture/conformance/control/evidence suites, then the
-task-required type/lint/package gates. Finish with a whitespace check over the
-submitted task scope and keep concurrent work out of scope.
-
-Put each real actionable `P0`–`P2` finding in its own copyable `md` fenced
-block with severity, file/line, broken invariant, reproduction, impact, and
-required correction. Keep approval/no-finding status and verification evidence
-in ordinary Markdown. A passing reviewer result is relayed by the user; the
-primary implementer marks its task `done`.
+Report each actionable `P0`–`P2` finding in its own copyable `md` block with
+file/line, invariant, reproduction, impact and required correction. Put approval
+and verification evidence in ordinary Markdown. The coordinator owns commit,
+integration and final task/STATUS transition after approval.
