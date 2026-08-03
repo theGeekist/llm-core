@@ -1,7 +1,7 @@
 # llm-core Architecture v2 Status
 
 Architecture version: v2
-Updated: 3 August 2026
+Updated: 4 August 2026
 Kernel: complete at `9920425`
 Pre-transition source baseline: `c041792`
 
@@ -88,7 +88,7 @@ No task is active in the shared canonical checkout.
 | architecture-status-validation             | architecture  | proposed | architecture-decisions, architecture-source-layout-normalization                                                                                                                        |
 | architecture-release-reproducibility       | architecture  | proposed | architecture-decisions, architecture-source-layout-normalization                                                                                                                        |
 | architecture-legacy-functional-removal     | architecture  | proposed | architecture-source-layout-normalization, language-rollout                                                                                                                              |
-| runtime-tool-execution-decomposition       | qualification | proposed | architecture-source-layout-normalization, runtime-receipt-reconciliation                                                                                                                |
+| runtime-tool-execution-decomposition       | qualification | done     | architecture-source-layout-normalization, runtime-receipt-reconciliation                                                                                                                |
 | runtime-tools-front-boundary               | qualification | proposed | architecture-source-layout-normalization, runtime-tool-execution-decomposition                                                                                                          |
 | runtime-temporal-reference                 | qualification | proposed | architecture-source-layout-normalization, runtime-receipt-reconciliation, capabilities-runtime-conformance, architecture-release-reproducibility                                        |
 | capabilities-workspace-sandbox             | qualification | proposed | architecture-source-layout-normalization, runtime-receipt-reconciliation, runtime-tools-front-boundary                                                                                  |

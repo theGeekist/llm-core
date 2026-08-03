@@ -95,6 +95,16 @@ export interface ReconcileControlledToolReceiptInput {
   redaction?: RedactionMetadata;
 }
 
+/** Private state passed between the controlled execution phases. */
+export interface ControlledExecutionPhase {
+  input: ExecuteControlledToolInput;
+  bound: BoundAction;
+  receipt: ToolExecutionReceipt;
+  delivery: EventDelivery;
+  control: ToolExecutionControl;
+  isMeaningful: boolean;
+}
+
 export type EventDelivery = "failed" | "not-configured" | "scheduled";
 
 interface ReceiptOutcome {
