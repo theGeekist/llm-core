@@ -16,6 +16,6 @@ idempotency/reconciliation strategy. Retrieval results may carry only
 portable, redacted `extensions`; provider-native documents stay inside the
 adapter.
 
-`Retriever`, `Indexer`, `VectorStore`, document transforms, rerankers, and
-response synthesizers are imported from `/agent`. The package defines their
-contracts; your capability binding selects a qualified live implementation.
+Retrieval contracts are imported from `/retrieval`; indexing and vector-store
+contracts are imported from `/indexing`. The package defines their portable
+boundaries; your capability binding selects a qualified live implementation.

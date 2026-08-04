@@ -55,6 +55,7 @@ A `ConversationEvent` is a deterministic view. It is useful for interfaces
 and stored conversation projections, but it does not replace the canonical
 `ToolExecutionEvent`, a durable receipt, or the terminal `AgentResult`.
 
-Common `Conversation.stream()` yields this projected event directly. Raw
+An `InteractionSession` can expose projected conversation events while an
+explicit runtime integration supplies canonical run events. Raw
 `InteractionEvent` values, registration helpers, and reducers remain extension
 APIs for runtime and adapter authors.

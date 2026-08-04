@@ -6,10 +6,12 @@ loop.
 
 <<< @/snippets/v2/agent-capabilities.ts
 
-The `runner` in this example is supplied by a qualified runtime integration.
-It may represent LangGraph, PydanticAI, Strands, or another supported runtime.
-Its native session, graph, checkpoint, and workspace state do not become
-portable merely because it implements `AgentRunner`.
+The `runner` in this example is supplied by the host or a runtime integration.
+It is not provided by the kernel. A future qualified adapter may bind a native
+framework, but no framework becomes supported until its exact adapter subpath
+and conformance evidence are published. Native session, graph, checkpoint, and
+workspace state do not become portable merely because a runner implements
+`AgentRunner`.
 
 For specification-driven work, load and review external intent, then compile it
 through an explicit adapter target. Compilation does not execute the result.

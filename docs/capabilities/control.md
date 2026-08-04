@@ -5,8 +5,8 @@ approval authentication, cancellation, and concurrency are separate ports
 because each answers a different question.
 
 Intervention requests and decisions belong to the
-[state capability](/capabilities/state). Durable intervention sequencing belongs
-to [workflow orchestration](/orchestration/workflows).
+[state capability](/capabilities/state). A qualified runtime integration owns
+durable intervention sequencing and native workflow state.
 
 <<< @/snippets/v2/control-policy.ts
 

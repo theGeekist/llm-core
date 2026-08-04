@@ -1,6 +1,8 @@
 # Model and media
 
-The `/model` subpath defines provider-neutral model and media contracts.
+The `/model` subpath defines provider-neutral model requests, responses,
+profiles, and content contracts. Live media generation and transcription ports
+are published independently at `/media`.
 `ModelRequest` carries messages, tools, response format, sampling, and redacted
 metadata. `ModelResponse` represents either a completion or a structured error.
 `ModelError.code` distinguishes provider cancellation (`cancelled`) from an

@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto";
-import { existsSync, readdirSync, readFileSync } from "node:fs";
-import { extname, join, relative, resolve, sep } from "node:path";
+import { lstatSync, readdirSync, readFileSync, realpathSync } from "node:fs";
+import { basename, extname, join, posix, relative, resolve, sep } from "node:path";
 
 export interface SlocWaiver {
   readonly version: number;
@@ -86,20 +86,40 @@ const isExcluded = (path: string, baseline: SlocBaseline): boolean => {
   );
 };
 
-const walk = (root: string, directory: string, baseline: SlocBaseline): string[] => {
+interface SourceWalkResult {
+  readonly files: readonly string[];
+  readonly symbolicLinks: readonly string[];
+}
+
+interface SourceWalkContext {
+  readonly root: string;
+  readonly baseline: SlocBaseline;
+  readonly symbolicLinks: string[];
+}
+
+const walk = (context: SourceWalkContext, directory: string): string[] => {
   const files: string[] = [];
   for (const entry of readdirSync(directory, { withFileTypes: true })) {
     const path = join(directory, entry.name);
-    const relativePath = normalized(relative(root, path));
-    if (isExcluded(relativePath, baseline)) continue;
-    if (entry.isDirectory()) files.push(...walk(root, path, baseline));
+    const relativePath = normalized(relative(context.root, path));
+    if (isExcluded(relativePath, context.baseline)) continue;
+    if (entry.isDirectory()) files.push(...walk(context, path));
     else if (entry.isFile() && sourceExtensions.has(extname(entry.name))) files.push(path);
+    else if (entry.isSymbolicLink()) context.symbolicLinks.push(relativePath);
   }
   return files;
 };
 
-export const measureSources = (root: string, baseline: SlocBaseline): SourceMeasurement[] =>
-  walk(root, root, baseline)
+const sourceWalk = (root: string, baseline: SlocBaseline): SourceWalkResult => {
+  const symbolicLinks: string[] = [];
+  return {
+    files: walk({ root, baseline, symbolicLinks }, root),
+    symbolicLinks: symbolicLinks.sort((left, right) => left.localeCompare(right)),
+  };
+};
+
+const measureSourceFiles = (root: string, files: readonly string[]): SourceMeasurement[] =>
+  files
     .map((path) => {
       const content = readFileSync(path, "utf8");
       return {
@@ -110,6 +130,11 @@ export const measureSources = (root: string, baseline: SlocBaseline): SourceMeas
     })
     .sort((left, right) => left.path.localeCompare(right.path));
 
+export const measureSources = (root: string, baseline: SlocBaseline): SourceMeasurement[] => {
+  const sources = sourceWalk(root, baseline);
+  return measureSourceFiles(root, sources.files);
+};
+
 const exactKeys = (value: object, allowed: readonly string[], label: string): string[] => {
   const unknown = Object.keys(value).filter((key) => !allowed.includes(key));
   return unknown.map((key) => `${label} has unknown field ${key}`);
@@ -119,6 +144,81 @@ const isIsoCalendarDate = (value: string): boolean => {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
   const parsed = new Date(`${value}T00:00:00.000Z`);
   return !Number.isNaN(parsed.valueOf()) && parsed.toISOString().slice(0, 10) === value;
+};
+
+const isFollowUpPath = (value: string): boolean => {
+  if (value.includes("\\") || posix.isAbsolute(value) || posix.normalize(value) !== value) {
+    return false;
+  }
+  const segments = value.split("/");
+  const taskIndex = segments.indexOf("tasks", 3);
+  return (
+    segments.length >= 5 &&
+    segments[0] === "packages" &&
+    segments[1] !== "" &&
+    segments[1] !== "." &&
+    segments[1] !== ".." &&
+    segments[2] === "docs" &&
+    segments.slice(3).every((segment) => segment !== "" && segment !== "." && segment !== "..") &&
+    taskIndex >= 3 &&
+    taskIndex === segments.length - 2 &&
+    /^[a-z0-9]+(?:-[a-z0-9]+)*\.md$/.test(segments.at(-1)!)
+  );
+};
+
+const isWithin = (parent: string, candidate: string): boolean => {
+  const path = relative(parent, candidate);
+  return path === "" || (!path.startsWith(`..${sep}`) && path !== ".." && !posix.isAbsolute(path));
+};
+
+const canonicalFollowUp = (root: string, followUp: string): string | null => {
+  try {
+    const task = resolve(root, followUp);
+    if (!lstatSync(task).isFile()) return null;
+    const canonicalRoot = realpathSync(root);
+    const canonicalTask = realpathSync(task);
+    const packageDocs = realpathSync(resolve(root, ...followUp.split("/").slice(0, 3)));
+    return isWithin(canonicalRoot, canonicalTask) && isWithin(packageDocs, canonicalTask)
+      ? canonicalTask
+      : null;
+  } catch {
+    return null;
+  }
+};
+
+interface TaskFrontMatter {
+  readonly id: string;
+  readonly status: string;
+}
+
+const actionableTaskStatuses = new Set([
+  "proposed",
+  "ready",
+  "claimed",
+  "in_progress",
+  "review",
+  "blocked",
+]);
+
+const taskFrontMatter = (content: string): TaskFrontMatter | null => {
+  const lines = content.replaceAll("\r\n", "\n").split("\n");
+  if (lines[0] !== "---") return null;
+  const closing = lines.indexOf("---", 1);
+  if (closing < 0) return null;
+  const fields = new Map<string, string>();
+  for (const line of lines.slice(1, closing)) {
+    if (line.trim() === "" || line.trimStart().startsWith("#") || /^\s/.test(line)) continue;
+    const separator = line.indexOf(":");
+    if (separator <= 0) return null;
+    const key = line.slice(0, separator);
+    if (!/^[a-z][a-z0-9_]*$/.test(key) || fields.has(key)) return null;
+    fields.set(key, line.slice(separator + 1).trim());
+  }
+  const id = fields.get("id");
+  const status = fields.get("status");
+  return id !== undefined && /^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(id) && status !== undefined
+    ? { id, status }
+    : null;
 };
 
 const validateWaiver = (path: string, waiver: SlocWaiver): string[] => {
@@ -133,8 +233,10 @@ const validateWaiver = (path: string, waiver: SlocWaiver): string[] => {
   if (!isIsoCalendarDate(waiver.expiresOn)) {
     errors.push(`${path} waiver expiry must be a valid YYYY-MM-DD date`);
   }
-  if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(waiver.followUp)) {
-    errors.push(`${path} waiver must name a follow-up task ID`);
+  if (!isFollowUpPath(waiver.followUp)) {
+    errors.push(
+      `${path} waiver followUp must be a normalized repository-relative task path under packages/<owner>/docs/**/tasks/`,
+    );
   }
   if (!Number.isInteger(waiver.currentLines) || waiver.currentLines <= 0) {
     errors.push(`${path} waiver currentLines must be a positive integer`);
@@ -208,43 +310,50 @@ const sameStrings = (actual: readonly string[], expected: readonly string[]): bo
 
 interface ActiveWaiverContext {
   readonly root: string;
-  readonly measurement: SourceMeasurement;
+  readonly sourcePath: string;
   readonly waiver: SlocWaiver;
   readonly today: string;
 }
 
 const validateActiveWaiver = ({
   root,
-  measurement,
+  sourcePath,
   waiver,
   today,
 }: ActiveWaiverContext): string[] => {
-  const task = join(
-    root,
-    "packages/llm-core/internal/final-architecture/tasks",
-    `${waiver.followUp}.md`,
-  );
+  if (!isFollowUpPath(waiver.followUp)) return [];
+  const task = canonicalFollowUp(root, waiver.followUp);
   const errors: string[] = [];
-  if (!existsSync(task)) errors.push(`${measurement.path} waiver follow-up does not exist`);
-  if (waiver.expiresOn < today) errors.push(`${measurement.path} waiver expired`);
+  if (task === null) {
+    errors.push(
+      `${sourcePath} waiver follow-up must be a non-symlink regular file within its package docs task boundary`,
+    );
+  } else {
+    const expectedId = basename(task, ".md");
+    const frontMatter = taskFrontMatter(readFileSync(task, "utf8"));
+    if (frontMatter === null) {
+      errors.push(
+        `${sourcePath} waiver follow-up must have canonical front matter with unique id and status fields`,
+      );
+    } else if (frontMatter.id !== expectedId) {
+      errors.push(`${sourcePath} waiver follow-up id must match its filename`);
+    } else if (!actionableTaskStatuses.has(frontMatter.status)) {
+      errors.push(
+        `${sourcePath} waiver follow-up status must be actionable: proposed, ready, claimed, in_progress, review, or blocked`,
+      );
+    }
+  }
+  if (waiver.expiresOn < today) errors.push(`${sourcePath} waiver expired`);
   return errors;
 };
 
 interface MeasurementContext {
-  readonly root: string;
   readonly measurement: SourceMeasurement;
   readonly exception: SlocException | undefined;
   readonly limit: number;
-  readonly today: string;
 }
 
-const validateMeasurement = ({
-  root,
-  measurement,
-  exception,
-  limit,
-  today,
-}: MeasurementContext): string[] => {
+const validateMeasurement = ({ measurement, exception, limit }: MeasurementContext): string[] => {
   if (measurement.lines <= limit) {
     return exception
       ? [`${measurement.path} is at or below the limit; remove its stale exception`]
@@ -265,7 +374,7 @@ const validateMeasurement = ({
   ) {
     return [`${measurement.path} changed beyond its versioned coordinator waiver`];
   }
-  return validateActiveWaiver({ root, measurement, waiver: exception.waiver, today });
+  return [];
 };
 
 export interface SlocCheckOptions {
@@ -286,18 +395,27 @@ export const checkSloc = (
     excludedDirectories: slocV1Policy.excludedDirectories,
     excludedSuffixes: slocV1Policy.excludedSuffixes,
   };
-  const measurements = measureSources(root, enforcedBaseline);
+  const sources = sourceWalk(root, enforcedBaseline);
+  const measurements = measureSourceFiles(root, sources.files);
   const byPath = new Map(measurements.map((measurement) => [measurement.path, measurement]));
   const errors = validateSlocBaseline(baseline, expectedLegacyEntries);
+
+  for (const path of sources.symbolicLinks) {
+    errors.push(`${path} is a symbolic link; symbolic links are not allowed in the measured tree`);
+  }
+
+  for (const [sourcePath, exception] of Object.entries(baseline.exceptions)) {
+    if (exception.waiver) {
+      errors.push(...validateActiveWaiver({ root, sourcePath, waiver: exception.waiver, today }));
+    }
+  }
 
   for (const measurement of measurements) {
     errors.push(
       ...validateMeasurement({
-        root,
         measurement,
         exception: baseline.exceptions[measurement.path],
         limit: slocV1Policy.limit,
-        today,
       }),
     );
   }

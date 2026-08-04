@@ -69,13 +69,10 @@ Supply explicit `RedactionMetadata` for sensitive categories. Canonical
 facts, and optionally already-redacted extensions. They do not carry raw tool
 arguments or results.
 
-## Durable intervention resume
+## Runtime integration
 
-Runtime `resumeInterventionWorkflow` is the workflow-level path for an
-authenticated decision against a registered checkpoint. Its journal atomically
-consumes the decision, claims the checkpoint when execution will continue,
-records meaningful effects, and commits or quarantines the
-`ControlledWorkflowResult`.
-
-If an effect is `started` or its state is indeterminate, the outcome is
-`reconciliation-required`. Automatic replay is not authorized.
+A qualified runtime may compose these contracts into its native intervention
+and resume lifecycle. It remains responsible for native checkpoint claims,
+decision consumption, workflow state, and recovery semantics. If a recorded
+effect is `started` or indeterminate, automatic replay is not authorized; the
+integration must reconcile it against authoritative external state.

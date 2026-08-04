@@ -1,45 +1,48 @@
 # Orchestration
 
-Orchestration turns independent capabilities into an application story. In
-llm-core, that work belongs to the `/workflow` and `/control` subpaths rather
-than to a model, tool, store, or adapter.
+Orchestration turns independent capabilities into an application story without
+making the kernel a workflow engine. `llm-core` owns portable workflow intent
+and the controlled path for meaningful tool effects. A selected runtime
+integration owns native ordering, branching, pause, retry, rollback, and
+resume semantics.
 
 ```mermaid
 flowchart TB
   contracts["Portable contracts"] --> capabilities["Capability ports"]
-  capabilities --> orchestration["Application orchestration"]
-  orchestration --> adapters["Qualified adapters"]
-  orchestration --> result["Explicit outcome"]
-  adapters --> native["Provider or UI SDK"]
+  capabilities --> control["Controlled effect sequencing"]
+  capabilities --> intent["Portable workflow intent"]
+  intent --> adapters["Qualified runtime adapter"]
+  adapters --> native["Native workflow runtime"]
+  control --> result["Authoritative effect outcome"]
 ```
 
 This direction keeps three responsibilities separate:
 
-| Layer         | Owns                                                    | Does not own                 |
-| ------------- | ------------------------------------------------------- | ---------------------------- |
-| Capability    | One contract and its guarantees                         | Cross-capability sequencing  |
-| Orchestration | Ordering, pause, retry, rollback, and controlled resume | Provider-native data         |
-| Adapter       | Translation at an external boundary                     | Policy or workflow authority |
+| Layer               | Owns                                                          | Does not own                         |
+| ------------------- | ------------------------------------------------------------- | ------------------------------------ |
+| Kernel capability   | Portable contracts and their guarantees                       | Native workflow execution            |
+| Controlled effect   | Policy, approval, receipt, concurrency, and effect sequencing | A general workflow runtime           |
+| Runtime integration | Native execution semantics and runtime authority              | Portable kernel contract definitions |
+| Adapter projection  | Explicit mapping and conversion-loss reporting                | Universal checkpoint portability     |
 
-## Two execution paths
+## Two separate responsibilities
 
-The general workflow runtime executes passive steps. Every
-`WorkflowStep` declares `effect: "none"`, and `Workflow.run` rejects a workflow
-that does not.
+The `/workflow` front describes portable intent. It does not expose a local
+`Workflow.run`, `runWorkflow`, or resume engine. A qualified adapter projects
+supported intent into LangGraph, Temporal, Mastra, or another selected runtime.
 
 Meaningful effects take the controlled path. `executeControlledTool` coordinates
 policy, approval, concurrency, durable receipts, execution, and redacted event
-delivery. A durable intervention resume uses runtime
-`resumeInterventionWorkflow`, a `WorkflowResumeJournal`, and returns a
-`ControlledWorkflowResult`.
+delivery. A runtime may use those contracts inside its own workflow, but the
+kernel does not take ownership of that workflow.
 
-This is a deliberate split. An ephemeral workflow pause is useful for in-process
-coordination. It is not evidence that a side effect can be repeated safely.
+This is a deliberate split. Native pause or checkpoint state is not evidence
+that a side effect can be repeated safely.
 
 ## Choose the next page
 
-- [Workflows](/orchestration/workflows) explains ordered passive steps,
-  pause/resume, retry, and rollback.
+- [Workflows](/orchestration/workflows) explains portable intent and
+  adapter-owned execution.
 - [Controlled tool execution](/orchestration/controlled-tool-execution)
   explains the fail-closed path for meaningful effects.
 - [Composition patterns](/orchestration/composition-patterns) shows how to

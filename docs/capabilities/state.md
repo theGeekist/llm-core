@@ -15,7 +15,7 @@ flowchart TB
 
   Checkpoint -->|"register"| Registered["RegisteredResumableCheckpoint"]
   Registered -->|"compatibility check"| Compatible["Compatible checkpoint"]
-  Compatible -->|"resume"| Resume["Local resume path"]
+  Compatible -->|"supply to adapter"| Resume["Qualified runtime resume"]
 ```
 
 | Lifetime                 | Guarantee                                                           |
@@ -29,9 +29,10 @@ flowchart TB
 <<< @/snippets/v2/state-lifetimes.ts
 
 `RegisteredResumableCheckpoint` is a refinement of `ResumableCheckpoint`, not a
-sixth lifetime. Only that refinement enters local checkpoint resume. Registration
-validates and freezes portable state plus runtime, contract schema, code,
-checkpoint format, native-reference, and recorded-effect compatibility.
+sixth lifetime. Only that refinement may be supplied to a compatible runtime
+adapter for resume. Registration validates and freezes portable state plus
+runtime, contract schema, code, checkpoint format, native-reference, and
+recorded-effect compatibility.
 
 `checkResumeCompatibility` compares those recorded facts with the current
 runtime. Snapshots, provider sessions, and durable execution handles remain

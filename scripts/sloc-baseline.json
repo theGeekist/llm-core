@@ -31,7 +31,7 @@
       "waiver": {
         "version": 1,
         "expiresOn": "2026-09-04",
-        "followUp": "architecture-test-sloc-decomposition",
+        "followUp": "packages/llm-core/docs/final-architecture/tasks/architecture-test-sloc-decomposition.md",
         "currentLines": 766,
         "currentSha256": "651eef72acf4701b6c9c477111d76962ca08f8c90c64c9b2da73afc4f735b5fc"
       }
@@ -42,7 +42,7 @@
       "waiver": {
         "version": 1,
         "expiresOn": "2026-09-04",
-        "followUp": "architecture-test-sloc-decomposition",
+        "followUp": "packages/llm-core/docs/final-architecture/tasks/architecture-test-sloc-decomposition.md",
         "currentLines": 776,
         "currentSha256": "821e6b2f1ba62de40ad163e37060516f38b5b85cb93fea2118e955da24291cbe"
       }
@@ -61,7 +61,7 @@
       "waiver": {
         "version": 1,
         "expiresOn": "2026-09-04",
-        "followUp": "architecture-test-sloc-decomposition",
+        "followUp": "packages/llm-core/docs/final-architecture/tasks/architecture-test-sloc-decomposition.md",
         "currentLines": 558,
         "currentSha256": "924bf6511a4f4b29a5d59342219d101742650cf19c0365aa856aa2c732a45128"
       }

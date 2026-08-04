@@ -33,13 +33,10 @@ runner, adapter and storage responsibilities differ.
 
 ## Workflows
 
-| Term                           | Meaning                                                                                 |
-| ------------------------------ | --------------------------------------------------------------------------------------- |
-| `WorkflowExecutionPlan`        | Portable declarative workflow intent projected by an explicit runtime target.           |
-| Native workflow                | Graph or durable workflow owned and executed by a qualified integration.                |
-| `ControlledWorkflowStep`       | Meaningful runtime step executed only by authenticated durable intervention resume.     |
-| `ControlledWorkflowStepResult` | State and authoritative effect record returned by a controlled runtime step.            |
-| `ControlledWorkflowResult`     | Result of authenticated durable intervention resume, including reconciliation outcomes. |
+| Term                    | Meaning                                                                       |
+| ----------------------- | ----------------------------------------------------------------------------- |
+| `WorkflowExecutionPlan` | Portable declarative workflow intent projected by an explicit runtime target. |
+| Native workflow         | Graph or durable workflow owned and executed by a qualified integration.      |
 
 A recipe may be an application pattern or a preconfigured workflow in your own
 code. It is not a public llm-core type or package export.

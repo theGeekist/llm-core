@@ -1,8 +1,9 @@
 # Capabilities
 
 A capability is a stable contract for one kind of work. The contract describes
-portable inputs and outputs. A live implementation enters later, when your
-application composes an agent or workflow.
+portable inputs and outputs. A live implementation enters later through
+explicit host composition, a capability adapter, or the runtime integration
+selected by your application.
 
 This separation lets application code depend on what a component does without
 depending on the provider or framework that performs it.
@@ -18,15 +19,17 @@ depending on the provider or framework that performs it.
 | `@geekist/llm-core/context`    | Scoped, budgeted context manifests                                                    |
 | `@geekist/llm-core/artifacts`  | Portable output identity and provenance                                               |
 | `@geekist/llm-core/evaluation` | Evidence-bound cases, evaluators, and results                                         |
-| `@geekist/llm-core/agent`      | Agent execution and composition, including retrieval, indexing, storage, and memory   |
+| `@geekist/llm-core/agent`      | Portable agent intent and normalized execution facts                                  |
 
 The capability pages follow the same path you use in an application:
 
 1. Define portable contracts.
 2. Supply qualified live implementations.
-3. Orchestrate work through an agent or workflow.
+3. Supply intent and capabilities to a qualified runtime integration.
 4. Preserve redacted evidence and explicit state.
 
-Retrieval, indexing, storage, and memory are curated through `/agent`. Media is
-curated through `/model`. These contracts do not select hosted services or
-expose provider-native clients.
+Retrieval, indexing, storage, memory, and media are independent capability
+fronts at `/retrieval`, `/indexing`, `/storage`, `/memory`, and `/media`.
+`/model` owns provider-neutral model requests, responses, profiles, and content
+contracts. None of these fronts selects a hosted service, executes an agent
+loop, or exposes provider-native clients.

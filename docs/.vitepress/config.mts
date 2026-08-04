@@ -3,10 +3,10 @@ import { tabsMarkdownPlugin } from "vitepress-plugin-tabs";
 
 export default defineConfig({
   title: "llm-core",
-  description: "Portable contracts and controlled orchestration for LLM applications.",
+  description: "Portable contracts, conformance, authority, and evidence for AI applications.",
   base: "/",
   appearance: "dark",
-  srcExclude: ["**/.internal/**", "**/handoffs/**"],
+  srcExclude: ["**/internal/**", "**/handoffs/**"],
   head: [
     ["link", { rel: "icon", href: "/favicon.ico" }],
     ["link", { rel: "icon", type: "image/png", sizes: "32x32", href: "/favicon-32.png" }],
@@ -16,7 +16,7 @@ export default defineConfig({
       "meta",
       {
         property: "og:description",
-        content: "Portable contracts and controlled orchestration for LLM applications.",
+        content: "Portable contracts, conformance, authority, and evidence for AI applications.",
       },
     ],
     ["meta", { property: "og:image", content: "https://llm-core.geekist.co/og.png" }],
@@ -65,8 +65,8 @@ export default defineConfig({
           items: [
             { text: "Get started", link: "/guide/hello-world" },
             { text: "Core concepts", link: "/guide/core-concepts" },
-            { text: "Run an agent", link: "/guide/agent" },
-            { text: "Build and resume a workflow", link: "/guide/workflow" },
+            { text: "Integrate an agent runtime", link: "/guide/agent" },
+            { text: "Describe workflow intent", link: "/guide/workflow" },
             { text: "Project an interaction", link: "/interaction/" },
             { text: "Why llm-core?", link: "/guide/philosophy" },
             { text: "Migrate from 1.x", link: "/reference/migration-2" },

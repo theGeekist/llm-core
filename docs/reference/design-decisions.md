@@ -12,8 +12,8 @@ other live behavior enter through typed ports during composition.
 ## Capabilities own their contracts
 
 Models, tools, control, evidence, state, context, artifacts, evaluation, and
-agent execution expose explicit package subpaths. Cross-capability sequencing
-lives in application orchestration rather than inside one feature.
+portable agent intent expose explicit package subpaths. Concrete agent and
+workflow execution belongs to qualified runtime integrations.
 
 ## Meaningful effects fail closed
 

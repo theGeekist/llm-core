@@ -49,6 +49,7 @@ Portable values never contain credentials, physical paths, or live framework
 objects.
 
 See the [documentation](https://llm-core.geekist.co/), the
-[architecture](https://github.com/theGeekist/llm-core/tree/main/packages/llm-core/internal/final-architecture),
+[package engineering documents](https://github.com/theGeekist/llm-core/blob/main/packages/llm-core/docs/README.md), the
+[architecture](https://github.com/theGeekist/llm-core/blob/main/packages/llm-core/docs/final-architecture/README.md),
 and the
 [version 2 migration guide](https://github.com/theGeekist/llm-core/blob/main/docs/reference/migration-2.md).

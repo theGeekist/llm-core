@@ -11,14 +11,15 @@
     "apps/*"
   ],
   "scripts": {
-    "build": "bun run --filter '@geekist/llm-core' build",
+    "build": "bun run check:public-boundary && bun run --cwd packages/llm-core build && bun run --cwd packages/aifsd build",
+    "check:public-boundary": "bun run scripts/check-public-boundary.ts",
     "contracts:schema": "bun run --cwd packages/llm-core contracts:schema",
     "contracts:schema:check": "bun run --cwd packages/llm-core contracts:schema:check",
     "test": "bun test",
     "test:package": "bun run --cwd packages/llm-core test:package",
     "lint": "eslint \"**/*.{ts,tsx,js,jsx}\"",
     "lint:fix": "eslint \"**/*.{ts,tsx,js,jsx}\" --fix",
-    "typecheck:packages": "bun run --filter '@geekist/llm-core' typecheck && bun run contracts:schema:check",
+    "typecheck:packages": "bun run --cwd packages/llm-core typecheck && bun run --cwd packages/aifsd typecheck && bun run contracts:schema:check",
     "typecheck": "bun run typecheck:packages && bun run typecheck:examples && bun run docs:snippets:typecheck",
     "format": "prettier \"**/*.{ts,tsx,js,jsx,json,md}\" --write",
     "docs:dev": "bunx vitepress dev docs",
@@ -46,6 +47,9 @@
     "@types/react-dom": "19.2.0",
     "typescript": "^5.7.3",
     "eslint-plugin-sonarjs": "3.0.5",
+    "remark-gfm": "4.0.1",
+    "remark-parse": "11.0.0",
+    "unified": "11.0.5",
     "vitepress": "^1.6.4",
     "vitepress-plugin-mermaid": "^2.0.17",
     "vitepress-plugin-tabs": "^0.7.3"

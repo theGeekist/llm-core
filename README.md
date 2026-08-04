@@ -1,41 +1,28 @@
-# @geekist/llm-core
+# Geekist AI ecosystem
 
-Portable contracts and controlled orchestration for LLM applications.
+This workspace contains independently owned packages for portable AI
+contracts, runtime integrations, and AI-first software delivery. The packages
+share one ecosystem documentation site while retaining their own engineering
+documents and architecture authority.
 
-`llm-core` 2 is ESM-only and requires Node.js 22 or newer.
+## Packages
 
-```bash
-npm install @geekist/llm-core
+| Package                                              | Purpose                                                                      | Package documents                                                         |
+| ---------------------------------------------------- | ---------------------------------------------------------------------------- | ------------------------------------------------------------------------- |
+| [`@geekist/llm-core`](./packages/llm-core/README.md) | Portable contracts, conformance, authority, and evidence for agentic systems | [`packages/llm-core/docs`](./packages/llm-core/docs/README.md)            |
+| [`@aifsd/sdk`](./packages/aifsd/README.md)           | Build and Runtime SDK product journeys, integrations, templates, and clients | Private engineering authority; optional local `packages/aifsd/docs` mount |
+
+Additional packages use the same ownership shape:
+
+```text
+packages/<package>/
+├── README.md
+├── docs/
+├── src/
+└── tests/
 ```
 
-```ts
-import { createAgent } from "@geekist/llm-core";
-import type { Model } from "@geekist/llm-core/model";
-
-declare const model: Model;
-
-const agent = createAgent({
-  model,
-  instructions: "Return a clear, portable answer.",
-});
-
-const result = await agent.run("Why is the sky blue?");
-console.log(result.status, result.output);
-```
-
-The root contains the common `createAgent`, `defineTool`, `defineWorkflow`,
-and `createConversation` journeys. Runtime implementers use explicit extension
-paths such as `@geekist/llm-core/agent/runtime` and
-`@geekist/llm-core/tools/runtime`. Provider integrations live on qualified
-adapter paths such as `@geekist/llm-core/adapters/ai-sdk`.
-
-Common application conversations start with `createConversation`. The
-`@geekist/llm-core/interaction` subpath is the extension surface for explicit
-runner sessions, raw events, projections, and live reconnect state.
-
-Provider-native data is accepted only through validated, namespaced, redacted
-extensions. Credentials and live provider objects remain outside portable
-contracts.
-
-See the [documentation](./docs/index.md) and the
-[1.x to 2.0 migration map](./docs/reference/migration-2.md).
+The shared [VitePress site](./docs/index.md) currently documents `llm-core` and
+can aggregate future package sections. Start package work from its README and
+engineering docs. Documentation-only internal material belongs under
+`packages/<package>/docs/internal/`.

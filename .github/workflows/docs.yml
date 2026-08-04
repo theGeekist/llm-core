@@ -41,14 +41,14 @@ jobs:
       - name: Build docs
         run: bun run docs:build
 
+      - name: Validate documentation
+        run: bun run docs:check
+
       - name: Install browser
         run: bunx playwright install --with-deps chromium
 
       - name: Smoke test Mermaid rendering
         run: bun run docs:mermaid:check
-
-      - name: Typecheck Snippets
-        run: bun run docs:snippets:typecheck
 
       - name: Upload Pages artifact
         # Only upload artifact if pushing to main (deployment candidate)

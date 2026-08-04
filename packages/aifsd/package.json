@@ -1,0 +1,14 @@
+{
+  "name": "@aifsd/sdk",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Build and Runtime SDKs for AI-first software delivery",
+  "scripts": {
+    "build": "bun run check:types",
+    "check:types": "tsc -p tsconfig.json --noEmit",
+    "test": "bun test --pass-with-no-tests tests",
+    "typecheck": "bun run check:types",
+    "validate": "bun run check:types && bun run test"
+  }
+}

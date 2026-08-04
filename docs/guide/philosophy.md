@@ -8,7 +8,7 @@ where unrelated concerns meet.
 
 - specs capture portable intent;
 - runners own live agent execution;
-- workflows coordinate author-defined steps;
+- workflow contracts describe portable intent for runtime integrations;
 - capability ports keep provider choices local;
 - interactions project canonical events into application state;
 - policy, approval, execution, and receipts remain separate.
@@ -59,9 +59,9 @@ send a second payment, publish twice, or repeat another external side effect.
 ## Adopt one boundary at a time
 
 The package does not require one all-encompassing runtime. You can begin with a
-local agent, add capability bindings as dependencies grow, introduce workflows
-for explicit application sequencing, and project interaction events when a UI
-needs deterministic state.
+qualified integration, add capability bindings as dependencies grow, project
+portable workflow intent into the runtime that fits the work, and reduce
+interaction events when a UI needs deterministic state.
 
 The result is not abstraction for its own sake. It is a system where intent,
 authority, execution, evidence, and presentation can change independently
