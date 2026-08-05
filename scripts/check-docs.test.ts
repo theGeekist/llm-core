@@ -117,19 +117,36 @@ describe("documentation validation", () => {
     ]);
   });
 
-  test("skips an optional package documentation mount at the package root", async () => {
+  test("skips only the approved private AIFSD documentation mount", async () => {
     const root = workspace();
     const privateRoot = mkdtempSync(join(tmpdir(), "private-package-docs-"));
     roots.push(privateRoot);
     write(root, "docs/index.md", "# Documentation\n");
     writeFileSync(join(privateRoot, "README.md"), "[Private missing](missing.md)\n");
-    mkdirSync(join(root, "packages/alpha"), { recursive: true });
-    symlinkSync(privateRoot, join(root, "packages/alpha/docs"));
+    mkdirSync(join(root, "packages/aifsd"), { recursive: true });
+    symlinkSync(privateRoot, join(root, "packages/aifsd/docs"));
 
     const result = await checkDocumentation(root);
 
     expect(result.engineeringPageCount).toBe(0);
     expect(result.errors).toEqual([]);
+  });
+
+  test("rejects a symlinked documentation root for any other package", async () => {
+    const root = workspace();
+    const linkedRoot = mkdtempSync(join(tmpdir(), "linked-package-docs-"));
+    roots.push(linkedRoot);
+    write(root, "docs/index.md", "# Documentation\n");
+    writeFileSync(join(linkedRoot, "README.md"), "# Linked documentation\n");
+    mkdirSync(join(root, "packages/alpha"), { recursive: true });
+    symlinkSync(linkedRoot, join(root, "packages/alpha/docs"));
+
+    const result = await checkDocumentation(root);
+
+    expect(result.engineeringPageCount).toBe(0);
+    expect(result.errors).toContain(
+      "packages/alpha/docs: documentation source must not be a symlink",
+    );
   });
 
   test("reports a missing snippet with its published source path", async () => {

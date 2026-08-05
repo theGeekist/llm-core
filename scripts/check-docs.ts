@@ -256,14 +256,16 @@ const packageDirectories = async (workspaceRoot: string): Promise<readonly strin
 
 const packageDocumentationRoots = async (workspaceRoot: string): Promise<readonly string[]> => {
   const candidates = (await packageDirectories(workspaceRoot)).map((path) => join(path, "docs"));
+  const privateAifsdMount = join(workspaceRoot, "packages", "aifsd", "docs");
   const roots = await Promise.all(
-    candidates.map(async (candidate) =>
-      (await hasKind(candidate, "symlink")) || !(await hasKind(candidate, "directory"))
-        ? undefined
-        : candidate,
-    ),
+    candidates.map(async (candidate) => {
+      if (candidate === privateAifsdMount && (await hasKind(candidate, "symlink"))) {
+        return null;
+      }
+      return (await hasKind(candidate, "directory")) ? candidate : null;
+    }),
   );
-  return roots.filter((candidate): candidate is string => candidate !== undefined);
+  return roots.filter((candidate): candidate is string => candidate !== null);
 };
 
 const routingMarkdownPaths = async (workspaceRoot: string): Promise<WalkResult> => {
