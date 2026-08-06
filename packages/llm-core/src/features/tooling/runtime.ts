@@ -12,7 +12,6 @@ export {
   isRegisteredExecutableTool,
   rebindValidatedToolCall,
 } from "./executable";
-export { canonicalizeJson, normalizeStrictJson } from "./canonical-json";
 export { readExecutableTool } from "./facade";
 export { registerToolSchema } from "./schema-registration";
 export { ToolArgumentValidationError, validateToolArguments } from "./validation";

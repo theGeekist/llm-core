@@ -1,5 +1,5 @@
 import type { MaybePromise } from "#shared/maybe";
-import { isPromiseLike, maybeChain } from "#shared/maybe";
+import { maybeChain, maybeTry } from "#shared/maybe";
 import { hasOnlyKeys, isPortableRecord as isRecord } from "#shared/portable-data";
 import { isRegisteredRuntimeCapabilityBinding } from "./validation";
 import type { AnyRegisteredRuntimeCapabilityBinding } from "./types";
@@ -139,17 +139,7 @@ const classify = <TResult>(
 const retryCall = <TResult>(
   input: ExecuteWithQualifiedRetryInput<TResult>,
   attempt: number,
-): MaybePromise<TResult> => {
-  try {
-    const result = input.call();
-    if (!isPromiseLike(result)) {
-      return result;
-    }
-    return result.catch((error: unknown) => handleFailure(input, attempt, error));
-  } catch (error) {
-    return handleFailure(input, attempt, error);
-  }
-};
+): MaybePromise<TResult> => maybeTry((error) => handleFailure(input, attempt, error), input.call);
 
 const handleFailure = <TResult>(
   input: ExecuteWithQualifiedRetryInput<TResult>,

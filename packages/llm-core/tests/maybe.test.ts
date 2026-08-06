@@ -57,7 +57,7 @@ describe("Maybe utilities", () => {
     const values = [1, 2, 3];
     const result = maybeAll(values);
     expect(result).toEqual([1, 2, 3]);
-    expect(result).toBe(values);
+    expect(result).not.toBe(values);
   });
 
   it("maybeReduce preserves synchronous reductions", () => {

@@ -1,4 +1,5 @@
 import { createHash } from "node:crypto";
+import { canonicalize } from "@geekist/strict-json";
 import {
   digest,
   isCanonicalUuid,
@@ -7,9 +8,6 @@ import {
   isSchemaRef,
   type Digest,
   type EvidenceRef,
-  type JsonArray,
-  type JsonObject,
-  type JsonValue,
   type PortableContent,
   type ResourceRef,
 } from "#contracts";
@@ -166,110 +164,7 @@ const isPortableContent = (value: unknown): value is PortableContent => {
   );
 };
 
-const invalidCanonicalValue = (reason: string): never => {
-  throw new TypeError(`Canonical context values require strict JSON: ${reason}.`);
-};
-
-const assertUnicodeScalarString = (value: string, location: string): void => {
-  let index = 0;
-  while (index < value.length) {
-    const unit = value.charCodeAt(index);
-    if (unit >= 0xd800 && unit <= 0xdbff) {
-      const next = value.charCodeAt(index + 1);
-      if (!(next >= 0xdc00 && next <= 0xdfff)) {
-        invalidCanonicalValue(`lone high surrogate in ${location}`);
-      }
-      index += 2;
-      continue;
-    }
-    if (unit >= 0xdc00 && unit <= 0xdfff) {
-      invalidCanonicalValue(`lone low surrogate in ${location}`);
-    }
-    index += 1;
-  }
-};
-
-const normalizeNumber = (value: number): number => {
-  if (!Number.isFinite(value)) return invalidCanonicalValue("non-finite number");
-  if (Number.isInteger(value) && !Number.isSafeInteger(value)) {
-    return invalidCanonicalValue("unsafe integer");
-  }
-  return Object.is(value, -0) ? 0 : value;
-};
-
-const readDataProperty = (
-  descriptor: PropertyDescriptor | undefined,
-  location: string,
-): unknown => {
-  if (!descriptor || !descriptor.enumerable || !("value" in descriptor)) {
-    return invalidCanonicalValue(`non-data property at ${location}`);
-  }
-  return descriptor.value;
-};
-
-const normalizeJson = (value: unknown, ancestors: Set<object>): JsonValue => {
-  if (value === null || typeof value === "boolean") return value;
-  if (typeof value === "string") {
-    assertUnicodeScalarString(value, "string value");
-    return value;
-  }
-  if (typeof value === "number") return normalizeNumber(value);
-  if (typeof value !== "object") return invalidCanonicalValue(typeof value);
-  if (ancestors.has(value)) return invalidCanonicalValue("cyclic reference");
-  ancestors.add(value);
-  try {
-    if (Array.isArray(value)) {
-      if (!isDenseArray(value)) return invalidCanonicalValue("sparse or extended array");
-      const descriptors = Object.getOwnPropertyDescriptors(value);
-      const normalized: JsonArray = [];
-      for (let index = 0; index < value.length; index += 1) {
-        normalized.push(
-          normalizeJson(
-            readDataProperty(descriptors[String(index)], `array index ${index}`),
-            ancestors,
-          ),
-        );
-      }
-      return normalized;
-    }
-    if (!isPlainRecord(value)) return invalidCanonicalValue("non-plain object");
-    const normalized: JsonObject = {};
-    const descriptors = Object.getOwnPropertyDescriptors(value);
-    const keys = Reflect.ownKeys(value);
-    if (keys.some((key) => typeof key === "symbol")) {
-      return invalidCanonicalValue("symbol-keyed property");
-    }
-    for (const key of (keys as string[]).sort()) {
-      assertUnicodeScalarString(key, "object key");
-      normalized[key] = normalizeJson(
-        readDataProperty(descriptors[key], `object property ${key}`),
-        ancestors,
-      );
-    }
-    return normalized;
-  } finally {
-    ancestors.delete(value);
-  }
-};
-
-const serializeCanonical = (value: JsonValue): string => {
-  if (
-    value === null ||
-    typeof value === "boolean" ||
-    typeof value === "number" ||
-    typeof value === "string"
-  ) {
-    return JSON.stringify(value);
-  }
-  if (Array.isArray(value)) return `[${value.map(serializeCanonical).join(",")}]`;
-  return `{${Object.keys(value)
-    .sort()
-    .map((key) => `${JSON.stringify(key)}:${serializeCanonical(value[key] as JsonValue)}`)
-    .join(",")}}`;
-};
-
-export const canonicalJson = (value: unknown): string =>
-  serializeCanonical(normalizeJson(value, new Set<object>()));
+export const canonicalJson = (value: unknown): string => canonicalize(value);
 
 export const canonicalDigest = (value: unknown): Digest =>
   digest(createHash("sha256").update(canonicalJson(value)).digest("hex"));

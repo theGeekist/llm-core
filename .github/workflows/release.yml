@@ -4,12 +4,46 @@ on:
   push:
     tags:
       - "v*"
+      - "strict-json-v*"
       - "*/*"
 
 permissions:
   contents: write
 
 jobs:
+  release-strict-json:
+    if: startsWith(github.ref, 'refs/tags/strict-json-v')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version-file: ".bun-version"
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          registry-url: "https://registry.npmjs.org"
+
+      - name: Install
+        run: bun install --frozen-lockfile
+
+      - name: Qualify strict-json release
+        run: bun run release:qualify:strict-json
+
+      - name: Publish strict-json
+        run: npm publish --access public
+        working-directory: packages/strict-json
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: GitHub Release
+        uses: softprops/action-gh-release@v2
+
   release-core:
     if: startsWith(github.ref, 'refs/tags/v')
     runs-on: ubuntu-latest
@@ -30,6 +64,9 @@ jobs:
 
       - name: Qualify Core release
         run: bun run release:qualify:llm-core
+
+      - name: Verify strict-json dependency is published
+        run: bun run release:check:strict-json-published
 
       - name: Publish Core
         run: npm publish --access public

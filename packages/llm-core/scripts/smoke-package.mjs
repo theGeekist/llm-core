@@ -14,7 +14,11 @@ import { fileURLToPath } from "node:url";
 
 const root = dirname(dirname(fileURLToPath(import.meta.url)));
 const workspaceRoot = resolve(root, "../..");
+const strictJsonRoot = resolve(root, "../strict-json");
 const packageJson = JSON.parse(readFileSync(join(root, "package.json"), "utf8"));
+const strictJsonPackageJson = JSON.parse(
+  readFileSync(join(strictJsonRoot, "package.json"), "utf8"),
+);
 const workspacePackageJson = JSON.parse(readFileSync(join(workspaceRoot, "package.json"), "utf8"));
 const expectedSubpaths = [
   ".",
@@ -96,6 +100,12 @@ if (
 ) {
   fail("Package must publish the v2 ESM-only manifest.");
 }
+if (
+  packageJson.dependencies?.["@geekist/strict-json"] !== strictJsonPackageJson.version ||
+  String(packageJson.dependencies?.["@geekist/strict-json"]).startsWith("workspace:")
+) {
+  fail("Published llm-core must depend on the concrete workspace strict-json version.");
+}
 if (JSON.stringify(Object.keys(packageJson.exports)) !== JSON.stringify(expectedSubpaths)) {
   fail("Package exports must match the exact ordered ADR-008 surface.");
 }
@@ -174,6 +184,13 @@ for (const file of walkFiles(join(root, "dist"))) {
 
 const smokeRoot = mkdtempSync(join(tmpdir(), "llm-core-package-smoke-"));
 try {
+  run("bun", ["run", "build"], { cwd: strictJsonRoot });
+  const strictJsonPackedOutput = run("npm", ["pack", "--json", "--pack-destination", smokeRoot], {
+    cwd: strictJsonRoot,
+    env: { ...process.env, npm_config_cache: join(smokeRoot, "npm-cache") },
+  });
+  const strictJsonPacked = JSON.parse(strictJsonPackedOutput);
+  const strictJsonTarball = join(smokeRoot, strictJsonPacked[0].filename);
   const packedOutput = run("npm", ["pack", "--json", "--pack-destination", smokeRoot], {
     cwd: root,
     env: { ...process.env, npm_config_cache: join(smokeRoot, "npm-cache") },
@@ -193,6 +210,7 @@ try {
         private: true,
         type: "module",
         dependencies: {
+          "@geekist/strict-json": `file:${strictJsonTarball}`,
           "@geekist/llm-core": `file:${tarball}`,
           ...peerDependencies,
         },

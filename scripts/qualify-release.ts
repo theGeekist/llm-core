@@ -18,6 +18,7 @@ export interface ReleaseQualifierRegistry {
 export const baselineReleaseCommands: readonly (readonly string[])[] = [
   ["bun", "install", "--frozen-lockfile"],
   ["bun", "run", "lint"],
+  ["bun", "run", "--cwd", "packages/strict-json", "release:build"],
   ["bun", "run", "--cwd", "packages/llm-core", "release:build"],
   ["bun", "run", "test:package"],
   ["bun", "run", "qualify:external-fixtures"],
@@ -27,7 +28,11 @@ export const baselineReleaseCommands: readonly (readonly string[])[] = [
 ];
 
 const expectedRootEntrypoint = "bun run scripts/qualify-release.ts";
-const expectedPublishEntrypoint = "bun run --cwd ../.. release:qualify:llm-core && bun publish";
+const expectedStrictJsonEntrypoint = "bun run --cwd packages/strict-json release:build";
+const expectedStrictJsonPublishEntrypoint =
+  "bun run --cwd ../.. release:qualify:strict-json && bun publish";
+const expectedPublishEntrypoint =
+  "bun run --cwd ../.. release:qualify:llm-core && bun run --cwd ../.. release:check:strict-json-published && bun publish";
 const sealedUnconditionalSurfaces = new Set([
   ".",
   "./contracts",
@@ -216,10 +221,19 @@ export const validateReleaseEntrypoints = (root: string): string[] => {
   const packageManifest = readJson<{ scripts?: Record<string, string> }>(
     join(root, "packages/llm-core/package.json"),
   );
+  const strictJsonManifest = readJson<{ scripts?: Record<string, string> }>(
+    join(root, "packages/strict-json/package.json"),
+  );
   const releaseWorkflow = readFileSync(join(root, ".github/workflows/release.yml"), "utf8");
   const errors: string[] = [];
   if (rootManifest.scripts?.["release:qualify:llm-core"] !== expectedRootEntrypoint) {
     errors.push("root release:qualify:llm-core must own the canonical release orchestrator");
+  }
+  if (rootManifest.scripts?.["release:qualify:strict-json"] !== expectedStrictJsonEntrypoint) {
+    errors.push("root release:qualify:strict-json must own strict-json qualification");
+  }
+  if (strictJsonManifest.scripts?.["publish:npm"] !== expectedStrictJsonPublishEntrypoint) {
+    errors.push("strict-json publish:npm must delegate to root release:qualify:strict-json");
   }
   if (packageManifest.scripts?.["publish:npm"] !== expectedPublishEntrypoint) {
     errors.push("package publish:npm must delegate to root release:qualify:llm-core");
@@ -243,8 +257,41 @@ export const validateReleaseEntrypoints = (root: string): string[] => {
   const publication = releaseCoreLines.findIndex(
     (line) => line.trim() === "run: npm publish --access public",
   );
-  if (qualification < 0 || publication < 0 || qualification > publication) {
-    errors.push("tagged npm publication must follow root release:qualify:llm-core");
+  const dependencyCheck = releaseCoreLines.findIndex(
+    (line) => line.trim() === "run: bun run release:check:strict-json-published",
+  );
+  if (
+    qualification < 0 ||
+    dependencyCheck < 0 ||
+    publication < 0 ||
+    qualification > dependencyCheck ||
+    dependencyCheck > publication
+  ) {
+    errors.push(
+      "tagged llm-core publication must follow qualification and the strict-json registry check",
+    );
+  }
+
+  const strictStart = workflowLines.findIndex(
+    (line) => line.trimEnd() === "  release-strict-json:",
+  );
+  const strictNextJob = workflowLines.findIndex(
+    (line, index) => index > strictStart && isJobHeader(line),
+  );
+  const strictLines =
+    strictStart < 0
+      ? []
+      : workflowLines
+          .slice(strictStart + 1, strictNextJob < 0 ? undefined : strictNextJob)
+          .filter((line) => !line.trimStart().startsWith("#"));
+  const strictQualification = strictLines.findIndex(
+    (line) => line.trim() === "run: bun run release:qualify:strict-json",
+  );
+  const strictPublication = strictLines.findIndex(
+    (line) => line.trim() === "run: npm publish --access public",
+  );
+  if (strictQualification < 0 || strictPublication < 0 || strictQualification > strictPublication) {
+    errors.push("tagged strict-json publication must follow root release:qualify:strict-json");
   }
   return errors;
 };

@@ -1,4 +1,5 @@
 import { describe, expect, test } from "bun:test";
+import { isPromiseLike } from "#shared/maybe";
 import {
   compilePydanticAiAgentSpec,
   preparePydanticAiAgentSpec,
@@ -78,8 +79,8 @@ describe("PydanticAI AgentSpec adapter", () => {
       decision: value.decision,
       target: target(),
     });
-    expect(compilation).not.toBeInstanceOf(Promise);
-    if (compilation instanceof Promise) throw new TypeError("Expected synchronous compilation.");
+    expect(isPromiseLike(compilation)).toBe(false);
+    if (isPromiseLike(compilation)) throw new TypeError("Expected synchronous compilation.");
 
     const prepared = preparePydanticAiAgentSpec({
       compiled: compilation.compiled,
@@ -89,8 +90,8 @@ describe("PydanticAI AgentSpec adapter", () => {
         resume: ({ input }: { readonly input: string }) => `resumed:${input}`,
       },
     });
-    expect(prepared).not.toBeInstanceOf(Promise);
-    if (prepared instanceof Promise) throw new TypeError("Expected synchronous preparation.");
+    expect(isPromiseLike(prepared)).toBe(false);
+    if (isPromiseLike(prepared)) throw new TypeError("Expected synchronous preparation.");
     expect(Object.isFrozen(prepared)).toBe(true);
     expect(Object.keys(prepared).sort()).toEqual(["execute", "resume"]);
     expect(prepared.execute("first")).toBe("executed:first");

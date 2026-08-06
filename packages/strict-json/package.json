@@ -1,0 +1,66 @@
+{
+  "name": "@geekist/strict-json",
+  "version": "0.1.0",
+  "license": "Apache-2.0",
+  "description": "Strict JSON normalisation, canonicalisation, snapshots, and freezing.",
+  "keywords": [
+    "typescript",
+    "json",
+    "canonical-json",
+    "strict-json",
+    "rfc-8785"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/theGeekist/llm-core.git",
+    "directory": "packages/strict-json"
+  },
+  "bugs": {
+    "url": "https://github.com/theGeekist/llm-core/issues"
+  },
+  "author": "Geekist <hello@geekist.co>",
+  "publishConfig": {
+    "access": "public"
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "type": "module",
+  "sideEffects": false,
+  "private": false,
+  "files": [
+    "dist",
+    "README.md",
+    "docs/internal/STRICT-JSON-CONTRACT.md"
+  ],
+  "devDependencies": {
+    "canonicalize": "3.0.0",
+    "fast-check": "4.9.0"
+  },
+  "main": "./dist/esm/index.js",
+  "module": "./dist/esm/index.js",
+  "types": "./dist/types/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/types/index.d.ts",
+      "import": "./dist/esm/index.js",
+      "default": "./dist/esm/index.js"
+    }
+  },
+  "scripts": {
+    "build": "bun run scripts/build.ts clean && bun run build:types && bun run scripts/build.ts emit",
+    "build:types": "tsc -p tsconfig.build.json --emitDeclarationOnly",
+    "format": "prettier \"**/*.{ts,js,mjs,json,md}\" --write",
+    "format:check": "prettier \"**/*.{ts,js,mjs,json,md}\" --check",
+    "lint": "eslint \"**/*.{ts,js,mjs}\"",
+    "lint:fix": "eslint \"**/*.{ts,js,mjs}\" --fix",
+    "release:check": "bun run lint && bun run typecheck && bun run typecheck:tests && bun run test && bun run format:check",
+    "release:build": "bun run release:check && bun run build && bun run test:package",
+    "publish:npm": "bun run --cwd ../.. release:qualify:strict-json && bun publish",
+    "test": "bun test tests",
+    "test:coverage": "bun test tests --coverage --coverage-reporter=text",
+    "test:package": "node scripts/smoke-package.mjs",
+    "typecheck": "tsc --noEmit",
+    "typecheck:tests": "tsc -p tsconfig.test.json --noEmit"
+  }
+}

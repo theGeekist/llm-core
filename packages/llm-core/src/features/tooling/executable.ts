@@ -1,8 +1,8 @@
 import { isProxy } from "node:util/types";
 import { isUuidV7, type RunId, type StepId, type ToolCallId } from "#contracts";
 import { maybeChain, type MaybePromise } from "#shared/maybe";
+import { deepFreeze, normalize } from "@geekist/strict-json";
 import { defineToolDefinition } from "./action";
-import { freezeJsonValue, normalizeStrictJson } from "./canonical-json";
 import type {
   ExecutableTool,
   ExecutableToolValidationInput,
@@ -104,8 +104,8 @@ export const rebindValidatedToolCall = (input: RebindValidatedToolCallInput): To
   const rebound = Object.freeze({
     ...captured.call,
     toolCallId: captured.toolCallId,
-    invocation: freezeJsonValue(
-      normalizeStrictJson({
+    invocation: deepFreeze(
+      normalize({
         ...invocation,
         runId: captured.runId,
         ...(captured.stepId === undefined ? {} : { stepId: captured.stepId }),
@@ -137,10 +137,8 @@ export const createExecutableTool = (input: CreateExecutableToolInput): Executab
       (argumentsValue): ToolCall => {
         const validatedCall = Object.freeze({
           ...call,
-          arguments: freezeJsonValue(argumentsValue),
-          invocation: freezeJsonValue(
-            normalizeStrictJson(call.invocation),
-          ) as unknown as ToolCall["invocation"],
+          arguments: deepFreeze(argumentsValue) as unknown as ToolCall["arguments"],
+          invocation: deepFreeze(normalize(call.invocation)) as unknown as ToolCall["invocation"],
         });
         validatedCalls.add(validatedCall);
         return validatedCall;

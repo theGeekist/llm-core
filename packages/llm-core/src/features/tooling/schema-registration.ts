@@ -1,7 +1,7 @@
 import { isDigest } from "#contracts";
 import type { Digest, JsonValue } from "#contracts";
 import { maybeMap, type MaybePromise } from "#shared/maybe";
-import { canonicalizeJson, freezeJsonValue, normalizeStrictJson } from "./canonical-json";
+import { canonicalize, deepFreeze, normalize } from "@geekist/strict-json";
 
 declare const registeredToolSchemaBrand: unique symbol;
 
@@ -74,11 +74,11 @@ export const registerToolSchema = (
   document: unknown,
   port: ToolSchemaDigestPort,
 ): MaybePromise<RegisteredToolSchema> => {
-  const normalized = normalizeStrictJson(document);
-  const canonicalSchema = canonicalizeJson(normalized);
+  const normalized = normalize(document);
+  const canonicalSchema = canonicalize(normalized);
   return maybeMap((value) => {
     const registered = {
-      document: freezeJsonValue(normalized),
+      document: deepFreeze(normalized),
       digest: snapshotSchemaDigest(value),
     } as RegisteredToolSchema;
     registeredToolSchemas.add(registered);

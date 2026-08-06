@@ -1,7 +1,7 @@
 import { isContractVersion, isDigest, isExternalId } from "#contracts";
 import type { SecretRef } from "#contracts";
 import { maybeMap, type MaybePromise } from "#shared/maybe";
-import { canonicalizeJson, freezeJsonValue, normalizeStrictJson } from "./canonical-json";
+import { canonicalize, deepFreeze, normalize } from "@geekist/strict-json";
 import { isRegisteredToolSchema } from "./schema-registration";
 import type { ActionDocument, EffectTarget, ToolCall, ToolId, ToolDefinition } from "./types";
 
@@ -158,9 +158,9 @@ export const createActionDocument = (
     },
     authority: readAuthority(call),
     execution: { ...definition.execution },
-    arguments: normalizeStrictJson(call.arguments),
+    arguments: normalize(call.arguments),
   };
-  return freezeJsonValue(normalizeStrictJson(document)) as unknown as ActionDocument;
+  return deepFreeze(normalize(document)) as unknown as ActionDocument;
 };
 
 const isActionDigest = (value: unknown, keyRef: SecretRef): value is ActionDigest => {
@@ -198,7 +198,7 @@ const toBoundAction =
 export const bindAction = (input: BindActionInput): MaybePromise<BoundAction> => {
   assertDigestMaterial(input.securityDomain, input.keyRef);
   const document = createActionDocument(input.definition, input.call);
-  const canonicalDocument = canonicalizeJson(document);
+  const canonicalDocument = canonicalize(document);
   return maybeMap(
     toBoundAction(document, canonicalDocument, input.keyRef),
     input.digestPort.create({
@@ -219,7 +219,7 @@ export const verifyActionDigest = (
   if (!isActionDigest(input.digest, input.keyRef)) {
     return false;
   }
-  const canonicalDocument = canonicalizeJson(createActionDocument(input.definition, input.call));
+  const canonicalDocument = canonicalize(createActionDocument(input.definition, input.call));
   return input.digestPort.verify({
     canonicalDocument,
     securityDomain: input.securityDomain,
@@ -228,4 +228,4 @@ export const verifyActionDigest = (
   });
 };
 
-export const actionDigestInput = (document: ActionDocument): string => canonicalizeJson(document);
+export const actionDigestInput = (document: ActionDocument): string => canonicalize(document);

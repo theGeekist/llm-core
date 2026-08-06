@@ -21,27 +21,45 @@ const makeRoot = (): string => {
   const root = mkdtempSync(join(tmpdir(), "llm-core-release-"));
   roots.push(root);
   mkdirSync(join(root, "packages/llm-core"), { recursive: true });
+  mkdirSync(join(root, "packages/strict-json"), { recursive: true });
   mkdirSync(join(root, ".github/workflows"), { recursive: true });
   mkdirSync(join(root, "scripts"), { recursive: true });
   writeFileSync(join(root, ".bun-version"), "1.3.8\n");
   writeFileSync(join(root, "bun.lock"), "lock\n");
   writeJson(join(root, "package.json"), {
-    scripts: { "release:qualify:llm-core": "bun run scripts/qualify-release.ts" },
+    scripts: {
+      "release:qualify:llm-core": "bun run scripts/qualify-release.ts",
+      "release:qualify:strict-json": "bun run --cwd packages/strict-json release:build",
+    },
   });
   writeJson(join(root, "packages/llm-core/package.json"), {
     exports: {},
     scripts: {
-      "publish:npm": "bun run --cwd ../.. release:qualify:llm-core && bun publish",
+      "publish:npm":
+        "bun run --cwd ../.. release:qualify:llm-core && bun run --cwd ../.. release:check:strict-json-published && bun publish",
+    },
+  });
+  writeJson(join(root, "packages/strict-json/package.json"), {
+    scripts: {
+      "publish:npm": "bun run --cwd ../.. release:qualify:strict-json && bun publish",
     },
   });
   writeFileSync(
     join(root, ".github/workflows/release.yml"),
     [
       "jobs:",
+      "  release-strict-json:",
+      "    steps:",
+      "      - name: Qualify strict-json",
+      "        run: bun run release:qualify:strict-json",
+      "      - name: Publish strict-json",
+      "        run: npm publish --access public",
       "  release-core:",
       "    steps:",
       "      - name: Qualify",
       "        run: bun run release:qualify:llm-core",
+      "      - name: Verify dependency",
+      "        run: bun run release:check:strict-json-published",
       "      - name: Publish",
       "        run: npm publish --access public",
     ].join("\n"),
@@ -182,6 +200,7 @@ describe("canonical release qualification", () => {
     expect(calls).toEqual([
       ["bun", "install", "--frozen-lockfile"],
       ["bun", "run", "lint"],
+      ["bun", "run", "--cwd", "packages/strict-json", "release:build"],
       ["bun", "run", "--cwd", "packages/llm-core", "release:build"],
       ["bun", "run", "test:package"],
       ["bun", "run", "qualify:external-fixtures"],
@@ -232,7 +251,7 @@ describe("canonical release qualification", () => {
     );
     const errors = validateReleaseEntrypoints(root).join("\n");
     expect(errors).toContain("package publish:npm must delegate");
-    expect(errors).toContain("tagged npm publication must follow");
+    expect(errors).toContain("tagged llm-core publication must follow");
   });
 
   test("requires a root lockfile", () => {
@@ -316,7 +335,7 @@ describe("canonical release qualification", () => {
       ].join("\n"),
     );
     expect(validateReleaseEntrypoints(root).join("\n")).toContain(
-      "tagged npm publication must follow",
+      "tagged llm-core publication must follow",
     );
   });
 

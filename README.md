@@ -7,10 +7,11 @@ documents and architecture authority.
 
 ## Packages
 
-| Package                                              | Purpose                                                                      | Package documents                                                         |
-| ---------------------------------------------------- | ---------------------------------------------------------------------------- | ------------------------------------------------------------------------- |
-| [`@geekist/llm-core`](./packages/llm-core/README.md) | Portable contracts, conformance, authority, and evidence for agentic systems | [`packages/llm-core/docs`](./packages/llm-core/docs/README.md)            |
-| [`@aifsd/sdk`](./packages/aifsd/README.md)           | Build and Runtime SDK product journeys, integrations, templates, and clients | Private engineering authority; optional local `packages/aifsd/docs` mount |
+| Package                                                    | Purpose                                                                      | Package documents                                                         |
+| ---------------------------------------------------------- | ---------------------------------------------------------------------------- | ------------------------------------------------------------------------- |
+| [`@geekist/llm-core`](./packages/llm-core/README.md)       | Portable contracts, conformance, authority, and evidence for agentic systems | [`packages/llm-core/docs`](./packages/llm-core/docs/README.md)            |
+| [`@aifsd/sdk`](./packages/aifsd/README.md)                 | Build and Runtime SDK product journeys, integrations, templates, and clients | Private engineering authority; optional local `packages/aifsd/docs` mount |
+| [`@geekist/strict-json`](./packages/strict-json/README.md) | Strict JSON normalisation, canonicalisation, and immutable snapshots         | [`packages/strict-json/docs`](./packages/strict-json/docs/README.md)      |
 
 Additional packages use the same ownership shape:
 

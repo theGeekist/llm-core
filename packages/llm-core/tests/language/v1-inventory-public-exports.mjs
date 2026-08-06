@@ -184,15 +184,7 @@ const internalByEntrypoint = new Map([
       "sanitizeNativeMetadata",
     ]),
   ],
-  [
-    "./tools",
-    new Set([
-      "canonicalizeJson",
-      "isRegisteredToolBinding",
-      "normalizeStrictJson",
-      "RegisteredToolSchema",
-    ]),
-  ],
+  ["./tools", new Set(["isRegisteredToolBinding", "RegisteredToolSchema"])],
   [
     "./evidence",
     new Set([

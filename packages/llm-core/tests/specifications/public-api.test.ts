@@ -1,5 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import { contractVersion, digest, extensionNamespace, type JsonValue } from "#contracts";
+import { isPromiseLike } from "#shared/maybe";
 import {
   compileSpecification,
   createPortableIntegrationReference,
@@ -365,8 +366,8 @@ describe("specification public API", () => {
         return { target: { model: "test" }, result: "exact" };
       },
     });
-    expect(projected).not.toBeInstanceOf(Promise);
-    if (projected instanceof Promise) throw new TypeError("Expected synchronous projection.");
+    expect(isPromiseLike(projected)).toBe(false);
+    if (isPromiseLike(projected)) throw new TypeError("Expected synchronous projection.");
     expect(projections).toBe(1);
     expect(projected.compiled.value).toEqual({ model: "test" });
     expect(projected.result).toBe("exact");

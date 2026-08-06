@@ -1,6 +1,6 @@
 import type { JsonValue } from "#contracts";
 import { maybeMap, type MaybePromise } from "#shared/maybe";
-import { normalizeStrictJson } from "./canonical-json";
+import { normalize } from "@geekist/strict-json";
 import { isRegisteredToolSchema, type RegisteredToolSchema } from "./schema-registration";
 
 export interface ToolArgumentValidationInput {
@@ -58,7 +58,7 @@ export const validateToolArguments = (
   if (!isRegisteredToolSchema(input.schema)) {
     throw new TypeError("Tool argument validation requires a registered input schema.");
   }
-  const argumentsValue = normalizeStrictJson(input.arguments);
+  const argumentsValue = normalize(input.arguments);
   return maybeMap(
     readValidatedArguments(argumentsValue),
     input.port.validate({ schema: input.schema, arguments: argumentsValue }),

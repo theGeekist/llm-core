@@ -1,0 +1,11 @@
+{
+  "extends": "../../tsconfig.json",
+  "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+      "@geekist/strict-json": ["./index.ts"]
+    }
+  },
+  "include": ["index.ts", "src", "tests", "scripts"],
+  "exclude": ["node_modules", "dist", "coverage"]
+}

@@ -249,6 +249,38 @@ describe("qualified capability retry", () => {
     expect(delays).toEqual([5]);
   });
 
+  test("retries a rejected non-native thenable", async () => {
+    let attempts = 0;
+    const binding = retrieverBinding([
+      passingClaim(RETRY_GUARANTEE_CAPABILITIES.idempotent, "retriever:retry"),
+    ]);
+    const result = executeWithQualifiedRetry({
+      binding,
+      effect: "read-only",
+      phase: "before-start",
+      policy: {
+        maxAttempts: 2,
+        delayMs: 0,
+        retryOn: ["network"],
+        guarantee: "idempotent",
+      },
+      classifyFailure: () => "network",
+      call: () => {
+        attempts += 1;
+        if (attempts === 1) {
+          return {
+            then: (_onFulfilled, onRejected) =>
+              Promise.resolve(onRejected?.(new Error("non-native rejection")) as never),
+          };
+        }
+        return "recovered";
+      },
+    });
+
+    await expect(result).resolves.toBe("recovered");
+    expect(attempts).toBe(2);
+  });
+
   test("event projection failure does not retry without an explicit guarantee", async () => {
     let emissions = 0;
     const sink = registerRuntimeCapabilityBinding(
