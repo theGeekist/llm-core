@@ -7,13 +7,23 @@ context, not project state.
 
 ## Choose the smallest context set
 
-- Planning or “what next?”: [planning handoff](./plan-v2-arch.md), then
-  [`ROADMAP.md`](../final-architecture/ROADMAP.md)
-  and the relevant task front matter.
-- Implementation: [implementation handoff](./implement-v2-code.md), the selected
-  task, its named ADRs and its `read_scope`.
-- Review: [review handoff](./review-v2-code.md), the selected task, its named
-  ADRs and submitted diff.
+Begin every task-facing session from the canonical checkout:
+
+```sh
+bun run tasks:plan --authority all
+bun run tasks:context -- <authority>/<task-id>
+```
+
+Open every item in the generated context pack. In particular,
+`required_reading` is an ordered consumption obligation; `read_scope` is only
+additional inspection authority.
+
+- Planning or “what next?”: [planning handoff](./plan-v2-arch.md), the planner
+  output and then the relevant `ROADMAP.md` programme section.
+- Implementation: [implementation handoff](./implement-v2-code.md) and the
+  complete generated context pack.
+- Review: [review handoff](./review-v2-code.md), the complete generated context
+  pack and submitted diff.
 - Claim, concurrency or integration: additionally read
   [`COORDINATION.md`](../final-architecture/COORDINATION.md).
 - Historical kernel questions only: read

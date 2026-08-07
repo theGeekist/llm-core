@@ -14,6 +14,7 @@ base_sha:
 branch:
 worktree:
 depends_on:
+  - architecture-external-contract-fidelity
   - architecture-runtime-ownership-correction
   - specification-api
   - adapter-openspec
@@ -24,12 +25,20 @@ depends_on:
 decision_dependencies:
   - ADR-009
   - ADR-016
+  - ADR-017
 conflicts_with: []
 write_scope:
   - packages/llm-core/tests/specifications/semantic-path-characterization.test.ts
   - packages/llm-core/tests/specifications/fixtures/**
   - packages/llm-core/docs/final-architecture/tasks/specification-semantic-path-characterization.md
+required_reading:
+  - path: packages/llm-core/docs/final-architecture/SPECIFICATIONS.md
+    reason: "Use the existing semantic path as the characterization subject, not as proof that it composes."
+  - path: packages/llm-core/docs/internal/REUSABLE-ABSTRACTION-REVIEW.md
+    reason: "Apply fixture-island and observation-capture caveats to the characterization."
 read_scope:
+  - packages/llm-core/docs/final-architecture/SPECIFICATIONS.md
+  - packages/llm-core/docs/internal/REUSABLE-ABSTRACTION-REVIEW.md
   - packages/llm-core/src/features/specifications/**
   - packages/llm-core/src/application/specification-compiler/**
   - packages/llm-core/src/specifications/**
@@ -74,8 +83,8 @@ architectural drift.
 
 - The canonical fixture is typechecked without casting its node collection to
   `never` or an untyped ad hoc graph.
-- Characterization distinguishes source-document preservation from typed-waist
-  conformance and records the current loss at each transition.
+- Characterization distinguishes source observation, portable derivation and
+  typed-waist conformance, recording unsupported operations at each boundary.
 - Existing native fixture suites remain unchanged and continue to pass.
 - The PydanticAI incompatibility is demonstrated through the public review and
   projection path rather than inferred from implementation details.

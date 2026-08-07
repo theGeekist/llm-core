@@ -19,7 +19,7 @@ define portable intent
   -> import or reconcile specifications
   -> review and bind authority
   -> compile through an explicit integration target
-  -> retain evidence, provenance and conversion loss
+  -> retain evidence, provenance and exact operation dispositions
 ```
 
 Execution is always visibly owned by a qualified runtime integration. There is
@@ -43,7 +43,7 @@ ADR-016 therefore removes the runnable facades rather than renaming them again.
 | Level       | Audience                              | Examples                                                                                         |
 | ----------- | ------------------------------------- | ------------------------------------------------------------------------------------------------ |
 | Common      | Application and delivery authors      | specification, agent definition, tool definition, workflow intent, requirement, evidence, result |
-| Integration | Runtime and adapter authors           | runner, prepare, checkpoint, native session, capability profile, conversion report               |
+| Integration | Runtime and adapter authors           | runner, prepare, checkpoint, native session, capability profile, operation disposition           |
 | Internal    | Kernel implementation and conformance | registration token, authority snapshot, binding provenance, local proof runner, fake runner      |
 
 Common language describes intent and evidence. It does not promise that a

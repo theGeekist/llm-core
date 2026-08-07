@@ -27,7 +27,14 @@ write_scope:
   - packages/llm-core/tests/context/**
   - packages/llm-core/tests/artifacts/**
   - packages/llm-core/docs/final-architecture/tasks/capabilities-context-artifacts.md
+required_reading:
+  - path: docs/capabilities/context.md
+    reason: "Preserve context manifest identity, authority and portability evidence."
+  - path: docs/capabilities/artifacts.md
+    reason: "Preserve artifact ownership and immutable reference semantics."
 read_scope:
+  - docs/capabilities/context.md
+  - docs/capabilities/artifacts.md
   - packages/llm-core/src/contracts/**
   - packages/llm-core/src/features/evidence/**
 review_owner: coordinator

@@ -25,6 +25,15 @@ write_scope:
   - packages/llm-core/src/features/model/**
   - packages/llm-core/tests/model/**
   - packages/llm-core/docs/final-architecture/tasks/core-model-runtime.md
+required_reading:
+  - path: docs/capabilities/model.md
+    reason: "Preserve model profile, resolution and native provider ownership evidence."
+  - path: packages/llm-core/docs/v1-implementation-plan.md
+    reason: "Identify the pre-v2 provider coupling removed by the model slice."
+    ref: 8844ac3989e497a762fa43f23fd93e40803d2174
+read_scope:
+  - docs/capabilities/model.md
+  - packages/llm-core/docs/v1-implementation-plan.md
 review_owner: coordinator
 updated_at: 2026-07-29
 ---

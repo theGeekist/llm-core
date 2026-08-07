@@ -14,11 +14,13 @@ base_sha:
 branch:
 worktree:
 depends_on:
+  - architecture-external-contract-fidelity
   - architecture-runtime-ownership-correction
   - capabilities-runtime-conformance
   - capabilities-operational-evidence
 decision_dependencies:
   - ADR-016
+  - ADR-017
 conflicts_with: []
 write_scope:
   - apps/coding-agent-qualification/**
@@ -26,6 +28,17 @@ write_scope:
   - packages/llm-core/tests/adapters/coding-agent/**
   - docs/adapters/coding-agent.md
   - packages/llm-core/docs/final-architecture/tasks/adapter-coding-agent-integration.md
+required_reading:
+  - path: packages/aifsd/docs/final-architecture/INTEGRATIONS.md
+    reason: "Preserve coding-agent ownership, permissions and evidence boundaries in product composition."
+  - path: context/aifsd-research/profiles/claude-agent-sdk.md
+    reason: "Use one researched coding-agent boundary as selection evidence."
+  - path: context/aifsd-research/profiles/openhands-sdk.md
+    reason: "Compare an unlike coding-agent boundary before selecting the qualified target."
+read_scope:
+  - packages/aifsd/docs/final-architecture/INTEGRATIONS.md
+  - context/aifsd-research/profiles/claude-agent-sdk.md
+  - context/aifsd-research/profiles/openhands-sdk.md
 review_owner: human
 updated_at: 2026-08-04
 ---
@@ -44,7 +57,7 @@ evidence without rebuilding its loop in `llm-core`.
 - Implement only the portable adapter projection required by the governed
   repository-change fixture.
 - Characterize permissions, workspace ownership, cancellation, artifacts,
-  sessions and evidence loss.
+  sessions and supported or unsupported evidence operations.
 
 ## Out of scope
 
@@ -79,4 +92,5 @@ Not started; selection evidence and claim metadata are added on assignment.
 ## Handoff
 
 Pending execution. Record the selected version and boundary, changed files,
-fixture evidence, semantic loss, command results and publication recommendation.
+fixture evidence, exact operation matrix, command results and publication
+recommendation.

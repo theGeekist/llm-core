@@ -25,7 +25,14 @@ write_scope:
   - packages/llm-core/tests/conformance/**
   - packages/llm-core/src/adapters/runtimes/**
   - packages/llm-core/docs/final-architecture/tasks/capabilities-runtime-conformance.md
+required_reading:
+  - path: docs/adapters/runtime-conformance.md
+    reason: "Use the exact runtime qualification evidence while treating projected support language as historical."
+  - path: packages/llm-core/docs/final-architecture/EXTERNAL-CONTRACT-FIDELITY-IMPACT.md
+    reason: "Treat this task's loss-based wording as historical and apply the current exact-contract correction."
 read_scope:
+  - docs/adapters/runtime-conformance.md
+  - packages/llm-core/docs/final-architecture/EXTERNAL-CONTRACT-FIDELITY-IMPACT.md
   - packages/llm-core/src/contracts/**
   - packages/llm-core/src/features/**
   - packages/llm-core/src/application/**

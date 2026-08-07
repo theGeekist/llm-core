@@ -35,7 +35,11 @@ write_scope:
   - packages/llm-core/tests/application/tool-execution/**
   - packages/llm-core/tests/specification-compiler/authority.test.ts
   - packages/llm-core/docs/final-architecture/tasks/runtime-receipt-reconciliation.md
+required_reading:
+  - path: docs/orchestration/controlled-tool-execution.md
+    reason: "Preserve durable fencing, ambiguity and recovery invariants in the public journey."
 read_scope:
+  - docs/orchestration/controlled-tool-execution.md
   - packages/llm-core/src/contracts/**
   - packages/llm-core/src/features/state/**
 review_owner: coordinator

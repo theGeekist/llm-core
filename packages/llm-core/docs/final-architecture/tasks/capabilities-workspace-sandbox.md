@@ -30,7 +30,11 @@ write_scope:
   - packages/llm-core/tests/workspace/**
   - docs/capabilities/control.md
   - packages/llm-core/docs/final-architecture/tasks/capabilities-workspace-sandbox.md
+required_reading:
+  - path: docs/capabilities/control.md
+    reason: "Preserve the controlled-effect boundary when defining host and isolated workspace capabilities."
 read_scope:
+  - docs/capabilities/control.md
   - packages/llm-core/src/contracts/**
   - packages/llm-core/src/features/artifacts/**
   - packages/llm-core/src/features/evidence/**

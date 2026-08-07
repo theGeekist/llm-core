@@ -34,7 +34,14 @@ write_scope:
   - packages/llm-core/tests/application/tool-execution/**
   - packages/llm-core/tests/specification-compiler/**
   - packages/llm-core/docs/final-architecture/tasks/specification-authority.md
+required_reading:
+  - path: packages/llm-core/docs/final-architecture/SPECIFICATIONS.md
+    reason: "Preserve use-time authority, source revision and expiry revalidation."
+  - path: docs/reference/failures.md
+    reason: "Preserve public failure distinctions for stale and unauthorized specification use."
 read_scope:
+  - packages/llm-core/docs/final-architecture/SPECIFICATIONS.md
+  - docs/reference/failures.md
   - packages/llm-core/src/application/specification-compiler/**
   - packages/llm-core/src/features/control/**
   - packages/llm-core/src/features/state/**

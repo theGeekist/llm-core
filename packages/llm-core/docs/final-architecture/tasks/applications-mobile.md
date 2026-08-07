@@ -4,8 +4,8 @@ id: applications-mobile
 title: Mobile application foundation
 stage: applications
 status: cancelled
-forward_to:
-  - aifsd/build-runtime-vertical-slice
+replaced_by:
+  - aifsd/clients-mobile-foundation
 priority: medium
 preferred_owner_kind: codex
 owner:
@@ -37,7 +37,14 @@ write_scope:
   - apps/mobile/**
   - docs/applications/mobile.md
   - packages/llm-core/docs/final-architecture/tasks/applications-mobile.md
+required_reading:
+  - path: packages/aifsd/docs/final-architecture/LLM-CORE-PARITY.md
+    reason: "Retain the cancelled mobile brief as cross-authority provenance."
+  - path: packages/aifsd/docs/final-architecture/tasks/clients-mobile-foundation.md
+    reason: "Use the committed AIFSD mobile task as current product authority."
 read_scope:
+  - packages/aifsd/docs/final-architecture/LLM-CORE-PARITY.md
+  - packages/aifsd/docs/final-architecture/tasks/clients-mobile-foundation.md
   - packages/llm-core/src/client/**
   - packages/llm-core/package.json
 review_owner: coordinator
@@ -48,6 +55,8 @@ updated_at: 2026-08-04
 
 Cancelled by ADR-016 before implementation. Mobile is a downstream product
 choice after delivery and runtime use cases are proven.
+The committed AIFSD replacement retains a distinct mobile framework, device,
+background, security and release decision.
 
 ## Objective
 

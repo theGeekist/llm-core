@@ -34,7 +34,14 @@ write_scope:
   - packages/llm-core/tests/application/workflow/**
   - docs/capabilities/evidence.md
   - packages/llm-core/docs/final-architecture/tasks/cost-budget-enforcement.md
+required_reading:
+  - path: packages/llm-core/docs/final-architecture/tasks/capabilities-cost-intelligence.md
+    reason: "Retain the cancelled source task as provenance for gateway enforcement."
+  - path: docs/orchestration/controlled-tool-execution.md
+    reason: "Preserve effect ordering and observed facts at execution gateways."
 read_scope:
+  - packages/llm-core/docs/final-architecture/tasks/capabilities-cost-intelligence.md
+  - docs/orchestration/controlled-tool-execution.md
   - packages/llm-core/src/features/control/**
   - packages/llm-core/src/features/evidence/**
   - packages/llm-core/src/features/model/**

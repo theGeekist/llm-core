@@ -39,7 +39,17 @@ write_scope:
   - packages/llm-core/tsconfig.json
   - packages/llm-core/tsconfig.build.json
   - packages/llm-core/docs/final-architecture/tasks/specification-api.md
+required_reading:
+  - path: packages/llm-core/docs/final-architecture/SPECIFICATIONS.md
+    reason: "Preserve the package front and graph-free review boundary while treating loss support as historical."
+  - path: packages/llm-core/docs/final-architecture/LANGUAGE.md
+    reason: "Preserve the common load, review and compile vocabulary without implied execution."
+  - path: packages/llm-core/docs/final-architecture/EXTERNAL-CONTRACT-FIDELITY-IMPACT.md
+    reason: "Treat this task's loss-based wording as historical and apply the current exact-contract correction."
 read_scope:
+  - packages/llm-core/docs/final-architecture/SPECIFICATIONS.md
+  - packages/llm-core/docs/final-architecture/LANGUAGE.md
+  - packages/llm-core/docs/final-architecture/EXTERNAL-CONTRACT-FIDELITY-IMPACT.md
   - packages/llm-core/src/features/specifications/**
   - packages/llm-core/src/application/specification-compiler/**
   - packages/llm-core/src/application/agent/**

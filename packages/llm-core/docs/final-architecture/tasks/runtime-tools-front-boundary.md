@@ -47,7 +47,11 @@ write_scope:
   - packages/llm-core/tests/architecture/**
   - docs/reference/package-exports.md
   - packages/llm-core/docs/final-architecture/tasks/runtime-tools-front-boundary.md
+required_reading:
+  - path: docs/reference/package-exports.md
+    reason: "Preserve the exact tools runtime export while removing only the internal dependency exception."
 read_scope:
+  - docs/reference/package-exports.md
   - packages/llm-core/src/application/tool-execution/**
   - packages/llm-core/src/features/tooling/**
 review_owner: coordinator

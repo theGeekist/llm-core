@@ -27,7 +27,11 @@ write_scope:
   - packages/llm-core/tests/evaluation/**
   - docs/capabilities/evaluation.md
   - packages/llm-core/docs/final-architecture/tasks/capabilities-evaluation-qualification.md
+required_reading:
+  - path: docs/capabilities/evaluation.md
+    reason: "Preserve dataset, split, evaluator and promotion provenance in qualification work."
 read_scope:
+  - docs/capabilities/evaluation.md
   - packages/llm-core/src/contracts/**
   - packages/llm-core/src/features/evidence/**
   - packages/llm-core/src/features/artifacts/**

@@ -21,6 +21,7 @@ authoritative unless superseded; substantive change requires a superseding ADR.
 | [ADR-014](ADR-014-integration-cost-client-application-boundaries.md) | Integration, cost and client application boundaries    | accepted; product priority superseded        |
 | [ADR-015](ADR-015-kernel-completion-programme-boundaries.md)         | Kernel completion and continuing programmes            | accepted; runtime/product clauses superseded |
 | [ADR-016](ADR-016-integration-owned-execution.md)                    | Integration-owned execution and AIFSD product boundary | accepted                                     |
+| [ADR-017](ADR-017-external-contract-fidelity.md)                     | Exact external contract fidelity                       | accepted                                     |
 
 A later change uses a superseding ADR so another worker can reconstruct why the
 architecture moved.

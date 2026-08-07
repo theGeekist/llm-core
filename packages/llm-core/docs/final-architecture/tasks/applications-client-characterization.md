@@ -4,8 +4,8 @@ id: applications-client-characterization
 title: Characterize desktop and mobile client journeys
 stage: applications
 status: cancelled
-forward_to:
-  - aifsd/build-runtime-vertical-slice
+replaced_by:
+  - aifsd/clients-desktop-mobile-characterization
 priority: normal
 preferred_owner_kind: codex
 owner:
@@ -39,7 +39,14 @@ write_scope:
   - packages/llm-core/tests/applications/characterization/**
   - docs/applications/characterization/**
   - packages/llm-core/docs/final-architecture/tasks/applications-client-characterization.md
+required_reading:
+  - path: packages/aifsd/docs/final-architecture/LLM-CORE-PARITY.md
+    reason: "Retain the cancelled client brief as cross-authority provenance."
+  - path: packages/aifsd/docs/final-architecture/tasks/clients-desktop-mobile-characterization.md
+    reason: "Use the committed AIFSD characterization task as current product authority."
 read_scope:
+  - packages/aifsd/docs/final-architecture/LLM-CORE-PARITY.md
+  - packages/aifsd/docs/final-architecture/tasks/clients-desktop-mobile-characterization.md
   - packages/llm-core/index.ts
   - packages/llm-core/src/**/public.ts
   - packages/llm-core/src/agent/index.ts
@@ -58,6 +65,8 @@ updated_at: 2026-08-04
 
 Cancelled by ADR-016 before implementation. Operator-client characterization
 may be proposed again only after delivery and runtime-substitution evidence.
+The committed AIFSD replacement preserves the independent desktop/mobile and
+local/remote characterization before any shared client contract.
 
 ## Objective
 

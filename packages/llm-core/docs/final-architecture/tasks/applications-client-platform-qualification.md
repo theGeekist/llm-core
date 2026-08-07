@@ -4,8 +4,8 @@ id: applications-client-platform-qualification
 title: Prequalify client platforms and build the packed-package gate
 stage: applications
 status: cancelled
-forward_to:
-  - aifsd/build-runtime-vertical-slice
+replaced_by:
+  - aifsd/clients-platform-qualification
 priority: high
 preferred_owner_kind: coordinator
 owner:
@@ -35,7 +35,14 @@ write_scope:
   - packages/llm-core/tests/applications/platform-qualification/**
   - docs/applications/client-platform-qualification.md
   - packages/llm-core/docs/final-architecture/tasks/applications-client-platform-qualification.md
+required_reading:
+  - path: packages/aifsd/docs/final-architecture/LLM-CORE-PARITY.md
+    reason: "Retain the cancelled platform brief as cross-authority provenance."
+  - path: packages/aifsd/docs/final-architecture/tasks/clients-platform-qualification.md
+    reason: "Use the committed AIFSD platform qualification task as current product authority."
 read_scope:
+  - packages/aifsd/docs/final-architecture/LLM-CORE-PARITY.md
+  - packages/aifsd/docs/final-architecture/tasks/clients-platform-qualification.md
   - packages/llm-core/package.json
   - packages/llm-core/scripts/build.ts
   - packages/llm-core/src/client/**
@@ -48,6 +55,8 @@ updated_at: 2026-08-04
 
 Cancelled by ADR-016 before implementation. Platform qualification follows an
 evidence-backed product boundary rather than defining one in advance.
+The committed AIFSD replacement retains separate source and packed-artifact
+qualification across every claimed client platform.
 
 ## Objective
 

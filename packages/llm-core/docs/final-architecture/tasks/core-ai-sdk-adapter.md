@@ -35,7 +35,14 @@ write_scope:
   - packages/llm-core/tests/integration/**
   - packages/llm-core/tests/interop/**
   - packages/llm-core/docs/final-architecture/tasks/core-ai-sdk-adapter.md
+required_reading:
+  - path: docs/adapters/ai-sdk.md
+    reason: "Use the qualified AI SDK boundary and its exact public caveats as implementation evidence."
+  - path: packages/llm-core/docs/final-architecture/EXTERNAL-CONTRACT-FIDELITY-IMPACT.md
+    reason: "Treat this task's loss-based wording as historical and apply the current exact-contract correction."
 read_scope:
+  - docs/adapters/ai-sdk.md
+  - packages/llm-core/docs/final-architecture/EXTERNAL-CONTRACT-FIDELITY-IMPACT.md
   - packages/llm-core/src/features/**
 review_owner: coordinator
 updated_at: 2026-07-29

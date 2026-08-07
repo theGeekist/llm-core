@@ -47,7 +47,14 @@ write_scope:
   - docs/reference/package-exports.md
   - docs/reference/specification-adapters.md
   - packages/llm-core/docs/final-architecture/tasks/adapter-ai-sdlc-release.md
+required_reading:
+  - path: context/aifsd-research/profiles/ai-sdlc.md
+    reason: "Preserve the exact resource contract and trust boundary in publication."
+  - path: docs/reference/package-exports.md
+    reason: "Use the sealed export inventory as publication evidence."
 read_scope:
+  - context/aifsd-research/profiles/ai-sdlc.md
+  - docs/reference/package-exports.md
   - packages/llm-core/src/adapters/ai-sdlc/**
   - packages/llm-core/tests/adapters/ai-sdlc/**
 review_owner: coordinator

@@ -4,8 +4,8 @@ id: applications-desktop
 title: Desktop application foundation
 stage: applications
 status: cancelled
-forward_to:
-  - aifsd/build-runtime-vertical-slice
+replaced_by:
+  - aifsd/clients-desktop-foundation
 priority: medium
 preferred_owner_kind: codex
 owner:
@@ -37,7 +37,14 @@ write_scope:
   - apps/desktop/**
   - docs/applications/desktop.md
   - packages/llm-core/docs/final-architecture/tasks/applications-desktop.md
+required_reading:
+  - path: packages/aifsd/docs/final-architecture/LLM-CORE-PARITY.md
+    reason: "Retain the cancelled desktop brief as cross-authority provenance."
+  - path: packages/aifsd/docs/final-architecture/tasks/clients-desktop-foundation.md
+    reason: "Use the committed AIFSD desktop task as current product authority."
 read_scope:
+  - packages/aifsd/docs/final-architecture/LLM-CORE-PARITY.md
+  - packages/aifsd/docs/final-architecture/tasks/clients-desktop-foundation.md
   - packages/llm-core/src/client/**
   - packages/llm-core/package.json
 review_owner: coordinator
@@ -48,6 +55,8 @@ updated_at: 2026-08-04
 
 Cancelled by ADR-016 before implementation. Desktop is a downstream product
 choice after delivery and runtime use cases are proven.
+The committed AIFSD replacement retains a distinct desktop framework, security,
+packaging and release decision.
 
 ## Objective
 

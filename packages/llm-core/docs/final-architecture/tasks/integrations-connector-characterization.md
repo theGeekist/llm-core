@@ -14,6 +14,7 @@ base_sha:
 branch:
 worktree:
 depends_on:
+  - architecture-external-contract-fidelity
   - architecture-source-layout-normalization
   - language-rollout
   - runtime-tools-front-boundary
@@ -23,11 +24,22 @@ decision_dependencies:
   - ADR-007
   - ADR-014
   - ADR-015
+  - ADR-017
 conflicts_with:
 write_scope:
   - packages/llm-core/tests/integrations/characterization/**
   - packages/llm-core/docs/final-architecture/tasks/integrations-connector-characterization.md
+required_reading:
+  - path: context/simple-chat/README.md
+    reason: "Keep scaffold-only status explicit so planned MCP behaviour is not cited as executable qualification."
+  - path: context/simple-chat/docs/protocols/mcp-adapter.md
+    reason: "Use planned MCP lifecycle and delivery distinctions as contextual evidence, not a generic connector contract."
+  - path: context/simple-chat/docs/adr/0001-a2a-canonical-protocol.md
+    reason: "Keep A2A identity and delegation outside the connector abstraction."
 read_scope:
+  - context/simple-chat/README.md
+  - context/simple-chat/docs/protocols/mcp-adapter.md
+  - context/simple-chat/docs/adr/0001-a2a-canonical-protocol.md
   - packages/llm-core/src/contracts/**
   - packages/llm-core/src/features/tooling/**
   - packages/llm-core/src/tools/**
@@ -51,7 +63,7 @@ vertical slices before freezing a shared connector contract.
 - An independently implemented executable OAuth-backed SaaS slice covering
   consent references, pagination, rate limits and webhook or polling
   reconciliation with its own task-local ports and state.
-- A field-by-field commonality, loss and reliability report.
+- A field-by-field commonality, unsupported-operation and reliability report.
 
 ## Out of scope
 

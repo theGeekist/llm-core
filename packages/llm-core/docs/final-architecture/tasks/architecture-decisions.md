@@ -21,6 +21,11 @@ write_scope:
   - packages/llm-core/docs/final-architecture/PLAN.md
   - packages/llm-core/docs/final-architecture/STATUS.md
   - packages/llm-core/docs/final-architecture/decisions/**
+required_reading:
+  - path: packages/llm-core/docs/final-architecture/PLAN.md
+    reason: "Reconstruct the completed kernel posture produced by the accepted architecture decisions."
+read_scope:
+  - packages/llm-core/docs/final-architecture/PLAN.md
 review_owner: human
 updated_at: 2026-07-29
 ---

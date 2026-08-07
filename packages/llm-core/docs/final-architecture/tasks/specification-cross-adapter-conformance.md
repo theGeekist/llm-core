@@ -14,6 +14,7 @@ base_sha:
 branch:
 worktree:
 depends_on:
+  - architecture-external-contract-fidelity
   - specification-semantic-reconciliation
   - adapter-pydantic-ai-semantic-projection
   - adapter-openspec
@@ -24,6 +25,7 @@ decision_dependencies:
   - ADR-009
   - ADR-010
   - ADR-016
+  - ADR-017
 conflicts_with: []
 write_scope:
   - packages/llm-core/tests/adapters/specification-conformance/**
@@ -39,6 +41,17 @@ write_scope:
   - packages/llm-core/src/adapters/bmad/**
   - docs/reference/specification-adapters.md
   - packages/llm-core/docs/final-architecture/tasks/specification-cross-adapter-conformance.md
+required_reading:
+  - path: packages/llm-core/docs/final-architecture/SPECIFICATIONS.md
+    reason: "Use the prior adapter support model only as historical input to exact cross-adapter proof."
+  - path: packages/llm-core/docs/internal/REUSABLE-ABSTRACTION-REVIEW.md
+    reason: "Avoid mutually green fixture islands and preserve format-specific capture caveats."
+  - path: packages/llm-core/docs/final-architecture/EXTERNAL-CONTRACT-FIDELITY-IMPACT.md
+    reason: "Treat this task's loss-based wording as historical and apply the current exact-contract correction."
+read_scope:
+  - packages/llm-core/docs/final-architecture/SPECIFICATIONS.md
+  - packages/llm-core/docs/internal/REUSABLE-ABSTRACTION-REVIEW.md
+  - packages/llm-core/docs/final-architecture/EXTERNAL-CONTRACT-FIDELITY-IMPACT.md
 review_owner: coordinator
 updated_at: 2026-08-04
 ---
@@ -58,16 +71,18 @@ islands.
 - Preserve the existing pinned native fixture suites as format-specific
   evidence.
 - Exercise at least one real `import -> reconcile -> review -> project` path,
-  initially OpenSpec to PydanticAI, with exact/degraded/rejected accounting for
-  every relevant typed kind.
-- Require each other import adapter to prove either typed promotion or an
-  explicit document-only boundary with named semantic loss.
+  initially OpenSpec to PydanticAI, with separate exact operation claims and
+  `supported`, `unsupported` or `not-applicable` dispositions for every
+  relevant typed kind.
+- Require each other import adapter to prove either exact typed promotion or an
+  explicit document-only boundary with unsupported semantic operations.
 - Remove weak ad hoc graph casts where exported contract types can make drift a
   compile-time failure.
 
 ## Out of scope
 
-- Claiming lossless conversion or native checkpoint/session interchangeability.
+- Claiming round trip or native checkpoint/session interchangeability without
+  exact executable evidence.
 - Publishing adapter fronts.
 - Making one external format the canonical model.
 
@@ -77,7 +92,11 @@ islands.
   document graph passes `loadSpecification`.
 - Cross-adapter tests use production importer output and production projector
   output, not parallel fixtures that encode the same private convention.
-- Every conversion loss is bound to a source location or canonical node.
+- Every unsupported semantic operation is bound to a source location or
+  canonical node and cannot return a narrowed success.
+- Every operation uses the closed `supported`, `unsupported` or
+  `not-applicable` disposition set, and `not-applicable` cites the exact source
+  contract and version that omits the operation or semantic dimension.
 - Publication tasks can consume this durable evidence without redefining the
   semantic claim.
 

@@ -39,7 +39,11 @@ write_scope:
   - packages/llm-core/tests/**
   - docs/reference/package-exports.md
   - packages/llm-core/docs/final-architecture/tasks/architecture-source-layout-normalization.md
+required_reading:
+  - path: packages/llm-core/docs/internal/REUSABLE-ABSTRACTION-REVIEW.md
+    reason: "Keep concept-owned seams separate from rejected generic shared abstractions during movement."
 read_scope:
+  - packages/llm-core/docs/internal/REUSABLE-ABSTRACTION-REVIEW.md
   - packages/llm-core/src/features/**
   - packages/llm-core/src/application/**
   - packages/llm-core/src/agent/**

@@ -10,13 +10,14 @@ acting. This is a role brief, not a task assignment.
 
 ## Load only what the task needs
 
-1. Read repository guidance and the selected task brief.
-2. Read only the ADRs named by that task and source/tests in its `read_scope`.
-3. Read [`COORDINATION.md`](../final-architecture/COORDINATION.md)
-   when claiming, running beside another task, delegating, reviewing or
-   integrating.
-4. Read [`ROADMAP.md`](../final-architecture/ROADMAP.md)
-   only when selecting work. `PLAN.md` is completed history.
+1. Run `bun run tasks:plan --authority all` before selecting or claiming work.
+2. Run `bun run tasks:context -- <authority>/<task-id>` for the selected task.
+3. Open every generated governing item, the selected brief, every
+   `required_reading` entry, every named ADR and every dependency brief.
+4. Use `read_scope` for additional investigation as needed. It is not a
+   substitute for the required context pack.
+5. Read `ROADMAP.md` only when selecting work. Read historical material for the
+   obligation stated in its `required_reading` reason, not as newer authority.
 
 ## Implement
 
@@ -29,7 +30,12 @@ acting. This is a role brief, not a task assignment.
 - Use the shallow owner/file layout and naming rules in `COORDINATION.md`;
   prefer descriptive prefixes to classificatory subfolders.
 - Preserve `MaybePromise`, authority checks, controlled-effect guarantees,
-  portable-data boundaries and explicit semantic loss.
+  portable-data boundaries and exact supported, unsupported or not-applicable
+  external-operation contracts.
+- Apply the current backend or frontend slice architecture skill when the task
+  touches that surface. Keep user-facing strings feature-owned, machine
+  identifiers language-neutral and runtime configuration resolved at
+  application composition.
 - Follow the 500-SLOC rule and the release/publication gates named by the task.
 - Request lifecycle transitions from the coordinator; never edit lifecycle
   state independently.

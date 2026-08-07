@@ -26,6 +26,18 @@ write_scope:
   - packages/llm-core/tests/state/**
   - packages/llm-core/tests/application/workflow/**
   - packages/llm-core/docs/final-architecture/tasks/core-state-interventions.md
+required_reading:
+  - path: docs/capabilities/state.md
+    reason: "Preserve state authority, intervention and checkpoint distinctions."
+  - path: packages/llm-core/docs/v1-agent-orchestration-wip.md
+    reason: "Avoid restoring retired kernel-owned resumability assumptions."
+    ref: 8844ac3989e497a762fa43f23fd93e40803d2174
+  - path: packages/llm-core/docs/final-architecture/EXTERNAL-CONTRACT-FIDELITY-IMPACT.md
+    reason: "Treat this task's loss-based wording as historical and apply the current exact-contract correction."
+read_scope:
+  - docs/capabilities/state.md
+  - packages/llm-core/docs/v1-agent-orchestration-wip.md
+  - packages/llm-core/docs/final-architecture/EXTERNAL-CONTRACT-FIDELITY-IMPACT.md
 review_owner: coordinator
 updated_at: 2026-07-29
 ---

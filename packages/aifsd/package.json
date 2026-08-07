@@ -3,7 +3,7 @@
   "version": "0.0.0",
   "private": true,
   "type": "module",
-  "description": "Build and Runtime SDKs for AI-first software delivery",
+  "description": "SDK for AI-first software delivery and application integration",
   "files": [
     "dist",
     "README.md"

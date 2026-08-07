@@ -4,8 +4,8 @@ id: applications-client-subpath-release
 title: Qualify and publish the shared client subpath
 stage: applications
 status: cancelled
-forward_to:
-  - aifsd/build-runtime-vertical-slice
+replaced_by:
+  - aifsd/clients-surface-publication
 priority: high
 preferred_owner_kind: coordinator
 owner:
@@ -48,7 +48,14 @@ write_scope:
   - docs/reference/package-exports.md
   - docs/applications/client.md
   - packages/llm-core/docs/final-architecture/tasks/applications-client-subpath-release.md
+required_reading:
+  - path: packages/aifsd/docs/final-architecture/LLM-CORE-PARITY.md
+    reason: "Retain the cancelled publication brief as cross-authority provenance."
+  - path: packages/aifsd/docs/final-architecture/tasks/clients-surface-publication.md
+    reason: "Use the committed AIFSD surface publication task as current product authority."
 read_scope:
+  - packages/aifsd/docs/final-architecture/LLM-CORE-PARITY.md
+  - packages/aifsd/docs/final-architecture/tasks/clients-surface-publication.md
   - apps/client-platform-qualification/**
   - packages/llm-core/src/client/**
   - packages/llm-core/tests/client/**
@@ -60,6 +67,8 @@ updated_at: 2026-08-04
 
 Cancelled by ADR-016 before implementation. No shared client subpath is
 published until unlike real consumers establish a stable contract.
+The committed AIFSD replacement chooses its package or subpath from evidence
+rather than preserving the former `@geekist/llm-core/client` proposal.
 
 ## Objective
 

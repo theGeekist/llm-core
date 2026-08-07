@@ -14,7 +14,9 @@ base_sha:
 branch:
 worktree:
 depends_on:
+  - architecture-external-contract-fidelity
   - architecture-runtime-ownership-correction
+  - runtime-operation-contract-correction
   - architecture-release-reproducibility
   - capabilities-runtime-conformance
   - capabilities-operational-evidence
@@ -22,6 +24,7 @@ decision_dependencies:
   - ADR-006
   - ADR-007
   - ADR-016
+  - ADR-017
 conflicts_with:
   - adapter-pydantic-ai-runtime
   - adapter-strands-runtime
@@ -32,6 +35,14 @@ write_scope:
   - apps/langgraph-runtime-qualification/**
   - docs/adapters/langgraph-runtime.md
   - packages/llm-core/docs/final-architecture/tasks/adapter-langgraph-runtime.md
+required_reading:
+  - path: context/aifsd-research/profiles/langgraph.md
+    reason: "Use the researched graph, reducer, interrupt and checkpoint semantics as contextual evidence."
+  - path: docs/adapters/runtime-conformance.md
+    reason: "Preserve exact portable conformance without flattening native graph state."
+read_scope:
+  - context/aifsd-research/profiles/langgraph.md
+  - docs/adapters/runtime-conformance.md
 review_owner: coordinator
 updated_at: 2026-08-04
 ---
@@ -62,7 +73,8 @@ thread semantics.
 - The adapter passes the declared runner conformance level in an isolated
   exact-version fixture.
 - Native state remains opaque and compatibility metadata is explicit.
-- Portable events, controls, evidence and semantic loss are deterministic.
+- Every supported portable operation has deterministic events, controls and
+  evidence; unsupported native operations remain explicit.
 - No local-runner fallback exists.
 
 ## Verification
@@ -81,4 +93,5 @@ Not started; the pinned version and claim metadata are added on assignment.
 ## Handoff
 
 Pending execution. Record the exact dependency closure, conformance level,
-changed files, native semantics retained, declared loss and command results.
+changed files, native contracts retained, supported and unsupported operation
+matrix and command results.

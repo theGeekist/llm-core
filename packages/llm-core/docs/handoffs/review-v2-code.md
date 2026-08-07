@@ -11,10 +11,12 @@ dedicated checkout. The reviewer does not change task state.
 
 ## Evidence to load
 
-Read the selected task, its named ADRs and the task-scoped staged and unstaged
-diff against `base_sha`. Inspect nearby source and failure-path tests. Read
-[`COORDINATION.md`](../final-architecture/COORDINATION.md)
-only when checking concurrency, review or integration procedure.
+Run `bun run tasks:plan --authority all`, then
+`bun run tasks:context -- <authority>/<task-id>`. Open every generated item,
+including every task-specific `required_reading` entry, before reading the
+task-scoped staged and unstaged diff against `base_sha`. Inspect nearby source
+and failure-path tests. `read_scope` is additional inspection authority, not a
+replacement for generated context.
 
 ## Review
 
@@ -28,8 +30,13 @@ only when checking concurrency, review or integration procedure.
   rollback, idempotency, fencing and reconciliation semantics.
 - Require controlled effects to retain policy, approval, receipt and evidence
   checks; recovery must not guess ambiguous outcomes.
-- Verify exact adapter versions, declared loss, direct dependencies and isolated
-  fixtures. Publication must leave a durable, non-skipping registered qualifier.
+- Verify exact adapter versions, supported and unsupported operation matrices,
+  direct dependencies and isolated fixtures. Publication must leave a durable,
+  non-skipping registered qualifier.
+- Apply current backend or frontend slice guidance where applicable. Check that
+  feature-owned user-facing strings remain identifiable, protocol/reason codes
+  remain language-neutral and deployment choices enter through application
+  configuration rather than hidden module literals.
 - For `./client`, Metro evidence supports only the pinned React Native/Metro
   library window—not native modules or application lifecycle behavior.
 - Enforce the 500-SLOC rule and every task-specific release/package gate.

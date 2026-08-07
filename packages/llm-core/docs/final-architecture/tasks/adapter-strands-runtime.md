@@ -14,7 +14,9 @@ base_sha:
 branch:
 worktree:
 depends_on:
+  - architecture-external-contract-fidelity
   - architecture-runtime-ownership-correction
+  - runtime-operation-contract-correction
   - architecture-source-layout-normalization
   - capabilities-operational-evidence
   - capabilities-runtime-conformance
@@ -27,6 +29,7 @@ decision_dependencies:
   - ADR-013
   - ADR-015
   - ADR-016
+  - ADR-017
 conflicts_with:
   - adapter-langgraph-runtime
   - adapter-pydantic-ai-runtime
@@ -51,7 +54,14 @@ write_scope:
   - packages/llm-core/tests/adapters/runtimes/strands/**
   - packages/llm-core/tests/conformance/strands/**
   - packages/llm-core/docs/final-architecture/tasks/adapter-strands-runtime.md
+required_reading:
+  - path: context/aifsd-research/profiles/strands-agents.md
+    reason: "Use the researched Strands TypeScript and Python semantic differences as contextual evidence."
+  - path: docs/adapters/runtime-conformance.md
+    reason: "Preserve exact portable conformance and native operation ownership."
 read_scope:
+  - context/aifsd-research/profiles/strands-agents.md
+  - docs/adapters/runtime-conformance.md
   - packages/llm-core/src/contracts/**
   - packages/llm-core/src/features/**
   - packages/llm-core/src/application/**
@@ -65,8 +75,9 @@ updated_at: 2026-08-04
 ## Objective
 
 Prove the TypeScript-neutral runner boundary against a second independently
-implemented TypeScript runtime, using exact Strands versions and explicit
-semantic loss rather than framework-shaped core contracts.
+implemented TypeScript runtime, using exact Strands versions, native operation
+ownership and explicit unsupported operations rather than framework-shaped
+core contracts.
 
 ## In scope
 
@@ -82,8 +93,9 @@ semantic loss rather than framework-shaped core contracts.
 - Conformance for model/tool events, invocation identity, cancellation,
   intervention, usage attribution, native extensions and declared state
   capabilities.
-- A compatibility report that separates supported, projected, lossy and
-  unsupported behavior, including Python-versus-TypeScript Strands differences.
+- An exact operation matrix that separates supported portable operations from
+  unsupported or Strands-native behavior, including Python-versus-TypeScript
+  Strands differences.
 
 ## Out of scope
 

@@ -20,7 +20,11 @@ depends_on: []
 decision_dependencies: []
 conflicts_with: []
 write_scope: []
+required_reading:
+  - path: packages/llm-core/docs/final-architecture/PLAN.md
+    reason: Reconstruct the completed kernel boundary this task must preserve.
 read_scope:
+  - packages/llm-core/docs/final-architecture/PLAN.md
   - packages/llm-core/src/**
 review_owner: coordinator
 updated_at: YYYY-MM-DD
@@ -33,6 +37,12 @@ only from the canonical vocabularies in [`../tasks/README.md`](../tasks/README.m
 Use `replaced_by` only for an existing local task ID or committed
 `<package-name>/<task-id>` replacement. Use `forward_to` for a planned,
 uncommitted cross-package authority in `<package-name>/<task-id>` form.
+Use `required_reading` only for exact task-specific historical, caveat or
+evidence files. Give every entry a one-line `reason`, add optional full-revision
+`ref` only when historical source identity matters, and ensure every path is
+covered by `read_scope` after configured mount aliases are resolved. If task
+discovery identifies relevant evidence outside the scope, expand the task
+metadata rather than omitting the evidence.
 
 ## Objective
 

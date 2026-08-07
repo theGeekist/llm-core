@@ -33,7 +33,14 @@ write_scope:
   - packages/llm-core/tests/application/budget/**
   - docs/capabilities/evidence.md
   - packages/llm-core/docs/final-architecture/tasks/cost-budget-control.md
+required_reading:
+  - path: packages/llm-core/docs/final-architecture/tasks/capabilities-cost-intelligence.md
+    reason: "Retain the cancelled source task as provenance for the separated budget-policy boundary."
+  - path: docs/capabilities/control.md
+    reason: "Preserve policy, cancellation and evidence distinctions in budget decisions."
 read_scope:
+  - packages/llm-core/docs/final-architecture/tasks/capabilities-cost-intelligence.md
+  - docs/capabilities/control.md
   - packages/llm-core/src/application/tool-execution/**
   - packages/llm-core/src/application/agent/**
   - packages/llm-core/src/application/workflow/**

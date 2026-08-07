@@ -36,6 +36,15 @@ write_scope:
   - packages/llm-core/src/composition/capability-bindings/**
   - packages/llm-core/tests/application/capability-bindings/**
   - packages/llm-core/docs/final-architecture/tasks/core-capability-bindings.md
+required_reading:
+  - path: docs/capabilities/bindings.md
+    reason: "Preserve the public binding, retry and authority behaviour established by this task."
+  - path: packages/llm-core/docs/v1-implementation-plan.md
+    reason: "Identify pre-v2 coupling that the capability binding boundary replaced."
+    ref: 8844ac3989e497a762fa43f23fd93e40803d2174
+read_scope:
+  - docs/capabilities/bindings.md
+  - packages/llm-core/docs/v1-implementation-plan.md
 review_owner: coordinator
 updated_at: 2026-07-30
 ---

@@ -2,6 +2,7 @@
 
 The v2 kernel is complete at `9920425`. Later qualification, integration,
 adapter and product work is independently prioritizable under ADR-015.
+ADR-017 is accepted and governs exact external-contract qualification.
 
 ## Document ownership
 
@@ -17,6 +18,8 @@ adapter and product work is independently prioritizable under ADR-015.
 - [`LANGUAGE.md`](LANGUAGE.md): completed public-language decisions.
 - [`SPECIFICATIONS.md`](SPECIFICATIONS.md): specification model and
   interoperability seams.
+- [`EXTERNAL-CONTRACT-FIDELITY-IMPACT.md`](EXTERNAL-CONTRACT-FIDELITY-IMPACT.md):
+  code and task impact for accepted ADR-017.
 
 Read only the documents needed for the current action. Planning uses ROADMAP;
 implementation/review starts from the selected task and named ADRs;

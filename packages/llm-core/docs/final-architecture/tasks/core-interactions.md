@@ -29,6 +29,18 @@ write_scope:
   - packages/llm-core/tests/application/interaction/**
   - packages/llm-core/tests/adapters/ui/**
   - packages/llm-core/docs/final-architecture/tasks/core-interactions.md
+required_reading:
+  - path: docs/adapters/ui.md
+    reason: "Preserve the stateless UI projection boundary and native lifecycle ownership."
+  - path: packages/llm-core/docs/v1-agent-orchestration-wip.md
+    reason: "Avoid restoring the retired interaction orchestration model."
+    ref: 8844ac3989e497a762fa43f23fd93e40803d2174
+  - path: packages/llm-core/docs/final-architecture/EXTERNAL-CONTRACT-FIDELITY-IMPACT.md
+    reason: "Treat this task's loss-based wording as historical and apply the current exact-contract correction."
+read_scope:
+  - docs/adapters/ui.md
+  - packages/llm-core/docs/v1-agent-orchestration-wip.md
+  - packages/llm-core/docs/final-architecture/EXTERNAL-CONTRACT-FIDELITY-IMPACT.md
 review_owner: coordinator
 updated_at: 2026-07-29
 ---

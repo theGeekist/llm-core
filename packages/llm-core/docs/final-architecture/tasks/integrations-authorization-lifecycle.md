@@ -28,7 +28,14 @@ write_scope:
   - packages/llm-core/tests/integrations/**
   - docs/capabilities/integrations.md
   - packages/llm-core/docs/final-architecture/tasks/integrations-authorization-lifecycle.md
+required_reading:
+  - path: packages/aifsd/docs/final-architecture/CONFIGURATION.md
+    reason: "Preserve composition-owned secret references and configuration diagnostics."
+  - path: packages/aifsd/docs/final-architecture/SECURITY.md
+    reason: "Preserve credential, consent and revocation boundaries across product composition."
 read_scope:
+  - packages/aifsd/docs/final-architecture/CONFIGURATION.md
+  - packages/aifsd/docs/final-architecture/SECURITY.md
   - packages/llm-core/src/contracts/**
   - packages/llm-core/src/features/control/**
   - packages/llm-core/src/features/evidence/**

@@ -32,7 +32,11 @@ write_scope:
   - docs/capabilities/evidence.md
   - docs/capabilities/model.md
   - packages/llm-core/docs/final-architecture/tasks/capabilities-operational-evidence.md
+required_reading:
+  - path: docs/capabilities/evidence.md
+    reason: "Preserve usage attribution, redaction and observability separation."
 read_scope:
+  - docs/capabilities/evidence.md
   - packages/llm-core/src/contracts/**
   - packages/llm-core/src/features/control/**
   - packages/llm-core/src/application/**

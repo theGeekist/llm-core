@@ -20,7 +20,12 @@ conflicts_with: []
 write_scope:
   - packages/llm-core/tests/architecture/**
   - packages/llm-core/docs/final-architecture/tasks/api-baseline.md
+required_reading:
+  - path: packages/llm-core/docs/v1-developer.md
+    reason: "Reconstruct the pre-v2 public surface that this baseline measured."
+    ref: 8844ac3989e497a762fa43f23fd93e40803d2174
 read_scope:
+  - packages/llm-core/docs/v1-developer.md
   - packages/llm-core/index.ts
   - packages/llm-core/package.json
   - packages/llm-core/src/**

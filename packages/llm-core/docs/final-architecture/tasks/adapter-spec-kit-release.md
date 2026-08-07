@@ -47,7 +47,14 @@ write_scope:
   - docs/reference/package-exports.md
   - docs/reference/specification-adapters.md
   - packages/llm-core/docs/final-architecture/tasks/adapter-spec-kit-release.md
+required_reading:
+  - path: context/aifsd-research/profiles/spec-kit.md
+    reason: "Preserve the exact file, CLI and workflow support boundary in publication."
+  - path: docs/reference/package-exports.md
+    reason: "Use the sealed export inventory as publication evidence."
 read_scope:
+  - context/aifsd-research/profiles/spec-kit.md
+  - docs/reference/package-exports.md
   - packages/llm-core/src/adapters/spec-kit/**
   - packages/llm-core/tests/adapters/spec-kit/**
 review_owner: coordinator

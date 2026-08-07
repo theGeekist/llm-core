@@ -67,9 +67,35 @@ Every task defines:
 
 - objective, scope and non-goals;
 - dependencies, ADRs and conflicts;
+- a non-empty ordered `required_reading` list for task-specific historical,
+  caveat and evidence material;
 - exact read/write authority;
 - acceptance criteria and verification; and
 - work log and handoff.
+
+Each `required_reading` entry has this shape:
+
+```yaml
+required_reading:
+  - path: packages/llm-core/docs/final-architecture/PLAN.md
+    reason: Reconstruct the completed kernel boundary this task must preserve.
+    ref: 8844ac3989e497a762fa43f23fd93e40803d2174
+```
+
+`path` is an exact existing file, never a glob, directory or URL. `reason` is a
+one-line obligation explaining why the agent must open it. `ref` is optional
+and, when present, is a full 40-character Git revision used only when the
+historical source version matters. Every entry must be covered by `read_scope`
+after configured mount aliases are resolved. A broader scope grants inspection
+authority but does not generate or replace contextual reading. When relevant
+evidence is found outside the declared scope, amend both fields rather than
+discarding the evidence.
+
+The governing baseline, selected task, named ADRs and dependency briefs are
+supplied separately by `tasks:context` and must not be repeated merely to pad
+`required_reading`. Completed and cancelled tasks retain the field for audit
+and reconstruction. Historical loss wording remains provenance only and must
+be paired with current correction material when it could otherwise mislead.
 
 Task-specific text wins over summaries elsewhere. Common execution, 500-SLOC,
 review, release and publication rules are not repeated here; follow

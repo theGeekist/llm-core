@@ -14,10 +14,12 @@ base_sha:
 branch:
 worktree:
 depends_on:
+  - specification-exact-operation-contracts
   - specification-semantic-path-characterization
 decision_dependencies:
   - ADR-009
   - ADR-016
+  - ADR-017
 conflicts_with: []
 write_scope:
   - packages/llm-core/src/features/specifications/**
@@ -28,6 +30,14 @@ write_scope:
   - packages/llm-core/docs/final-architecture/SPECIFICATIONS.md
   - packages/llm-core/docs/final-architecture/decisions/**
   - packages/llm-core/docs/final-architecture/tasks/specification-semantic-reconciliation.md
+required_reading:
+  - path: packages/llm-core/docs/final-architecture/SPECIFICATIONS.md
+    reason: "Preserve source ownership, accepted scope and typed semantic-waist authority."
+  - path: packages/aifsd/docs/final-architecture/CONFIGURATION.md
+    reason: "Separate portable intent from integration and runtime configuration sources."
+read_scope:
+  - packages/llm-core/docs/final-architecture/SPECIFICATIONS.md
+  - packages/aifsd/docs/final-architecture/CONFIGURATION.md
 review_owner: human
 updated_at: 2026-08-04
 ---
@@ -54,8 +64,9 @@ implemented reconciliation stage promotes them into the typed semantic waist.
   typed intent or explicit target bindings.
 - Separate observational document support from typed semantic-waist support in
   adapter conformance claims.
-- Reconcile native document nodes into typed intent with explicit provenance and
-  conversion loss; never guess unsupported meaning.
+- Reconcile native document nodes into typed intent with explicit provenance;
+  reject unsupported requested semantics rather than guessing or degrading
+  them.
 - Require accepted scopes to close over typed semantic references or name an
   explicit external reference contract.
 - Validate workflow-step dependency cycles and align readonly portable types

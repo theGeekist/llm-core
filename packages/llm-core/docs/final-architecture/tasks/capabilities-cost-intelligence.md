@@ -40,7 +40,11 @@ write_scope:
   - docs/capabilities/model.md
   - docs/capabilities/evaluation.md
   - packages/llm-core/docs/final-architecture/tasks/capabilities-cost-intelligence.md
+required_reading:
+  - path: docs/capabilities/evidence.md
+    reason: "Retain the cancelled task's observed-usage and cost-evidence boundary as source provenance."
 read_scope:
+  - docs/capabilities/evidence.md
   - packages/llm-core/src/contracts/**
   - packages/llm-core/src/features/control/**
 review_owner: coordinator

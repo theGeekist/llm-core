@@ -9,11 +9,12 @@ owns programme grouping, admission and priority advice.
 Work is selected one candidate at a time with no preset serial or parallel
 preference. Before claiming, the coordinator:
 
-1. verifies dependencies and decision gates;
-2. inspects `git status` and every active task;
-3. compares conflicts, write scopes, generated outputs and staging paths;
-4. records whether the candidate starts alongside current work or waits; and
-5. assigns one primary owner, lease, base SHA and execution location.
+1. runs `bun run tasks:plan --authority all`;
+2. verifies dependencies and decision gates;
+3. inspects `git status` and every active task;
+4. compares conflicts, write scopes, generated outputs and staging paths;
+5. records whether the candidate starts alongside current work or waits; and
+6. assigns one primary owner, lease, base SHA and execution location.
 
 DAG readiness alone does not authorize a claim. Overlap is serialized or
 repartitioned; a separate checkout never cures shared ownership.
@@ -23,6 +24,18 @@ The coordinator owns every lifecycle transition and is the only writer of
 logical edit. Workers request `in_progress`, `review` or `blocked`; they never
 change lifecycle fields themselves. The required metadata and work-log labels
 are defined in [`tasks/README.md`](tasks/README.md).
+
+After selection, the primary owner runs
+`bun run tasks:context -- <authority>/<task-id>` and opens every generated
+item before implementation or review. Governing reading, the selected brief,
+task-specific `required_reading`, named ADRs and dependency briefs are separate
+obligations. `read_scope` grants additional inspection authority and does not
+mean every matching file must be opened.
+
+Historical material can retain superseded language as provenance. Its
+`required_reading` reason must identify that role and pair obsolete loss-based
+support wording with the current correction material rather than reviving it
+as implementation authority.
 
 ## Execution boundaries
 
@@ -88,6 +101,21 @@ file splitting.
 Architecture tests enforce the mechanically decidable subset. A justified
 exception is recorded in the owning task rather than normalized into a broader
 rule.
+
+## Internationalisation and configuration
+
+- When a feature or adapter is introduced or materially changed, identify its
+  runtime configuration requirements in the task and resolve them at
+  application composition.
+- Feature-owned user-facing strings stay identifiable at their originating
+  feature. Application or delivery code composes locale behaviour and renders
+  structured reason codes, fields and paths into prose.
+- Protocol values, serialized identifiers, error codes and evidence records
+  remain language-neutral. Dates, numbers and currencies remain portable facts
+  until a locale-aware delivery surface formats them.
+- Do not hide provider selection, versions, endpoints, credentials, policy or
+  operational thresholds in module literals when they are deployment or
+  composition choices.
 
 ## Review and completion
 

@@ -26,3 +26,18 @@ test("SLOC excludes the optional AIFSD private documentation mount exactly", () 
     rmSync(external, { recursive: true, force: true });
   }
 });
+
+test("SLOC excludes ignored external context mounts exactly", () => {
+  const root = mkdtempSync(join(tmpdir(), "llm-core-sloc-context-"));
+  const external = mkdtempSync(join(tmpdir(), "external-context-"));
+  try {
+    mkdirSync(join(root, "context"), { recursive: true });
+    writeFileSync(join(external, "implementation.ts"), "implementation\n".repeat(501));
+    symlinkSync(external, join(root, "context/simple-chat"));
+
+    expect(checkSloc(root, baseline, { expectedLegacyEntries: {} }).errors).toEqual([]);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+    rmSync(external, { recursive: true, force: true });
+  }
+});

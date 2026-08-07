@@ -23,7 +23,15 @@ conflicts_with: []
 write_scope:
   - packages/llm-core/docs/final-architecture/LANGUAGE.md
   - packages/llm-core/docs/final-architecture/tasks/language-audit.md
+required_reading:
+  - path: docs/reference/vocabulary.md
+    reason: "Use the public vocabulary evidence produced from the audit findings."
+  - path: packages/llm-core/docs/v1-developer.md
+    reason: "Identify internal lifecycle language that escaped into the pre-v2 public surface."
+    ref: 8844ac3989e497a762fa43f23fd93e40803d2174
 read_scope:
+  - docs/reference/vocabulary.md
+  - packages/llm-core/docs/v1-developer.md
   - packages/llm-core/src/**
   - packages/llm-core/tests/**
   - packages/llm-core/README.md

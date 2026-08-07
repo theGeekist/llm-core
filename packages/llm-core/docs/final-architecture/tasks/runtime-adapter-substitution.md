@@ -14,17 +14,28 @@ base_sha:
 branch:
 worktree:
 depends_on:
+  - architecture-external-contract-fidelity
+  - runtime-operation-contract-correction
   - adapter-langgraph-runtime
   - adapter-pydantic-ai-runtime
 decision_dependencies:
   - ADR-006
   - ADR-007
   - ADR-016
+  - ADR-017
 conflicts_with: []
 write_scope:
   - apps/runtime-adapter-substitution/**
   - docs/reference/runtime-substitution.md
   - packages/llm-core/docs/final-architecture/tasks/runtime-adapter-substitution.md
+required_reading:
+  - path: docs/adapters/runtime-conformance.md
+    reason: "Compare only the exact portable operation set demonstrated by both runtime fixtures."
+  - path: packages/llm-core/docs/final-architecture/EXTERNAL-CONTRACT-FIDELITY-IMPACT.md
+    reason: "Do not revive loss-based or projected substitution claims."
+read_scope:
+  - docs/adapters/runtime-conformance.md
+  - packages/llm-core/docs/final-architecture/EXTERNAL-CONTRACT-FIDELITY-IMPACT.md
 review_owner: human
 updated_at: 2026-08-04
 ---
@@ -34,14 +45,16 @@ updated_at: 2026-08-04
 ## Objective
 
 Run one portable intent through qualified LangGraph and PydanticAI integrations
-and compare portable outcomes, controls, evidence and declared semantic loss.
+and compare only the exact portable operations, controls and evidence supported
+by both.
 
 ## In scope
 
 - Define one fixed portable intent and expected comparison dimensions.
 - Execute it through the accepted LangGraph and PydanticAI qualification
   fixtures by changing only explicit adapter construction.
-- Publish deterministic outcome, capability, evidence and loss comparisons.
+- Publish deterministic outcome, capability and evidence comparisons for the
+  common exact operation set.
 
 ## Out of scope
 
@@ -53,8 +66,8 @@ and compare portable outcomes, controls, evidence and declared semantic loss.
 
 - The demonstration changes only the explicit adapter construction.
 - Native sessions and checkpoints are not exchanged or described as portable.
-- Differences are reported as capabilities and loss rather than normalized
-  away.
+- Native differences remain owned by each runtime and are never normalized into
+  a false portability claim.
 - The local runner is absent from the demonstration.
 
 ## Verification

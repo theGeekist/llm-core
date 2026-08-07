@@ -3,7 +3,7 @@ architecture_version: 2
 id: architecture-runtime-ownership-correction
 title: Correct runtime ownership and mark v1 architecture
 stage: architecture
-status: review
+status: done
 priority: critical
 preferred_owner_kind: coordinator
 owner: architecture-coordinator
@@ -57,6 +57,18 @@ write_scope:
   - scripts/sloc-baseline.json
   - scripts/qualify-release.ts
   - tsconfig.json
+required_reading:
+  - path: packages/llm-core/docs/final-architecture/LANGUAGE.md
+    reason: "Preserve the corrected distinction between portable intent and integration-owned execution."
+  - path: packages/llm-core/docs/v1-implementation-plan.md
+    reason: "Identify the retired runtime ownership assumptions that must remain historical only."
+    ref: 8844ac3989e497a762fa43f23fd93e40803d2174
+  - path: packages/llm-core/docs/final-architecture/EXTERNAL-CONTRACT-FIDELITY-IMPACT.md
+    reason: "Treat this task's loss-based wording as historical and apply the current exact-contract correction."
+read_scope:
+  - packages/llm-core/docs/final-architecture/LANGUAGE.md
+  - packages/llm-core/docs/v1-implementation-plan.md
+  - packages/llm-core/docs/final-architecture/EXTERNAL-CONTRACT-FIDELITY-IMPACT.md
 review_owner: human
 updated_at: 2026-08-04
 ---
@@ -165,7 +177,7 @@ Codex/architecture-coordinator -> Codex/Planck: tooling review.
   the package architecture, strengthened relative-link verification, removed
   lifecycle state from ROADMAP prose, and retired the duplicate llm-core AIFSD
   product tasks with a planned forward target at
-  `aifsd/build-runtime-vertical-slice`, without claiming committed replacement
+  `aifsd/local-delivery-vertical-slice`, without claiming committed replacement
   authority.
 - 2026-08-04 — Review fixes qualified cross-package governance references and
   made documentation and SLOC validation package-aware across repository gates.
@@ -218,7 +230,7 @@ None. `packages/aifsd/**` and `bun.lock` remained outside this task's changes.
 
 ### Remaining risks
 
-Only human approval remains; the temporary test waivers are owned by
+The temporary test waivers are owned by
 `architecture-test-sloc-decomposition`.
 
 ### Recommended next task

@@ -41,8 +41,8 @@ decisions, task briefs and status.
   runtime, package front or common application journey.
 - Public language expresses portable intent without implying that the kernel
   owns agent, workflow or conversation execution.
-- Specifications use a typed semantic graph, explicit preservation/loss
-  reports, application-owned admission and authority snapshots.
+- Specifications use a typed semantic graph, exact operation dispositions,
+  application-owned admission and authority snapshots.
 - Pipeline supplies domain-agnostic composition; `llm-core` owns specification
   meaning, authority and durable state.
 

@@ -8,6 +8,7 @@ node_modules/
 !.agent/rules/**
 .worktrees/
 coverage/
+/context/
 # llm-core/
 pipeline
 pipeline/

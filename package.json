@@ -28,6 +28,8 @@
     "docs:preview": "bunx vitepress preview docs",
     "docs:check": "bun run scripts/check-docs.ts && bun run docs:snippets:typecheck",
     "docs:snippets:typecheck": "bun tsc -p docs/snippets/tsconfig.json --noEmit",
+    "tasks:context": "bun run scripts/plan-architecture-tasks.ts --context",
+    "tasks:plan": "bun run scripts/plan-architecture-tasks.ts",
     "typecheck:examples": "bun tsc -p examples/agentic/client/tsconfig.json --noEmit && bun tsc -p examples/agentic/server/tsconfig.json --noEmit && bun tsc -p examples/kitchen-sink/client/tsconfig.json --noEmit && bun tsc -p examples/kitchen-sink/server/tsconfig.json --noEmit",
     "typecheck:tests": "bun run --cwd packages/strict-json typecheck:tests && bun run --cwd packages/llm-core typecheck:tests",
     "check:sloc": "bun run scripts/check-sloc.ts",
@@ -38,6 +40,7 @@
   },
   "devDependencies": {
     "@playwright/test": "1.57.0",
+    "@wpkernel/pipeline": "1.2.1",
     "prettier": "3.3.3",
     "eslint": "8.57.0",
     "eslint-config-prettier": "9.1.0",

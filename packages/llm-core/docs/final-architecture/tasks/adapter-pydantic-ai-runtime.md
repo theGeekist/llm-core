@@ -14,7 +14,9 @@ base_sha:
 branch:
 worktree:
 depends_on:
+  - architecture-external-contract-fidelity
   - architecture-runtime-ownership-correction
+  - runtime-operation-contract-correction
   - architecture-release-reproducibility
   - capabilities-runtime-conformance
   - capabilities-operational-evidence
@@ -22,6 +24,7 @@ decision_dependencies:
   - ADR-006
   - ADR-007
   - ADR-016
+  - ADR-017
 conflicts_with:
   - adapter-langgraph-runtime
   - adapter-strands-runtime
@@ -32,6 +35,14 @@ write_scope:
   - apps/pydantic-ai-runtime-qualification/**
   - docs/adapters/pydantic-ai-runtime.md
   - packages/llm-core/docs/final-architecture/tasks/adapter-pydantic-ai-runtime.md
+required_reading:
+  - path: context/aifsd-research/profiles/pydantic-ai.md
+    reason: "Use the researched Python runtime and version boundary as contextual evidence."
+  - path: packages/llm-core/docs/internal/REUSABLE-ABSTRACTION-REVIEW.md
+    reason: "Apply the A06 stdio lifecycle caveat before reusing the existing transport."
+read_scope:
+  - context/aifsd-research/profiles/pydantic-ai.md
+  - packages/llm-core/docs/internal/REUSABLE-ABSTRACTION-REVIEW.md
 review_owner: coordinator
 updated_at: 2026-08-04
 ---
@@ -60,8 +71,8 @@ PydanticAI specification adapter.
 ## Acceptance criteria
 
 - Transport, process ownership, cancellation and failure semantics are explicit.
-- Native PydanticAI messages, usage and state remain native references where
-  portable projection would lose meaning.
+- Native PydanticAI messages, usage and state remain native references unless
+  an exact portable operation is separately proved.
 - The adapter passes the same declared runner conformance level as the first
   TypeScript runtime adapter.
 - No local-runner fallback exists.
@@ -86,4 +97,5 @@ added on assignment.
 ## Handoff
 
 Pending execution. Record the dependency closure, transport and lifecycle
-contract, conformance level, changed files, declared loss and command results.
+contract, conformance level, changed files, supported and unsupported operation
+matrix and command results.

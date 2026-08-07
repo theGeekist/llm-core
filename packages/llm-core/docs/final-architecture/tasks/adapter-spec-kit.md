@@ -23,9 +23,18 @@ write_scope:
   - packages/llm-core/src/adapters/spec-kit/**
   - packages/llm-core/tests/adapters/spec-kit/**
   - packages/llm-core/docs/final-architecture/tasks/adapter-spec-kit.md
+required_reading:
+  - path: context/aifsd-research/profiles/spec-kit.md
+    reason: "Use the researched file, CLI, overlay and workflow semantics as source-format evidence."
+  - path: packages/llm-core/docs/final-architecture/SPECIFICATIONS.md
+    reason: "Preserve workflow-program and source-authority distinctions while treating loss support as historical."
+  - path: packages/llm-core/docs/final-architecture/EXTERNAL-CONTRACT-FIDELITY-IMPACT.md
+    reason: "Treat this task's loss-based wording as historical and apply the current exact-contract correction."
 read_scope:
+  - context/aifsd-research/profiles/spec-kit.md
+  - packages/llm-core/docs/final-architecture/SPECIFICATIONS.md
+  - packages/llm-core/docs/final-architecture/EXTERNAL-CONTRACT-FIDELITY-IMPACT.md
   - packages/llm-core/src/specifications/**
-  - /Users/jasonnathan/Repos/aifsd-agent-framework-research/profiles/spec-kit.md
 review_owner: coordinator
 updated_at: 2026-08-02
 ---

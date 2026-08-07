@@ -31,7 +31,14 @@ write_scope:
   - docs/**
   - examples/**
   - packages/llm-core/docs/final-architecture/tasks/language-rollout.md
+required_reading:
+  - path: packages/llm-core/docs/final-architecture/LANGUAGE.md
+    reason: "Preserve the corrected public language while keeping runnable facade history superseded."
+  - path: docs/reference/migration-2.md
+    reason: "Use the migration map as rollout evidence rather than compatibility authority."
 read_scope:
+  - packages/llm-core/docs/final-architecture/LANGUAGE.md
+  - docs/reference/migration-2.md
   - packages/llm-core/**
   - docs/**
 review_owner: coordinator

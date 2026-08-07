@@ -30,6 +30,15 @@ write_scope:
   - packages/llm-core/src/contracts/**
   - packages/llm-core/tests/contracts/**
   - packages/llm-core/docs/final-architecture/tasks/core-contracts.md
+required_reading:
+  - path: docs/capabilities/contracts.md
+    reason: "Preserve the narrow-waist contract evidence and portable-data boundary."
+  - path: packages/llm-core/docs/v1-implementation-plan.md
+    reason: "Reconstruct the broad pre-v2 surface that the narrow waist replaced."
+    ref: 8844ac3989e497a762fa43f23fd93e40803d2174
+read_scope:
+  - docs/capabilities/contracts.md
+  - packages/llm-core/docs/v1-implementation-plan.md
 review_owner: coordinator
 updated_at: 2026-07-29
 ---

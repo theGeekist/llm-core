@@ -14,7 +14,9 @@ base_sha:
 branch:
 worktree:
 depends_on:
+  - architecture-external-contract-fidelity
   - architecture-runtime-ownership-correction
+  - runtime-operation-contract-correction
   - architecture-source-layout-normalization
   - adapter-strands-runtime
 decision_dependencies:
@@ -22,6 +24,7 @@ decision_dependencies:
   - ADR-013
   - ADR-015
   - ADR-016
+  - ADR-017
 conflicts_with:
   - adapter-openspec-release
   - adapter-pydantic-ai-release
@@ -50,7 +53,14 @@ write_scope:
   - docs/reference/package-exports.md
   - docs/adapters/runtime-conformance.md
   - packages/llm-core/docs/final-architecture/tasks/adapter-strands-runtime-release.md
+required_reading:
+  - path: context/aifsd-research/profiles/strands-agents.md
+    reason: "Preserve the exact researched SDK and platform boundary in the support declaration."
+  - path: docs/reference/package-exports.md
+    reason: "Use the sealed export surface as publication evidence."
 read_scope:
+  - context/aifsd-research/profiles/strands-agents.md
+  - docs/reference/package-exports.md
   - packages/llm-core/src/adapters/runtimes/strands/**
   - packages/llm-core/tests/adapters/runtimes/strands/**
   - packages/llm-core/tests/conformance/strands/**
@@ -70,7 +80,8 @@ support declarations and documentation make its exact boundary truthful.
 - Package, build, declaration and source-resolution entries.
 - Updated public-surface and package-smoke expectations.
 - Public support documentation naming the exact qualified Strands release,
-  native boundary, known loss, Python/TypeScript scope and durability posture.
+  native boundary, exact operation matrix, Python/TypeScript scope and
+  durability posture.
 - A support declaration naming the maintenance owner, the exact upstream
   version and package-release window supported, and the deprecation policy.
 - An explicit dependency posture for `@strands-agents/sdk` (peer, optional peer
@@ -92,8 +103,8 @@ support declarations and documentation make its exact boundary truthful.
   asserts its resolved version and exercises the native boundary without using
   a workspace or transitive-root copy.
 - Documentation names the maintenance owner, exact supported Strands version
-  and package-release window, support level, known loss, Python/TypeScript
-  scope, durability posture and deprecation policy.
+  and package-release window, supported and unsupported operations,
+  Python/TypeScript scope, durability posture and deprecation policy.
 - Publication commits the project to supporting the declared exact version for
   that window. Support for later Strands versions remains demand-led and
   requires new qualification evidence.

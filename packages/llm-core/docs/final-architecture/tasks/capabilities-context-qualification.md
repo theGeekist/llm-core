@@ -26,7 +26,14 @@ write_scope:
   - packages/llm-core/tests/context/**
   - docs/capabilities/context.md
   - packages/llm-core/docs/final-architecture/tasks/capabilities-context-qualification.md
+required_reading:
+  - path: docs/capabilities/context.md
+    reason: "Use the public context eligibility and compilation boundary as qualification evidence."
+  - path: packages/llm-core/docs/final-architecture/EXTERNAL-CONTRACT-FIDELITY-IMPACT.md
+    reason: "Treat this task's loss-based wording as historical and apply the current exact-contract correction."
 read_scope:
+  - docs/capabilities/context.md
+  - packages/llm-core/docs/final-architecture/EXTERNAL-CONTRACT-FIDELITY-IMPACT.md
   - packages/llm-core/src/contracts/**
   - packages/llm-core/src/features/artifacts/**
   - packages/llm-core/src/features/evidence/**

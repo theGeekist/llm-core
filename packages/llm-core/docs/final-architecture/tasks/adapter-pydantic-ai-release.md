@@ -50,7 +50,14 @@ write_scope:
   - docs/reference/package-exports.md
   - docs/reference/specification-adapters.md
   - packages/llm-core/docs/final-architecture/tasks/adapter-pydantic-ai-release.md
+required_reading:
+  - path: context/aifsd-research/profiles/pydantic-ai.md
+    reason: "Preserve the exact AgentSpec and Python qualification boundary in publication."
+  - path: docs/reference/package-exports.md
+    reason: "Use the sealed export inventory as publication evidence."
 read_scope:
+  - context/aifsd-research/profiles/pydantic-ai.md
+  - docs/reference/package-exports.md
   - packages/llm-core/src/adapters/pydantic-ai-spec/**
   - packages/llm-core/tests/adapters/pydantic-ai-spec/**
 review_owner: coordinator

@@ -42,7 +42,11 @@ write_scope:
   - packages/llm-core/tests/architecture/**
   - packages/llm-core/docs/final-architecture/STATUS.md
   - packages/llm-core/docs/final-architecture/tasks/architecture-status-validation.md
+required_reading:
+  - path: packages/llm-core/docs/final-architecture/STATUS.md
+    reason: "Use the current generated projection as the byte-for-byte validation target."
 read_scope:
+  - packages/llm-core/docs/final-architecture/STATUS.md
   - packages/llm-core/docs/final-architecture/tasks/**
   - packages/llm-core/docs/final-architecture/decisions/**
   - packages/llm-core/docs/final-architecture/templates/task.md
@@ -72,6 +76,13 @@ matter.
 - Validate task IDs against filenames, allowed lifecycle/stage/priority/owner
   vocabularies defined in `tasks/README.md`, accepted decision dependencies,
   self-dependencies and self-conflicts.
+- Validate every task has a non-empty ordered `required_reading` list whose
+  entries contain only `path`, `reason` and optional `ref`; paths name exact
+  configured local files, reasons are non-empty, refs are full Git revisions,
+  duplicates are rejected and each exact path is declared in `read_scope`.
+- Resolve current and revision-pinned reading through the same configured
+  repository aliases as `tasks:context`; reject missing current files and refs
+  that do not contain the named historical file.
 - Validate every `replaced_by` entry as either an existing local task ID or an
   existing `<package-name>/<task-id>` replacement in committed package
   authority. Validate `forward_to` only as an exact package-qualified reference
@@ -99,8 +110,10 @@ matter.
   malformed active leases, incomplete concurrency/execution-mode evidence,
   filename/ID mismatch, self-edges, unknown local replacements, unqualified
   foreign replacements, nonexistent committed replacements, malformed
-  package-qualified replacement/forward metadata, conflicting
-  `replaced_by`/`forward_to` values and active write-scope collisions.
+  package-qualified replacement/forward metadata, missing or malformed
+  required reading, nonexistent current or revision-pinned reading, reading
+  outside exact read authority, conflicting `replaced_by`/`forward_to` values
+  and active write-scope collisions.
 - The check is read-only and deterministic.
 - The package release gate and repository documentation gate both run the
   check.

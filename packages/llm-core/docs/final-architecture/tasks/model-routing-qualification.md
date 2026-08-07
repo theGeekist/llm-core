@@ -31,7 +31,17 @@ write_scope:
   - packages/llm-core/tests/evaluation/**
   - packages/llm-core/tests/application/model-routing/**
   - packages/llm-core/docs/final-architecture/tasks/model-routing-qualification.md
+required_reading:
+  - path: packages/llm-core/docs/final-architecture/tasks/capabilities-cost-intelligence.md
+    reason: "Retain the cancelled source task as provenance for advisory routing ownership."
+  - path: docs/capabilities/model.md
+    reason: "Preserve capability and provider-profile gates before routing recommendations."
+  - path: docs/capabilities/evaluation.md
+    reason: "Preserve held-out evaluation provenance and promotion separation."
 read_scope:
+  - packages/llm-core/docs/final-architecture/tasks/capabilities-cost-intelligence.md
+  - docs/capabilities/model.md
+  - docs/capabilities/evaluation.md
   - packages/llm-core/src/features/evidence/**
 review_owner: coordinator
 updated_at: 2026-08-02

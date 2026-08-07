@@ -23,9 +23,15 @@ write_scope:
   - packages/llm-core/src/adapters/bmad/**
   - packages/llm-core/tests/adapters/bmad/**
   - packages/llm-core/docs/final-architecture/tasks/adapter-bmad.md
+required_reading:
+  - path: context/aifsd-research/profiles/bmad-method.md
+    reason: "Use the researched BMAD artifact, status and append-only record semantics as evidence."
+  - path: packages/llm-core/docs/final-architecture/SPECIFICATIONS.md
+    reason: "Preserve stable source identity and lifecycle distinctions while treating loss support as historical."
 read_scope:
+  - context/aifsd-research/profiles/bmad-method.md
+  - packages/llm-core/docs/final-architecture/SPECIFICATIONS.md
   - packages/llm-core/src/specifications/**
-  - /Users/jasonnathan/Repos/aifsd-agent-framework-research/profiles/bmad-method.md
 review_owner: coordinator
 updated_at: 2026-08-02
 ---

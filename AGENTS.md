@@ -61,6 +61,45 @@
   explicitly. Root convenience commands may aggregate packages, but must not
   obscure which package owns the underlying material.
 
+## Task context
+
+- Before selecting or claiming architecture work, run
+  `bun run tasks:plan --authority all` from the canonical checkout.
+- After selecting a task, run
+  `bun run tasks:context -- <authority>/<task-id>` and open every generated
+  governing, historical, decision and dependency item before implementation or
+  review. A generated context pack is an index, not evidence that its files
+  were read.
+- `required_reading` is an ordered task-specific obligation for historical,
+  caveat and evidence material. `read_scope` is additional inspection
+  authority, not a substitute for required reading.
+- External repositories required by tasks are exposed through ignored local
+  symlinks under `context/`, currently `context/aifsd-research` and
+  `context/simple-chat`. Tasks reference those mounted paths. If a required
+  mount is unavailable, restore or configure it; never drop the context or
+  narrow `required_reading` merely to satisfy the current `read_scope`.
+- Apply the current backend or frontend slice architecture skill whenever the
+  selected work touches that surface. Skills guide the work but are not
+  repository architecture authority and must not be listed in task
+  `required_reading`.
+
+## Internationalisation and configuration cadence
+
+- Treat internationalisation and runtime configuration as normal concerns when
+  a feature, application surface or adapter is introduced or materially
+  changed, even when there is currently one locale or one deployment profile.
+- Keep user-facing strings identifiable and owned by the feature that
+  introduces them. Keep machine identifiers, protocol values, reason codes and
+  serialized contracts language-neutral; render prose at the delivery edge.
+- Resolve locale and configuration sources at application composition. Provide
+  features and adapters with explicit values rather than reading process or
+  host state from domain code.
+- Record new configuration requirements in the owning task and documentation
+  when the feature is touched. Prefer portable primitives where practical,
+  without turning one library family into package doctrine.
+- Keep locale-sensitive presentation such as dates, numbers, currencies and
+  lists outside portable facts and protocol records.
+
 ## Compatibility policy
 
 - The project is pre-user and pre-compatibility. Optimize for the final coherent design rather than preserving legacy APIs, overloads, aliases, deprecated paths, serialized shapes, or behaviors from earlier versions.

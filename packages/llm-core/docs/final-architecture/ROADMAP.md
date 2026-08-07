@@ -5,6 +5,21 @@ Role: programme grouping and priority advice; task front matter owns lifecycle s
 Kernel baseline: `9920425`
 Boundary correction: ADR-016
 Decision authority: [ADR-013](decisions/ADR-013-operational-qualification-boundaries.md), [ADR-015](decisions/ADR-015-kernel-completion-programme-boundaries.md), [ADR-016](decisions/ADR-016-integration-owned-execution.md)
+Fidelity correction: [ADR-017](decisions/ADR-017-external-contract-fidelity.md)
+
+ADR-017 correction proceeds before new adapter publication:
+
+```text
+architecture-external-contract-fidelity
+  |   freezes architecture and correction ownership
+  +-> adapter-ai-sdk-native-contract-correction
+  +-> specification-exact-operation-contracts
+  +-> runtime-operation-contract-correction
+  +-> future protocol and runtime qualification
+```
+
+The exact current implementation impact is recorded in
+[`EXTERNAL-CONTRACT-FIDELITY-IMPACT.md`](EXTERNAL-CONTRACT-FIDELITY-IMPACT.md).
 
 `llm-core` is the portable contract, conformance, authority and evidence kernel
 joining two complete use cases: AI-first software delivery and agentic behavior
@@ -24,7 +39,7 @@ Runtime support additionally requires:
 
 - a concrete external runtime and exact upstream version;
 - an adapter implementing `AgentRunner` without flattening native state;
-- capability and information-loss reporting;
+- an exact `supported`, `unsupported` and `not-applicable` operation matrix;
 - isolated conformance evidence; and
 - a maintenance owner and support window before publication.
 
@@ -77,6 +92,7 @@ host or integration concerns.
 capabilities-runtime-conformance
 + capabilities-operational-evidence
 + architecture-release-reproducibility
++ runtime-operation-contract-correction
   -> adapter-langgraph-runtime
   -> adapter-pydantic-ai-runtime
   -> adapter-strands-runtime
@@ -91,8 +107,9 @@ is the first Python typed-runtime target and tests subprocess/sidecar or remote
 integration. Strands remains an independently qualified runtime candidate.
 
 `runtime-adapter-substitution` must run the same portable intent through two
-unlike runtimes, compare normalized evidence and report semantic loss. It must
-not claim checkpoint or native-session interchangeability.
+unlike runtimes and compare the exact portable operation and normalized
+evidence. It must not claim checkpoint, native-session or unsupported-operation
+interchangeability.
 
 Other runtimes—OpenAI Agents, Claude Agent SDK, OpenHands, Microsoft Agent
 Framework, ADK, Mastra and others—are demand-led additions through the same
@@ -118,11 +135,11 @@ owner, deprecation policy and durable registered qualifier.
 
 ## AIFSD product boundary
 
-A planned dedicated AIFSD package is intended to own delivery-product
-characterization, SDK/CLI shape, templates, clients, and product orchestration
-once its authority is committed. `llm-core` supplies portable specifications,
-evaluation, evidence, control contracts, and qualified integration boundaries
-that the future product may consume.
+The committed private AIFSD product authority owns delivery-product
+characterization, SDK/CLI shape, templates, clients and product orchestration;
+the public implementation workspace is `@aifsd/sdk`. `llm-core` supplies
+portable specifications, evaluation, evidence, control contracts and qualified
+integration boundaries that the product may consume.
 
 The product programme must still prove one complete governed change:
 
@@ -140,10 +157,9 @@ The resulting SDK, CLI, or application composes `llm-core`; it is not exported
 as a kernel runtime. Codex, Claude Agent SDK, and OpenHands are delivery/runtime
 integration candidates, not behavior reimplemented in the kernel.
 
-The planned AIFSD delivery programme and llm-core runtime-adapter substitution
-remain independent. Until the AIFSD task authority is committed, llm-core
-cancelled briefs record only a forward target rather than a replacement or
-cross-package prerequisite.
+The AIFSD delivery programme and llm-core runtime-adapter substitution remain
+independent. Cancelled llm-core product briefs now name committed AIFSD
+replacement tasks while remaining as public historical provenance.
 
 ## Connectors and operating services
 
@@ -156,6 +172,7 @@ runtime-tools-front-boundary
 runtime-receipt-reconciliation
 + capabilities-operational-evidence
 + integrations-authorization-lifecycle
++ runtime-operation-contract-correction
   -> adapters-protocol-qualification
 ```
 

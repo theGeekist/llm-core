@@ -35,6 +35,18 @@ write_scope:
   - packages/llm-core/tests/retrieval/**
   - packages/llm-core/tests/indexing/**
   - packages/llm-core/docs/final-architecture/tasks/core-knowledge.md
+required_reading:
+  - path: docs/capabilities/retrieval-indexing.md
+    reason: "Preserve retrieval identity, filter and indexing evidence from the implemented slice."
+  - path: packages/llm-core/docs/v1-implementation-plan.md
+    reason: "Identify pre-v2 knowledge coupling that the feature front replaced."
+    ref: 8844ac3989e497a762fa43f23fd93e40803d2174
+  - path: packages/llm-core/docs/final-architecture/EXTERNAL-CONTRACT-FIDELITY-IMPACT.md
+    reason: "Treat this task's loss-based wording as historical and apply the current exact-contract correction."
+read_scope:
+  - docs/capabilities/retrieval-indexing.md
+  - packages/llm-core/docs/v1-implementation-plan.md
+  - packages/llm-core/docs/final-architecture/EXTERNAL-CONTRACT-FIDELITY-IMPACT.md
 review_owner: coordinator
 updated_at: 2026-07-29
 ---

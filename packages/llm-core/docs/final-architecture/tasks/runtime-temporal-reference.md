@@ -14,6 +14,8 @@ base_sha:
 branch:
 worktree:
 depends_on:
+  - architecture-external-contract-fidelity
+  - runtime-operation-contract-correction
   - architecture-source-layout-normalization
   - runtime-receipt-reconciliation
   - capabilities-runtime-conformance
@@ -24,6 +26,7 @@ decision_dependencies:
   - ADR-007
   - ADR-013
   - ADR-015
+  - ADR-017
 conflicts_with:
   - adapter-strands-runtime
   - adapters-protocol-qualification
@@ -48,14 +51,24 @@ write_scope:
   - packages/llm-core/tests/adapters/runtimes/temporal/**
   - docs/adapters/runtime-conformance.md
   - packages/llm-core/docs/final-architecture/tasks/runtime-temporal-reference.md
+required_reading:
+  - path: context/aifsd-research/profiles/temporal-python.md
+    reason: "Use the researched Temporal durability boundary and version caveats as contextual evidence."
+  - path: docs/adapters/runtime-conformance.md
+    reason: "Preserve portable versus runtime-owned state and history distinctions."
+  - path: packages/llm-core/docs/final-architecture/EXTERNAL-CONTRACT-FIDELITY-IMPACT.md
+    reason: "Apply the accepted exact-operation correction without treating narrowed Temporal semantics as supported runtime fidelity."
 read_scope:
+  - context/aifsd-research/profiles/temporal-python.md
+  - docs/adapters/runtime-conformance.md
+  - packages/llm-core/docs/final-architecture/EXTERNAL-CONTRACT-FIDELITY-IMPACT.md
   - packages/llm-core/src/contracts/**
   - packages/llm-core/src/features/control/**
   - packages/llm-core/src/features/evidence/**
   - packages/llm-core/src/features/state/**
   - packages/llm-core/src/application/**
 review_owner: coordinator
-updated_at: 2026-08-03
+updated_at: 2026-08-07
 ---
 
 # runtime-temporal-reference — Temporal durable execution reference
@@ -102,7 +115,10 @@ meaning of a checkpoint, provider session, or external effect.
 - The repository-wide external-fixture gate discovers and reruns the fixture.
 - Package source, focused tests and the external fixture resolve the same exact
   qualified Temporal SDK versions.
-- The support report distinguishes Temporal-owned history from portable state.
+- The exact operation matrix distinguishes Temporal-owned history from
+  portable state and uses `supported`, `unsupported` or `not-applicable` for
+  every operation. Each `not-applicable` entry cites exact-version Temporal
+  contract evidence that the operation or semantic dimension is absent.
 
 ## Verification
 

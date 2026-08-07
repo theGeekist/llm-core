@@ -30,6 +30,18 @@ write_scope:
   - packages/llm-core/tests/evidence/**
   - packages/llm-core/tests/application/tool-execution/**
   - packages/llm-core/docs/final-architecture/tasks/core-tool-control-events.md
+required_reading:
+  - path: docs/orchestration/controlled-tool-execution.md
+    reason: "Preserve policy, approval, receipt and evidence ordering for meaningful effects."
+  - path: packages/llm-core/docs/v1-workflow-notes.md
+    reason: "Identify the retired tool and workflow coupling corrected by v2."
+    ref: 8844ac3989e497a762fa43f23fd93e40803d2174
+  - path: packages/llm-core/docs/final-architecture/EXTERNAL-CONTRACT-FIDELITY-IMPACT.md
+    reason: "Treat this task's loss-based wording as historical and apply the current exact-contract correction."
+read_scope:
+  - docs/orchestration/controlled-tool-execution.md
+  - packages/llm-core/docs/v1-workflow-notes.md
+  - packages/llm-core/docs/final-architecture/EXTERNAL-CONTRACT-FIDELITY-IMPACT.md
 review_owner: coordinator
 updated_at: 2026-07-29
 ---

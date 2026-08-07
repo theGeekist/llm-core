@@ -29,12 +29,18 @@ write_scope:
   - packages/llm-core/tests/architecture/source-boundaries.test.ts
   - packages/llm-core/tests/conformance/pydantic-ai-compatibility.test.ts
   - packages/llm-core/docs/final-architecture/tasks/adapter-pydantic-ai.md
+required_reading:
+  - path: context/aifsd-research/profiles/pydantic-ai.md
+    reason: "Use the exact PydanticAI AgentSpec reference as compilation evidence."
+  - path: packages/llm-core/docs/final-architecture/SPECIFICATIONS.md
+    reason: "Preserve accepted-intent and authority boundaries while treating loss support as historical."
 read_scope:
+  - context/aifsd-research/profiles/pydantic-ai.md
+  - packages/llm-core/docs/final-architecture/SPECIFICATIONS.md
   - packages/llm-core/src/specifications/**
   - packages/llm-core/src/features/agent/**
   - packages/llm-core/src/features/tooling/**
   - packages/llm-core/src/features/model/**
-  - /Users/jasonnathan/Repos/aifsd-agent-framework-research/profiles/pydantic-ai.md
 review_owner: coordinator
 updated_at: 2026-08-02
 ---

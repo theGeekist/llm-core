@@ -6,12 +6,18 @@ development happens beside `llm-core` so changes across the SDK and its kernel
 can remain atomic. npm publication remains disabled while the first executable
 surface is established.
 
-AIFSD begins as one package with two conceptual SDK surfaces:
+AIFSD is one SDK supporting two initial product journeys:
 
-- **Build SDK**: development orchestration, agents, models, repositories,
-  evaluation, CI/CD, infrastructure and remote work.
-- **Runtime SDK**: application-facing AI composition through qualified native
-  runtime integrations.
+- **Software delivery**: development orchestration, agents, models,
+  repositories, evaluation, CI/CD, infrastructure and remote work.
+- **Application integration**: application-facing AI composition through
+  qualified native runtime integrations.
+
+These journeys are not separate SDK products. New public capability fronts are
+introduced only after executable use demonstrates a coherent contract and
+independent ownership. `application/` names internal cross-capability
+orchestration, while `runtime` remains reserved for actual execution
+environments and native runtime integrations.
 
 The first characterised public surface is `@aifsd/sdk/config`. It validates a
 closed portable manifest, resolves externally approved catalogue snapshots,

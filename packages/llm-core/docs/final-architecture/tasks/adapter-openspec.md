@@ -23,11 +23,17 @@ write_scope:
   - packages/llm-core/src/adapters/openspec/**
   - packages/llm-core/tests/adapters/openspec/**
   - packages/llm-core/docs/final-architecture/tasks/adapter-openspec.md
+required_reading:
+  - path: context/aifsd-research/profiles/openspec.md
+    reason: "Use the documented OpenSpec file and CLI contracts as source-format evidence."
+  - path: packages/llm-core/docs/final-architecture/SPECIFICATIONS.md
+    reason: "Preserve source authority and observation boundaries while treating loss support as historical."
 read_scope:
+  - context/aifsd-research/profiles/openspec.md
+  - packages/llm-core/docs/final-architecture/SPECIFICATIONS.md
   - packages/llm-core/src/specifications/**
   - packages/llm-core/src/features/specifications/**
   - packages/llm-core/src/application/specification-compiler/**
-  - /Users/jasonnathan/Repos/aifsd-agent-framework-research/profiles/openspec.md
 review_owner: coordinator
 updated_at: 2026-08-02
 ---

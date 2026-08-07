@@ -15,15 +15,28 @@ branch:
 worktree:
 depends_on:
   - adapter-pydantic-ai
+  - specification-exact-operation-contracts
   - specification-semantic-reconciliation
 decision_dependencies:
   - ADR-009
   - ADR-016
+  - ADR-017
 conflicts_with: []
 write_scope:
   - packages/llm-core/src/adapters/pydantic-ai-spec/**
   - packages/llm-core/tests/adapters/pydantic-ai-spec/**
   - packages/llm-core/docs/final-architecture/tasks/adapter-pydantic-ai-semantic-projection.md
+required_reading:
+  - path: context/aifsd-research/profiles/pydantic-ai.md
+    reason: "Preserve the exact AgentSpec field and version boundary during projection."
+  - path: packages/llm-core/docs/internal/REUSABLE-ABSTRACTION-REVIEW.md
+    reason: "Apply the lax canonical comparator and specification-capture caveats."
+  - path: packages/llm-core/docs/final-architecture/EXTERNAL-CONTRACT-FIDELITY-IMPACT.md
+    reason: "Treat this task's loss-based wording as historical and apply the current exact-contract correction."
+read_scope:
+  - context/aifsd-research/profiles/pydantic-ai.md
+  - packages/llm-core/docs/internal/REUSABLE-ABSTRACTION-REVIEW.md
+  - packages/llm-core/docs/final-architecture/EXTERNAL-CONTRACT-FIDELITY-IMPACT.md
 review_owner: coordinator
 updated_at: 2026-08-04
 ---
@@ -49,8 +62,8 @@ from a separately supplied target.
   fixture and explicit format-specific projection configuration.
 - Derive or bind every emitted AgentSpec field to accepted intent or a named
   integration/runtime configuration source.
-- Preserve explicit degraded and rejected dispositions for unsupported
-  PydanticAI semantics.
+- Reject requested PydanticAI semantics that the exact projection operation
+  cannot preserve; retain the native source and format configuration.
 - Validate the actual compiler output with exact PydanticAI rather than only a
   parallel checked-in JSON fixture.
 - Keep authority-lifecycle mocks only for the lifecycle behavior they prove.

@@ -40,6 +40,14 @@ in `application`, and framework/protocol mappings in qualified adapters.
 
 ## Resume
 
-If asked what comes next, inspect current task front matter, dependency state,
-conflicts, and active scopes, then use `ROADMAP.md` for programme grouping and
-priority advice. Do not infer readiness from this handoff.
+If asked what comes next, run:
+
+```sh
+bun run tasks:plan --authority all
+```
+
+Inspect current task front matter, dependency state, conflicts and active
+scopes, then use `ROADMAP.md` for programme grouping and priority advice. After
+selection run `bun run tasks:context -- <authority>/<task-id>` and open every
+generated item before proposing a claim. Do not infer readiness from this
+handoff.

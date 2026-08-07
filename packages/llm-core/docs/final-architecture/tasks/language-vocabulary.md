@@ -31,7 +31,14 @@ write_scope:
   - packages/llm-core/tests/language/**
   - packages/llm-core/package.json
   - bun.lock
+required_reading:
+  - path: packages/llm-core/docs/final-architecture/LANGUAGE.md
+    reason: "Preserve the exact common, integration and internal language levels."
+  - path: docs/reference/vocabulary.md
+    reason: "Use the published vocabulary as evidence of the accepted naming contract."
 read_scope:
+  - packages/llm-core/docs/final-architecture/LANGUAGE.md
+  - docs/reference/vocabulary.md
   - packages/llm-core/src/**
   - packages/llm-core/tests/**
   - packages/llm-core/README.md

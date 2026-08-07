@@ -47,7 +47,14 @@ write_scope:
   - docs/reference/package-exports.md
   - docs/reference/specification-adapters.md
   - packages/llm-core/docs/final-architecture/tasks/adapter-bmad-release.md
+required_reading:
+  - path: context/aifsd-research/profiles/bmad-method.md
+    reason: "Preserve the exact artifact and lifecycle support boundary in publication."
+  - path: docs/reference/package-exports.md
+    reason: "Use the sealed export inventory as publication evidence."
 read_scope:
+  - context/aifsd-research/profiles/bmad-method.md
+  - docs/reference/package-exports.md
   - packages/llm-core/src/adapters/bmad/**
   - packages/llm-core/tests/adapters/bmad/**
 review_owner: coordinator

@@ -26,7 +26,11 @@ write_scope:
   - packages/llm-core/src/features/evaluation/**
   - packages/llm-core/tests/evaluation/**
   - packages/llm-core/docs/final-architecture/tasks/capabilities-evaluation.md
+required_reading:
+  - path: docs/capabilities/evaluation.md
+    reason: "Preserve evaluator identity, result and evidence semantics established by the feature."
 read_scope:
+  - docs/capabilities/evaluation.md
   - packages/llm-core/src/contracts/**
   - packages/llm-core/src/features/evidence/**
   - packages/llm-core/src/features/context/**

@@ -44,6 +44,15 @@ write_scope:
   - packages/llm-core/tests/model/schema-resolution.test.ts
   - packages/llm-core/tests/agent/skills.test.ts
   - packages/llm-core/docs/final-architecture/tasks/core-media-schemas-skills.md
+required_reading:
+  - path: docs/capabilities/agent-skills.md
+    reason: "Preserve the implemented skill and schema ownership boundary."
+  - path: packages/llm-core/docs/v1-implementation-plan.md
+    reason: "Reconstruct the pre-v2 aggregate capability assumptions this slice replaced."
+    ref: 8844ac3989e497a762fa43f23fd93e40803d2174
+read_scope:
+  - docs/capabilities/agent-skills.md
+  - packages/llm-core/docs/v1-implementation-plan.md
 review_owner: coordinator
 updated_at: 2026-07-30
 ---

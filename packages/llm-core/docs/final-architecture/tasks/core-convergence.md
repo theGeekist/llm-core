@@ -47,6 +47,11 @@ write_scope:
   - examples/**
   - apps/**
   - packages/llm-core/docs/final-architecture/tasks/core-convergence.md
+required_reading:
+  - path: packages/llm-core/docs/final-architecture/PLAN.md
+    reason: "Use the recorded kernel completion posture and deletion boundary as convergence evidence."
+read_scope:
+  - packages/llm-core/docs/final-architecture/PLAN.md
 review_owner: human
 updated_at: 2026-07-30
 ---

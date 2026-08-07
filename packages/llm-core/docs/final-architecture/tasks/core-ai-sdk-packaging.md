@@ -29,6 +29,18 @@ write_scope:
   - .github/workflows/docs.yml
   - .github/workflows/release.yml
   - packages/llm-core/docs/final-architecture/tasks/core-ai-sdk-packaging.md
+required_reading:
+  - path: docs/adapters/ai-sdk.md
+    reason: "Preserve the independently qualified AI SDK generation and packaging boundary."
+  - path: packages/llm-core/docs/v1-implementation-plan.md
+    reason: "Reconstruct the module-format and dependency assumptions replaced by v2."
+    ref: 8844ac3989e497a762fa43f23fd93e40803d2174
+  - path: packages/llm-core/docs/final-architecture/EXTERNAL-CONTRACT-FIDELITY-IMPACT.md
+    reason: "Treat this task's loss-based wording as historical and apply the current exact-contract correction."
+read_scope:
+  - docs/adapters/ai-sdk.md
+  - packages/llm-core/docs/v1-implementation-plan.md
+  - packages/llm-core/docs/final-architecture/EXTERNAL-CONTRACT-FIDELITY-IMPACT.md
 review_owner: human
 updated_at: 2026-07-29
 ---

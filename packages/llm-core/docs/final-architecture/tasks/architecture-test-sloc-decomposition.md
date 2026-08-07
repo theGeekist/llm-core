@@ -26,6 +26,11 @@ write_scope:
   - packages/llm-core/tests/support/**
   - scripts/sloc-baseline.json
   - packages/llm-core/docs/final-architecture/tasks/architecture-test-sloc-decomposition.md
+required_reading:
+  - path: scripts/sloc-baseline.json
+    reason: "Use the recorded waiver digests and ceilings as decomposition evidence."
+read_scope:
+  - scripts/sloc-baseline.json
 review_owner: coordinator
 updated_at: 2026-08-04
 ---

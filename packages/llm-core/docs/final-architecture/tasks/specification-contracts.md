@@ -26,7 +26,11 @@ write_scope:
   - packages/llm-core/src/features/specifications/**
   - packages/llm-core/tests/specifications/**
   - packages/llm-core/docs/final-architecture/tasks/specification-contracts.md
+required_reading:
+  - path: packages/llm-core/docs/final-architecture/SPECIFICATIONS.md
+    reason: "Reconstruct the semantic graph, source authority and prior conversion model established by this task."
 read_scope:
+  - packages/llm-core/docs/final-architecture/SPECIFICATIONS.md
   - packages/llm-core/src/contracts/**
   - packages/llm-core/src/features/artifacts/**
   - packages/llm-core/src/features/evidence/**

@@ -4,8 +4,8 @@ id: aifsd-delivery-toolchain
 title: Derive the AIFSD delivery SDK or CLI
 stage: applications
 status: cancelled
-forward_to:
-  - aifsd/build-runtime-vertical-slice
+replaced_by:
+  - aifsd/local-delivery-vertical-slice
 priority: high
 preferred_owner_kind: coordinator
 owner:
@@ -26,6 +26,14 @@ write_scope:
   - packages/aifsd-delivery/**
   - docs/applications/aifsd-delivery.md
   - packages/llm-core/docs/final-architecture/tasks/aifsd-delivery-toolchain.md
+required_reading:
+  - path: packages/aifsd/docs/final-architecture/LLM-CORE-PARITY.md
+    reason: "Retain the cancelled llm-core brief as provenance while using AIFSD's adopted disposition."
+  - path: packages/aifsd/docs/final-architecture/tasks/sdk-vocabulary.md
+    reason: "Use the committed AIFSD SDK task as current product authority."
+read_scope:
+  - packages/aifsd/docs/final-architecture/LLM-CORE-PARITY.md
+  - packages/aifsd/docs/final-architecture/tasks/sdk-vocabulary.md
 review_owner: human
 updated_at: 2026-08-04
 ---
@@ -56,8 +64,10 @@ Defined after characterization determines the artifact and consumer matrix.
 - 2026-08-04 — Cancelled before implementation and forwarded toward a planned
   dedicated AIFSD package for SDK, CLI, template, client, and delivery
   orchestration ownership. No committed replacement authority is claimed.
+- 2026-08-07 — AIFSD committed the destination task authority. The provisional
+  forward target became an exact cross-package replacement whose Inputs retain
+  this task's product-derivation outcome separately from journey evidence.
 
 ## Handoff
 
-Continue product derivation only after the planned AIFSD task authority is
-committed.
+Continue product derivation under `aifsd/local-delivery-vertical-slice`.

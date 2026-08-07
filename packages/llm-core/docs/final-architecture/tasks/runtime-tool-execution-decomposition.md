@@ -27,7 +27,11 @@ write_scope:
   - packages/llm-core/tests/application/tool-execution/**
   - packages/llm-core/docs/final-architecture/tasks/runtime-tool-execution-decomposition.md
   - packages/llm-core/docs/final-architecture/STATUS.md
+required_reading:
+  - path: docs/orchestration/controlled-tool-execution.md
+    reason: "Preserve one controlled execution front and its observable sync-or-async behaviour."
 read_scope:
+  - docs/orchestration/controlled-tool-execution.md
   - packages/llm-core/src/features/control/**
   - packages/llm-core/src/features/evidence/**
   - packages/llm-core/src/features/tooling/**

@@ -31,7 +31,7 @@ export interface SourceMeasurement {
 }
 
 const sourceExtensions = new Set([".cjs", ".cts", ".js", ".jsx", ".mjs", ".mts", ".ts", ".tsx"]);
-const excludedWorkspaceRoots = Object.freeze(["packages/aifsd/docs"]);
+const excludedWorkspaceRoots = Object.freeze(["context", "packages/aifsd/docs"]);
 export const slocV1Policy = Object.freeze({
   limit: 500,
   excludedDirectories: Object.freeze([

@@ -26,7 +26,14 @@ write_scope:
   - packages/llm-core/src/application/specification-compiler/**
   - packages/llm-core/tests/specification-compiler/**
   - packages/llm-core/docs/final-architecture/tasks/specification-compiler.md
+required_reading:
+  - path: packages/llm-core/docs/final-architecture/SPECIFICATIONS.md
+    reason: "Preserve review, admission and compilation authority boundaries."
+  - path: packages/llm-core/docs/internal/REUSABLE-ABSTRACTION-REVIEW.md
+    reason: "Apply specification fixture and canonicalisation caveats during reconstruction."
 read_scope:
+  - packages/llm-core/docs/final-architecture/SPECIFICATIONS.md
+  - packages/llm-core/docs/internal/REUSABLE-ABSTRACTION-REVIEW.md
   - packages/llm-core/src/features/specifications/**
   - packages/llm-core/src/features/control/**
   - packages/llm-core/src/features/evidence/**

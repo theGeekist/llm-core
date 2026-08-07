@@ -144,7 +144,8 @@ conformance tests continue to exercise the local proof without publishing it.
 - `adapter-langgraph-runtime` and `adapter-pydantic-ai-runtime` qualify real,
   unlike runner integrations.
 - `runtime-adapter-substitution` demonstrates portable intent across them.
-- `aifsd-delivery-characterization` and `aifsd-delivery-toolchain` define the
-  delivery product above the kernel.
+- `aifsd/local-delivery-vertical-slice` defines the delivery product above the
+  kernel under AIFSD's private task authority; the cancelled llm-core briefs
+  remain public provenance.
 - `architecture-test-sloc-decomposition` removes the temporary proof-suite
   waivers introduced by this correction.

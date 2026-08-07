@@ -4,8 +4,8 @@ id: applications-client-contract
 title: Shared end-user client application contract
 stage: applications
 status: cancelled
-forward_to:
-  - aifsd/build-runtime-vertical-slice
+replaced_by:
+  - aifsd/clients-shared-application-contract
 priority: high
 preferred_owner_kind: codex
 owner:
@@ -35,7 +35,14 @@ write_scope:
   - packages/llm-core/tests/client/**
   - docs/applications/client.md
   - packages/llm-core/docs/final-architecture/tasks/applications-client-contract.md
+required_reading:
+  - path: packages/aifsd/docs/final-architecture/LLM-CORE-PARITY.md
+    reason: "Retain the cancelled client contract as cross-authority provenance."
+  - path: packages/aifsd/docs/final-architecture/tasks/clients-shared-application-contract.md
+    reason: "Use the committed AIFSD shared application task as current product authority."
 read_scope:
+  - packages/aifsd/docs/final-architecture/LLM-CORE-PARITY.md
+  - packages/aifsd/docs/final-architecture/tasks/clients-shared-application-contract.md
   - packages/llm-core/index.ts
   - packages/llm-core/src/**/public.ts
   - packages/llm-core/src/agent/index.ts
@@ -55,6 +62,7 @@ updated_at: 2026-08-04
 
 Cancelled by ADR-016 before implementation. A client contract must be derived
 from demonstrated operator consumers after the AIFSD delivery toolchain exists.
+The committed AIFSD replacement retains that evidence-before-contract boundary.
 
 ## Objective
 

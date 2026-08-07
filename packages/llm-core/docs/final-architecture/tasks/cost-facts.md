@@ -27,7 +27,14 @@ write_scope:
   - packages/llm-core/tests/evidence/**
   - docs/capabilities/evidence.md
   - packages/llm-core/docs/final-architecture/tasks/cost-facts.md
+required_reading:
+  - path: packages/llm-core/docs/final-architecture/tasks/capabilities-cost-intelligence.md
+    reason: "Retain the cancelled source task as provenance for the separated facts boundary."
+  - path: docs/capabilities/evidence.md
+    reason: "Preserve observed usage and unavailable-attribution semantics."
 read_scope:
+  - packages/llm-core/docs/final-architecture/tasks/capabilities-cost-intelligence.md
+  - docs/capabilities/evidence.md
   - packages/llm-core/src/features/model/**
 review_owner: coordinator
 updated_at: 2026-08-02

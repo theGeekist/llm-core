@@ -28,6 +28,15 @@ write_scope:
   - packages/llm-core/tests/agent/**
   - packages/llm-core/tests/application/agent/**
   - packages/llm-core/docs/final-architecture/tasks/core-agent-runner.md
+required_reading:
+  - path: docs/capabilities/agent.md
+    reason: "Preserve the runner port and portable agent boundary evidenced by the public guide."
+  - path: packages/llm-core/docs/v1-agent-orchestration-wip.md
+    reason: "Avoid restoring the retired kernel-owned orchestration model."
+    ref: 8844ac3989e497a762fa43f23fd93e40803d2174
+read_scope:
+  - docs/capabilities/agent.md
+  - packages/llm-core/docs/v1-agent-orchestration-wip.md
 review_owner: coordinator
 updated_at: 2026-07-29
 ---

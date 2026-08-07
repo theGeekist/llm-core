@@ -42,7 +42,11 @@ write_scope:
   - docs/reference/conformance.md
   - packages/llm-core/docs/final-architecture/tasks/architecture-release-reproducibility.md
   - packages/llm-core/docs/final-architecture/STATUS.md
+required_reading:
+  - path: docs/reference/conformance.md
+    reason: "Preserve the public distinction between implementation, qualification and supported release evidence."
 read_scope:
+  - docs/reference/conformance.md
   - bun.lock
   - packages/llm-core/src/**
   - packages/llm-core/tests/**

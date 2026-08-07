@@ -36,6 +36,15 @@ write_scope:
   - packages/llm-core/tests/storage/**
   - packages/llm-core/tests/memory/**
   - packages/llm-core/docs/final-architecture/tasks/core-conversations.md
+required_reading:
+  - path: docs/capabilities/storage-memory.md
+    reason: "Preserve the storage and conversation ownership distinctions established by the task."
+  - path: packages/llm-core/docs/v1-agent-orchestration-wip.md
+    reason: "Keep the retired conversation runtime model historical."
+    ref: 8844ac3989e497a762fa43f23fd93e40803d2174
+read_scope:
+  - docs/capabilities/storage-memory.md
+  - packages/llm-core/docs/v1-agent-orchestration-wip.md
 review_owner: coordinator
 updated_at: 2026-07-29
 ---

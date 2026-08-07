@@ -34,7 +34,11 @@ write_scope:
   - packages/llm-core/src/functional/index.ts
   - packages/llm-core/tests/architecture/**
   - packages/llm-core/docs/final-architecture/tasks/architecture-legacy-functional-removal.md
+required_reading:
+  - path: packages/llm-core/docs/internal/REUSABLE-ABSTRACTION-REVIEW.md
+    reason: "Apply the D01 dead-basis evidence without removing live MaybePromise composition."
 read_scope:
+  - packages/llm-core/docs/internal/REUSABLE-ABSTRACTION-REVIEW.md
   - packages/llm-core/package.json
   - packages/llm-core/scripts/build.ts
   - packages/llm-core/tsconfig.json
