@@ -3,8 +3,8 @@ import type {
   CapabilityClaim,
   CapabilityRequirement,
   ConformanceEvidence,
-} from "./capabilities";
-import type { ExtensionNamespace } from "./extensions";
+} from "./capabilities.js";
+import type { ExtensionNamespace } from "./extensions.js";
 import type {
   CorrelationId,
   ConversationId,
@@ -23,10 +23,10 @@ import type {
   ToolCallId,
   TraceFlags,
   TraceId,
-} from "./identity";
-import type { InvocationContext } from "./invocation";
-import type { EvidenceRef, PortableContent, ResourceRef } from "./schema";
-import type { SchemaRef } from "./versioning";
+} from "./identity.js";
+import type { InvocationContext } from "./invocation.js";
+import type { EvidenceRef, PortableContent, ResourceRef } from "./schema.js";
+import type { SchemaRef } from "./versioning.js";
 
 /**
  * Type-only schema-generation root.

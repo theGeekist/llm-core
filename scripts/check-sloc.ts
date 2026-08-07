@@ -31,6 +31,7 @@ export interface SourceMeasurement {
 }
 
 const sourceExtensions = new Set([".cjs", ".cts", ".js", ".jsx", ".mjs", ".mts", ".ts", ".tsx"]);
+const excludedWorkspaceRoots = Object.freeze(["packages/aifsd/docs"]);
 export const slocV1Policy = Object.freeze({
   limit: 500,
   excludedDirectories: Object.freeze([
@@ -79,10 +80,14 @@ export const sourceDigest = (content: string): string =>
 const normalized = (path: string): string => path.split(sep).join("/");
 
 const isExcluded = (path: string, baseline: SlocBaseline): boolean => {
-  const segments = normalized(path).split("/");
+  const relativePath = normalized(path);
+  const segments = relativePath.split("/");
   return (
+    excludedWorkspaceRoots.some(
+      (root) => relativePath === root || relativePath.startsWith(`${root}/`),
+    ) ||
     segments.some((segment) => baseline.excludedDirectories.includes(segment)) ||
-    baseline.excludedSuffixes.some((suffix) => normalized(path).endsWith(suffix))
+    baseline.excludedSuffixes.some((suffix) => relativePath.endsWith(suffix))
   );
 };
 

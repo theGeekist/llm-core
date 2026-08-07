@@ -27,18 +27,41 @@ module.exports = {
     "@typescript-eslint/no-unused-vars": [
       "error",
       {
-        "argsIgnorePattern": "^_",
-        "varsIgnorePattern": "^_",
-        "caughtErrorsIgnorePattern": "^_"
-      }
+        argsIgnorePattern: "^_",
+        varsIgnorePattern: "^_",
+        caughtErrorsIgnorePattern: "^_",
+      },
     ],
   },
   overrides: [
     {
-      files: ["docs/**/*.ts", "docs/**/*.js", "tests/**/*.ts", "tests/**/*.js", "**/tests/**/*.ts", "**/tests/**/*.js"],
+      files: [
+        "docs/**/*.ts",
+        "docs/**/*.js",
+        "tests/**/*.ts",
+        "tests/**/*.js",
+        "**/tests/**/*.ts",
+        "**/tests/**/*.js",
+      ],
       rules: {
         "consistent-return": "off",
       },
+    },
+    {
+      files: ["packages/aifsd/tests/config/apply-sequencing.test.ts"],
+      rules: { "sonarjs/no-nested-functions": "off" },
+    },
+    {
+      files: ["packages/aifsd/tests/config/manifest-adversarial.test.ts"],
+      rules: { "sonarjs/no-hardcoded-passwords": "off" },
+    },
+    {
+      files: ["packages/aifsd/tests/config/plan-adversarial.test.ts"],
+      rules: { "sonarjs/publicly-writable-directories": "off" },
+    },
+    {
+      files: ["packages/aifsd/tests/config/runtime-p1-adversarial.test.ts"],
+      rules: { "max-params": "off" },
     },
   ],
 };

@@ -27,6 +27,11 @@
     "packages/aifsd": {
       "name": "@aifsd/sdk",
       "version": "0.0.0",
+      "dependencies": {
+        "@geekist/llm-core": "2.0.0",
+        "@geekist/strict-json": "0.1.0",
+        "@wpkernel/pipeline": "1.2.1",
+      },
     },
     "packages/llm-core": {
       "name": "@geekist/llm-core",

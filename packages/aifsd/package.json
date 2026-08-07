@@ -4,11 +4,31 @@
   "private": true,
   "type": "module",
   "description": "Build and Runtime SDKs for AI-first software delivery",
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "exports": {
+    "./config": {
+      "types": "./dist/types/config/index.d.ts",
+      "import": "./dist/esm/config/index.js",
+      "default": "./dist/esm/config/index.js"
+    }
+  },
   "scripts": {
-    "build": "bun run check:types",
+    "build": "bun run clean && bun run check:types && bun run build:types && bun run build:runtime",
+    "clean": "rm -rf dist",
+    "build:types": "tsc -p tsconfig.build.json --emitDeclarationOnly",
+    "build:runtime": "bun build src/config/index.ts --outdir dist/esm/config --target=node --format=esm --external '@geekist/llm-core/*' --external '@geekist/strict-json' --external '@wpkernel/pipeline/*'",
     "check:types": "tsc -p tsconfig.json --noEmit",
+    "lint": "eslint \"src/**/*.{ts,tsx,js,jsx}\" \"tests/**/*.{ts,tsx,js,jsx}\"",
     "test": "bun test --pass-with-no-tests tests",
     "typecheck": "bun run check:types",
-    "validate": "bun run check:types && bun run test"
+    "validate": "bun run check:types && bun run lint && bun run test"
+  },
+  "dependencies": {
+    "@geekist/llm-core": "2.0.0",
+    "@geekist/strict-json": "0.1.0",
+    "@wpkernel/pipeline": "1.2.1"
   }
 }

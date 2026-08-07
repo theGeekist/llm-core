@@ -1,6 +1,6 @@
-import type { JsonValue, NativeExtensions } from "./extensions";
-import type { EvidenceRef } from "./schema";
-import type { ContractVersion, SchemaRef } from "./versioning";
+import type { JsonValue, NativeExtensions } from "./extensions.js";
+import type { EvidenceRef } from "./schema.js";
+import type { ContractVersion, SchemaRef } from "./versioning.js";
 
 /**
  * Stable, namespaced capability identifier such as `llm-core.model.streaming`.

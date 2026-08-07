@@ -1,6 +1,6 @@
-import type { EvidenceId, ResourceId } from "./identity";
-import type { JsonValue } from "./extensions";
-import type { Digest, SchemaRef } from "./versioning";
+import type { EvidenceId, ResourceId } from "./identity.js";
+import type { JsonValue } from "./extensions.js";
+import type { Digest, SchemaRef } from "./versioning.js";
 
 /**
  * An IANA media type.

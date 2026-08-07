@@ -1,5 +1,5 @@
-import type { CapabilityClaim, CapabilityConstraint, ConformanceEvidence } from "./capabilities";
-import type { NativeExtensions } from "./extensions";
+import type { CapabilityClaim, CapabilityConstraint, ConformanceEvidence } from "./capabilities.js";
+import type { NativeExtensions } from "./extensions.js";
 import { hasOnlyKeys, isPortableRecord } from "../shared/portable-data";
 
 export interface CapabilityClaimValidators {

@@ -9,7 +9,7 @@ import type {
   TenantId,
   ToolCallId,
   TraceContext,
-} from "./identity";
+} from "./identity.js";
 
 /**
  * A portable non-negative integer limit.

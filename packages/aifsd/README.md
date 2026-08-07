@@ -8,13 +8,38 @@ surface is established.
 
 AIFSD begins as one package with two conceptual SDK surfaces:
 
-- **Build SDK** — development orchestration, agents, models, repositories,
+- **Build SDK**: development orchestration, agents, models, repositories,
   evaluation, CI/CD, infrastructure and remote work.
-- **Runtime SDK** — application-facing AI composition through qualified native
+- **Runtime SDK**: application-facing AI composition through qualified native
   runtime integrations.
 
-No implementation API is committed yet. Executable characterisation will
-determine the initial public surface.
+The first characterised public surface is `@aifsd/sdk/config`. It validates a
+closed portable manifest, resolves externally approved catalogue snapshots,
+creates reproducibility locks, plans ownership-safe native changes, applies a
+separately approved plan, and explains resolution and planned-change decisions
+from immutable renderer-neutral facts captured when those decisions are made.
+Release trust uses the `local`, `community`, `verified`, and `official` levels
+defined by the accepted product architecture.
+
+The six operations are `validateManifest`, `resolveManifest`,
+`createConfigurationLock`, `planChanges`, `applyPlan`, and
+`explainConfiguration`.
+
+Configuration diagnostics are renderer-neutral portable data with the closed
+shape `{ code, reasonCode, path? }`. The SDK supplies stable categories, causes
+and locations; consuming CLIs and UIs own prose and localisation.
+
+`@geekist/strict-json` owns the consumer-neutral JSON boundary shared with
+llm-core: strict normalisation, canonical bytes and valid-graph freezing. AIFSD
+retains configuration diagnostics, secret-reference policy, hashing and the
+point at which accepted configuration becomes immutable.
+
+Run the repository-root `bun run build` before consuming the workspace package
+from Node so the kernel dependency and SDK are built in order. Runtime code
+resolves to generated ESM under `dist/`, while generated declarations supply
+its TypeScript contract. The package tests exercise the runtime export with the
+actual `node` executable and the declaration surface from a clean TypeScript
+consumer.
 
 The private product architecture and task authority may be mounted locally at
 `docs/` for authorised development. That mount is optional and is never part of
