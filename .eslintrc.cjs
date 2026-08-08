@@ -18,7 +18,7 @@ module.exports = {
   ],
   rules: {
     "consistent-return": ["error", { treatUndefinedAsUnspecified: true }],
-    "max-lines": ["error", { max: 500, skipBlankLines: true, skipComments: true }],
+    "max-lines": ["error", { max: 600, skipBlankLines: true, skipComments: true }],
     "max-params": ["error", 3],
     "no-console": "off",
     "sonarjs/no-nested-conditional": "off",

@@ -382,6 +382,43 @@ interface MeasurementContext {
 const lightweightWaiverRequired = (path: string, lines: number, limit: number): string =>
   `${path} has ${lines} lines; target is ${limit}; record an ${JSON.stringify(approximateTargetJustification)} waiver`;
 
+type ExistingMeasurementContext = MeasurementContext & { readonly exception: SlocException };
+
+const validateUnchangedMeasurement = ({
+  measurement,
+  exception,
+  limit,
+  hardLimit,
+}: ExistingMeasurementContext): string[] => {
+  if (measurement.lines > hardLimit) {
+    return exception.waiver ? [`${measurement.path} waiver is stale; remove it`] : [];
+  }
+  if (!exception.waiver) {
+    return [lightweightWaiverRequired(measurement.path, measurement.lines, limit)];
+  }
+  return measurement.lines === exception.waiver.currentLines &&
+    measurement.sha256 === exception.waiver.currentSha256
+    ? []
+    : [`${measurement.path} changed beyond its approximately-500 waiver`];
+};
+
+const validateChangedMeasurement = ({
+  measurement,
+  exception,
+  limit,
+  hardLimit,
+}: ExistingMeasurementContext): string[] => {
+  if (!exception.waiver) {
+    return measurement.lines <= hardLimit
+      ? [lightweightWaiverRequired(measurement.path, measurement.lines, limit)]
+      : [`${measurement.path} changed; decompose it or record a versioned coordinator waiver`];
+  }
+  return measurement.lines === exception.waiver.currentLines &&
+    measurement.sha256 === exception.waiver.currentSha256
+    ? []
+    : [`${measurement.path} changed beyond its versioned coordinator waiver`];
+};
+
 const validateMeasurement = ({
   measurement,
   exception,
@@ -402,30 +439,8 @@ const validateMeasurement = ({
   }
   const unchanged =
     measurement.lines === exception.lines && measurement.sha256 === exception.sha256;
-  if (unchanged) {
-    if (measurement.lines <= hardLimit) {
-      if (!exception.waiver) {
-        return [lightweightWaiverRequired(measurement.path, measurement.lines, limit)];
-      }
-      return measurement.lines === exception.waiver.currentLines &&
-        measurement.sha256 === exception.waiver.currentSha256
-        ? []
-        : [`${measurement.path} changed beyond its approximately-500 waiver`];
-    }
-    return exception.waiver ? [`${measurement.path} waiver is stale; remove it`] : [];
-  }
-  if (!exception.waiver) {
-    return measurement.lines <= hardLimit
-      ? [lightweightWaiverRequired(measurement.path, measurement.lines, limit)]
-      : [`${measurement.path} changed; decompose it or record a versioned coordinator waiver`];
-  }
-  if (
-    measurement.lines !== exception.waiver.currentLines ||
-    measurement.sha256 !== exception.waiver.currentSha256
-  ) {
-    return [`${measurement.path} changed beyond its versioned coordinator waiver`];
-  }
-  return [];
+  const context = { measurement, exception, limit, hardLimit };
+  return unchanged ? validateUnchangedMeasurement(context) : validateChangedMeasurement(context);
 };
 
 export interface SlocCheckOptions {

@@ -110,13 +110,13 @@
       }
     },
     "scripts/check-sloc.ts": {
-      "lines": 508,
-      "sha256": "3609f1b4e155ce2f2a4b5cbce43083ad336cd109286b056be2eae7b62dfe8044",
+      "lines": 523,
+      "sha256": "3f5d29d6eb033ea5f5d0ce0edda239e4cb1ea9795b44e8452af4402a64cdc9d2",
       "waiver": {
         "version": 1,
         "justification": "approximately 500 lines",
-        "currentLines": 508,
-        "currentSha256": "3609f1b4e155ce2f2a4b5cbce43083ad336cd109286b056be2eae7b62dfe8044"
+        "currentLines": 523,
+        "currentSha256": "3f5d29d6eb033ea5f5d0ce0edda239e4cb1ea9795b44e8452af4402a64cdc9d2"
       }
     }
   }

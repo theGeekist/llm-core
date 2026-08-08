@@ -1,4 +1,6 @@
 import { describe, expect, test } from "bun:test";
+import { existsSync } from "node:fs";
+import { join } from "node:path";
 import {
   authorityLocations,
   createArchitectureTaskPlan,
@@ -144,9 +146,13 @@ describe("architecture task planner rendering", () => {
 
   test("keeps every repository task context bounded to its declared obligations", async () => {
     const workspaceRoot = process.cwd();
+    const selectedAuthorities = taskAuthorities.filter((authority) => {
+      const configured = taskPlanConfiguration.authorities[authority];
+      return !configured.optional || existsSync(join(workspaceRoot, configured.architectureRoot));
+    });
     const locations = await authorityLocations(
       workspaceRoot,
-      taskAuthorities,
+      selectedAuthorities,
       taskPlanConfiguration,
     );
     const loaded = await Promise.all(
@@ -154,13 +160,21 @@ describe("architecture task planner rendering", () => {
     );
     const tasks = loaded.flatMap(({ tasks: authorityTasks }) => authorityTasks);
     const decisions = loaded.flatMap(({ decisions: authorityDecisions }) => authorityDecisions);
-    expect(
-      validateTaskReadings({
-        scopesOverlap,
-        tasks,
-        workspaceRoot,
-      }),
-    ).toEqual([]);
+    const unavailableReadingSources = validateTaskReadings({
+      scopesOverlap,
+      tasks,
+      workspaceRoot,
+    });
+    for (const source of unavailableReadingSources) {
+      const configuredRoot =
+        taskPlanConfiguration.contextSources.find(({ pathPrefix }) => pathPrefix === source)
+          ?.rootFromWorkspace ??
+        Object.values(taskPlanConfiguration.authorities).find(
+          ({ logicalMount }) => logicalMount === source,
+        )?.logicalMount;
+      expect(configuredRoot).toBeDefined();
+      expect(existsSync(join(workspaceRoot, configuredRoot!))).toBe(false);
+    }
     const resolved = await createArchitectureTaskPlan({ decisions, tasks });
     const taskByKey = new Map(tasks.map((item) => [item.key, item]));
     const entryByKey = new Map(resolved.ordered.map((item) => [item.task.key, item]));

@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { mkdirSync, mkdtempSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import {
@@ -168,22 +168,27 @@ describe("required reading provenance", () => {
     ).not.toThrow();
   });
 
-  test("resolves packages/aifsd/docs pins relative to the private repository root", () => {
-    const privateRoot = join(process.cwd(), "context/aifsd-research");
-    const privateRef = git(privateRoot, "rev-parse", "HEAD");
-    expect(() =>
-      validate({
-        reading: [
-          {
-            path: "packages/aifsd/docs/final-architecture/README.md",
-            reason: "Pinned private product authority.",
-            ref: privateRef,
-          },
-        ],
-        readScope: ["packages/aifsd/docs/**"],
-      }),
-    ).not.toThrow();
-  });
+  const privateRoot = join(process.cwd(), "context/aifsd-research");
+  const simpleChatRoot = join(process.cwd(), "context/simple-chat");
+
+  test.skipIf(!existsSync(privateRoot))(
+    "resolves packages/aifsd/docs pins relative to the private repository root",
+    () => {
+      const privateRef = git(privateRoot, "rev-parse", "HEAD");
+      expect(() =>
+        validate({
+          reading: [
+            {
+              path: "packages/aifsd/docs/final-architecture/README.md",
+              reason: "Pinned private product authority.",
+              ref: privateRef,
+            },
+          ],
+          readScope: ["packages/aifsd/docs/**"],
+        }),
+      ).not.toThrow();
+    },
+  );
 
   test("requires the ref to be a commit and ref:path to be a Git blob", () => {
     const root = process.cwd();
@@ -243,31 +248,33 @@ describe("required reading provenance", () => {
     });
   });
 
-  test("permits configured mutable Simple Chat context in every lifecycle", () => {
-    const reading = [
-      { path: "context/simple-chat/README.md", reason: "Current consumer evidence.", ref: null },
-    ];
-    for (const status of taskPlanConfiguration.lifecycle.allowed) {
+  test.skipIf(!existsSync(simpleChatRoot))(
+    "permits configured mutable Simple Chat context in every lifecycle",
+    () => {
+      const reading = [
+        { path: "context/simple-chat/README.md", reason: "Current consumer evidence.", ref: null },
+      ];
+      for (const status of taskPlanConfiguration.lifecycle.allowed) {
+        expect(() =>
+          validate({ readScope: ["context/simple-chat/**"], reading, status }),
+        ).not.toThrow();
+      }
+      const simpleChatRef = git(simpleChatRoot, "rev-parse", "HEAD");
       expect(() =>
-        validate({ readScope: ["context/simple-chat/**"], reading, status }),
+        validate({
+          reading: [
+            {
+              path: "context/simple-chat/README.md",
+              reason: "Immutable consumer evidence.",
+              ref: simpleChatRef,
+            },
+          ],
+          readScope: ["context/simple-chat/**"],
+          status: "done",
+        }),
       ).not.toThrow();
-    }
-    const simpleChatRoot = join(process.cwd(), "context/simple-chat");
-    const simpleChatRef = git(simpleChatRoot, "rev-parse", "HEAD");
-    expect(() =>
-      validate({
-        reading: [
-          {
-            path: "context/simple-chat/README.md",
-            reason: "Immutable consumer evidence.",
-            ref: simpleChatRef,
-          },
-        ],
-        readScope: ["context/simple-chat/**"],
-        status: "done",
-      }),
-    ).not.toThrow();
-  });
+    },
+  );
 
   test("rejects uncovered, missing and escaping current files", () => {
     expect(() =>
