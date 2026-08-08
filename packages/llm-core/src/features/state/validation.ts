@@ -6,6 +6,7 @@ import {
   isJsonValue,
   isSchemaRef,
 } from "#contracts";
+import { compareUtf16CodeUnits } from "#shared/fp";
 import type {
   NativeReferenceCompatibility,
   RecordedEffect,
@@ -253,4 +254,4 @@ export const deepFreeze = <T>(value: T): T => {
 
 export const sortedNativeReferenceKeys = (
   references: readonly NativeReferenceCompatibility[],
-): readonly string[] => references.map(nativeReferenceKey).sort();
+): readonly string[] => references.map(nativeReferenceKey).sort(compareUtf16CodeUnits);

@@ -13,6 +13,7 @@ import {
   type EvidenceRef,
   type NativeExtensions,
 } from "#contracts";
+import { compareUtf16CodeUnits } from "#shared/fp";
 import { isCapabilityClaim } from "../../contracts/capability-claim-validation";
 import {
   cloneFrozen,
@@ -82,7 +83,7 @@ const readClosedBinding = (
     const descriptors = Object.getOwnPropertyDescriptors(value);
     if (
       Reflect.ownKeys(value).some((key) => typeof key !== "string") ||
-      Object.keys(descriptors).sort().join(",") !== "descriptor,kind,port" ||
+      Object.keys(descriptors).sort(compareUtf16CodeUnits).join(",") !== "descriptor,kind,port" ||
       !["kind", "descriptor", "port"].every((key) => "value" in descriptors[key]!)
     ) {
       return null;

@@ -1,4 +1,5 @@
 import { isContractVersion, isDigest, isExternalId, isJsonValue } from "#contracts";
+import { compareUtf16CodeUnits } from "#shared/fp";
 import { maybeMap, type MaybePromise } from "#shared/maybe";
 import { cloneFrozen, hasOnlyKeys, isPortableRecord } from "#shared/portable-data";
 import {
@@ -43,7 +44,9 @@ const sameDigest = (left: { algorithm: string; value: string }, right: typeof le
 
 const sameStrings = (left: readonly string[], right: readonly string[]): boolean =>
   left.length === right.length &&
-  [...left].sort().every((value, index) => value === [...right].sort()[index]);
+  [...left]
+    .sort(compareUtf16CodeUnits)
+    .every((value, index) => value === [...right].sort(compareUtf16CodeUnits)[index]);
 
 const samePolicies = (
   left: readonly SpecificationPolicyVersion[],

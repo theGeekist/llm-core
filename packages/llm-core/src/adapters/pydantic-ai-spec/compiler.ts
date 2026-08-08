@@ -5,6 +5,7 @@ import {
   isJsonValue,
   type JsonValue,
 } from "#contracts";
+import { compareUtf16CodeUnits } from "#shared/fp";
 import { maybeMap, type MaybePromise } from "#shared/maybe";
 import type {
   CompiledSpecification,
@@ -89,7 +90,7 @@ const canonicalJson = (value: JsonValue): string => {
   if (value === null || typeof value !== "object") return JSON.stringify(value);
   if (Array.isArray(value)) return `[${value.map(canonicalJson).join(",")}]`;
   return `{${Object.keys(value)
-    .sort()
+    .sort(compareUtf16CodeUnits)
     .map((key) => `${JSON.stringify(key)}:${canonicalJson(value[key]!)}`)
     .join(",")}}`;
 };

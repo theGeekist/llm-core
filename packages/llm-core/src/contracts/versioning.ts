@@ -1,3 +1,5 @@
+import { compareUtf16CodeUnits } from "#shared/fp";
+
 declare const contractVersionBrand: unique symbol;
 
 export type DigestAlgorithm = "sha-256";
@@ -43,7 +45,7 @@ const isPlainRecord = (value: unknown): value is Record<string, unknown> => {
 };
 
 const hasExactKeys = (value: Record<string, unknown>, expected: string[]): boolean => {
-  const actual = Object.keys(value).sort();
+  const actual = Object.keys(value).sort(compareUtf16CodeUnits);
   return actual.length === expected.length && actual.every((key, index) => key === expected[index]);
 };
 

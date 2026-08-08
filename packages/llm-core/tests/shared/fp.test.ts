@@ -1,5 +1,5 @@
 import { describe, expect, it } from "bun:test";
-import { bindFirst, toArray, toFalse, toNull, toTrue } from "#shared/fp";
+import { bindFirst, compareUtf16CodeUnits, toArray, toFalse, toNull, toTrue } from "#shared/fp";
 import { isNull } from "#shared/guards";
 
 describe("fp", () => {
@@ -30,6 +30,16 @@ describe("fp", () => {
       const sub = (a: number, b: number) => a - b;
       const subTen = bindFirst(sub, 10);
       expect(subTen(3)).toBe(7);
+    });
+  });
+
+  describe("compareUtf16CodeUnits", () => {
+    it("preserves deterministic locale-neutral code-unit ordering", () => {
+      expect(["éΔ", "e\u0301Δ", "eΔ"].sort(compareUtf16CodeUnits)).toEqual([
+        "e\u0301Δ",
+        "eΔ",
+        "éΔ",
+      ]);
     });
   });
 });

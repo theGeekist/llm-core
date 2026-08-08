@@ -31,7 +31,7 @@ export const fromLangChainOutputParser = (
   },
   async formatInstructions() {
     try {
-      const instructions = await parser.getFormatInstructions();
+      const instructions = parser.getFormatInstructions();
       if (typeof instructions !== "string") {
         throw new TypeError();
       }

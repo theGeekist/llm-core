@@ -7,6 +7,7 @@ import {
   type JsonObject,
   type JsonValue,
 } from "#contracts";
+import { compareUtf16CodeUnits } from "#shared/fp";
 import { hasOnlyKeys, isPortableRecord } from "#shared/portable-data";
 import {
   createConversionReport,
@@ -687,7 +688,7 @@ const overlayResolutionIssues = (
         const descendants = descendantStepIds(step);
         return [...winners.keys()]
           .filter((candidate) => descendants.has(candidate))
-          .sort()
+          .sort(compareUtf16CodeUnits)
           .map((descendant) => ({
             code: "spec-kit-workflow-overlay-anchor-conflict",
             severity: "error",

@@ -20,8 +20,9 @@ from typing import Any
 PROTOCOL = "llm-core.pydantic-ai.bridge/v2"
 PYDANTIC_AI_VERSION = "2.19.0"
 PYDANTIC_AI_COMMIT = "ed0f40c0e5061722f7d9f579ed7efff1b74e3ea5"
+PORTABLE_OWNER = "@geekist/llm-core"
 PORTABLE_CONTRACT = {
-    "authority": "@geekist/llm-core AgentRunner",
+    "authority": f"{PORTABLE_OWNER} AgentRunner",
     "version": "2",
     "source": "packages/llm-core/src/features/agent/public.ts",
 }
@@ -61,22 +62,22 @@ def operation(
 
 
 OPERATIONS = [
-    operation("model", "portable.agent.prepare.literal-read-only-definition", "portable", "@geekist/llm-core", PORTABLE_CONTRACT, "supported", [SUPPORTED_FIXTURE], "A closed literal AgentDefinition is prepared without dropping fields."),
-    operation("model", "portable.agent.start.text-prompt", "portable", "@geekist/llm-core", PORTABLE_CONTRACT, "supported", [SUPPORTED_FIXTURE], "A non-empty text prompt is passed literally to the assessed runtime."),
-    operation("model", "portable.agent.result.text", "portable", "@geekist/llm-core", PORTABLE_CONTRACT, "supported", [SUPPORTED_FIXTURE], "The assessed text result is returned as an explicit portable text value."),
+    operation("model", "portable.agent.prepare.literal-read-only-definition", "portable", PORTABLE_OWNER, PORTABLE_CONTRACT, "supported", [SUPPORTED_FIXTURE], "A closed literal AgentDefinition is prepared without dropping fields."),
+    operation("model", "portable.agent.start.text-prompt", "portable", PORTABLE_OWNER, PORTABLE_CONTRACT, "supported", [SUPPORTED_FIXTURE], "A non-empty text prompt is passed literally to the assessed runtime."),
+    operation("model", "portable.agent.result.text", "portable", PORTABLE_OWNER, PORTABLE_CONTRACT, "supported", [SUPPORTED_FIXTURE], "The assessed text result is returned as an explicit portable text value."),
     operation("tool", "native.pydantic-ai.testmodel.echo-string-tool-trajectory", "native", "pydantic-ai", NATIVE_CONTRACT, "supported", [SUPPORTED_FIXTURE], "The assessed TestModel trajectory preserves one echo tool call with one string value argument and matching return."),
-    operation("control", "portable.tool.execute.read-only-allowlisted", "portable", "@geekist/llm-core", PORTABLE_CONTRACT, "unsupported", [DEFINITION_REJECTION_FIXTURE], "The bridge does not accept a caller-declared portable tool binding."),
-    operation("event", "portable.agent.observe.normalized-lifecycle", "portable", "@geekist/llm-core", PORTABLE_CONTRACT, "supported", [SUPPORTED_FIXTURE], "Adapter-owned lifecycle events satisfy the closed AgentEvent sequence contract."),
+    operation("control", "portable.tool.execute.read-only-allowlisted", "portable", PORTABLE_OWNER, PORTABLE_CONTRACT, "unsupported", [DEFINITION_REJECTION_FIXTURE], "The bridge does not accept a caller-declared portable tool binding."),
+    operation("event", "portable.agent.observe.normalized-lifecycle", "portable", PORTABLE_OWNER, PORTABLE_CONTRACT, "supported", [SUPPORTED_FIXTURE], "Adapter-owned lifecycle events satisfy the closed AgentEvent sequence contract."),
     operation("state", "native.pydantic-ai.testmodel.echo-four-message-history-json", "native", "pydantic-ai", NATIVE_CONTRACT, "supported", [SUPPORTED_FIXTURE], "The assessed TestModel prompt, echo call, echo return and final text history is retained exactly."),
     operation("model", "native.pydantic-ai.typed-output", "native", "pydantic-ai", NATIVE_CONTRACT, "unsupported", [TYPED_OUTPUT_REJECTION_FIXTURE], "The bridge explicitly rejects native output_type requests."),
-    operation("model", "portable.agent.result.structured-json", "portable", "@geekist/llm-core", PORTABLE_CONTRACT, "unsupported", [RESULT_REJECTION_FIXTURE], "No exact portable output-schema validation operation is implemented."),
+    operation("model", "portable.agent.result.structured-json", "portable", PORTABLE_OWNER, PORTABLE_CONTRACT, "unsupported", [RESULT_REJECTION_FIXTURE], "No exact portable output-schema validation operation is implemented."),
     operation("model", "native.pydantic-ai.binary-media-reasoning-provider-extensions", "native", "pydantic-ai", NATIVE_CONTRACT, "unsupported", [DEFINITION_REJECTION_FIXTURE, RESULT_REJECTION_FIXTURE], "The bridge rejects these PydanticAI and provider-native values."),
     operation("event", "native.pydantic-ai.event-stream", "native", "pydantic-ai", NATIVE_CONTRACT, "unsupported", [NATIVE_EVENTS_REJECTION_FIXTURE], "The bridge explicitly rejects requests for PydanticAI native event streaming."),
     operation("state", "native.pydantic-ai.dependencies-and-provider-state", "native", "pydantic-ai", NATIVE_CONTRACT, "unsupported", [DEFINITION_REJECTION_FIXTURE, RESULT_REJECTION_FIXTURE], "Dependencies and provider state remain PydanticAI-owned and are not exposed by the bridge."),
-    operation("control", "portable.agent.cancel", "portable", "@geekist/llm-core", PORTABLE_CONTRACT, "unsupported", [CONTROL_REJECTION_FIXTURE], "The bounded process has no live in-flight cancellation channel."),
-    operation("control", "portable.agent.intervene", "portable", "@geekist/llm-core", PORTABLE_CONTRACT, "unsupported", [CONTROL_REJECTION_FIXTURE], "PydanticAI deferred calls are not llm-core authenticated interventions."),
-    operation("state", "portable.agent.resume.checkpoint", "portable", "@geekist/llm-core", PORTABLE_CONTRACT, "unsupported", [CONTROL_REJECTION_FIXTURE], "PydanticAI message history is not an llm-core checkpoint."),
-    operation("continuation", "portable.agent.continue.provider-session", "portable", "@geekist/llm-core", PORTABLE_CONTRACT, "unsupported", [CONTROL_REJECTION_FIXTURE], "A new run with history is not provider-session, live or durable continuation."),
+    operation("control", "portable.agent.cancel", "portable", PORTABLE_OWNER, PORTABLE_CONTRACT, "unsupported", [CONTROL_REJECTION_FIXTURE], "The bounded process has no live in-flight cancellation channel."),
+    operation("control", "portable.agent.intervene", "portable", PORTABLE_OWNER, PORTABLE_CONTRACT, "unsupported", [CONTROL_REJECTION_FIXTURE], "PydanticAI deferred calls are not llm-core authenticated interventions."),
+    operation("state", "portable.agent.resume.checkpoint", "portable", PORTABLE_OWNER, PORTABLE_CONTRACT, "unsupported", [CONTROL_REJECTION_FIXTURE], "PydanticAI message history is not an llm-core checkpoint."),
+    operation("continuation", "portable.agent.continue.provider-session", "portable", PORTABLE_OWNER, PORTABLE_CONTRACT, "unsupported", [CONTROL_REJECTION_FIXTURE], "A new run with history is not provider-session, live or durable continuation."),
 ]
 NOW = "2026-07-30T00:00:00.000Z"
 prepared: dict[str, dict[str, Any]] = {}
@@ -157,110 +158,112 @@ def event(run_id: str, sequence: int, kind: str, facts: dict[str, Any]) -> dict[
     }
 
 
-def handle(request: dict[str, Any]) -> dict[str, Any]:
-    operation = request.get("operation", "")
-    if request.get("protocol") != PROTOCOL:
-        return response(operation, error={"code": "protocol-mismatch", "message": "Unsupported protocol."})
-    payload = request.get("payload") or {}
-    if operation == "handshake":
-        available, version = pydantic_ai_version()
+def handle_handshake() -> dict[str, Any]:
+    available, version = pydantic_ai_version()
+    return response(
+        "handshake",
+        {
+            "protocol": PROTOCOL,
+            "pythonVersion": ".".join(map(str, sys.version_info[:3])),
+            "pydanticAiVersion": version,
+            "pydanticAiAvailable": available,
+            "operations": OPERATIONS,
+        },
+    )
+
+
+def handle_prepare(payload: dict[str, Any]) -> dict[str, Any]:
+    spec = payload.get("spec")
+    allowed_spec_keys = {
+        "agentId",
+        "version",
+        "instructions",
+        "effectRequirement",
+    }
+    if (
+        not isinstance(spec, dict)
+        or set(spec) != allowed_spec_keys
+        or spec.get("effectRequirement") != "read-only"
+        or not isinstance(spec.get("instructions"), str)
+        or "{{" in spec["instructions"]
+        or "}}" in spec["instructions"]
+    ):
         return response(
-            operation,
-            {
-                "protocol": PROTOCOL,
-                "pythonVersion": ".".join(map(str, sys.version_info[:3])),
-                "pydanticAiVersion": version,
-                "pydanticAiAvailable": available,
-                "operations": OPERATIONS,
+            "prepare",
+            error={
+                "code": "unsupported-agent-spec",
+                "message": "Only closed, literal, read-only agent specs are supported.",
             },
         )
-    if operation == "prepare":
-        spec = payload.get("spec")
-        allowed_spec_keys = {
-            "agentId",
-            "version",
-            "instructions",
-            "effectRequirement",
-        }
-        if (
-            not isinstance(spec, dict)
-            or set(spec) != allowed_spec_keys
-            or spec.get("effectRequirement") != "read-only"
-            or not isinstance(spec.get("instructions"), str)
-            or "{{" in spec["instructions"]
-            or "}}" in spec["instructions"]
-        ):
-            return response(
-                operation,
-                error={
-                    "code": "unsupported-agent-spec",
-                    "message": "Only closed, literal, read-only agent specs are supported.",
-                },
-            )
-        token = str(uuid.uuid5(uuid.NAMESPACE_URL, json.dumps(spec, sort_keys=True)))
-        prepared[token] = spec
-        return response(operation, {"token": token})
-    if operation == "start":
-        token = payload.get("token")
-        if token not in prepared:
-            return response(operation, error={"code": "unknown-token", "message": "Unknown prepared spec."})
-        run_input = payload.get("input")
-        if (
-            not isinstance(run_input, dict)
-            or set(run_input) != {"prompt"}
-            or not isinstance(run_input["prompt"], str)
-            or not run_input["prompt"]
-        ):
-            return response(
-                operation,
-                error={
-                    "code": "unsupported-input",
-                    "message": "Only a non-empty prompt string is supported.",
-                },
-            )
-        run_id = uuid7()
-        available, _version = pydantic_ai_version()
-        runtime_result = (
-            execute_pydantic_ai(
-                run_input["prompt"],
-                str(prepared[token]["instructions"]),
-            )
-            if available
-            else None
+    token = str(uuid.uuid5(uuid.NAMESPACE_URL, json.dumps(spec, sort_keys=True)))
+    prepared[token] = spec
+    return response("prepare", {"token": token})
+
+
+def handle_start(payload: dict[str, Any]) -> dict[str, Any]:
+    token = payload.get("token")
+    if token not in prepared:
+        return response("start", error={"code": "unknown-token", "message": "Unknown prepared spec."})
+    run_input = payload.get("input")
+    if (
+        not isinstance(run_input, dict)
+        or set(run_input) != {"prompt"}
+        or not isinstance(run_input["prompt"], str)
+        or not run_input["prompt"]
+    ):
+        return response(
+            "start",
+            error={
+                "code": "unsupported-input",
+                "message": "Only a non-empty prompt string is supported.",
+            },
         )
-        if runtime_result:
-            output = {"kind": "text", "text": runtime_result["output"]}
-            native_result = {
-                "runtime": "pydantic-ai",
-                "runtimeVersion": PYDANTIC_AI_VERSION,
-                "native": {
-                    "output": runtime_result["output"],
-                    "toolNames": runtime_result["toolNames"],
-                    "messageHistory": runtime_result["messages"],
-                },
-            }
-        else:
-            output = {"kind": "text", "text": "deterministic"}
-            native_result = None
-        runs[run_id] = {
-            "events": [
-                event(
-                    run_id,
-                    0,
-                    "agent.run.started",
-                    {
-                        "agentId": prepared[token]["agentId"],
-                        "agentVersion": prepared[token]["version"],
-                    },
-                ),
-                event(run_id, 1, "agent.run.progress", {"code": "python.model.completed"}),
-                event(run_id, 2, "agent.run.progress", {"code": "python.tool.completed"}),
-                event(run_id, 3, "agent.run.completed", {"status": "completed"}),
-            ],
-            "result": {"identity": {"runId": run_id}, "status": "completed", "output": output},
-            "nativeResult": native_result,
+    run_id = uuid7()
+    available, _version = pydantic_ai_version()
+    runtime_result = (
+        execute_pydantic_ai(
+            run_input["prompt"],
+            str(prepared[token]["instructions"]),
+        )
+        if available
+        else None
+    )
+    if runtime_result:
+        output = {"kind": "text", "text": runtime_result["output"]}
+        native_result = {
+            "runtime": "pydantic-ai",
+            "runtimeVersion": PYDANTIC_AI_VERSION,
+            "native": {
+                "output": runtime_result["output"],
+                "toolNames": runtime_result["toolNames"],
+                "messageHistory": runtime_result["messages"],
+            },
         }
-        return response(operation, {"runId": run_id})
+    else:
+        output = {"kind": "text", "text": "deterministic"}
+        native_result = None
+    runs[run_id] = {
+        "events": [
+            event(
+                run_id,
+                0,
+                "agent.run.started",
+                {
+                    "agentId": prepared[token]["agentId"],
+                    "agentVersion": prepared[token]["version"],
+                },
+            ),
+            event(run_id, 1, "agent.run.progress", {"code": "python.model.completed"}),
+            event(run_id, 2, "agent.run.progress", {"code": "python.tool.completed"}),
+            event(run_id, 3, "agent.run.completed", {"status": "completed"}),
+        ],
+        "result": {"identity": {"runId": run_id}, "status": "completed", "output": output},
+        "nativeResult": native_result,
+    }
+    return response("start", {"runId": run_id})
+
+
+def handle_run_operation(operation: str, payload: dict[str, Any]) -> dict[str, Any]:
     run_id = payload.get("runId")
     run = runs.get(run_id)
     if run is None:
@@ -306,6 +309,20 @@ def handle(request: dict[str, Any]) -> dict[str, Any]:
     if operation == "intervene":
         return response(operation, {"status": "unsupported", "acknowledgedAt": NOW})
     return response(operation, error={"code": "unknown-operation", "message": "Unknown operation."})
+
+
+def handle(request: dict[str, Any]) -> dict[str, Any]:
+    operation = request.get("operation", "")
+    if request.get("protocol") != PROTOCOL:
+        return response(operation, error={"code": "protocol-mismatch", "message": "Unsupported protocol."})
+    payload = request.get("payload") or {}
+    if operation == "handshake":
+        return handle_handshake()
+    if operation == "prepare":
+        return handle_prepare(payload)
+    if operation == "start":
+        return handle_start(payload)
+    return handle_run_operation(operation, payload)
 
 
 for raw_line in sys.stdin:

@@ -9,6 +9,7 @@ import {
   type JsonObject,
   type JsonValue,
 } from "#contracts";
+import { compareUtf16CodeUnits } from "#shared/fp";
 import { cloneFrozen, hasOnlyKeys, isPortableRecord } from "#shared/portable-data";
 import {
   createConversionReport,
@@ -484,7 +485,9 @@ const parseStatus = (stdout: string, contract: OpenSpecStatusContract): Captured
       throw new TypeError("OpenSpec status artifact bindings must remain internally consistent.");
     }
     if (isSourceArtifact(artifact)) {
-      const unresolved = artifact.requires.filter((required) => !completed.has(required)).sort();
+      const unresolved = artifact.requires
+        .filter((required) => !completed.has(required))
+        .sort(compareUtf16CodeUnits);
       if (
         (artifact.status === "ready" && unresolved.length > 0) ||
         (artifact.status === "blocked" &&

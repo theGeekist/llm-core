@@ -7,6 +7,7 @@ import {
   isTraceId,
   type InvocationContext,
 } from "#contracts";
+import { compareUtf16CodeUnits } from "#shared/fp";
 import { cloneFrozen, hasOnlyKeys, isPortableRecord as isRecord } from "#shared/portable-data";
 import {
   createDurableExecutionHandle,
@@ -61,7 +62,7 @@ const isCanonicalTimestamp = (value: unknown): value is string =>
 
 const isCostLimit = (value: unknown): boolean =>
   isRecord(value) &&
-  Object.keys(value).sort().join(",") === "currency,minorUnits" &&
+  Object.keys(value).sort(compareUtf16CodeUnits).join(",") === "currency,minorUnits" &&
   typeof value.currency === "string" &&
   /^[A-Z]{3}$/.test(value.currency) &&
   typeof value.minorUnits === "string" &&
@@ -157,7 +158,7 @@ const registerState = (value: CapabilityInvocationState | undefined): Capability
       break;
     case "paused-live":
       if (
-        Object.keys(candidate).sort().join(",") === "continuation,kind" &&
+        Object.keys(candidate).sort(compareUtf16CodeUnits).join(",") === "continuation,kind" &&
         isLiveContinuation(candidate.continuation)
       ) {
         return Object.freeze({
@@ -168,7 +169,7 @@ const registerState = (value: CapabilityInvocationState | undefined): Capability
       break;
     case "paused-snapshot":
       if (
-        Object.keys(candidate).sort().join(",") === "kind,snapshot" &&
+        Object.keys(candidate).sort(compareUtf16CodeUnits).join(",") === "kind,snapshot" &&
         isRecord(candidate.snapshot) &&
         Object.keys(candidate.snapshot).every((key) =>
           ["kind", "snapshotId", "createdAt", "schema", "value"].includes(key),
@@ -191,7 +192,7 @@ const registerState = (value: CapabilityInvocationState | undefined): Capability
       break;
     case "resume-checkpoint":
       if (
-        Object.keys(candidate).sort().join(",") === "checkpoint,kind" &&
+        Object.keys(candidate).sort(compareUtf16CodeUnits).join(",") === "checkpoint,kind" &&
         isRegisteredResumableCheckpoint(candidate.checkpoint)
       ) {
         return Object.freeze({
@@ -202,9 +203,10 @@ const registerState = (value: CapabilityInvocationState | undefined): Capability
       break;
     case "continue-provider-session":
       if (
-        Object.keys(candidate).sort().join(",") === "kind,session" &&
+        Object.keys(candidate).sort(compareUtf16CodeUnits).join(",") === "kind,session" &&
         isRecord(candidate.session) &&
-        Object.keys(candidate.session).sort().join(",") === "kind,providerId,sessionId"
+        Object.keys(candidate.session).sort(compareUtf16CodeUnits).join(",") ===
+          "kind,providerId,sessionId"
       ) {
         return Object.freeze({
           kind: "continue-provider-session",
@@ -214,12 +216,13 @@ const registerState = (value: CapabilityInvocationState | undefined): Capability
       break;
     case "signal-durable-execution":
       if (
-        Object.keys(candidate).sort().join(",") === "handle,kind" &&
+        Object.keys(candidate).sort(compareUtf16CodeUnits).join(",") === "handle,kind" &&
         isRecord(candidate.handle) &&
-        Object.keys(candidate.handle).sort().join(",") ===
+        Object.keys(candidate.handle).sort(compareUtf16CodeUnits).join(",") ===
           "durableJobId,kind,opaqueHandle,runtime" &&
         isRecord(candidate.handle.runtime) &&
-        Object.keys(candidate.handle.runtime).sort().join(",") === "runtimeId,runtimeVersion"
+        Object.keys(candidate.handle.runtime).sort(compareUtf16CodeUnits).join(",") ===
+          "runtimeId,runtimeVersion"
       ) {
         return Object.freeze({
           kind: "signal-durable-execution",

@@ -8,6 +8,7 @@ import {
   type PortableContent,
   type SchemaRef,
 } from "#contracts";
+import { compareUtf16CodeUnits } from "#shared/fp";
 import type { MaybePromise } from "#shared/maybe";
 import { isPortableMediaContent } from "../media/public";
 
@@ -167,7 +168,8 @@ const isPortableContent = (value: unknown): value is PortableContent => {
   const candidate = value as { kind?: unknown; text?: unknown; value?: unknown };
   if (candidate.kind === "text") {
     return (
-      Object.keys(value).sort().join(",") === "kind,text" && typeof candidate.text === "string"
+      Object.keys(value).sort(compareUtf16CodeUnits).join(",") === "kind,text" &&
+      typeof candidate.text === "string"
     );
   }
   if (candidate.kind === "json") {
@@ -188,7 +190,7 @@ export const createParsedModelOutput = (value: unknown): ParsedModelOutput => {
   const candidate = value as { kind?: unknown; content?: unknown; value?: unknown };
   if (
     candidate.kind === "content" &&
-    Object.keys(value).sort().join(",") === "content,kind" &&
+    Object.keys(value).sort(compareUtf16CodeUnits).join(",") === "content,kind" &&
     Array.isArray(candidate.content) &&
     candidate.content.length > 0 &&
     candidate.content.every(isPortableContent)
@@ -197,7 +199,7 @@ export const createParsedModelOutput = (value: unknown): ParsedModelOutput => {
   }
   if (
     candidate.kind === "json" &&
-    Object.keys(value).sort().join(",") === "kind,value" &&
+    Object.keys(value).sort(compareUtf16CodeUnits).join(",") === "kind,value" &&
     isJsonValue(candidate.value)
   ) {
     return deepFreeze(structuredClone(candidate)) as ParsedModelOutput;

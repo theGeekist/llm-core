@@ -1,4 +1,5 @@
 import { isDigest, isExternalId, type Digest, type InvocationContext } from "#contracts";
+import { compareUtf16CodeUnits } from "#shared/fp";
 import { maybeMap, type MaybePromise } from "#shared/maybe";
 
 declare const skillIdBrand: unique symbol;
@@ -47,7 +48,7 @@ export const registerAgentSkill = (value: unknown): AgentSkillRef => {
     typeof value !== "object" ||
     value === null ||
     Array.isArray(value) ||
-    Object.keys(value).sort().join(",") !== "digest,scope,skillId"
+    Object.keys(value).sort(compareUtf16CodeUnits).join(",") !== "digest,scope,skillId"
   ) {
     throw new TypeError("Agent skills must use a closed portable identity.");
   }
@@ -71,7 +72,8 @@ const stripLocalPaths = (
       if (
         typeof candidate !== "object" ||
         candidate === null ||
-        Object.keys(candidate).sort().join(",") !== "digest,localPath,scope,skillId" ||
+        Object.keys(candidate).sort(compareUtf16CodeUnits).join(",") !==
+          "digest,localPath,scope,skillId" ||
         typeof candidate.localPath !== "string" ||
         candidate.localPath.trim().length === 0
       ) {

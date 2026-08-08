@@ -5,6 +5,9 @@ export const toFalse = () => false;
 
 export const toArray = (value: string | string[]) => (Array.isArray(value) ? value : [value]);
 
+export const compareUtf16CodeUnits = (left: string, right: string): number =>
+  left < right ? -1 : left > right ? 1 : 0;
+
 export type Unary<TIn, TOut> = (value: TIn) => TOut;
 
 const applyCompose = (fns: readonly Unary<unknown, unknown>[], value: unknown) => {

@@ -6,6 +6,7 @@ import {
   isJsonValue,
   type JsonValue,
 } from "#contracts";
+import { compareUtf16CodeUnits } from "#shared/fp";
 import { cloneFrozen, hasOnlyKeys, isPortableRecord } from "#shared/portable-data";
 import {
   createConversionReport,
@@ -76,7 +77,7 @@ const canonicalizeAiSdlcJson = (value: JsonValue): string => {
     if (typeof item === "string") return JSON.stringify(item);
     if (Array.isArray(item)) return `[${item.map(serialize).join(",")}]`;
     return `{${Object.keys(item)
-      .sort()
+      .sort(compareUtf16CodeUnits)
       .map((key) => `${JSON.stringify(key)}:${serialize(item[key]!)}`)
       .join(",")}}`;
   };

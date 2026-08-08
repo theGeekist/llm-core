@@ -8,6 +8,7 @@ import {
   type JsonValue,
   type SchemaRef,
 } from "#contracts";
+import { compareUtf16CodeUnits } from "#shared/fp";
 import { maybeMap, type MaybePromise } from "#shared/maybe";
 
 declare const registeredSchemaDocumentBrand: unique symbol;
@@ -66,7 +67,7 @@ const registerResolution = (
 ): RegisteredSchemaDocument => {
   if (
     resolution === null ||
-    Object.keys(resolution).sort().join(",") !== "bytes,schema" ||
+    Object.keys(resolution).sort(compareUtf16CodeUnits).join(",") !== "bytes,schema" ||
     !isSchemaRef(resolution.schema) ||
     !sameSchema(expected, resolution.schema) ||
     !(resolution.bytes instanceof Uint8Array)
