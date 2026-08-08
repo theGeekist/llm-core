@@ -1,0 +1,45 @@
+{
+  "schemaVersion": "1.0.0",
+  "identity": {
+    "name": "aifsd-fixture-pydantic-ai",
+    "version": "0.0.0",
+    "publisher": "AIFSD",
+    "license": "Apache-2.0"
+  },
+  "integrationClass": "runtime",
+  "capabilities": ["runtime.typed-agent"],
+  "upstreams": [
+    {
+      "name": "PydanticAI",
+      "version": "2.19.0",
+      "source": "https://github.com/pydantic/pydantic-ai",
+      "revision": "ed0f40c0e5061722f7d9f579ed7efff1b74e3ea5"
+    }
+  ],
+  "operations": [
+    {
+      "operationId": "native.typed-agent-run",
+      "disposition": "supported",
+      "upstream": "PydanticAI",
+      "upstreamVersion": "2.19.0"
+    },
+    {
+      "operationId": "native.intrinsic-crash-durable-run",
+      "disposition": "unsupported",
+      "upstream": "PydanticAI",
+      "upstreamVersion": "2.19.0"
+    }
+  ],
+  "entrypoints": {
+    "metadata": "./integration/manifest.json",
+    "qualification": "./qualification/native-probe.py",
+    "native": "pydantic_ai"
+  },
+  "permissions": {
+    "filesystem": [],
+    "process": ["python"],
+    "network": [],
+    "effects": ["model-invocation"],
+    "secretSlots": []
+  }
+}

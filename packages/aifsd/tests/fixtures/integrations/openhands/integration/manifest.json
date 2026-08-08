@@ -1,0 +1,45 @@
+{
+  "schemaVersion": "1.0.0",
+  "identity": {
+    "name": "aifsd-fixture-openhands",
+    "version": "0.0.0",
+    "publisher": "AIFSD",
+    "license": "Apache-2.0"
+  },
+  "integrationClass": "development",
+  "capabilities": ["coding-agent.native-events"],
+  "upstreams": [
+    {
+      "name": "OpenHands Software Agent SDK",
+      "version": "1.37.1",
+      "source": "https://github.com/OpenHands/software-agent-sdk",
+      "revision": "310989d306114efd0fcadbcbed9ff9c21d4a5963"
+    }
+  ],
+  "operations": [
+    {
+      "operationId": "native.message-event-round-trip",
+      "disposition": "supported",
+      "upstream": "OpenHands Software Agent SDK",
+      "upstreamVersion": "1.37.1"
+    },
+    {
+      "operationId": "native.distributed-workflow-durability",
+      "disposition": "unsupported",
+      "upstream": "OpenHands Software Agent SDK",
+      "upstreamVersion": "1.37.1"
+    }
+  ],
+  "entrypoints": {
+    "metadata": "./integration/manifest.json",
+    "qualification": "./qualification/native-probe.py",
+    "native": "openhands.sdk"
+  },
+  "permissions": {
+    "filesystem": [],
+    "process": ["python"],
+    "network": [],
+    "effects": [],
+    "secretSlots": []
+  }
+}

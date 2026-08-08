@@ -1,0 +1,33 @@
+{
+  "name": "aifsd-fixture-openhands",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "files": [
+    "dist/esm",
+    "dist/types",
+    "integration",
+    "qualification",
+    "pyproject.toml",
+    "uv.lock",
+    "README.md"
+  ],
+  "exports": {
+    ".": {
+      "types": "./dist/types/index.d.ts",
+      "import": "./dist/esm/index.js",
+      "default": "./dist/esm/index.js"
+    }
+  },
+  "scripts": {
+    "build": "rm -rf dist && tsc -p tsconfig.build.json --emitDeclarationOnly && bun build src/index.ts --outdir dist/esm --target=node --format=esm",
+    "check:types": "tsc -p tsconfig.json --noEmit",
+    "test": "bun test tests",
+    "qualify:native": "bun run scripts/qualify.ts",
+    "pack:test": "bun run scripts/pack-test.ts",
+    "validate": "bun run check:types && bun run build && bun run test && bun run qualify:native && bun run pack:test"
+  },
+  "devDependencies": {
+    "@aifsd/sdk": "0.0.0"
+  }
+}

@@ -1,0 +1,9 @@
+{
+  "operationId": "native.distributed-workflow-durability",
+  "outcome": "observed-unsupported",
+  "basis": "pinned-source",
+  "upstreamVersion": "1.37.1",
+  "upstreamRevision": "310989d306114efd0fcadbcbed9ff9c21d4a5963",
+  "source": "context/aifsd-research/profiles/openhands-sdk.md",
+  "finding": "Agent Server has process-oriented conversation leases; the pinned source does not claim a distributed workflow durability guarantee."
+}

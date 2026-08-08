@@ -9,5 +9,5 @@
     "rootDir": "src",
     "paths": {}
   },
-  "include": ["src/config/index.ts", "src/integrations/index.ts"]
+  "include": ["src/index.ts"]
 }

@@ -1,0 +1,9 @@
+{
+  "operationId": "native.intrinsic-crash-durable-run",
+  "outcome": "observed-unsupported",
+  "basis": "pinned-source",
+  "upstreamVersion": "2.19.0",
+  "upstreamRevision": "ed0f40c0e5061722f7d9f579ed7efff1b74e3ea5",
+  "source": "context/aifsd-research/profiles/pydantic-ai.md",
+  "finding": "The pinned source states that a local agent run is not crash durable; durability requires execution inside an external engine integration."
+}

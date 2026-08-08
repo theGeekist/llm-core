@@ -13,13 +13,18 @@
       "types": "./dist/types/config/index.d.ts",
       "import": "./dist/esm/config/index.js",
       "default": "./dist/esm/config/index.js"
+    },
+    "./integrations": {
+      "types": "./dist/types/integrations/index.d.ts",
+      "import": "./dist/esm/integrations/index.js",
+      "default": "./dist/esm/integrations/index.js"
     }
   },
   "scripts": {
     "build": "bun run clean && bun run check:types && bun run build:types && bun run build:runtime",
     "clean": "rm -rf dist",
-    "build:types": "tsc -p tsconfig.build.json --emitDeclarationOnly",
-    "build:runtime": "bun build src/config/index.ts --outdir dist/esm/config --target=node --format=esm --external '@geekist/llm-core/*' --external '@geekist/strict-json' --external '@wpkernel/pipeline/*'",
+    "build:types": "tsc -p tsconfig.build.json --emitDeclarationOnly && rm -f dist/types/integrations/qualification-host.d.ts dist/types/integrations/qualification-host.d.ts.map dist/types/integrations/trust-host.d.ts dist/types/integrations/trust-host.d.ts.map",
+    "build:runtime": "bun build src/config/index.ts --outdir dist/esm/config --target=node --format=esm --external '@geekist/llm-core/*' --external '@geekist/strict-json' --external '@wpkernel/pipeline/*' && bun build src/integrations/index.ts --outdir dist/esm/integrations --target=node --format=esm --external '@geekist/llm-core/*' --external '@geekist/strict-json' --external '@wpkernel/pipeline/*'",
     "check:types": "tsc -p tsconfig.json --noEmit",
     "lint": "eslint \"src/**/*.{ts,tsx,js,jsx}\" \"tests/**/*.{ts,tsx,js,jsx}\"",
     "test": "bun test --pass-with-no-tests tests",

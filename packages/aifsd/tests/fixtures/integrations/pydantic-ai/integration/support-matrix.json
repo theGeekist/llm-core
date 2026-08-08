@@ -1,0 +1,17 @@
+{
+  "upstream": {
+    "name": "PydanticAI",
+    "version": "2.19.0",
+    "revision": "ed0f40c0e5061722f7d9f579ed7efff1b74e3ea5"
+  },
+  "operations": [
+    {
+      "operationId": "native.typed-agent-run",
+      "disposition": "supported"
+    },
+    {
+      "operationId": "native.intrinsic-crash-durable-run",
+      "disposition": "unsupported"
+    }
+  ]
+}

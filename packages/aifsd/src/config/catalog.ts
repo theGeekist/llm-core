@@ -43,6 +43,27 @@ const validateMember = (member: unknown, path: string): ConfigurationDiagnostic[
   return diagnostics;
 };
 
+const validateMembersRepresentation = (
+  representation: Record<string, unknown>,
+  path: string,
+): ConfigurationDiagnostic[] => {
+  const diagnostics = sealed(representation, ["kind", "members"], path);
+  if (!Array.isArray(representation.members)) {
+    diagnostics.push(invalid("expected-array", `${path}/members`));
+    return diagnostics;
+  }
+  if (representation.members.length === 0) {
+    diagnostics.push(diagnostic("closure-incomplete", "closure-incomplete", `${path}/members`));
+  }
+  representation.members.forEach((member, index) => {
+    diagnostics.push(...validateMember(member, `${path}/members/${index}`));
+  });
+  duplicateDependencyMemberIndexes(representation.members).forEach((index) =>
+    diagnostics.push(invalid("closure-members-duplicated", `${path}/members/${index}`)),
+  );
+  return diagnostics;
+};
+
 export const validateClosureStructure = (
   closure: unknown,
   path: string,
@@ -59,17 +80,7 @@ export const validateClosureStructure = (
   }
   const rpath = `${path}/representation`;
   if (representation.kind === "members") {
-    diagnostics.push(...sealed(representation, ["kind", "members"], rpath));
-    if (!Array.isArray(representation.members)) {
-      diagnostics.push(invalid("expected-array", `${rpath}/members`));
-    } else {
-      representation.members.forEach((member, index) => {
-        diagnostics.push(...validateMember(member, `${rpath}/members/${index}`));
-      });
-      duplicateDependencyMemberIndexes(representation.members).forEach((index) =>
-        diagnostics.push(invalid("closure-members-duplicated", `${rpath}/members/${index}`)),
-      );
-    }
+    diagnostics.push(...validateMembersRepresentation(representation, rpath));
   } else if (representation.kind === "package-lock") {
     diagnostics.push(...sealed(representation, ["kind", "lockDigest"], rpath));
     if (!isDigest(representation.lockDigest)) {
@@ -133,7 +144,7 @@ const validateEvidenceContent = (content: unknown, path: string): ConfigurationD
   return diagnostics;
 };
 
-const validateEvidenceRef = (evidence: unknown, path: string): ConfigurationDiagnostic[] => {
+export const validateEvidenceRef = (evidence: unknown, path: string): ConfigurationDiagnostic[] => {
   if (!isObjectRecord(evidence)) {
     return [invalid("expected-object", path)];
   }
