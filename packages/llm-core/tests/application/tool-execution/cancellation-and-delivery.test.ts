@@ -131,6 +131,25 @@ describe("controlled tool execution", () => {
     expect(replay.status).toBe("indeterminate");
   });
 
+  it("reports synchronous event-sink throws without gating execution", async () => {
+    const journal = new MemoryJournal();
+    const input = baseInput(journal, () => ({
+      toolCallId: CALL_ID,
+      status: "succeeded",
+      content: [],
+    }));
+    const eventSink: EventSink = {
+      emit: () => {
+        throw new Error("sink invocation failed");
+      },
+    };
+
+    const outcome = await executeControlledTool({ ...input, eventSink });
+
+    expect(outcome.status).toBe("succeeded");
+    expect("eventDelivery" in outcome && outcome.eventDelivery).toBe("failed");
+  });
+
   it("never re-executes when terminal receipt persistence fails after an effect", async () => {
     const journal = new MemoryJournal();
     const append = journal.append.bind(journal);

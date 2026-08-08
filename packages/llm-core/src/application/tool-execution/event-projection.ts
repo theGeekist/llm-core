@@ -32,12 +32,14 @@ const eventKind = (from: ToolReceiptState, to: ToolReceiptState): ToolExecutionE
 /** Receipt persistence is authoritative; event delivery never gates execution. */
 export const project = (sink: EventSink | undefined, event: ToolExecutionEvent): EventDelivery => {
   if (!sink) return "not-configured";
+  let pendingDelivery: Promise<void>;
   try {
-    void sink.emit(event).catch(() => undefined);
-    return "scheduled";
+    pendingDelivery = sink.emit(event);
   } catch {
     return "failed";
   }
+  void pendingDelivery.catch(() => undefined);
+  return "scheduled";
 };
 
 export const mergeDelivery = (current: EventDelivery, next: EventDelivery): EventDelivery => {

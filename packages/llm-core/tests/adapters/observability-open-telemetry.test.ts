@@ -99,6 +99,24 @@ describe("OpenTelemetry observability projection", () => {
     expect(attempts).toBe(1);
   });
 
+  it("isolates synchronous exporter throws inside the scheduled delivery", async () => {
+    let attempts = 0;
+    const projector = createOpenTelemetryProjector({
+      declaration,
+      port: {
+        export: () => {
+          attempts += 1;
+          throw new Error("collector invocation failed");
+        },
+      },
+    });
+
+    expect(projector.project({ event: event() })).toBe("scheduled");
+    expect(attempts).toBe(0);
+    await Promise.resolve();
+    expect(attempts).toBe(1);
+  });
+
   it("honors declared sampling before a port can observe the event", () => {
     let attempts = 0;
     const projector = createOpenTelemetryProjector({

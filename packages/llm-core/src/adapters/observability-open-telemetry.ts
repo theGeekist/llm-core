@@ -169,6 +169,13 @@ export const createOpenTelemetryProjector = (
   const frozenDeclaration = cloneFrozen(declaration);
   const emit = input.port.export.bind(input.port);
   const sample = input.sample;
+  const exportBestEffort = async (projection: OpenTelemetryProjection): Promise<void> => {
+    try {
+      await emit(projection);
+    } catch {
+      // Delivery is a one-way best-effort projection. It never retries.
+    }
+  };
 
   return Object.freeze({
     declaration: frozenDeclaration,
@@ -189,11 +196,7 @@ export const createOpenTelemetryProjector = (
       try {
         const projection = projectionFor(frozenDeclaration, projectionInput);
         queueMicrotask(() => {
-          try {
-            void Promise.resolve(emit(projection)).catch(() => undefined);
-          } catch {
-            // Delivery is a one-way best-effort projection. It never retries.
-          }
+          void exportBestEffort(projection);
         });
         return "scheduled";
       } catch {
