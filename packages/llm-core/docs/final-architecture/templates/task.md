@@ -67,9 +67,10 @@ brief above the work log is immutable while claimed.
 
 - New or moved code follows the shallow layout and naming rules in
   `COORDINATION.md`.
-- New or materially changed hand-written source/test modules satisfy the
-  500-SLOC rule, or the handoff records a coordinator-approved waiver and named
-  follow-up task.
+- New or materially changed hand-written source/test modules target roughly 500
+  lines. Modules from 501 through 600 lines record the lightweight
+  `approximately 500 lines` waiver; only modules above 600 require the stronger
+  coordinator waiver and named follow-up.
 
 ## Verification
 

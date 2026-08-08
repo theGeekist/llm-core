@@ -1,7 +1,7 @@
 ---
 architecture_version: 2
 id: architecture-test-sloc-decomposition
-title: Decompose legacy runner and workflow test modules
+title: Decompose legacy runner test modules above the hard SLOC boundary
 stage: architecture
 status: proposed
 priority: medium
@@ -22,7 +22,6 @@ conflicts_with: []
 write_scope:
   - packages/llm-core/tests/application/agent/local-runner.test.ts
   - packages/llm-core/tests/application/agent/model-tool-program.test.ts
-  - packages/llm-core/tests/application/workflow/resume.test.ts
   - packages/llm-core/tests/support/**
   - scripts/sloc-baseline.json
   - packages/llm-core/docs/final-architecture/tasks/architecture-test-sloc-decomposition.md
@@ -32,20 +31,20 @@ required_reading:
 read_scope:
   - scripts/sloc-baseline.json
 review_owner: coordinator
-updated_at: 2026-08-04
+updated_at: 2026-08-08
 ---
 
-# architecture-test-sloc-decomposition — Decompose legacy runner and workflow test modules
+# architecture-test-sloc-decomposition — Decompose legacy runner tests above the hard SLOC boundary
 
 ## Objective
 
-Split the three sealed runner and workflow proof suites into focused modules
-without weakening their conformance evidence.
+Split the two changed runner proof suites that exceed the 600-line hard boundary
+into focused modules without weakening their conformance evidence.
 
 ## In scope
 
-- Decompose the local-runner, model-tool-program and workflow-resume suites into
-  capability-focused test modules below the 500-line source limit.
+- Decompose the local-runner and model-tool-program suites into
+  capability-focused test modules at or below the 600-line hard boundary.
 - Preserve all proof behavior and test-support ownership introduced by
   `architecture-runtime-ownership-correction`.
 - Remove the temporary versioned SLOC waivers after decomposition.
@@ -58,8 +57,8 @@ without weakening their conformance evidence.
 
 ## Acceptance criteria
 
-- Every affected hand-written test module is at or below 500 physical lines.
-- The three temporary SLOC waivers are removed.
+- Every affected hand-written test module is at or below 600 physical lines.
+- The two temporary hard-boundary SLOC waivers are removed.
 - Runner and controlled-workflow proof counts and behavior remain intact.
 - The package qualification suite passes.
 

@@ -46,7 +46,7 @@ read_scope:
   - packages/llm-core/src/features/evidence/**
   - packages/llm-core/src/features/model/**
 review_owner: coordinator
-updated_at: 2026-08-03
+updated_at: 2026-08-08
 ---
 
 # cost-budget-enforcement — Integrate budget decisions at execution gateways
@@ -83,9 +83,10 @@ unused helper.
 - Agent, tool and workflow entry paths cannot bypass the same budget authority
   by calling a lower-level executor directly.
 - Fully synchronous paths remain synchronous.
-- Every new or materially changed hand-written source/test module satisfies the
-  500-SLOC rule; any inherited exception is decomposed or receives an explicit
-  coordinator waiver and follow-up task.
+- Every new or materially changed hand-written source/test module targets
+  roughly 500 lines. A module from 501 through 600 lines records the lightweight
+  `approximately 500 lines` waiver; only work above 600 requires decomposition
+  or the stronger coordinator waiver and follow-up.
 
 ## Regression
 

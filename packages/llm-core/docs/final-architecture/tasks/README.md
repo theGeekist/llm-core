@@ -97,7 +97,7 @@ supplied separately by `tasks:context` and must not be repeated merely to pad
 and reconstruction. Historical loss wording remains provenance only and must
 be paired with current correction material when it could otherwise mislead.
 
-Task-specific text wins over summaries elsewhere. Common execution, 500-SLOC,
+Task-specific text wins over summaries elsewhere. Common execution, SLOC,
 review, release and publication rules are not repeated here; follow
 [`../COORDINATION.md`](../COORDINATION.md). Use
 [`../templates/task.md`](../templates/task.md) for new briefs.

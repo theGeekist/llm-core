@@ -39,7 +39,10 @@ replacement for generated context.
   configuration rather than hidden module literals.
 - For `./client`, Metro evidence supports only the pinned React Native/Metro
   library window—not native modules or application lifecycle behavior.
-- Enforce the 500-SLOC rule and every task-specific release/package gate.
+- Treat roughly 500 SLOC as the target. Accept the lightweight
+  `approximately 500 lines` waiver for 501 through 600 lines without requiring
+  decomposition or a follow-up; enforce the hard boundary above 600 and every
+  task-specific release/package gate.
 
 Run focused and adjacent checks, then the task-required type, lint, package and
 whitespace gates. Reject evidence polluted by overlapping writers or workspace

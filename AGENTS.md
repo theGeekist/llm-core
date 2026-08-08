@@ -137,6 +137,9 @@
 - Use `public.ts` for internal architectural fronts and `index.ts` only for
   package or published-subpath entrypoints. Do not add vague `common`, `misc`,
   `shared`, `utils`, or generic `helpers` modules.
-- New hand-written production and test modules are limited to 500 physical
-  source lines; legacy exceptions follow the digest/waiver rule in the
-  coordination document.
+- Treat roughly 500 physical source lines as the target for new hand-written
+  production and test modules. Files from 501 through 600 lines require a
+  lightweight waiver whose complete justification may simply be
+  `approximately 500 lines`; reviewers must not require decomposition or a
+  follow-up task on size alone. Files above 600 lines cross the hard boundary
+  and follow the stronger digest/waiver rule in the coordination document.

@@ -77,12 +77,15 @@ not create a second coordinator or a separate task claim.
 
 ## Size rule
 
-New hand-written production and test modules must not exceed 500 physical source
-lines. Generated, vendored and snapshot exclusions are centrally configured. A
-legacy exception is pinned by ceiling and content digest; any content change
-requires reduction to the limit or a versioned coordinator waiver with a named
-follow-up. The threshold is a cohesion signal, not permission for arbitrary
-file splitting.
+Roughly 500 physical source lines is the target for new hand-written production
+and test modules. A file from 501 through 600 lines records a lightweight
+waiver; `approximately 500 lines` is sufficient justification by itself and
+does not require decomposition, expiry or a follow-up task. A file above 600
+lines crosses the hard boundary and requires reduction or a versioned
+coordinator waiver with expiry and a named follow-up. Generated, vendored and
+snapshot exclusions are centrally configured. Size is a cohesion signal, not
+permission for arbitrary file splitting or rejection of an otherwise coherent
+module.
 
 ## Source layout and names
 

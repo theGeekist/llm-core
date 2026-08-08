@@ -7,6 +7,11 @@ Owners: architecture coordinator
 Affected tasks: all post-kernel remediation and continuing-programme tasks
 Supersedes: none
 
+Amended 2026-08-08 by human architecture review: the original 500-line wording
+was a cohesion target, not a hard decomposition boundary. This amendment makes
+the lightweight 501-through-600 waiver and the hard boundary above 600
+explicit.
+
 ## Context
 
 Architecture v2 completed its architecture, baseline, core, capabilities,
@@ -56,9 +61,12 @@ consumers proved their common shape.
   prefixes replace classificatory nesting; extra depth requires an independently
   owned boundary. Internal fronts use `public.ts`; package/subpath fronts use
   `index.ts`.
-- New hand-written production and test modules are limited to 500 physical
-  source lines. Existing exceptions are pinned by ceiling and digest; content
-  changes require decomposition unless a versioned waiver names a follow-up.
+- Roughly 500 physical source lines is the target for new hand-written
+  production and test modules. Files from 501 through 600 lines require only an
+  `approximately 500 lines` waiver. Files above 600 lines cross the hard
+  boundary; existing exceptions remain pinned by ceiling and digest, and
+  content changes require decomposition unless a versioned waiver names a
+  follow-up.
 
 ### Qualification, publication and packaging
 

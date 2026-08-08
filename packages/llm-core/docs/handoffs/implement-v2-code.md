@@ -36,7 +36,9 @@ acting. This is a role brief, not a task assignment.
   touches that surface. Keep user-facing strings feature-owned, machine
   identifiers language-neutral and runtime configuration resolved at
   application composition.
-- Follow the 500-SLOC rule and the release/publication gates named by the task.
+- Target roughly 500 SLOC. Record the lightweight `approximately 500 lines`
+  waiver for 501 through 600 lines; only work above 600 enters the stronger
+  decomposition or follow-up path.
 - Request lifecycle transitions from the coordinator; never edit lifecycle
   state independently.
 
