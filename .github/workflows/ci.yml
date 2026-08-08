@@ -108,6 +108,12 @@ jobs:
         with:
           node-version: "22"
 
+      - name: Setup Java
+        uses: actions/setup-java@v5
+        with:
+          distribution: "temurin"
+          java-version: "17"
+
       - name: Setup Bun
         uses: oven-sh/setup-bun@v2
         with:
@@ -129,3 +135,4 @@ jobs:
         uses: SonarSource/sonarqube-scan-action@v8
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_SCANNER_SKIP_JRE_PROVISIONING: "true"
