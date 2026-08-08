@@ -36,7 +36,7 @@
       "@geekist/llm-core/model": ["./packages/llm-core/src/features/model/public.ts"],
       "@geekist/llm-core/model/runtime": ["./packages/llm-core/src/features/model/runtime.ts"],
       "@geekist/llm-core/tools": ["./packages/llm-core/src/features/tooling/public.ts"],
-      "@geekist/llm-core/tools/runtime": ["./packages/llm-core/src/features/tooling/runtime.ts"],
+      "@geekist/llm-core/tools/runtime": ["./packages/llm-core/src/tools/runtime.ts"],
       "@geekist/llm-core/control": ["./packages/llm-core/src/control/index.ts"],
       "@geekist/llm-core/control/runtime": ["./packages/llm-core/src/control/runtime.ts"],
       "@geekist/llm-core/evidence": ["./packages/llm-core/src/features/evidence/public.ts"],

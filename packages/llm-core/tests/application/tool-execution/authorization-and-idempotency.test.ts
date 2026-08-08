@@ -7,7 +7,7 @@ import {
   actionDigest,
   createExecutableTool,
   executeControlledTool,
-} from "../../../src/features/tooling/runtime";
+} from "../../../src/tools/runtime";
 import {
   type EvidenceId,
   type PrincipalId,

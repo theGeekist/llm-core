@@ -23,5 +23,9 @@ Concrete runtime support is published only through exact-version qualified
 adapter subpaths. `./workflow/runtime` was removed because the kernel does not
 own a workflow executor.
 
+`./tools/runtime` is the package-owned aggregation front for tooling runtime
+contracts and controlled tool execution. The tooling feature remains
+dependency-inward and does not import application orchestration.
+
 There is no broad adapter barrel. Provider dependencies and native types stay
 behind qualified boundaries. See [API by subpath](/reference/api).

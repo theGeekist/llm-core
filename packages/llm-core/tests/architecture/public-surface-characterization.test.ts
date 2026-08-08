@@ -5,7 +5,7 @@ import * as contracts from "../../src/contracts/public";
 import * as model from "../../src/features/model/public";
 import * as modelRuntime from "../../src/features/model/runtime";
 import * as tools from "../../src/features/tooling/public";
-import * as toolsRuntime from "../../src/features/tooling/runtime";
+import * as toolsRuntime from "../../src/tools/runtime";
 import * as control from "../../src/control/index";
 import * as controlRuntime from "../../src/control/runtime";
 import * as evidence from "../../src/features/evidence/public";

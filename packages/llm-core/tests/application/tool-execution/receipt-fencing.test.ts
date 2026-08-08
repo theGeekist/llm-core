@@ -1,6 +1,6 @@
 import { describe, expect, it } from "bun:test";
 import { type EventId, coreId } from "#contracts";
-import { executeControlledTool } from "../../../src/features/tooling/runtime";
+import { executeControlledTool } from "../../../src/tools/runtime";
 import { baseInput, CALL_ID, id, MemoryJournal } from "./execute-fixtures";
 
 describe("controlled tool execution", () => {

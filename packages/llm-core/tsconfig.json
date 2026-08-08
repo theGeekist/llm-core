@@ -9,7 +9,7 @@
       "@geekist/llm-core/model": ["./src/features/model/public.ts"],
       "@geekist/llm-core/model/runtime": ["./src/features/model/runtime.ts"],
       "@geekist/llm-core/tools": ["./src/features/tooling/public.ts"],
-      "@geekist/llm-core/tools/runtime": ["./src/features/tooling/runtime.ts"],
+      "@geekist/llm-core/tools/runtime": ["./src/tools/runtime.ts"],
       "@geekist/llm-core/control": ["./src/control/index.ts"],
       "@geekist/llm-core/control/runtime": ["./src/control/runtime.ts"],
       "@geekist/llm-core/evidence": ["./src/features/evidence/public.ts"],

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "bun:test";
 import type { EventSink } from "../../../src/features/evidence/public";
-import { executeControlledTool } from "../../../src/features/tooling/runtime";
+import { executeControlledTool } from "../../../src/tools/runtime";
 import { CALL_ID, RUN_ID, baseInput, facts, MemoryJournal } from "./execute-fixtures";
 
 describe("controlled tool execution", () => {

@@ -50,7 +50,7 @@ import {
   type ToolCall,
   type ToolDefinition,
   type ToolExecutionFactsPort,
-} from "../../../src/features/tooling/runtime";
+} from "../../../src/tools/runtime";
 
 const RUN_ID = coreId<RunId>("018f0f4e-8c5b-7a91-8c3b-123456789001");
 const CALL_ID = coreId<ToolCallId>("018f0f4e-8c5b-7a91-8c3b-123456789002");

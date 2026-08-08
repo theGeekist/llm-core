@@ -9,7 +9,7 @@ import * as openaiChatkit from "../../src/adapters/openai-chatkit/index";
 import * as agent from "../../src/agent/index";
 import * as agentRuntime from "../../src/agent/runtime";
 import * as control from "../../src/control/index";
-import * as toolRuntime from "../../src/features/tooling/runtime";
+import * as toolRuntime from "../../src/tools/runtime";
 import * as workflow from "../../src/workflow/index";
 import type {
   AgentDefinition,

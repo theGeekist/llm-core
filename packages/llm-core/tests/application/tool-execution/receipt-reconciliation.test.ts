@@ -1,6 +1,6 @@
 import { describe, expect, it } from "bun:test";
 import { type EvidenceId, type ResourceId, coreId, digest, schemaRef } from "#contracts";
-import { executeControlledTool } from "../../../src/features/tooling/runtime";
+import { executeControlledTool } from "../../../src/tools/runtime";
 import { reconcileControlledToolReceipt } from "../../../src/application/tool-execution/public";
 import { CALL_ID, RUN_ID, baseInput, facts, id, MemoryJournal } from "./execute-fixtures";
 

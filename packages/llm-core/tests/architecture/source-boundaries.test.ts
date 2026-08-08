@@ -204,14 +204,7 @@ describe("architecture v2 source boundaries", () => {
           violations.push(`${owner} -> ${imported}`);
           continue;
         }
-        const qualifiedToolRuntimeAggregation =
-          owner === "features/tooling/runtime.ts" &&
-          imported === "application/tool-execution/public.ts";
-        if (
-          feature &&
-          /^(?:application|composition|adapters)\//.test(imported) &&
-          !qualifiedToolRuntimeAggregation
-        ) {
+        if (feature && /^(?:application|composition|adapters)\//.test(imported)) {
           violations.push(`${owner} -> ${imported}`);
           continue;
         }

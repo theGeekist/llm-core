@@ -161,9 +161,9 @@
       "default": "./dist/esm/src/features/tooling/public.js"
     },
     "./tools/runtime": {
-      "types": "./dist/types/src/features/tooling/runtime.d.ts",
-      "import": "./dist/esm/src/features/tooling/runtime.js",
-      "default": "./dist/esm/src/features/tooling/runtime.js"
+      "types": "./dist/types/src/tools/runtime.d.ts",
+      "import": "./dist/esm/src/tools/runtime.js",
+      "default": "./dist/esm/src/tools/runtime.js"
     },
     "./control": {
       "types": "./dist/types/src/control/index.d.ts",

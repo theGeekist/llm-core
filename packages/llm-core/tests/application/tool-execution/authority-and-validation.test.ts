@@ -5,7 +5,7 @@ import {
   executeControlledTool,
   type ExecutableTool,
   type ToolCall,
-} from "../../../src/features/tooling/runtime";
+} from "../../../src/tools/runtime";
 import { type TenantId, contractVersion, externalId } from "#contracts";
 import type { PolicyEvaluationPort } from "../../../src/features/control/runtime";
 import {

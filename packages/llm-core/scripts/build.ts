@@ -134,7 +134,7 @@ const PUBLIC_ENTRY_POINTS = [
   "src/features/model/public.ts",
   "src/features/model/runtime.ts",
   "src/features/tooling/public.ts",
-  "src/features/tooling/runtime.ts",
+  "src/tools/runtime.ts",
   "src/control/index.ts",
   "src/control/runtime.ts",
   "src/features/evidence/public.ts",
