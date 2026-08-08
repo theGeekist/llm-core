@@ -28,7 +28,10 @@ import {
   type ToolExecutionResult,
 } from "../../../src/features/tooling/runtime";
 import {
+  createAgentJsonOutput,
+  createAgentTextOutput,
   isPreparedAgentDefinition,
+  type AgentOutput,
   type PreparedAgentDefinition,
   type AgentResult,
 } from "../../../src/features/agent/public";
@@ -45,7 +48,7 @@ export interface ModelToolAgentProgramOptions {
   readonly conversation?: ConversationStore;
   readonly subagents?: readonly DeclaredSubagentBinding[];
   readonly maxModelCalls?: number;
-  readonly projectOutput?: (content: readonly ModelContentPart[]) => JsonValue;
+  readonly projectOutput?: (content: readonly ModelContentPart[]) => AgentOutput;
   readonly controlledToolInput?: (
     input: ControlledToolInputFactoryInput,
   ) => Parameters<NonNullable<LocalAgentExecutionContext["controlledToolExecution"]>["execute"]>[0];
@@ -71,7 +74,7 @@ interface ComposedSubagentBinding {
   readonly resolve: DeclaredSubagentBinding["resolve"];
 }
 
-const textOutput = (content: readonly ModelContentPart[]): JsonValue => {
+const textOutput = (content: readonly ModelContentPart[]): AgentOutput => {
   const portable = content.flatMap((part): JsonValue[] => {
     if (part.kind === "text") return [part.text];
     if (part.kind === "json") return [part.value];
@@ -80,7 +83,10 @@ const textOutput = (content: readonly ModelContentPart[]): JsonValue => {
   if (portable.length === 0) {
     throw new TypeError("Agent model completions require portable text or JSON output.");
   }
-  return portable.length === 1 ? portable[0]! : portable;
+  if (portable.length === 1 && typeof portable[0] === "string") {
+    return createAgentTextOutput(portable[0]);
+  }
+  return createAgentJsonOutput(portable.length === 1 ? portable[0]! : portable);
 };
 
 const toolDeclarations = (tools: readonly ExecutableTool[]): ToolDeclaration[] =>
@@ -164,7 +170,7 @@ const childToolExecutionResult = (call: ToolCallPart, result: AgentResult): Mode
       kind: "json",
       value: {
         status: result.status,
-        ...(result.output === undefined ? {} : { output: result.output }),
+        ...(result.output === undefined ? {} : { output: result.output as unknown as JsonValue }),
         ...(result.reasonCode === undefined ? {} : { reasonCode: result.reasonCode }),
         runId: result.identity.runId,
       },
@@ -222,7 +228,7 @@ const appendConversation = (
 
 const executionResult = (
   response: Extract<ModelResponse, { kind: "completion" }>,
-  projectOutput: (content: readonly ModelContentPart[]) => JsonValue,
+  projectOutput: (content: readonly ModelContentPart[]) => AgentOutput,
 ): LocalAgentExecutionResult => ({
   status: "completed",
   output: projectOutput(response.content),

@@ -17,74 +17,66 @@ import time
 import uuid
 from typing import Any
 
-PROTOCOL = "llm-core.pydantic-ai.bridge/v1"
-SEMANTICS = [
-    {
-        "area": "model",
-        "semantic": "text-messages",
-        "disposition": "supported",
-        "detail": "Text prompts and responses retain their meaning.",
-    },
-    {
-        "area": "model",
-        "semantic": "python-output-type",
-        "disposition": "projected",
-        "detail": "Typed Python output has no direct cross-language type identity.",
-    },
-    {
-        "area": "model",
-        "semantic": "cross-language-json-output",
-        "disposition": "projected",
-        "detail": "AgentSpec output_schema is instruction-only; the bridge must validate JSON independently.",
-    },
-    {
-        "area": "model",
-        "semantic": "binary-media-reasoning-and-native-extensions",
-        "disposition": "unsupported",
-        "detail": "No portable v1 bridge representation is declared for these provider-sensitive values.",
-    },
-    {
-        "area": "tool",
-        "semantic": "function-tool-schema-call-id-arguments-and-result",
-        "disposition": "supported",
-        "detail": "Allowlisted process-local tools retain schema, call identity, JSON arguments and results.",
-    },
-    {
-        "area": "control",
-        "semantic": "read-only-tool-execution",
-        "disposition": "supported",
-        "detail": "Read-only tools may execute after Python-side validation.",
-    },
-    {
-        "area": "control",
-        "semantic": "meaningful-effects-and-approval-authority",
-        "disposition": "unsupported",
-        "detail": "Deferred PydanticAI calls are not llm-core authorization or durable effect receipts.",
-    },
-    {
-        "area": "event",
-        "semantic": "ordered-agent-lifecycle",
-        "disposition": "projected",
-        "detail": "Normalized lifecycle events are projected; provider event variants are not preserved.",
-    },
-    {
-        "area": "state",
-        "semantic": "caller-managed-message-history",
-        "disposition": "projected",
-        "detail": "Serializable history is observational state, not a resumable llm-core checkpoint.",
-    },
-    {
-        "area": "state",
-        "semantic": "registered-checkpoint-and-recorded-effects",
-        "disposition": "unsupported",
-        "detail": "PydanticAI local runs do not provide llm-core checkpoint compatibility or effect receipts.",
-    },
-    {
-        "area": "continuation",
-        "semantic": "provider-session-live-or-durable-continuation",
-        "disposition": "unsupported",
-        "detail": "A new run with message history is not provider-session, live, or durable continuation.",
-    },
+PROTOCOL = "llm-core.pydantic-ai.bridge/v2"
+PYDANTIC_AI_VERSION = "2.19.0"
+PYDANTIC_AI_COMMIT = "ed0f40c0e5061722f7d9f579ed7efff1b74e3ea5"
+PORTABLE_CONTRACT = {
+    "authority": "@geekist/llm-core AgentRunner",
+    "version": "2",
+    "source": "packages/llm-core/src/features/agent/public.ts",
+}
+NATIVE_CONTRACT = {
+    "authority": "pydantic-ai-slim",
+    "version": PYDANTIC_AI_VERSION,
+    "source": PYDANTIC_AI_COMMIT,
+}
+SUPPORTED_FIXTURE = "packages/llm-core/tests/conformance/pydantic-ai-compatibility.test.ts#supported-exact-operations"
+DEFINITION_REJECTION_FIXTURE = "packages/llm-core/tests/conformance/pydantic-ai-compatibility.test.ts#unsupported-definition-and-input-operations"
+RESULT_REJECTION_FIXTURE = "packages/llm-core/tests/conformance/pydantic-ai-compatibility.test.ts#unsupported-result-operations"
+CONTROL_REJECTION_FIXTURE = "packages/llm-core/tests/conformance/pydantic-ai-compatibility.test.ts#unsupported-control-and-continuation-operations"
+TYPED_OUTPUT_REJECTION_FIXTURE = "packages/llm-core/tests/conformance/pydantic-ai-compatibility.test.ts#unsupported-native-typed-output-operation"
+NATIVE_EVENTS_REJECTION_FIXTURE = "packages/llm-core/tests/conformance/pydantic-ai-compatibility.test.ts#unsupported-native-event-stream-operation"
+
+
+def operation(
+    area: str,
+    operation_id: str,
+    surface: str,
+    owner: str,
+    contract: dict[str, str],
+    disposition: str,
+    fixtures: list[str],
+    detail: str,
+) -> dict[str, Any]:
+    return {
+        "area": area,
+        "operation": operation_id,
+        "surface": surface,
+        "owner": owner,
+        "contract": contract,
+        "disposition": disposition,
+        "fixtures": fixtures,
+        "detail": detail,
+    }
+
+
+OPERATIONS = [
+    operation("model", "portable.agent.prepare.literal-read-only-definition", "portable", "@geekist/llm-core", PORTABLE_CONTRACT, "supported", [SUPPORTED_FIXTURE], "A closed literal AgentDefinition is prepared without dropping fields."),
+    operation("model", "portable.agent.start.text-prompt", "portable", "@geekist/llm-core", PORTABLE_CONTRACT, "supported", [SUPPORTED_FIXTURE], "A non-empty text prompt is passed literally to the assessed runtime."),
+    operation("model", "portable.agent.result.text", "portable", "@geekist/llm-core", PORTABLE_CONTRACT, "supported", [SUPPORTED_FIXTURE], "The assessed text result is returned as an explicit portable text value."),
+    operation("tool", "native.pydantic-ai.testmodel.echo-string-tool-trajectory", "native", "pydantic-ai", NATIVE_CONTRACT, "supported", [SUPPORTED_FIXTURE], "The assessed TestModel trajectory preserves one echo tool call with one string value argument and matching return."),
+    operation("control", "portable.tool.execute.read-only-allowlisted", "portable", "@geekist/llm-core", PORTABLE_CONTRACT, "unsupported", [DEFINITION_REJECTION_FIXTURE], "The bridge does not accept a caller-declared portable tool binding."),
+    operation("event", "portable.agent.observe.normalized-lifecycle", "portable", "@geekist/llm-core", PORTABLE_CONTRACT, "supported", [SUPPORTED_FIXTURE], "Adapter-owned lifecycle events satisfy the closed AgentEvent sequence contract."),
+    operation("state", "native.pydantic-ai.testmodel.echo-four-message-history-json", "native", "pydantic-ai", NATIVE_CONTRACT, "supported", [SUPPORTED_FIXTURE], "The assessed TestModel prompt, echo call, echo return and final text history is retained exactly."),
+    operation("model", "native.pydantic-ai.typed-output", "native", "pydantic-ai", NATIVE_CONTRACT, "unsupported", [TYPED_OUTPUT_REJECTION_FIXTURE], "The bridge explicitly rejects native output_type requests."),
+    operation("model", "portable.agent.result.structured-json", "portable", "@geekist/llm-core", PORTABLE_CONTRACT, "unsupported", [RESULT_REJECTION_FIXTURE], "No exact portable output-schema validation operation is implemented."),
+    operation("model", "native.pydantic-ai.binary-media-reasoning-provider-extensions", "native", "pydantic-ai", NATIVE_CONTRACT, "unsupported", [DEFINITION_REJECTION_FIXTURE, RESULT_REJECTION_FIXTURE], "The bridge rejects these PydanticAI and provider-native values."),
+    operation("event", "native.pydantic-ai.event-stream", "native", "pydantic-ai", NATIVE_CONTRACT, "unsupported", [NATIVE_EVENTS_REJECTION_FIXTURE], "The bridge explicitly rejects requests for PydanticAI native event streaming."),
+    operation("state", "native.pydantic-ai.dependencies-and-provider-state", "native", "pydantic-ai", NATIVE_CONTRACT, "unsupported", [DEFINITION_REJECTION_FIXTURE, RESULT_REJECTION_FIXTURE], "Dependencies and provider state remain PydanticAI-owned and are not exposed by the bridge."),
+    operation("control", "portable.agent.cancel", "portable", "@geekist/llm-core", PORTABLE_CONTRACT, "unsupported", [CONTROL_REJECTION_FIXTURE], "The bounded process has no live in-flight cancellation channel."),
+    operation("control", "portable.agent.intervene", "portable", "@geekist/llm-core", PORTABLE_CONTRACT, "unsupported", [CONTROL_REJECTION_FIXTURE], "PydanticAI deferred calls are not llm-core authenticated interventions."),
+    operation("state", "portable.agent.resume.checkpoint", "portable", "@geekist/llm-core", PORTABLE_CONTRACT, "unsupported", [CONTROL_REJECTION_FIXTURE], "PydanticAI message history is not an llm-core checkpoint."),
+    operation("continuation", "portable.agent.continue.provider-session", "portable", "@geekist/llm-core", PORTABLE_CONTRACT, "unsupported", [CONTROL_REJECTION_FIXTURE], "A new run with history is not provider-session, live or durable continuation."),
 ]
 NOW = "2026-07-30T00:00:00.000Z"
 prepared: dict[str, dict[str, Any]] = {}
@@ -118,8 +110,8 @@ def execute_pydantic_ai(prompt: str, instructions: str) -> dict[str, Any]:
     from pydantic_ai.models.test import TestModel
 
     model = TestModel()
-    projected_spec = AgentSpec.from_dict({"instructions": instructions})
-    agent = Agent.from_spec(projected_spec, model=model)
+    native_spec = AgentSpec.from_dict({"instructions": instructions})
+    agent = Agent.from_spec(native_spec, model=model)
 
     @agent.tool_plain
     def echo(value: str) -> str:
@@ -134,20 +126,10 @@ def execute_pydantic_ai(prompt: str, instructions: str) -> dict[str, Any]:
         else []
     )
     messages = json.loads(result.all_messages_json())
-    tool_call: dict[str, Any] | None = None
-    tool_return: dict[str, Any] | None = None
-    for message in messages:
-        for part in message.get("parts", []):
-            if part.get("part_kind") == "tool-call":
-                tool_call = part
-            elif part.get("part_kind") == "tool-return":
-                tool_return = part
     return {
         "output": str(result.output),
         "toolNames": tool_names,
         "messages": messages,
-        "toolCall": tool_call,
-        "toolReturn": tool_return,
     }
 
 
@@ -189,7 +171,7 @@ def handle(request: dict[str, Any]) -> dict[str, Any]:
                 "pythonVersion": ".".join(map(str, sys.version_info[:3])),
                 "pydanticAiVersion": version,
                 "pydanticAiAvailable": available,
-                "semantics": SEMANTICS,
+                "operations": OPERATIONS,
             },
         )
     if operation == "prepare":
@@ -247,25 +229,19 @@ def handle(request: dict[str, Any]) -> dict[str, Any]:
             else None
         )
         if runtime_result:
-            tool_call = runtime_result["toolCall"] or {}
-            tool_return = runtime_result["toolReturn"] or {}
-            output = {
+            output = {"kind": "text", "text": runtime_result["output"]}
+            native_result = {
                 "runtime": "pydantic-ai",
-                "model": {"kind": "text", "text": runtime_result["output"]},
-                "tool": {
-                    "name": tool_call.get("tool_name"),
-                    "toolCallId": tool_call.get("tool_call_id"),
-                    "arguments": tool_call.get("args"),
-                    "result": tool_return.get("content"),
-                    "registered": "echo" in runtime_result["toolNames"],
+                "runtimeVersion": PYDANTIC_AI_VERSION,
+                "native": {
+                    "output": runtime_result["output"],
+                    "toolNames": runtime_result["toolNames"],
+                    "messageHistory": runtime_result["messages"],
                 },
-                "messageHistory": runtime_result["messages"],
             }
         else:
-            output = {
-                "runtime": "python-transport",
-                "model": {"kind": "text", "text": "deterministic"},
-            }
+            output = {"kind": "text", "text": "deterministic"}
+            native_result = None
         runs[run_id] = {
             "events": [
                 event(
@@ -282,6 +258,7 @@ def handle(request: dict[str, Any]) -> dict[str, Any]:
                 event(run_id, 3, "agent.run.completed", {"status": "completed"}),
             ],
             "result": {"identity": {"runId": run_id}, "status": "completed", "output": output},
+            "nativeResult": native_result,
         }
         return response(operation, {"runId": run_id})
     run_id = payload.get("runId")
@@ -292,6 +269,38 @@ def handle(request: dict[str, Any]) -> dict[str, Any]:
         return response(operation, run["events"])
     if operation == "result":
         return response(operation, run["result"])
+    if operation == "native-result":
+        if run["nativeResult"] is None:
+            return response(
+                operation,
+                error={
+                    "code": "native-result-unavailable",
+                    "message": "The PydanticAI native result is unavailable.",
+                },
+            )
+        return response(
+            operation,
+            {
+                "identity": {"runId": run_id},
+                "observation": run["nativeResult"],
+            },
+        )
+    if operation == "native-typed-output":
+        return response(
+            operation,
+            error={
+                "code": "native-typed-output-unsupported",
+                "message": "PydanticAI output_type is not supported by this bridge.",
+            },
+        )
+    if operation == "native-events":
+        return response(
+            operation,
+            error={
+                "code": "native-event-stream-unsupported",
+                "message": "PydanticAI native event streaming is not supported by this bridge.",
+            },
+        )
     if operation == "cancel":
         return response(operation, {"status": "already-terminal", "acknowledgedAt": NOW})
     if operation == "intervene":

@@ -1,5 +1,12 @@
 /** @internal Runner implementations only; omitted from supported package fronts. */
 export { createPreparedAgentDefinition, isPreparedAgentDefinition } from "./definition";
+export {
+  createAgentJsonOutput,
+  createAgentTextOutput,
+  isAgentOutput,
+  registerAgentOutput,
+} from "./result";
+export type { AgentJsonOutput, AgentOutput, AgentTextOutput } from "./result";
 export { loadAgentSkills, registerAgentSkill } from "./skills";
 export type {
   AgentSkillRef,

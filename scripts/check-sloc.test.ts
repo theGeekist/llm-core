@@ -3,6 +3,7 @@ import { mkdirSync, mkdtempSync, rmSync, symlinkSync, writeFileSync } from "node
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import {
+  approximateTargetJustification,
   checkSloc,
   legacySnapshotSeal,
   physicalSourceLines,
@@ -15,6 +16,7 @@ import {
 const roots: string[] = [];
 const sourcePath = "packages/llm-core/src/large.ts";
 const followUpPath = "packages/llm-core/docs/final-architecture/tasks/decompose-large.md";
+const hardWaiverJustification = "changed legacy module above 600 lines pending decomposition";
 
 const makeRoot = (): string => {
   const root = mkdtempSync(join(tmpdir(), "llm-core-sloc-"));
@@ -63,25 +65,82 @@ describe("physical source lines", () => {
 });
 
 describe("SLOC enforcement", () => {
-  test("rejects a new oversized module", () => {
+  test("requires the lightweight waiver above the 500-line target", () => {
     const root = makeRoot();
-    writeSource(root, contentWithLines(501));
+    writeSource(root, contentWithLines(589));
     expect(runCheck(root, baselineFor()).errors).toContain(
-      `${sourcePath} has 501 lines; limit is 500`,
+      `${sourcePath} has 589 lines; target is 500; record an ${JSON.stringify(approximateTargetJustification)} waiver`,
+    );
+  });
+
+  test("accepts approximately 500 lines as the complete lightweight waiver justification", () => {
+    const root = makeRoot();
+    const content = contentWithLines(589);
+    writeSource(root, content);
+    const waiver = {
+      version: 1,
+      justification: approximateTargetJustification,
+      currentLines: physicalSourceLines(content),
+      currentSha256: sourceDigest(content),
+    };
+    expect(
+      checkSloc(root, baselineFor(exceptionFor(content, waiver)), {
+        expectedLegacyEntries: {},
+      }).errors,
+    ).toEqual([]);
+  });
+
+  test("rejects an invented lightweight waiver justification", () => {
+    const root = makeRoot();
+    const content = contentWithLines(589);
+    writeSource(root, content);
+    const waiver = {
+      version: 1,
+      justification: "this file is special",
+      currentLines: physicalSourceLines(content),
+      currentSha256: sourceDigest(content),
+    };
+    expect(runCheck(root, baselineFor(exceptionFor(content, waiver))).errors).toContain(
+      `${sourcePath} waiver justification must be exactly ${JSON.stringify(approximateTargetJustification)}`,
+    );
+  });
+
+  test("rejects extra machinery on the lightweight waiver", () => {
+    const root = makeRoot();
+    const content = contentWithLines(589);
+    writeSource(root, content);
+    const waiver = {
+      version: 1,
+      justification: approximateTargetJustification,
+      expiresOn: "2026-12-31",
+      followUp: followUpPath,
+      currentLines: physicalSourceLines(content),
+      currentSha256: sourceDigest(content),
+    };
+    expect(runCheck(root, baselineFor(exceptionFor(content, waiver))).errors).toContain(
+      `${sourcePath} approximately-500 waiver must not require expiry or follow-up`,
+    );
+  });
+
+  test("rejects a new module above the hard boundary", () => {
+    const root = makeRoot();
+    writeSource(root, contentWithLines(601));
+    expect(runCheck(root, baselineFor()).errors).toContain(
+      `${sourcePath} has 601 lines; hard limit is 600; decompose it or record a versioned coordinator waiver`,
     );
   });
 
   test("accepts an unchanged digest-pinned legacy exception", () => {
     const root = makeRoot();
-    const content = contentWithLines(501);
+    const content = contentWithLines(601);
     writeSource(root, content);
     expect(runCheck(root, baselineFor(exceptionFor(content))).errors).toEqual([]);
   });
 
   test.each([
-    ["growth", 501, 502],
-    ["same-size content change", 501, 501],
-    ["reduced but still oversized content change", 503, 501],
+    ["growth", 601, 602],
+    ["same-size content change", 601, 601],
+    ["reduced but still oversized content change", 603, 601],
   ])("rejects %s without a waiver", (_label, originalLines, changedLines) => {
     const root = makeRoot();
     const original = contentWithLines(originalLines, "before");
@@ -93,7 +152,7 @@ describe("SLOC enforcement", () => {
 
   test("requires removal of an exception after decomposition", () => {
     const root = makeRoot();
-    const original = contentWithLines(501, "original");
+    const original = contentWithLines(601, "original");
     const content = contentWithLines(500);
     writeSource(root, content);
     const trusted = baselineFor(exceptionFor(original));
@@ -108,15 +167,16 @@ describe("SLOC enforcement", () => {
 
   test("accepts a current versioned waiver with an existing follow-up", () => {
     const root = makeRoot();
-    const content = contentWithLines(502);
+    const content = contentWithLines(602);
     writeSource(root, content);
     writeFileSync(
       join(root, "packages/llm-core/docs/final-architecture/tasks/decompose-large.md"),
       taskFrontMatter("decompose-large", "ready"),
     );
-    const original = contentWithLines(501, "original");
+    const original = contentWithLines(601, "original");
     const waiver = {
       version: 2,
+      justification: hardWaiverJustification,
       expiresOn: "2026-12-31",
       followUp: followUpPath,
       currentLines: physicalSourceLines(content),
@@ -128,13 +188,14 @@ describe("SLOC enforcement", () => {
   test("allows a package source to reference an explicit package-owned follow-up", () => {
     const root = makeRoot();
     const ownedSourcePath = "packages/example/src/large.ts";
-    const content = contentWithLines(502);
-    const original = contentWithLines(501, "original");
+    const content = contentWithLines(602);
+    const original = contentWithLines(601, "original");
     mkdirSync(join(root, "packages/example/src"), { recursive: true });
     writeFileSync(join(root, ownedSourcePath), content);
     writeFileSync(join(root, followUpPath), taskFrontMatter());
     const waiver = {
       version: 2,
+      justification: hardWaiverJustification,
       expiresOn: "2026-12-31",
       followUp: followUpPath,
       currentLines: physicalSourceLines(content),
@@ -151,13 +212,14 @@ describe("SLOC enforcement", () => {
   test("allows a repository-level source to reference an explicit package-owned follow-up", () => {
     const root = makeRoot();
     const repositorySourcePath = "scripts/large.ts";
-    const content = contentWithLines(502);
-    const original = contentWithLines(501, "original");
+    const content = contentWithLines(602);
+    const original = contentWithLines(601, "original");
     mkdirSync(join(root, "scripts"), { recursive: true });
     writeFileSync(join(root, repositorySourcePath), content);
     writeFileSync(join(root, followUpPath), taskFrontMatter());
     const waiver = {
       version: 2,
+      justification: hardWaiverJustification,
       expiresOn: "2026-12-31",
       followUp: followUpPath,
       currentLines: physicalSourceLines(content),
@@ -173,9 +235,9 @@ describe("SLOC enforcement", () => {
 
   test("rejects expired waivers and missing follow-ups", () => {
     const root = makeRoot();
-    const content = contentWithLines(502);
+    const content = contentWithLines(602);
     writeSource(root, content);
-    const original = contentWithLines(501, "original");
+    const original = contentWithLines(601, "original");
     const waiver = {
       version: 1,
       expiresOn: "2026-01-01",
@@ -190,8 +252,8 @@ describe("SLOC enforcement", () => {
 
   test("requires the explicit follow-up path to name a file", () => {
     const root = makeRoot();
-    const content = contentWithLines(502);
-    const original = contentWithLines(501, "original");
+    const content = contentWithLines(602);
+    const original = contentWithLines(601, "original");
     writeSource(root, content);
     const directoryPath = "packages/llm-core/docs/final-architecture/tasks/directory.md";
     mkdirSync(join(root, directoryPath));
@@ -215,8 +277,8 @@ describe("SLOC enforcement", () => {
     ["a tasks README", "packages/llm-core/docs/final-architecture/tasks/README.md"],
   ])("rejects %s as a waiver follow-up", (_label, followUp) => {
     const root = makeRoot();
-    const content = contentWithLines(502);
-    const original = contentWithLines(501, "original");
+    const content = contentWithLines(602);
+    const original = contentWithLines(601, "original");
     writeSource(root, content);
     const waiver = {
       version: 2,
@@ -233,8 +295,8 @@ describe("SLOC enforcement", () => {
 
   test("rejects a task whose front-matter id does not match its filename", () => {
     const root = makeRoot();
-    const content = contentWithLines(502);
-    const original = contentWithLines(501, "original");
+    const content = contentWithLines(602);
+    const original = contentWithLines(601, "original");
     writeSource(root, content);
     writeFileSync(join(root, followUpPath), taskFrontMatter("another-task"));
     const waiver = {
@@ -252,8 +314,8 @@ describe("SLOC enforcement", () => {
 
   test("rejects a task without valid front matter", () => {
     const root = makeRoot();
-    const content = contentWithLines(502);
-    const original = contentWithLines(501, "original");
+    const content = contentWithLines(602);
+    const original = contentWithLines(601, "original");
     writeSource(root, content);
     writeFileSync(join(root, followUpPath), "# Decompose large\n");
     const waiver = {
@@ -273,8 +335,8 @@ describe("SLOC enforcement", () => {
     "rejects a follow-up task with non-actionable status %s",
     (status) => {
       const root = makeRoot();
-      const content = contentWithLines(502);
-      const original = contentWithLines(501, "original");
+      const content = contentWithLines(602);
+      const original = contentWithLines(601, "original");
       writeSource(root, content);
       writeFileSync(join(root, followUpPath), taskFrontMatter("decompose-large", status));
       const waiver = {
@@ -298,8 +360,8 @@ describe("SLOC enforcement", () => {
     ["a malformed field", "---\nid: decompose-large\nstatus proposed\n---\n"],
   ])("rejects %s as task front matter", (_label, frontMatter) => {
     const root = makeRoot();
-    const content = contentWithLines(502);
-    const original = contentWithLines(501, "original");
+    const content = contentWithLines(602);
+    const original = contentWithLines(601, "original");
     writeSource(root, content);
     writeFileSync(join(root, followUpPath), frontMatter);
     const waiver = {
@@ -317,9 +379,9 @@ describe("SLOC enforcement", () => {
 
   test("rejects impossible waiver calendar dates", () => {
     const root = makeRoot();
-    const content = contentWithLines(502);
+    const content = contentWithLines(602);
     writeSource(root, content);
-    const original = contentWithLines(501, "original");
+    const original = contentWithLines(601, "original");
     const waiver = {
       version: 1,
       expiresOn: "2026-99-99",
@@ -341,8 +403,8 @@ describe("SLOC enforcement", () => {
     "decompose-large",
   ])("rejects unsafe or malformed follow-up path %s", (followUp) => {
     const root = makeRoot();
-    const content = contentWithLines(502);
-    const original = contentWithLines(501, "original");
+    const content = contentWithLines(602);
+    const original = contentWithLines(601, "original");
     writeSource(root, content);
     const waiver = {
       version: 2,
@@ -359,9 +421,9 @@ describe("SLOC enforcement", () => {
 
   test("rejects a changed source and rewritten legacy exception without a waiver", () => {
     const root = makeRoot();
-    const original = contentWithLines(501, "original");
+    const original = contentWithLines(601, "original");
     const trusted = baselineFor(exceptionFor(original));
-    const changed = contentWithLines(502, "changed");
+    const changed = contentWithLines(602, "changed");
     writeSource(root, changed);
     const rewritten = baselineFor(exceptionFor(changed));
     expect(
@@ -375,7 +437,7 @@ describe("SLOC enforcement", () => {
   test("rejects a new oversized file added directly as an unwaived exception", () => {
     const root = makeRoot();
     const trusted = baselineFor();
-    const content = contentWithLines(501);
+    const content = contentWithLines(601);
     writeSource(root, content);
     const rewritten = baselineFor(exceptionFor(content));
     expect(
@@ -413,7 +475,7 @@ describe("SLOC enforcement", () => {
     const root = makeRoot();
     const target = join(root, "source-target");
     mkdirSync(target);
-    writeFileSync(join(target, "large.ts"), contentWithLines(501));
+    writeFileSync(join(target, "large.ts"), contentWithLines(601));
     symlinkSync(target, join(root, "packages/llm-core/src/linked"));
 
     expect(runCheck(root, baselineFor()).errors).toContain(
@@ -427,7 +489,7 @@ describe("SLOC enforcement", () => {
       const root = makeRoot();
       const external = mkdtempSync(join(tmpdir(), "llm-core-sloc-external-"));
       roots.push(external);
-      writeSource(root, contentWithLines(502));
+      writeSource(root, contentWithLines(602));
       writeFileSync(join(external, "decompose-large.md"), taskFrontMatter());
       const task = join(root, followUpPath);
       if (kind === "file") symlinkSync(join(external, "decompose-large.md"), task);
@@ -439,12 +501,12 @@ describe("SLOC enforcement", () => {
         version: 2,
         expiresOn: "2026-12-31",
         followUp: followUpPath,
-        currentLines: 502,
-        currentSha256: sourceDigest(contentWithLines(502)),
+        currentLines: 602,
+        currentSha256: sourceDigest(contentWithLines(602)),
       };
       const errors = runCheck(
         root,
-        baselineFor(exceptionFor(contentWithLines(501), waiver)),
+        baselineFor(exceptionFor(contentWithLines(601), waiver)),
       ).errors;
       expect(errors.join("\n")).toContain(
         "non-symlink regular file within its package docs task boundary",
@@ -463,30 +525,30 @@ describe("SLOC enforcement", () => {
     expect(runCheck(root, baselineFor()).errors).toEqual([]);
   });
 
-  test("rejects a changed version-1 limit and still enforces 500 lines", () => {
+  test("rejects a changed version-1 target and still enforces the hard boundary", () => {
     const root = makeRoot();
-    writeSource(root, contentWithLines(501));
+    writeSource(root, contentWithLines(601));
     const baseline = { ...baselineFor(), limit: 1_000_000 };
     const errors = runCheck(root, baseline).errors.join("\n");
     expect(errors).toContain("version 1 limit must be exactly 500");
-    expect(errors).toContain(`${sourcePath} has 501 lines; limit is 500`);
+    expect(errors).toContain(`${sourcePath} has 601 lines; hard limit is 600`);
   });
 
   test("rejects broadened exclusions and scans with the canonical policy", () => {
     const root = makeRoot();
-    writeSource(root, contentWithLines(501));
+    writeSource(root, contentWithLines(601));
     const baseline = {
       ...baselineFor(),
       excludedDirectories: [...slocV1Policy.excludedDirectories, "packages"],
     };
     const errors = runCheck(root, baseline).errors.join("\n");
     expect(errors).toContain("excludedDirectories must match the canonical policy");
-    expect(errors).toContain(`${sourcePath} has 501 lines; limit is 500`);
+    expect(errors).toContain(`${sourcePath} has 601 lines; hard limit is 600`);
   });
 
   test("rejects removal of an entry from the sealed legacy set", () => {
     const root = makeRoot();
-    const content = contentWithLines(501);
+    const content = contentWithLines(601);
     writeSource(root, content);
     const trusted = baselineFor(exceptionFor(content));
     expect(

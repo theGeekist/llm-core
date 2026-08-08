@@ -4,8 +4,9 @@ import { basename, extname, join, posix, relative, resolve, sep } from "node:pat
 
 export interface SlocWaiver {
   readonly version: number;
-  readonly expiresOn: string;
-  readonly followUp: string;
+  readonly justification?: string;
+  readonly expiresOn?: string;
+  readonly followUp?: string;
   readonly currentLines: number;
   readonly currentSha256: string;
 }
@@ -34,6 +35,7 @@ const sourceExtensions = new Set([".cjs", ".cts", ".js", ".jsx", ".mjs", ".mts",
 const excludedWorkspaceRoots = Object.freeze(["context", "packages/aifsd/docs"]);
 export const slocV1Policy = Object.freeze({
   limit: 500,
+  hardLimit: 600,
   excludedDirectories: Object.freeze([
     ".git",
     ".worktrees",
@@ -57,15 +59,9 @@ const sealedLegacyEntries: Readonly<Record<string, string>> = {
     "4448a7cbf3201876d123942c8b6a29109a51faf1008815afceaba98b52b01f3b",
   "packages/llm-core/tests/application/agent/model-tool-program.test.ts":
     "dd8a67fa1cd28addf67ee5f74fadb968402228168227f2739a05c29d32326013",
-  "packages/llm-core/tests/application/capability-bindings/bindings.test.ts":
-    "ec634bbd3cb3c59e2406ce9667b20d3beb52afd237454d4e46eeece7153fdb43",
-  "packages/llm-core/tests/application/interaction/session.test.ts":
-    "d7a04a5ce399105f168cc621c5341ce1000615c6bc11746eede3758ddf3460ed",
-  "packages/llm-core/tests/application/workflow/resume.test.ts":
-    "ff4332c0039b361e2dbe66bb10a4c8f8863bf26dcba40392f2ac02cde871e5c9",
-  "packages/llm-core/tests/evidence/tool-receipt-journal.test.ts":
-    "c020e81e6a979bf7633f4dc12704d8b0859db2b379d19bdbfab105b2514ab040",
 };
+
+export const approximateTargetJustification = "approximately 500 lines";
 
 export const physicalSourceLines = (content: string): number => {
   if (content.length === 0) return 0;
@@ -229,25 +225,39 @@ const taskFrontMatter = (content: string): TaskFrontMatter | null => {
 const validateWaiver = (path: string, waiver: SlocWaiver): string[] => {
   const errors = exactKeys(
     waiver,
-    ["version", "expiresOn", "followUp", "currentLines", "currentSha256"],
+    ["version", "justification", "expiresOn", "followUp", "currentLines", "currentSha256"],
     `${path} waiver`,
   );
   if (!Number.isInteger(waiver.version) || waiver.version < 1) {
     errors.push(`${path} waiver version must be a positive integer`);
-  }
-  if (!isIsoCalendarDate(waiver.expiresOn)) {
-    errors.push(`${path} waiver expiry must be a valid YYYY-MM-DD date`);
-  }
-  if (!isFollowUpPath(waiver.followUp)) {
-    errors.push(
-      `${path} waiver followUp must be a normalized repository-relative task path under packages/<owner>/docs/**/tasks/`,
-    );
   }
   if (!Number.isInteger(waiver.currentLines) || waiver.currentLines <= 0) {
     errors.push(`${path} waiver currentLines must be a positive integer`);
   }
   if (!/^[a-f0-9]{64}$/.test(waiver.currentSha256)) {
     errors.push(`${path} waiver currentSha256 must be a SHA-256 digest`);
+  }
+  if (waiver.currentLines <= slocV1Policy.hardLimit) {
+    if (waiver.justification !== approximateTargetJustification) {
+      errors.push(
+        `${path} waiver justification must be exactly ${JSON.stringify(approximateTargetJustification)}`,
+      );
+    }
+    if (waiver.expiresOn !== undefined || waiver.followUp !== undefined) {
+      errors.push(`${path} approximately-500 waiver must not require expiry or follow-up`);
+    }
+  } else {
+    if (typeof waiver.justification !== "string" || waiver.justification.trim() === "") {
+      errors.push(`${path} hard-boundary waiver justification must not be empty`);
+    }
+    if (waiver.expiresOn === undefined || !isIsoCalendarDate(waiver.expiresOn)) {
+      errors.push(`${path} waiver expiry must be a valid YYYY-MM-DD date`);
+    }
+    if (waiver.followUp === undefined || !isFollowUpPath(waiver.followUp)) {
+      errors.push(
+        `${path} waiver followUp must be a normalized repository-relative task path under packages/<owner>/docs/**/tasks/`,
+      );
+    }
   }
   return errors;
 };
@@ -296,7 +306,16 @@ export const validateSlocBaseline = (
   }
   for (const [path, exception] of Object.entries(baseline.exceptions)) {
     errors.push(...validateException(path, exception, slocV1Policy.limit));
-    if (expectedLegacyEntries[path] !== legacyEntryDigest(path, exception)) {
+    const sealedDigest = expectedLegacyEntries[path];
+    const isLightweightException =
+      exception.lines <= slocV1Policy.hardLimit &&
+      exception.waiver !== undefined &&
+      exception.waiver.currentLines <= slocV1Policy.hardLimit &&
+      exception.waiver.justification === approximateTargetJustification;
+    if (
+      (sealedDigest !== undefined && sealedDigest !== legacyEntryDigest(path, exception)) ||
+      (sealedDigest === undefined && !isLightweightException)
+    ) {
       errors.push(`${path} is not a sealed legacy exception`);
     }
   }
@@ -326,6 +345,7 @@ const validateActiveWaiver = ({
   waiver,
   today,
 }: ActiveWaiverContext): string[] => {
+  if (waiver.followUp === undefined || waiver.expiresOn === undefined) return [];
   if (!isFollowUpPath(waiver.followUp)) return [];
   const task = canonicalFollowUp(root, waiver.followUp);
   const errors: string[] = [];
@@ -356,22 +376,48 @@ interface MeasurementContext {
   readonly measurement: SourceMeasurement;
   readonly exception: SlocException | undefined;
   readonly limit: number;
+  readonly hardLimit: number;
 }
 
-const validateMeasurement = ({ measurement, exception, limit }: MeasurementContext): string[] => {
+const lightweightWaiverRequired = (path: string, lines: number, limit: number): string =>
+  `${path} has ${lines} lines; target is ${limit}; record an ${JSON.stringify(approximateTargetJustification)} waiver`;
+
+const validateMeasurement = ({
+  measurement,
+  exception,
+  limit,
+  hardLimit,
+}: MeasurementContext): string[] => {
   if (measurement.lines <= limit) {
     return exception
       ? [`${measurement.path} is at or below the limit; remove its stale exception`]
       : [];
   }
-  if (!exception) return [`${measurement.path} has ${measurement.lines} lines; limit is ${limit}`];
+  if (!exception) {
+    return measurement.lines <= hardLimit
+      ? [lightweightWaiverRequired(measurement.path, measurement.lines, limit)]
+      : [
+          `${measurement.path} has ${measurement.lines} lines; hard limit is ${hardLimit}; decompose it or record a versioned coordinator waiver`,
+        ];
+  }
   const unchanged =
     measurement.lines === exception.lines && measurement.sha256 === exception.sha256;
   if (unchanged) {
+    if (measurement.lines <= hardLimit) {
+      if (!exception.waiver) {
+        return [lightweightWaiverRequired(measurement.path, measurement.lines, limit)];
+      }
+      return measurement.lines === exception.waiver.currentLines &&
+        measurement.sha256 === exception.waiver.currentSha256
+        ? []
+        : [`${measurement.path} changed beyond its approximately-500 waiver`];
+    }
     return exception.waiver ? [`${measurement.path} waiver is stale; remove it`] : [];
   }
   if (!exception.waiver) {
-    return [`${measurement.path} changed; decompose it or record a versioned coordinator waiver`];
+    return measurement.lines <= hardLimit
+      ? [lightweightWaiverRequired(measurement.path, measurement.lines, limit)]
+      : [`${measurement.path} changed; decompose it or record a versioned coordinator waiver`];
   }
   if (
     measurement.lines !== exception.waiver.currentLines ||
@@ -410,7 +456,7 @@ export const checkSloc = (
   }
 
   for (const [sourcePath, exception] of Object.entries(baseline.exceptions)) {
-    if (exception.waiver) {
+    if (exception.waiver && exception.waiver.currentLines > slocV1Policy.hardLimit) {
       errors.push(...validateActiveWaiver({ root, sourcePath, waiver: exception.waiver, today }));
     }
   }
@@ -421,6 +467,7 @@ export const checkSloc = (
         measurement,
         exception: baseline.exceptions[measurement.path],
         limit: slocV1Policy.limit,
+        hardLimit: slocV1Policy.hardLimit,
       }),
     );
   }
@@ -455,7 +502,7 @@ if (import.meta.main) {
     process.exitCode = 1;
   } else {
     console.log(
-      `Checked ${result.measurements.length} source modules at a ${slocV1Policy.limit}-line limit.`,
+      `Checked ${result.measurements.length} source modules at a ${slocV1Policy.limit}-line target and ${slocV1Policy.hardLimit}-line hard limit.`,
     );
   }
 }

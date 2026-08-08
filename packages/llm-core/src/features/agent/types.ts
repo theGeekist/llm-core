@@ -9,6 +9,7 @@ import type {
 } from "../state/public";
 import type { RegisteredResumableCheckpoint } from "../state/runtime";
 import type { AgentSkillRef } from "./skills";
+import type { AgentOutput } from "./result";
 
 declare const preparedAgentDefinitionBrand: unique symbol;
 
@@ -63,7 +64,7 @@ export type AgentRunTerminalStatus = "completed" | "failed" | "denied" | "cancel
 export interface AgentResult {
   readonly identity: AgentRunIdentity;
   readonly status: AgentRunTerminalStatus;
-  readonly output?: JsonValue;
+  readonly output?: AgentOutput;
   readonly reasonCode?: string;
   readonly providerSession?: ProviderSessionRef;
   readonly checkpoint?: RegisteredResumableCheckpoint;

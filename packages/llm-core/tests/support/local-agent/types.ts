@@ -1,5 +1,5 @@
 /** Test-only TypeScript runner contracts. */
-import type { ContractVersion, EventId, JsonValue, RunId } from "#contracts";
+import type { ContractVersion, EventId, RunId } from "#contracts";
 import type { MaybePromise } from "#shared/maybe";
 import type {
   ControlledToolExecutionOutcome,
@@ -14,6 +14,7 @@ import type {
   AgentRunnerProfile,
   PreparedAgentDefinition,
   AgentResult,
+  AgentOutput,
 } from "../../../src/features/agent/public";
 import type { ToolDeclaration } from "../../../src/features/model/public";
 import type {
@@ -44,7 +45,7 @@ export interface ControlledAgentToolExecutionPort {
 
 export interface LocalAgentExecutionResult {
   readonly status: AgentResult["status"];
-  readonly output?: JsonValue;
+  readonly output?: AgentOutput;
   readonly reasonCode?: string;
   readonly providerSession?: AgentResult["providerSession"];
   readonly checkpoint?: AgentResult["checkpoint"];

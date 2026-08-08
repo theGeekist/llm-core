@@ -125,7 +125,7 @@ const lifecycleContract = (name: string, create: () => AgentRunner) => {
 const basicProgram = (): LocalAgentProgramPort => ({
   execute(context) {
     context.emitProgress({ code: "working" });
-    return { status: "completed", output: { ok: true } };
+    return { status: "completed", output: { kind: "json", value: { ok: true } } };
   },
 });
 
@@ -567,7 +567,7 @@ describe("createLocalAgentRunner", () => {
     const target = runner({
       async execute(context) {
         if ((context.request.input as { kind: string }).kind === "child") {
-          return { status: "completed", output: { child: true } };
+          return { status: "completed", output: { kind: "json", value: { child: true } } };
         }
         const child = await context.startChild(request(context.request.agent, { kind: "child" }));
         childIdentity = child.identity;

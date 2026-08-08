@@ -318,6 +318,22 @@ describe("interaction session orchestration", () => {
     unsafeReason.value.turns[0]!.reasonCode = "secret token text";
     expect(() => registerConversationSnapshot(unsafeReason, CONVERSATION_ID)).toThrow("safe code");
 
+    const undeclaredOutput = structuredClone(memory.read()) as unknown as {
+      value: { turns: Array<Record<string, unknown>> };
+    };
+    undeclaredOutput.value.turns[0]!.output = { text: "legacy-untyped-output" };
+    expect(() => registerConversationSnapshot(undeclaredOutput, CONVERSATION_ID)).toThrow(
+      "Agent output",
+    );
+    undeclaredOutput.value.turns[0]!.output = {
+      kind: "text",
+      text: "portable",
+      providerState: { secret: "must-not-cross" },
+    };
+    expect(() => registerConversationSnapshot(undeclaredOutput, CONVERSATION_ID)).toThrow(
+      "Agent output",
+    );
+
     const unsafeIdentity = structuredClone(memory.read()) as unknown as {
       value: { projection: { events: Array<Record<string, unknown>> } };
     };

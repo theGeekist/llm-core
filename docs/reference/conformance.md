@@ -20,25 +20,35 @@ installation is frozen against the root lockfile.
 
 ## First Python reference runtime
 
-The exact Python compatibility target is `pydantic-ai-slim==2.19.0`. Its test
-uses a real Python runtime and preserves real tool-call identity, arguments,
-results, and message history for the supported path.
+The exact Python target is `pydantic-ai-slim==2.19.0` at source commit
+`ed0f40c0e5061722f7d9f579ed7efff1b74e3ea5`. Its operation suite uses a real
+Python runtime and qualifies one bounded TestModel trajectory: a single
+`echo(value: string)` tool call, its matching return, and the exact four-message
+prompt/call/return/text history. It does not establish generic PydanticAI tool
+or message-history support.
+
+`AgentRun.result()` returns only the closed kernel text output
+`{ kind: "text", text: string }`. `PydanticAiAgentRun.nativeResult()` validates
+an explicit bridge run identity and requires its native output to equal the
+cached portable terminal text before returning the separate observation. The
+portable text result and normalised lifecycle remain separate operations.
 
 The adapter declares unsupported capabilities explicitly. It does not claim
 cancel, resume, intervention, provider-session continuity, or meaningful-effect
 execution where those semantics are not implemented.
 
-## Reading a compatibility claim
+## Reading an operation claim
 
-A compatibility declaration is narrower than package installation. Check:
+An operation declaration is narrower than package installation. Check:
 
 1. the exact runtime and version;
-2. the supported input and spec subset;
-3. declared semantic losses;
-4. unsupported controls and state lifetimes;
-5. the executable evidence backing the claim.
+2. the exact portable or native operation identifier and owner;
+3. its `supported`, `unsupported`, or `not-applicable` disposition;
+4. exact-version source evidence for `not-applicable`; and
+5. the executable fixture set backing each supported or unsupported claim.
 
-Transport success alone does not establish runtime conformance.
+Transport success and portable normalisation do not establish native runtime
+operation support.
 
 ## Commands and evidence
 
@@ -65,10 +75,13 @@ list and have exactly one registration, including the exact support window and
 maintenance owner. An absent, duplicate, skipped or failing registration makes
 release qualification fail closed.
 
-SLOC policy version 1 is code-owned: the limit is exactly 500 physical lines,
-the directory and suffix exclusions are canonical, and every legacy exception
-must match the sealed set. Editing the baseline cannot raise the enforced limit
-or hide source paths from measurement.
+SLOC policy version 1 is code-owned: 500 physical lines is the target and 600
+is the hard boundary. Files from 501 through 600 lines require only the exact
+`approximately 500 lines` waiver; size alone cannot require decomposition or a
+follow-up. Files above 600 use sealed legacy exceptions or the stronger
+versioned waiver with expiry and follow-up. Directory and suffix exclusions
+remain canonical, and editing the baseline cannot raise either threshold or
+hide source paths from measurement.
 
 The exact-runtime suite is
 `tests/conformance/pydantic-ai-compatibility.test.ts`. The process-transport

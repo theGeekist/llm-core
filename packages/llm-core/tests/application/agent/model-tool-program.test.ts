@@ -183,7 +183,10 @@ describe("model/tool agent program", () => {
     const result = started.result();
 
     expect(result).not.toBeInstanceOf(Promise);
-    expect(result).toMatchObject({ status: "completed", output: "done" });
+    expect(result).toMatchObject({
+      status: "completed",
+      output: { kind: "text", text: "done" },
+    });
     expect(observed?.messages).toEqual([
       { role: "system", content: [{ kind: "text", text: "Be precise." }] },
       { role: "user", content: [{ kind: "json", value: { question: "hello" } }] },
@@ -230,7 +233,7 @@ describe("model/tool agent program", () => {
 
     expect(await run(runner, agent)).toMatchObject({
       status: "completed",
-      output: "The answer is 42.",
+      output: { kind: "text", text: "The answer is 42." },
     });
     expect(calls).toHaveLength(1);
     expect(requests[1]?.messages.at(-1)).toEqual({
@@ -281,7 +284,7 @@ describe("model/tool agent program", () => {
 
     expect(await run(runner, agent)).toMatchObject({
       status: "completed",
-      output: "not executed",
+      output: { kind: "text", text: "not executed" },
     });
     expect(directExecutions).toBe(0);
   });
@@ -341,7 +344,7 @@ describe("model/tool agent program", () => {
 
     expect(await run(runner, agent)).toMatchObject({
       status: "completed",
-      output: "controlled",
+      output: { kind: "text", text: "controlled" },
     });
     expect(controlledExecutions).toBe(1);
   });
@@ -392,7 +395,7 @@ describe("model/tool agent program", () => {
 
     expect(await run(runner, parent)).toMatchObject({
       status: "completed",
-      output: "final",
+      output: { kind: "text", text: "final" },
     });
     expect(requests[0]?.tools).toEqual([
       {
@@ -451,7 +454,10 @@ describe("model/tool agent program", () => {
     const runner = runnerWith(program);
     const parent = await prepare(runner, "Do not run undeclared children.", "parent");
 
-    expect(await run(runner, parent)).toMatchObject({ status: "completed", output: "closed" });
+    expect(await run(runner, parent)).toMatchObject({
+      status: "completed",
+      output: { kind: "text", text: "closed" },
+    });
     expect(resolverCalls).toBe(0);
   });
 
@@ -528,7 +534,7 @@ describe("model/tool agent program", () => {
 
     expect(await run(runner, parent)).toMatchObject({
       status: "completed",
-      output: "forgery rejected",
+      output: { kind: "text", text: "forgery rejected" },
     });
   });
 
@@ -607,7 +613,7 @@ describe("model/tool agent program", () => {
 
     expect(await started.result()).toMatchObject({
       status: "completed",
-      output: "next answer",
+      output: { kind: "text", text: "next answer" },
     });
     expect(observed?.messages[1]).toEqual({
       role: "assistant",

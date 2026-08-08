@@ -10,23 +10,32 @@ export {
   createPydanticAiBridgeRunner,
   createPythonTransportConformanceRunner,
   PydanticAiCompatibilityError,
+  type PydanticAiAgentRun,
   type PydanticAiBridgeContractVersion,
   type PydanticAiBridgeOperation,
   type PydanticAiBridgeRequest,
   type PydanticAiBridgeResponse,
+  type PydanticAiBridgeRunner,
   type PydanticAiBridgeTransport,
 } from "./pydantic-ai";
 export {
+  isPydanticAiNativeRunObservation,
+  type PydanticAiNativeRunObservation,
+} from "./pydantic-ai-native-result";
+export {
+  PYDANTIC_AI_ASSESSED_COMMIT,
   PYDANTIC_AI_ASSESSED_VERSION,
   PYDANTIC_AI_BRIDGE_PROTOCOL,
-  PYDANTIC_AI_COMPATIBILITY_REPORT,
   PYDANTIC_AI_MINIMUM_MINOR,
-  PYDANTIC_AI_SEMANTICS,
+  PYDANTIC_AI_OPERATION_MATRIX,
+  PYDANTIC_AI_OPERATIONS,
   PYDANTIC_AI_SUPPORTED_MAJOR,
   type PydanticAiBridgeHandshake,
-  type RuntimeCompatibilityReport,
-  type RuntimeSupportDeclaration,
-  type RuntimeSemanticDisposition,
+  type RuntimeContractReference,
+  type RuntimeOperationDeclaration,
+  type RuntimeOperationDisposition,
+  type RuntimeOperationMatrix,
+  type RuntimeOperationSurface,
 } from "./pydantic-ai-support";
 export {
   createNdjsonStdioTransport,

@@ -201,7 +201,7 @@ export interface ConversationRunRecord {
   readonly runId: RunId;
   readonly input: JsonValue;
   readonly status: AgentResult["status"];
-  readonly output?: JsonValue;
+  readonly output?: AgentResult["output"];
   readonly reasonCode?: string;
 }
 

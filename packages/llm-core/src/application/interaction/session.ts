@@ -14,6 +14,7 @@ import {
   type LiveContinuation,
 } from "../../features/state/public";
 import type { ToolExecutionEvent } from "../../features/evidence/public";
+import { isAgentOutput } from "../../features/agent/public";
 import {
   interactionAgentEvent,
   interactionContentEvent,
@@ -281,8 +282,8 @@ export const createInteractionSession = (
             "Agent result reason code must safely agree with its terminal event.",
           );
         }
-        if (run.output !== undefined && !isJsonValue(run.output)) {
-          throw new TypeError("Agent output must be strict portable JSON.");
+        if (run.output !== undefined && !isAgentOutput(run.output)) {
+          throw new TypeError("Agent output must use the closed portable result contract.");
         }
         const providerSession = run.providerSession
           ? registerInteractionProviderSession(run.providerSession)

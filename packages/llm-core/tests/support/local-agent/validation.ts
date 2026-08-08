@@ -10,6 +10,7 @@ import {
 } from "#contracts";
 import type { AgentCancellationRequest } from "../../../src/features/agent/public";
 import {
+  isAgentOutput,
   isPreparedAgentDefinition,
   type AgentEvent,
   type AgentEventKind,
@@ -250,7 +251,7 @@ export const validateAgentEventFacts = (kind: AgentEventKind, facts: AgentEvent[
 export const validateLocalAgentExecutionResult = (draft: LocalAgentExecutionResult): void => {
   if (
     !["completed", "failed", "denied", "cancelled"].includes(draft.status) ||
-    (draft.output !== undefined && !isJsonValue(draft.output)) ||
+    (draft.output !== undefined && !isAgentOutput(draft.output)) ||
     (draft.reasonCode !== undefined && typeof draft.reasonCode !== "string") ||
     (draft.providerSession !== undefined && !isClosedProviderSession(draft.providerSession)) ||
     (draft.checkpoint !== undefined && !isRegisteredResumableCheckpoint(draft.checkpoint)) ||

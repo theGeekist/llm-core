@@ -69,13 +69,16 @@ const program: LocalAgentProgramPort = {
     return {
       status: "completed",
       output: {
-        runtime: "typescript-local",
-        input: context.request.input,
-        model: { kind: "text", text: "deterministic" },
-        tool: { name: "echo", result: context.request.input },
-        control: { effect: "read-only", status: "allowed" },
-        state: { kind: "snapshot", resumable: false },
-        continuation: { status: "unsupported" },
+        kind: "json",
+        value: {
+          runtime: "typescript-local",
+          input: context.request.input,
+          model: { kind: "text", text: "deterministic" },
+          tool: { name: "echo", result: context.request.input },
+          control: { effect: "read-only", status: "allowed" },
+          state: { kind: "snapshot", resumable: false },
+          continuation: { status: "unsupported" },
+        },
       },
     };
   },
@@ -194,13 +197,16 @@ export const assertPortableRunnerConformance = async (
 
     expect(result.status).toBe("completed");
     expect(result.identity.runId).toBe(run.identity.runId);
-    expect(result.output).toMatchObject({ model: { kind: "text" } });
+    expect(result.output).toEqual(expect.objectContaining({ kind: expect.any(String) }));
     if (verifyAllSemantics) {
       expect(result.output).toMatchObject({
-        tool: { name: "echo", result: { prompt: "hello" } },
-        control: { effect: "read-only", status: "allowed" },
-        state: { kind: "snapshot", resumable: false },
-        continuation: { status: "unsupported" },
+        kind: "json",
+        value: {
+          tool: { name: "echo", result: { prompt: "hello" } },
+          control: { effect: "read-only", status: "allowed" },
+          state: { kind: "snapshot", resumable: false },
+          continuation: { status: "unsupported" },
+        },
       });
     }
     expect(events.map((event) => event.kind)).toEqual([

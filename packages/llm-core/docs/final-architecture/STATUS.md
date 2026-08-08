@@ -1,7 +1,7 @@
 # llm-core Architecture v2 Status
 
 Architecture version: v2
-Updated: 7 August 2026
+Updated: 8 August 2026
 Kernel: complete at `9920425`
 Pre-transition source baseline: `c041792`
 
@@ -97,7 +97,7 @@ mean published or supported through a package front.
 | architecture-test-sloc-decomposition         | architecture   | proposed | architecture-runtime-ownership-correction                                                                                                                                                                                                                                      |
 | adapter-ai-sdk-native-contract-correction    | adapters       | proposed | architecture-external-contract-fidelity, core-ai-sdk-adapter                                                                                                                                                                                                                   |
 | specification-exact-operation-contracts      | specifications | proposed | architecture-external-contract-fidelity, specification-api                                                                                                                                                                                                                     |
-| runtime-operation-contract-correction        | adapters       | proposed | architecture-external-contract-fidelity, capabilities-runtime-conformance                                                                                                                                                                                                      |
+| runtime-operation-contract-correction        | adapters       | done     | architecture-external-contract-fidelity, capabilities-runtime-conformance                                                                                                                                                                                                      |
 | specification-semantic-path-characterization | specifications | proposed | architecture-external-contract-fidelity, architecture-runtime-ownership-correction, specification-api, adapter-openspec, adapter-pydantic-ai, adapter-ai-sdlc, adapter-spec-kit, adapter-bmad                                                                                  |
 | specification-semantic-reconciliation        | specifications | proposed | specification-exact-operation-contracts, specification-semantic-path-characterization                                                                                                                                                                                          |
 | adapter-pydantic-ai-semantic-projection      | adapters       | proposed | adapter-pydantic-ai, specification-exact-operation-contracts, specification-semantic-reconciliation                                                                                                                                                                            |

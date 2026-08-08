@@ -96,7 +96,7 @@ export const completedRun = (
   const resultDraft: AgentResult = {
     identity: { runId },
     status: "completed",
-    output: { text: "done" },
+    output: { kind: "text", text: "done" },
     providerSession: {
       kind: "provider-session-ref",
       providerId: "provider",

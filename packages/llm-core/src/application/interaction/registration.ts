@@ -9,6 +9,7 @@ import {
   type RunId,
 } from "#contracts";
 import { createSnapshot } from "../../features/state/public";
+import { registerAgentOutput } from "../../features/agent/public";
 import { isCanonicalInteractionTimestamp, isSafeInteractionCode } from "./content-registration";
 import { registerInteractionProviderSession } from "./provider-session-registration";
 import { registerConversationEvent } from "./ui-event-registration";
@@ -212,8 +213,7 @@ const normalizeTurn = (value: unknown): ConversationRunRecord => {
     !isRecord(value) ||
     !hasOnlyKeys(value, ["runId", "input", "status", "output", "reasonCode"]) ||
     !TERMINAL_STATUSES.includes(value.status as (typeof TERMINAL_STATUSES)[number]) ||
-    !isJsonValue(value.input) ||
-    (value.output !== undefined && !isJsonValue(value.output))
+    !isJsonValue(value.input)
   ) {
     throw new TypeError("Conversation turns must be closed portable terminal records.");
   }
@@ -222,7 +222,7 @@ const normalizeTurn = (value: unknown): ConversationRunRecord => {
     runId: runId(value.runId),
     input: structuredClone(value.input),
     status: value.status as (typeof TERMINAL_STATUSES)[number],
-    ...(value.output === undefined ? {} : { output: structuredClone(value.output) as JsonValue }),
+    ...(value.output === undefined ? {} : { output: registerAgentOutput(value.output) }),
     ...(reasonCode ? { reasonCode } : {}),
   };
 };

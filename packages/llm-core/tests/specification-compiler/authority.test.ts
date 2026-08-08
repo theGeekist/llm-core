@@ -147,7 +147,7 @@ describe("specification execution authority", () => {
     const program: LocalAgentProgramPort = {
       execute: () => {
         executions += 1;
-        return { status: "completed", output: null };
+        return { status: "completed", output: { kind: "json", value: null } };
       },
     };
     const runner = createLocalAgentRunner({
@@ -206,7 +206,9 @@ describe("specification execution authority", () => {
     const fixture = authorityFixture(plan);
     const runner = createLocalAgentRunner({
       identity: identity(),
-      program: { execute: () => ({ status: "completed", output: null }) },
+      program: {
+        execute: () => ({ status: "completed", output: { kind: "json", value: null } }),
+      },
       runnerId: "runner.authority",
       runnerVersion: contractVersion("1.0.0"),
       specification: { compiled: fixture.compiled, authority: fixture.authority },
@@ -224,7 +226,9 @@ describe("specification execution authority", () => {
     const fixture = authorityFixture({ target: "not-an-agent" });
     const runner = createLocalAgentRunner({
       identity: identity(),
-      program: { execute: () => ({ status: "completed", output: null }) },
+      program: {
+        execute: () => ({ status: "completed", output: { kind: "json", value: null } }),
+      },
       runnerId: "runner.authority",
       runnerVersion: contractVersion("1.0.0"),
       specification: {

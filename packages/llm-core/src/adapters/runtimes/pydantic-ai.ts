@@ -4,24 +4,38 @@ import type {
   AgentCancellationRequest,
   AgentInterventionAcknowledgement,
   AgentRun,
-  AgentEvent,
+  AgentResult,
   AgentStartRequest,
   AgentRunner,
   AgentRunnerProfile,
   AgentDefinition,
   PreparedAgentDefinition,
-  AgentResult,
 } from "../../features/agent/public";
 import { createPreparedAgentDefinition } from "../../features/agent/public";
 import type { InterventionDecision } from "../../features/state/public";
+import type { PydanticAiNativeRunObservation } from "./pydantic-ai-native-result";
 import {
   PYDANTIC_AI_BRIDGE_PROTOCOL,
-  PYDANTIC_AI_MINIMUM_MINOR,
-  PYDANTIC_AI_SEMANTICS,
-  PYDANTIC_AI_SUPPORTED_MAJOR,
   type PydanticAiBridgeHandshake,
-  type RuntimeSupportDeclaration,
+  type RuntimeOperationDeclaration,
 } from "./pydantic-ai-support";
+import {
+  PydanticAiCompatibilityError,
+  TERMINAL_EVENT_KINDS,
+  assertPydanticAiBridgeCompatible,
+  clonePortable,
+  hasPydanticAiOperationMatrix,
+  payloadRecord,
+  pydanticAiPromptInput,
+  registerPydanticAiSpec,
+  stringField,
+  supportedPythonVersion,
+  validatePydanticAiEvent,
+  validatePydanticAiNativeResult,
+  validatePydanticAiResult,
+} from "./pydantic-ai-validation";
+
+export { PydanticAiCompatibilityError, assertPydanticAiBridgeCompatible };
 
 export type PydanticAiBridgeOperation =
   | "handshake"
@@ -29,6 +43,9 @@ export type PydanticAiBridgeOperation =
   | "start"
   | "events"
   | "result"
+  | "native-result"
+  | "native-typed-output"
+  | "native-events"
   | "cancel"
   | "intervene";
 
@@ -50,113 +67,17 @@ export interface PydanticAiBridgeTransport {
   exchange(request: PydanticAiBridgeRequest): Promise<PydanticAiBridgeResponse>;
 }
 
-export class PydanticAiCompatibilityError extends Error {
-  readonly code: string;
-
-  constructor(code: string, message: string) {
-    super(message);
-    this.name = "PydanticAiCompatibilityError";
-    this.code = code;
-  }
+export interface PydanticAiAgentRun extends AgentRun {
+  nativeResult(): Promise<PydanticAiNativeRunObservation>;
 }
 
-function parseVersion(value: string): readonly [number, number, number] | null {
-  const match = /^(\d+)\.(\d+)\.(\d+)(?:[+-].*)?$/.exec(value);
-  if (!match) {
-    return null;
-  }
-  return [Number(match[1]), Number(match[2]), Number(match[3])];
+export interface PydanticAiBridgeRunner extends AgentRunner {
+  start(request: AgentStartRequest): Promise<PydanticAiAgentRun>;
 }
-
-const sameDeclaration = (
-  actual: readonly RuntimeSupportDeclaration[],
-  expected: readonly RuntimeSupportDeclaration[],
-): boolean => JSON.stringify(actual) === JSON.stringify(expected);
-
-const supportedPythonVersion = (value: string): boolean => {
-  const match = /^(\d+)\.(\d+)\.(\d+)(?:[+-].*)?$/.exec(value);
-  if (!match) return false;
-  const major = Number(match[1]);
-  const minor = Number(match[2]);
-  return major === 3 && minor >= 10 && minor < 15;
-};
-
-export const assertPydanticAiBridgeCompatible = (handshake: PydanticAiBridgeHandshake): void => {
-  if (handshake.protocol !== PYDANTIC_AI_BRIDGE_PROTOCOL) {
-    throw new PydanticAiCompatibilityError(
-      "protocol-mismatch",
-      `Expected ${PYDANTIC_AI_BRIDGE_PROTOCOL}.`,
-    );
-  }
-  if (!handshake.pydanticAiAvailable) {
-    throw new PydanticAiCompatibilityError(
-      "pydantic-ai-unavailable",
-      "The Python process is reachable, but PydanticAI is not installed.",
-    );
-  }
-  if (!supportedPythonVersion(handshake.pythonVersion)) {
-    throw new PydanticAiCompatibilityError(
-      "unsupported-python-version",
-      `Python ${handshake.pythonVersion} is outside >=3.10 <3.15.`,
-    );
-  }
-  const version = parseVersion(handshake.pydanticAiVersion);
-  if (
-    !version ||
-    version[0] !== PYDANTIC_AI_SUPPORTED_MAJOR ||
-    version[1] !== PYDANTIC_AI_MINIMUM_MINOR ||
-    version[2] !== 0
-  ) {
-    throw new PydanticAiCompatibilityError(
-      "unsupported-pydantic-ai-version",
-      `PydanticAI ${handshake.pydanticAiVersion} is not the assessed 2.19.0 release.`,
-    );
-  }
-  if (!sameDeclaration(handshake.semantics, PYDANTIC_AI_SEMANTICS)) {
-    throw new PydanticAiCompatibilityError(
-      "semantic-declaration-mismatch",
-      "The Python bridge semantic declaration does not match this adapter.",
-    );
-  }
-};
-
-const clonePortable = <T>(value: T): T => {
-  try {
-    return structuredClone(value);
-  } catch {
-    throw new PydanticAiCompatibilityError(
-      "non-portable-payload",
-      "PydanticAI bridge payloads must be structured-cloneable portable values.",
-    );
-  }
-};
-
-const payloadRecord = (
-  value: JsonValue | undefined,
-  operation: string,
-): Record<string, JsonValue> => {
-  if (!value || typeof value !== "object" || Array.isArray(value)) {
-    throw new PydanticAiCompatibilityError(
-      "malformed-response",
-      `PydanticAI ${operation} returned a non-object payload.`,
-    );
-  }
-  return value;
-};
-
-const stringField = (value: JsonValue | undefined, field: string, operation: string): string => {
-  if (typeof value !== "string" || value.length === 0) {
-    throw new PydanticAiCompatibilityError(
-      "malformed-response",
-      `PydanticAI ${operation} returned an invalid ${field}.`,
-    );
-  }
-  return value;
-};
 
 const capabilities: AgentRunnerProfile = Object.freeze({
   runnerId: "llm-core.runtime.pydantic-ai",
-  runnerVersion: contractVersion("1.0.0"),
+  runnerVersion: contractVersion("2.0.0"),
   controlledEffects: false,
   cancellation: "none",
   interventions: false,
@@ -166,138 +87,12 @@ const capabilities: AgentRunnerProfile = Object.freeze({
   childRuns: false,
 });
 
-const EVENT_KINDS = new Set<AgentEvent["kind"]>([
-  "agent.run.started",
-  "agent.run.progress",
-  "agent.run.completed",
-  "agent.run.failed",
-  "agent.run.denied",
-  "agent.run.cancelled",
-]);
-
-const TERMINAL_EVENT_KINDS = new Set<AgentEvent["kind"]>([
-  "agent.run.completed",
-  "agent.run.failed",
-  "agent.run.denied",
-  "agent.run.cancelled",
-]);
-
-const validEventFacts = (kind: AgentEvent["kind"], facts: Record<string, JsonValue>): boolean => {
-  switch (kind) {
-    case "agent.run.started":
-      return typeof facts.agentId === "string" && typeof facts.agentVersion === "string";
-    case "agent.run.progress":
-      return typeof facts.code === "string" && Object.keys(facts).length === 1;
-    case "agent.run.completed":
-      return facts.status === "completed";
-    case "agent.run.failed":
-      return facts.status === "failed";
-    case "agent.run.denied":
-      return facts.status === "denied";
-    case "agent.run.cancelled":
-      return facts.status === "cancelled";
-    default:
-      return false;
-  }
-};
-
-const validateEvent = (value: JsonValue, runId: string, expectedSequence: number): AgentEvent => {
-  const record = payloadRecord(value, "events");
-  const kind = record.kind as AgentEvent["kind"];
-  if (
-    !isUuidV7(record.eventId) ||
-    !EVENT_KINDS.has(kind) ||
-    record.sequence !== expectedSequence ||
-    typeof record.occurredAt !== "string" ||
-    !record.occurredAt.endsWith("Z") ||
-    !record.facts ||
-    typeof record.facts !== "object" ||
-    Array.isArray(record.facts)
-  ) {
-    throw new PydanticAiCompatibilityError(
-      "malformed-event",
-      "PydanticAI emitted an unknown, malformed, duplicated, dropped, or reordered event.",
-    );
-  }
-  if (!validEventFacts(kind, record.facts as Record<string, JsonValue>)) {
-    throw new PydanticAiCompatibilityError(
-      "malformed-event-facts",
-      "PydanticAI emitted facts that do not match the projected lifecycle event.",
-    );
-  }
-  const identity = payloadRecord(record.identity, "events");
-  if (identity.runId !== runId) {
-    throw new PydanticAiCompatibilityError(
-      "event-identity-mismatch",
-      "PydanticAI emitted an event for a different run.",
-    );
-  }
-  return clonePortable(record) as unknown as AgentEvent;
-};
-
-const validateResult = (value: JsonValue | undefined, runId: string): AgentResult => {
-  const record = payloadRecord(value, "result");
-  const identity = payloadRecord(record.identity, "result");
-  if (
-    identity.runId !== runId ||
-    !["completed", "failed", "denied", "cancelled"].includes(String(record.status))
-  ) {
-    throw new PydanticAiCompatibilityError(
-      "malformed-result",
-      "PydanticAI returned an invalid terminal result.",
-    );
-  }
-  return clonePortable(record) as unknown as AgentResult;
-};
-
-const validatePydanticAiSpec = (spec: AgentDefinition): void => {
-  if (spec.effectRequirement === "controlled") {
-    throw new PydanticAiCompatibilityError(
-      "controlled-effects-unsupported",
-      "PydanticAI deferred calls do not satisfy llm-core controlled-effect semantics.",
-    );
-  }
-  if (spec.skills?.length) {
-    throw new PydanticAiCompatibilityError(
-      "skills-unsupported",
-      "The bounded PydanticAI bridge does not project llm-core skill references.",
-    );
-  }
-  if (spec.metadata && Object.keys(spec.metadata).length > 0) {
-    throw new PydanticAiCompatibilityError(
-      "metadata-unsupported",
-      "The bounded PydanticAI bridge does not project arbitrary agent metadata.",
-    );
-  }
-  if (spec.instructions.includes("{{") || spec.instructions.includes("}}")) {
-    throw new PydanticAiCompatibilityError(
-      "templates-unsupported",
-      "The bounded PydanticAI bridge accepts literal instructions only.",
-    );
-  }
-};
-
-const promptInput = (input: JsonValue): { readonly prompt: string } => {
-  const record = payloadRecord(input, "start");
-  if (
-    Object.keys(record).length !== 1 ||
-    typeof record.prompt !== "string" ||
-    record.prompt.length === 0
-  ) {
-    throw new PydanticAiCompatibilityError(
-      "input-shape-unsupported",
-      "The bounded PydanticAI bridge accepts only { prompt: string } input.",
-    );
-  }
-  return { prompt: record.prompt };
-};
-
 /**
  * Creates a bounded PydanticAI v2 runner over an injected transport.
  *
  * The transport may be stdio, HTTP, a queue, or an in-memory test server; none
  * of those provider details escape this adapter. The Python peer must return
- * the exact semantic declaration above before any run is prepared.
+ * the exact operation matrix above before any run is prepared.
  */
 const createBridgeRunner = (
   transport: PydanticAiBridgeTransport,
@@ -342,14 +137,14 @@ const createBridgeRunner = (
         pythonVersion: stringField(payload.pythonVersion, "pythonVersion", "handshake"),
         pydanticAiVersion: stringField(payload.pydanticAiVersion, "pydanticAiVersion", "handshake"),
         pydanticAiAvailable: payload.pydanticAiAvailable === true,
-        semantics: payload.semantics as unknown as readonly RuntimeSupportDeclaration[],
+        operations: payload.operations as unknown as readonly RuntimeOperationDeclaration[],
       };
       if (requirePydanticAi) {
         assertPydanticAiBridgeCompatible(handshake);
       } else if (
         handshake.protocol !== PYDANTIC_AI_BRIDGE_PROTOCOL ||
         !supportedPythonVersion(handshake.pythonVersion) ||
-        !sameDeclaration(handshake.semantics, PYDANTIC_AI_SEMANTICS)
+        !hasPydanticAiOperationMatrix(handshake.operations)
       ) {
         throw new PydanticAiCompatibilityError(
           "python-transport-handshake-mismatch",
@@ -360,8 +155,16 @@ const createBridgeRunner = (
     return handshakePromise;
   };
 
-  const runHandle = (runId: string): AgentRun =>
-    Object.freeze({
+  const runHandle = (runId: string): AgentRun => {
+    let terminalResult: Promise<AgentResult> | undefined;
+    const result = (): Promise<AgentResult> => {
+      terminalResult ??= exchange("result", { runId }).then((payload) =>
+        validatePydanticAiResult(payload, runId),
+      );
+      return terminalResult;
+    };
+
+    return Object.freeze({
       identity: { runId: runId as AgentRun["identity"]["runId"] },
       events: () => ({
         async *[Symbol.asyncIterator]() {
@@ -381,7 +184,7 @@ const createBridgeRunner = (
                 "PydanticAI emitted an event after the terminal event.",
               );
             }
-            const validated = validateEvent(event, runId, sequence);
+            const validated = validatePydanticAiEvent(event, runId, sequence);
             terminalSeen = TERMINAL_EVENT_KINDS.has(validated.kind);
             sequence += 1;
             yield validated;
@@ -394,7 +197,25 @@ const createBridgeRunner = (
           }
         },
       }),
-      result: async () => validateResult(await exchange("result", { runId }), runId),
+      result,
+      ...(requirePydanticAi
+        ? {
+            nativeResult: async () => {
+              const portable = await result();
+              if (portable.output?.kind !== "text") {
+                throw new PydanticAiCompatibilityError(
+                  "portable-result-unavailable",
+                  "PydanticAI native results require the correlated portable text result.",
+                );
+              }
+              return validatePydanticAiNativeResult(
+                await exchange("native-result", { runId }),
+                runId,
+                portable.output.text,
+              );
+            },
+          }
+        : {}),
       cancel: async (
         _request: AgentCancellationRequest,
       ): Promise<AgentCancellationAcknowledgement> => {
@@ -412,6 +233,7 @@ const createBridgeRunner = (
         );
       },
     });
+  };
 
   return Object.freeze({
     capabilities: async () => {
@@ -420,13 +242,13 @@ const createBridgeRunner = (
     },
     prepare: async (spec: AgentDefinition): Promise<PreparedAgentDefinition> => {
       await ensureHandshake();
-      validatePydanticAiSpec(spec);
+      const registered = registerPydanticAiSpec(spec);
       const payload = payloadRecord(
-        await exchange("prepare", { spec: spec as unknown as JsonValue }),
+        await exchange("prepare", { spec: registered as unknown as JsonValue }),
         "prepare",
       );
       const token = stringField(payload.token, "token", "prepare");
-      const prepared = createPreparedAgentDefinition(clonePortable(spec));
+      const prepared = createPreparedAgentDefinition(registered);
       tokens.set(prepared, token);
       return prepared;
     },
@@ -445,7 +267,7 @@ const createBridgeRunner = (
           "PydanticAI message history is not an llm-core provider session.",
         );
       }
-      const input = promptInput(request.input);
+      const input = pydanticAiPromptInput(request.input);
       const payload = payloadRecord(
         await exchange("start", {
           token,
@@ -466,8 +288,9 @@ const createBridgeRunner = (
   });
 };
 
-export const createPydanticAiBridgeRunner = (transport: PydanticAiBridgeTransport): AgentRunner =>
-  createBridgeRunner(transport, true);
+export const createPydanticAiBridgeRunner = (
+  transport: PydanticAiBridgeTransport,
+): PydanticAiBridgeRunner => createBridgeRunner(transport, true) as PydanticAiBridgeRunner;
 
 /**
  * Executes runner fixtures across a real Python process without claiming that
