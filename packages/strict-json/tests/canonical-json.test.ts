@@ -33,6 +33,10 @@ describe("canonicalize", () => {
     expect(canonicalize([roundedBinary64, 4.5, 0.002, 1e-27])).toBe(
       "[333333333.3333333,4.5,0.002,1e-27]",
     );
+    expect(canonicalize({ "0": null, "": "" })).toBe('{"":"","0":null}');
+    expect(canonicalize({ "": { "0": 0, "": "" } })).toBe(
+      '{"":{"":"","0":0}}',
+    );
   });
 
   test("wraps serializer failures in the package-owned error contract", () => {

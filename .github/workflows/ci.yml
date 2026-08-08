@@ -80,6 +80,9 @@ jobs:
       - name: Install JavaScript dependencies
         run: bun install --frozen-lockfile
 
+      - name: Build strict-json dependency
+        run: bun run --cwd packages/strict-json build
+
       - name: Install exact PydanticAI runtime
         run: |
           python -m venv .venv-pydantic-ai
@@ -110,6 +113,9 @@ jobs:
 
       - name: Install
         run: bun install --frozen-lockfile
+
+      - name: Build strict-json dependency
+        run: bun run --cwd packages/strict-json build
 
       - name: Debug
         run: ls -R packages

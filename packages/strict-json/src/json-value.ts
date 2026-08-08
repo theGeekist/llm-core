@@ -83,7 +83,7 @@ const normalizeNumber = (value: number, path: readonly JsonPathSegment[]): numbe
   return Object.is(value, -0) ? 0 : value;
 };
 
-const sortedStrings = (values: readonly string[]): string[] => {
+export const sortedStrings = (values: readonly string[]): string[] => {
   const sorted = new Array<string>(values.length);
   for (let index = 0; index < values.length; index += 1) {
     sorted[index] = values[index] as string;

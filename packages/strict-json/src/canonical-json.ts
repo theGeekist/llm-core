@@ -1,4 +1,4 @@
-import { normalize, StrictJsonError, type JsonValue } from "./json-value.js";
+import { normalize, sortedStrings, StrictJsonError, type JsonValue } from "./json-value.js";
 
 const serializeArray = (value: JsonValue[]): string => {
   let serialized = "[";
@@ -10,7 +10,7 @@ const serializeArray = (value: JsonValue[]): string => {
 };
 
 const serializeRecord = (value: { [key: string]: JsonValue }): string => {
-  const keys = Reflect.ownKeys(value) as string[];
+  const keys = sortedStrings(Reflect.ownKeys(value) as string[]);
   let serialized = "{";
   for (let index = 0; index < keys.length; index += 1) {
     const key = keys[index] as string;
