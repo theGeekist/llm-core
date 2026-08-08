@@ -126,6 +126,6 @@ jobs:
         run: bun run test -- --coverage --coverage-reporter=text --coverage-reporter=lcov
 
       - name: SonarQube Scan
-        uses: SonarSource/sonarqube-scan-action@v6
+        uses: SonarSource/sonarqube-scan-action@v8
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
