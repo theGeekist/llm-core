@@ -17,7 +17,7 @@ depends_on:
   - architecture-external-contract-fidelity
   - architecture-source-layout-normalization
   - language-rollout
-  - runtime-tools-front-boundary
+  - adapters-protocol-qualification
 decision_dependencies:
   - ADR-003
   - ADR-005
@@ -46,7 +46,7 @@ read_scope:
   - packages/llm-core/src/features/control/**
   - packages/llm-core/src/features/evidence/**
 review_owner: coordinator
-updated_at: 2026-08-02
+updated_at: 2026-08-08
 ---
 
 # integrations-connector-characterization — Characterize unlike connector vertical slices
@@ -58,8 +58,9 @@ vertical slices before freezing a shared connector contract.
 
 ## In scope
 
-- An executable private MCP tool/resource discovery and controlled-invocation
-  slice with task-local ports and state.
+- An executable MCP tool/resource discovery and controlled-invocation slice
+  consuming the qualified public MCP surface with task-local application ports
+  and state.
 - An independently implemented executable OAuth-backed SaaS slice covering
   consent references, pagination, rate limits and webhook or polling
   reconciliation with its own task-local ports and state.

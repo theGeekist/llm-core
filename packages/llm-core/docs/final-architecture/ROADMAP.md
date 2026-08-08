@@ -165,18 +165,30 @@ replacement tasks while remaining as public historical provenance.
 
 ```text
 runtime-tools-front-boundary
+  + runtime-receipt-reconciliation
+  + capabilities-operational-evidence
+  + runtime-operation-contract-correction
+  + architecture-release-reproducibility
+      -> adapters-protocol-qualification
+          -> @geekist/llm-core/a2a
+          -> @geekist/llm-core/mcp
+
+adapters-protocol-qualification
   -> integrations-connector-characterization
       -> integrations-connector-contracts
           -> integrations-authorization-lifecycle
-
-runtime-receipt-reconciliation
-+ capabilities-operational-evidence
-+ integrations-authorization-lifecycle
-+ runtime-operation-contract-correction
-  -> adapters-protocol-qualification
 ```
 
-Connector characterization uses unlike executable MCP and OAuth SaaS slices.
+The protocol task publishes exact, independently qualified A2A and stateless
+MCP surfaces through one shared package and packed-consumer gate. Simple Chat
+consumes both: A2A remains its canonical agent protocol while MCP is the
+stateless compatibility path for Codex and Claude hosts. AIFSD composes the
+qualified protocol integrations; Simple Chat retains channels, sessions,
+delivery, replay, presence, receipts and its MCP-to-A2A application binding.
+
+Connector characterization subsequently uses the qualified MCP surface and an
+independently implemented OAuth SaaS slice to derive only their evidenced
+common connector semantics.
 Hosted approval inboxes, registries, credential brokers, sandboxes, context
 compilers, telemetry stores and policy administration remain services above or
 beside the kernel.
@@ -210,7 +222,8 @@ or an independent release lifecycle.
 ## Priority
 
 1. Complete ADR-016 boundary correction and package-surface verification.
-2. Finish stable-waist runtime/tool remediation.
+2. Finish the tools-front correction, then publish the exact A2A and stateless
+   MCP surfaces required by downstream products.
 3. Qualify real runtime integrations and one coding-agent delivery integration.
 4. In independent streams, demonstrate runtime substitution and characterize
    one governed AIFSD delivery slice.

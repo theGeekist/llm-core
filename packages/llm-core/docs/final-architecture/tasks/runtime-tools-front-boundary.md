@@ -4,7 +4,7 @@ id: runtime-tools-front-boundary
 title: Remove the tooling feature-to-application boundary exception
 stage: qualification
 status: proposed
-priority: high
+priority: critical
 preferred_owner_kind: coordinator
 owner:
 owner_kind:
@@ -55,7 +55,7 @@ read_scope:
   - packages/llm-core/src/application/tool-execution/**
   - packages/llm-core/src/features/tooling/**
 review_owner: coordinator
-updated_at: 2026-08-02
+updated_at: 2026-08-08
 ---
 
 # runtime-tools-front-boundary — Remove the tooling feature-to-application boundary exception
@@ -95,6 +95,12 @@ bun run --cwd packages/llm-core format:check
 ## Work log
 
 Planned by ADR-015; not claimed.
+
+2026-08-08: Raised to critical because the exact A2A and stateless MCP consumer
+surfaces now depend directly on this ownership correction. Leaving the
+prerequisite below the protocol task's priority would cause the planner's
+intentional priority short-circuit to postpone the dependency that unblocks
+Simple Chat.
 
 ## Handoff
 
