@@ -24,7 +24,7 @@ const makeRoot = (): string => {
   mkdirSync(join(root, "packages/strict-json"), { recursive: true });
   mkdirSync(join(root, ".github/workflows"), { recursive: true });
   mkdirSync(join(root, "scripts"), { recursive: true });
-  writeFileSync(join(root, ".bun-version"), "1.3.8\n");
+  writeFileSync(join(root, ".bun-version"), "1.3.14\n");
   writeFileSync(join(root, "bun.lock"), "lock\n");
   writeJson(join(root, "package.json"), {
     scripts: {
@@ -196,7 +196,7 @@ describe("canonical release qualification", () => {
       calls.push([...command]);
       return { exitCode: 0 };
     };
-    qualifyRelease(root, runner, "1.3.8");
+    qualifyRelease(root, runner, "1.3.14");
     expect(calls).toEqual([
       ["bun", "install", "--frozen-lockfile"],
       ["bun", "run", "lint"],
@@ -215,7 +215,7 @@ describe("canonical release qualification", () => {
   test("rejects the wrong local Bun version", () => {
     const root = makeRoot();
     expect(() => qualifyRelease(root, () => ({ exitCode: 0 }), "1.2.21")).toThrow(
-      "Bun 1.3.8 is required",
+      "Bun 1.3.14 is required",
     );
   });
 
@@ -237,7 +237,7 @@ describe("canonical release qualification", () => {
     const runner: CommandRunner = (command) => ({
       exitCode: command.includes("qualify:client") ? 9 : 0,
     });
-    expect(() => qualifyRelease(root, runner, "1.3.8")).toThrow("failed with exit code 9");
+    expect(() => qualifyRelease(root, runner, "1.3.14")).toThrow("failed with exit code 9");
   });
 
   test("fails when package or tagged publication bypasses the canonical command", () => {
@@ -257,13 +257,13 @@ describe("canonical release qualification", () => {
   test("requires a root lockfile", () => {
     const root = makeRoot();
     rmSync(join(root, "bun.lock"));
-    expect(() => qualifyRelease(root, () => ({ exitCode: 0 }), "1.3.8")).toThrow();
+    expect(() => qualifyRelease(root, () => ({ exitCode: 0 }), "1.3.14")).toThrow();
   });
 
   test("rejects a manifest export omitted from requiredSurfaces", () => {
     const root = makeRoot();
     publishConditionalSurface(root, "./client");
-    expect(() => qualifyRelease(root, () => ({ exitCode: 0 }), "1.3.8")).toThrow(
+    expect(() => qualifyRelease(root, () => ({ exitCode: 0 }), "1.3.14")).toThrow(
       "published conditional export missing from requiredSurfaces ./client",
     );
   });

@@ -29,6 +29,8 @@ import * as aiSdkUi from "../../src/adapters/ai-sdk-ui/index";
 import * as assistantUi from "../../src/adapters/assistant-ui/index";
 import * as openaiChatkit from "../../src/adapters/openai-chatkit/index";
 import * as nluxUi from "../../src/adapters/nlux-ui/index";
+import * as a2a from "../../src/adapters/protocols/a2a/index";
+import * as mcp from "../../src/adapters/protocols/mcp/index";
 
 const PUBLIC_SURFACE = {
   ".": root,
@@ -60,6 +62,8 @@ const PUBLIC_SURFACE = {
   "./adapters/assistant-ui": assistantUi,
   "./adapters/openai-chatkit": openaiChatkit,
   "./adapters/nlux-ui": nluxUi,
+  "./a2a": a2a,
+  "./mcp": mcp,
 } as const;
 
 const packageJson = (await Bun.file(new URL("../../package.json", import.meta.url)).json()) as {

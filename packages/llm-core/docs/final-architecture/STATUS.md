@@ -1,7 +1,7 @@
 # llm-core Architecture v2 Status
 
 Architecture version: v2
-Updated: 8 August 2026
+Updated: 9 August 2026
 Kernel: complete at `9920425`
 Pre-transition source baseline: `c041792`
 
@@ -113,7 +113,7 @@ mean published or supported through a package front.
 | integrations-connector-characterization      | integrations   | proposed | architecture-external-contract-fidelity, architecture-source-layout-normalization, language-rollout, adapters-protocol-qualification                                                                                                                                           |
 | integrations-connector-contracts             | integrations   | proposed | architecture-external-contract-fidelity, architecture-source-layout-normalization, integrations-connector-characterization                                                                                                                                                     |
 | integrations-authorization-lifecycle         | integrations   | proposed | architecture-source-layout-normalization, integrations-connector-contracts                                                                                                                                                                                                     |
-| adapters-protocol-qualification              | adapters       | proposed | architecture-external-contract-fidelity, runtime-operation-contract-correction, architecture-source-layout-normalization, runtime-receipt-reconciliation, capabilities-operational-evidence, architecture-release-reproducibility, runtime-tools-front-boundary                |
+| adapters-protocol-qualification              | adapters       | done     | architecture-external-contract-fidelity, runtime-operation-contract-correction, architecture-source-layout-normalization, runtime-receipt-reconciliation, capabilities-operational-evidence, architecture-release-reproducibility, runtime-tools-front-boundary                |
 | adapter-strands-runtime                      | adapters       | proposed | architecture-external-contract-fidelity, architecture-runtime-ownership-correction, runtime-operation-contract-correction, architecture-source-layout-normalization, capabilities-operational-evidence, capabilities-runtime-conformance, architecture-release-reproducibility |
 | adapter-strands-runtime-release              | adapters       | proposed | architecture-external-contract-fidelity, architecture-runtime-ownership-correction, runtime-operation-contract-correction, architecture-source-layout-normalization, adapter-strands-runtime                                                                                   |
 | adapter-langgraph-runtime                    | adapters       | proposed | architecture-external-contract-fidelity, architecture-runtime-ownership-correction, runtime-operation-contract-correction, architecture-release-reproducibility, capabilities-runtime-conformance, capabilities-operational-evidence                                           |

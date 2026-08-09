@@ -8,36 +8,31 @@ import {
 import type { PydanticAgentDefinition } from "./types";
 
 /** Adapter-qualified native operations supplied by the application. */
-export interface PydanticAiNativeAgentOperations<
+export type PydanticAiNativeAgentOperations<
   TPrepared,
   TExecutionInput,
   TExecutionResult,
   TResumeInput,
   TResumeResult,
-> extends SpecificationExecutionOperations<
-    PydanticAgentDefinition,
-    TPrepared,
-    TExecutionInput,
-    TExecutionResult,
-    TResumeInput,
-    TResumeResult
-  > {}
+> = SpecificationExecutionOperations<
+  PydanticAgentDefinition,
+  TPrepared,
+  TExecutionInput,
+  TExecutionResult,
+  TResumeInput,
+  TResumeResult
+>;
 
 /**
  * Application-owned facade that keeps native preparation and continuation
  * inseparable from the authority-bearing compiled specification.
  */
-export interface PreparedPydanticAiAgentSpec<
+export type PreparedPydanticAiAgentSpec<
   TExecutionInput,
   TExecutionResult,
   TResumeInput,
   TResumeResult,
-> extends PreparedSpecificationExecution<
-    TExecutionInput,
-    TExecutionResult,
-    TResumeInput,
-    TResumeResult
-  > {}
+> = PreparedSpecificationExecution<TExecutionInput, TExecutionResult, TResumeInput, TResumeResult>;
 
 /**
  * Verifies immediately before native preparation, after an asynchronous

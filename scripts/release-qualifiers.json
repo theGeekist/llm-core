@@ -1,5 +1,30 @@
 {
   "version": 1,
-  "requiredSurfaces": [],
-  "qualifiers": []
+  "requiredSurfaces": ["./a2a", "./mcp"],
+  "qualifiers": [
+    {
+      "surface": "./a2a",
+      "supportWindow": "A2A specification 1.0.0 and @a2a-js/sdk 1.0.0",
+      "owner": "adapters-protocol-qualification",
+      "command": [
+        "bun",
+        "run",
+        "--cwd",
+        "packages/llm-core/tests/adapters/protocols/external-consumer",
+        "qualify:a2a"
+      ]
+    },
+    {
+      "surface": "./mcp",
+      "supportWindow": "MCP specification 2026-07-28 and TypeScript SDK 2.0.0",
+      "owner": "adapters-protocol-qualification",
+      "command": [
+        "bun",
+        "run",
+        "--cwd",
+        "packages/llm-core/tests/adapters/protocols/external-consumer",
+        "qualify:mcp"
+      ]
+    }
+  ]
 }

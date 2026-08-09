@@ -9,6 +9,7 @@ const adapterRoot = resolve(sourceRoot, "adapters");
 
 const walkTypeScript = (directory: string): string[] =>
   readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {
+    if (entry.isDirectory() && entry.name === "node_modules") return [];
     const path = resolve(directory, entry.name);
     return entry.isDirectory() ? walkTypeScript(path) : path.endsWith(".ts") ? [path] : [];
   });
@@ -49,13 +50,16 @@ const testFilenameStem = (basename: string): string => {
 };
 
 // Add an exact path case returning its independently owned reason when a real
-// production boundary earns additional depth. There are no current exceptions.
-const sourceDepthExceptionReason = (_path: string): string | undefined => undefined;
+// production boundary earns additional depth.
+const sourceDepthExceptionReason = (path: string): string | undefined =>
+  /^adapters\/protocols\/(?:a2a|mcp)\/[^/]+\.ts$/.test(path)
+    ? "independently qualified protocol owner below the shared publication boundary"
+    : undefined;
 
 // Add an exact first-level adapter owner and independently owned reason only
 // when a multi-file integration intentionally exposes no owner-level front.
-// There are no current exceptions.
-const adapterFrontExceptionReason = (_owner: string): string | undefined => undefined;
+const adapterFrontExceptionReason = (owner: string): string | undefined =>
+  owner === "protocols" ? "A2A and MCP own distinct published child fronts" : undefined;
 
 const indexFronts = new Map([
   ["adapters/ai-sdk/index.ts", "published ./adapters/ai-sdk front"],
@@ -63,6 +67,8 @@ const indexFronts = new Map([
   ["adapters/assistant-ui/index.ts", "published ./adapters/assistant-ui front"],
   ["adapters/nlux-ui/index.ts", "published ./adapters/nlux-ui front"],
   ["adapters/openai-chatkit/index.ts", "published ./adapters/openai-chatkit front"],
+  ["adapters/protocols/a2a/index.ts", "published ./a2a front"],
+  ["adapters/protocols/mcp/index.ts", "published ./mcp front"],
   ["agent/index.ts", "published ./agent front"],
   ["control/index.ts", "published ./control front"],
   ["conversation/index.ts", "published ./conversation front"],

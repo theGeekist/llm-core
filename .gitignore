@@ -3,10 +3,13 @@ dist/
 node_modules/
 .env
 .vscode/
+.codex/
+.claude/settings.local.json
 .agent/*
 !.agent/rules/
 !.agent/rules/**
 .worktrees/
+.gitnexus/
 coverage/
 /context/
 # llm-core/

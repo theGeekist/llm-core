@@ -10,6 +10,8 @@ type BuildOptions = {
 };
 
 const EXTERNALS = [
+  "@a2a-js/sdk",
+  "@a2a-js/sdk/*",
   "assistant-stream",
   "assistant-stream/*",
   "@ai-sdk-tools/cache",
@@ -56,6 +58,10 @@ const EXTERNALS = [
   "@llamaindex/workflow-core/*",
   "@mastra/core",
   "@mastra/core/*",
+  "@modelcontextprotocol/client",
+  "@modelcontextprotocol/client/*",
+  "@modelcontextprotocol/server",
+  "@modelcontextprotocol/server/*",
   "@nlux/core",
   "@nlux/core/*",
   "@node-llm/core",
@@ -158,6 +164,8 @@ const PUBLIC_ENTRY_POINTS = [
   "src/adapters/assistant-ui/index.ts",
   "src/adapters/openai-chatkit/index.ts",
   "src/adapters/nlux-ui/index.ts",
+  "src/adapters/protocols/a2a/index.ts",
+  "src/adapters/protocols/mcp/index.ts",
 ] as const;
 
 const walkFiles = (directory: string): string[] =>

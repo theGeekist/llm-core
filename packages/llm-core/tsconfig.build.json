@@ -37,6 +37,8 @@
     "src/adapters/ai-sdk-ui/index.ts",
     "src/adapters/assistant-ui/index.ts",
     "src/adapters/openai-chatkit/index.ts",
-    "src/adapters/nlux-ui/index.ts"
+    "src/adapters/nlux-ui/index.ts",
+    "src/adapters/protocols/a2a/index.ts",
+    "src/adapters/protocols/mcp/index.ts"
   ]
 }

@@ -367,16 +367,18 @@ const workflowPolicyErrors = (root: string, path: string): string[] => {
 };
 
 const defaultRunner: CommandRunner = (command, cwd) => {
+  const label = command.join(" ");
+  const startedAt = Date.now();
+  console.log(`Running ${label}`);
   const result = Bun.spawnSync([...command], {
     cwd,
     env: process.env,
-    stderr: "pipe",
-    stdout: "pipe",
+    stderr: "inherit",
+    stdout: "inherit",
   });
+  console.log(`Finished ${label} in ${((Date.now() - startedAt) / 1_000).toFixed(1)}s.`);
   return {
     exitCode: result.exitCode,
-    stderr: result.stderr.toString(),
-    stdout: result.stdout.toString(),
   };
 };
 

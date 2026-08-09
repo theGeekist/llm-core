@@ -50,12 +50,16 @@ const expectedSubpaths = [
   "./adapters/assistant-ui",
   "./adapters/openai-chatkit",
   "./adapters/nlux-ui",
+  "./a2a",
+  "./mcp",
 ];
 const expectedPeerDependencies = {
+  "@a2a-js/sdk": "1.0.0",
   "@ai-sdk/provider": "^4.0.3",
   "@assistant-ui/react": "^0.11.53",
   "@nlux/core": "^2.17.1",
   "@openai/chatkit": "^1.2.0",
+  "@modelcontextprotocol/server": "2.0.0",
   ai: "^7.0.37",
 };
 const externalConsumerTypeDependencies = {
@@ -83,7 +87,7 @@ const walkFiles = (directory) =>
     return entry.isDirectory() ? walkFiles(path) : [path];
   });
 
-const containsSourceAlias = (source) => source.includes('"#') || source.includes("'#");
+const containsSourceAlias = (source) => /(?:\bfrom\s+|\bimport\s*(?:\(\s*)?)["']#/.test(source);
 
 const nodeMajor = Number.parseInt(process.versions.node.split(".")[0] ?? "", 10);
 if (!Number.isInteger(nodeMajor) || nodeMajor < 22) {
@@ -255,6 +259,10 @@ try {
       'import type { AssistantUiProjectionCommand, AssistantUiProjectionOptions } from "@geekist/llm-core/adapters/assistant-ui";',
       'import type { ChatKitProjectionEvent } from "@geekist/llm-core/adapters/openai-chatkit";',
       'import type { NluxInteractionAdapterOptions, NluxProjectionSignal } from "@geekist/llm-core/adapters/nlux-ui";',
+      'import { A2A_PROTOCOL_VERSION, A2A_SDK_VERSION, createA2AClient } from "@geekist/llm-core/a2a";',
+      'import type { A2AClient, Transport } from "@geekist/llm-core/a2a";',
+      'import { MCP_PROTOCOL_VERSION, MCP_SERVER_SDK_VERSION, createMcpStatelessHost } from "@geekist/llm-core/mcp";',
+      'import type { McpStatelessHost, McpStatelessHostDefinition } from "@geekist/llm-core/mcp";',
       'import type { ConversionReport, SpecificationAdapterSupport, SpecificationPolicy, SpecificationReviewItem, SpecificationReviewRelationship, SpecificationScopeId, SpecificationSourceSnapshot } from "@geekist/llm-core/specifications";',
       ...specifiers
         .slice(1)
@@ -267,6 +275,8 @@ try {
       "void createContextEntry; void selectContext;",
       "void createArtifact; void createArtifactRef;",
       "void createEvaluationCase; void createEvaluationComposition; void evaluationEvaluatorId;",
+      "void A2A_PROTOCOL_VERSION; void A2A_SDK_VERSION; void createA2AClient;",
+      "void MCP_PROTOCOL_VERSION; void MCP_SERVER_SDK_VERSION; void createMcpStatelessHost;",
       "type RootTypes = [AgentDefinition, AgentEvent, AgentResult, Tool, ToolConfig, ToolCall, ToolExecutionResult, ToolExecutionFailure, WorkflowExecutionPlan, ConversationEvent, ConversationSnapshot, ConversationState, ConversationStore];",
       "declare const rootTypes: RootTypes; void rootTypes;",
       "type SpecificationTypes = [Specification, SpecificationDecision, CompiledSpecification<unknown>, SpecificationPolicy, SpecificationReviewView, SpecificationReviewItem, SpecificationReviewRelationship, SpecificationScopeId, SpecificationSourceSnapshot, SpecificationAdapterSupport, ConversionReport];",
@@ -283,6 +293,8 @@ try {
       "declare const evaluationTypes: EvaluationTypes; void evaluationTypes;",
       "type UiTypes = [AiSdkUiProjectionChunk, AssistantUiProjectionCommand, AssistantUiProjectionOptions, ChatKitProjectionEvent, NluxInteractionAdapterOptions, NluxProjectionSignal];",
       "declare const uiTypes: UiTypes; void uiTypes;",
+      "type ProtocolTypes = [A2AClient, Transport, McpStatelessHost, McpStatelessHostDefinition];",
+      "declare const protocolTypes: ProtocolTypes; void protocolTypes;",
       ...specifiers.slice(1).map((_, index) => `void surface${index};`),
       "",
     ].join("\n"),

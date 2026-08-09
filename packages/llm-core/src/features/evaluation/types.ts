@@ -142,4 +142,4 @@ export interface EvaluationPromotionInput {
   readonly decision: "promote" | "reject";
 }
 
-export interface EvaluationPromotion extends EvaluationPromotionInput {}
+export type EvaluationPromotion = EvaluationPromotionInput;

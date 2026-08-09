@@ -10,7 +10,6 @@
     "types": ["bun", "node"],
     "typeRoots": ["../../../node_modules/@types"],
     "skipLibCheck": true,
-    "baseUrl": ".",
     "paths": {}
   },
   "include": ["index.ts"]

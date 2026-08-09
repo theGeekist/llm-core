@@ -28,7 +28,6 @@ const authorityConfiguration = {
   },
 } as const;
 
-const taskPriorities = ["critical", "high", "medium", "normal"] as const;
 const taskStatuses = [
   "proposed",
   "ready",
@@ -71,7 +70,7 @@ const taskFrontMatterFields = [
 
 export type OutputFormat = (typeof outputFormats)[number];
 export type TaskAuthority = keyof typeof authorityConfiguration;
-export type TaskPriority = (typeof taskPriorities)[number];
+export type TaskPriority = "critical" | "high" | "medium" | "normal";
 export type TaskStatus = (typeof taskStatuses)[number];
 
 interface AuthorityConfiguration {

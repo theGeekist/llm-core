@@ -1,7 +1,7 @@
 {
   "extends": "../../tsconfig.json",
   "compilerOptions": {
-    "baseUrl": ".",
+    "types": ["bun", "node"],
     "paths": {
       // Allow resolving the package name to source for internal referencing/tests
       "@geekist/llm-core": ["./index.ts"],
@@ -32,7 +32,9 @@
       "@geekist/llm-core/adapters/ai-sdk-ui": ["./src/adapters/ai-sdk-ui/index.ts"],
       "@geekist/llm-core/adapters/assistant-ui": ["./src/adapters/assistant-ui/index.ts"],
       "@geekist/llm-core/adapters/openai-chatkit": ["./src/adapters/openai-chatkit/index.ts"],
-      "@geekist/llm-core/adapters/nlux-ui": ["./src/adapters/nlux-ui/index.ts"]
+      "@geekist/llm-core/adapters/nlux-ui": ["./src/adapters/nlux-ui/index.ts"],
+      "@geekist/llm-core/a2a": ["./src/adapters/protocols/a2a/index.ts"],
+      "@geekist/llm-core/mcp": ["./src/adapters/protocols/mcp/index.ts"]
     }
   },
   "include": ["src", "tests", "scripts"],

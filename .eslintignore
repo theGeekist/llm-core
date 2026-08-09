@@ -8,3 +8,6 @@ examples/*/server/dist/**
 assistant-ui/**
 copilot-sdk/**
 codex/**
+.gitnexus/**
+.codex/**
+.claude/settings.local.json

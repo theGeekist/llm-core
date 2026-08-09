@@ -1,7 +1,8 @@
 # Package exports
 
 The package is ESM-only and requires Node.js 22 or newer. It publishes 29
-unconditional entrypoints after the ADR-016 boundary correction.
+unconditional entrypoints after the ADR-016 boundary correction, plus two
+independently qualified protocol entrypoints.
 
 The root exports `defineTool` plus the specification load, review, and compile
 operations. Root types describe portable agent, workflow, conversation, tool,
@@ -16,6 +17,8 @@ Important ownership fronts are:
 @geekist/llm-core/conversation
 @geekist/llm-core/interaction
 @geekist/llm-core/specifications
+@geekist/llm-core/a2a
+@geekist/llm-core/mcp
 ```
 
 `./agent/runtime` exposes the runner SPI but no concrete implementation.
@@ -29,3 +32,8 @@ dependency-inward and does not import application orchestration.
 
 There is no broad adapter barrel. Provider dependencies and native types stay
 behind qualified boundaries. See [API by subpath](/reference/api).
+
+`./a2a` and `./mcp` are conditional in the release sense: each has an exact
+upstream support window, operation matrix, hostile-input fixtures and durable
+release qualifier. They share package publication machinery only. Their
+contracts, native ownership and executable evidence remain separate.

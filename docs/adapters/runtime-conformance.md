@@ -64,3 +64,25 @@ tools or message history.
 The adapter page should publish this closed `supported`, `unsupported`, or
 `not-applicable` matrix. Keep exact versions, commands, suites, and reference
 targets in [packaging and conformance](/reference/conformance).
+
+## Protocol conformance
+
+A protocol adapter is qualified against its own recognised authority rather
+than the runtime ladder alone. The A2A and MCP package fronts therefore expose
+independent exact-operation matrices, retain native ownership for protocol
+facts, reject undeclared input at registration boundaries and fail explicitly
+for applicable unsupported operations.
+
+The MCP surface is stateless per request. A trusted application binding owns
+tool and resource catalogues, request authorisation and handlers. Successful
+tool calls still pass through kernel schema validation, policy, approval,
+receipt and cancellation controls. The transport cannot grant itself those
+capabilities.
+
+The A2A surface preserves remote identity, delegation, task state, artefacts,
+events, subscriptions and cancellation as A2A-native facts. No portable
+checkpoint, team or application-session contract is inferred from them.
+
+Release qualification runs each surface's packed external-consumer fixture
+against the exact SDK versions declared by its operation matrix. A fixture for
+one protocol is not evidence for the other.

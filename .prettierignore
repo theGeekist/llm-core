@@ -3,3 +3,6 @@ pipeline
 pipeline/**
 dist/**
 coverage/**
+.gitnexus/**
+.codex/**
+.claude/settings.local.json
