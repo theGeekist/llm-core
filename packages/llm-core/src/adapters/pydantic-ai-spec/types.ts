@@ -1,13 +1,13 @@
 import type { CapabilityRequirement, JsonObject } from "#contracts";
-import type { AgentDefinition } from "@aifsd/llm-core/agent/runtime";
-import type { ContextSelection } from "@aifsd/llm-core/context";
-import type { EvaluationQualification } from "@aifsd/llm-core/evaluation";
-import type { PromptTemplate, ToolDeclaration } from "@aifsd/llm-core/model";
+import type { AgentDefinition } from "@geekist/llm-core/agent/runtime";
+import type { ContextSelection } from "@geekist/llm-core/context";
+import type { EvaluationQualification } from "@geekist/llm-core/evaluation";
+import type { PromptTemplate, ToolDeclaration } from "@geekist/llm-core/model";
 import type {
   CompiledSpecification,
   SpecificationOperation,
   SpecificationScopeId,
-} from "@aifsd/llm-core/specifications";
+} from "@geekist/llm-core/specifications";
 
 /** Exact JSON-shaped AgentSpec boundary assessed at PydanticAI v2.19.0. */
 export interface PydanticAgentDefinition {

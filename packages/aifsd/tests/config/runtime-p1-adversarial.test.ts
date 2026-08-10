@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { digest, schemaRef } from "@aifsd/llm-core/contracts";
+import { digest, schemaRef } from "@geekist/llm-core/contracts";
 
 import {
   resolveManifest,

@@ -9,7 +9,7 @@
     "lint:fix": "eslint \"**/*.{ts,tsx,js,jsx}\" --fix"
   },
   "dependencies": {
-    "@aifsd/llm-core": "workspace:*",
+    "@geekist/llm-core": "workspace:*",
     "react": "19.2.3",
     "react-dom": "19.2.3"
   },

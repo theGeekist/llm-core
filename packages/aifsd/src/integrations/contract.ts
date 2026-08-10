@@ -1,4 +1,4 @@
-import type { Digest, EvidenceRef, JsonValue, SecretRef } from "@aifsd/llm-core/contracts";
+import type { Digest, EvidenceRef, JsonValue, SecretRef } from "@geekist/llm-core/contracts";
 import type {
   ConfigurationResult,
   DependencyMember,

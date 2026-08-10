@@ -65,7 +65,7 @@ describe("PydanticAI exact operation matrix", () => {
           operation: "portable.agent.observe.normalized-lifecycle",
           surface: "portable",
           disposition: "supported",
-          owner: "@aifsd/llm-core",
+          owner: "@geekist/llm-core",
         }),
         expect.objectContaining({
           operation: "native.pydantic-ai.event-stream",

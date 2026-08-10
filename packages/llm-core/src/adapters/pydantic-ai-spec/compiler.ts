@@ -14,12 +14,12 @@ import type {
   SpecificationDiagnostic,
   SpecificationOperation,
   SpecificationProjectionView,
-} from "@aifsd/llm-core/specifications";
+} from "@geekist/llm-core/specifications";
 import {
   createSpecificationAdapterSupport,
   createSpecificationOperation,
   projectSpecification,
-} from "@aifsd/llm-core/specifications";
+} from "@geekist/llm-core/specifications";
 import type {
   PydanticAgentDefinition,
   PydanticAiCompilation,

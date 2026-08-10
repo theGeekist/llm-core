@@ -146,7 +146,7 @@ try {
         type: "module",
         dependencies: {
           "@aifsd/sdk": `file:${archives.sdk}`,
-          "@aifsd/llm-core": `file:${archives.llmCore}`,
+          "@geekist/llm-core": `file:${archives.llmCore}`,
           "@aifsd/strict-json": `file:${archives.strictJson}`,
           "@wpkernel/pipeline": `file:${archives.pipeline}`,
         },

@@ -2,7 +2,7 @@ import { createHash } from "node:crypto";
 import { mkdtempSync, realpathSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
-import { digest, type Digest, type EvidenceRef } from "@aifsd/llm-core/contracts";
+import { digest, type Digest, type EvidenceRef } from "@geekist/llm-core/contracts";
 import {
   integrationClosureDigest,
   integrationContentDigest,

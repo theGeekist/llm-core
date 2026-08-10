@@ -19,7 +19,7 @@ import {
   type SpecificationOperation,
   type SpecificationAdapterSupport,
   type SpecificationSourceSnapshot,
-} from "@aifsd/llm-core/specifications";
+} from "@geekist/llm-core/specifications";
 
 const FORMAT_ID = extensionNamespace("io.github.fission-ai.openspec");
 const VERSION = contractVersion("1.6.0");

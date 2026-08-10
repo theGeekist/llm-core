@@ -9,7 +9,7 @@ import {
   type SpecificationAdapterSupport,
   type SpecificationFormat,
   type SpecificationSourceSnapshot,
-} from "@aifsd/llm-core/specifications";
+} from "@geekist/llm-core/specifications";
 import {
   assertFileInput,
   assertTimestamp,

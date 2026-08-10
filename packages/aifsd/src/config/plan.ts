@@ -4,7 +4,7 @@
 // — that becomes a conflict the caller must resolve (CONFIGURATION.md
 // "Materialization" and "Generated artifact ownership").
 
-import type { Digest } from "@aifsd/llm-core/contracts";
+import type { Digest } from "@geekist/llm-core/contracts";
 import type {
   DesiredArtifact,
   ChangePlan,

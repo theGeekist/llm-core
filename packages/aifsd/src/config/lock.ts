@@ -10,7 +10,7 @@
 // cannot smuggle a false identity into the lock. Verification rebuilds the
 // expected lock and fails closed on any semantic drift.
 
-import { isDigest, type Digest } from "@aifsd/llm-core/contracts";
+import { isDigest, type Digest } from "@geekist/llm-core/contracts";
 import type {
   CatalogAuthority,
   ConfigurationLockInput,

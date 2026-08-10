@@ -128,7 +128,7 @@ describe("configuration public front", () => {
           type: "module",
           dependencies: {
             "@aifsd/sdk": `file:${sdk.tarball}`,
-            "@aifsd/llm-core": `file:${kernel.tarball}`,
+            "@geekist/llm-core": `file:${kernel.tarball}`,
             "@aifsd/strict-json": `file:${strictJson.tarball}`,
             "@wpkernel/pipeline": `file:${pipeline.tarball}`,
           },

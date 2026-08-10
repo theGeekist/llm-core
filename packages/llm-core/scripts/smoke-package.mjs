@@ -246,7 +246,7 @@ try {
         type: "module",
         dependencies: {
           "@aifsd/strict-json": `file:${strictJsonTarball}`,
-          "@aifsd/llm-core": `file:${tarball}`,
+          "@geekist/llm-core": `file:${tarball}`,
           ...peerDependencies,
         },
         devDependencies: externalConsumerTypeDependencies,
@@ -263,7 +263,7 @@ try {
   });
 
   const specifiers = expectedSubpaths.map((subpath) =>
-    subpath === "." ? "@aifsd/llm-core" : `@aifsd/llm-core/${subpath.slice(2)}`,
+    subpath === "." ? "@geekist/llm-core" : `@geekist/llm-core/${subpath.slice(2)}`,
   );
   const runtimeImports = specifiers
     .map((specifier) => `await import(${JSON.stringify(specifier)});`)
@@ -272,8 +272,8 @@ try {
     join(consumer, "runtime.mjs"),
     [
       runtimeImports,
-      'const { contractVersion, digest, extensionNamespace } = await import("@aifsd/llm-core/contracts");',
-      'const { createSpecificationOperation } = await import("@aifsd/llm-core/specifications");',
+      'const { contractVersion, digest, extensionNamespace } = await import("@geekist/llm-core/contracts");',
+      'const { createSpecificationOperation } = await import("@geekist/llm-core/specifications");',
       "createSpecificationOperation({",
       '  operation: "observe-native-source",',
       '  sourceContract: { authority: "packed-smoke", format: { id: extensionNamespace("dev.geekist.packed-smoke"), version: contractVersion("1.0.0") }, revision: "fixture.1" },',
@@ -289,30 +289,30 @@ try {
   writeFileSync(
     join(consumer, "consumer.ts"),
     [
-      'import { compileSpecification, defineTool, loadSpecification, reviewSpecification } from "@aifsd/llm-core";',
-      'import type { AgentDefinition, AgentEvent, AgentResult, CompiledSpecification, ConversationEvent, ConversationSnapshot, ConversationState, ConversationStore, Specification, SpecificationDecision, SpecificationReviewView, Tool, ToolCall, ToolConfig, ToolExecutionFailure, ToolExecutionResult, WorkflowExecutionPlan } from "@aifsd/llm-core";',
-      'import type { PreparedAgentDefinition, AgentRunner, AgentRunnerProfile, AgentStartRequest } from "@aifsd/llm-core/agent/runtime";',
-      'import { createExecutableTool } from "@aifsd/llm-core/tools/runtime";',
-      'import type { ExecutableTool, ToolDefinition } from "@aifsd/llm-core/tools/runtime";',
-      'import { executeControlledTool } from "@aifsd/llm-core/tools/runtime";',
-      'import type { ExecuteControlledToolInput, ControlledToolExecutionOutcome } from "@aifsd/llm-core/tools/runtime";',
-      'import type { InteractionSession, InteractionSessionIdentityPort } from "@aifsd/llm-core/interaction";',
-      'import { createContextEntry, selectContext } from "@aifsd/llm-core/context";',
-      'import type { ContextEntry, ContextSelection } from "@aifsd/llm-core/context";',
-      'import { createArtifact, createArtifactRef } from "@aifsd/llm-core/artifacts";',
-      'import type { Artifact, ArtifactRef } from "@aifsd/llm-core/artifacts";',
-      'import { createEvaluationCase, createEvaluationComposition, evaluationEvaluatorId } from "@aifsd/llm-core/evaluation";',
-      'import type { EvaluationCase, EvaluationComposition, EvaluationResult } from "@aifsd/llm-core/evaluation";',
-      'import type { AiSdkUiProjectionChunk } from "@aifsd/llm-core/adapters/ai-sdk-ui";',
-      'import type { AssistantUiProjectionCommand, AssistantUiProjectionOptions } from "@aifsd/llm-core/adapters/assistant-ui";',
-      'import type { ChatKitProjectionEvent } from "@aifsd/llm-core/adapters/openai-chatkit";',
-      'import type { NluxInteractionAdapterOptions, NluxProjectionSignal } from "@aifsd/llm-core/adapters/nlux-ui";',
-      'import { A2A_PROTOCOL_VERSION, A2A_SDK_VERSION, createA2AClient } from "@aifsd/llm-core/a2a";',
-      'import type { A2AClient, Transport } from "@aifsd/llm-core/a2a";',
-      'import { MCP_PROTOCOL_VERSION, MCP_SERVER_SDK_VERSION, createMcpStatelessHost } from "@aifsd/llm-core/mcp";',
-      'import type { McpStatelessHost, McpStatelessHostDefinition } from "@aifsd/llm-core/mcp";',
-      'import { createSpecificationOperation } from "@aifsd/llm-core/specifications";',
-      'import type { SpecificationAdapterSupport, SpecificationDiagnostic, SpecificationDiagnosticImpact, SpecificationDiagnosticSeverity, SpecificationOperation, SpecificationOperationDisposition, SpecificationOperationId, SpecificationOperationMatrix, SpecificationPolicy, SpecificationReviewItem, SpecificationReviewRelationship, SpecificationScopeId, SpecificationSourceContract, SpecificationSourceSnapshot } from "@aifsd/llm-core/specifications";',
+      'import { compileSpecification, defineTool, loadSpecification, reviewSpecification } from "@geekist/llm-core";',
+      'import type { AgentDefinition, AgentEvent, AgentResult, CompiledSpecification, ConversationEvent, ConversationSnapshot, ConversationState, ConversationStore, Specification, SpecificationDecision, SpecificationReviewView, Tool, ToolCall, ToolConfig, ToolExecutionFailure, ToolExecutionResult, WorkflowExecutionPlan } from "@geekist/llm-core";',
+      'import type { PreparedAgentDefinition, AgentRunner, AgentRunnerProfile, AgentStartRequest } from "@geekist/llm-core/agent/runtime";',
+      'import { createExecutableTool } from "@geekist/llm-core/tools/runtime";',
+      'import type { ExecutableTool, ToolDefinition } from "@geekist/llm-core/tools/runtime";',
+      'import { executeControlledTool } from "@geekist/llm-core/tools/runtime";',
+      'import type { ExecuteControlledToolInput, ControlledToolExecutionOutcome } from "@geekist/llm-core/tools/runtime";',
+      'import type { InteractionSession, InteractionSessionIdentityPort } from "@geekist/llm-core/interaction";',
+      'import { createContextEntry, selectContext } from "@geekist/llm-core/context";',
+      'import type { ContextEntry, ContextSelection } from "@geekist/llm-core/context";',
+      'import { createArtifact, createArtifactRef } from "@geekist/llm-core/artifacts";',
+      'import type { Artifact, ArtifactRef } from "@geekist/llm-core/artifacts";',
+      'import { createEvaluationCase, createEvaluationComposition, evaluationEvaluatorId } from "@geekist/llm-core/evaluation";',
+      'import type { EvaluationCase, EvaluationComposition, EvaluationResult } from "@geekist/llm-core/evaluation";',
+      'import type { AiSdkUiProjectionChunk } from "@geekist/llm-core/adapters/ai-sdk-ui";',
+      'import type { AssistantUiProjectionCommand, AssistantUiProjectionOptions } from "@geekist/llm-core/adapters/assistant-ui";',
+      'import type { ChatKitProjectionEvent } from "@geekist/llm-core/adapters/openai-chatkit";',
+      'import type { NluxInteractionAdapterOptions, NluxProjectionSignal } from "@geekist/llm-core/adapters/nlux-ui";',
+      'import { A2A_PROTOCOL_VERSION, A2A_SDK_VERSION, createA2AClient } from "@geekist/llm-core/a2a";',
+      'import type { A2AClient, Transport } from "@geekist/llm-core/a2a";',
+      'import { MCP_PROTOCOL_VERSION, MCP_SERVER_SDK_VERSION, createMcpStatelessHost } from "@geekist/llm-core/mcp";',
+      'import type { McpStatelessHost, McpStatelessHostDefinition } from "@geekist/llm-core/mcp";',
+      'import { createSpecificationOperation } from "@geekist/llm-core/specifications";',
+      'import type { SpecificationAdapterSupport, SpecificationDiagnostic, SpecificationDiagnosticImpact, SpecificationDiagnosticSeverity, SpecificationOperation, SpecificationOperationDisposition, SpecificationOperationId, SpecificationOperationMatrix, SpecificationPolicy, SpecificationReviewItem, SpecificationReviewRelationship, SpecificationScopeId, SpecificationSourceContract, SpecificationSourceSnapshot } from "@geekist/llm-core/specifications";',
       ...specifiers
         .slice(1)
         .map(

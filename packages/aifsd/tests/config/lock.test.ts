@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { digest, type EvidenceRef } from "@aifsd/llm-core/contracts";
+import { digest, type EvidenceRef } from "@geekist/llm-core/contracts";
 
 import {
   createConfigurationLock,

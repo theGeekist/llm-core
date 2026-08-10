@@ -22,7 +22,7 @@ const packages: Readonly<Record<PackageKey, PackageConfig>> = {
   },
   "llm-core": {
     directory: "packages/llm-core",
-    name: "@aifsd/llm-core",
+    name: "@geekist/llm-core",
     tagPrefix: "v",
   },
   "strict-json": {
@@ -282,7 +282,7 @@ const validateDependencies = (
     errors.push(`${path}.dependencies must map package names to exact semantic versions`);
   }
   if (
-    packageConfig?.name === "@aifsd/llm-core" &&
+    packageConfig?.name === "@geekist/llm-core" &&
     (!isRecord(value) || !exactSemver(value["@aifsd/strict-json"]))
   ) {
     errors.push(`${path}.dependencies must bind @aifsd/strict-json exactly`);
@@ -290,10 +290,10 @@ const validateDependencies = (
   if (
     packageConfig?.name === "@aifsd/sdk" &&
     (!isRecord(value) ||
-      !exactSemver(value["@aifsd/llm-core"]) ||
+      !exactSemver(value["@geekist/llm-core"]) ||
       !exactSemver(value["@aifsd/strict-json"]))
   ) {
-    errors.push(`${path}.dependencies must bind @aifsd/llm-core and @aifsd/strict-json exactly`);
+    errors.push(`${path}.dependencies must bind @geekist/llm-core and @aifsd/strict-json exactly`);
   }
   return errors;
 };
@@ -309,7 +309,7 @@ const validatePlanDigests = (
     errors.push(`${path}.digests must contain exact SHA-256 manifest and lockfile digests`);
   }
   if (
-    (packageConfig?.name === "@aifsd/llm-core" || packageConfig?.name === "@aifsd/sdk") &&
+    (packageConfig?.name === "@geekist/llm-core" || packageConfig?.name === "@aifsd/sdk") &&
     !digest(value.qualifierRegistry, "sha256")
   ) {
     errors.push(`${path}.digests.qualifierRegistry must be an exact SHA-256 digest`);

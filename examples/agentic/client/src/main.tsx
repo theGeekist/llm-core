@@ -1,6 +1,6 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
-import type { AiSdkUiProjectionChunk } from "@aifsd/llm-core/adapters/ai-sdk-ui";
+import type { AiSdkUiProjectionChunk } from "@geekist/llm-core/adapters/ai-sdk-ui";
 import "./styles.css";
 
 // Shape-only compile fixture. See docs/interaction for common conversations and the session extension.

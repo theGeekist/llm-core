@@ -95,6 +95,9 @@ jobs:
           node-version: "22"
           registry-url: "https://registry.npmjs.org"
 
+      - name: Setup trusted-publishing npm
+        run: npm install --global npm@11.18.0
+
       - name: Install
         run: bun install --frozen-lockfile
 
@@ -135,8 +138,6 @@ jobs:
           --phase publish --package strict-json --tag "$GITHUB_REF_NAME"
           --tarball "${{ steps.artifact.outputs.tarball }}"
           --metadata "${{ steps.artifact.outputs.metadata }}"
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
       - name: Create GitHub release
         uses: softprops/action-gh-release@v2
@@ -180,6 +181,9 @@ jobs:
         with:
           node-version: "22"
           registry-url: "https://registry.npmjs.org"
+
+      - name: Setup trusted-publishing npm
+        run: npm install --global npm@11.18.0
 
       - name: Validate llm-core tag, version and changelog
         run: >-
@@ -229,8 +233,6 @@ jobs:
           --phase publish --package llm-core --tag "$GITHUB_REF_NAME"
           --tarball "${{ steps.artifact.outputs.tarball }}"
           --metadata "${{ steps.artifact.outputs.metadata }}"
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
       - name: Create GitHub release
         uses: softprops/action-gh-release@v2
@@ -274,6 +276,9 @@ jobs:
         with:
           node-version: "22"
           registry-url: "https://registry.npmjs.org"
+
+      - name: Setup trusted-publishing npm
+        run: npm install --global npm@11.18.0
 
       - name: Install
         run: bun install --frozen-lockfile
@@ -346,8 +351,6 @@ jobs:
           --phase publish --package aifsd --tag "$GITHUB_REF_NAME"
           --tarball "${{ steps.artifact.outputs.tarball }}"
           --metadata "${{ steps.artifact.outputs.metadata }}"
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
       - name: Create GitHub release
         uses: softprops/action-gh-release@v2

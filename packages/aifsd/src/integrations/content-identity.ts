@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto";
-import { digest, type Digest } from "@aifsd/llm-core/contracts";
+import { digest, type Digest } from "@geekist/llm-core/contracts";
 import { canonicalize } from "@aifsd/strict-json";
 import type { ExecutableClosure } from "./contract.js";
 

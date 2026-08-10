@@ -13,7 +13,7 @@ const fixture = (version = "2.0.0", changelog = "## [Unreleased]\n\nTarget versi
   mkdirSync(packageRoot, { recursive: true });
   writeFileSync(
     join(packageRoot, "package.json"),
-    `${JSON.stringify({ name: "@aifsd/llm-core", version, private: false })}\n`,
+    `${JSON.stringify({ name: "@geekist/llm-core", version, private: false })}\n`,
   );
   writeFileSync(join(packageRoot, "CHANGELOG.md"), changelog);
   return root;

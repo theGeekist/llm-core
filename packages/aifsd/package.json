@@ -41,7 +41,7 @@
     "build": "bun run clean && bun run check:types && bun run build:types && bun run build:runtime",
     "clean": "rm -rf dist",
     "build:types": "tsc -p tsconfig.build.json --emitDeclarationOnly && rm -f dist/types/integrations/qualification-host.d.ts dist/types/integrations/qualification-host.d.ts.map dist/types/integrations/trust-host.d.ts dist/types/integrations/trust-host.d.ts.map",
-    "build:runtime": "bun build src/config/index.ts --outdir dist/esm/config --target=node --format=esm --external '@aifsd/llm-core/*' --external '@aifsd/strict-json' --external '@wpkernel/pipeline/*' && bun build src/integrations/index.ts --outdir dist/esm/integrations --target=node --format=esm --external '@aifsd/llm-core/*' --external '@aifsd/strict-json' --external '@wpkernel/pipeline/*'",
+    "build:runtime": "bun build src/config/index.ts --outdir dist/esm/config --target=node --format=esm --external '@geekist/llm-core/*' --external '@aifsd/strict-json' --external '@wpkernel/pipeline/*' && bun build src/integrations/index.ts --outdir dist/esm/integrations --target=node --format=esm --external '@geekist/llm-core/*' --external '@aifsd/strict-json' --external '@wpkernel/pipeline/*'",
     "check:types": "tsc -p tsconfig.json --noEmit",
     "format": "prettier \"src/**/*.{ts,tsx,js,mjs,json}\" \"tests/**/*.{ts,tsx,js,mjs,json}\" \"scripts/**/*.{js,mjs}\" package.json README.md CHANGELOG.md --write",
     "format:check": "prettier \"src/**/*.{ts,tsx,js,mjs,json}\" \"tests/**/*.{ts,tsx,js,mjs,json}\" \"scripts/**/*.{js,mjs}\" package.json README.md CHANGELOG.md --check",
@@ -55,7 +55,7 @@
     "validate": "bun run release:check"
   },
   "dependencies": {
-    "@aifsd/llm-core": "2.0.0",
+    "@geekist/llm-core": "2.0.0",
     "@aifsd/strict-json": "0.1.0",
     "@wpkernel/pipeline": "1.2.1"
   }

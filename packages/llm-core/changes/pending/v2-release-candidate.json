@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "id": "v2-release-candidate",
-  "package": "@aifsd/llm-core",
+  "package": "@geekist/llm-core",
   "tasks": ["llm-core/release-v2-readiness", "llm-core/release-history-provenance"],
   "decisions": ["llm-core/ADR-007", "llm-core/ADR-015"],
   "releaseImpact": "major",

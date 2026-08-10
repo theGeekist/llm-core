@@ -19,7 +19,7 @@ import {
   type SpecificationOperation,
   type SpecificationSourceAuthority,
   type SpecificationSourceRole,
-} from "@aifsd/llm-core/specifications";
+} from "@geekist/llm-core/specifications";
 import {
   SPEC_KIT_ASSESSED_CLI_VERSION,
   observeSpecKitCliVersion,

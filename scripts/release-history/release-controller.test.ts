@@ -12,7 +12,7 @@ import {
 const archive = Buffer.from("qualified archive");
 const artifact: ArtifactMetadata = {
   schemaVersion: 1,
-  package: "@aifsd/llm-core",
+  package: "@geekist/llm-core",
   version: "2.0.0",
   filename: "geekist-llm-core-2.0.0.tgz",
   tarball: join(tmpdir(), "geekist-llm-core-2.0.0.tgz"),
@@ -27,7 +27,7 @@ const metadata = {
   gitHead: "b".repeat(40),
   dist: {
     integrity: artifact.integrity,
-    tarball: "https://registry.npmjs.org/@aifsd/llm-core/-/llm-core-2.0.0.tgz",
+    tarball: "https://registry.npmjs.org/@geekist/llm-core/-/llm-core-2.0.0.tgz",
   },
 };
 
@@ -63,10 +63,18 @@ describe("release controller", () => {
     ).toBe(false);
   });
 
-  test("accepts registry bytes only when archive, integrity and gitHead agree", async () => {
+  test("accepts registry bytes with matching integrity and optional matching gitHead", async () => {
     await expect(
       verifyRegistryArtifact({
         metadata,
+        artifact,
+        releaseSha: "b".repeat(40),
+        download: async () => archive,
+      }),
+    ).resolves.toBeUndefined();
+    await expect(
+      verifyRegistryArtifact({
+        metadata: { ...metadata, gitHead: undefined },
         artifact,
         releaseSha: "b".repeat(40),
         download: async () => archive,
@@ -112,17 +120,20 @@ describe("release controller", () => {
       JSON.stringify({ subject: [{ digest: { sha512: "0".repeat(128) } }] }),
     ).toString("base64");
     await expect(
-      verifyProvenanceAttestation("https://registry.npmjs.org/attestation", artifact, async () => ({
-        attestations: [
-          {
-            predicateType: "https://slsa.dev/provenance/v1",
-            bundle: {
-              dsseEnvelope: { payload },
-              verificationMaterial: { certificate: { rawBytes: "not-a-certificate" } },
+      verifyProvenanceAttestation("https://registry.npmjs.org/attestation", artifact, {
+        tag: "v2.0.0",
+        download: async () => ({
+          attestations: [
+            {
+              predicateType: "https://slsa.dev/provenance/v1",
+              bundle: {
+                dsseEnvelope: { payload },
+                verificationMaterial: { certificate: { rawBytes: "not-a-certificate" } },
+              },
             },
-          },
-        ],
-      })),
+          ],
+        }),
+      }),
     ).rejects.toThrow("subject does not match");
   });
 });

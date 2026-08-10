@@ -4,7 +4,7 @@ import {
   type CompiledSpecification,
   type PreparedSpecificationExecution,
   type SpecificationExecutionOperations,
-} from "@aifsd/llm-core/specifications";
+} from "@geekist/llm-core/specifications";
 import type { PydanticAgentDefinition } from "./types";
 
 /** Adapter-qualified native operations supplied by the application. */

@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { digest } from "@aifsd/llm-core/contracts";
+import { digest } from "@geekist/llm-core/contracts";
 
 import {
   resolveManifest,

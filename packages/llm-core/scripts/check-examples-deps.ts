@@ -2,7 +2,7 @@ import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 
 const EXAMPLES_DIR = "../../../examples";
-const CORE_PKG = "@aifsd/llm-core";
+const CORE_PKG = "@geekist/llm-core";
 const DEP_FIELDS = [
   "dependencies",
   "devDependencies",

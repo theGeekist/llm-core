@@ -1,5 +1,5 @@
 {
-  "name": "@aifsd/llm-core-protocol-external-consumer",
+  "name": "@geekist/llm-core-protocol-external-consumer",
   "version": "0.0.0",
   "private": true,
   "type": "module",

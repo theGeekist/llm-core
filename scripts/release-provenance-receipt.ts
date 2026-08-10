@@ -24,7 +24,7 @@ const githubReleaseKeys = new Set(["url"]);
 const attestationKeys = new Set(["identity", "url"]);
 const packageTags = new Map([
   ["@aifsd/sdk", "aifsd-v"],
-  ["@aifsd/llm-core", "v"],
+  ["@geekist/llm-core", "v"],
   ["@aifsd/strict-json", "strict-json-v"],
 ]);
 
@@ -83,15 +83,16 @@ const validateArtifact = (value: unknown, path: string): string[] => {
 };
 
 const validateNpm = (value: unknown, releaseSha: unknown, path: string): string[] => {
-  if (!isRecord(value)) return [`${path}.npm must contain integrity, tarball and gitHead`];
+  if (!isRecord(value)) return [`${path}.npm must contain integrity and tarball evidence`];
   const errors = exactKeys(value, npmKeys, `${path}.npm`);
   if (
     !/^sha512-[A-Za-z0-9+/]+={0,2}$/.test(String(value.integrity)) ||
-    !httpsUrl(value.tarball, new Set(["registry.npmjs.org"])) ||
-    !sha(value.gitHead) ||
-    value.gitHead !== releaseSha
+    !httpsUrl(value.tarball, new Set(["registry.npmjs.org"]))
   ) {
-    errors.push(`${path}.npm must contain exact integrity, registry tarball and release gitHead`);
+    errors.push(`${path}.npm must contain exact integrity and the registry tarball`);
+  }
+  if (value.gitHead !== undefined && (!sha(value.gitHead) || value.gitHead !== releaseSha)) {
+    errors.push(`${path}.npm.gitHead must equal releaseSha when the registry provides it`);
   }
   return errors;
 };

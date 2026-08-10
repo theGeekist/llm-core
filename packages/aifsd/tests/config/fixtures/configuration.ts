@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto";
 import { canonicalize } from "@aifsd/strict-json";
-import { contractVersion, digest, secretRef } from "@aifsd/llm-core/contracts";
+import { contractVersion, digest, secretRef } from "@geekist/llm-core/contracts";
 
 import {
   createConfigurationLock,

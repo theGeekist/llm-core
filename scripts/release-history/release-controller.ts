@@ -1,4 +1,4 @@
-import { createHash, X509Certificate } from "node:crypto";
+import { createHash } from "node:crypto";
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { basename, join, relative, resolve } from "node:path";
 import { npmDistTag, validateReleaseVersion } from "../release-version";
@@ -8,6 +8,7 @@ import {
   type PackageKey,
 } from "../release-provenance";
 import type { ArtifactMetadata } from "./prepare-artifact";
+import { verifyProvenanceAttestation } from "./verify-provenance-attestation";
 
 interface PackageConfig {
   readonly directory: string;
@@ -22,19 +23,6 @@ interface RegistryMetadata {
     readonly integrity?: unknown;
     readonly tarball?: unknown;
     readonly attestations?: { readonly url?: unknown };
-  };
-}
-
-interface ProvenanceAttestation {
-  readonly predicateType?: unknown;
-  readonly bundle?: {
-    readonly dsseEnvelope?: { readonly payload?: unknown };
-    readonly verificationMaterial?: {
-      readonly certificate?: { readonly rawBytes?: unknown };
-      readonly x509CertificateChain?: {
-        readonly certificates?: readonly { readonly rawBytes?: unknown }[];
-      };
-    };
   };
 }
 
@@ -74,7 +62,7 @@ const packageConfigs: Readonly<Record<PackageKey, PackageConfig>> = {
   },
   "llm-core": {
     directory: "packages/llm-core",
-    name: "@aifsd/llm-core",
+    name: "@geekist/llm-core",
     tagPrefix: "v",
   },
   "strict-json": {
@@ -342,8 +330,11 @@ export const verifyRegistryArtifact = async ({
   if (sha512 !== artifact.sha512 || archiveIntegrity(archive) !== artifact.integrity) {
     throw new Error("Published registry bytes differ from the qualified archive");
   }
-  if (metadata.dist?.integrity !== artifact.integrity || metadata.gitHead !== releaseSha) {
-    throw new Error("Registry integrity or gitHead differs from the release evidence");
+  if (metadata.dist?.integrity !== artifact.integrity) {
+    throw new Error("Registry integrity differs from the release evidence");
+  }
+  if (metadata.gitHead !== undefined && metadata.gitHead !== releaseSha) {
+    throw new Error("Registry gitHead differs from the release evidence");
   }
 };
 
@@ -371,48 +362,6 @@ const waitForAttestation = async (
     if (attempt < attempts) await Bun.sleep(Math.min(1_000 * 2 ** (attempt - 1), 15_000));
   }
   throw new Error(`${coordinate} npm provenance attestation did not become visible`);
-};
-
-const attestationCertificate = (attestation: ProvenanceAttestation): string | undefined => {
-  const direct = attestation.bundle?.verificationMaterial?.certificate?.rawBytes;
-  if (typeof direct === "string") return direct;
-  const chained =
-    attestation.bundle?.verificationMaterial?.x509CertificateChain?.certificates?.[0]?.rawBytes;
-  return typeof chained === "string" ? chained : undefined;
-};
-
-export const verifyProvenanceAttestation = async (
-  url: string,
-  artifact: ArtifactMetadata,
-  download: (url: string) => Promise<unknown> = async (attestationUrl) => {
-    const response = await fetch(attestationUrl);
-    if (!response.ok) throw new Error(`Attestation download failed: ${response.status}`);
-    return response.json();
-  },
-): Promise<void> => {
-  const response = await download(url);
-  const attestations = planRecord(response, "attestation response").attestations;
-  if (!Array.isArray(attestations)) throw new Error("npm attestation response has no attestations");
-  const provenance = attestations.find(
-    (entry): entry is ProvenanceAttestation =>
-      planRecord(entry, "attestation").predicateType === "https://slsa.dev/provenance/v1",
-  );
-  const payload = provenance?.bundle?.dsseEnvelope?.payload;
-  const certificate = provenance ? attestationCertificate(provenance) : undefined;
-  if (typeof payload !== "string" || !certificate) {
-    throw new Error("npm provenance bundle is incomplete");
-  }
-  const statement = JSON.parse(Buffer.from(payload, "base64").toString()) as {
-    readonly subject?: readonly { readonly digest?: Readonly<Record<string, unknown>> }[];
-  };
-  const expectedSha512 = artifact.sha512.slice("sha512:".length);
-  if (!statement.subject?.some((subject) => subject.digest?.sha512 === expectedSha512)) {
-    throw new Error("npm provenance subject does not match the qualified archive");
-  }
-  const identity = new X509Certificate(Buffer.from(certificate, "base64")).subjectAltName;
-  if (!identity.includes("https://github.com/theGeekist/llm-core/.github/workflows/release.yml@")) {
-    throw new Error("npm provenance signer is not the release workflow");
-  }
 };
 
 const readArtifact = (path: string): ArtifactMetadata =>
@@ -475,7 +424,7 @@ const writeReceipt = async ({ root, key, tag, artifact, output }: ReceiptInput):
   await verifyRegistryArtifact({ metadata, artifact, releaseSha });
   const attestationUrl = metadata.dist?.attestations?.url;
   if (typeof attestationUrl !== "string") throw new Error("npm provenance attestation is absent");
-  await verifyProvenanceAttestation(attestationUrl, artifact);
+  await verifyProvenanceAttestation(attestationUrl, artifact, { tag });
   const receipt = {
     schemaVersion: 1,
     package: config.name,
@@ -500,7 +449,7 @@ const writeReceipt = async ({ root, key, tag, artifact, output }: ReceiptInput):
     npm: {
       integrity: metadata.dist?.integrity,
       tarball: metadata.dist?.tarball,
-      gitHead: metadata.gitHead,
+      ...(typeof metadata.gitHead === "string" ? { gitHead: metadata.gitHead } : {}),
     },
     githubRelease: { url: githubReleaseUrl(root, tag) },
     attestation: {
@@ -598,3 +547,5 @@ if (import.meta.main) {
     process.exitCode = 1;
   }
 }
+
+export { verifyProvenanceAttestation };

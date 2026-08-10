@@ -15,7 +15,7 @@ import {
   type SpecificationDiagnostic,
   type SpecificationOperation,
   type SpecificationAdapterSupport,
-} from "@aifsd/llm-core/specifications";
+} from "@geekist/llm-core/specifications";
 import {
   AI_SDLC_API_VERSION,
   ATTESTATION_SCHEMA_ID,

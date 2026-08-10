@@ -6,7 +6,7 @@ import {
   MCP_OPERATION_MATRIX,
   MCP_PROTOCOL_VERSION,
   MCP_SERVER_SDK_VERSION,
-} from "@aifsd/llm-core/mcp";
+} from "@geekist/llm-core/mcp";
 import { Client, StreamableHTTPClientTransport } from "@modelcontextprotocol/client";
 import { packedControlledBinding } from "./controlled-tool-fixture";
 

@@ -3,7 +3,7 @@
 // byte-for-byte correspondence of an untrusted custom resolver's output to a
 // single real catalog entry.
 
-import { isDigest } from "@aifsd/llm-core/contracts";
+import { isDigest } from "@geekist/llm-core/contracts";
 import type {
   Catalog,
   ConfigurationDiagnostic,

@@ -1,5 +1,5 @@
 import { snapshot, StrictJsonError } from "@aifsd/strict-json";
-import { isDigest, isExternalId } from "@aifsd/llm-core/contracts";
+import { isDigest, isExternalId } from "@geekist/llm-core/contracts";
 import type {
   DependencyMember,
   ExecutableClosure,

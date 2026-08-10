@@ -1,5 +1,5 @@
 import { snapshot, StrictJsonError } from "@aifsd/strict-json";
-import { isCanonicalUuid, isDigest, isSchemaRef } from "@aifsd/llm-core/contracts";
+import { isCanonicalUuid, isDigest, isSchemaRef } from "@geekist/llm-core/contracts";
 import type {
   EvidenceRef,
   IntegrationManifest,

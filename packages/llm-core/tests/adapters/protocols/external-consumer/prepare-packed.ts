@@ -39,4 +39,4 @@ const installPacked = (sourceRoot: string, packagePath: string): void => {
 };
 
 installPacked(strictJsonRoot, "@aifsd/strict-json");
-installPacked(packageRoot, "@aifsd/llm-core");
+installPacked(packageRoot, "@geekist/llm-core");

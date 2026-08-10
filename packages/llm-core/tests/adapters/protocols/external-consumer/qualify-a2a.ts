@@ -12,7 +12,7 @@ import {
   StreamResponse,
   Task,
   TaskState,
-} from "@aifsd/llm-core/a2a";
+} from "@geekist/llm-core/a2a";
 import { DeleteTaskPushNotificationConfigRequest } from "@a2a-js/sdk";
 
 const manifest = JSON.parse(

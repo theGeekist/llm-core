@@ -2,7 +2,7 @@ import type { ContractVersion, JsonObject } from "#contracts";
 import type {
   SpecificationAdapterSupport,
   SpecificationOperation,
-} from "@aifsd/llm-core/specifications";
+} from "@geekist/llm-core/specifications";
 
 export type BmadArtifactKind =
   | "canonical-spec"

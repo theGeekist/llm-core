@@ -24,7 +24,7 @@ const releasePackages: Readonly<Record<PackageKey, ReleasePackage>> = {
   },
   "llm-core": {
     directory: "packages/llm-core",
-    name: "@aifsd/llm-core",
+    name: "@geekist/llm-core",
     tagPrefix: "v",
   },
   "strict-json": {

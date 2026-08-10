@@ -5,7 +5,7 @@
 
 import { createHash } from "node:crypto";
 import { canonicalize } from "@aifsd/strict-json";
-import { digest, type Digest } from "@aifsd/llm-core/contracts";
+import { digest, type Digest } from "@geekist/llm-core/contracts";
 import type { ExecutableClosure } from "./contract.js";
 
 const sha256Hex = (input: string): string =>

@@ -1,5 +1,5 @@
 import { snapshot, StrictJsonError } from "@aifsd/strict-json";
-import { isDigest } from "@aifsd/llm-core/contracts";
+import { isDigest } from "@geekist/llm-core/contracts";
 import type { IntegrationResult, PublicationAdmission, PublicationAuthority } from "./contract.js";
 
 const trusts = new Set(["community", "verified", "official"]);

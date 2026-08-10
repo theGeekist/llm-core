@@ -1,7 +1,7 @@
 import { createHash } from "node:crypto";
 import { mkdirSync } from "node:fs";
 import { join } from "node:path";
-import { digest, type Digest } from "@aifsd/llm-core/contracts";
+import { digest, type Digest } from "@geekist/llm-core/contracts";
 
 export interface PackedArtifact {
   readonly path: string;

@@ -8,7 +8,7 @@ import {
   StrictJsonError,
   type JsonValue as StrictJsonValue,
 } from "@aifsd/strict-json";
-import type { JsonValue } from "@aifsd/llm-core/contracts";
+import type { JsonValue } from "@geekist/llm-core/contracts";
 import type {
   ConfigurationDiagnostic,
   ConfigurationDiagnosticCode,

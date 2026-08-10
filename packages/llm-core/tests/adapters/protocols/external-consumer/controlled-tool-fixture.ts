@@ -11,13 +11,13 @@ import {
   type PrincipalId,
   type RunId,
   type ToolCallId,
-} from "@aifsd/llm-core/contracts";
+} from "@geekist/llm-core/contracts";
 import {
   approvalId,
   cancellationId,
   createConcurrencyGate,
   policyEvaluationId,
-} from "@aifsd/llm-core/control/runtime";
+} from "@geekist/llm-core/control/runtime";
 import type {
   AppendToolReceiptTransition,
   AppendToolReceiptTransitionResult,
@@ -29,8 +29,8 @@ import type {
   ToolExecutionReceipt,
   ToolReceiptFence,
   ToolReceiptJournal,
-} from "@aifsd/llm-core/evidence";
-import type { McpToolBinding } from "@aifsd/llm-core/mcp";
+} from "@geekist/llm-core/evidence";
+import type { McpToolBinding } from "@geekist/llm-core/mcp";
 import {
   actionDigest,
   createExecutableTool,
@@ -39,7 +39,7 @@ import {
   type ActionDigestPort,
   type ToolCall,
   type ToolExecutionFactsPort,
-} from "@aifsd/llm-core/tools/runtime";
+} from "@geekist/llm-core/tools/runtime";
 
 const RUN_ID = coreId<RunId>("018f0f4e-8c5b-7a91-8c3b-223456789001");
 const CALL_ID = coreId<ToolCallId>("018f0f4e-8c5b-7a91-8c3b-223456789002");

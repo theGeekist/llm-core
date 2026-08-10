@@ -19,7 +19,7 @@ afterEach(() => {
 const fragment = {
   schemaVersion: 1,
   id: "release-v2-candidate",
-  package: "@aifsd/llm-core",
+  package: "@geekist/llm-core",
   tasks: ["llm-core/release-history-provenance"],
   decisions: ["llm-core/ADR-007", "llm-core/ADR-015"],
   releaseImpact: "major",
@@ -31,7 +31,7 @@ const fragment = {
 
 const plan = {
   schemaVersion: 1,
-  package: "@aifsd/llm-core",
+  package: "@geekist/llm-core",
   version: "2.0.0",
   classification: "current",
   sourceSha: "a".repeat(40),
@@ -68,7 +68,7 @@ const plan = {
 
 const receipt = {
   schemaVersion: 1,
-  package: "@aifsd/llm-core",
+  package: "@geekist/llm-core",
   version: "2.0.0",
   tag: "v2.0.0",
   sourceSha: "a".repeat(40),
@@ -146,7 +146,7 @@ describe("release provenance", () => {
           },
         ],
         dependencies: {
-          "@aifsd/llm-core": "2.0.0",
+          "@geekist/llm-core": "2.0.0",
           "@aifsd/strict-json": "0.1.0",
           "@wpkernel/pipeline": "1.2.1",
         },
@@ -228,7 +228,13 @@ describe("release provenance", () => {
         ...receipt,
         npm: { ...receipt.npm, integrity: "" },
       }).join("\n"),
-    ).toContain("exact integrity, registry tarball and release gitHead");
+    ).toContain("exact integrity and the registry tarball");
+    expect(
+      validateReleaseReceipt({
+        ...receipt,
+        npm: { integrity: receipt.npm.integrity, tarball: receipt.npm.tarball },
+      }),
+    ).toEqual([]);
     expect(validateReleaseReceipt({ ...receipt, result: "pending" }).join("\n")).toContain(
       "result must be verified",
     );
