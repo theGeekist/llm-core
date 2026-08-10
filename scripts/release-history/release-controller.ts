@@ -120,11 +120,7 @@ const planRecord = (value: unknown, name: string): Readonly<Record<string, unkno
   return value as Readonly<Record<string, unknown>>;
 };
 
-export const approvedReleaseMetadataPath = (
-  key: PackageKey,
-  version: string,
-  path: string,
-): boolean => {
+const approvedReleaseMetadataPath = (key: PackageKey, version: string, path: string): boolean => {
   const packageRoot = packageConfigs[key].directory;
   return (
     path === "bun.lock" ||
@@ -136,6 +132,8 @@ export const approvedReleaseMetadataPath = (
     path.startsWith(`${packageRoot}/changes/released/${version}/`)
   );
 };
+
+export { approvedReleaseMetadataPath };
 
 const validateGitIdentity = (
   root: string,

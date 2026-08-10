@@ -263,8 +263,8 @@ describe("canonical release qualification", () => {
     expect(calls).toEqual([
       ["bun", "install", "--frozen-lockfile"],
       ["bun", "run", "release:version:check"],
-      ["bun", "run", "release:checks:llm-core"],
       ["bun", "run", "release:build:llm-core"],
+      ["bun", "run", "release:checks:llm-core"],
       ["bun", "run", "release:package-smoke:llm-core"],
       ["bun", "run", "qualify:external-fixtures:prebuilt"],
       ["bun", "run", "qualify:client"],

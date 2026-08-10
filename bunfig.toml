@@ -1,3 +1,6 @@
+[install]
+linkWorkspacePackages = true
+
 [test]
 # root = "."  # Removed restricted root to allow workspace-wide testing or filter-based testing
 pathIgnorePatterns = ["context/**"]

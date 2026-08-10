@@ -1,12 +1,19 @@
 {
   "version": 1,
   "aifsdExactPaths": [
+    "packages/aifsd/CHANGELOG.md",
     "packages/aifsd/README.md",
     "packages/aifsd/internal/typecheck-root.d.ts",
     "packages/aifsd/package.json",
     "packages/aifsd/tsconfig.build.json",
     "packages/aifsd/tsconfig.json"
   ],
-  "aifsdCodeRoots": ["packages/aifsd/scripts", "packages/aifsd/src", "packages/aifsd/tests"],
+  "aifsdCodeRoots": [
+    "packages/aifsd/changes",
+    "packages/aifsd/releases",
+    "packages/aifsd/scripts",
+    "packages/aifsd/src",
+    "packages/aifsd/tests"
+  ],
   "aifsdPublicDocuments": []
 }

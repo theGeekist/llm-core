@@ -184,13 +184,13 @@
       }
     },
     "scripts/release-history/release-controller.ts": {
-      "lines": 597,
-      "sha256": "4a05766d4ba7b42f91fbeabbc5e94f5eeb6f297c9d982c43a65f2a962e3fffcb",
+      "lines": 600,
+      "sha256": "5ff9cad7bcb3a08ab99238876cf80185fc24f782d3718197fe8fcb935390771a",
       "waiver": {
         "version": 1,
         "justification": "approximately 500 lines",
-        "currentLines": 597,
-        "currentSha256": "4a05766d4ba7b42f91fbeabbc5e94f5eeb6f297c9d982c43a65f2a962e3fffcb"
+        "currentLines": 600,
+        "currentSha256": "5ff9cad7bcb3a08ab99238876cf80185fc24f782d3718197fe8fcb935390771a"
       }
     },
     "scripts/release-provenance.ts": {

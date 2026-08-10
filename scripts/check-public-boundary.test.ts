@@ -8,12 +8,19 @@ import {
 const projection: PublicProjection = {
   version: 1,
   aifsdExactPaths: [
+    "packages/aifsd/CHANGELOG.md",
     "packages/aifsd/README.md",
     "packages/aifsd/internal/typecheck-root.d.ts",
     "packages/aifsd/package.json",
     "packages/aifsd/tsconfig.json",
   ],
-  aifsdCodeRoots: ["packages/aifsd/scripts", "packages/aifsd/src", "packages/aifsd/tests"],
+  aifsdCodeRoots: [
+    "packages/aifsd/changes",
+    "packages/aifsd/releases",
+    "packages/aifsd/scripts",
+    "packages/aifsd/src",
+    "packages/aifsd/tests",
+  ],
   aifsdPublicDocuments: ["docs/aifsd/getting-started.md"],
 };
 
@@ -39,8 +46,11 @@ describe("public repository boundary", () => {
         [
           "AGENTS.md",
           "docs/aifsd/getting-started.md",
+          "packages/aifsd/CHANGELOG.md",
+          "packages/aifsd/changes/pending/aifsd-config-integrations-candidate.json",
           "packages/aifsd/README.md",
           "packages/aifsd/internal/typecheck-root.d.ts",
+          "packages/aifsd/releases/0.1.0/plan.json",
           "packages/aifsd/scripts/check-api-surface.ts",
           "packages/aifsd/src/tasks/public.ts",
           "packages/aifsd/tests/tasks.test.ts",

@@ -81,8 +81,8 @@ jobs:
       - name: Install JavaScript dependencies
         run: bun install --frozen-lockfile
 
-      - name: Build strict-json dependency
-        run: bun run --cwd packages/strict-json build
+      - name: Build workspace dependencies
+        run: bun run release:build:llm-core
 
       - name: Install exact PydanticAI runtime
         run: |
@@ -127,8 +127,8 @@ jobs:
       - name: Install
         run: bun install --frozen-lockfile
 
-      - name: Build strict-json dependency
-        run: bun run --cwd packages/strict-json build
+      - name: Build workspace dependencies
+        run: bun run release:build:llm-core
 
       - name: Test
         run: bun run test -- --coverage --coverage-reporter=text --coverage-reporter=lcov
