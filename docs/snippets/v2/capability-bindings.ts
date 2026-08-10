@@ -2,9 +2,9 @@ import {
   capabilityIdForPort,
   createCapabilityBindingCatalog,
   type CapabilityEvidenceVerifier,
-} from "@aifsd/llm-core/agent/runtime";
-import type { CapabilityBinding } from "@aifsd/llm-core/contracts";
-import type { Retriever } from "@aifsd/llm-core/retrieval";
+} from "@geekist/llm-core/agent/runtime";
+import type { CapabilityBinding } from "@geekist/llm-core/contracts";
+import type { Retriever } from "@geekist/llm-core/retrieval";
 
 declare const retriever: Retriever;
 declare const descriptor: CapabilityBinding;

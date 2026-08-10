@@ -1,4 +1,4 @@
-import { defineTool, type ToolInput } from "@aifsd/llm-core";
+import { defineTool, type ToolInput } from "@geekist/llm-core";
 
 type SearchInput = {
   query: string;

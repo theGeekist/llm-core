@@ -1,4 +1,4 @@
-import { createAiSdkUiWebSocketTransport } from "@aifsd/llm-core/adapters/ai-sdk-ui";
+import { createAiSdkUiWebSocketTransport } from "@geekist/llm-core/adapters/ai-sdk-ui";
 
 const transport = createAiSdkUiWebSocketTransport({
   url: "wss://example.test/chat",

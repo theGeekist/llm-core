@@ -1,6 +1,6 @@
-import { newCoreId, type InvocationContext, type InvocationId } from "@aifsd/llm-core/contracts";
-import type { Indexer } from "@aifsd/llm-core/indexing";
-import { textDocument, textRetrievalQuery, type Retriever } from "@aifsd/llm-core/retrieval";
+import { newCoreId, type InvocationContext, type InvocationId } from "@geekist/llm-core/contracts";
+import type { Indexer } from "@geekist/llm-core/indexing";
+import { textDocument, textRetrievalQuery, type Retriever } from "@geekist/llm-core/retrieval";
 
 declare const indexer: Indexer;
 declare const retriever: Retriever;

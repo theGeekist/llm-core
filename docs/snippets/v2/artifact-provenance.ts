@@ -1,5 +1,5 @@
-import { createArtifact } from "@aifsd/llm-core/artifacts";
-import { digest, newCoreId, type InvocationId, type ResourceId } from "@aifsd/llm-core/contracts";
+import { createArtifact } from "@geekist/llm-core/artifacts";
+import { digest, newCoreId, type InvocationId, type ResourceId } from "@geekist/llm-core/contracts";
 
 const artifact = createArtifact({
   content: {

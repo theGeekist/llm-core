@@ -3,7 +3,7 @@ import type {
   AgentResult,
   AgentRunner,
   AgentStartRequest,
-} from "@aifsd/llm-core/agent/runtime";
+} from "@geekist/llm-core/agent/runtime";
 
 declare const runner: AgentRunner;
 declare const definition: AgentDefinition;

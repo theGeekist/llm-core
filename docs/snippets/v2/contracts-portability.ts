@@ -5,7 +5,7 @@ import {
   type EvidenceRef,
   type ResourceId,
   type ResourceRef,
-} from "@aifsd/llm-core/contracts";
+} from "@geekist/llm-core/contracts";
 
 const resource: ResourceRef = {
   resourceId: newCoreId<ResourceId>("0190bd0c-0000-7000-8000-000000002401"),

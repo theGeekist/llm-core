@@ -2,9 +2,9 @@ import {
   executeWithQualifiedRetry,
   registerCapabilityInvocation,
   type AnyRegisteredRuntimeCapabilityBinding,
-} from "@aifsd/llm-core/agent/runtime";
-import type { InvocationContext } from "@aifsd/llm-core/contracts";
-import type { Snapshot } from "@aifsd/llm-core/state";
+} from "@geekist/llm-core/agent/runtime";
+import type { InvocationContext } from "@geekist/llm-core/contracts";
+import type { Snapshot } from "@geekist/llm-core/state";
 
 declare const invocationContext: InvocationContext;
 declare const snapshot: Snapshot;

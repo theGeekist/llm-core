@@ -1,5 +1,5 @@
-import type { CapabilityRequirement } from "@aifsd/llm-core/contracts";
-import { createModelResolver, modelRef, type ModelBinding } from "@aifsd/llm-core/model/runtime";
+import type { CapabilityRequirement } from "@geekist/llm-core/contracts";
+import { createModelResolver, modelRef, type ModelBinding } from "@geekist/llm-core/model/runtime";
 
 declare const bindings: readonly ModelBinding[];
 declare const requiredCapabilities: readonly CapabilityRequirement[];

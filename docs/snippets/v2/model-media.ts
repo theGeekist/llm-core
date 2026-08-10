@@ -1,6 +1,6 @@
-import { createBuiltinModel, type ModelRequest } from "@aifsd/llm-core/model";
-import { newCoreId, type InvocationContext, type InvocationId } from "@aifsd/llm-core/contracts";
-import type { ImageGenerationPort, TranscriptionPort } from "@aifsd/llm-core/media";
+import { createBuiltinModel, type ModelRequest } from "@geekist/llm-core/model";
+import { newCoreId, type InvocationContext, type InvocationId } from "@geekist/llm-core/contracts";
+import type { ImageGenerationPort, TranscriptionPort } from "@geekist/llm-core/media";
 
 const context: InvocationContext = {
   invocationId: newCoreId<InvocationId>("0190bd0c-0000-7000-8000-000000002410"),

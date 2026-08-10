@@ -2,7 +2,7 @@ import {
   redactedNativeExtensions,
   type EventSink,
   type ToolReceiptJournal,
-} from "@aifsd/llm-core/evidence";
+} from "@geekist/llm-core/evidence";
 
 const extensions = redactedNativeExtensions({
   "com.example.provider": {

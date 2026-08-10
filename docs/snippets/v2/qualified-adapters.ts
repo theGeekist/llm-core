@@ -1,10 +1,10 @@
 import {
   createAiSdk7Model,
   createInMemoryAiSdk7ToolCallCorrelationStore,
-} from "@aifsd/llm-core/adapters/ai-sdk";
-import type { AiSdk7NativeContract } from "@aifsd/llm-core/adapters/ai-sdk";
-import { createAiSdkUiProjectionMapper } from "@aifsd/llm-core/adapters/ai-sdk-ui";
-import type { ModelProfile } from "@aifsd/llm-core/model/runtime";
+} from "@geekist/llm-core/adapters/ai-sdk";
+import type { AiSdk7NativeContract } from "@geekist/llm-core/adapters/ai-sdk";
+import { createAiSdkUiProjectionMapper } from "@geekist/llm-core/adapters/ai-sdk-ui";
+import type { ModelProfile } from "@geekist/llm-core/model/runtime";
 import type { LanguageModel } from "ai";
 
 declare const providerModel: LanguageModel;

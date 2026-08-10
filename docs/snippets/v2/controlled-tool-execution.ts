@@ -1,7 +1,7 @@
 import {
   executeControlledTool,
   type ExecuteControlledToolInput,
-} from "@aifsd/llm-core/tools/runtime";
+} from "@geekist/llm-core/tools/runtime";
 
 declare const input: ExecuteControlledToolInput;
 

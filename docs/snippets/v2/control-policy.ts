@@ -1,6 +1,6 @@
-import { authorizePolicyDecision, type PolicyEvaluationRef } from "@aifsd/llm-core/control/runtime";
-import type { PolicyDecision } from "@aifsd/llm-core/control";
-import { contractVersion } from "@aifsd/llm-core/contracts";
+import { authorizePolicyDecision, type PolicyEvaluationRef } from "@geekist/llm-core/control/runtime";
+import type { PolicyDecision } from "@geekist/llm-core/control";
+import { contractVersion } from "@geekist/llm-core/contracts";
 
 declare const evaluation: PolicyEvaluationRef;
 
