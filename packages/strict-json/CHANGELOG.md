@@ -2,9 +2,7 @@
 
 Notable public changes to `@aifsd/strict-json` are recorded here.
 
-## [Unreleased]
-
-Target version: 0.1.0.
+## [0.1.0] - 2026-08-10
 
 ### Added
 

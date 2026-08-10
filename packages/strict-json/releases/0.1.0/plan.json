@@ -1,0 +1,32 @@
+{
+  "schemaVersion": 1,
+  "package": "@aifsd/strict-json",
+  "version": "0.1.0",
+  "classification": "current",
+  "sourceSha": "95155ec8ef1cf1d2bb150484a82305acdfb5ae88",
+  "releaseSha": "SELF",
+  "tag": "strict-json-v0.1.0",
+  "sourceTree": "e2ffa8f07acde64f280fdf8f7b1ae46e90450d4c",
+  "releaseTree": "SELF",
+  "approvedMetadataPaths": [
+    "packages/strict-json/CHANGELOG.md",
+    "packages/strict-json/changes/released/0.1.0/strict-json-foundation.json",
+    "packages/strict-json/releases/0.1.0/plan.json"
+  ],
+  "fragments": [
+    {
+      "path": "packages/strict-json/changes/released/0.1.0/strict-json-foundation.json",
+      "blob": "7f05bb029dca7a73f7bba93f1412db26f0e7df4f"
+    }
+  ],
+  "dependencies": {},
+  "digests": {
+    "manifest": "sha256:7b6e5d196d8e9405a053cf56ec94fe125c27dc2a5552faa60cb9de5baae49f83",
+    "lockfile": "sha256:adbc56255b3be2cb7f245434f14deba94a22c5a206a5197ac8f6c18133cc24c1"
+  },
+  "toolchain": {
+    "bun": "1.3.14",
+    "node": "22"
+  },
+  "supportDeclarations": []
+}
