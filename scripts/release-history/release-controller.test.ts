@@ -3,7 +3,11 @@ import { createHash } from "node:crypto";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import type { ArtifactMetadata } from "./prepare-artifact";
-import { verifyProvenanceAttestation, verifyRegistryArtifact } from "./release-controller";
+import {
+  approvedReleaseMetadataPath,
+  verifyProvenanceAttestation,
+  verifyRegistryArtifact,
+} from "./release-controller";
 
 const archive = Buffer.from("qualified archive");
 const artifact: ArtifactMetadata = {
@@ -28,6 +32,37 @@ const metadata = {
 };
 
 describe("release controller", () => {
+  test("allows only the selected package release metadata and fragment archive paths", () => {
+    expect(
+      approvedReleaseMetadataPath(
+        "strict-json",
+        "0.1.0",
+        "packages/strict-json/changes/pending/strict-json-foundation.json",
+      ),
+    ).toBe(true);
+    expect(
+      approvedReleaseMetadataPath(
+        "strict-json",
+        "0.1.0",
+        "packages/strict-json/changes/released/0.1.0/strict-json-foundation.json",
+      ),
+    ).toBe(true);
+    expect(
+      approvedReleaseMetadataPath(
+        "strict-json",
+        "0.1.0",
+        "packages/llm-core/changes/pending/v2-release-candidate.json",
+      ),
+    ).toBe(false);
+    expect(
+      approvedReleaseMetadataPath(
+        "strict-json",
+        "0.1.0",
+        "packages/strict-json/src/canonical-json.ts",
+      ),
+    ).toBe(false);
+  });
+
   test("accepts registry bytes only when archive, integrity and gitHead agree", async () => {
     await expect(
       verifyRegistryArtifact({

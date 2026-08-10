@@ -120,7 +120,11 @@ const planRecord = (value: unknown, name: string): Readonly<Record<string, unkno
   return value as Readonly<Record<string, unknown>>;
 };
 
-const approvedReleaseMetadataPath = (key: PackageKey, version: string, path: string): boolean => {
+export const approvedReleaseMetadataPath = (
+  key: PackageKey,
+  version: string,
+  path: string,
+): boolean => {
   const packageRoot = packageConfigs[key].directory;
   return (
     path === "bun.lock" ||
@@ -128,6 +132,7 @@ const approvedReleaseMetadataPath = (key: PackageKey, version: string, path: str
     path === `${packageRoot}/CHANGELOG.md` ||
     path === "docs/reference/release-history.md" ||
     path === `${packageRoot}/releases/${version}/plan.json` ||
+    path.startsWith(`${packageRoot}/changes/pending/`) ||
     path.startsWith(`${packageRoot}/changes/released/${version}/`)
   );
 };
