@@ -1,0 +1,5 @@
+[project]
+name = "llm-core-coding-agent-qualification"
+version = "0.0.0"
+requires-python = ">=3.12,<3.15"
+dependencies = ["openhands-sdk==1.37.1"]

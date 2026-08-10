@@ -33,7 +33,6 @@ conflicts_with:
   - adapter-strands-runtime-release
   - adapter-strands-runtime
   - runtime-temporal-reference
-  - adapters-protocol-qualification
   - applications-client-subpath-release
   - architecture-legacy-functional-removal
 write_scope:

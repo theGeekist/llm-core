@@ -24,6 +24,7 @@ decision_dependencies:
   - ADR-010
   - ADR-015
 conflicts_with:
+  - architecture-adapter-sloc-decomposition
   - adapter-pydantic-ai-release
   - adapter-ai-sdlc-release
   - adapter-spec-kit-release

@@ -5,7 +5,6 @@ title: Make v2 qualification, CI and release publication coherent
 stage: architecture
 status: done
 priority: critical
-evidence_milestone: null
 replaced_by: []
 forward_to: []
 preferred_owner_kind: coordinator
@@ -61,6 +60,8 @@ required_reading:
   - path: docs/reference/conformance.md
     reason: Preserve the distinction between implementation, qualification and published support evidence.
 read_scope:
+  - packages/llm-core/docs/final-architecture/tasks/architecture-release-reproducibility.md
+  - docs/reference/conformance.md
   - .github/workflows/**
   - .gitignore
   - CHANGELOG.md

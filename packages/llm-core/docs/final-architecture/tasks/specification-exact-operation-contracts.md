@@ -18,11 +18,7 @@ depends_on:
   - specification-api
 decision_dependencies:
   - ADR-017
-conflicts_with:
-  - specification-semantic-path-characterization
-  - specification-semantic-reconciliation
-  - adapter-pydantic-ai-semantic-projection
-  - specification-cross-adapter-conformance
+conflicts_with: []
 write_scope:
   - packages/llm-core/src/features/specifications/**
   - packages/llm-core/src/specifications/**

@@ -18,11 +18,7 @@ depends_on:
   - capabilities-runtime-conformance
 decision_dependencies:
   - ADR-017
-conflicts_with:
-  - adapter-langgraph-runtime
-  - adapter-pydantic-ai-runtime
-  - adapter-strands-runtime
-  - runtime-adapter-substitution
+conflicts_with: []
 write_scope:
   - scripts/check-sloc.ts
   - scripts/check-sloc.test.ts

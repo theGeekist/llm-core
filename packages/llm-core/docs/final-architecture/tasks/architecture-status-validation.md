@@ -3,16 +3,16 @@ architecture_version: 2
 id: architecture-status-validation
 title: Mechanically validate the architecture status projection
 stage: architecture
-status: proposed
+status: done
 priority: high
 preferred_owner_kind: coordinator
-owner:
-owner_kind:
-lease_started_at:
-lease_expires_at:
-base_sha:
-branch:
-worktree:
+owner: codex-root
+owner_kind: codex
+lease_started_at: 2026-08-10T14:58:44+08:00
+lease_expires_at: 2026-08-11T14:58:44+08:00
+base_sha: e91f1fa36dbbc63b961c5b646c256e5372bd5717
+branch: main
+worktree: /Users/jasonnathan/Repos/@theGeekist/llm-core
 depends_on:
   - architecture-decisions
   - architecture-source-layout-normalization
@@ -41,6 +41,15 @@ write_scope:
   - packages/llm-core/package.json
   - packages/llm-core/tests/architecture/**
   - packages/llm-core/docs/final-architecture/STATUS.md
+  - packages/llm-core/docs/final-architecture/tasks/release-history-provenance.md
+  - packages/llm-core/docs/final-architecture/tasks/release-v2-readiness.md
+  - packages/llm-core/docs/final-architecture/tasks/architecture-adapter-sloc-decomposition.md
+  - packages/llm-core/docs/final-architecture/tasks/runtime-operation-contract-correction.md
+  - packages/llm-core/docs/final-architecture/tasks/runtime-tools-front-boundary.md
+  - packages/llm-core/docs/final-architecture/tasks/specification-exact-operation-contracts.md
+  - packages/llm-core/docs/final-architecture/tasks/adapter-openspec-release.md
+  - packages/llm-core/docs/final-architecture/tasks/adapter-pydantic-ai-release.md
+  - packages/llm-core/docs/final-architecture/tasks/adapter-spec-kit-release.md
   - packages/llm-core/docs/final-architecture/tasks/architecture-status-validation.md
 required_reading:
   - path: packages/llm-core/docs/final-architecture/STATUS.md
@@ -130,8 +139,71 @@ bun run docs:check
 
 ## Work log
 
-Planned by ADR-015; not claimed.
+Execution mode: shared-checkout
+Execution rationale: The canonical checkout is the default and the task owns its complete implementation, validation, generated-status and gate-integration surface.
+Concurrency evaluation: adapter-coding-agent-integration plus ongoing public documentation, AIFSD private-authority and Simple Chat work; start alongside because their declared and observed writes are outside this task's write scope and the active llm-core peer is not listed in conflicts_with.
+Concurrent task scopes: adapter-coding-agent-integration owns apps/coding-agent-qualification/**, packages/llm-core/src/adapters/coding-agent/**, packages/llm-core/tests/adapters/coding-agent/\*\*, docs/adapters/coding-agent.md and its own task brief; public docs, package documentation, AIFSD private authority and Simple Chat remain disjoint from this task's mechanical status-validation files.
+Swarm delegation: none
+
+Claimed by `codex-root` at base
+`e91f1fa36dbbc63b961c5b646c256e5372bd5717` after the llm-core-scoped planner
+reported no blocker. The all-authority planner remains independently blocked by
+the ongoing AIFSD authority's missing
+`packages/aifsd/docs/final-architecture/tasks/llm-core-v2-publication-evidence.md`
+required-reading file; this task does not own that private documentation.
+
+Admission recheck: the all-authority and llm-core planners both recognised this
+task as the sole active task with no blocker. Implementation then entered
+`in_progress` under the same lease and write boundary.
+
+Implementation: added one deterministic package-local renderer shared by check
+and write modes, exact inventory-row validation, graph and governance
+invariants, active ownership/checkout validation, package and documentation
+gate integration, and adversarial fixture coverage for the acceptance surface.
+
+Verification: the architecture suite passes 70 tests; focused ESLint, package
+source and test typechecks, SLOC validation and `git diff --check` pass.
+
+Independent review correction: replacement targets now require a Git blob in
+the authority repository's `HEAD` rather than index membership; `forward_to`
+requires a configured non-local authority; table-unsafe evidence milestones
+are rejected; and concurrent-scope evidence matches complete task-ID tokens.
+Each reproduced defect has a focused regression fixture.
+
+Follow-up review correction: active labels are parsed only within `## Work log`;
+an absent optional AIFSD authority no longer becomes a public build dependency
+while a mounted missing target still fails; planner-owned non-empty write-scope
+validation is reused; malformed present `owner_kind` values are rejected; and
+the validator remains below 500 physical lines, so no SLOC waiver is required.
+Focused fixtures cover handoff-label duplication, optional-versus-mounted
+foreign authority, missing/empty/blank scopes and numeric/object owner kinds.
+
+Final review correction: swarm delegation now accepts only `none` or complete
+documented lineage. Graph validation rejects structural and ADR defects without
+mistaking ordinary candidate readiness, priority deferral or inactive conflicts
+for invalid authority. Governance repair removed null optional metadata, added
+exact required-reading authority and reconciled stale conflict edges before the
+canonical projection was regenerated.
 
 ## Handoff
 
-Pending.
+Base SHA: `e91f1fa36dbbc63b961c5b646c256e5372bd5717`.
+
+Execution mode: shared canonical checkout on `main`; the active
+`adapter-coding-agent-integration` scope is disjoint and current package source
+and test typechecks pass.
+
+Changed surface: package-local STATUS renderer/validator, adversarial
+architecture fixtures, package scripts, repository documentation gate, this
+task record and the coordinator-owned lifecycle projection in `STATUS.md`.
+
+Independent review: the first pass reproduced four defects involving staged
+replacement authority, unknown/local forward authorities, Markdown table
+delimiters and substring task-ID evidence. All were corrected with focused
+regressions. Re-review found no remaining actionable task-owned defect and
+confirmed the earlier 53-test baseline. A subsequent review supplied five
+further findings; all now have focused corrections and the suite passes 60
+tests before the final delegation and graph-readiness regressions were added.
+Final follow-up reviews found no remaining actionable defect and independently
+confirmed structural graph enforcement, candidate scheduling semantics,
+mount-boundary behaviour, SLOC, typecheck, lint and diff evidence.

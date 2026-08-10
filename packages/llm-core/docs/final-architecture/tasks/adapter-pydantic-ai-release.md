@@ -25,6 +25,7 @@ decision_dependencies:
   - ADR-010
   - ADR-015
 conflicts_with:
+  - architecture-adapter-sloc-decomposition
   - adapter-openspec-release
   - adapter-ai-sdlc-release
   - adapter-spec-kit-release

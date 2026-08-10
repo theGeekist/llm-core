@@ -19,7 +19,6 @@ decision_dependencies:
   - ADR-007
   - ADR-015
 conflicts_with:
-  - adapters-protocol-qualification
   - adapter-openspec-release
   - adapter-pydantic-ai-release
   - adapter-spec-kit-release

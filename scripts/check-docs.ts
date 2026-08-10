@@ -4,6 +4,7 @@ import remarkGfm from "remark-gfm";
 import remarkParse from "remark-parse";
 import ts from "typescript";
 import { unified } from "unified";
+import { checkArchitectureStatus } from "../packages/llm-core/scripts/check-architecture-status";
 
 export interface DocumentationCheckResult {
   readonly errors: readonly string[];
@@ -350,6 +351,14 @@ export const checkDocumentation = async (
     ...engineeringWalks.flatMap(({ errors: walkErrors }) => walkErrors),
     ...routingWalk.errors,
   ];
+  const architectureStatusPath = join(
+    workspaceRoot,
+    "packages/llm-core/docs/final-architecture/STATUS.md",
+  );
+  if (await hasKind(architectureStatusPath, "file")) {
+    const architectureStatus = await checkArchitectureStatus({ workspaceRoot });
+    errors.push(...architectureStatus.errors);
+  }
   const referencedSnippets = new Set<string>();
 
   for (const path of publishedMarkdown) {

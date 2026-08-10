@@ -5,7 +5,6 @@ title: Reconstruct release history and preserve publication provenance
 stage: qualification
 status: done
 priority: critical
-evidence_milestone: null
 replaced_by: []
 forward_to: []
 preferred_owner_kind: coordinator
@@ -67,6 +66,9 @@ required_reading:
   - path: docs/reference/conformance.md
     reason: Preserve the distinction between implementation, qualification, publication and supported evidence.
 read_scope:
+  - packages/llm-core/docs/final-architecture/tasks/release-v2-readiness.md
+  - packages/llm-core/docs/final-architecture/PLAN.md
+  - docs/reference/conformance.md
   - .github/workflows/**
   - .git/**
   - CHANGELOG.md
