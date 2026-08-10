@@ -66,17 +66,34 @@ const externalConsumerTypeDependencies = {
   "@types/json-schema": "^7.0.15",
   "@types/node": "^22.13.5",
 };
+const prebuilt = process.argv.includes("--prebuilt");
+const argumentValue = (name) => {
+  const index = process.argv.indexOf(name);
+  const value = index < 0 ? undefined : process.argv[index + 1];
+  if (index >= 0 && !value) throw new TypeError(`Expected a path after ${name}.`);
+  return value ? resolve(process.cwd(), value) : undefined;
+};
+const suppliedTarball = argumentValue("--tarball");
+const suppliedStrictJsonTarball = argumentValue("--strict-json-tarball");
+if (suppliedTarball && !suppliedStrictJsonTarball) {
+  throw new TypeError("An exact llm-core tarball requires --strict-json-tarball.");
+}
 
 const fail = (message) => {
   throw new Error(message);
 };
 
 const run = (command, args, options = {}) => {
+  const startedAt = Date.now();
   const result = spawnSync(command, args, { encoding: "utf8", ...options });
   if (result.status !== 0) {
     process.stdout.write(result.stdout ?? "");
     process.stderr.write(result.stderr ?? "");
-    fail(`${command} ${args.join(" ")} failed.`);
+    const elapsed = Date.now() - startedAt;
+    const cache = options.env?.npm_config_cache;
+    const detail = result.error instanceof Error ? ` ${result.error.message}` : "";
+    const cacheDetail = cache ? ` with npm cache ${cache}` : "";
+    fail(`${command} ${args.join(" ")} failed after ${elapsed}ms` + `${cacheDetail}.${detail}`);
   }
   return result.stdout ?? "";
 };
@@ -105,8 +122,8 @@ if (
   fail("Package must publish the v2 ESM-only manifest.");
 }
 if (
-  packageJson.dependencies?.["@geekist/strict-json"] !== strictJsonPackageJson.version ||
-  String(packageJson.dependencies?.["@geekist/strict-json"]).startsWith("workspace:")
+  packageJson.dependencies?.["@aifsd/strict-json"] !== strictJsonPackageJson.version ||
+  String(packageJson.dependencies?.["@aifsd/strict-json"]).startsWith("workspace:")
 ) {
   fail("Published llm-core must depend on the concrete workspace strict-json version.");
 }
@@ -161,11 +178,13 @@ for (const [name, command] of Object.entries(packageJson.scripts ?? {})) {
 }
 
 const staleCjsArtifacts = [join(root, "dist", "cjs", "stale.cjs"), join(root, "dist", "stale.cjs")];
-for (const artifact of staleCjsArtifacts) {
-  mkdirSync(dirname(artifact), { recursive: true });
-  writeFileSync(artifact, "module.exports = {};\n");
+if (!prebuilt) {
+  for (const artifact of staleCjsArtifacts) {
+    mkdirSync(dirname(artifact), { recursive: true });
+    writeFileSync(artifact, "module.exports = {};\n");
+  }
+  run("bun", ["run", "build"], { cwd: root });
 }
-run("bun", ["run", "build"], { cwd: root });
 
 for (const artifact of staleCjsArtifacts) {
   if (existsSync(artifact)) fail(`Build retained ${relative(root, artifact)}.`);
@@ -188,19 +207,31 @@ for (const file of walkFiles(join(root, "dist"))) {
 
 const smokeRoot = mkdtempSync(join(tmpdir(), "llm-core-package-smoke-"));
 try {
-  run("bun", ["run", "build"], { cwd: strictJsonRoot });
-  const strictJsonPackedOutput = run("npm", ["pack", "--json", "--pack-destination", smokeRoot], {
-    cwd: strictJsonRoot,
-    env: { ...process.env, npm_config_cache: join(smokeRoot, "npm-cache") },
-  });
-  const strictJsonPacked = JSON.parse(strictJsonPackedOutput);
-  const strictJsonTarball = join(smokeRoot, strictJsonPacked[0].filename);
-  const packedOutput = run("npm", ["pack", "--json", "--pack-destination", smokeRoot], {
-    cwd: root,
-    env: { ...process.env, npm_config_cache: join(smokeRoot, "npm-cache") },
-  });
-  const packed = JSON.parse(packedOutput);
-  const tarball = join(smokeRoot, packed[0].filename);
+  if (!prebuilt) run("bun", ["run", "build"], { cwd: strictJsonRoot });
+  const strictJsonTarball =
+    suppliedStrictJsonTarball ??
+    join(
+      smokeRoot,
+      JSON.parse(
+        run("npm", ["pack", "--json", "--pack-destination", smokeRoot], {
+          cwd: strictJsonRoot,
+          env: { ...process.env, npm_config_cache: join(smokeRoot, "npm-cache") },
+        }),
+      )[0].filename,
+    );
+  const tarball =
+    suppliedTarball ??
+    join(
+      smokeRoot,
+      JSON.parse(
+        run("npm", ["pack", "--json", "--pack-destination", smokeRoot], {
+          cwd: root,
+          env: { ...process.env, npm_config_cache: join(smokeRoot, "npm-cache") },
+        }),
+      )[0].filename,
+    );
+  if (!existsSync(strictJsonTarball)) fail(`Missing strict-json tarball: ${strictJsonTarball}`);
+  if (!existsSync(tarball)) fail(`Missing llm-core tarball: ${tarball}`);
   const consumer = join(smokeRoot, "consumer");
   mkdirSync(consumer, { recursive: true });
   const peerDependencies = Object.fromEntries(
@@ -214,8 +245,8 @@ try {
         private: true,
         type: "module",
         dependencies: {
-          "@geekist/strict-json": `file:${strictJsonTarball}`,
-          "@geekist/llm-core": `file:${tarball}`,
+          "@aifsd/strict-json": `file:${strictJsonTarball}`,
+          "@aifsd/llm-core": `file:${tarball}`,
           ...peerDependencies,
         },
         devDependencies: externalConsumerTypeDependencies,
@@ -227,43 +258,61 @@ try {
   run("npm", ["install", "--ignore-scripts", "--no-audit", "--no-fund", "--no-package-lock"], {
     cwd: consumer,
     env: { ...process.env, npm_config_cache: join(smokeRoot, "npm-cache") },
+    timeout: 10 * 60 * 1000,
+    killSignal: "SIGTERM",
   });
 
   const specifiers = expectedSubpaths.map((subpath) =>
-    subpath === "." ? "@geekist/llm-core" : `@geekist/llm-core/${subpath.slice(2)}`,
+    subpath === "." ? "@aifsd/llm-core" : `@aifsd/llm-core/${subpath.slice(2)}`,
   );
   const runtimeImports = specifiers
     .map((specifier) => `await import(${JSON.stringify(specifier)});`)
     .join("\n");
-  writeFileSync(join(consumer, "runtime.mjs"), `${runtimeImports}\n`);
+  writeFileSync(
+    join(consumer, "runtime.mjs"),
+    [
+      runtimeImports,
+      'const { contractVersion, digest, extensionNamespace } = await import("@aifsd/llm-core/contracts");',
+      'const { createSpecificationOperation } = await import("@aifsd/llm-core/specifications");',
+      "createSpecificationOperation({",
+      '  operation: "observe-native-source",',
+      '  sourceContract: { authority: "packed-smoke", format: { id: extensionNamespace("dev.geekist.packed-smoke"), version: contractVersion("1.0.0") }, revision: "fixture.1" },',
+      '  disposition: "supported",',
+      '  fixtures: [{ fixtureId: "packed-smoke.fixture", digest: digest("1".repeat(64)) }],',
+      "  diagnostics: [],",
+      "});",
+      "",
+    ].join("\n"),
+  );
   run(process.execPath, ["runtime.mjs"], { cwd: consumer });
 
   writeFileSync(
     join(consumer, "consumer.ts"),
     [
-      'import { compileSpecification, defineTool, loadSpecification, reviewSpecification } from "@geekist/llm-core";',
-      'import type { AgentDefinition, AgentEvent, AgentResult, CompiledSpecification, ConversationEvent, ConversationSnapshot, ConversationState, ConversationStore, Specification, SpecificationDecision, SpecificationReviewView, Tool, ToolCall, ToolConfig, ToolExecutionFailure, ToolExecutionResult, WorkflowExecutionPlan } from "@geekist/llm-core";',
-      'import type { PreparedAgentDefinition, AgentRunner, AgentRunnerProfile, AgentStartRequest } from "@geekist/llm-core/agent/runtime";',
-      'import { createExecutableTool } from "@geekist/llm-core/tools/runtime";',
-      'import type { ExecutableTool, ToolDefinition } from "@geekist/llm-core/tools/runtime";',
-      'import { executeControlledTool } from "@geekist/llm-core/tools/runtime";',
-      'import type { ExecuteControlledToolInput, ControlledToolExecutionOutcome } from "@geekist/llm-core/tools/runtime";',
-      'import type { InteractionSession, InteractionSessionIdentityPort } from "@geekist/llm-core/interaction";',
-      'import { createContextEntry, selectContext } from "@geekist/llm-core/context";',
-      'import type { ContextEntry, ContextSelection } from "@geekist/llm-core/context";',
-      'import { createArtifact, createArtifactRef } from "@geekist/llm-core/artifacts";',
-      'import type { Artifact, ArtifactRef } from "@geekist/llm-core/artifacts";',
-      'import { createEvaluationCase, createEvaluationComposition, evaluationEvaluatorId } from "@geekist/llm-core/evaluation";',
-      'import type { EvaluationCase, EvaluationComposition, EvaluationResult } from "@geekist/llm-core/evaluation";',
-      'import type { AiSdkUiProjectionChunk } from "@geekist/llm-core/adapters/ai-sdk-ui";',
-      'import type { AssistantUiProjectionCommand, AssistantUiProjectionOptions } from "@geekist/llm-core/adapters/assistant-ui";',
-      'import type { ChatKitProjectionEvent } from "@geekist/llm-core/adapters/openai-chatkit";',
-      'import type { NluxInteractionAdapterOptions, NluxProjectionSignal } from "@geekist/llm-core/adapters/nlux-ui";',
-      'import { A2A_PROTOCOL_VERSION, A2A_SDK_VERSION, createA2AClient } from "@geekist/llm-core/a2a";',
-      'import type { A2AClient, Transport } from "@geekist/llm-core/a2a";',
-      'import { MCP_PROTOCOL_VERSION, MCP_SERVER_SDK_VERSION, createMcpStatelessHost } from "@geekist/llm-core/mcp";',
-      'import type { McpStatelessHost, McpStatelessHostDefinition } from "@geekist/llm-core/mcp";',
-      'import type { ConversionReport, SpecificationAdapterSupport, SpecificationPolicy, SpecificationReviewItem, SpecificationReviewRelationship, SpecificationScopeId, SpecificationSourceSnapshot } from "@geekist/llm-core/specifications";',
+      'import { compileSpecification, defineTool, loadSpecification, reviewSpecification } from "@aifsd/llm-core";',
+      'import type { AgentDefinition, AgentEvent, AgentResult, CompiledSpecification, ConversationEvent, ConversationSnapshot, ConversationState, ConversationStore, Specification, SpecificationDecision, SpecificationReviewView, Tool, ToolCall, ToolConfig, ToolExecutionFailure, ToolExecutionResult, WorkflowExecutionPlan } from "@aifsd/llm-core";',
+      'import type { PreparedAgentDefinition, AgentRunner, AgentRunnerProfile, AgentStartRequest } from "@aifsd/llm-core/agent/runtime";',
+      'import { createExecutableTool } from "@aifsd/llm-core/tools/runtime";',
+      'import type { ExecutableTool, ToolDefinition } from "@aifsd/llm-core/tools/runtime";',
+      'import { executeControlledTool } from "@aifsd/llm-core/tools/runtime";',
+      'import type { ExecuteControlledToolInput, ControlledToolExecutionOutcome } from "@aifsd/llm-core/tools/runtime";',
+      'import type { InteractionSession, InteractionSessionIdentityPort } from "@aifsd/llm-core/interaction";',
+      'import { createContextEntry, selectContext } from "@aifsd/llm-core/context";',
+      'import type { ContextEntry, ContextSelection } from "@aifsd/llm-core/context";',
+      'import { createArtifact, createArtifactRef } from "@aifsd/llm-core/artifacts";',
+      'import type { Artifact, ArtifactRef } from "@aifsd/llm-core/artifacts";',
+      'import { createEvaluationCase, createEvaluationComposition, evaluationEvaluatorId } from "@aifsd/llm-core/evaluation";',
+      'import type { EvaluationCase, EvaluationComposition, EvaluationResult } from "@aifsd/llm-core/evaluation";',
+      'import type { AiSdkUiProjectionChunk } from "@aifsd/llm-core/adapters/ai-sdk-ui";',
+      'import type { AssistantUiProjectionCommand, AssistantUiProjectionOptions } from "@aifsd/llm-core/adapters/assistant-ui";',
+      'import type { ChatKitProjectionEvent } from "@aifsd/llm-core/adapters/openai-chatkit";',
+      'import type { NluxInteractionAdapterOptions, NluxProjectionSignal } from "@aifsd/llm-core/adapters/nlux-ui";',
+      'import { A2A_PROTOCOL_VERSION, A2A_SDK_VERSION, createA2AClient } from "@aifsd/llm-core/a2a";',
+      'import type { A2AClient, Transport } from "@aifsd/llm-core/a2a";',
+      'import { MCP_PROTOCOL_VERSION, MCP_SERVER_SDK_VERSION, createMcpStatelessHost } from "@aifsd/llm-core/mcp";',
+      'import type { McpStatelessHost, McpStatelessHostDefinition } from "@aifsd/llm-core/mcp";',
+      'import { createSpecificationOperation } from "@aifsd/llm-core/specifications";',
+      'import type { SpecificationAdapterSupport, SpecificationDiagnostic, SpecificationDiagnosticImpact, SpecificationDiagnosticSeverity, SpecificationOperation, SpecificationOperationDisposition, SpecificationOperationId, SpecificationOperationMatrix, SpecificationPolicy, SpecificationReviewItem, SpecificationReviewRelationship, SpecificationScopeId, SpecificationSourceContract, SpecificationSourceSnapshot } from "@aifsd/llm-core/specifications";',
       ...specifiers
         .slice(1)
         .map(
@@ -277,9 +326,10 @@ try {
       "void createEvaluationCase; void createEvaluationComposition; void evaluationEvaluatorId;",
       "void A2A_PROTOCOL_VERSION; void A2A_SDK_VERSION; void createA2AClient;",
       "void MCP_PROTOCOL_VERSION; void MCP_SERVER_SDK_VERSION; void createMcpStatelessHost;",
+      "void createSpecificationOperation;",
       "type RootTypes = [AgentDefinition, AgentEvent, AgentResult, Tool, ToolConfig, ToolCall, ToolExecutionResult, ToolExecutionFailure, WorkflowExecutionPlan, ConversationEvent, ConversationSnapshot, ConversationState, ConversationStore];",
       "declare const rootTypes: RootTypes; void rootTypes;",
-      "type SpecificationTypes = [Specification, SpecificationDecision, CompiledSpecification<unknown>, SpecificationPolicy, SpecificationReviewView, SpecificationReviewItem, SpecificationReviewRelationship, SpecificationScopeId, SpecificationSourceSnapshot, SpecificationAdapterSupport, ConversionReport];",
+      "type SpecificationTypes = [Specification, SpecificationDecision, CompiledSpecification<unknown>, SpecificationPolicy, SpecificationReviewView, SpecificationReviewItem, SpecificationReviewRelationship, SpecificationScopeId, SpecificationSourceSnapshot, SpecificationAdapterSupport, SpecificationDiagnostic, SpecificationDiagnosticImpact, SpecificationDiagnosticSeverity, SpecificationOperation, SpecificationOperationDisposition, SpecificationOperationId, SpecificationOperationMatrix, SpecificationSourceContract];",
       "declare const specificationTypes: SpecificationTypes; void specificationTypes;",
       "type AgentRuntimeTypes = [AgentDefinition, PreparedAgentDefinition, AgentRunner, AgentRunnerProfile, AgentStartRequest, ExecutableTool, ToolDefinition];",
       "declare const agentRuntimeTypes: AgentRuntimeTypes; void agentRuntimeTypes;",

@@ -13,6 +13,7 @@ export interface ExternalFixture {
   readonly directory: string;
   readonly relativeDirectory: string;
   readonly qualifyScript: string;
+  readonly prebuiltQualifyScript?: string;
   readonly lockfile: string;
 }
 
@@ -67,6 +68,10 @@ export const discoverExternalFixtures = (repositoryRoot: string): ExternalFixtur
         typeof scripts === "object" && scripts !== null
           ? (scripts as Record<string, unknown>).qualify
           : undefined;
+      const prebuiltQualifyScript =
+        typeof scripts === "object" && scripts !== null
+          ? (scripts as Record<string, unknown>)["qualify:prebuilt"]
+          : undefined;
       if (typeof qualifyScript !== "string" || qualifyScript.trim() === "") {
         throw new Error(
           `${join(directory, "package.json")} must define a non-empty qualify script`,
@@ -76,6 +81,10 @@ export const discoverExternalFixtures = (repositoryRoot: string): ExternalFixtur
         directory,
         relativeDirectory: relative(repositoryRoot, directory).split("\\").join("/"),
         qualifyScript,
+        prebuiltQualifyScript:
+          typeof prebuiltQualifyScript === "string" && prebuiltQualifyScript.trim() !== ""
+            ? prebuiltQualifyScript
+            : undefined,
         lockfile: findLockfile(directory),
       };
     });
@@ -112,11 +121,15 @@ const runChecked = (
 export const qualifyExternalFixtures = (
   repositoryRoot: string,
   runner: CommandRunner = defaultRunner,
+  prebuilt = false,
 ): ExternalFixture[] => {
   const fixtures = discoverExternalFixtures(repositoryRoot);
   for (const fixture of fixtures) {
     runChecked(runner, fixture, ["bun", "install", "--frozen-lockfile"]);
-    runChecked(runner, fixture, ["bun", "run", "qualify"]);
+    if (prebuilt && fixture.prebuiltQualifyScript === undefined) {
+      throw new Error(`${fixture.relativeDirectory}: missing qualify:prebuilt script`);
+    }
+    runChecked(runner, fixture, ["bun", "run", prebuilt ? "qualify:prebuilt" : "qualify"]);
   }
   return fixtures;
 };
@@ -124,7 +137,11 @@ export const qualifyExternalFixtures = (
 if (import.meta.main) {
   try {
     const root = resolve(import.meta.dir, "..");
-    const fixtures = qualifyExternalFixtures(root);
+    const fixtures = qualifyExternalFixtures(
+      root,
+      defaultRunner,
+      process.argv.includes("--prebuilt"),
+    );
     console.log(
       `Qualified ${fixtures.length} external-consumer fixture${fixtures.length === 1 ? "" : "s"}.`,
     );

@@ -16,11 +16,11 @@ import { compileSpecification as compileRegisteredSpecification } from "../appli
 import { reviewSpecificationGraph } from "../application/specification-compiler/resolution";
 import { graphFromSource } from "./loading";
 import {
-  createConversionReport,
   createProposedSpecificationChange,
   createSpecificationAdapterSupport,
   createSpecificationDecision,
   createSpecificationDecisionRecord,
+  createSpecificationOperation,
   createPortableIntegrationReference,
   createSpecificationSourceSnapshot as createSourceSnapshot,
 } from "../features/specifications/public";
@@ -30,23 +30,23 @@ import type {
   ApprovalIntent,
   CapabilityIntent,
   ContextIntent,
-  ConversionFidelity,
-  ConversionIssue,
-  ConversionIssueDisposition,
-  ConversionIssueSeverity,
-  ConversionReport,
   ProposedSpecificationChange,
   ProposedSpecificationChangeId,
   EvaluationIntent,
   PortableIntegrationReference,
   PortableIntegrationReferenceInput,
   PortableSpecificationTarget,
-  SpecificationAdapterDirection,
   SpecificationAdapterFixture,
   SpecificationAdapterSourceOwnership,
   SpecificationAdapterSupport,
-  SpecificationAdapterWriteBack,
-  SpecificationConformanceLevel,
+  SpecificationDiagnostic,
+  SpecificationDiagnosticImpact,
+  SpecificationDiagnosticSeverity,
+  SpecificationOperation,
+  SpecificationOperationDisposition,
+  SpecificationOperationId,
+  SpecificationOperationMatrix,
+  SpecificationSourceContract,
   SpecificationDecision,
   SpecificationDecisionRecord,
   SpecificationDecisionRecordId,
@@ -76,11 +76,11 @@ import type {
 } from "../application/specification-compiler/types";
 
 export {
-  createConversionReport,
   createProposedSpecificationChange,
   createSpecificationAdapterSupport,
   createSpecificationDecision,
   createSpecificationDecisionRecord,
+  createSpecificationOperation,
   createPortableIntegrationReference,
   createSourceSnapshot as createSpecificationSourceSnapshot,
 };
@@ -90,11 +90,6 @@ export type {
   ApprovalIntent,
   CapabilityIntent,
   CompiledSpecification,
-  ConversionFidelity,
-  ConversionIssue,
-  ConversionIssueDisposition,
-  ConversionIssueSeverity,
-  ConversionReport,
   ContextIntent,
   EvaluationIntent,
   PortableIntegrationReference,
@@ -102,12 +97,17 @@ export type {
   PortableSpecificationTarget,
   ProposedSpecificationChange,
   ProposedSpecificationChangeId,
-  SpecificationAdapterDirection,
   SpecificationAdapterFixture,
   SpecificationAdapterSourceOwnership,
   SpecificationAdapterSupport,
-  SpecificationAdapterWriteBack,
-  SpecificationConformanceLevel,
+  SpecificationDiagnostic,
+  SpecificationDiagnosticImpact,
+  SpecificationDiagnosticSeverity,
+  SpecificationOperation,
+  SpecificationOperationDisposition,
+  SpecificationOperationId,
+  SpecificationOperationMatrix,
+  SpecificationSourceContract,
   SpecificationDecision,
   SpecificationDecisionRecord,
   SpecificationDecisionRecordId,
@@ -143,7 +143,6 @@ export type SpecificationScopeId = SpecificationDecisionRecord["acceptedScope"][
  */
 export interface Specification {
   readonly sources: readonly SpecificationSourceSnapshot[];
-  readonly report?: ConversionReport;
 }
 
 /** One typed portable item a review policy may select into an accepted scope. */
@@ -185,7 +184,7 @@ export interface SpecificationReviewView {
   readonly workflow: {
     readonly scopeIds: readonly SpecificationScopeId[];
   };
-  readonly issues: readonly ConversionIssue[];
+  readonly issues: readonly SpecificationDiagnostic[];
   readonly questions: readonly SpecificationQuestion[];
 }
 
@@ -322,7 +321,6 @@ export const loadSpecification = (source: unknown): Specification => {
   const graph = graphFromSource(source);
   const specification = Object.freeze({
     sources: graph.sources,
-    ...(graph.report === undefined ? {} : { report: graph.report }),
   });
   loadedGraphs.set(specification, graph);
   loadedReviewViews.set(specification, reviewViewForGraph(graph));

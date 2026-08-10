@@ -1,13 +1,13 @@
 import type { CapabilityRequirement, JsonObject } from "#contracts";
-import type { AgentDefinition } from "@geekist/llm-core/agent/runtime";
-import type { ContextSelection } from "@geekist/llm-core/context";
-import type { EvaluationQualification } from "@geekist/llm-core/evaluation";
-import type { PromptTemplate, ToolDeclaration } from "@geekist/llm-core/model";
+import type { AgentDefinition } from "@aifsd/llm-core/agent/runtime";
+import type { ContextSelection } from "@aifsd/llm-core/context";
+import type { EvaluationQualification } from "@aifsd/llm-core/evaluation";
+import type { PromptTemplate, ToolDeclaration } from "@aifsd/llm-core/model";
 import type {
   CompiledSpecification,
-  ConversionReport,
+  SpecificationOperation,
   SpecificationScopeId,
-} from "@geekist/llm-core/specifications";
+} from "@aifsd/llm-core/specifications";
 
 /** Exact JSON-shaped AgentSpec boundary assessed at PydanticAI v2.19.0. */
 export interface PydanticAgentDefinition {
@@ -85,15 +85,15 @@ export interface PydanticAiCompilationTarget {
 
 export interface PydanticAiCompilation {
   readonly compiled: CompiledSpecification<PydanticAgentDefinition>;
-  readonly report: ConversionReport;
+  readonly operation: SpecificationOperation;
 }
 
 export class PydanticAiUnsupportedSemanticsError extends TypeError {
-  readonly report: ConversionReport;
+  readonly operation: SpecificationOperation;
 
-  constructor(report: ConversionReport) {
+  constructor(operation: SpecificationOperation) {
     super("PydanticAI AgentSpec projection contains unsupported semantics.");
     this.name = "PydanticAiUnsupportedSemanticsError";
-    this.report = report;
+    this.operation = operation;
   }
 }

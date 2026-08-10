@@ -185,19 +185,31 @@ describe("Spec Kit adapter", () => {
 
   test("binds support declarations to exact immutable fixture bytes", () => {
     expect(SPEC_KIT_FILE_SUPPORT).toMatchObject({
-      levels: ["syntax", "semantic"],
-      writeBack: "unsupported",
+      authority: "Spec Kit repository",
+      revision: "c0fe0e43cd728ebc3dd1f714343f3921510a157f",
     });
     expect(SPEC_KIT_CLI_SUPPORT).toMatchObject({
-      levels: ["syntax", "semantic"],
-      writeBack: "unsupported",
+      authority: "Spec Kit repository CLI",
+      revision: "c0fe0e43cd728ebc3dd1f714343f3921510a157f",
     });
-    expect(SPEC_KIT_FILE_SUPPORT.fixtures.map((item) => item.digest.value)).toEqual([
+    const fileDerivation = SPEC_KIT_FILE_SUPPORT.operations.find(
+      (operation) => operation.operation === "derive-portable-specification",
+    );
+    const cliObservation = SPEC_KIT_CLI_SUPPORT.operations.find(
+      (operation) => operation.operation === "observe-native-source",
+    );
+    if (
+      fileDerivation?.disposition !== "supported" ||
+      cliObservation?.disposition !== "supported"
+    ) {
+      throw new TypeError("Expected Spec Kit operation support.");
+    }
+    expect(fileDerivation.fixtures.map((item) => item.digest.value)).toEqual([
       hash(fixture("workflow-core-c0fe0e4.yml")),
       hash(fixture("workflow-control-flow-c0fe0e4.yml")),
       hash(fixture("workflow-overlay-installed-c0fe0e4.yml")),
     ]);
-    expect(SPEC_KIT_CLI_SUPPORT.fixtures.map((item) => item.digest.value)).toEqual([
+    expect(cliObservation.fixtures.map((item) => item.digest.value)).toEqual([
       hash(fixture("run-failed-c0fe0e4.json")),
       hash(fixture("resume-paused-c0fe0e4.json")),
       hash(fixture("status-run-aborted-c0fe0e4.json")),

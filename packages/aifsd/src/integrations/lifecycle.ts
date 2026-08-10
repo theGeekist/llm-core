@@ -1,4 +1,4 @@
-import { snapshot, StrictJsonError } from "@geekist/strict-json";
+import { snapshot, StrictJsonError } from "@aifsd/strict-json";
 import { captureIntegrationWorker } from "./activation-worker.js";
 import type {
   AcquiredIntegration,

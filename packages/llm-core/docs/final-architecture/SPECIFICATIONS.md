@@ -3,7 +3,8 @@
 Architecture version: v2
 Decision authority:
 [`ADR-009`](decisions/ADR-009-specification-interoperability.md) and
-[`ADR-016`](decisions/ADR-016-integration-owned-execution.md)
+[`ADR-016`](decisions/ADR-016-integration-owned-execution.md), corrected by
+[`ADR-017`](decisions/ADR-017-external-contract-fidelity.md)
 Implementation stage: specifications
 
 ADR-012 ratified the original public names used by this completed
@@ -27,7 +28,7 @@ architecture:
    an explicit target supplied by a qualified runtime integration, including
    runtime-oriented formats such as PydanticAI `AgentSpec`.
 
-These axes share identity, provenance, loss accounting and review, but they do
+These axes share identity, provenance, exact operation declarations and review, but they do
 not replace the two complete system use cases: AI-first software delivery and
 agentic behavior inside the delivered product.
 
@@ -64,16 +65,16 @@ cohesive capability.
 
 ## The eight boundaries
 
-| Reader-facing boundary    | Internal responsibility | Input                                                         | Output                                                        | Authority                                                                    |
-| ------------------------- | ----------------------- | ------------------------------------------------------------- | ------------------------------------------------------------- | ---------------------------------------------------------------------------- |
-| 1. Load source            | Observe                 | External files, CLI output, API resources or runtime specs    | Detached source snapshot                                      | Adapter records what existed; it does not interpret or authorize             |
-| 2. Read format            | Import                  | Versioned snapshot                                            | Imported nodes, relationships and conversion report           | Format adapter owns parsing and source-version compatibility                 |
-| 3. Combine specifications | Reconcile               | One or more imports                                           | Canonical specification graph                                 | Core owns identity, provenance, source authority and conflict representation |
-| 4. Check specification    | Resolve                 | Canonical semantic graph                                      | Checked specification plus diagnostics                        | Core derives references, requirements and unresolved questions               |
-| 5. Build plans            | Derive views            | Checked graph                                                 | Dependency plan and workflow program                          | Each view declares which relationship kinds it interprets                    |
-| 6. Decide                 | Admit                   | Checked specification, policy decisions and evidence          | Specification decision and, when accepted, a portable record  | Application policy or authenticated human authority; never the importer      |
-| 7. Compile                | Project                 | Runtime-verified accepted specification plus explicit target  | Portable declarative data or serialized integration reference | Target integration reports exact, changed and unsupported semantics          |
-| 8. Propose changes        | Reconcile feedback      | Execution receipts, evaluations, drift and produced artifacts | Proposed specification change with lineage                    | Evidence may propose a change; only the source owner may accept it           |
+| Reader-facing boundary    | Internal responsibility | Input                                                         | Output                                                                                       | Authority                                                                    |
+| ------------------------- | ----------------------- | ------------------------------------------------------------- | -------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------- |
+| 1. Load source            | Observe                 | External files, CLI output, API resources or runtime specs    | Detached source snapshot                                                                     | Adapter records what existed; it does not interpret or authorize             |
+| 2. Read format            | Derive                  | Versioned native snapshot and exact source identity           | Portable nodes and relationships plus a separate operation result                            | Format adapter owns parsing and source-version compatibility                 |
+| 3. Combine specifications | Reconcile               | One or more imports                                           | Canonical specification graph                                                                | Core owns identity, provenance, source authority and conflict representation |
+| 4. Check specification    | Resolve                 | Canonical semantic graph                                      | Checked specification plus diagnostics                                                       | Core derives references, requirements and unresolved questions               |
+| 5. Build plans            | Derive views            | Checked graph                                                 | Dependency plan and workflow program                                                         | Each view declares which relationship kinds it interprets                    |
+| 6. Decide                 | Admit                   | Checked specification, policy decisions and evidence          | Specification decision and, when accepted, a portable record                                 | Application policy or authenticated human authority; never the importer      |
+| 7. Compile                | Project                 | Runtime-verified accepted specification plus explicit target  | Portable declarative data or serialized integration reference plus an exact operation result | Target integration rejects unrepresentable requested semantics               |
+| 8. Propose changes        | Reconcile feedback      | Execution receipts, evaluations, drift and produced artifacts | Proposed specification change with lineage                                                   | Evidence may propose a change; only the source owner may accept it           |
 
 The eighth boundary closes the lifecycle without creating an unsafe write-back
 loop. Runtime evidence can show that intent and implementation diverged, but
@@ -99,8 +100,7 @@ SpecificationGraph
   ├── source snapshots
   ├── typed semantic nodes
   ├── typed relationships
-  ├── source bindings and provenance
-  └── reconciliation diagnostics
+  └── source bindings and provenance
 
 CheckedSpecification
   ├── reconciled semantic graph
@@ -140,12 +140,17 @@ ProposedSpecificationChange
   ├── proposed semantic changes
   ├── originating accepted-specification record
   ├── execution/evaluation evidence
-  └── conversion report
+  └── exact export operation declaration
 ```
 
 The source snapshot, graph, checked value, decision record and change proposal are
 distinct portable branded contracts. Brands provide compile-time separation;
 they are not execution authority.
+
+A proposed change binds only `export-native-source`, and its operation source
+format must exactly equal the target format. If export is not implemented, the
+proposal records that operation as `unsupported`; `not-applicable` cannot make a
+concrete source-targeted change coherent.
 
 `AcceptedSpecificationHandle` is a live, process-local value recorded in a
 module-private provenance registry. It can be obtained only by completing
@@ -219,34 +224,30 @@ or blocked outcomes. Execution engines receive this view only after review.
 Every adapter declares:
 
 - a namespaced format identifier;
-- detectable supported versions or version ranges;
-- operation: import, export or both;
-- supported formats, versions, operations and features;
-- preserved native-extension namespaces;
-- source ownership and write-back behavior; and
-- fixtures used to substantiate the claim.
+- the recognised source-contract authority and immutable revision;
+- source ownership;
+- independent declarations for native observation, portable derivation,
+  compilation, native export and native round trip; and
+- immutable executable fixtures for every supported operation.
 
-Support levels are cumulative only when explicitly declared:
+The operation declaration is a closed five-entry matrix in that order. It may
+not omit an operation because an adapter has not implemented it. Each nested
+source contract must exactly equal the declaration's authority, format and
+revision, preventing a support claim from borrowing evidence assessed against a
+different contract.
 
-| Level       | Claim                                                                    |
-| ----------- | ------------------------------------------------------------------------ |
-| Syntax      | The adapter can detect and parse the declared format version             |
-| Semantic    | Required source meaning maps into canonical nodes and relationships      |
-| Compilation | An accepted canonical subset can be compiled for the target              |
-| Round trip  | Declared semantics survive import and export within tested bounds        |
-| Lifecycle   | Source-specific sync, archive or write-back behavior is supported safely |
+Each operation is exactly one of:
 
-Every import and adapter conversion returns a conversion report:
+- `supported`, with executable fixtures and no blocking diagnostics;
+- `unsupported`, with an explicit reason and no portable success value; or
+- `not-applicable`, with source-contract evidence proving that the operation or
+  semantic dimension does not exist.
 
-```text
-fidelity: exact | partial | rejected
-issues[]:
-  code
-  severity
-  disposition: preserved | degraded | rejected
-  source location or canonical node identity
-  explanation
-```
+Diagnostics have advisory or blocking impact. They explain an operation but do
+not form another support scale. A portable derivation may name only the exact
+semantics it proves. Native constructs outside that declaration remain in the
+immutable source snapshot, and a caller requesting their portable semantics is
+rejected before any portable success value is returned.
 
 No adapter may claim framework support merely because it parses JSON or
 Markdown. Unknown fields are retained only as strict JSON under validated
@@ -260,7 +261,7 @@ reverse-DNS extension namespaces.
 | 2     | PydanticAI `AgentSpec` compilation | Proves the other interoperability axis: canonical accepted intent to a typed runtime specification  |
 | 3     | AI-SDLC JSON import                | Proves structured cross-language resources, decisions, review metadata and evidence-oriented fields |
 | 4     | Spec Kit file/CLI import           | Adds constitutions, overlays, templates and branch/join/loop workflow semantics                     |
-| 5     | BMAD file/CLI import               | Adds stable planning identities, append-only memory, preservation and partial/blocked outcomes      |
+| 5     | BMAD file/CLI import               | Adds stable planning identities, append-only memory, preservation and native blocked outcomes       |
 
 OpenSpec and PydanticAI are the first pair because they prove unlike boundaries,
 not because either is the universal model. AI-SDLC is next because its
@@ -377,9 +378,9 @@ completion boundary.
 1. The language stage settled the original public language and proved its
    fixtures. ADR-016 later removed the runnable Agent, Workflow and Conversation
    facades because they assigned execution to the kernel.
-2. `specification-contracts` defined and validated snapshots, semantic graphs,
-   conversion reports, portable specification decision records, change
-   proposals and adapter capabilities.
+2. `specification-contracts` originally defined conversion fidelity alongside
+   snapshots and semantic graphs. ADR-017 replaced that support scale with
+   exact operation declarations, portable decision records and change proposals.
 3. `specification-compiler` added reconciliation, resolution, derived views,
    review and the pure Pipeline-backed compiler after the WPKernel release gate.
    It owns runtime registration of accepted specifications and authority-bound
@@ -401,7 +402,7 @@ completion boundary.
    pass.
 2. A later source-application task may apply change proposals only after its
    adapter proves authenticated ownership, optimistic concurrency, stale
-   rejection, conversion-loss handling and durable receipts.
+   rejection, exact export qualification and durable receipts.
 
 ## Evidence base
 
@@ -424,7 +425,7 @@ The WPKernel adoption gates are derived from:
 - no hosted specification store, portal, issue tracker or approval inbox;
 - no implicit execution on import;
 - no silent source write-back;
-- no claim of lossless cross-framework conversion;
+- no native export or round-trip claim without exact source-contract fixtures;
 - no framework lifecycle in the package root;
 - no durable checkpoint built from Pipeline's process-local suspension; and
 - no custom Pipeline fork or LLM-specific helper kinds in WPKernel.

@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { secretRef } from "@geekist/llm-core/contracts";
+import { secretRef } from "@aifsd/llm-core/contracts";
 
 import { validateManifest } from "../../src/config/index.js";
 import { createManifest } from "./fixtures/configuration.js";

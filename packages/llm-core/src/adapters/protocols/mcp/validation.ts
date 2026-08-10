@@ -5,7 +5,7 @@ import {
   type JsonValue,
   type ToolCallId,
 } from "#contracts";
-import { canonicalize, deepFreeze, normalize } from "@geekist/strict-json";
+import { canonicalize, deepFreeze, normalize } from "@aifsd/strict-json";
 import {
   specTypeSchemas,
   type CallToolResult,

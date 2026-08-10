@@ -17,22 +17,17 @@ export interface ReleaseQualifierRegistry {
 
 export const baselineReleaseCommands: readonly (readonly string[])[] = [
   ["bun", "install", "--frozen-lockfile"],
-  ["bun", "run", "lint"],
-  ["bun", "run", "--cwd", "packages/strict-json", "release:build"],
-  ["bun", "run", "--cwd", "packages/llm-core", "release:build"],
-  ["bun", "run", "test:package"],
-  ["bun", "run", "qualify:external-fixtures"],
-  ["bun", "run", "docs:check"],
-  ["bun", "run", "--cwd", "packages/llm-core", "format:check"],
-  ["bun", "run", "check:sloc"],
+  ["bun", "run", "release:version:check"],
+  ["bun", "run", "release:checks:llm-core"],
+  ["bun", "run", "release:build:llm-core"],
+  ["bun", "run", "release:package-smoke:llm-core"],
+  ["bun", "run", "qualify:external-fixtures:prebuilt"],
 ];
 
 const expectedRootEntrypoint = "bun run scripts/qualify-release.ts";
 const expectedStrictJsonEntrypoint = "bun run --cwd packages/strict-json release:build";
-const expectedStrictJsonPublishEntrypoint =
-  "bun run --cwd ../.. release:qualify:strict-json && bun publish";
-const expectedPublishEntrypoint =
-  "bun run --cwd ../.. release:qualify:llm-core && bun run --cwd ../.. release:check:strict-json-published && bun publish";
+const expectedAifsdEntrypoint =
+  "bun run --cwd packages/aifsd release:build && bun run --cwd packages/aifsd test:package:prebuilt";
 const sealedUnconditionalSurfaces = new Set([
   ".",
   "./contracts",
@@ -224,6 +219,9 @@ export const validateReleaseEntrypoints = (root: string): string[] => {
   const strictJsonManifest = readJson<{ scripts?: Record<string, string> }>(
     join(root, "packages/strict-json/package.json"),
   );
+  const aifsdManifest = readJson<{ scripts?: Record<string, string> }>(
+    join(root, "packages/aifsd/package.json"),
+  );
   const releaseWorkflow = readFileSync(join(root, ".github/workflows/release.yml"), "utf8");
   const errors: string[] = [];
   if (rootManifest.scripts?.["release:qualify:llm-core"] !== expectedRootEntrypoint) {
@@ -232,66 +230,30 @@ export const validateReleaseEntrypoints = (root: string): string[] => {
   if (rootManifest.scripts?.["release:qualify:strict-json"] !== expectedStrictJsonEntrypoint) {
     errors.push("root release:qualify:strict-json must own strict-json qualification");
   }
-  if (strictJsonManifest.scripts?.["publish:npm"] !== expectedStrictJsonPublishEntrypoint) {
-    errors.push("strict-json publish:npm must delegate to root release:qualify:strict-json");
+  if (rootManifest.scripts?.["release:qualify:aifsd"] !== expectedAifsdEntrypoint) {
+    errors.push("root release:qualify:aifsd must own exact AIFSD qualification");
   }
-  if (packageManifest.scripts?.["publish:npm"] !== expectedPublishEntrypoint) {
-    errors.push("package publish:npm must delegate to root release:qualify:llm-core");
+  if (strictJsonManifest.scripts?.["publish:npm"] !== undefined) {
+    errors.push("strict-json must not expose a working-tree publish:npm command");
   }
-  const workflowLines = releaseWorkflow.split("\n");
-  const releaseCoreStart = workflowLines.findIndex((line) => line.trimEnd() === "  release-core:");
-  const isJobHeader = (line: string): boolean =>
-    line.startsWith("  ") && !line.startsWith("    ") && line.trimEnd().endsWith(":");
-  const nextJob = workflowLines.findIndex(
-    (line, index) => index > releaseCoreStart && isJobHeader(line),
-  );
-  const releaseCoreLines =
-    releaseCoreStart < 0
-      ? []
-      : workflowLines
-          .slice(releaseCoreStart + 1, nextJob < 0 ? undefined : nextJob)
-          .filter((line) => !line.trimStart().startsWith("#"));
-  const qualification = releaseCoreLines.findIndex(
-    (line) => line.trim() === "run: bun run release:qualify:llm-core",
-  );
-  const publication = releaseCoreLines.findIndex(
-    (line) => line.trim() === "run: npm publish --access public",
-  );
-  const dependencyCheck = releaseCoreLines.findIndex(
-    (line) => line.trim() === "run: bun run release:check:strict-json-published",
-  );
-  if (
-    qualification < 0 ||
-    dependencyCheck < 0 ||
-    publication < 0 ||
-    qualification > dependencyCheck ||
-    dependencyCheck > publication
-  ) {
-    errors.push(
-      "tagged llm-core publication must follow qualification and the strict-json registry check",
+  if (packageManifest.scripts?.["publish:npm"] !== undefined) {
+    errors.push("llm-core must not expose a working-tree publish:npm command");
+  }
+  if (aifsdManifest.scripts?.["publish:npm"] !== undefined) {
+    errors.push("AIFSD must not expose a working-tree publish:npm command");
+  }
+  if (/\b(?:npm|bun)\s+publish\b/.test(releaseWorkflow)) {
+    errors.push("release workflow must not contain a direct npm or Bun publish command");
+  }
+  for (const packageKey of ["strict-json", "llm-core", "aifsd"] as const) {
+    const phases = (["validate", "publish", "receipt"] as const).map((phase) =>
+      releaseWorkflow.indexOf(`--phase ${phase} --package ${packageKey}`),
     );
-  }
-
-  const strictStart = workflowLines.findIndex(
-    (line) => line.trimEnd() === "  release-strict-json:",
-  );
-  const strictNextJob = workflowLines.findIndex(
-    (line, index) => index > strictStart && isJobHeader(line),
-  );
-  const strictLines =
-    strictStart < 0
-      ? []
-      : workflowLines
-          .slice(strictStart + 1, strictNextJob < 0 ? undefined : strictNextJob)
-          .filter((line) => !line.trimStart().startsWith("#"));
-  const strictQualification = strictLines.findIndex(
-    (line) => line.trim() === "run: bun run release:qualify:strict-json",
-  );
-  const strictPublication = strictLines.findIndex(
-    (line) => line.trim() === "run: npm publish --access public",
-  );
-  if (strictQualification < 0 || strictPublication < 0 || strictQualification > strictPublication) {
-    errors.push("tagged strict-json publication must follow root release:qualify:strict-json");
+    if (phases.some((index) => index < 0) || phases[1]! <= phases[0]! || phases[2]! <= phases[1]!) {
+      errors.push(
+        `${packageKey} workflow must delegate ordered validation, publication and receipt phases to the release controller`,
+      );
+    }
   }
   return errors;
 };

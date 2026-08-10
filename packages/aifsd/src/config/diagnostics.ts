@@ -1,5 +1,5 @@
 // Renderer-neutral configuration diagnostics and strict JSON admission. Neutral
-// JSON mechanics remain owned by @geekist/strict-json; this module maps stable
+// JSON mechanics remain owned by @aifsd/strict-json; this module maps stable
 // failures into AIFSD's diagnostic vocabulary and preserves domain freeze timing.
 
 import {
@@ -7,8 +7,8 @@ import {
   normalize,
   StrictJsonError,
   type JsonValue as StrictJsonValue,
-} from "@geekist/strict-json";
-import type { JsonValue } from "@geekist/llm-core/contracts";
+} from "@aifsd/strict-json";
+import type { JsonValue } from "@aifsd/llm-core/contracts";
 import type {
   ConfigurationDiagnostic,
   ConfigurationDiagnosticCode,

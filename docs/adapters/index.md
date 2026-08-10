@@ -1,8 +1,6 @@
 # Qualified adapters
 
-Adapters translate an external SDK at the edge of llm-core. They implement or
-project a neutral contract without letting provider-native objects become
-portable state.
+Adapters translate an external SDK at the edge of llm-core. They implement or project a neutral contract without letting provider-native objects become portable state.
 
 <<< @/snippets/v2/qualified-adapters.ts
 
@@ -50,21 +48,11 @@ There is no public broad adapters barrel. Import only the adapter you use:
 | `/a2a`                     | Qualified A2A 1.0 native protocol boundary            |
 | `/mcp`                     | Qualified stateless MCP 2026-07-28 boundary           |
 
-Qualified imports keep native peer dependencies and types at the edge. Install
-the corresponding optional peer only when your application uses that subpath.
+Qualified imports keep native peer dependencies and types at the edge. Install the corresponding optional peer only when your application uses that subpath.
 
-The protocol subpaths are deliberately separate. `/a2a` preserves A2A-native
-agent cards, messages, tasks, artefacts, streaming and delegation semantics.
-`/mcp` exposes a stateless request boundary whose application binding supplies
-catalogues, authorisation and handlers, while tool invocation enters the
-normal llm-core controlled-execution path. Neither surface converts into the
-other or owns downstream coordinator state.
+The protocol subpaths are deliberately separate. `/a2a` preserves A2A-native agent cards, messages, tasks, artefacts, streaming and delegation semantics. `/mcp` exposes a stateless request boundary whose application binding supplies catalogues, authorisation and handlers, while tool invocation enters the normal llm-core controlled-execution path. Neither surface converts into the other or owns downstream coordinator state.
 
-Their qualification is pinned to A2A specification 1.0.0 with
-`@a2a-js/sdk@1.0.0`, and MCP specification 2026-07-28 with
-`@modelcontextprotocol/server@2.0.0` and
-`@modelcontextprotocol/client@2.0.0`. Consumers of these native typed surfaces
-install the corresponding exact SDK package alongside llm-core.
+Their qualification is pinned to A2A specification 1.0.0 with `@a2a-js/sdk@1.0.0`, and MCP specification 2026-07-28 with `@modelcontextprotocol/server@2.0.0` and `@modelcontextprotocol/client@2.0.0`. Consumers of these native typed surfaces install the corresponding exact SDK package alongside llm-core.
 
 ## Adapter guarantees
 
@@ -78,6 +66,4 @@ A useful adapter states:
 
 Adapter installation alone proves none of those claims.
 
-Continue with [AI SDK model integration](/adapters/ai-sdk),
-[UI projections](/adapters/ui), or
-[runtime conformance](/adapters/runtime-conformance).
+Continue with [AI SDK model integration](/adapters/ai-sdk), [UI projections](/adapters/ui), or [runtime conformance](/adapters/runtime-conformance).

@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 1,
+  "id": "strict-json-foundation",
+  "package": "@aifsd/strict-json",
+  "tasks": ["strict-json/strict-json-foundation"],
+  "decisions": [],
+  "releaseImpact": "minor",
+  "summary": "Establish human-reviewed strict JSON normalisation, canonicalisation, immutable snapshots and isolated package qualification at the final ac788c7 boundary after the 83ed374 key-order erratum.",
+  "affectedExports": ["."],
+  "contributors": ["Jason Nathan"],
+  "assistance": [
+    {
+      "system": "OpenAI Codex",
+      "role": "implementation, qualification and review"
+    }
+  ]
+}

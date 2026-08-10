@@ -11,7 +11,7 @@
         "run",
         "--cwd",
         "packages/llm-core/tests/adapters/protocols/external-consumer",
-        "qualify:a2a"
+        "verify:a2a"
       ]
     },
     {
@@ -23,7 +23,7 @@
         "run",
         "--cwd",
         "packages/llm-core/tests/adapters/protocols/external-consumer",
-        "qualify:mcp"
+        "verify:mcp"
       ]
     }
   ]

@@ -1,9 +1,9 @@
 export {
-  createConversionReport,
   createProposedSpecificationChange,
   createSpecificationAdapterSupport,
   createSpecificationDecision,
   createSpecificationDecisionRecord,
+  createSpecificationOperation,
   createSpecificationSourceSnapshot,
 } from "./factory";
 export { createPortableIntegrationReference } from "./portable-target";
@@ -14,19 +14,19 @@ export type {
 } from "./portable-target";
 export type * from "./semantic-types";
 export type {
-  ConversionFidelity,
-  ConversionIssue,
-  ConversionIssueDisposition,
-  ConversionIssueSeverity,
-  ConversionReport,
   ProposedSpecificationChange,
   ProposedSpecificationChangeId,
-  SpecificationAdapterDirection,
   SpecificationAdapterFixture,
   SpecificationAdapterSourceOwnership,
   SpecificationAdapterSupport,
-  SpecificationAdapterWriteBack,
-  SpecificationConformanceLevel,
+  SpecificationDiagnostic,
+  SpecificationDiagnosticImpact,
+  SpecificationDiagnosticSeverity,
+  SpecificationOperation,
+  SpecificationOperationDisposition,
+  SpecificationOperationId,
+  SpecificationOperationMatrix,
+  SpecificationSourceContract,
   SpecificationDecision,
   SpecificationDecisionRecord,
   SpecificationDecisionRecordId,

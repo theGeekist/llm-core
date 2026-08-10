@@ -20,7 +20,7 @@ from typing import Any
 PROTOCOL = "llm-core.pydantic-ai.bridge/v2"
 PYDANTIC_AI_VERSION = "2.19.0"
 PYDANTIC_AI_COMMIT = "ed0f40c0e5061722f7d9f579ed7efff1b74e3ea5"
-PORTABLE_OWNER = "@geekist/llm-core"
+PORTABLE_OWNER = "@aifsd/llm-core"
 PORTABLE_CONTRACT = {
     "authority": f"{PORTABLE_OWNER} AgentRunner",
     "version": "2",

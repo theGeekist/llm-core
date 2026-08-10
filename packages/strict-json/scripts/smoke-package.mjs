@@ -11,6 +11,13 @@ const temporaryRoot = await mkdtemp(join(tmpdir(), "strict-json-smoke-"));
 const packRoot = join(temporaryRoot, "pack");
 const consumerRoot = join(temporaryRoot, "consumer");
 const npmCache = join(temporaryRoot, "npm-cache");
+const tarballIndex = process.argv.indexOf("--tarball");
+const suppliedTarball =
+  tarballIndex < 0 ? undefined : resolve(process.cwd(), process.argv[tarballIndex + 1] ?? "");
+
+if (tarballIndex >= 0 && !process.argv[tarballIndex + 1]) {
+  throw new TypeError("Expected a path after --tarball.");
+}
 
 try {
   await Promise.all([
@@ -18,13 +25,18 @@ try {
     mkdir(consumerRoot, { recursive: true }),
   ]);
 
-  const packed = await exec(
-    "npm",
-    ["pack", "--json", "--cache", npmCache, "--pack-destination", packRoot],
-    { cwd: packageRoot },
-  );
-  const [{ filename }] = JSON.parse(packed.stdout);
-  const tarball = join(packRoot, filename);
+  let tarball = suppliedTarball;
+  if (tarball) {
+    await access(tarball);
+  } else {
+    const packed = await exec(
+      "npm",
+      ["pack", "--json", "--cache", npmCache, "--pack-destination", packRoot],
+      { cwd: packageRoot },
+    );
+    const [{ filename }] = JSON.parse(packed.stdout);
+    tarball = join(packRoot, filename);
+  }
 
   await writeFile(
     join(consumerRoot, "package.json"),
@@ -50,7 +62,7 @@ try {
   await writeFile(
     join(consumerRoot, "consumer.ts"),
     [
-      'import { snapshot, type FrozenJsonValue } from "@geekist/strict-json";',
+      'import { snapshot, type FrozenJsonValue } from "@aifsd/strict-json";',
       "const value: FrozenJsonValue = snapshot({ z: -0, a: [3, 2, 1] });",
       "",
     ].join("\n"),
@@ -58,7 +70,7 @@ try {
   await writeFile(
     join(consumerRoot, "runtime.mjs"),
     [
-      'import { canonicalize, snapshot } from "@geekist/strict-json";',
+      'import { canonicalize, snapshot } from "@aifsd/strict-json";',
       "const value = snapshot({ z: -0, a: [3, 2, 1] });",
       'if (canonicalize(value) !== \'{"a":[3,2,1],"z":0}\') throw new Error("canonical mismatch");',
       "",
@@ -86,13 +98,13 @@ try {
   await exec("node", ["runtime.mjs"], { cwd: consumerRoot });
 
   const installedManifest = JSON.parse(
-    await readFile(join(consumerRoot, "node_modules/@geekist/strict-json/package.json"), "utf8"),
+    await readFile(join(consumerRoot, "node_modules/@aifsd/strict-json/package.json"), "utf8"),
   );
-  if (installedManifest.name !== "@geekist/strict-json") {
+  if (installedManifest.name !== "@aifsd/strict-json") {
     throw new Error("Packed package manifest was not installed.");
   }
   await access(
-    join(consumerRoot, "node_modules/@geekist/strict-json/docs/internal/STRICT-JSON-CONTRACT.md"),
+    join(consumerRoot, "node_modules/@aifsd/strict-json/docs/internal/STRICT-JSON-CONTRACT.md"),
   );
 } finally {
   await rm(temporaryRoot, { force: true, recursive: true });

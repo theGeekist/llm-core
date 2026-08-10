@@ -26,14 +26,14 @@ describe("Spec Kit adapter", () => {
         resolutionScope: "workflow:speckit",
       }),
     };
-    expect(importedFiles([enabled, disabled, base]).report.fidelity).toBe("exact");
+    expect(importedFiles([enabled, disabled, base]).operation.disposition).toBe("supported");
 
     const distinct = importedFiles([
       workflowOverlayFile("alpha", 5, true, 0),
       workflowOverlayFile("zulu", 5, true, 1),
       { ...base, provenance: { ...base.provenance, order: 2 } },
     ]);
-    expect(distinct.report.fidelity).toBe("exact");
+    expect(distinct.operation.disposition).toBe("supported");
   });
 
   test("rejects winning ancestor replace and remove operations with descendant edits", () => {
@@ -47,62 +47,41 @@ describe("Spec Kit adapter", () => {
 `,
     ];
     destructiveEdits.forEach((edits, index) => {
-      const imported = importedFiles([
-        nestedWorkflowOverlayFile(`destructive-${index}`, 5, true, 0, edits),
-        nestedWorkflowBaseFile(1),
-      ]);
-      expect(imported.report).toMatchObject({
-        fidelity: "rejected",
-        issues: [
-          expect.anything(),
-          expect.anything(),
-          expect.objectContaining({
-            code: "spec-kit-workflow-overlay-anchor-conflict",
-            disposition: "rejected",
-            explanation: expect.stringContaining("'choose' is an ancestor of 'retry'"),
-          }),
-        ],
-      });
+      expect(() =>
+        importedFiles([
+          nestedWorkflowOverlayFile(`destructive-${index}`, 5, true, 0, edits),
+          nestedWorkflowBaseFile(1),
+        ]),
+      ).toThrow("'choose' is an ancestor of 'retry'");
     });
   });
 
   test("reports nested winning-anchor conflicts in pinned lexical order", () => {
-    const imported = importedFiles([
-      nestedWorkflowOverlayFile(
-        "nested-chain",
-        5,
-        true,
-        0,
-        `  - remove: retry
+    expect(() =>
+      importedFiles([
+        nestedWorkflowOverlayFile(
+          "nested-chain",
+          5,
+          true,
+          0,
+          `  - remove: retry
   - remove: choose
   - remove: check
 `,
-      ),
-      nestedWorkflowBaseFile(1),
-    ]);
-    expect(
-      imported.report.issues
-        .filter((issue) => issue.code === "spec-kit-workflow-overlay-anchor-conflict")
-        .map((issue) => issue.explanation),
-    ).toEqual([
-      expect.stringContaining("'choose' is an ancestor of 'check'"),
-      expect.stringContaining("'choose' is an ancestor of 'retry'"),
-      expect.stringContaining("'retry' is an ancestor of 'check'"),
-    ]);
+        ),
+        nestedWorkflowBaseFile(1),
+      ]),
+    ).toThrow("'choose' is an ancestor of 'check'");
   });
 
   test("resolves conflict winners across priorities and ASCII overlay-ID ties", () => {
-    const splitPriority = importedFiles([
-      nestedWorkflowOverlayFile("parent", 5, true, 0, `  - remove: choose\n`),
-      nestedWorkflowOverlayFile("child", 20, true, 1, `  - remove: retry\n`),
-      nestedWorkflowBaseFile(2),
-    ]);
-    expect(splitPriority.report).toMatchObject({
-      fidelity: "rejected",
-      issues: expect.arrayContaining([
-        expect.objectContaining({ code: "spec-kit-workflow-overlay-anchor-conflict" }),
+    expect(() =>
+      importedFiles([
+        nestedWorkflowOverlayFile("parent", 5, true, 0, `  - remove: choose\n`),
+        nestedWorkflowOverlayFile("child", 20, true, 1, `  - remove: retry\n`),
+        nestedWorkflowBaseFile(2),
       ]),
-    });
+    ).toThrow("portable derivation is unsupported");
 
     const splitPrioritySafe = importedFiles([
       nestedWorkflowOverlayFile(
@@ -118,23 +97,24 @@ describe("Spec Kit adapter", () => {
       nestedWorkflowOverlayFile("higher-priority-loser", 20, true, 1, `  - remove: choose\n`),
       nestedWorkflowBaseFile(2),
     ]);
-    expect(splitPrioritySafe.report.fidelity).toBe("exact");
+    expect(splitPrioritySafe.operation.disposition).toBe("supported");
 
-    const tiedConflict = importedFiles([
-      nestedWorkflowOverlayFile(
-        "alpha",
-        5,
-        true,
-        0,
-        `  - insert_after: choose
+    expect(() =>
+      importedFiles([
+        nestedWorkflowOverlayFile(
+          "alpha",
+          5,
+          true,
+          0,
+          `  - insert_after: choose
     step: { id: after-choose, type: shell, run: echo }
   - remove: retry
 `,
-      ),
-      nestedWorkflowOverlayFile("zulu", 5, true, 1, `  - remove: choose\n`),
-      nestedWorkflowBaseFile(2),
-    ]);
-    expect(tiedConflict.report.fidelity).toBe("rejected");
+        ),
+        nestedWorkflowOverlayFile("zulu", 5, true, 1, `  - remove: choose\n`),
+        nestedWorkflowBaseFile(2),
+      ]),
+    ).toThrow("portable derivation is unsupported");
 
     const tiedSafe = importedFiles([
       nestedWorkflowOverlayFile(
@@ -157,9 +137,9 @@ describe("Spec Kit adapter", () => {
       ),
       nestedWorkflowBaseFile(2),
     ]);
-    expect(tiedSafe.report.fidelity).toBe("exact");
+    expect(tiedSafe.operation.disposition).toBe("supported");
     expect(
-      tiedSafe.report.issues.some(
+      tiedSafe.operation.diagnostics.some(
         (issue) => issue.code === "spec-kit-workflow-overlay-anchor-conflict",
       ),
     ).toBe(false);
@@ -171,20 +151,11 @@ describe("Spec Kit adapter", () => {
       nestedWorkflowOverlayFile("child", 5, true, 0, `  - remove: retry\n`),
       nestedWorkflowBaseFile(1),
     ]);
-    expect(disabled.report.fidelity).toBe("exact");
+    expect(disabled.operation.disposition).toBe("supported");
 
-    const missingBase = importedFiles([
-      nestedWorkflowOverlayFile("unverified", 5, true, 0, `  - remove: choose\n`),
-    ]);
-    expect(missingBase.report).toMatchObject({
-      fidelity: "partial",
-      issues: expect.arrayContaining([
-        expect.objectContaining({
-          code: "spec-kit-workflow-overlay-base-unobserved",
-          disposition: "degraded",
-        }),
-      ]),
-    });
+    expect(() =>
+      importedFiles([nestedWorkflowOverlayFile("unverified", 5, true, 0, `  - remove: choose\n`)]),
+    ).toThrow("base workflow tree");
   });
 
   test("emits heterogeneous source snapshots and bindings while retaining native scope order", () => {
@@ -311,7 +282,9 @@ describe("Spec Kit adapter", () => {
         enabled: true,
       },
     });
-    expect(imported.report.fidelity).toBe("exact");
-    expect(imported.report.issues.every((issue) => issue.disposition === "preserved")).toBe(true);
+    expect(imported.operation.disposition).toBe("supported");
+    expect(
+      imported.operation.diagnostics.every((diagnostic) => diagnostic.impact === "advisory"),
+    ).toBe(true);
   });
 });

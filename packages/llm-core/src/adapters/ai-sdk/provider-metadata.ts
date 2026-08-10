@@ -1,25 +1,11 @@
-import type {
-  CallWarning,
-  LanguageModelResponseMetadata,
-  LanguageModelUsage,
-  ProviderMetadata,
-} from "ai";
+import type { LanguageModelUsage } from "ai";
 import { nativeExtensions, type JsonValue } from "#contracts";
 import type { ModelWarning, ProviderResponseMetadata } from "../../features/model/public";
 import type { ModelProfile } from "../../features/model/runtime";
-import type { AiSdk7ProviderMetadataRedactor } from "./provider-types";
+import { AI_SDK7_AUTHORITY } from "./native-contract";
 
 export const AI_SDK_SUPPORTED_VERSION = "7.0.37";
 export const AI_SDK_EXTENSION_NAMESPACE = "dev.ai-sdk";
-
-export const AI_SDK7_SEMANTIC_LOSS = Object.freeze([
-  "schema-ref identity cannot materialize a JSON Schema, so structured output uses unstructured JSON",
-  "media-ref content requires composition to resolve it before invocation",
-  "provider warning text is redacted to a stable generic message",
-  "stream approval/native metadata has no field on the frozen ModelStreamEvent contract",
-  "generated files and sources have no lossless frozen ModelContentPart projection",
-  "multipart JSON tool results use application/json file parts because AI SDK content output has no JSON part",
-]);
 
 export const toModelUsage = (
   usage?: LanguageModelUsage,
@@ -34,55 +20,69 @@ export const toModelUsage = (
       }
     : undefined;
 
-const warningCode = (warning: CallWarning): string => {
-  if (
-    typeof warning === "object" &&
-    warning &&
-    "type" in warning &&
-    typeof warning.type === "string"
-  ) {
-    return `ai-sdk.${warning.type}`;
-  }
-  return "ai-sdk.provider-warning";
+const asRecord = (value: JsonValue): Record<string, JsonValue> | undefined =>
+  value !== null && !Array.isArray(value) && typeof value === "object" ? value : undefined;
+
+const warningCode = (warning: Record<string, JsonValue>): string =>
+  typeof warning.type === "string" ? `ai-sdk.${warning.type}` : "ai-sdk.provider-warning";
+
+const detailSuffix = (details: string | undefined): string => (details ? ` (${details})` : "");
+
+const genericWarning = "AI SDK provider warning.";
+
+const featureWarning = (prefix: string, warning: Record<string, JsonValue>): string =>
+  typeof warning.feature === "string"
+    ? `${prefix}${warning.feature}${detailSuffix(
+        typeof warning.details === "string" ? warning.details : undefined,
+      )}`
+    : genericWarning;
+
+const warningMessages: Record<string, (warning: Record<string, JsonValue>) => string> = {
+  unsupported: (warning) => featureWarning("Unsupported AI SDK feature: ", warning),
+  compatibility: (warning) => featureWarning("AI SDK compatibility adjustment: ", warning),
+  deprecated: (warning) =>
+    typeof warning.setting === "string" && typeof warning.message === "string"
+      ? `Deprecated AI SDK setting ${warning.setting}: ${warning.message}`
+      : genericWarning,
+  other: (warning) => (typeof warning.message === "string" ? warning.message : genericWarning),
 };
 
-export const toModelWarnings = (warnings?: CallWarning[]): ModelWarning[] | undefined =>
+const warningMessage = (warning: Record<string, JsonValue>): string =>
+  typeof warning.type === "string"
+    ? (warningMessages[warning.type]?.(warning) ?? genericWarning)
+    : genericWarning;
+
+export const toModelWarnings = (warnings?: readonly JsonValue[]): ModelWarning[] | undefined =>
   warnings?.length
-    ? warnings.map((warning) => ({
-        code: warningCode(warning),
-        message: "AI SDK provider reported a redacted warning.",
-        severity: "warning",
-      }))
+    ? warnings.map((value) => {
+        const warning = asRecord(value) ?? {};
+        return {
+          code: warningCode(warning),
+          message: warningMessage(warning),
+          severity: "warning",
+        };
+      })
     : undefined;
 
 type MetadataInput = {
   profile: ModelProfile;
-  response?: LanguageModelResponseMetadata;
-  providerMetadata?: ProviderMetadata;
-  redactProviderMetadata?: AiSdk7ProviderMetadataRedactor;
-  approvalRequests?: JsonValue[];
+  response?: JsonValue;
+  providerMetadata?: JsonValue;
 };
 
 export const toResponseMetadata = (input: MetadataInput): ProviderResponseMetadata => {
-  const redactedProviderMetadata =
-    input.providerMetadata && input.redactProviderMetadata
-      ? input.redactProviderMetadata(input.providerMetadata)
-      : undefined;
+  const response = input.response === undefined ? undefined : asRecord(input.response);
   const adapterFacts: Record<string, JsonValue> = {
-    sdkVersion: AI_SDK_SUPPORTED_VERSION,
-    semanticLoss: [...AI_SDK7_SEMANTIC_LOSS],
+    authority: AI_SDK7_AUTHORITY,
   };
-  if (redactedProviderMetadata !== undefined) {
-    adapterFacts.providerMetadata = redactedProviderMetadata;
-  }
-  if (input.approvalRequests?.length) {
-    adapterFacts.approvalRequests = input.approvalRequests;
+  if (input.providerMetadata !== undefined) {
+    adapterFacts.providerMetadata = input.providerMetadata;
   }
 
   return {
     provider: input.profile.provider,
-    modelId: input.response?.modelId,
-    requestId: input.response?.id,
+    modelId: typeof response?.modelId === "string" ? response.modelId : undefined,
+    requestId: typeof response?.id === "string" ? response.id : undefined,
     extensions: nativeExtensions({ [AI_SDK_EXTENSION_NAMESPACE]: adapterFacts }),
   };
 };

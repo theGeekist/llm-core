@@ -5,6 +5,13 @@ on:
     branches: [main]
   pull_request:
 
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   test:
     runs-on: ubuntu-latest
@@ -24,35 +31,21 @@ jobs:
         with:
           bun-version-file: ".bun-version"
 
-      - name: Install
-        run: bun install --frozen-lockfile
+      - name: Restore Bun and Turbo caches
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.bun/install/cache
+            .turbo
+          key: ${{ runner.os }}-bun-turbo-${{ hashFiles('bun.lock') }}-${{ github.sha }}
+          restore-keys: |
+            ${{ runner.os }}-bun-turbo-${{ hashFiles('bun.lock') }}-
 
-      - name: Check source size boundaries
-        run: bun run check:sloc
+      - name: Run canonical llm-core release qualification
+        run: bun run release:qualify:llm-core
 
-      - name: Qualify external consumer fixtures
-        run: bun run qualify:external-fixtures
-
-      - name: Lint
-        run: bun run lint
-
-      - name: Build
-        run: bun run build
-
-      - name: Smoke test package exports
-        run: bun run test:package
-
-      - name: Typecheck
-        run: bun run typecheck
-
-      - name: Typecheck Tests
-        run: bun run typecheck:tests
-
-      - name: Test
+      - name: Collect coverage
         run: bun run test -- --coverage --coverage-reporter=text --coverage-reporter=lcov
-
-      - name: Typecheck Examples
-        run: bun run typecheck:examples
 
       - name: Upload coverage
         uses: codecov/codecov-action@v5
@@ -78,6 +71,12 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: "3.14"
+
+      - name: Restore Bun cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.bun/install/cache
+          key: ${{ runner.os }}-bun-${{ hashFiles('bun.lock') }}
 
       - name: Install JavaScript dependencies
         run: bun install --frozen-lockfile
@@ -119,14 +118,17 @@ jobs:
         with:
           bun-version-file: ".bun-version"
 
+      - name: Restore Bun cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.bun/install/cache
+          key: ${{ runner.os }}-bun-${{ hashFiles('bun.lock') }}
+
       - name: Install
         run: bun install --frozen-lockfile
 
       - name: Build strict-json dependency
         run: bun run --cwd packages/strict-json build
-
-      - name: Debug
-        run: ls -R packages
 
       - name: Test
         run: bun run test -- --coverage --coverage-reporter=text --coverage-reporter=lcov

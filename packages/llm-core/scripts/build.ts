@@ -262,9 +262,9 @@ const forceExternalPlugin: BunPlugin = {
   },
 };
 
-const runBuildEntry = async (entry: string, options: BuildOptions) => {
+const runBuildEntries = async (entries: readonly string[], options: BuildOptions) => {
   const result = await Bun.build({
-    entrypoints: [entry],
+    entrypoints: [...entries],
     outdir: options.outdir,
     root: options.root,
     target: options.target,
@@ -291,8 +291,6 @@ const run = async () => {
   if (phase !== "emit") {
     throw new TypeError(`Unknown build phase: ${phase}`);
   }
-  let ok = true;
-
   const baseOptions: BuildOptions = {
     outdir,
     root: rootDir,
@@ -300,10 +298,10 @@ const run = async () => {
     splitting: true,
   };
 
-  for (const entry of PUBLIC_ENTRY_POINTS) {
-    ok = (await runBuildEntry(resolve(rootDir, entry), baseOptions)) && ok;
-  }
-
+  const ok = await runBuildEntries(
+    PUBLIC_ENTRY_POINTS.map((entry) => resolve(rootDir, entry)),
+    baseOptions,
+  );
   if (!ok) {
     process.exit(1);
   }

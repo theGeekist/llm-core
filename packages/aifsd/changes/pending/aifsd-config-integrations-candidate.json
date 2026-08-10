@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 1,
+  "id": "aifsd-config-integrations-candidate",
+  "package": "@aifsd/sdk",
+  "tasks": ["llm-core/release-history-provenance"],
+  "decisions": [],
+  "releaseImpact": "minor",
+  "summary": "Prepare the first AIFSD SDK candidate around its characterised configuration and integration fronts.",
+  "affectedExports": ["./config", "./integrations"],
+  "contributors": ["Jason Nathan"],
+  "assistance": [
+    {
+      "system": "OpenAI Codex",
+      "role": "release topology implementation and qualification"
+    }
+  ]
+}

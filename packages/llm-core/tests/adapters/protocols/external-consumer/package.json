@@ -1,11 +1,13 @@
 {
-  "name": "@geekist/llm-core-protocol-external-consumer",
+  "name": "@aifsd/llm-core-protocol-external-consumer",
   "version": "0.0.0",
   "private": true,
   "type": "module",
   "scripts": {
     "prepare:packed": "bun run prepare-packed.ts",
+    "prepare:packed:prebuilt": "bun run prepare-packed.ts --prebuilt",
     "qualify": "bun run prepare:packed && bun run verify:a2a && bun run verify:mcp",
+    "qualify:prebuilt": "bun run prepare:packed:prebuilt && bun run verify:a2a && bun run verify:mcp",
     "qualify:a2a": "bun run prepare:packed && bun run verify:a2a",
     "qualify:mcp": "bun run prepare:packed && bun run verify:mcp",
     "verify:a2a": "bun run qualify-a2a.ts",

@@ -11,7 +11,7 @@ import type {
   Selection,
   TrustLevel,
 } from "./contract.js";
-import { isExternalId, type SecretRef } from "@geekist/llm-core/contracts";
+import { isExternalId, type SecretRef } from "@aifsd/llm-core/contracts";
 import { closureDigest, contentDigest } from "./content-digest.js";
 import { diagnostic, isObjectRecord, normalizeConfigurationValue } from "./diagnostics.js";
 import type { ConfigurationDiagnostic } from "./contract.js";

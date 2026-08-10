@@ -63,7 +63,6 @@ const graph = (
       source: { sourceId, documentId: "root.document" },
     },
   ],
-  report?: unknown,
 ): SpecificationGraph =>
   createSpecificationGraph({
     graphId: "graph.product",
@@ -71,7 +70,6 @@ const graph = (
     sources: [source()],
     nodes,
     relationships,
-    ...(report === undefined ? {} : { report }),
   } as never);
 
 const acceptedDecision = (): SpecificationDecision => ({
@@ -415,36 +413,5 @@ describe("specification compiler", () => {
       cycleFirstNodeId,
       cycleSecondNodeId,
     ]);
-  });
-
-  test("rejects accepted scope with rejected conversion semantics while retaining out-of-scope diagnostics", () => {
-    const rejectedIssue = {
-      code: "unsupported-semantics",
-      severity: "error",
-      disposition: "rejected",
-      explanation: "This requirement cannot be represented.",
-      nodeId: firstNodeId,
-    } as const;
-    const graphWithRejectedSemantics = graph([], undefined, {
-      fidelity: "rejected",
-      issues: [rejectedIssue],
-    });
-
-    const rejected = reviewSpecification({
-      graph: graphWithRejectedSemantics,
-      decision: acceptedDecisionForScope([firstNodeId]),
-    });
-    expect(rejected.decision.status).toBe("rejected");
-    if (rejected.decision.status === "rejected") {
-      expect(rejected.decision.issues).toEqual([rejectedIssue]);
-    }
-    expect(rejected.issues).toEqual([rejectedIssue]);
-
-    const accepted = reviewSpecification({
-      graph: graphWithRejectedSemantics,
-      decision: acceptedDecisionForScope([secondNodeId]),
-    });
-    expect(accepted.decision.status).toBe("accepted");
-    expect(accepted.issues).toEqual([rejectedIssue]);
   });
 });

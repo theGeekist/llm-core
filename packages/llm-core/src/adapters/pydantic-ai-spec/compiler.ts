@@ -9,17 +9,17 @@ import { compareUtf16CodeUnits } from "#shared/fp";
 import { maybeMap, type MaybePromise } from "#shared/maybe";
 import type {
   CompiledSpecification,
-  ConversionIssue,
-  ConversionReport,
   SpecificationAdapterSupport,
   SpecificationDecision,
+  SpecificationDiagnostic,
+  SpecificationOperation,
   SpecificationProjectionView,
-} from "@geekist/llm-core/specifications";
+} from "@aifsd/llm-core/specifications";
 import {
-  createConversionReport,
   createSpecificationAdapterSupport,
+  createSpecificationOperation,
   projectSpecification,
-} from "@geekist/llm-core/specifications";
+} from "@aifsd/llm-core/specifications";
 import type {
   PydanticAgentDefinition,
   PydanticAiCompilation,
@@ -35,13 +35,13 @@ export const PYDANTIC_AI_AGENT_SPEC_VERSION = "2.19.0" as const;
 
 const issue = (input: {
   readonly code: string;
-  readonly disposition: ConversionIssue["disposition"];
+  readonly impact: SpecificationDiagnostic["impact"];
   readonly explanation: string;
-  readonly nodeId: ConversionIssue["nodeId"];
-}): ConversionIssue => ({
+  readonly nodeId: SpecificationDiagnostic["nodeId"];
+}): SpecificationDiagnostic => ({
   code: input.code,
-  severity: input.disposition === "rejected" ? "error" : "warning",
-  disposition: input.disposition,
+  severity: input.impact === "blocking" ? "error" : "warning",
+  impact: input.impact,
   explanation: input.explanation,
   nodeId: input.nodeId,
 });
@@ -78,9 +78,9 @@ type ReviewedSemanticValues = Pick<PydanticAiCompilationTarget["semantics"], Sem
 
 interface AcceptedSemanticProjection {
   readonly values: ReviewedSemanticValues;
-  readonly nodeIds: Readonly<Partial<Record<SemanticCategory, ConversionIssue["nodeId"]>>>;
+  readonly nodeIds: Readonly<Partial<Record<SemanticCategory, SpecificationDiagnostic["nodeId"]>>>;
   readonly invalid: ReadonlySet<SemanticCategory>;
-  readonly issues: readonly ConversionIssue[];
+  readonly issues: readonly SpecificationDiagnostic[];
 }
 
 const categoryCode = (category: SemanticCategory): string =>
@@ -116,7 +116,7 @@ const isReviewedTool = (value: unknown): boolean =>
 const semanticContent = (projection: SpecificationProjectionView): AcceptedSemanticProjection => {
   const observations = new Map<
     SemanticCategory,
-    { readonly nodeId: ConversionIssue["nodeId"]; readonly value: JsonValue }[]
+    { readonly nodeId: SpecificationDiagnostic["nodeId"]; readonly value: JsonValue }[]
   >();
   for (const item of projection.acceptedItems) {
     if (item.content === null || typeof item.content !== "object" || Array.isArray(item.content)) {
@@ -130,9 +130,9 @@ const semanticContent = (projection: SpecificationProjectionView): AcceptedSeman
     }
   }
 
-  const issues: ConversionIssue[] = [];
+  const issues: SpecificationDiagnostic[] = [];
   const invalid = new Set<SemanticCategory>();
-  const nodeIds: Partial<Record<SemanticCategory, ConversionIssue["nodeId"]>> = {};
+  const nodeIds: Partial<Record<SemanticCategory, SpecificationDiagnostic["nodeId"]>> = {};
   const values: Record<SemanticCategory, unknown> = {
     modelRequirements: [],
     prompt: null,
@@ -154,7 +154,7 @@ const semanticContent = (projection: SpecificationProjectionView): AcceptedSeman
       issues.push(
         issue({
           code: `pydantic-ai.${categoryCode(category)}-accepted-content-missing`,
-          disposition: "rejected",
+          impact: "blocking",
           explanation: `Every accepted item must explicitly bind ${category} content; an omitted field is not evidence of semantic absence.`,
           nodeId: missing?.scopeId ?? projection.acceptedItems[0]!.scopeId,
         }),
@@ -176,7 +176,7 @@ const semanticContent = (projection: SpecificationProjectionView): AcceptedSeman
       issues.push(
         issue({
           code: `pydantic-ai.${categoryCode(category)}-content-invalid`,
-          disposition: "rejected",
+          impact: "blocking",
           explanation: `Accepted ${category} content must be an explicit array of portable category values.`,
           nodeId: first.nodeId,
         }),
@@ -191,7 +191,7 @@ const semanticContent = (projection: SpecificationProjectionView): AcceptedSeman
       issues.push(
         issue({
           code: `pydantic-ai.${categoryCode(category)}-accepted-content-contradictory`,
-          disposition: "rejected",
+          impact: "blocking",
           explanation: `Accepted ${category} content contains conflicting values, including explicit empty or null claims.`,
           nodeId: contradiction.nodeId,
         }),
@@ -209,8 +209,8 @@ const semanticContent = (projection: SpecificationProjectionView): AcceptedSeman
 const reviewedScopeIssues = (
   semantics: PydanticAiCompilationTarget["semantics"],
   projection: SpecificationProjectionView,
-  nodeId: ConversionIssue["nodeId"],
-): readonly ConversionIssue[] => {
+  nodeId: SpecificationDiagnostic["nodeId"],
+): readonly SpecificationDiagnostic[] => {
   const acceptedScope = projection.acceptedItems.map((item) => item.scopeId);
   const acceptedScopeSet = new Set(acceptedScope);
   return SEMANTIC_CATEGORIES.flatMap((category) => {
@@ -226,7 +226,7 @@ const reviewedScopeIssues = (
         code: `pydantic-ai.${
           category === "modelRequirements" ? "model-requirements" : category
         }-review-scope-invalid`,
-        disposition: "rejected",
+        impact: "blocking",
         explanation: `Reviewed ${category} semantics must account for every item in the accepted specification scope.`,
         nodeId,
       }),
@@ -236,14 +236,14 @@ const reviewedScopeIssues = (
 
 const capabilityIssues = (
   capabilities: unknown,
-  nodeId: ConversionIssue["nodeId"],
-): readonly ConversionIssue[] => {
+  nodeId: SpecificationDiagnostic["nodeId"],
+): readonly SpecificationDiagnostic[] => {
   if (capabilities === undefined) return [];
   if (!Array.isArray(capabilities)) {
     return [
       issue({
         code: "pydantic-ai.capabilities-invalid",
-        disposition: "rejected",
+        impact: "blocking",
         explanation: "AgentSpec capabilities must use the qualified 2.19.0 safe subset.",
         nodeId,
       }),
@@ -263,7 +263,7 @@ const capabilityIssues = (
         code: effectful
           ? "pydantic-ai.effectful-capability-unsupported"
           : "pydantic-ai.unknown-capability-unsupported",
-        disposition: "rejected",
+        impact: "blocking",
         explanation: effectful
           ? `PydanticAI capability ${name} may introduce native tools, network access, or other effects outside llm-core control.`
           : "The capability is outside the closed PydanticAI 2.19.0 safe subset.",
@@ -285,8 +285,8 @@ const hasExplicitSemanticReview = (
 const semanticMismatchIssues = (
   semantics: PydanticAiCompilationTarget["semantics"],
   accepted: AcceptedSemanticProjection,
-  nodeId: ConversionIssue["nodeId"],
-): readonly ConversionIssue[] =>
+  nodeId: SpecificationDiagnostic["nodeId"],
+): readonly SpecificationDiagnostic[] =>
   SEMANTIC_CATEGORIES.flatMap((category) => {
     if (
       accepted.invalid.has(category) ||
@@ -297,7 +297,7 @@ const semanticMismatchIssues = (
     return [
       issue({
         code: `pydantic-ai.${categoryCode(category)}-review-content-mismatch`,
-        disposition: "rejected",
+        impact: "blocking",
         explanation: `Reviewed ${category} semantics must exactly match the authority-bound accepted item content.`,
         nodeId: accepted.nodeIds[category] ?? nodeId,
       }),
@@ -307,13 +307,13 @@ const semanticMismatchIssues = (
 const modelRequirementIssues = (
   semantics: PydanticAiCompilationTarget["semantics"],
   accepted: AcceptedSemanticProjection,
-  nodeId: ConversionIssue["nodeId"],
-): readonly ConversionIssue[] => {
+  nodeId: SpecificationDiagnostic["nodeId"],
+): readonly SpecificationDiagnostic[] => {
   if (!Array.isArray(semantics.modelRequirements)) {
     return [
       issue({
         code: "pydantic-ai.model-requirements-invalid",
-        disposition: "rejected",
+        impact: "blocking",
         explanation: "Reviewed model requirements must be an explicit array.",
         nodeId,
       }),
@@ -331,13 +331,9 @@ const modelRequirementIssues = (
   );
   return [
     issue({
-      code: required
-        ? "pydantic-ai.model-requirements-unsupported"
-        : "pydantic-ai.advisory-model-requirements-omitted",
-      disposition: required ? "rejected" : "degraded",
-      explanation: required
-        ? "AgentSpec selects a model identifier but cannot retain llm-core capability requirements and their resolution authority."
-        : "Advisory llm-core model requirements are not represented in AgentSpec.",
+      code: "pydantic-ai.model-requirements-unsupported",
+      impact: "blocking",
+      explanation: `${required ? "Required" : "Advisory"} llm-core model requirements and their resolution authority have no exact AgentSpec representation.`,
       nodeId,
     }),
   ];
@@ -345,13 +341,13 @@ const modelRequirementIssues = (
 
 const promptIssues = (
   accepted: AcceptedSemanticProjection,
-  nodeId: ConversionIssue["nodeId"],
-): readonly ConversionIssue[] =>
+  nodeId: SpecificationDiagnostic["nodeId"],
+): readonly SpecificationDiagnostic[] =>
   !accepted.invalid.has("prompt") && accepted.values.prompt !== null
     ? [
         issue({
           code: "pydantic-ai.prompt-template-unsupported",
-          disposition: "rejected",
+          impact: "blocking",
           explanation:
             "AgentSpec instructions do not preserve llm-core prompt template identity, inputs, schema, and metadata semantics.",
           nodeId,
@@ -362,13 +358,13 @@ const promptIssues = (
 const toolIssues = (
   semantics: PydanticAiCompilationTarget["semantics"],
   accepted: AcceptedSemanticProjection,
-  nodeId: ConversionIssue["nodeId"],
-): readonly ConversionIssue[] => {
+  nodeId: SpecificationDiagnostic["nodeId"],
+): readonly SpecificationDiagnostic[] => {
   if (!Array.isArray(semantics.tools)) {
     return [
       issue({
         code: "pydantic-ai.tools-invalid",
-        disposition: "rejected",
+        impact: "blocking",
         explanation: "Reviewed tool semantics must be an explicit array.",
         nodeId,
       }),
@@ -380,7 +376,7 @@ const toolIssues = (
     ? [
         issue({
           code: "pydantic-ai.tool-declarations-unsupported",
-          disposition: "rejected",
+          impact: "blocking",
           explanation:
             "AgentSpec cannot retain llm-core tool declaration, control, and execution authority semantics.",
           nodeId,
@@ -394,13 +390,13 @@ const nullableCategoryIssues = (input: {
   readonly category: "context" | "evaluation";
   readonly code: string;
   readonly explanation: string;
-  readonly nodeId: ConversionIssue["nodeId"];
-}): readonly ConversionIssue[] =>
+  readonly nodeId: SpecificationDiagnostic["nodeId"];
+}): readonly SpecificationDiagnostic[] =>
   !input.accepted.invalid.has(input.category) && input.accepted.values[input.category] !== null
     ? [
         issue({
           code: input.code,
-          disposition: "rejected",
+          impact: "blocking",
           explanation: input.explanation,
           nodeId: input.nodeId,
         }),
@@ -410,13 +406,13 @@ const nullableCategoryIssues = (input: {
 const reviewedSemanticIssues = (
   semantics: PydanticAiCompilationTarget["semantics"],
   projection: SpecificationProjectionView,
-  nodeId: ConversionIssue["nodeId"],
-): readonly ConversionIssue[] => {
+  nodeId: SpecificationDiagnostic["nodeId"],
+): readonly SpecificationDiagnostic[] => {
   if (!hasExplicitSemanticReview(semantics)) {
     return [
       issue({
         code: "pydantic-ai.semantic-review-required",
-        disposition: "rejected",
+        impact: "blocking",
         explanation:
           "Projection requires explicit review accounting for model requirement, prompt, tool, context, and evaluation semantics.",
         nodeId,
@@ -450,19 +446,19 @@ const reviewedSemanticIssues = (
   ];
 };
 
-const reportFor = (
+const operationFor = (
   target: PydanticAiCompilationTarget,
   projection: SpecificationProjectionView,
-  nodeId: ConversionIssue["nodeId"],
-): ConversionReport => {
-  const issues: ConversionIssue[] = [
+  nodeId: SpecificationDiagnostic["nodeId"],
+): SpecificationOperation => {
+  const diagnostics: SpecificationDiagnostic[] = [
     ...reviewedSemanticIssues(target.semantics, projection, nodeId),
   ];
   if (target.agent.effectRequirement !== "read-only") {
-    issues.push(
+    diagnostics.push(
       issue({
         code: "pydantic-ai.controlled-effects-unsupported",
-        disposition: "rejected",
+        impact: "blocking",
         explanation:
           "PydanticAI deferred calls are not llm-core controlled-effect authority or receipts.",
         nodeId,
@@ -470,46 +466,70 @@ const reportFor = (
     );
   }
   if (target.agent.skills?.length) {
-    issues.push(
+    diagnostics.push(
       issue({
-        code: "pydantic-ai.agent-skills-omitted",
-        disposition: "degraded",
-        explanation:
-          "llm-core skill references have no AgentSpec representation and are not projected.",
+        code: "pydantic-ai.agent-skills-unsupported",
+        impact: "blocking",
+        explanation: "Requested llm-core skill references have no exact AgentSpec representation.",
         nodeId,
       }),
     );
   }
   if (target.depsSchema !== undefined) {
-    issues.push(
+    diagnostics.push(
       issue({
-        code: "pydantic-ai.deps-schema-template-only",
-        disposition: "degraded",
-        explanation: "AgentSpec deps_schema validates template names, not runtime dependencies.",
+        code: "pydantic-ai.deps-schema-unsupported",
+        impact: "blocking",
+        explanation:
+          "Requested depsSchema runtime dependency semantics are not preserved by AgentSpec deps_schema template validation.",
         nodeId,
       }),
     );
   }
   if (target.outputSchema !== undefined) {
-    issues.push(
+    diagnostics.push(
       issue({
-        code: "pydantic-ai.output-schema-instruction-only",
-        disposition: "degraded",
+        code: "pydantic-ai.output-schema-unsupported",
+        impact: "blocking",
         explanation:
-          "AgentSpec output_schema guides the model but does not validate returned fields.",
+          "Requested outputSchema validation semantics are not preserved by AgentSpec output_schema instructions.",
         nodeId,
       }),
     );
   }
-  issues.push(...capabilityIssues(target.capabilities, nodeId));
-  return createConversionReport({
-    fidelity: issues.some(({ disposition }) => disposition === "rejected")
-      ? "rejected"
-      : issues.length
-        ? "partial"
-        : "exact",
-    issues,
-  });
+  diagnostics.push(...capabilityIssues(target.capabilities, nodeId));
+  const sourceContract = {
+    authority: "PydanticAI AgentSpec",
+    format: {
+      id: extensionNamespace("ai.pydantic.agentspec"),
+      version: contractVersion(PYDANTIC_AI_AGENT_SPEC_VERSION),
+    },
+    revision: "ed0f40c0e5061722f7d9f579ed7efff1b74e3ea5",
+  } as const;
+  return diagnostics.some(({ impact }) => impact === "blocking")
+    ? createSpecificationOperation({
+        operation: "compile-portable-specification",
+        sourceContract,
+        disposition: "unsupported",
+        reason: "The requested portable semantics do not have an exact AgentSpec representation.",
+        diagnostics,
+      })
+    : createSpecificationOperation({
+        operation: "compile-portable-specification",
+        sourceContract,
+        disposition: "supported",
+        fixtures: [
+          {
+            fixtureId: "pydantic-ai-agentspec-v2.19.0",
+            digest: digest("a4e6a0d071ca2779e2aae4fe309cc8a7952a890f1ad12bbcef0bc00a632dd0fc"),
+          },
+          {
+            fixtureId: "pydantic-ai-agentspec-validator-v2.19.0",
+            digest: digest("1546f39b6369e0689a097383908a444ad1e489924d94e98fcce65379afb3df4f"),
+          },
+        ],
+        diagnostics,
+      });
 };
 
 const project = (target: PydanticAiCompilationTarget): PydanticAgentDefinition => ({
@@ -553,32 +573,89 @@ export const PYDANTIC_AI_AGENT_SPEC_SUPPORT: SpecificationAdapterSupport =
       id: extensionNamespace("ai.pydantic.agentspec"),
       version: contractVersion(PYDANTIC_AI_AGENT_SPEC_VERSION),
     },
-    direction: "export",
-    supportedVersions: [contractVersion(PYDANTIC_AI_AGENT_SPEC_VERSION)],
-    levels: ["compilation"],
-    features: [
-      "agent-name",
-      "model-id",
-      "literal-instructions",
-      "retry-budgets",
-      "end-strategy",
-      "tool-timeout",
-      "safe-capabilities",
-    ],
-    preservedExtensionNamespaces: [],
+    authority: "PydanticAI AgentSpec",
+    revision: "ed0f40c0e5061722f7d9f579ed7efff1b74e3ea5",
     sourceOwnership: "source-owned",
-    writeBack: "unsupported",
-    fixtures: [
-      {
-        fixtureId: "pydantic-ai-agentspec-v2.19.0",
-        digest: digest("a4e6a0d071ca2779e2aae4fe309cc8a7952a890f1ad12bbcef0bc00a632dd0fc"),
-      },
-    ],
-    evidence: [
-      {
-        evidenceId: "pydantic-ai-v2.19.0",
-        digest: digest("1546f39b6369e0689a097383908a444ad1e489924d94e98fcce65379afb3df4f"),
-      },
+    operations: [
+      createSpecificationOperation({
+        operation: "observe-native-source",
+        sourceContract: {
+          authority: "PydanticAI AgentSpec",
+          format: {
+            id: extensionNamespace("ai.pydantic.agentspec"),
+            version: contractVersion(PYDANTIC_AI_AGENT_SPEC_VERSION),
+          },
+          revision: "ed0f40c0e5061722f7d9f579ed7efff1b74e3ea5",
+        },
+        disposition: "unsupported",
+        reason: "PydanticAI AgentSpec native observation is not implemented.",
+        diagnostics: [],
+      }),
+      createSpecificationOperation({
+        operation: "derive-portable-specification",
+        sourceContract: {
+          authority: "PydanticAI AgentSpec",
+          format: {
+            id: extensionNamespace("ai.pydantic.agentspec"),
+            version: contractVersion(PYDANTIC_AI_AGENT_SPEC_VERSION),
+          },
+          revision: "ed0f40c0e5061722f7d9f579ed7efff1b74e3ea5",
+        },
+        disposition: "unsupported",
+        reason: "PydanticAI AgentSpec portable derivation is not implemented.",
+        diagnostics: [],
+      }),
+      createSpecificationOperation({
+        operation: "compile-portable-specification",
+        sourceContract: {
+          authority: "PydanticAI AgentSpec",
+          format: {
+            id: extensionNamespace("ai.pydantic.agentspec"),
+            version: contractVersion(PYDANTIC_AI_AGENT_SPEC_VERSION),
+          },
+          revision: "ed0f40c0e5061722f7d9f579ed7efff1b74e3ea5",
+        },
+        disposition: "supported",
+        fixtures: [
+          {
+            fixtureId: "pydantic-ai-agentspec-v2.19.0",
+            digest: digest("a4e6a0d071ca2779e2aae4fe309cc8a7952a890f1ad12bbcef0bc00a632dd0fc"),
+          },
+          {
+            fixtureId: "pydantic-ai-agentspec-validator-v2.19.0",
+            digest: digest("1546f39b6369e0689a097383908a444ad1e489924d94e98fcce65379afb3df4f"),
+          },
+        ],
+        diagnostics: [],
+      }),
+      createSpecificationOperation({
+        operation: "export-native-source",
+        sourceContract: {
+          authority: "PydanticAI AgentSpec",
+          format: {
+            id: extensionNamespace("ai.pydantic.agentspec"),
+            version: contractVersion(PYDANTIC_AI_AGENT_SPEC_VERSION),
+          },
+          revision: "ed0f40c0e5061722f7d9f579ed7efff1b74e3ea5",
+        },
+        disposition: "unsupported",
+        reason: "PydanticAI AgentSpec native export is not implemented.",
+        diagnostics: [],
+      }),
+      createSpecificationOperation({
+        operation: "round-trip-native-source",
+        sourceContract: {
+          authority: "PydanticAI AgentSpec",
+          format: {
+            id: extensionNamespace("ai.pydantic.agentspec"),
+            version: contractVersion(PYDANTIC_AI_AGENT_SPEC_VERSION),
+          },
+          revision: "ed0f40c0e5061722f7d9f579ed7efff1b74e3ea5",
+        },
+        disposition: "unsupported",
+        reason: "PydanticAI AgentSpec round trip is not implemented.",
+        diagnostics: [],
+      }),
     ],
   });
 
@@ -602,8 +679,8 @@ export const compilePydanticAiAgentSpec = (input: {
       result,
     }: {
       readonly compiled: CompiledSpecification<PydanticAgentDefinition>;
-      readonly result: ConversionReport;
-    }) => ({ compiled, report: result }),
+      readonly result: SpecificationOperation;
+    }) => ({ compiled, operation: result }),
     projectSpecification(decision, {
       project: (projection) => {
         const nodeId = decision.record.acceptedScope[0];
@@ -612,13 +689,13 @@ export const compilePydanticAiAgentSpec = (input: {
             "PydanticAI AgentSpec compilation requires a non-empty accepted scope.",
           );
         }
-        const report = reportFor(input.target, projection, nodeId);
+        const operation = operationFor(input.target, projection, nodeId);
         if (!input.target.model.trim()) {
           throw new TypeError("PydanticAI AgentSpec compilation requires a model identifier.");
         }
         assertRetries(input.target.retries);
-        if (report.fidelity === "rejected") {
-          throw new PydanticAiUnsupportedSemanticsError(report);
+        if (operation.disposition === "unsupported") {
+          throw new PydanticAiUnsupportedSemanticsError(operation);
         }
         if (
           input.target.toolTimeout !== undefined &&
@@ -626,7 +703,7 @@ export const compilePydanticAiAgentSpec = (input: {
         ) {
           throw new TypeError("PydanticAI AgentSpec toolTimeout must be a positive finite number.");
         }
-        return { target: project(input.target), result: report };
+        return { target: project(input.target), result: operation };
       },
     }),
   );

@@ -1,8 +1,6 @@
 import { isContractVersion, isDigest, isExtensionNamespace, isJsonValue } from "#contracts";
 import { hasOnlyKeys } from "#shared/portable-data";
 import type {
-  ConversionIssue,
-  ConversionReport,
   ProposedSpecificationChange,
   SpecificationAdapterSupport,
   SpecificationDecision,
@@ -10,13 +8,15 @@ import type {
   SpecificationEvidenceBinding,
   SpecificationFormat,
   SpecificationGraph,
+  SpecificationDiagnostic,
   SpecificationNode,
+  SpecificationOperation,
   SpecificationSemanticNode,
   SpecificationRelationship,
   SpecificationSourceBinding,
   SpecificationSourceSnapshot,
 } from "./types";
-import { assertKnownBinding, assertReportBindings } from "./graph-bindings";
+import { assertKnownBinding } from "./graph-bindings";
 import {
   assertSemanticNodeReferences,
   assertSpecificationNode,
@@ -52,48 +52,114 @@ function assertSourceBinding(value: unknown): asserts value is SpecificationSour
   if (location !== undefined) nonBlankText(location, "non-blank source locations");
 }
 
-function assertIssue(value: unknown): asserts value is ConversionIssue {
+function assertDiagnostic(value: unknown): asserts value is SpecificationDiagnostic {
   const input = record(
     value,
-    ["code", "severity", "disposition", "explanation"],
+    ["code", "severity", "impact", "explanation"],
     ["source", "nodeId"],
-    "closed conversion issues",
+    "closed specification diagnostics",
   );
-  nonBlankText(valueOf(input, "code"), "non-blank conversion issue codes");
+  nonBlankText(valueOf(input, "code"), "non-blank specification diagnostic codes");
   if (!["info", "warning", "error"].includes(String(valueOf(input, "severity")))) {
-    fail("known conversion issue severities");
+    fail("known specification diagnostic severities");
   }
-  if (!["preserved", "degraded", "rejected"].includes(String(valueOf(input, "disposition")))) {
-    fail("known conversion issue dispositions");
+  if (!["advisory", "blocking"].includes(String(valueOf(input, "impact")))) {
+    fail("known specification diagnostic impacts");
   }
-  nonBlankText(valueOf(input, "explanation"), "non-blank conversion issue explanations");
+  nonBlankText(valueOf(input, "explanation"), "non-blank specification diagnostic explanations");
   const source = valueOf<unknown>(input, "source");
   const nodeId = valueOf<unknown>(input, "nodeId");
   if ((source === undefined) === (nodeId === undefined)) {
-    fail("each conversion issue to identify exactly one source location or node");
+    fail("each specification diagnostic to identify exactly one source location or node");
   }
   if (source !== undefined) assertSourceBinding(source);
-  if (nodeId !== undefined) nonBlankId(nodeId, "stable conversion node identities");
+  if (nodeId !== undefined) nonBlankId(nodeId, "stable specification node identities");
 }
 
-export function assertConversionReport(value: unknown): asserts value is ConversionReport {
-  const input = record(value, ["fidelity", "issues"], [], "closed conversion reports");
-  const fidelity = valueOf<unknown>(input, "fidelity");
-  if (!["exact", "partial", "rejected"].includes(String(fidelity))) {
-    fail("known conversion fidelity values");
+const operationIds = [
+  "observe-native-source",
+  "derive-portable-specification",
+  "compile-portable-specification",
+  "export-native-source",
+  "round-trip-native-source",
+] as const;
+
+const assertFixture = (value: unknown): string => {
+  const item = record(value, ["fixtureId", "digest"], [], "closed operation fixtures");
+  const fixtureId = nonBlankId(valueOf(item, "fixtureId"), "stable operation fixture identities");
+  if (!isDigest(valueOf(item, "digest"))) fail("SHA-256 operation fixture digests");
+  return fixtureId;
+};
+
+const assertSourceContract = (value: unknown): void => {
+  const input = record(
+    value,
+    ["authority", "format", "revision"],
+    [],
+    "closed specification source contracts",
+  );
+  nonBlankText(valueOf(input, "authority"), "recognised source-contract authorities");
+  assertFormat(valueOf(input, "format"));
+  nonBlankId(valueOf(input, "revision"), "immutable source-contract revisions");
+};
+
+export function assertSpecificationOperation(
+  value: unknown,
+): asserts value is SpecificationOperation {
+  const input = record(
+    value,
+    ["operation", "sourceContract", "disposition", "diagnostics"],
+    ["fixtures", "reason", "evidence"],
+    "closed specification operation declarations",
+  );
+  if (!operationIds.includes(valueOf(input, "operation") as never)) {
+    fail("known specification operation identities");
   }
-  const issues = values(valueOf(input, "issues"), "dense conversion issue arrays");
-  issues.forEach(assertIssue);
-  const dispositions = issues.map((issue) => (issue as ConversionIssue).disposition);
-  if (fidelity === "exact" && dispositions.some((disposition) => disposition !== "preserved")) {
-    fail("exact conversion reports without degraded or rejected semantics");
+  assertSourceContract(valueOf(input, "sourceContract"));
+  const diagnostics = values(valueOf(input, "diagnostics"), "dense operation diagnostics");
+  diagnostics.forEach(assertDiagnostic);
+  const disposition = valueOf(input, "disposition");
+  if (
+    disposition === "supported" &&
+    hasOnlyKeys(input, ["operation", "sourceContract", "disposition", "diagnostics", "fixtures"])
+  ) {
+    const fixtures = values(valueOf(input, "fixtures"), "dense supported-operation fixtures");
+    if (fixtures.length === 0) fail("at least one supported-operation fixture");
+    unique(fixtures.map(assertFixture), "unique supported-operation fixture identities");
+    if (
+      diagnostics.some(
+        (diagnostic) => (diagnostic as SpecificationDiagnostic).impact === "blocking",
+      )
+    ) {
+      fail("supported operations without blocking diagnostics");
+    }
+    return;
   }
-  if (fidelity === "partial" && !dispositions.includes("degraded")) {
-    fail("partial conversion reports to declare degraded semantics");
+  if (
+    disposition === "unsupported" &&
+    hasOnlyKeys(input, ["operation", "sourceContract", "disposition", "diagnostics", "reason"])
+  ) {
+    nonBlankText(valueOf(input, "reason"), "unsupported-operation reasons");
+    return;
   }
-  if (fidelity === "rejected" && !dispositions.includes("rejected")) {
-    fail("rejected conversion reports to declare rejected semantics");
+  if (
+    disposition === "not-applicable" &&
+    hasOnlyKeys(input, [
+      "operation",
+      "sourceContract",
+      "disposition",
+      "diagnostics",
+      "reason",
+      "evidence",
+    ])
+  ) {
+    nonBlankText(valueOf(input, "reason"), "not-applicable operation reasons");
+    const evidence = values(valueOf(input, "evidence"), "dense not-applicable evidence arrays");
+    if (evidence.length === 0) fail("source-contract evidence for not-applicable operations");
+    evidence.forEach(assertEvidenceBinding);
+    return;
   }
+  fail("exact supported, unsupported, or not-applicable operation branches");
 }
 
 export function assertSpecificationSourceSnapshot(
@@ -168,7 +234,7 @@ export function assertSpecificationGraph(value: unknown): asserts value is Speci
   const input = record(
     value,
     ["graphId", "version", "sources", "nodes", "relationships"],
-    ["report"],
+    [],
     "closed specification graphs",
   );
   nonBlankId(valueOf(input, "graphId"), "stable graph identities");
@@ -209,11 +275,6 @@ export function assertSpecificationGraph(value: unknown): asserts value is Speci
     }
     assertKnownBinding(relationship.source, snapshots);
   });
-  const report = valueOf<unknown>(input, "report");
-  if (report !== undefined) {
-    assertConversionReport(report);
-    assertReportBindings(report, snapshots, nodeIds);
-  }
 }
 
 export function assertSpecificationAdapterSupport(
@@ -221,76 +282,43 @@ export function assertSpecificationAdapterSupport(
 ): asserts value is SpecificationAdapterSupport {
   const input = record(
     value,
-    [
-      "format",
-      "direction",
-      "supportedVersions",
-      "levels",
-      "features",
-      "preservedExtensionNamespaces",
-      "sourceOwnership",
-      "writeBack",
-      "fixtures",
-      "evidence",
-    ],
+    ["format", "authority", "revision", "sourceOwnership", "operations"],
     [],
     "closed adapter support declarations",
   );
   assertFormat(valueOf(input, "format"));
-  if (!["import", "export", "both"].includes(String(valueOf(input, "direction")))) {
-    fail("known adapter support directions");
-  }
-  const versions = values(valueOf(input, "supportedVersions"), "dense supported-version arrays");
-  if (versions.length === 0 || !versions.every(isContractVersion))
-    fail("non-empty SemVer supported versions");
-  unique(versions as string[], "unique supported versions");
-  const levels = values(valueOf(input, "levels"), "dense conformance level arrays");
-  if (
-    levels.length === 0 ||
-    !levels.every((level) =>
-      ["syntax", "semantic", "compilation", "round-trip", "lifecycle"].includes(String(level)),
-    )
-  ) {
-    fail("non-empty known conformance levels");
-  }
-  unique(levels as string[], "unique conformance levels");
-  const features = values(valueOf(input, "features"), "dense feature arrays");
-  if (!features.every((feature) => typeof feature === "string" && feature.trim().length > 0)) {
-    fail("non-blank supported features");
-  }
-  unique(features as string[], "unique supported features");
-  const namespaces = values(
-    valueOf(input, "preservedExtensionNamespaces"),
-    "dense preserved-extension namespace arrays",
-  );
-  if (!namespaces.every(isExtensionNamespace)) fail("reverse-DNS preserved extension namespaces");
-  unique(namespaces as string[], "unique preserved extension namespaces");
+  nonBlankText(valueOf(input, "authority"), "recognised adapter authorities");
+  nonBlankId(valueOf(input, "revision"), "immutable adapter revisions");
   if (!["source-owned", "adapter-owned"].includes(String(valueOf(input, "sourceOwnership")))) {
     fail("known adapter source ownership values");
   }
-  const writeBack = String(valueOf(input, "writeBack"));
-  if (!["unsupported", "proposal-only", "source-authorized"].includes(writeBack)) {
-    fail("known adapter write-back behaviors");
+  const operations = values(valueOf(input, "operations"), "dense adapter operation arrays");
+  if (operations.length !== operationIds.length) {
+    fail("a closed adapter operation matrix covering all five operation identities");
   }
-  if (writeBack === "source-authorized" && !levels.includes("lifecycle")) {
-    fail("source-authorized write-back to declare lifecycle conformance");
-  }
-  const fixtures = values(valueOf(input, "fixtures"), "dense adapter fixture arrays");
-  if (fixtures.length === 0) fail("at least one adapter support fixture");
-  const fixtureIds = fixtures.map((fixture) => {
-    const item = record(fixture, ["fixtureId", "digest"], [], "closed adapter fixtures");
-    const fixtureId = nonBlankId(valueOf(item, "fixtureId"), "stable adapter fixture identities");
-    if (!isDigest(valueOf(item, "digest"))) fail("SHA-256 adapter fixture digests");
-    return fixtureId;
-  });
-  unique(fixtureIds, "unique adapter fixture identities");
-  const evidence = values(valueOf(input, "evidence"), "dense adapter evidence arrays");
-  if (evidence.length === 0) fail("at least one adapter support evidence binding");
-  evidence.forEach(assertEvidenceBinding);
+  operations.forEach(assertSpecificationOperation);
+  const typedOperations = operations as SpecificationOperation[];
   unique(
-    (evidence as SpecificationEvidenceBinding[]).map((binding) => binding.evidenceId),
-    "unique adapter support evidence identities",
+    typedOperations.map((operation) => operation.operation),
+    "unique adapter operation identities",
   );
+  if (typedOperations.some(({ operation }, index) => operation !== operationIds[index])) {
+    fail("a closed adapter operation matrix in canonical operation-family order");
+  }
+  const authority = valueOf<string>(input, "authority");
+  const revision = valueOf<string>(input, "revision");
+  const format = valueOf<SpecificationFormat>(input, "format");
+  if (
+    typedOperations.some(
+      ({ sourceContract }) =>
+        sourceContract.authority !== authority ||
+        sourceContract.revision !== revision ||
+        sourceContract.format.id !== format.id ||
+        sourceContract.format.version !== format.version,
+    )
+  ) {
+    fail("operation source contracts exactly matching adapter authority, format, and revision");
+  }
 }
 
 function assertEvidenceBinding(value: unknown): asserts value is SpecificationEvidenceBinding {
@@ -410,7 +438,7 @@ export function assertSpecificationDecision(
   if (status === "rejected" && hasOnlyKeys(input, ["status", "issues"])) {
     const issues = values(valueOf(input, "issues"), "dense rejection issue arrays");
     if (issues.length === 0) fail("non-empty rejection issues");
-    issues.forEach(assertIssue);
+    issues.forEach(assertDiagnostic);
     return;
   }
   if (status === "needs-input" && hasOnlyKeys(input, ["status", "questions"])) {
@@ -439,7 +467,7 @@ export function assertProposedSpecificationChange(
 ): asserts value is ProposedSpecificationChange {
   const input = record(
     value,
-    ["changeId", "target", "changes", "originatingDecision", "evidence", "conversion"],
+    ["changeId", "target", "changes", "originatingDecision", "evidence", "operation"],
     [],
     "closed proposed specification changes",
   );
@@ -470,7 +498,21 @@ export function assertProposedSpecificationChange(
     (evidence as SpecificationEvidenceBinding[]).map((binding) => binding.evidenceId),
     "unique proposed-change evidence identities",
   );
-  assertConversionReport(valueOf(input, "conversion"));
+  const operation = valueOf<SpecificationOperation>(input, "operation");
+  assertSpecificationOperation(operation);
+  if (operation.operation !== "export-native-source") {
+    fail("proposed changes bound to the native-source export operation family");
+  }
+  const targetFormat = valueOf<SpecificationFormat>(target, "format");
+  if (
+    operation.sourceContract.format.id !== targetFormat.id ||
+    operation.sourceContract.format.version !== targetFormat.version
+  ) {
+    fail("proposed-change operations bound to the exact target format");
+  }
+  if (operation.disposition === "not-applicable") {
+    fail("proposed-change export operations model unavailable support as unsupported");
+  }
 }
 
 export const assertPortableSpecificationInput = (value: unknown): void => {

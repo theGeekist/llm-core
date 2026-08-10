@@ -1,7 +1,7 @@
 import { isDigest } from "#contracts";
 import type { Digest, JsonValue } from "#contracts";
 import { maybeMap, type MaybePromise } from "#shared/maybe";
-import { canonicalize, deepFreeze, normalize } from "@geekist/strict-json";
+import { canonicalize, deepFreeze, normalize } from "@aifsd/strict-json";
 
 declare const registeredToolSchemaBrand: unique symbol;
 

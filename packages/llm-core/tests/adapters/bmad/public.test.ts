@@ -58,30 +58,42 @@ const graphOf = (value: ReturnType<typeof importBmadFiles>) =>
       readonly content: Readonly<Record<string, unknown>>;
       readonly extensions?: Readonly<Record<string, unknown>>;
     }[];
-    readonly report: {
-      readonly fidelity: string;
-      readonly issues: readonly {
-        readonly code: string;
-        readonly explanation: string;
-        readonly source?: { readonly documentId?: string };
-      }[];
-    };
   };
 
 describe("BMAD adapter", () => {
   test("declares only pinned file semantics and the qualified version invocation", () => {
     expect(String(BMAD_FILE_SUPPORT.format.id)).toBe("io.github.bmad-code-org.file");
     expect(BMAD_FILE_SUPPORT).toMatchObject({
-      levels: ["syntax", "semantic"],
+      authority: "BMAD Method repository",
       sourceOwnership: "source-owned",
-      writeBack: "unsupported",
+      revision: "bb45db4aa4496c69239f9c0629c290fd1b072fc9",
     });
-    expect(BMAD_FILE_SUPPORT.features).toContain("memlog-v6.10.0-record-observation");
-    expect(BMAD_FILE_SUPPORT.features).toContain(
-      "dev-auto-v6.10.0-frontmatter-and-result-observation",
+    expect(BMAD_FILE_SUPPORT.operations).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ operation: "observe-native-source", disposition: "supported" }),
+        expect.objectContaining({
+          operation: "derive-portable-specification",
+          disposition: "supported",
+        }),
+        expect.objectContaining({
+          operation: "round-trip-native-source",
+          disposition: "unsupported",
+        }),
+      ]),
     );
     expect(String(BMAD_CLI_SUPPORT.format.id)).toBe("io.github.bmad-code-org.cli");
-    expect(BMAD_CLI_SUPPORT.features).toEqual(["bmad-version-command-observation"]);
+    expect(
+      BMAD_CLI_SUPPORT.operations.map(({ operation, disposition }) => ({
+        operation,
+        disposition,
+      })),
+    ).toEqual([
+      { operation: "observe-native-source", disposition: "supported" },
+      { operation: "derive-portable-specification", disposition: "unsupported" },
+      { operation: "compile-portable-specification", disposition: "unsupported" },
+      { operation: "export-native-source", disposition: "unsupported" },
+      { operation: "round-trip-native-source", disposition: "unsupported" },
+    ]);
   });
 
   test("parses pinned memlog bytes and Dev Auto frontmatter/result bytes", () => {
@@ -136,8 +148,8 @@ describe("BMAD adapter", () => {
       graph.sources[0]?.documents.find(({ documentId }) => documentId === "_bmad-output/.memlog.md")
         ?.content,
     ).toEqual({ path: "_bmad-output/.memlog.md", text: fixture("memlog-v6.10.0.md") });
-    expect(graph.report.fidelity).toBe("partial");
-    expect(graph.report.issues.map((issue) => issue.code)).toContain(
+    expect(imported.operation.disposition).toBe("supported");
+    expect(imported.operation.diagnostics.map((diagnostic) => diagnostic.code)).toContain(
       "bmad-blocked-outcome-preserved",
     );
   });
@@ -179,9 +191,9 @@ describe("BMAD adapter", () => {
   });
 
   test("reports every deliberately unparsed convention without inventing source status", () => {
-    const graph = graphOf(importBmadFiles(input()));
-    const unparsed = graph.report.issues.filter(
-      (issue) => issue.code === "bmad-unparsed-convention-preserved",
+    const imported = importBmadFiles(input());
+    const unparsed = imported.operation.diagnostics.filter(
+      (diagnostic) => diagnostic.code === "bmad-unparsed-convention-preserved",
     );
     expect(unparsed).toHaveLength(input().artifacts.length);
     expect(
@@ -189,7 +201,7 @@ describe("BMAD adapter", () => {
     ).toMatchObject({
       explanation: expect.stringContaining("sprint-status YAML keys and lifecycle semantics"),
     });
-    expect(graph.report.fidelity).toBe("partial");
+    expect(imported.operation.disposition).toBe("supported");
   });
 
   test("uses source path identities and body ordinals unaffected by frontmatter shifts", () => {
@@ -325,26 +337,22 @@ describe("BMAD adapter", () => {
     const declaredBytes = new Map([
       ["bmad.file.memlog.v6.10.0", "memlog-v6.10.0.md"],
       ["bmad.file.dev-auto-blocked.v6.10.0", "dev-auto-blocked-v6.10.0.md"],
-      ["bmad.profile.state-memory.bb45db4", "profile-evidence-bb45db4.md"],
       ["bmad.cli.version-stdout.v6.10.0", "cli-version-v6.10.0.txt"],
-      ["bmad.cli-source.version.bb45db4", "cli-evidence-bb45db4.txt"],
     ]);
+    const supportedFixtures = (support: typeof BMAD_FILE_SUPPORT) =>
+      support.operations.flatMap((operation) =>
+        operation.disposition === "supported" ? operation.fixtures : [],
+      );
     const declarations = [
-      ...BMAD_FILE_SUPPORT.fixtures.map(
+      ...supportedFixtures(BMAD_FILE_SUPPORT).map(
         ({ fixtureId, digest }) => [fixtureId, digest.value] as const,
       ),
-      ...BMAD_FILE_SUPPORT.evidence.map(
-        ({ evidenceId, digest }) => [evidenceId, digest.value] as const,
-      ),
-      ...BMAD_CLI_SUPPORT.fixtures.map(
+      ...supportedFixtures(BMAD_CLI_SUPPORT).map(
         ({ fixtureId, digest }) => [fixtureId, digest.value] as const,
-      ),
-      ...BMAD_CLI_SUPPORT.evidence.map(
-        ({ evidenceId, digest }) => [evidenceId, digest.value] as const,
       ),
     ];
 
-    expect(declarations).toHaveLength(declaredBytes.size);
+    expect(new Map(declarations).size).toBe(declaredBytes.size);
     declarations.forEach(([id, declaredDigest]) => {
       const filename = declaredBytes.get(id);
       expect(filename).toBeDefined();
@@ -441,9 +449,9 @@ describe("BMAD adapter", () => {
     expect(Object.isFrozen(graph.nodes[0]?.content)).toBe(true);
     expect(Object.isFrozen(graph.sources[0]?.documents)).toBe(true);
     expect(Object.isFrozen(graph.sources[0]?.extensions)).toBe(true);
-    expect(Object.isFrozen(graph.report.issues)).toBe(true);
+    expect(Object.isFrozen(imported.operation.diagnostics)).toBe(true);
     expect(Object.isFrozen(imported.support)).toBe(true);
-    expect(imported.support.every((support) => Object.isFrozen(support.features))).toBe(true);
+    expect(imported.support.every((support) => Object.isFrozen(support.operations))).toBe(true);
     expect(Object.isFrozen(specification)).toBe(true);
   });
 });

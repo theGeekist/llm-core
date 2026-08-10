@@ -1,4 +1,4 @@
-import { canonicalize, snapshot, type FrozenJsonValue } from "@geekist/strict-json";
+import { canonicalize, snapshot, type FrozenJsonValue } from "@aifsd/strict-json";
 import { types as nodeTypes } from "node:util";
 import {
   AgentCard,

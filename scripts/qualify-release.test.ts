@@ -22,6 +22,7 @@ const makeRoot = (): string => {
   roots.push(root);
   mkdirSync(join(root, "packages/llm-core"), { recursive: true });
   mkdirSync(join(root, "packages/strict-json"), { recursive: true });
+  mkdirSync(join(root, "packages/aifsd"), { recursive: true });
   mkdirSync(join(root, ".github/workflows"), { recursive: true });
   mkdirSync(join(root, "scripts"), { recursive: true });
   writeFileSync(join(root, ".bun-version"), "1.3.14\n");
@@ -30,19 +31,19 @@ const makeRoot = (): string => {
     scripts: {
       "release:qualify:llm-core": "bun run scripts/qualify-release.ts",
       "release:qualify:strict-json": "bun run --cwd packages/strict-json release:build",
+      "release:qualify:aifsd":
+        "bun run --cwd packages/aifsd release:build && bun run --cwd packages/aifsd test:package:prebuilt",
     },
   });
   writeJson(join(root, "packages/llm-core/package.json"), {
     exports: {},
-    scripts: {
-      "publish:npm":
-        "bun run --cwd ../.. release:qualify:llm-core && bun run --cwd ../.. release:check:strict-json-published && bun publish",
-    },
+    scripts: {},
   });
   writeJson(join(root, "packages/strict-json/package.json"), {
-    scripts: {
-      "publish:npm": "bun run --cwd ../.. release:qualify:strict-json && bun publish",
-    },
+    scripts: {},
+  });
+  writeJson(join(root, "packages/aifsd/package.json"), {
+    scripts: {},
   });
   writeFileSync(
     join(root, ".github/workflows/release.yml"),
@@ -50,18 +51,80 @@ const makeRoot = (): string => {
       "jobs:",
       "  release-strict-json:",
       "    steps:",
+      "      - name: Validate release",
+      "        run: >-",
+      "          bun run scripts/release-history/release-controller.ts",
+      "          --phase validate --package strict-json --tag tag",
       "      - name: Qualify strict-json",
       "        run: bun run release:qualify:strict-json",
+      "      - name: Prepare strict-json",
+      "        run: >-",
+      "          bun run scripts/release-history/prepare-artifact.ts",
+      "          --package strict-json",
+      "      - name: Smoke strict-json",
+      "        run: >-",
+      "          node packages/strict-json/scripts/smoke-package.mjs",
+      "      - name: Upload strict-json",
+      "        uses: actions/upload-artifact@v4",
       "      - name: Publish strict-json",
-      "        run: npm publish --access public",
+      "        run: >-",
+      "          bun run scripts/release-history/release-controller.ts",
+      "          --phase publish --package strict-json --tag tag",
+      "      - name: Receipt strict-json",
+      "        run: >-",
+      "          bun run scripts/release-history/release-controller.ts",
+      "          --phase receipt --package strict-json --tag tag",
       "  release-core:",
       "    steps:",
+      "      - name: Validate release",
+      "        run: >-",
+      "          bun run scripts/release-history/release-controller.ts",
+      "          --phase validate --package llm-core --tag tag",
       "      - name: Qualify",
       "        run: bun run release:qualify:llm-core",
       "      - name: Verify dependency",
-      "        run: bun run release:check:strict-json-published",
+      "        run: bun run release:download:published --package strict-json --output strict-json.tgz",
+      "      - name: Prepare core",
+      "        run: >-",
+      "          bun run scripts/release-history/prepare-artifact.ts",
+      "          --package llm-core",
+      "      - name: Smoke core",
+      "        run: >-",
+      "          node packages/llm-core/scripts/smoke-package.mjs",
+      "      - name: Upload core",
+      "        uses: actions/upload-artifact@v4",
       "      - name: Publish",
-      "        run: npm publish --access public",
+      "        run: >-",
+      "          bun run scripts/release-history/release-controller.ts",
+      "          --phase publish --package llm-core --tag tag",
+      "      - name: Receipt",
+      "        run: >-",
+      "          bun run scripts/release-history/release-controller.ts",
+      "          --phase receipt --package llm-core --tag tag",
+      "  release-aifsd:",
+      "    steps:",
+      "      - name: Validate AIFSD",
+      "        run: >-",
+      "          bun run scripts/release-history/release-controller.ts",
+      "          --phase validate --package aifsd --tag tag",
+      "      - name: Qualify AIFSD",
+      "        run: bun run release:qualify:aifsd",
+      "      - name: Prepare AIFSD",
+      "        run: >-",
+      "          bun run scripts/release-history/prepare-artifact.ts",
+      "          --package aifsd",
+      "      - name: Smoke AIFSD",
+      "        run: node packages/aifsd/scripts/smoke-package.mjs --tarball archive.tgz",
+      "      - name: Upload AIFSD",
+      "        uses: actions/upload-artifact@v4",
+      "      - name: Publish AIFSD",
+      "        run: >-",
+      "          bun run scripts/release-history/release-controller.ts",
+      "          --phase publish --package aifsd --tag tag",
+      "      - name: Receipt AIFSD",
+      "        run: >-",
+      "          bun run scripts/release-history/release-controller.ts",
+      "          --phase receipt --package aifsd --tag tag",
     ].join("\n"),
   );
   for (const path of ["ci.yml", "docs.yml"]) {
@@ -199,14 +262,11 @@ describe("canonical release qualification", () => {
     qualifyRelease(root, runner, "1.3.14");
     expect(calls).toEqual([
       ["bun", "install", "--frozen-lockfile"],
-      ["bun", "run", "lint"],
-      ["bun", "run", "--cwd", "packages/strict-json", "release:build"],
-      ["bun", "run", "--cwd", "packages/llm-core", "release:build"],
-      ["bun", "run", "test:package"],
-      ["bun", "run", "qualify:external-fixtures"],
-      ["bun", "run", "docs:check"],
-      ["bun", "run", "--cwd", "packages/llm-core", "format:check"],
-      ["bun", "run", "check:sloc"],
+      ["bun", "run", "release:version:check"],
+      ["bun", "run", "release:checks:llm-core"],
+      ["bun", "run", "release:build:llm-core"],
+      ["bun", "run", "release:package-smoke:llm-core"],
+      ["bun", "run", "qualify:external-fixtures:prebuilt"],
       ["bun", "run", "qualify:client"],
     ]);
     expect(calls.slice(0, baselineReleaseCommands.length)).toEqual([...baselineReleaseCommands]);
@@ -250,8 +310,19 @@ describe("canonical release qualification", () => {
       "- run: npm publish --access public\n",
     );
     const errors = validateReleaseEntrypoints(root).join("\n");
-    expect(errors).toContain("package publish:npm must delegate");
-    expect(errors).toContain("tagged llm-core publication must follow");
+    expect(errors).toContain("llm-core must not expose a working-tree publish:npm command");
+    expect(errors).toContain("must not contain a direct npm or Bun publish command");
+  });
+
+  test("rejects publication that repacks the working directory after exact archive verification", () => {
+    const root = makeRoot();
+    const workflowPath = join(root, ".github/workflows/release.yml");
+    writeFileSync(
+      workflowPath,
+      `${readFileSync(workflowPath, "utf8")}\n- run: npm publish --access public --provenance\n`,
+    );
+    const errors = validateReleaseEntrypoints(root).join("\n");
+    expect(errors).toContain("must not contain a direct npm or Bun publish command");
   });
 
   test("requires a root lockfile", () => {
@@ -335,7 +406,7 @@ describe("canonical release qualification", () => {
       ].join("\n"),
     );
     expect(validateReleaseEntrypoints(root).join("\n")).toContain(
-      "tagged llm-core publication must follow",
+      "must not contain a direct npm or Bun publish command",
     );
   });
 

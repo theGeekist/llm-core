@@ -5,7 +5,7 @@
 // it, so a malformed digest, trust level, closure or evidence binding is
 // rejected as a diagnostic rather than throwing or slipping through.
 
-import { isCanonicalUuid, isDigest, isSchemaRef } from "@geekist/llm-core/contracts";
+import { isCanonicalUuid, isDigest, isSchemaRef } from "@aifsd/llm-core/contracts";
 import type {
   CatalogEntry,
   ConfigurationDiagnostic,

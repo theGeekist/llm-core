@@ -3,7 +3,7 @@
   "compilerOptions": {
     "types": ["bun", "node"],
     "paths": {
-      "@geekist/strict-json": ["./index.ts"]
+      "@aifsd/strict-json": ["./index.ts"]
     }
   },
   "include": ["index.ts", "src", "tests", "scripts"],

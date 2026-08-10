@@ -3,7 +3,7 @@ import {
   createSpecificationSourceSnapshot,
 } from "../../features/specifications/runtime";
 import type {
-  ConversionIssue,
+  SpecificationDiagnostic,
   SpecificationDecision,
   SpecificationGraph,
   SpecificationNodeId,
@@ -72,11 +72,13 @@ const questionNodes = (graph: SpecificationGraph): SpecificationQuestion[] =>
     (node) => node.nodeId,
   ).map((node) => ({ questionId: node.nodeId, prompt: node.title, source: node.source }));
 
-const dependencyIssues = (blockedNodeIds: readonly SpecificationNodeId[]): ConversionIssue[] =>
+const dependencyIssues = (
+  blockedNodeIds: readonly SpecificationNodeId[],
+): SpecificationDiagnostic[] =>
   blockedNodeIds.map((nodeId) => ({
     code: "dependency-cycle",
     severity: "error",
-    disposition: "rejected",
+    impact: "blocking",
     explanation: "Dependency-bearing relationships must be acyclic for compilation.",
     nodeId,
   }));
@@ -84,7 +86,7 @@ const dependencyIssues = (blockedNodeIds: readonly SpecificationNodeId[]): Conve
 const issueAffectsScope = (
   graph: SpecificationGraph,
   acceptedScope: readonly SpecificationNodeId[],
-  issue: ConversionIssue,
+  issue: SpecificationDiagnostic,
 ): boolean => {
   if (issue.nodeId !== undefined) return acceptedScope.includes(issue.nodeId);
   if (issue.source === undefined) return false;
@@ -121,14 +123,14 @@ const acceptedScopeOf = (
 const blockingIssuesForScope = (input: {
   readonly graph: SpecificationGraph;
   readonly dependency: SpecificationDependencyPlan;
-  readonly reportIssues: readonly ConversionIssue[];
+  readonly diagnostics: readonly SpecificationDiagnostic[];
   readonly acceptedScope: readonly SpecificationNodeId[] | undefined;
-}): ConversionIssue[] => {
-  const { acceptedScope, dependency, graph, reportIssues } = input;
+}): SpecificationDiagnostic[] => {
+  const { acceptedScope, dependency, diagnostics, graph } = input;
   if (acceptedScope === undefined) return [];
   return [
-    ...reportIssues.filter(
-      (issue) => issue.disposition === "rejected" && issueAffectsScope(graph, acceptedScope, issue),
+    ...diagnostics.filter(
+      (issue) => issue.impact === "blocking" && issueAffectsScope(graph, acceptedScope, issue),
     ),
     ...dependencyIssues(
       dependency.blockedNodeIds.filter((nodeId) => acceptedScope.includes(nodeId)),
@@ -151,7 +153,7 @@ const reviewDecision = (input: {
   readonly supplied: SpecificationDecision | undefined;
   readonly questions: readonly SpecificationQuestion[];
   readonly scopedQuestions: readonly SpecificationQuestion[];
-  readonly blockingIssues: readonly ConversionIssue[];
+  readonly blockingIssues: readonly SpecificationDiagnostic[];
 }): SpecificationDecision => {
   const { blockingIssues, graph, questions, scopedQuestions, supplied } = input;
   if (supplied === undefined) {
@@ -176,8 +178,8 @@ export const reviewSpecificationGraph = (
 ): SpecificationReview => {
   const dependency = deriveDependencyPlan(graph);
   const workflow = deriveWorkflowPlan(graph);
-  const reportIssues = graph.report?.issues ?? [];
-  const issues = [...reportIssues, ...dependencyIssues(dependency.blockedNodeIds)];
+  const diagnostics: readonly SpecificationDiagnostic[] = [];
+  const issues = dependencyIssues(dependency.blockedNodeIds);
   const questions = questionNodes(graph);
   const supplied =
     suppliedDecision === undefined ? undefined : createSpecificationDecision(suppliedDecision);
@@ -187,7 +189,7 @@ export const reviewSpecificationGraph = (
     supplied,
     questions,
     scopedQuestions: questionsForScope(questions, acceptedScope),
-    blockingIssues: blockingIssuesForScope({ graph, dependency, reportIssues, acceptedScope }),
+    blockingIssues: blockingIssuesForScope({ graph, dependency, diagnostics, acceptedScope }),
   });
   return { graph, dependency, workflow, decision, issues, questions };
 };

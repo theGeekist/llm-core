@@ -60,7 +60,7 @@ export interface SpecKitWorkflowProgram {
 
 export interface SpecKitWorkflowParseIssue {
   readonly code: string;
-  readonly disposition: "preserved" | "degraded" | "rejected";
+  readonly impact: "advisory" | "blocking";
   readonly explanation: string;
   readonly location?: string;
 }
@@ -98,7 +98,7 @@ const rejected = (
 ): void => {
   issues.push({
     code: "spec-kit-workflow-schema-invalid",
-    disposition: "rejected",
+    impact: "blocking",
     explanation,
     ...(location === undefined ? {} : { location }),
   });
@@ -161,7 +161,7 @@ const parseStep = (
   if (!builtIns.has(rawType as SpecKitBuiltInStepType)) {
     context.issues.push({
       code: "spec-kit-workflow-custom-step-uninterpreted",
-      disposition: "degraded",
+      impact: "advisory",
       explanation: `Custom step type '${rawType}' is retained in native data but its extension-defined control semantics are not interpreted.`,
       location,
     });
@@ -408,7 +408,7 @@ export const parseSpecKitWorkflow = (content: string): SpecKitWorkflowParseResul
         issues: [
           {
             code: "spec-kit-workflow-yaml-unsupported",
-            disposition: "rejected" as const,
+            impact: "blocking" as const,
             explanation:
               error instanceof Error ? error.message : "Workflow YAML could not be parsed.",
           },
@@ -448,12 +448,12 @@ export const parseSpecKitWorkflow = (content: string): SpecKitWorkflowParseResul
   if (steps.length === 0)
     rejected(issues, "Workflow must contain at least one valid step.", "/steps");
 
-  if (issues.some((issue) => issue.disposition === "rejected")) {
+  if (issues.some((issue) => issue.impact === "blocking")) {
     return capturePortable({ issues }, "Spec Kit workflow parse result");
   }
   issues.push({
     code: "spec-kit-workflow-control-preserved",
-    disposition: "preserved",
+    impact: "advisory",
     explanation:
       "The complete schema-v1.0 definition, nested branches, loop bounds, gates, fan-out, and fan-in remain source-owned portable data; they are not flattened into dependency edges.",
   });

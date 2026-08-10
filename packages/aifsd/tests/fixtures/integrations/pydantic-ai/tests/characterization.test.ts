@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { digest, type Digest } from "@geekist/llm-core/contracts";
+import { digest, type Digest } from "@aifsd/llm-core/contracts";
 import {
   integrationContentDigest,
   resolveLocalIntegrationMetadata,

@@ -116,23 +116,70 @@ export interface SpecificationRelationship {
   readonly extensions?: NativeExtensions;
 }
 
-export type ConversionFidelity = "exact" | "partial" | "rejected";
-export type ConversionIssueSeverity = "info" | "warning" | "error";
-export type ConversionIssueDisposition = "preserved" | "degraded" | "rejected";
+export type SpecificationDiagnosticSeverity = "info" | "warning" | "error";
+export type SpecificationDiagnosticImpact = "advisory" | "blocking";
 
-export interface ConversionIssue {
+/** A review or operation diagnostic. Impact is not an integration support level. */
+export interface SpecificationDiagnostic {
   readonly code: string;
-  readonly severity: ConversionIssueSeverity;
-  readonly disposition: ConversionIssueDisposition;
+  readonly severity: SpecificationDiagnosticSeverity;
+  readonly impact: SpecificationDiagnosticImpact;
   readonly explanation: string;
   readonly source?: SpecificationSourceBinding;
   readonly nodeId?: SpecificationNodeId;
 }
 
-export interface ConversionReport {
-  readonly fidelity: ConversionFidelity;
-  readonly issues: readonly ConversionIssue[];
+export type SpecificationOperationId =
+  | "observe-native-source"
+  | "derive-portable-specification"
+  | "compile-portable-specification"
+  | "export-native-source"
+  | "round-trip-native-source";
+
+export type SpecificationOperationDisposition = "supported" | "unsupported" | "not-applicable";
+
+/** The recognised source contract against which one operation is qualified. */
+export interface SpecificationSourceContract {
+  readonly authority: string;
+  readonly format: SpecificationFormat;
+  /** Immutable upstream revision, package version, or specification edition. */
+  readonly revision: string;
 }
+
+interface SpecificationOperationBase {
+  readonly operation: SpecificationOperationId;
+  readonly sourceContract: SpecificationSourceContract;
+  readonly diagnostics: readonly SpecificationDiagnostic[];
+}
+
+export type SpecificationOperation =
+  | (SpecificationOperationBase & {
+      readonly disposition: "supported";
+      readonly fixtures: readonly SpecificationAdapterFixture[];
+    })
+  | (SpecificationOperationBase & {
+      readonly disposition: "unsupported";
+      readonly reason: string;
+    })
+  | (SpecificationOperationBase & {
+      readonly disposition: "not-applicable";
+      readonly reason: string;
+      /** Evidence proving the source contract does not define the operation. */
+      readonly evidence: readonly SpecificationEvidenceBinding[];
+    });
+
+type SpecificationOperationFor<TId extends SpecificationOperationId> = SpecificationOperation & {
+  readonly operation: TId;
+};
+
+/** Closed operation matrix. Tuple order is the public operation-family order. */
+export type SpecificationOperationMatrix = readonly [
+  SpecificationOperationFor<"observe-native-source">,
+  SpecificationOperationFor<"derive-portable-specification">,
+  SpecificationOperationFor<"compile-portable-specification">,
+  SpecificationOperationFor<"export-native-source">,
+  SpecificationOperationFor<"round-trip-native-source">,
+];
 
 /** Internal canonical graph. It deliberately permits semantic cycles. */
 export interface SpecificationGraph {
@@ -141,20 +188,10 @@ export interface SpecificationGraph {
   readonly sources: readonly SpecificationSourceSnapshot[];
   readonly nodes: readonly SpecificationNode[];
   readonly relationships: readonly SpecificationRelationship[];
-  readonly report?: ConversionReport;
 }
 
-export type SpecificationAdapterDirection = "import" | "export" | "both";
 /** Who retains authority over the source after the adapter has observed it. */
 export type SpecificationAdapterSourceOwnership = "source-owned" | "adapter-owned";
-/** Explicitly states whether the adapter can write a change back to its source. */
-export type SpecificationAdapterWriteBack = "unsupported" | "proposal-only" | "source-authorized";
-export type SpecificationConformanceLevel =
-  | "syntax"
-  | "semantic"
-  | "compilation"
-  | "round-trip"
-  | "lifecycle";
 
 /** A content-addressed fixture that substantiates one adapter support claim. */
 export interface SpecificationAdapterFixture {
@@ -165,15 +202,10 @@ export interface SpecificationAdapterFixture {
 /** Versioned, format-specific declaration without an adapter implementation. */
 export interface SpecificationAdapterSupport {
   readonly format: SpecificationFormat;
-  readonly direction: SpecificationAdapterDirection;
-  readonly supportedVersions: readonly ContractVersion[];
-  readonly levels: readonly SpecificationConformanceLevel[];
-  readonly features: readonly string[];
-  readonly preservedExtensionNamespaces: readonly ExtensionNamespace[];
+  readonly authority: string;
+  readonly revision: string;
   readonly sourceOwnership: SpecificationAdapterSourceOwnership;
-  readonly writeBack: SpecificationAdapterWriteBack;
-  readonly fixtures: readonly SpecificationAdapterFixture[];
-  readonly evidence: readonly SpecificationEvidenceBinding[];
+  readonly operations: SpecificationOperationMatrix;
 }
 
 export interface SpecificationQuestion {
@@ -223,7 +255,7 @@ export interface SpecificationDecisionRecord {
 
 export type SpecificationDecision =
   | { readonly status: "accepted"; readonly record: SpecificationDecisionRecord }
-  | { readonly status: "rejected"; readonly issues: readonly ConversionIssue[] }
+  | { readonly status: "rejected"; readonly issues: readonly SpecificationDiagnostic[] }
   | { readonly status: "needs-input"; readonly questions: readonly SpecificationQuestion[] };
 
 export interface ProposedSpecificationChangeTarget {
@@ -243,5 +275,5 @@ export interface ProposedSpecificationChange {
     readonly resolvedDigest: Digest;
   };
   readonly evidence: readonly SpecificationEvidenceBinding[];
-  readonly conversion: ConversionReport;
+  readonly operation: SpecificationOperation;
 }

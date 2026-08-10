@@ -1,7 +1,6 @@
 # State and durability
 
-The `/state` contracts distinguish five sibling lifetimes. Choosing the correct one
-prevents a convenient local value from being mistaken for durable resume data.
+The `/state` contracts distinguish five sibling lifetimes. Choosing the correct one prevents a convenient local value from being mistaken for durable resume data.
 
 ```mermaid
 flowchart TB
@@ -28,12 +27,6 @@ flowchart TB
 
 <<< @/snippets/v2/state-lifetimes.ts
 
-`RegisteredResumableCheckpoint` is a refinement of `ResumableCheckpoint`, not a
-sixth lifetime. Only that refinement may be supplied to a compatible runtime
-adapter for resume. Registration validates and freezes portable state plus
-runtime, contract schema, code, checkpoint format, native-reference, and
-recorded-effect compatibility.
+`RegisteredResumableCheckpoint` is a refinement of `ResumableCheckpoint`, not a sixth lifetime. Only that refinement may be supplied to a compatible runtime adapter for resume. Registration validates and freezes portable state plus runtime, contract schema, code, checkpoint format, native-reference, and recorded-effect compatibility.
 
-`checkResumeCompatibility` compares those recorded facts with the current
-runtime. Snapshots, provider sessions, and durable execution handles remain
-non-substitutable siblings; none converts into a checkpoint.
+`checkResumeCompatibility` compares those recorded facts with the current runtime. Snapshots, provider sessions, and durable execution handles remain non-substitutable siblings; none converts into a checkpoint.

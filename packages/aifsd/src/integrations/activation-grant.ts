@@ -1,4 +1,4 @@
-import { snapshot } from "@geekist/strict-json";
+import { snapshot } from "@aifsd/strict-json";
 import type { AcquiredIntegration, ActivationGrant, SecretRef } from "./contract.js";
 import { integrationClosureDigest } from "./content-identity.js";
 

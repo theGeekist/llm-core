@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto";
-import { digest, type Digest } from "@geekist/llm-core/contracts";
-import { canonicalize } from "@geekist/strict-json";
+import { digest, type Digest } from "@aifsd/llm-core/contracts";
+import { canonicalize } from "@aifsd/strict-json";
 import type { ExecutableClosure } from "./contract.js";
 
 const compare = (left: string, right: string): number => (left < right ? -1 : left > right ? 1 : 0);

@@ -59,7 +59,8 @@ describe("ADR-016 curated exports", () => {
 
   test("publishes only the qualified AI SDK provider front", () => {
     expect(Object.keys(aiSdk).sort()).toEqual([
-      "AI_SDK7_SEMANTIC_LOSS",
+      "AI_SDK7_AUTHORITY",
+      "AI_SDK7_OPERATION_DISPOSITIONS",
       "AI_SDK_EXTENSION_NAMESPACE",
       "AI_SDK_SUPPORTED_VERSION",
       "createAiSdk7Model",

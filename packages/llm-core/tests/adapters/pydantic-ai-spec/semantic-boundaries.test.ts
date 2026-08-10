@@ -55,7 +55,7 @@ describe("PydanticAI AgentSpec adapter", () => {
           }),
         ),
       ).rejects.toMatchObject({
-        report: { issues: expect.arrayContaining([expect.objectContaining({ code })]) },
+        operation: { diagnostics: expect.arrayContaining([expect.objectContaining({ code })]) },
       });
     }
   });
@@ -82,9 +82,9 @@ describe("PydanticAI AgentSpec adapter", () => {
           compilePydanticAiAgentSpec({ decision: value.decision, target: target() }),
         ),
       ).rejects.toMatchObject({
-        report: {
-          fidelity: "rejected",
-          issues: expect.arrayContaining([
+        operation: {
+          disposition: "unsupported",
+          diagnostics: expect.arrayContaining([
             expect.objectContaining({
               code: `pydantic-ai.${
                 category === "modelRequirements" ? "model-requirements" : category
@@ -123,8 +123,8 @@ describe("PydanticAI AgentSpec adapter", () => {
           }),
         ),
       ).rejects.toMatchObject({
-        report: {
-          issues: expect.arrayContaining([
+        operation: {
+          diagnostics: expect.arrayContaining([
             expect.objectContaining({
               code: `pydantic-ai.${
                 category === "modelRequirements" ? "model-requirements" : category
@@ -159,9 +159,9 @@ describe("PydanticAI AgentSpec adapter", () => {
           compilePydanticAiAgentSpec({ decision: value.decision, target: compilationTarget }),
         ),
       ).rejects.toMatchObject({
-        report: {
-          fidelity: "rejected",
-          issues: [
+        operation: {
+          disposition: "unsupported",
+          diagnostics: [
             expect.objectContaining({
               code: `pydantic-ai.${
                 category === "modelRequirements" ? "model-requirements" : category
@@ -173,27 +173,32 @@ describe("PydanticAI AgentSpec adapter", () => {
     }
   });
 
-  test("degrades explicitly for advisory model requirements that AgentSpec omits", async () => {
+  test("rejects advisory model requirements because they are still requested semantics", async () => {
     const advisory = [{ capabilityId: "llm-core.model.streaming", required: false }];
     const value = await fixture([{ modelRequirements: advisory }]);
-    const compilation = await compilePydanticAiAgentSpec({
-      decision: value.decision,
-      target: {
-        ...target(),
-        semantics: {
-          ...target().semantics,
-          modelRequirements: advisory,
-        },
-      },
-    });
-    expect(compilation.report).toMatchObject({
-      fidelity: "partial",
-      issues: [
-        expect.objectContaining({
-          code: "pydantic-ai.advisory-model-requirements-omitted",
-          disposition: "degraded",
+    await expect(
+      Promise.resolve().then(() =>
+        compilePydanticAiAgentSpec({
+          decision: value.decision,
+          target: {
+            ...target(),
+            semantics: {
+              ...target().semantics,
+              modelRequirements: advisory,
+            },
+          },
         }),
-      ],
+      ),
+    ).rejects.toMatchObject({
+      operation: {
+        disposition: "unsupported",
+        diagnostics: expect.arrayContaining([
+          expect.objectContaining({
+            code: "pydantic-ai.model-requirements-unsupported",
+            impact: "blocking",
+          }),
+        ]),
+      },
     });
   });
 

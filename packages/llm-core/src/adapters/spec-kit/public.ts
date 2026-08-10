@@ -10,17 +10,16 @@ import {
 import { compareUtf16CodeUnits } from "#shared/fp";
 import { hasOnlyKeys, isPortableRecord } from "#shared/portable-data";
 import {
-  createConversionReport,
   createSpecificationAdapterSupport,
+  createSpecificationOperation,
   createSpecificationSourceSnapshot,
-  type ConversionFidelity,
-  type ConversionIssue,
-  type ConversionReport,
+  type SpecificationDiagnostic,
   type SpecificationAdapterSupport,
   type SpecificationFormat,
+  type SpecificationOperation,
   type SpecificationSourceAuthority,
   type SpecificationSourceRole,
-} from "@geekist/llm-core/specifications";
+} from "@aifsd/llm-core/specifications";
 import {
   SPEC_KIT_ASSESSED_CLI_VERSION,
   observeSpecKitCliVersion,
@@ -126,70 +125,157 @@ const STATUS_RUN_FIXTURE_DIGEST = digest(
 const STATUS_LIST_FIXTURE_DIGEST = digest(
   "a29906b64f65c0f16edad07a2175b9dd855ebbadea498f5ac05c87fcee80331a",
 );
-const PINNED_SOURCE_DIGEST = digest(
-  "132211ceb3aef1aec9b3ed7ec436feab58b30ae661e378d9cd166a7c3b9bf5b5",
-);
-
 const sha256 = (value: string) => digest(createHash("sha256").update(value).digest("hex"));
 
 export const SPEC_KIT_FILE_SUPPORT: SpecificationAdapterSupport = createSpecificationAdapterSupport(
   {
     format: SPEC_KIT_FILE_FORMAT,
-    direction: "import",
-    supportedVersions: [SPEC_KIT_ASSESSED_VERSION],
-    levels: ["syntax", "semantic"],
-    features: [
-      "artifact-chain-observation",
-      "native-resolution-provenance-order",
-      "workflow-schema-v1.0-portable-yaml-subset",
-      "nested-branch-switch-loop-gate-fan-out-fan-in-preservation",
-      "workflow-overlay-observation",
-      "local-state-as-non-checkpoint",
-    ],
-    preservedExtensionNamespaces: [extensionNamespace("io.github.spec-kit")],
+    authority: "Spec Kit repository",
+    revision: SPEC_KIT_ASSESSED_COMMIT,
     sourceOwnership: "source-owned",
-    writeBack: "unsupported",
-    fixtures: [
-      {
-        fixtureId: "spec-kit.workflow.core.c0fe0e4",
-        digest: CORE_WORKFLOW_FIXTURE_DIGEST,
-      },
-      {
-        fixtureId: "spec-kit.workflow.control-flow.c0fe0e4",
-        digest: CONTROL_WORKFLOW_FIXTURE_DIGEST,
-      },
-      {
-        fixtureId: "spec-kit.workflow.overlay.installed.c0fe0e4",
-        digest: WORKFLOW_OVERLAY_FIXTURE_DIGEST,
-      },
+    operations: [
+      createSpecificationOperation({
+        operation: "observe-native-source",
+        sourceContract: {
+          authority: "Spec Kit repository",
+          format: SPEC_KIT_FILE_FORMAT,
+          revision: SPEC_KIT_ASSESSED_COMMIT,
+        },
+        disposition: "supported",
+        fixtures: [
+          { fixtureId: "spec-kit.workflow.core.c0fe0e4", digest: CORE_WORKFLOW_FIXTURE_DIGEST },
+          {
+            fixtureId: "spec-kit.workflow.overlay.installed.c0fe0e4",
+            digest: WORKFLOW_OVERLAY_FIXTURE_DIGEST,
+          },
+        ],
+        diagnostics: [],
+      }),
+      createSpecificationOperation({
+        operation: "derive-portable-specification",
+        sourceContract: {
+          authority: "Spec Kit repository",
+          format: SPEC_KIT_FILE_FORMAT,
+          revision: SPEC_KIT_ASSESSED_COMMIT,
+        },
+        disposition: "supported",
+        fixtures: [
+          { fixtureId: "spec-kit.workflow.core.c0fe0e4", digest: CORE_WORKFLOW_FIXTURE_DIGEST },
+          {
+            fixtureId: "spec-kit.workflow.control-flow.c0fe0e4",
+            digest: CONTROL_WORKFLOW_FIXTURE_DIGEST,
+          },
+          {
+            fixtureId: "spec-kit.workflow.overlay.installed.c0fe0e4",
+            digest: WORKFLOW_OVERLAY_FIXTURE_DIGEST,
+          },
+        ],
+        diagnostics: [],
+      }),
+      createSpecificationOperation({
+        operation: "compile-portable-specification",
+        sourceContract: {
+          authority: "Spec Kit repository",
+          format: SPEC_KIT_FILE_FORMAT,
+          revision: SPEC_KIT_ASSESSED_COMMIT,
+        },
+        disposition: "unsupported",
+        reason: "Spec Kit portable compilation is not implemented.",
+        diagnostics: [],
+      }),
+      createSpecificationOperation({
+        operation: "export-native-source",
+        sourceContract: {
+          authority: "Spec Kit repository",
+          format: SPEC_KIT_FILE_FORMAT,
+          revision: SPEC_KIT_ASSESSED_COMMIT,
+        },
+        disposition: "unsupported",
+        reason: "Spec Kit native export is not implemented.",
+        diagnostics: [],
+      }),
+      createSpecificationOperation({
+        operation: "round-trip-native-source",
+        sourceContract: {
+          authority: "Spec Kit repository",
+          format: SPEC_KIT_FILE_FORMAT,
+          revision: SPEC_KIT_ASSESSED_COMMIT,
+        },
+        disposition: "unsupported",
+        reason: "Spec Kit native round trip is not implemented.",
+        diagnostics: [],
+      }),
     ],
-    evidence: [{ evidenceId: "spec-kit.source.c0fe0e4", digest: PINNED_SOURCE_DIGEST }],
   },
 );
 
 export const SPEC_KIT_CLI_SUPPORT: SpecificationAdapterSupport = createSpecificationAdapterSupport({
   format: SPEC_KIT_CLI_FORMAT,
-  direction: "import",
-  supportedVersions: [SPEC_KIT_ASSESSED_VERSION],
-  levels: ["syntax", "semantic"],
-  features: [
-    "separate-version-observation",
-    "workflow-status-run-json",
-    "workflow-status-list-json",
-    "workflow-run-and-resume-json",
-    "created-running-paused-completed-failed-aborted",
-    "gate-timestamp-step-state-command-exit-and-run-outcome-observation",
-  ],
-  preservedExtensionNamespaces: [extensionNamespace("io.github.spec-kit")],
+  authority: "Spec Kit repository CLI",
+  revision: SPEC_KIT_ASSESSED_COMMIT,
   sourceOwnership: "source-owned",
-  writeBack: "unsupported",
-  fixtures: [
-    { fixtureId: "spec-kit.cli.run-failed.c0fe0e4", digest: RUN_FAILED_FIXTURE_DIGEST },
-    { fixtureId: "spec-kit.cli.resume-paused.c0fe0e4", digest: RESUME_PAUSED_FIXTURE_DIGEST },
-    { fixtureId: "spec-kit.cli.status-run.c0fe0e4", digest: STATUS_RUN_FIXTURE_DIGEST },
-    { fixtureId: "spec-kit.cli.status-list.c0fe0e4", digest: STATUS_LIST_FIXTURE_DIGEST },
+  operations: [
+    createSpecificationOperation({
+      operation: "observe-native-source",
+      sourceContract: {
+        authority: "Spec Kit repository CLI",
+        format: SPEC_KIT_CLI_FORMAT,
+        revision: SPEC_KIT_ASSESSED_COMMIT,
+      },
+      disposition: "supported",
+      fixtures: [
+        { fixtureId: "spec-kit.cli.run-failed.c0fe0e4", digest: RUN_FAILED_FIXTURE_DIGEST },
+        { fixtureId: "spec-kit.cli.resume-paused.c0fe0e4", digest: RESUME_PAUSED_FIXTURE_DIGEST },
+        { fixtureId: "spec-kit.cli.status-run.c0fe0e4", digest: STATUS_RUN_FIXTURE_DIGEST },
+        { fixtureId: "spec-kit.cli.status-list.c0fe0e4", digest: STATUS_LIST_FIXTURE_DIGEST },
+      ],
+      diagnostics: [],
+    }),
+    createSpecificationOperation({
+      operation: "derive-portable-specification",
+      sourceContract: {
+        authority: "Spec Kit repository CLI",
+        format: SPEC_KIT_CLI_FORMAT,
+        revision: SPEC_KIT_ASSESSED_COMMIT,
+      },
+      disposition: "unsupported",
+      reason: "Spec Kit CLI portable derivation is not implemented.",
+      diagnostics: [],
+    }),
+    createSpecificationOperation({
+      operation: "compile-portable-specification",
+      sourceContract: {
+        authority: "Spec Kit repository CLI",
+        format: SPEC_KIT_CLI_FORMAT,
+        revision: SPEC_KIT_ASSESSED_COMMIT,
+      },
+      disposition: "unsupported",
+      reason: "Spec Kit CLI portable compilation is not implemented.",
+      diagnostics: [],
+    }),
+    createSpecificationOperation({
+      operation: "export-native-source",
+      sourceContract: {
+        authority: "Spec Kit repository CLI",
+        format: SPEC_KIT_CLI_FORMAT,
+        revision: SPEC_KIT_ASSESSED_COMMIT,
+      },
+      disposition: "unsupported",
+      reason: "Spec Kit CLI native export is not implemented.",
+      diagnostics: [],
+    }),
+    createSpecificationOperation({
+      operation: "round-trip-native-source",
+      sourceContract: {
+        authority: "Spec Kit repository CLI",
+        format: SPEC_KIT_CLI_FORMAT,
+        revision: SPEC_KIT_ASSESSED_COMMIT,
+      },
+      disposition: "unsupported",
+      reason: "Spec Kit CLI native round trip is not implemented.",
+      diagnostics: [],
+    }),
   ],
-  evidence: [{ evidenceId: "spec-kit.source.c0fe0e4", digest: PINNED_SOURCE_DIGEST }],
 });
 
 export type SpecKitDocumentKind =
@@ -247,7 +333,7 @@ export interface SpecKitFileSource {
 export interface SpecKitFileImportResult {
   /** Detached portable graph input for `loadSpecification`. */
   readonly graph: unknown;
-  readonly report: ConversionReport;
+  readonly operation: SpecificationOperation;
   readonly support: readonly [SpecificationAdapterSupport, SpecificationAdapterSupport];
 }
 
@@ -365,26 +451,14 @@ const titleFor = (file: SpecKitFile): string => {
   return file.path;
 };
 
-const fidelityFor = (issues: readonly ConversionIssue[]): ConversionFidelity =>
-  issues.some((issue) => issue.disposition === "rejected")
-    ? "rejected"
-    : issues.some((issue) => issue.disposition === "degraded")
-      ? "partial"
-      : "exact";
-
 const issueForFile = (
   sourceId: string,
   file: SpecKitFile,
   issue: SpecKitWorkflowParseIssue | SpecKitWorkflowOverlayParseIssue,
-): ConversionIssue => ({
+): SpecificationDiagnostic => ({
   code: issue.code,
-  severity:
-    issue.disposition === "rejected"
-      ? "error"
-      : issue.disposition === "degraded"
-        ? "warning"
-        : "info",
-  disposition: issue.disposition,
+  severity: issue.impact === "blocking" ? "error" : "warning",
+  impact: issue.impact,
   explanation: issue.explanation,
   source: {
     sourceId: sourceId as never,
@@ -628,7 +702,7 @@ const overlayResolutionIssues = (
   files: readonly GroupedFile[],
   workflows: ReadonlyMap<SpecKitFile, SpecKitWorkflowParseResult>,
   overlays: ReadonlyMap<SpecKitFile, SpecKitWorkflowOverlayParseResult>,
-): readonly ConversionIssue[] => {
+): readonly SpecificationDiagnostic[] => {
   const scopes = new Map<string, GroupedFile[]>();
   files.forEach((grouped) => {
     if (overlays.get(grouped.file)?.program?.enabled !== true) return;
@@ -637,71 +711,73 @@ const overlayResolutionIssues = (
     scoped.push(grouped);
     scopes.set(scope, scoped);
   });
-  return [...scopes.entries()].flatMap(([scope, enabledOverlays]): readonly ConversionIssue[] => {
-    const base = files.find(
-      ({ file }) =>
-        file.kind === "workflow" &&
-        file.provenance.resolutionScope === scope &&
-        workflows.get(file)?.program !== undefined,
-    );
-    if (base === undefined) {
-      return enabledOverlays.map(({ source, file }) => ({
-        code: "spec-kit-workflow-overlay-base-unobserved",
-        severity: "warning",
-        disposition: "degraded",
-        explanation:
-          "The enabled overlay is preserved, but its anchors and native winning-operation conflicts cannot be verified without the observed base workflow tree.",
-        source: { sourceId: source.sourceId as never, documentId: file.path },
-      }));
-    }
-    const rawSteps = workflows.get(base.file)?.program?.definition.steps;
-    const steps = Array.isArray(rawSteps)
-      ? (rawSteps.filter(isPortableRecord) as JsonObject[])
-      : [];
-    const winners = new Map<string, WinningOverlayEdit>();
-    enabledOverlays
-      .toSorted((left, right) => {
-        const leftProgram = overlays.get(left.file)!.program!;
-        const rightProgram = overlays.get(right.file)!.program!;
-        return (
-          rightProgram.priority - leftProgram.priority ||
-          (leftProgram.overlayId < rightProgram.overlayId
-            ? -1
-            : leftProgram.overlayId > rightProgram.overlayId
-              ? 1
-              : 0)
-        );
-      })
-      .forEach((grouped) => {
-        overlays.get(grouped.file)!.program!.edits.forEach((edit, index) => {
-          winners.set(edit.anchor, { grouped, operation: edit.operation, index });
+  return [...scopes.entries()].flatMap(
+    ([scope, enabledOverlays]): readonly SpecificationDiagnostic[] => {
+      const base = files.find(
+        ({ file }) =>
+          file.kind === "workflow" &&
+          file.provenance.resolutionScope === scope &&
+          workflows.get(file)?.program !== undefined,
+      );
+      if (base === undefined) {
+        return enabledOverlays.map(({ source, file }) => ({
+          code: "spec-kit-workflow-overlay-base-unobserved",
+          severity: "warning",
+          impact: "blocking",
+          explanation:
+            "The enabled overlay is preserved, but its anchors and native winning-operation conflicts cannot be verified without the observed base workflow tree.",
+          source: { sourceId: source.sourceId as never, documentId: file.path },
+        }));
+      }
+      const rawSteps = workflows.get(base.file)?.program?.definition.steps;
+      const steps = Array.isArray(rawSteps)
+        ? (rawSteps.filter(isPortableRecord) as JsonObject[])
+        : [];
+      const winners = new Map<string, WinningOverlayEdit>();
+      enabledOverlays
+        .toSorted((left, right) => {
+          const leftProgram = overlays.get(left.file)!.program!;
+          const rightProgram = overlays.get(right.file)!.program!;
+          return (
+            rightProgram.priority - leftProgram.priority ||
+            (leftProgram.overlayId < rightProgram.overlayId
+              ? -1
+              : leftProgram.overlayId > rightProgram.overlayId
+                ? 1
+                : 0)
+          );
+        })
+        .forEach((grouped) => {
+          overlays.get(grouped.file)!.program!.edits.forEach((edit, index) => {
+            winners.set(edit.anchor, { grouped, operation: edit.operation, index });
+          });
         });
-      });
-    return [...winners.entries()]
-      .toSorted(([leftAnchor], [rightAnchor]) =>
-        leftAnchor < rightAnchor ? -1 : leftAnchor > rightAnchor ? 1 : 0,
-      )
-      .flatMap(([anchor, winner]) => {
-        if (winner.operation !== "replace" && winner.operation !== "remove") return [];
-        const step = findWorkflowStep(steps, anchor);
-        if (step === null) return [];
-        const descendants = descendantStepIds(step);
-        return [...winners.keys()]
-          .filter((candidate) => descendants.has(candidate))
-          .sort(compareUtf16CodeUnits)
-          .map((descendant) => ({
-            code: "spec-kit-workflow-overlay-anchor-conflict",
-            severity: "error",
-            disposition: "rejected",
-            explanation: `Overlay anchor conflict: '${anchor}' is an ancestor of '${descendant}', and the ancestor's winning ${winner.operation} operation makes the result order-dependent.`,
-            source: {
-              sourceId: winner.grouped.source.sourceId as never,
-              documentId: winner.grouped.file.path,
-              location: `/edits/${winner.index}`,
-            },
-          }));
-      });
-  });
+      return [...winners.entries()]
+        .toSorted(([leftAnchor], [rightAnchor]) =>
+          leftAnchor < rightAnchor ? -1 : leftAnchor > rightAnchor ? 1 : 0,
+        )
+        .flatMap(([anchor, winner]) => {
+          if (winner.operation !== "replace" && winner.operation !== "remove") return [];
+          const step = findWorkflowStep(steps, anchor);
+          if (step === null) return [];
+          const descendants = descendantStepIds(step);
+          return [...winners.keys()]
+            .filter((candidate) => descendants.has(candidate))
+            .sort(compareUtf16CodeUnits)
+            .map((descendant) => ({
+              code: "spec-kit-workflow-overlay-anchor-conflict",
+              severity: "error",
+              impact: "blocking",
+              explanation: `Overlay anchor conflict: '${anchor}' is an ancestor of '${descendant}', and the ancestor's winning ${winner.operation} operation makes the result order-dependent.`,
+              source: {
+                sourceId: winner.grouped.source.sourceId as never,
+                documentId: winner.grouped.file.path,
+                location: `/edits/${winner.index}`,
+              },
+            }));
+        });
+    },
+  );
 };
 
 /**
@@ -718,18 +794,18 @@ export const importSpecKitFiles = (rawInput: SpecKitFileImportInput): SpecKitFil
   assertOverlayProvenance(parsedOverlays);
   assertWorkflowResolutionOrder(files, parsedOverlays);
   assertOverlayEditsAgainstBase(files, parsedWorkflows, parsedOverlays);
-  const issues: ConversionIssue[] = files.flatMap(({ source, file }) => {
+  const diagnostics: SpecificationDiagnostic[] = files.flatMap(({ source, file }) => {
     const sourceId = source.sourceId as never;
     if (file.kind === "workflow-state") {
       return [
         {
           code: "spec-kit-workflow-state-not-durable-checkpoint",
           severity: "warning",
-          disposition: "degraded",
+          impact: "advisory",
           explanation:
             "Local Spec Kit workflow state remains source-owned observation data; it is not an llm-core durable execution checkpoint.",
           source: { sourceId, documentId: file.path },
-        } satisfies ConversionIssue,
+        } satisfies SpecificationDiagnostic,
       ];
     }
     if (file.kind === "other") {
@@ -737,10 +813,10 @@ export const importSpecKitFiles = (rawInput: SpecKitFileImportInput): SpecKitFil
         {
           code: "spec-kit-unclassified-file-preserved",
           severity: "info",
-          disposition: "preserved",
+          impact: "advisory",
           explanation: "The unclassified Spec Kit file remains a source-owned artifact.",
           source: { sourceId, documentId: file.path },
-        } satisfies ConversionIssue,
+        } satisfies SpecificationDiagnostic,
       ];
     }
     return [
@@ -748,8 +824,11 @@ export const importSpecKitFiles = (rawInput: SpecKitFileImportInput): SpecKitFil
       ...(parsedOverlays.get(file)?.issues ?? []),
     ].map((issue) => issueForFile(source.sourceId, file, issue));
   });
-  issues.push(...overlayResolutionIssues(files, parsedWorkflows, parsedOverlays));
-  const report = createConversionReport({ fidelity: fidelityFor(issues), issues });
+  diagnostics.push(...overlayResolutionIssues(files, parsedWorkflows, parsedOverlays));
+  const blocking = diagnostics.find((diagnostic) => diagnostic.impact === "blocking");
+  if (blocking !== undefined) {
+    throw new TypeError(`Spec Kit portable derivation is unsupported: ${blocking.explanation}`);
+  }
   const sources = input.sources.map((source) =>
     createSpecificationSourceSnapshot({
       sourceId: source.sourceId as never,
@@ -811,12 +890,31 @@ export const importSpecKitFiles = (rawInput: SpecKitFileImportInput): SpecKitFil
     sources: sources as unknown as JsonValue[],
     nodes: nodes as unknown as JsonValue[],
     relationships: [],
-    report: report as unknown as JsonValue,
   };
   return capturePortable(
     {
       graph,
-      report,
+      operation: createSpecificationOperation({
+        operation: "derive-portable-specification",
+        sourceContract: {
+          authority: "Spec Kit repository",
+          format: SPEC_KIT_FILE_FORMAT,
+          revision: SPEC_KIT_ASSESSED_COMMIT,
+        },
+        disposition: "supported",
+        fixtures: [
+          { fixtureId: "spec-kit.workflow.core.c0fe0e4", digest: CORE_WORKFLOW_FIXTURE_DIGEST },
+          {
+            fixtureId: "spec-kit.workflow.control-flow.c0fe0e4",
+            digest: CONTROL_WORKFLOW_FIXTURE_DIGEST,
+          },
+          {
+            fixtureId: "spec-kit.workflow.overlay.installed.c0fe0e4",
+            digest: WORKFLOW_OVERLAY_FIXTURE_DIGEST,
+          },
+        ],
+        diagnostics,
+      }),
       support: [SPEC_KIT_FILE_SUPPORT, SPEC_KIT_CLI_SUPPORT] as const,
     },
     "Spec Kit file import result",

@@ -2,14 +2,14 @@ import { createHash } from "node:crypto";
 import { contractVersion, digest, extensionNamespace, type JsonValue } from "#contracts";
 import { cloneFrozen, hasOnlyKeys, isPortableRecord } from "#shared/portable-data";
 import {
-  createConversionReport,
   createSpecificationAdapterSupport,
+  createSpecificationOperation,
   createSpecificationSourceSnapshot,
-  type ConversionIssue,
+  type SpecificationDiagnostic,
   type SpecificationAdapterSupport,
   type SpecificationFormat,
   type SpecificationSourceSnapshot,
-} from "@geekist/llm-core/specifications";
+} from "@aifsd/llm-core/specifications";
 import {
   assertFileInput,
   assertTimestamp,
@@ -63,14 +63,8 @@ const MEMLOG_FIXTURE_DIGEST = digest(
 const DEV_AUTO_FIXTURE_DIGEST = digest(
   "b1440f9bfde8a3226b553942a3032ec8f4f163d15ac5e30e26473dc7635558cc",
 );
-const PROFILE_EVIDENCE_DIGEST = digest(
-  "96bd49916363073d6e9c0150fe50c17aef80cdd2c5e4fd1f9ceee41b8aa5bb22",
-);
 const CLI_VERSION_FIXTURE_DIGEST = digest(
   "81254ec8251acd235eecc3375f5dc6931a9fd2c4405b0c2e2760aaa7b960307b",
-);
-const CLI_EVIDENCE_DIGEST = digest(
-  "f4c35a8289947502dbadcb867b09db4ef1454774f973e0c85941b3ffabca7fb9",
 );
 
 const sha256 = (value: string) => digest(createHash("sha256").update(value).digest("hex"));
@@ -81,39 +75,139 @@ const sourceContentDigest = (artifacts: BmadFileImportInput["artifacts"]) =>
 /** Pinned semantic support: flat memlogs and Dev Auto lifecycle results. */
 export const BMAD_FILE_SUPPORT: SpecificationAdapterSupport = createSpecificationAdapterSupport({
   format: BMAD_FILE_FORMAT,
-  direction: "import",
-  supportedVersions: [BMAD_ASSESSED_VERSION],
-  levels: ["syntax", "semantic"],
-  features: [
-    "artifact-byte-preservation",
-    "memlog-v6.10.0-record-observation",
-    "dev-auto-v6.10.0-frontmatter-and-result-observation",
-    "source-ownership-preservation",
-    "blocked-outcome-observation",
-    "partial-unparsed-convention-reporting",
-  ],
-  preservedExtensionNamespaces: [EXTENSION],
+  authority: "BMAD Method repository",
+  revision: "bb45db4aa4496c69239f9c0629c290fd1b072fc9",
   sourceOwnership: "source-owned",
-  writeBack: "unsupported",
-  fixtures: [
-    { fixtureId: "bmad.file.memlog.v6.10.0", digest: MEMLOG_FIXTURE_DIGEST },
-    { fixtureId: "bmad.file.dev-auto-blocked.v6.10.0", digest: DEV_AUTO_FIXTURE_DIGEST },
+  operations: [
+    createSpecificationOperation({
+      operation: "observe-native-source",
+      sourceContract: {
+        authority: "BMAD Method repository",
+        format: BMAD_FILE_FORMAT,
+        revision: "bb45db4aa4496c69239f9c0629c290fd1b072fc9",
+      },
+      disposition: "supported",
+      fixtures: [
+        { fixtureId: "bmad.file.memlog.v6.10.0", digest: MEMLOG_FIXTURE_DIGEST },
+        { fixtureId: "bmad.file.dev-auto-blocked.v6.10.0", digest: DEV_AUTO_FIXTURE_DIGEST },
+      ],
+      diagnostics: [],
+    }),
+    createSpecificationOperation({
+      operation: "derive-portable-specification",
+      sourceContract: {
+        authority: "BMAD Method repository",
+        format: BMAD_FILE_FORMAT,
+        revision: "bb45db4aa4496c69239f9c0629c290fd1b072fc9",
+      },
+      disposition: "supported",
+      fixtures: [
+        { fixtureId: "bmad.file.memlog.v6.10.0", digest: MEMLOG_FIXTURE_DIGEST },
+        { fixtureId: "bmad.file.dev-auto-blocked.v6.10.0", digest: DEV_AUTO_FIXTURE_DIGEST },
+      ],
+      diagnostics: [],
+    }),
+    createSpecificationOperation({
+      operation: "compile-portable-specification",
+      sourceContract: {
+        authority: "BMAD Method repository",
+        format: BMAD_FILE_FORMAT,
+        revision: "bb45db4aa4496c69239f9c0629c290fd1b072fc9",
+      },
+      disposition: "unsupported",
+      reason: "BMAD portable compilation is not implemented.",
+      diagnostics: [],
+    }),
+    createSpecificationOperation({
+      operation: "export-native-source",
+      sourceContract: {
+        authority: "BMAD Method repository",
+        format: BMAD_FILE_FORMAT,
+        revision: "bb45db4aa4496c69239f9c0629c290fd1b072fc9",
+      },
+      disposition: "unsupported",
+      reason: "BMAD native export is not implemented.",
+      diagnostics: [],
+    }),
+    createSpecificationOperation({
+      operation: "round-trip-native-source",
+      sourceContract: {
+        authority: "BMAD Method repository",
+        format: BMAD_FILE_FORMAT,
+        revision: "bb45db4aa4496c69239f9c0629c290fd1b072fc9",
+      },
+      disposition: "unsupported",
+      reason: "BMAD native round trip is not implemented.",
+      diagnostics: [],
+    }),
   ],
-  evidence: [{ evidenceId: "bmad.profile.state-memory.bb45db4", digest: PROFILE_EVIDENCE_DIGEST }],
 });
 
 /** `bmad --version` is the only qualified 6.10.0 CLI invocation. */
 export const BMAD_CLI_SUPPORT: SpecificationAdapterSupport = createSpecificationAdapterSupport({
   format: BMAD_CLI_FORMAT,
-  direction: "import",
-  supportedVersions: [BMAD_ASSESSED_VERSION],
-  levels: ["syntax"],
-  features: ["bmad-version-command-observation"],
-  preservedExtensionNamespaces: [EXTENSION],
+  authority: "BMAD Method CLI",
+  revision: "bb45db4aa4496c69239f9c0629c290fd1b072fc9",
   sourceOwnership: "source-owned",
-  writeBack: "unsupported",
-  fixtures: [{ fixtureId: "bmad.cli.version-stdout.v6.10.0", digest: CLI_VERSION_FIXTURE_DIGEST }],
-  evidence: [{ evidenceId: "bmad.cli-source.version.bb45db4", digest: CLI_EVIDENCE_DIGEST }],
+  operations: [
+    createSpecificationOperation({
+      operation: "observe-native-source",
+      sourceContract: {
+        authority: "BMAD Method CLI",
+        format: BMAD_CLI_FORMAT,
+        revision: "bb45db4aa4496c69239f9c0629c290fd1b072fc9",
+      },
+      disposition: "supported",
+      fixtures: [
+        { fixtureId: "bmad.cli.version-stdout.v6.10.0", digest: CLI_VERSION_FIXTURE_DIGEST },
+      ],
+      diagnostics: [],
+    }),
+    createSpecificationOperation({
+      operation: "derive-portable-specification",
+      sourceContract: {
+        authority: "BMAD Method CLI",
+        format: BMAD_CLI_FORMAT,
+        revision: "bb45db4aa4496c69239f9c0629c290fd1b072fc9",
+      },
+      disposition: "unsupported",
+      reason: "BMAD CLI portable derivation is not implemented.",
+      diagnostics: [],
+    }),
+    createSpecificationOperation({
+      operation: "compile-portable-specification",
+      sourceContract: {
+        authority: "BMAD Method CLI",
+        format: BMAD_CLI_FORMAT,
+        revision: "bb45db4aa4496c69239f9c0629c290fd1b072fc9",
+      },
+      disposition: "unsupported",
+      reason: "BMAD CLI portable compilation is not implemented.",
+      diagnostics: [],
+    }),
+    createSpecificationOperation({
+      operation: "export-native-source",
+      sourceContract: {
+        authority: "BMAD Method CLI",
+        format: BMAD_CLI_FORMAT,
+        revision: "bb45db4aa4496c69239f9c0629c290fd1b072fc9",
+      },
+      disposition: "unsupported",
+      reason: "BMAD CLI native export is not implemented.",
+      diagnostics: [],
+    }),
+    createSpecificationOperation({
+      operation: "round-trip-native-source",
+      sourceContract: {
+        authority: "BMAD Method CLI",
+        format: BMAD_CLI_FORMAT,
+        revision: "bb45db4aa4496c69239f9c0629c290fd1b072fc9",
+      },
+      disposition: "unsupported",
+      reason: "BMAD CLI native round trip is not implemented.",
+      diagnostics: [],
+    }),
+  ],
 });
 
 const stableIdentity = (kind: "artifact" | "memlog-record", parts: readonly JsonValue[]): string =>
@@ -230,18 +324,18 @@ const memoryNode = (
   };
 };
 
-const conversionIssues = ({
+const derivationDiagnostics = ({
   input,
   memlogs,
   outcomes,
   unparsed,
-}: ParsedImport): ConversionIssue[] => {
+}: ParsedImport): SpecificationDiagnostic[] => {
   const sourceId = input.sourceId as never;
   return [
     {
       code: "bmad-source-owned-artifacts",
       severity: "info",
-      disposition: "preserved",
+      impact: "advisory",
       explanation:
         "BMAD artifact bytes and lifecycle state remain source-owned; this detached import grants no write-back or execution authority.",
       source: { sourceId, documentId: input.artifacts[0]!.path },
@@ -249,7 +343,7 @@ const conversionIssues = ({
     ...memlogs.map((memlog) => ({
       code: "bmad-append-only-memory-preserved",
       severity: "info" as const,
-      disposition: "preserved" as const,
+      impact: "advisory" as const,
       explanation:
         "BMAD memlog body entries are retained as append-only evidence with body-relative identities, not mutable node metadata.",
       source: { sourceId, documentId: memlog.path },
@@ -259,7 +353,7 @@ const conversionIssues = ({
       .map((outcome) => ({
         code: "bmad-blocked-outcome-preserved",
         severity: "warning" as const,
-        disposition: "preserved" as const,
+        impact: "advisory" as const,
         explanation:
           "BMAD blocked is a parsed source workflow outcome, not successful completion or llm-core rejection.",
         source: { sourceId, documentId: outcome.artifactPath },
@@ -267,7 +361,7 @@ const conversionIssues = ({
     ...unparsed.map(({ path, convention }) => ({
       code: "bmad-unparsed-convention-preserved",
       severity: "warning" as const,
-      disposition: "degraded" as const,
+      impact: "advisory" as const,
       explanation: `${convention} are byte-preserved but deliberately not interpreted by the BMAD 6.10.0 adapter. This is a partial observation, not a source terminal status.`,
       source: { sourceId, documentId: path },
     })),
@@ -293,10 +387,7 @@ export const importBmadFiles = (rawInput: BmadFileImportInput): BmadImportedSpec
   }));
   const parsed = { input, artifacts, classified, memlogs, outcomes, unparsed };
   const source = sourceSnapshot(parsed);
-  const report = createConversionReport({
-    fidelity: "partial",
-    issues: conversionIssues(parsed),
-  });
+  const diagnostics = derivationDiagnostics(parsed);
   return cloneFrozen({
     graph: {
       graphId: stableIdentity("artifact", [input.sourceId, "graph", input.revision]),
@@ -307,8 +398,21 @@ export const importBmadFiles = (rawInput: BmadFileImportInput): BmadImportedSpec
         ...memlogs.flatMap((memlog) => memlog.records.map((record) => memoryNode(input, record))),
       ],
       relationships: [],
-      report,
     },
+    operation: createSpecificationOperation({
+      operation: "derive-portable-specification",
+      sourceContract: {
+        authority: "BMAD Method repository",
+        format: BMAD_FILE_FORMAT,
+        revision: "bb45db4aa4496c69239f9c0629c290fd1b072fc9",
+      },
+      disposition: "supported",
+      fixtures: [
+        { fixtureId: "bmad.file.memlog.v6.10.0", digest: MEMLOG_FIXTURE_DIGEST },
+        { fixtureId: "bmad.file.dev-auto-blocked.v6.10.0", digest: DEV_AUTO_FIXTURE_DIGEST },
+      ],
+      diagnostics,
+    }),
     support: [BMAD_FILE_SUPPORT, BMAD_CLI_SUPPORT],
   }) as BmadImportedSpecification;
 };

@@ -1,10 +1,11 @@
-import { afterAll, beforeAll, describe, expect, it, mock } from "bun:test";
+import { afterAll, beforeAll, beforeEach, describe, expect, it, mock } from "bun:test";
 import { coreId, type JsonValue, type ToolCallId } from "#contracts";
 import { createBuiltinModelProfile, type ModelProfile } from "../../../src/features/model/runtime";
 import {
   INVOCATION_ID,
   TOOL_CALL_ID,
   asAsyncIterable,
+  completeGenerateTextResult,
   rejectUnexpectedEmbedding,
   usage,
   type ModelAdapterOverrides,
@@ -16,6 +17,7 @@ let capturedGenerateOptions: Record<string, unknown> | undefined;
 let capturedStreamOptions: Record<string, unknown> | undefined;
 let createAiSdk7Model: typeof import("../../../src/adapters/ai-sdk").createAiSdk7Model;
 let createInMemoryAiSdk7ToolCallCorrelationStore: typeof import("../../../src/adapters/ai-sdk").createInMemoryAiSdk7ToolCallCorrelationStore;
+const nativeEvents: import("../../../src/adapters/ai-sdk").AiSdk7NativeEvent[] = [];
 
 beforeAll(async () => {
   generated = {};
@@ -26,7 +28,7 @@ beforeAll(async () => {
       if (generated.throw) {
         throw generated.throw;
       }
-      return generated;
+      return completeGenerateTextResult(generated);
     },
     streamText: (options: Record<string, unknown>) => {
       capturedStreamOptions = options;
@@ -49,12 +51,21 @@ beforeAll(async () => {
 });
 
 afterAll(() => mock.restore());
+beforeEach(() => {
+  nativeEvents.length = 0;
+});
 
 const createAdapter = (overrides?: ModelAdapterOverrides) =>
   createAiSdk7Model({
     model: "test-provider/test-model",
     profile: createBuiltinModelProfile(),
     toolCallCorrelationStore: createInMemoryAiSdk7ToolCallCorrelationStore({ maxScopes: 32 }),
+    nativeContract: {
+      redact: ({ value }) => value,
+      observe: (event) => {
+        nativeEvents.push(event);
+      },
+    },
     createToolCallId: overrides?.createToolCallId ?? (() => TOOL_CALL_ID),
     ...overrides,
   });
@@ -122,7 +133,7 @@ describe("AI SDK 7 frozen model adapter", () => {
       output: undefined,
       finishReason: "tool-calls",
       usage,
-      warnings: [{ type: "unsupported-setting", setting: "seed" }],
+      warnings: [{ type: "unsupported", feature: "seed", details: "ignored by provider" }],
       response: { id: "request-1", modelId: "provider-model", timestamp: new Date(0) },
       providerMetadata: { provider: { secret: "must-not-survive", region: "sg" } },
     };
@@ -130,7 +141,19 @@ describe("AI SDK 7 frozen model adapter", () => {
     const adapter = createAdapter({
       resolveAbortSignal: () => abortController.signal,
       classifyToolApproval: () => "user-approval",
-      redactProviderMetadata: () => ({ region: "sg" }),
+      nativeContract: {
+        redact: ({ kind, value }) => {
+          if (kind === "provider-metadata") return { provider: { region: "sg" } };
+          if (kind === "approval") {
+            return { approvalId: "approval-1", toolCallId: "provider-call" };
+          }
+          if (kind === "step" || kind === "final-step") return { redacted: true };
+          return value;
+        },
+        observe: (event) => {
+          nativeEvents.push(event);
+        },
+      },
     });
 
     const response = await adapter.generate({
@@ -172,8 +195,8 @@ describe("AI SDK 7 frozen model adapter", () => {
       cachedInputTokens: 2,
     });
     expect(response.warnings?.[0]).toMatchObject({
-      code: "ai-sdk.unsupported-setting",
-      message: "AI SDK provider reported a redacted warning.",
+      code: "ai-sdk.unsupported",
+      message: "Unsupported AI SDK feature: seed (ignored by provider)",
     });
     expect(response.metadata).toMatchObject({
       provider: adapter.profile.provider,
@@ -182,8 +205,15 @@ describe("AI SDK 7 frozen model adapter", () => {
     });
     const serializedMetadata = JSON.stringify(response.metadata);
     expect(serializedMetadata).toContain('"region":"sg"');
-    expect(serializedMetadata).toContain('"approvalId":"approval-1"');
     expect(serializedMetadata).not.toContain("must-not-survive");
+    expect(JSON.stringify(nativeEvents)).not.toContain("must-not-survive");
+    expect(nativeEvents).toContainEqual(
+      expect.objectContaining({
+        namespace: "dev.ai-sdk",
+        kind: "approval",
+        value: { approvalId: "approval-1", toolCallId: "provider-call" },
+      }),
+    );
     expect(capturedGenerateOptions?.instructions).toBe("be concise");
     expect(capturedGenerateOptions?.abortSignal).toBe(abortController.signal);
 

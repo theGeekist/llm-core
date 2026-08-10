@@ -16,7 +16,7 @@ describe("Spec Kit adapter", () => {
   test("parses the byte-pinned core schema-v1.0 workflow without flattening gates", () => {
     const result = parseSpecKitWorkflow(fixture("workflow-core-c0fe0e4.yml"));
 
-    expect(result.issues.map((issue) => issue.disposition)).toEqual(["preserved"]);
+    expect(result.issues.map((issue) => issue.impact)).toEqual(["advisory"]);
     expect(result.program).toMatchObject({
       schemaVersion: "1.0",
       workflowId: "speckit",
@@ -74,7 +74,7 @@ describe("Spec Kit adapter", () => {
   test("parses the byte-captured installed native overlay and all qualified edit forms", () => {
     const result = parseSpecKitWorkflowOverlay(fixture("workflow-overlay-installed-c0fe0e4.yml"));
 
-    expect(result.issues.map((issue) => issue.disposition)).toEqual(["preserved"]);
+    expect(result.issues.map((issue) => issue.impact)).toEqual(["advisory"]);
     expect(result.program).toMatchObject({
       overlayId: "review-hardening",
       extendsWorkflowId: "speckit",
@@ -131,7 +131,7 @@ edits:
     invalidOverlays.forEach((content) => {
       const parsed = parseSpecKitWorkflowOverlay(content);
       expect(parsed.program).toBeUndefined();
-      expect(parsed.issues.some((issue) => issue.disposition === "rejected")).toBe(true);
+      expect(parsed.issues.some((issue) => issue.impact === "blocking")).toBe(true);
     });
 
     const mismatchedProvenance = [
@@ -222,7 +222,7 @@ edits:
         ],
       },
     ]);
-    expect(accepted.report.fidelity).toBe("exact");
+    expect(accepted.operation.disposition).toBe("supported");
 
     const malformedDisabled = {
       ...workflowOverlayFile("ignored", 1, false, 99),
@@ -235,7 +235,11 @@ edits:
           revision: "git:disabled",
           role: "overlay",
           authority: "advisory",
-          files: [malformedDisabled, workflowOverlayFile("alpha", 5, true, 0)],
+          files: [
+            malformedDisabled,
+            workflowOverlayFile("alpha", 5, true, 0),
+            { ...base, provenance: { ...base.provenance, order: 1 } },
+          ],
         },
       ]),
     ).not.toThrow();

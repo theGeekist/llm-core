@@ -1,11 +1,11 @@
 import { describe, expect, test } from "bun:test";
 import { contractVersion, digest, extensionNamespace } from "#contracts";
 import {
-  createConversionReport,
   createProposedSpecificationChange,
   createSpecificationAdapterSupport,
   createSpecificationDecision,
   createSpecificationDecisionRecord,
+  createSpecificationOperation,
   createSpecificationSourceSnapshot,
   type ProposedSpecificationChange,
   type SpecificationDecisionRecord,
@@ -109,9 +109,12 @@ const proposal = (): ProposedSpecificationChange =>
     changes: { operation: "replace", path: "/requirements/0", value: "Serve every user" },
     originatingDecision: { recordId: "decision-record.1", resolvedDigest },
     evidence: [{ evidenceId: "evidence.review", digest: evidenceDigest }],
-    conversion: {
-      fidelity: "exact",
-      issues: [],
+    operation: {
+      operation: "export-native-source",
+      sourceContract: { authority: "Example specification", format, revision: "revision.1" },
+      disposition: "supported",
+      fixtures: [{ fixtureId: "fixture.export.v1", digest: evidenceDigest }],
+      diagnostics: [],
     },
   }) as unknown as ProposedSpecificationChange;
 
@@ -268,107 +271,134 @@ describe("specification contracts", () => {
     untraced.nodes[0]!.source.documentId = "missing.document";
     expect(() => createSpecificationGraph(untraced as never)).toThrow("declared source documents");
 
-    const reportWithUnknownSource = structuredClone(graphInput()) as unknown as {
+    const graphWithObsoleteReport = structuredClone(graphInput()) as unknown as {
       report: unknown;
     };
-    reportWithUnknownSource.report = {
-      fidelity: "partial",
-      issues: [
-        {
-          code: "missing-source",
-          severity: "warning",
-          disposition: "degraded",
-          explanation: "The source could not be resolved.",
-          source: { sourceId: "missing.source", documentId: "missing.document" },
-        },
-      ],
-    };
-    expect(() => createSpecificationGraph(reportWithUnknownSource as never)).toThrow(
-      "conversion report issue bindings to declared source documents",
-    );
-
-    const reportWithUnknownNode = structuredClone(graphInput()) as unknown as {
-      report: unknown;
-    };
-    reportWithUnknownNode.report = {
-      fidelity: "rejected",
-      issues: [
-        {
-          code: "missing-node",
-          severity: "error",
-          disposition: "rejected",
-          explanation: "The canonical node could not be resolved.",
-          nodeId: "missing.node",
-        },
-      ],
-    };
-    expect(() => createSpecificationGraph(reportWithUnknownNode as never)).toThrow(
-      "conversion report issue node identities that reference declared graph nodes",
+    graphWithObsoleteReport.report = { fidelity: "partial", issues: [] };
+    expect(() => createSpecificationGraph(graphWithObsoleteReport as never)).toThrow(
+      "closed specification graphs",
     );
   });
 
-  test("declares versioned adapter support and records conversion loss explicitly", () => {
-    const support = createSpecificationAdapterSupport({
-      format,
-      direction: "both",
-      supportedVersions: [contractVersion("1.0.0")],
-      levels: ["syntax", "semantic"],
-      features: ["requirements", "decisions"],
-      preservedExtensionNamespaces: [extensionNamespace("org.example.source")],
-      sourceOwnership: "source-owned",
-      writeBack: "proposal-only",
+  test("declares exact adapter operations without treating diagnostics as support levels", () => {
+    const observation = createSpecificationOperation({
+      operation: "observe-native-source",
+      sourceContract: { authority: "Example specification", format, revision: "revision.1" },
+      disposition: "supported",
       fixtures: [{ fixtureId: "fixture.openspec.v1", digest: evidenceDigest }],
-      evidence: [{ evidenceId: "evidence.openspec.v1", digest: evidenceDigest }],
-    });
-    expect(Object.isFrozen(support)).toBe(true);
-    expect(support.writeBack).toBe("proposal-only");
-
-    expect(() =>
-      createSpecificationAdapterSupport({
-        ...support,
-        writeBack: "implicit" as never,
-      }),
-    ).toThrow("known adapter write-back behaviors");
-    expect(() =>
-      createSpecificationAdapterSupport({
-        ...support,
-        writeBack: "source-authorized",
-      }),
-    ).toThrow("source-authorized write-back to declare lifecycle conformance");
-    expect(() =>
-      createSpecificationAdapterSupport({
-        ...support,
-        fixtures: [],
-      }),
-    ).toThrow("at least one adapter support fixture");
-
-    const partial = createConversionReport({
-      fidelity: "partial",
-      issues: [
+      diagnostics: [
         {
-          code: "workflow-loop",
-          severity: "warning",
-          disposition: "degraded",
-          explanation: "The target cannot express the bounded loop.",
-          source: { sourceId, documentId: "root.document", location: "/workflow" },
+          code: "source-owned",
+          severity: "info",
+          impact: "advisory",
+          explanation: "The detached observation does not grant write authority.",
+          source: { sourceId, documentId: "root.document" },
         },
       ],
     });
-    expect(partial.issues[0]?.disposition).toBe("degraded");
+    const support = createSpecificationAdapterSupport({
+      format,
+      authority: "Example specification",
+      revision: "revision.1",
+      sourceOwnership: "source-owned",
+      operations: [
+        observation,
+        createSpecificationOperation({
+          operation: "derive-portable-specification",
+          sourceContract: { authority: "Example specification", format, revision: "revision.1" },
+          disposition: "unsupported",
+          reason: "Portable derivation is not implemented.",
+          diagnostics: [],
+        }),
+        createSpecificationOperation({
+          operation: "compile-portable-specification",
+          sourceContract: { authority: "Example specification", format, revision: "revision.1" },
+          disposition: "unsupported",
+          reason: "Portable compilation is not implemented.",
+          diagnostics: [],
+        }),
+        createSpecificationOperation({
+          operation: "export-native-source",
+          sourceContract: { authority: "Example specification", format, revision: "revision.1" },
+          disposition: "unsupported",
+          reason: "Native export is not implemented.",
+          diagnostics: [],
+        }),
+        createSpecificationOperation({
+          operation: "round-trip-native-source",
+          sourceContract: { authority: "Example specification", format, revision: "revision.1" },
+          disposition: "not-applicable",
+          reason: "The source contract does not define round trip.",
+          evidence: [{ evidenceId: "evidence.no-round-trip", digest: evidenceDigest }],
+          diagnostics: [],
+        }),
+      ],
+    });
+    expect(Object.isFrozen(support)).toBe(true);
+    expect(support.operations[0]?.disposition).toBe("supported");
+
     expect(() =>
-      createConversionReport({
-        fidelity: "exact",
-        issues: [
-          {
-            code: "loss",
-            severity: "error",
-            disposition: "rejected",
-            explanation: "Loss is not exact.",
-            nodeId: firstNodeId,
-          },
-        ],
+      createSpecificationAdapterSupport({
+        ...support,
+        operations: [] as never,
       }),
-    ).toThrow("exact conversion");
+    ).toThrow("closed adapter operation matrix");
+    for (const sourceContract of [
+      { ...observation.sourceContract, authority: "Forged authority" },
+      { ...observation.sourceContract, revision: "revision.forged" },
+      {
+        ...observation.sourceContract,
+        format: { ...observation.sourceContract.format, id: extensionNamespace("example.forged") },
+      },
+      {
+        ...observation.sourceContract,
+        format: { ...observation.sourceContract.format, version: contractVersion("2.0.0") },
+      },
+    ]) {
+      expect(() =>
+        createSpecificationAdapterSupport({
+          ...support,
+          operations: support.operations.map((operation, index) =>
+            index === 0 ? { ...operation, sourceContract } : operation,
+          ) as never,
+        }),
+      ).toThrow("exactly matching adapter authority, format, and revision");
+    }
+    expect(() =>
+      createSpecificationAdapterSupport({
+        ...support,
+        operations: [...support.operations.slice(0, 4), support.operations[3]] as never,
+      }),
+    ).toThrow(/unique adapter operation identities|closed adapter operation matrix/);
+    expect(() =>
+      createSpecificationAdapterSupport({
+        ...support,
+        operations: [
+          support.operations[1],
+          support.operations[0],
+          ...support.operations.slice(2),
+        ] as never,
+      }),
+    ).toThrow("canonical operation-family order");
+    expect(() =>
+      createSpecificationOperation({
+        operation: "derive-portable-specification",
+        sourceContract: { authority: "Example specification", format, revision: "revision.1" },
+        disposition: "supported",
+        fixtures: [],
+        diagnostics: [],
+      }),
+    ).toThrow("at least one supported-operation fixture");
+    expect(() =>
+      createSpecificationOperation({
+        operation: "round-trip-native-source",
+        sourceContract: { authority: "Example specification", format, revision: "revision.1" },
+        disposition: "not-applicable",
+        reason: "The source contract has no round-trip operation.",
+        diagnostics: [],
+        evidence: [],
+      }),
+    ).toThrow("source-contract evidence for not-applicable operations");
   });
 
   test("keeps decision records and change proposals portable, immutable, and non-operative", () => {
@@ -381,6 +411,41 @@ describe("specification contracts", () => {
     expect(Object.isFrozen(change)).toBe(true);
     expect(Object.hasOwn(change, "apply")).toBe(false);
     expect(change.target.baseDigest).toEqual(sourceDigest);
+
+    expect(() =>
+      createProposedSpecificationChange({
+        ...proposal(),
+        operation: { ...proposal().operation, operation: "derive-portable-specification" },
+      } as never),
+    ).toThrow("native-source export operation family");
+    expect(() =>
+      createProposedSpecificationChange({
+        ...proposal(),
+        operation: {
+          ...proposal().operation,
+          sourceContract: {
+            ...proposal().operation.sourceContract,
+            format: {
+              id: extensionNamespace("example.other-specification"),
+              version: contractVersion("1.0.0"),
+            },
+          },
+        },
+      }),
+    ).toThrow("exact target format");
+    expect(() =>
+      createProposedSpecificationChange({
+        ...proposal(),
+        operation: {
+          operation: "export-native-source",
+          sourceContract: { authority: "Example specification", format, revision: "revision.1" },
+          disposition: "not-applicable",
+          reason: "Export does not apply.",
+          evidence: [{ evidenceId: "evidence.no-export", digest: evidenceDigest }],
+          diagnostics: [],
+        },
+      }),
+    ).toThrow("model unavailable support as unsupported");
 
     expect(() =>
       createSpecificationDecision({

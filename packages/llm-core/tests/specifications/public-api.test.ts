@@ -57,7 +57,7 @@ const acceptedPolicy = (current = { revision: "revision.1" }): SpecificationPoli
       "requirement.prerequisite",
       "requirement.runtime",
     ]);
-    expect(review.issues.map((issue) => issue.code)).toContain("source-extension");
+    expect(review.issues).toEqual([]);
     return createSpecificationDecision({
       status: "accepted",
       record: createSpecificationDecisionRecord({
@@ -185,18 +185,6 @@ describe("specification public API", () => {
           source: { sourceId: "source.runtime", documentId: "root" },
         },
       ],
-      report: {
-        fidelity: "partial",
-        issues: [
-          {
-            code: "source-extension",
-            severity: "warning",
-            disposition: "degraded",
-            explanation: "The source extension remains namespaced portable data.",
-            nodeId: "requirement.runtime",
-          },
-        ],
-      },
     });
     const decision = await reviewSpecification(specification, {
       policy: acceptedPolicy(),
@@ -260,18 +248,6 @@ describe("specification public API", () => {
           source: { sourceId: "source.runtime", documentId: "root" },
         },
       ],
-      report: {
-        fidelity: "partial",
-        issues: [
-          {
-            code: "source-extension",
-            severity: "warning",
-            disposition: "degraded",
-            explanation: "The source extension remains namespaced portable data.",
-            nodeId: "requirement.runtime",
-          },
-        ],
-      },
     });
     const decision = await reviewSpecification(specification, { policy: acceptedPolicy(current) });
     if (decision.status !== "accepted") throw new TypeError("Expected an accepted decision.");
@@ -316,7 +292,7 @@ describe("specification public API", () => {
         {
           code: "not-accepted",
           severity: "error",
-          disposition: "rejected",
+          impact: "blocking",
           explanation: "This decision was not accepted.",
           nodeId: "requirement.runtime" as never,
         },

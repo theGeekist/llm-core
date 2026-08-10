@@ -130,10 +130,15 @@ describe("PydanticAI AgentSpec adapter", () => {
   });
 
   test("binds support evidence to immutable fixture and validator bytes", () => {
-    expect(PYDANTIC_AI_AGENT_SPEC_SUPPORT.fixtures[0]?.digest.value).toBe(
+    const compilation = PYDANTIC_AI_AGENT_SPEC_SUPPORT.operations.find(
+      (operation) => operation.operation === "compile-portable-specification",
+    );
+    if (compilation?.disposition !== "supported")
+      throw new TypeError("Expected compilation support.");
+    expect(compilation.fixtures[0]?.digest.value).toBe(
       hash(fixtureBytes("safe-agent-spec-v2.19.0.json")),
     );
-    expect(PYDANTIC_AI_AGENT_SPEC_SUPPORT.evidence[0]?.digest.value).toBe(
+    expect(compilation.fixtures[1]?.digest.value).toBe(
       hash(fixtureBytes("validate_agent_spec.py")),
     );
   });
@@ -154,25 +159,20 @@ describe("PydanticAI AgentSpec adapter", () => {
 
   test("declares the exact declarative AgentSpec boundary", () => {
     expect(PYDANTIC_AI_AGENT_SPEC_SUPPORT).toMatchObject({
-      direction: "export",
-      levels: ["compilation"],
-      supportedVersions: ["2.19.0"],
+      authority: "PydanticAI AgentSpec",
+      revision: "ed0f40c0e5061722f7d9f579ed7efff1b74e3ea5",
       sourceOwnership: "source-owned",
-      writeBack: "unsupported",
     });
-    expect(PYDANTIC_AI_AGENT_SPEC_SUPPORT.features).toEqual(
-      expect.arrayContaining(["agent-name", "model-id", "literal-instructions"]),
-    );
-    expect(PYDANTIC_AI_AGENT_SPEC_SUPPORT.features).not.toEqual(
+    expect(PYDANTIC_AI_AGENT_SPEC_SUPPORT.operations).toEqual(
       expect.arrayContaining([
-        "literal-description",
-        "metadata",
-        "model-settings",
-        "model-requirements",
-        "prompt-templates",
-        "tools",
-        "context",
-        "evaluation",
+        expect.objectContaining({
+          operation: "compile-portable-specification",
+          disposition: "supported",
+        }),
+        expect.objectContaining({
+          operation: "round-trip-native-source",
+          disposition: "unsupported",
+        }),
       ]),
     );
   });

@@ -1,13 +1,13 @@
 export { createAiSdk7Model } from "./provider-model";
 export { createInMemoryAiSdk7ToolCallCorrelationStore } from "./provider-correlation-store";
-export {
-  AI_SDK_EXTENSION_NAMESPACE,
-  AI_SDK_SUPPORTED_VERSION,
-  AI_SDK7_SEMANTIC_LOSS,
-} from "./provider-metadata";
+export { AI_SDK_EXTENSION_NAMESPACE, AI_SDK_SUPPORTED_VERSION } from "./provider-metadata";
+export { AI_SDK7_AUTHORITY, AI_SDK7_OPERATION_DISPOSITIONS } from "./native-contract";
 export type {
   AiSdk7AbortSignalResolver,
-  AiSdk7ProviderMetadataRedactor,
+  AiSdk7NativeContract,
+  AiSdk7NativeEvent,
+  AiSdk7NativeEventKind,
+  AiSdk7NativeOperation,
   AiSdk7ToolCallCorrelation,
   AiSdk7ToolCallCorrelationScope,
   AiSdk7ToolCallCorrelationStore,

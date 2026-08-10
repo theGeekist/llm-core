@@ -1,7 +1,7 @@
 import type { ContractVersion, Digest } from "#contracts";
 import type { MaybePromise } from "#shared/maybe";
 import type {
-  ConversionIssue,
+  SpecificationDiagnostic,
   SpecificationDecision,
   SpecificationDecisionRecord,
   SpecificationGraph,
@@ -85,7 +85,7 @@ export interface SpecificationReview {
   readonly dependency: SpecificationDependencyPlan;
   readonly workflow: SpecificationWorkflowPlan;
   readonly decision: SpecificationDecision;
-  readonly issues: readonly ConversionIssue[];
+  readonly issues: readonly SpecificationDiagnostic[];
   readonly questions: readonly SpecificationQuestion[];
 }
 

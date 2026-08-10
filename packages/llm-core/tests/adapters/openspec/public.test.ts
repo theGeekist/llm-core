@@ -17,6 +17,12 @@ const fixture = (name: string): string =>
   readFileSync(new URL(`./fixtures/${name}`, import.meta.url), "utf8");
 
 const hash = (value: string): string => createHash("sha256").update(value).digest("hex");
+const supportedOperation = (support: typeof OPENSPEC_FILE_SUPPORT, operation: string) => {
+  const declaration = support.operations.find((candidate) => candidate.operation === operation);
+  if (declaration?.disposition !== "supported")
+    throw new TypeError("Expected supported operation.");
+  return declaration;
+};
 
 const common = {
   version: contractVersion("1.6.0"),
@@ -44,12 +50,13 @@ describe("OpenSpec adapter", () => {
     });
 
     expect(imported.snapshot).toMatchObject({ role: "primary", authority: "authoritative" });
-    expect(imported.report).toMatchObject({
-      fidelity: "partial",
-      issues: [
+    expect(imported.operation).toMatchObject({
+      operation: "observe-native-source",
+      disposition: "supported",
+      diagnostics: [
         expect.objectContaining({
           code: "openspec.file-content-uninterpreted",
-          disposition: "degraded",
+          impact: "advisory",
         }),
       ],
     });
@@ -168,7 +175,11 @@ describe("OpenSpec adapter", () => {
         expect.objectContaining({ id: "design", status: "ready" }),
       ],
     ]);
-    expect(imported.report).toEqual({ fidelity: "exact", issues: [] });
+    expect(imported.operation).toMatchObject({
+      operation: "derive-portable-specification",
+      disposition: "supported",
+      diagnostics: [],
+    });
     expect(Object.isFrozen(graph.nodes[0])).toBe(true);
   });
 
@@ -214,12 +225,13 @@ describe("OpenSpec adapter", () => {
     expect(graph.sources[0]?.extensions["io.github.fission-ai.openspec"]?.contract).toBe(
       OPENSPEC_NPM_STATUS_CONTRACT,
     );
-    expect(imported.report).toEqual({
-      fidelity: "partial",
-      issues: [
+    expect(imported.operation).toMatchObject({
+      operation: "derive-portable-specification",
+      disposition: "supported",
+      diagnostics: [
         expect.objectContaining({
           code: "openspec.status-dependencies-unavailable",
-          disposition: "degraded",
+          impact: "advisory",
         }),
       ],
     });
@@ -328,39 +340,41 @@ describe("OpenSpec adapter", () => {
   });
 
   test("binds support evidence to exact immutable fixture bytes", () => {
-    expect(OPENSPEC_FILE_SUPPORT).toMatchObject({ levels: ["syntax"], writeBack: "unsupported" });
+    expect(OPENSPEC_FILE_SUPPORT).toMatchObject({
+      revision: "19d41714c8b790488732687443713e406ef5aeef",
+    });
     expect(OPENSPEC_SOURCE_STATUS_CLI_SUPPORT).toMatchObject({
-      levels: ["syntax", "semantic"],
-      writeBack: "unsupported",
-      features: expect.arrayContaining(["artifact-dependency-relationships"]),
+      revision: OPENSPEC_SOURCE_STATUS_CONTRACT,
     });
     expect(OPENSPEC_NPM_STATUS_CLI_SUPPORT).toMatchObject({
-      levels: ["syntax", "semantic"],
-      writeBack: "unsupported",
-      features: expect.not.arrayContaining(["artifact-dependency-relationships"]),
+      revision: OPENSPEC_NPM_STATUS_CONTRACT,
     });
-    expect(OPENSPEC_FILE_SUPPORT.fixtures[0]?.digest.value).toBe(
-      hash(fixture("current-spec-v1.6.0.md.fixture")),
+    expect(
+      supportedOperation(OPENSPEC_FILE_SUPPORT, "observe-native-source").fixtures[0]?.digest.value,
+    ).toBe(hash(fixture("current-spec-v1.6.0.md.fixture")));
+    expect(
+      supportedOperation(OPENSPEC_SOURCE_STATUS_CLI_SUPPORT, "derive-portable-specification")
+        .fixtures[0]?.digest.value,
+    ).toBe(hash(fixture("status-v1.6.0.json")));
+    expect(
+      supportedOperation(OPENSPEC_SOURCE_STATUS_CLI_SUPPORT, "derive-portable-specification")
+        .fixtures[1]?.digest.value,
+    ).toBe(hash(fixture("status-skip-specs-v1.6.0.json")));
+    expect(
+      supportedOperation(OPENSPEC_NPM_STATUS_CLI_SUPPORT, "derive-portable-specification")
+        .fixtures[0]?.digest.value,
+    ).toBe(hash(fixture("status-npm-tarball-v1.6.0.json")));
+    expect(OPENSPEC_FILE_SUPPORT.operations).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          operation: "derive-portable-specification",
+          disposition: "unsupported",
+        }),
+        expect.objectContaining({
+          operation: "round-trip-native-source",
+          disposition: "unsupported",
+        }),
+      ]),
     );
-    expect(OPENSPEC_SOURCE_STATUS_CLI_SUPPORT.fixtures[0]?.digest.value).toBe(
-      hash(fixture("status-v1.6.0.json")),
-    );
-    expect(OPENSPEC_SOURCE_STATUS_CLI_SUPPORT.fixtures[1]?.digest.value).toBe(
-      hash(fixture("status-skip-specs-v1.6.0.json")),
-    );
-    expect(OPENSPEC_NPM_STATUS_CLI_SUPPORT.fixtures[0]?.digest.value).toBe(
-      hash(fixture("status-npm-tarball-v1.6.0.json")),
-    );
-    expect(OPENSPEC_SOURCE_STATUS_CLI_SUPPORT.evidence).toEqual([
-      expect.objectContaining({
-        evidenceId: "openspec.source.19d41714c8b790488732687443713e406ef5aeef.agent-contract",
-      }),
-    ]);
-    expect(OPENSPEC_NPM_STATUS_CLI_SUPPORT.evidence).toEqual([
-      expect.objectContaining({
-        evidenceId:
-          "openspec.npm-tarball.1.6.0.sha1-00b6f63e9671153b8621466a9ed423792349b54f.status-declaration",
-      }),
-    ]);
   });
 });

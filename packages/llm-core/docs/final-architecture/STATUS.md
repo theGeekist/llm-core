@@ -1,13 +1,15 @@
 # llm-core Architecture v2 Status
 
 Architecture version: v2
-Updated: 9 August 2026
+Updated: 10 August 2026
 Kernel: complete at `9920425`
 Pre-transition source baseline: `c041792`
 
 <!-- architecture-status:generated:start -->
 
 Active tasks: 0
+
+No architecture task is currently active.
 
 This is a human projection. Task front matter under [`tasks/`](tasks/) is
 authoritative and will be mechanically checked by
@@ -30,7 +32,7 @@ The v2 kernel is complete. Its six stages contain 25 completed tasks:
 The original completion surface contained 30 ESM runtime and declaration
 entrypoints. ADR-016 corrects it to 29 by removing the kernel-owned workflow
 runtime front and runnable root facades. The package retains packed-qualified
-`@wpkernel/pipeline@1.2.0` as mechanical composition substrate.
+`@wpkernel/pipeline@1.2.1` as mechanical composition substrate.
 
 ## Completed boundary correction
 
@@ -93,10 +95,12 @@ mean published or supported through a package front.
 | architecture-status-validation               | architecture   | proposed | architecture-decisions, architecture-source-layout-normalization                                                                                                                                                                                                               |
 | architecture-external-contract-fidelity      | architecture   | done     | architecture-runtime-ownership-correction                                                                                                                                                                                                                                      |
 | architecture-release-reproducibility         | architecture   | done     | architecture-decisions, architecture-source-layout-normalization                                                                                                                                                                                                               |
+| release-v2-readiness                         | architecture   | done     | architecture-release-reproducibility, adapters-protocol-qualification                                                                                                                                                                                                          |
+| release-history-provenance                   | qualification  | done     | release-v2-readiness                                                                                                                                                                                                                                                           |
 | architecture-legacy-functional-removal       | architecture   | proposed | architecture-source-layout-normalization, language-rollout                                                                                                                                                                                                                     |
 | architecture-test-sloc-decomposition         | architecture   | proposed | architecture-runtime-ownership-correction                                                                                                                                                                                                                                      |
-| adapter-ai-sdk-native-contract-correction    | adapters       | proposed | architecture-external-contract-fidelity, core-ai-sdk-adapter                                                                                                                                                                                                                   |
-| specification-exact-operation-contracts      | specifications | proposed | architecture-external-contract-fidelity, specification-api                                                                                                                                                                                                                     |
+| adapter-ai-sdk-native-contract-correction    | adapters       | done     | architecture-external-contract-fidelity, core-ai-sdk-adapter                                                                                                                                                                                                                   |
+| specification-exact-operation-contracts      | specifications | done     | architecture-external-contract-fidelity, specification-api                                                                                                                                                                                                                     |
 | runtime-operation-contract-correction        | adapters       | done     | architecture-external-contract-fidelity, capabilities-runtime-conformance                                                                                                                                                                                                      |
 | specification-semantic-path-characterization | specifications | proposed | architecture-external-contract-fidelity, architecture-runtime-ownership-correction, specification-api, adapter-openspec, adapter-pydantic-ai, adapter-ai-sdlc, adapter-spec-kit, adapter-bmad                                                                                  |
 | specification-semantic-reconciliation        | specifications | proposed | specification-exact-operation-contracts, specification-semantic-path-characterization                                                                                                                                                                                          |

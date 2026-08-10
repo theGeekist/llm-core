@@ -5,18 +5,84 @@ on:
     tags:
       - "v*"
       - "strict-json-v*"
-      - "*/*"
+      - "aifsd-v*"
+  workflow_dispatch:
+    inputs:
+      package:
+        description: Package to qualify without publishing
+        required: true
+        type: choice
+        options:
+          - aifsd
+          - llm-core
+          - strict-json
 
 permissions:
-  contents: write
+  contents: read
+
+concurrency:
+  group: release-${{ github.ref }}-${{ inputs.package || 'tag' }}
+  cancel-in-progress: false
 
 jobs:
-  release-strict-json:
-    if: startsWith(github.ref, 'refs/tags/strict-json-v')
+  dry-run:
+    if: github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version-file: ".bun-version"
+
+      - name: Restore Bun and Turbo caches
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.bun/install/cache
+            .turbo
+          key: ${{ runner.os }}-release-${{ hashFiles('bun.lock') }}-${{ github.sha }}
+          restore-keys: |
+            ${{ runner.os }}-release-${{ hashFiles('bun.lock') }}-
+
+      - name: Qualify llm-core without publishing
+        if: inputs.package == 'llm-core'
+        run: bun run release:qualify:llm-core
+
+      - name: Qualify strict-json without publishing
+        if: inputs.package == 'strict-json'
+        run: |
+          bun install --frozen-lockfile
+          bun run release:version:check:strict-json
+          bun run release:qualify:strict-json
+
+      - name: Qualify AIFSD without publishing
+        if: inputs.package == 'aifsd'
+        run: |
+          bun install --frozen-lockfile
+          bun run release:version:check:aifsd
+          bun run release:qualify:aifsd
+
+  release-strict-json:
+    if: startsWith(github.ref, 'refs/tags/strict-json-v')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      id-token: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Setup Bun
         uses: oven-sh/setup-bun@v2
@@ -32,24 +98,77 @@ jobs:
       - name: Install
         run: bun install --frozen-lockfile
 
+      - name: Validate strict-json tag, version and changelog
+        run: >-
+          bun run scripts/release-history/release-controller.ts
+          --phase validate --package strict-json --tag "$GITHUB_REF_NAME"
+
       - name: Qualify strict-json release
         run: bun run release:qualify:strict-json
 
-      - name: Publish strict-json
-        run: npm publish --access public
-        working-directory: packages/strict-json
+      - name: Prepare exact strict-json archive
+        id: artifact
+        run: >-
+          bun run scripts/release-history/prepare-artifact.ts
+          --package strict-json
+          --output "$RUNNER_TEMP/release-artifacts"
+          --github-output "$GITHUB_OUTPUT"
+
+      - name: Verify exact strict-json archive
+        run: >-
+          node packages/strict-json/scripts/smoke-package.mjs
+          --tarball "${{ steps.artifact.outputs.tarball }}"
+
+      - name: Upload strict-json release evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: strict-json-${{ github.ref_name }}-${{ github.run_attempt }}-release-evidence
+          path: |
+            ${{ steps.artifact.outputs.tarball }}
+            ${{ steps.artifact.outputs.metadata }}
+          if-no-files-found: error
+          retention-days: 90
+
+      - name: Reconcile exact strict-json publication
+        run: >-
+          bun run scripts/release-history/release-controller.ts
+          --phase publish --package strict-json --tag "$GITHUB_REF_NAME"
+          --tarball "${{ steps.artifact.outputs.tarball }}"
+          --metadata "${{ steps.artifact.outputs.metadata }}"
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
-      - name: GitHub Release
+      - name: Create GitHub release
         uses: softprops/action-gh-release@v2
+        with:
+          generate_release_notes: true
+
+      - name: Verify publication and write strict-json receipt
+        run: >-
+          bun run scripts/release-history/release-controller.ts
+          --phase receipt --package strict-json --tag "$GITHUB_REF_NAME"
+          --tarball "${{ steps.artifact.outputs.tarball }}"
+          --metadata "${{ steps.artifact.outputs.metadata }}"
+          --receipt-output "$RUNNER_TEMP/strict-json-receipt.json"
+        env:
+          GH_TOKEN: ${{ github.token }}
+
+      - name: Preserve strict-json receipt
+        run: gh release upload "$GITHUB_REF_NAME" "$RUNNER_TEMP/strict-json-receipt.json" --clobber
+        env:
+          GH_TOKEN: ${{ github.token }}
 
   release-core:
     if: startsWith(github.ref, 'refs/tags/v')
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      id-token: write
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Setup Bun
         uses: oven-sh/setup-bun@v2
@@ -61,28 +180,89 @@ jobs:
         with:
           node-version: "22"
           registry-url: "https://registry.npmjs.org"
+
+      - name: Validate llm-core tag, version and changelog
+        run: >-
+          bun run scripts/release-history/release-controller.ts
+          --phase validate --package llm-core --tag "$GITHUB_REF_NAME"
 
       - name: Qualify Core release
         run: bun run release:qualify:llm-core
 
       - name: Verify strict-json dependency is published
-        run: bun run release:check:strict-json-published
+        id: strict_json
+        run: >-
+          bun run scripts/download-published-package.ts
+          --package strict-json
+          --output "$RUNNER_TEMP/release-dependencies/strict-json.tgz"
+          --github-output "$GITHUB_OUTPUT"
 
-      - name: Publish Core
-        run: npm publish --access public
-        working-directory: packages/llm-core
+      - name: Prepare exact llm-core archive
+        id: artifact
+        run: >-
+          bun run scripts/release-history/prepare-artifact.ts
+          --package llm-core
+          --output "$RUNNER_TEMP/release-artifacts"
+          --github-output "$GITHUB_OUTPUT"
+
+      - name: Verify exact llm-core archive
+        run: >-
+          node packages/llm-core/scripts/smoke-package.mjs
+          --prebuilt
+          --tarball "${{ steps.artifact.outputs.tarball }}"
+          --strict-json-tarball "${{ steps.strict_json.outputs.tarball }}"
+
+      - name: Upload llm-core release evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: llm-core-${{ github.ref_name }}-${{ github.run_attempt }}-release-evidence
+          path: |
+            ${{ steps.artifact.outputs.tarball }}
+            ${{ steps.artifact.outputs.metadata }}
+            ${{ steps.strict_json.outputs.tarball }}
+          if-no-files-found: error
+          retention-days: 90
+
+      - name: Reconcile exact llm-core publication
+        run: >-
+          bun run scripts/release-history/release-controller.ts
+          --phase publish --package llm-core --tag "$GITHUB_REF_NAME"
+          --tarball "${{ steps.artifact.outputs.tarball }}"
+          --metadata "${{ steps.artifact.outputs.metadata }}"
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
-      - name: GitHub Release
+      - name: Create GitHub release
         uses: softprops/action-gh-release@v2
+        with:
+          generate_release_notes: true
 
-  release-app:
-    if: contains(github.ref_name, '/')
+      - name: Verify publication and write llm-core receipt
+        run: >-
+          bun run scripts/release-history/release-controller.ts
+          --phase receipt --package llm-core --tag "$GITHUB_REF_NAME"
+          --tarball "${{ steps.artifact.outputs.tarball }}"
+          --metadata "${{ steps.artifact.outputs.metadata }}"
+          --receipt-output "$RUNNER_TEMP/llm-core-receipt.json"
+        env:
+          GH_TOKEN: ${{ github.token }}
+
+      - name: Preserve llm-core receipt
+        run: gh release upload "$GITHUB_REF_NAME" "$RUNNER_TEMP/llm-core-receipt.json" --clobber
+        env:
+          GH_TOKEN: ${{ github.token }}
+
+  release-aifsd:
+    if: startsWith(github.ref, 'refs/tags/aifsd-v')
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      id-token: write
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Setup Bun
         uses: oven-sh/setup-bun@v2
@@ -98,31 +278,93 @@ jobs:
       - name: Install
         run: bun install --frozen-lockfile
 
-      - name: Parse Tag
-        id: parse_tag
-        run: |
-          TAG=${GITHUB_REF#refs/tags/}
-          APP_NAME=$(echo $TAG | cut -d'/' -f1)
-          echo "app_name=$APP_NAME" >> $GITHUB_OUTPUT
+      - name: Validate AIFSD tag, version and changelog
+        run: >-
+          bun run scripts/release-history/release-controller.ts
+          --phase validate --package aifsd --tag "$GITHUB_REF_NAME"
 
-      - name: Build App
-        run: bun run --filter ${{ steps.parse_tag.outputs.app_name }} build
+      - name: Qualify AIFSD source candidate
+        run: bun run --cwd packages/aifsd release:build
 
-      - name: Publish App
-        # Assumes app directory name matches the tag prefix or we map it via bun filter
-        # For simplicity, we filter by package name which usually matches or we cd into apps/$APP_NAME
-        # Here we try generic publish if possible, or assume package name matches
-        run: |
-          APP_NAME=${{ steps.parse_tag.outputs.app_name }}
-          # Find directory
-          APP_DIR=$(find apps examples -name "$APP_NAME" -type d -maxdepth 2 | head -n 1)
-          if [ -z "$APP_DIR" ]; then 
-            echo "App directory not found for $APP_NAME"
-            exit 1
-          fi
-          cd $APP_DIR && npm publish --access public
+      - name: Download exact published strict-json dependency
+        id: strict_json
+        run: >-
+          bun run scripts/download-published-package.ts
+          --package strict-json
+          --output "$RUNNER_TEMP/release-dependencies/strict-json.tgz"
+          --github-output "$GITHUB_OUTPUT"
+
+      - name: Download exact published llm-core dependency
+        id: llm_core
+        run: >-
+          bun run scripts/download-published-package.ts
+          --package llm-core
+          --output "$RUNNER_TEMP/release-dependencies/llm-core.tgz"
+          --github-output "$GITHUB_OUTPUT"
+
+      - name: Download exact published pipeline dependency
+        id: pipeline
+        run: >-
+          bun run scripts/download-published-package.ts
+          --package pipeline
+          --output "$RUNNER_TEMP/release-dependencies/pipeline.tgz"
+          --github-output "$GITHUB_OUTPUT"
+
+      - name: Prepare exact AIFSD archive
+        id: artifact
+        run: >-
+          bun run scripts/release-history/prepare-artifact.ts
+          --package aifsd
+          --output "$RUNNER_TEMP/release-artifacts"
+          --github-output "$GITHUB_OUTPUT"
+
+      - name: Qualify exact AIFSD and dependency archives
+        run: >-
+          node packages/aifsd/scripts/smoke-package.mjs
+          --prebuilt
+          --tarball "${{ steps.artifact.outputs.tarball }}"
+          --llm-core-tarball "${{ steps.llm_core.outputs.tarball }}"
+          --strict-json-tarball "${{ steps.strict_json.outputs.tarball }}"
+          --pipeline-tarball "${{ steps.pipeline.outputs.tarball }}"
+
+      - name: Upload AIFSD release evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: aifsd-${{ github.ref_name }}-${{ github.run_attempt }}-release-evidence
+          path: |
+            ${{ steps.artifact.outputs.tarball }}
+            ${{ steps.artifact.outputs.metadata }}
+            ${{ steps.llm_core.outputs.tarball }}
+            ${{ steps.strict_json.outputs.tarball }}
+            ${{ steps.pipeline.outputs.tarball }}
+          if-no-files-found: error
+          retention-days: 90
+
+      - name: Reconcile exact AIFSD publication
+        run: >-
+          bun run scripts/release-history/release-controller.ts
+          --phase publish --package aifsd --tag "$GITHUB_REF_NAME"
+          --tarball "${{ steps.artifact.outputs.tarball }}"
+          --metadata "${{ steps.artifact.outputs.metadata }}"
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
-      - name: GitHub Release
+      - name: Create GitHub release
         uses: softprops/action-gh-release@v2
+        with:
+          generate_release_notes: true
+
+      - name: Verify publication and write AIFSD receipt
+        run: >-
+          bun run scripts/release-history/release-controller.ts
+          --phase receipt --package aifsd --tag "$GITHUB_REF_NAME"
+          --tarball "${{ steps.artifact.outputs.tarball }}"
+          --metadata "${{ steps.artifact.outputs.metadata }}"
+          --receipt-output "$RUNNER_TEMP/aifsd-receipt.json"
+        env:
+          GH_TOKEN: ${{ github.token }}
+
+      - name: Preserve AIFSD receipt
+        run: gh release upload "$GITHUB_REF_NAME" "$RUNNER_TEMP/aifsd-receipt.json" --clobber
+        env:
+          GH_TOKEN: ${{ github.token }}

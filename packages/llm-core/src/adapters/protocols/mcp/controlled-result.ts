@@ -1,5 +1,5 @@
 import type { PortableContent, ToolCallId } from "#contracts";
-import { canonicalize } from "@geekist/strict-json";
+import { canonicalize } from "@aifsd/strict-json";
 import type { CallToolResult, ContentBlock } from "@modelcontextprotocol/server";
 import type { ControlledToolExecutionOutcome } from "../../../tools/runtime";
 

@@ -3,7 +3,7 @@ architecture_version: 1
 id: strict-json-foundation
 title: Establish the strict-json package and strict boundary contract
 stage: core
-status: in_progress
+status: done
 priority: critical
 owner: codex-root
 owner_kind: codex
@@ -37,7 +37,7 @@ write_scope:
   - packages/aifsd/tests/config/**
   - bun.lock
 review_owner: human
-updated_at: 2026-08-06
+updated_at: 2026-08-10
 ---
 
 # strict-json-foundation
@@ -167,3 +167,9 @@ engineering pages, six routing pages and 23 snippets. The SLOC gate now ignores
 only the explicitly optional `packages/aifsd/docs` private-authority mount,
 proven by a focused symlink regression, and measures 438 source modules at the
 500-line limit.
+
+2026-08-10: Human review was confirmed complete. The package is now named
+`@aifsd/strict-json@0.1.0`; its independent release qualification passes 31
+tests with 279 assertions, declaration and distribution emission, formatting,
+and an isolated packed-package consumer. Publication remains a separate release
+operation and has not occurred.

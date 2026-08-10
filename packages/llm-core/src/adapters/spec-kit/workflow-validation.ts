@@ -9,7 +9,7 @@ const rejected = (
 ): void => {
   issues.push({
     code: "spec-kit-workflow-schema-invalid",
-    disposition: "rejected",
+    impact: "blocking",
     explanation,
     location,
   });

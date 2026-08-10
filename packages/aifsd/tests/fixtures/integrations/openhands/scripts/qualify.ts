@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto";
-import { digest } from "@geekist/llm-core/contracts";
+import { digest } from "@aifsd/llm-core/contracts";
 import {
   integrationContentDigest,
   qualifyIntegration,

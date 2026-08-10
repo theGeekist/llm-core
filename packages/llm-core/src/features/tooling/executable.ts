@@ -1,7 +1,7 @@
 import { isProxy } from "node:util/types";
 import { isUuidV7, type RunId, type StepId, type ToolCallId } from "#contracts";
 import { maybeChain, type MaybePromise } from "#shared/maybe";
-import { deepFreeze, normalize } from "@geekist/strict-json";
+import { deepFreeze, normalize } from "@aifsd/strict-json";
 import { defineToolDefinition } from "./action";
 import type {
   ExecutableTool,

@@ -8,39 +8,57 @@ import { projectSpecification } from "../../../src/specifications";
 import { fixture, rejected, target } from "./pydantic-ai-test-fixtures";
 
 describe("PydanticAI AgentSpec adapter", () => {
-  test("compiles a review-bound decision and accounts for degraded declarative semantics", async () => {
+  test("compiles a review-bound decision with exact operation diagnostics", async () => {
     const value = await fixture();
     const result = await compilePydanticAiAgentSpec({
       decision: value.decision,
-      target: {
-        ...target(),
-        depsSchema: { type: "object", properties: { tenant: { type: "string" } } },
-        outputSchema: { type: "object", required: ["answer"] },
-      },
+      target: target(),
     });
 
     expect(result.compiled.value).toEqual({
       model: "openai:gpt-5.2",
       name: "agent.pydantic",
       instructions: "Follow the accepted specification.",
-      deps_schema: { type: "object", properties: { tenant: { type: "string" } } },
-      output_schema: { type: "object", required: ["answer"] },
     });
-    expect(result.report).toMatchObject({
-      fidelity: "partial",
-      issues: [
-        {
-          code: "pydantic-ai.deps-schema-template-only",
-          disposition: "degraded",
-          nodeId: "requirement.pydantic",
-        },
-        {
-          code: "pydantic-ai.output-schema-instruction-only",
-          disposition: "degraded",
-          nodeId: "requirement.pydantic",
-        },
+    expect(result.operation).toMatchObject({
+      operation: "compile-portable-specification",
+      disposition: "supported",
+      diagnostics: [],
+    });
+  });
+
+  test("rejects every requested semantic that AgentSpec cannot preserve before success", async () => {
+    const value = await fixture();
+    const base = target();
+    const cases: readonly [PydanticAiCompilationTarget, string][] = [
+      [
+        { ...base, agent: { ...base.agent, skills: [{} as never] } },
+        "pydantic-ai.agent-skills-unsupported",
       ],
-    });
+      [
+        { ...base, depsSchema: { type: "object", properties: { tenant: { type: "string" } } } },
+        "pydantic-ai.deps-schema-unsupported",
+      ],
+      [
+        { ...base, outputSchema: { type: "object", required: ["answer"] } },
+        "pydantic-ai.output-schema-unsupported",
+      ],
+    ];
+    for (const [compilationTarget, code] of cases) {
+      await expect(
+        Promise.resolve().then(() =>
+          compilePydanticAiAgentSpec({ decision: value.decision, target: compilationTarget }),
+        ),
+      ).rejects.toMatchObject({
+        name: "PydanticAiUnsupportedSemanticsError",
+        operation: {
+          disposition: "unsupported",
+          diagnostics: expect.arrayContaining([
+            expect.objectContaining({ code, impact: "blocking" }),
+          ]),
+        },
+      });
+    }
   });
 
   test("rejects unsupported controlled-effect semantics", async () => {
@@ -51,9 +69,11 @@ describe("PydanticAI AgentSpec adapter", () => {
       ),
     ).rejects.toMatchObject({
       name: "PydanticAiUnsupportedSemanticsError",
-      report: {
-        fidelity: "rejected",
-        issues: [expect.objectContaining({ code: "pydantic-ai.controlled-effects-unsupported" })],
+      operation: {
+        disposition: "unsupported",
+        diagnostics: [
+          expect.objectContaining({ code: "pydantic-ai.controlled-effects-unsupported" }),
+        ],
       },
     });
   });
@@ -121,7 +141,7 @@ describe("PydanticAI AgentSpec adapter", () => {
     await expect(pending).rejects.toThrow("no longer matches");
   });
 
-  test("accepts only the closed safe capability subset and reports rejected semantics", async () => {
+  test("accepts only the closed safe capability subset and rejects unsupported semantics", async () => {
     const value = await fixture();
     const safe = await compilePydanticAiAgentSpec({
       decision: value.decision,
@@ -157,8 +177,8 @@ describe("PydanticAI AgentSpec adapter", () => {
         throw new Error("Expected unsupported capability rejection.");
       } catch (error) {
         expect(error).toBeInstanceOf(PydanticAiUnsupportedSemanticsError);
-        expect((error as PydanticAiUnsupportedSemanticsError).report.issues).toEqual(
-          expect.arrayContaining([expect.objectContaining({ code, disposition: "rejected" })]),
+        expect((error as PydanticAiUnsupportedSemanticsError).operation.diagnostics).toEqual(
+          expect.arrayContaining([expect.objectContaining({ code, impact: "blocking" })]),
         );
       }
     }
@@ -178,8 +198,8 @@ describe("PydanticAI AgentSpec adapter", () => {
         }),
       ),
     ).rejects.toMatchObject({
-      report: {
-        issues: [expect.objectContaining({ code: "pydantic-ai.semantic-review-required" })],
+      operation: {
+        diagnostics: [expect.objectContaining({ code: "pydantic-ai.semantic-review-required" })],
       },
     });
   });
@@ -191,9 +211,9 @@ describe("PydanticAI AgentSpec adapter", () => {
         compilePydanticAiAgentSpec({ decision: value.decision, target: target() }),
       ),
     ).rejects.toMatchObject({
-      report: {
-        fidelity: "rejected",
-        issues: expect.arrayContaining(
+      operation: {
+        disposition: "unsupported",
+        diagnostics: expect.arrayContaining(
           ["model-requirements", "prompt", "tools", "context", "evaluation"].map((category) =>
             expect.objectContaining({
               code: `pydantic-ai.${category}-accepted-content-missing`,

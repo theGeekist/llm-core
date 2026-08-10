@@ -1,7 +1,7 @@
 import { isContractVersion, isDigest, isExternalId } from "#contracts";
 import type { SecretRef } from "#contracts";
 import { maybeMap, type MaybePromise } from "#shared/maybe";
-import { canonicalize, deepFreeze, normalize } from "@geekist/strict-json";
+import { canonicalize, deepFreeze, normalize } from "@aifsd/strict-json";
 import { isRegisteredToolSchema } from "./schema-registration";
 import type { ActionDocument, EffectTarget, ToolCall, ToolId, ToolDefinition } from "./types";
 

@@ -1,5 +1,8 @@
 import type { ContractVersion, JsonObject } from "#contracts";
-import type { SpecificationAdapterSupport } from "@geekist/llm-core/specifications";
+import type {
+  SpecificationAdapterSupport,
+  SpecificationOperation,
+} from "@aifsd/llm-core/specifications";
 
 export type BmadArtifactKind =
   | "canonical-spec"
@@ -60,6 +63,7 @@ export interface BmadCliObservation extends BmadCliObservationInput {
 
 export interface BmadImportedSpecification {
   readonly graph: unknown;
+  readonly operation: SpecificationOperation;
   readonly support: readonly [SpecificationAdapterSupport, SpecificationAdapterSupport];
 }
 

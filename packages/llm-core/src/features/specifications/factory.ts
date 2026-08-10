@@ -1,21 +1,21 @@
 import { cloneFrozen } from "#shared/portable-data";
 import type {
-  ConversionReport,
   ProposedSpecificationChange,
   SpecificationAdapterSupport,
   SpecificationDecision,
   SpecificationDecisionRecord,
   SpecificationGraph,
+  SpecificationOperation,
   SpecificationSourceSnapshot,
 } from "./types";
 import {
-  assertConversionReport,
   assertPortableSpecificationInput,
   assertProposedSpecificationChange,
   assertSpecificationAdapterSupport,
   assertSpecificationDecision,
   assertSpecificationDecisionRecord,
   assertSpecificationGraph,
+  assertSpecificationOperation,
   assertSpecificationSourceSnapshot,
 } from "./validation";
 
@@ -33,8 +33,9 @@ export const createSpecificationSourceSnapshot = (
 export const createSpecificationGraph = (input: SpecificationGraph): SpecificationGraph =>
   capture(input, assertSpecificationGraph);
 
-export const createConversionReport = (input: ConversionReport): ConversionReport =>
-  capture(input, assertConversionReport);
+export const createSpecificationOperation = <TOperation extends SpecificationOperation>(
+  input: TOperation,
+): TOperation => capture(input, assertSpecificationOperation);
 
 export const createSpecificationAdapterSupport = (
   input: SpecificationAdapterSupport,

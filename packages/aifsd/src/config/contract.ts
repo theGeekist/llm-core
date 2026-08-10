@@ -3,7 +3,7 @@
 // These are the portable, data-only types that cross the configuration front
 // door. AIFSD owns the manifest, selection, resolution, lock and
 // materialization vocabulary; identity primitives (digests, secret and
-// resource references, evidence) are reused from the `@geekist/llm-core`
+// resource references, evidence) are reused from the `@aifsd/llm-core`
 // kernel rather than duplicated (ADR-003, ADR-007).
 
 import type {
@@ -12,7 +12,7 @@ import type {
   EvidenceRef,
   JsonValue,
   SecretRef,
-} from "@geekist/llm-core/contracts";
+} from "@aifsd/llm-core/contracts";
 import type { MaybePromise } from "@wpkernel/pipeline/core/types";
 
 export type { ContractVersion, Digest, EvidenceRef, JsonValue, MaybePromise, SecretRef };

@@ -3,15 +3,16 @@ import {
   Output,
   streamText,
   type ContentPart,
+  type StepResult,
   type TextStreamPart,
   type ToolSet,
 } from "ai";
+import { isProxy } from "node:util/types";
 import {
   isJsonValue,
   isUuidV7,
   newCoreId,
   type InvocationContext,
-  type JsonValue,
   type ToolCallId,
 } from "#contracts";
 import {
@@ -27,6 +28,14 @@ import {
   toPortableTextPart,
   toPortableToolCallPart,
 } from "./provider-messages";
+import {
+  emitAiSdk7CompletionPart,
+  emitAiSdk7GeneratedFile,
+  emitAiSdk7NativeEvent,
+  emitAiSdk7Step,
+  emitAiSdk7StreamPart,
+} from "./native-contract";
+import { assertAiSdk7ClosedArray } from "./native-snapshot";
 import { toModelUsage, toModelWarnings, toResponseMetadata } from "./provider-metadata";
 import { toAiSdk7ToolApproval, toAiSdk7Tools } from "./provider-tools";
 import type {
@@ -65,8 +74,21 @@ const defaultToolCallId = (): ToolCallId => {
   );
 };
 
+const safeErrorName = (error: unknown): string | null => {
+  if (typeof error !== "object" || error === null || isProxy(error) || !(error instanceof Error)) {
+    return null;
+  }
+  if (error instanceof DOMException) {
+    return Object.getOwnPropertyDescriptor(DOMException.prototype, "name")?.get?.call(error);
+  }
+  const descriptor = Object.getOwnPropertyDescriptor(error, "name");
+  return descriptor && "value" in descriptor && typeof descriptor.value === "string"
+    ? descriptor.value
+    : "Error";
+};
+
 const toError = (error: unknown): ModelError => {
-  const name = error instanceof Error ? error.name : undefined;
+  const name = safeErrorName(error) ?? undefined;
   return {
     code: name === "AbortError" ? "cancelled" : "provider-error",
     message:
@@ -81,19 +103,6 @@ const toError = (error: unknown): ModelError => {
 const isToolCall = (
   part: ContentPart<ToolSet> | TextStreamPart<ToolSet>,
 ): part is ContentPart<ToolSet> & ToolCallLike => part.type === "tool-call";
-
-const approvalFact = (
-  part: ContentPart<ToolSet>,
-  mapToolCallId: (providerToolCallId: string, toolName: string) => ToolCallId,
-): JsonValue | undefined =>
-  part.type === "tool-approval-request"
-    ? {
-        approvalId: part.approvalId,
-        toolCallId: mapToolCallId(part.toolCall.toolCallId, part.toolCall.toolName),
-        toolName: part.toolCall.toolName,
-        isAutomatic: part.isAutomatic ?? false,
-      }
-    : undefined;
 
 const toCompletionContent = (
   parts: Array<ContentPart<ToolSet>>,
@@ -262,12 +271,91 @@ export const createAiSdk7Model = (input: CreateAiSdk7ModelInput): Model => {
         request.responseFormat?.kind === "json"
           ? await generateText({ ...options, output: Output.json() })
           : await generateText(options);
-      const approvalRequests = result.content
-        .map((part) => approvalFact(part, mapInvocationToolCallId))
-        .filter((part): part is JsonValue => part !== undefined);
+      assertAiSdk7ClosedArray(result.content, "content");
+      assertAiSdk7ClosedArray(result.files, "files");
+      assertAiSdk7ClosedArray(result.sources, "sources");
+      assertAiSdk7ClosedArray(result.warnings ?? [], "warnings");
+      assertAiSdk7ClosedArray(result.steps, "steps");
+      for (const [index, part] of result.content.entries()) {
+        await emitAiSdk7CompletionPart(input.nativeContract, part, index);
+      }
+      const safeWarnings = [];
+      for (const [index, warning] of (result.warnings ?? []).entries()) {
+        safeWarnings.push(
+          await emitAiSdk7NativeEvent({
+            contract: input.nativeContract,
+            operation: "generateText",
+            kind: "warning",
+            path: `warnings[${index}]`,
+            value: warning,
+          }),
+        );
+      }
+      for (const [index, file] of (result.files ?? []).entries()) {
+        await emitAiSdk7GeneratedFile(input.nativeContract, file, index);
+      }
+      for (const [index, source] of (result.sources ?? []).entries()) {
+        await emitAiSdk7NativeEvent({
+          contract: input.nativeContract,
+          operation: "generateText",
+          kind: "source",
+          path: `sources[${index}]`,
+          value: source,
+        });
+      }
+      const safeResponse = result.response
+        ? await emitAiSdk7NativeEvent({
+            contract: input.nativeContract,
+            operation: "generateText",
+            kind: "response-metadata",
+            path: "response",
+            value: result.response,
+            knownShape: true,
+          })
+        : undefined;
+      const providerMetadata = result.providerMetadata
+        ? await emitAiSdk7NativeEvent({
+            contract: input.nativeContract,
+            operation: "generateText",
+            kind: "provider-metadata",
+            path: "providerMetadata",
+            value: result.providerMetadata,
+          })
+        : undefined;
+      for (const [index, step] of result.steps.entries()) {
+        await emitAiSdk7Step(input.nativeContract, step as StepResult<ToolSet>, index);
+      }
+      await emitAiSdk7Step(input.nativeContract, result.finalStep as StepResult<ToolSet>, "final");
+      await emitAiSdk7NativeEvent({
+        contract: input.nativeContract,
+        operation: "generateText",
+        kind: "generate-result",
+        path: "result",
+        knownShape: true,
+        value: {
+          text: result.text,
+          reasoningText: result.reasoningText,
+          finishReason: result.finishReason,
+          rawFinishReason: result.rawFinishReason,
+          usage: result.usage,
+          totalUsage: result.totalUsage,
+          request: result.request,
+          responseMessages: result.responseMessages,
+        },
+      });
+      const safeStructuredOutput =
+        request.responseFormat?.kind === "json"
+          ? await emitAiSdk7NativeEvent({
+              contract: input.nativeContract,
+              operation: "generateText",
+              kind: "structured-output",
+              path: "output",
+              value: result.output,
+            })
+          : undefined;
       const content =
-        request.responseFormat?.kind === "json" && isJsonValue(result.output)
-          ? [{ kind: "json" as const, value: result.output }]
+        request.responseFormat?.kind === "json" && isJsonValue(safeStructuredOutput)
+          ? [{ kind: "json" as const, value: safeStructuredOutput }]
           : toCompletionContent(result.content, mapInvocationToolCallId);
       await flushCorrelations(scope);
       return {
@@ -275,16 +363,25 @@ export const createAiSdk7Model = (input: CreateAiSdk7ModelInput): Model => {
         content,
         finishReason: result.finishReason,
         usage: toModelUsage(result.usage),
-        warnings: toModelWarnings(result.warnings),
+        warnings: toModelWarnings(safeWarnings),
         metadata: toResponseMetadata({
           profile,
-          response: result.response,
-          providerMetadata: result.providerMetadata,
-          redactProviderMetadata: input.redactProviderMetadata,
-          approvalRequests,
+          response: safeResponse,
+          providerMetadata,
         }),
       };
     } catch (error) {
+      try {
+        await emitAiSdk7NativeEvent({
+          contract: input.nativeContract,
+          operation: "generateText",
+          kind: "error",
+          path: "error",
+          value: error,
+        });
+      } catch {
+        // The model operation already failed closed; native boundary failures remain sanitized.
+      }
       return {
         kind: "error",
         error: toError(error),
@@ -300,7 +397,10 @@ export const createAiSdk7Model = (input: CreateAiSdk7ModelInput): Model => {
       const result = streamText(buildOptions(request, context, scope.correlation));
       const mapInvocationToolCallId = createInvocationToolCallMapper(scope);
       yield { kind: "start" };
+      let nativeIndex = 0;
       for await (const part of result.stream) {
+        await emitAiSdk7StreamPart(input.nativeContract, part, nativeIndex);
+        nativeIndex += 1;
         if (part.type === "text-delta") {
           yield { kind: "delta", part: toPortableTextPart(part.text) };
         } else if (part.type === "reasoning-delta") {
@@ -326,6 +426,17 @@ export const createAiSdk7Model = (input: CreateAiSdk7ModelInput): Model => {
       }
       yield { kind: "finish", finishReason: await result.finishReason, usage };
     } catch (error) {
+      try {
+        await emitAiSdk7NativeEvent({
+          contract: input.nativeContract,
+          operation: "streamText",
+          kind: "error",
+          path: "error",
+          value: error,
+        });
+      } catch {
+        // The stream already failed closed; native boundary failures remain sanitized.
+      }
       yield { kind: "error", error: toError(error) };
     }
   };

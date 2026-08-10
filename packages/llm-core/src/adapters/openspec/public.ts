@@ -1,4 +1,4 @@
-/* eslint-disable max-lines -- the public adapter front binds both exact OpenSpec 1.6.0 runtime contracts */
+/* eslint-disable max-lines, max-params -- the public adapter front binds both exact OpenSpec 1.6.0 runtime contracts */
 import { createHash } from "node:crypto";
 import {
   contractVersion,
@@ -12,14 +12,14 @@ import {
 import { compareUtf16CodeUnits } from "#shared/fp";
 import { cloneFrozen, hasOnlyKeys, isPortableRecord } from "#shared/portable-data";
 import {
-  createConversionReport,
   createSpecificationAdapterSupport,
+  createSpecificationOperation,
   createSpecificationSourceSnapshot,
-  type ConversionIssue,
-  type ConversionReport,
+  type SpecificationDiagnostic,
+  type SpecificationOperation,
   type SpecificationAdapterSupport,
   type SpecificationSourceSnapshot,
-} from "@geekist/llm-core/specifications";
+} from "@aifsd/llm-core/specifications";
 
 const FORMAT_ID = extensionNamespace("io.github.fission-ai.openspec");
 const VERSION = contractVersion("1.6.0");
@@ -36,23 +36,6 @@ const NPM_STATUS_FIXTURE_DIGEST = digest(
 const FILE_FIXTURE_DIGEST = digest(
   "de88ed452e28ed383ccab87565f543eda6a25871e2051310522e90303771fe8f",
 );
-const ASSESSED_SOURCE_AGENT_CONTRACT_DIGEST = digest(
-  "b61e6a5a6c81acac55346061544a4fc63401e68b2fccb58da5e1632553fe06e7",
-);
-const PUBLISHED_NPM_STATUS_DECLARATION_DIGEST = digest(
-  "03e039c50564badedf79f1437522f8be9f2caec9e7dbaa30b1518df16d5bc0f7",
-);
-
-const OPENSPEC_SOURCE_EVIDENCE = {
-  evidenceId: "openspec.source.19d41714c8b790488732687443713e406ef5aeef.agent-contract",
-  digest: ASSESSED_SOURCE_AGENT_CONTRACT_DIGEST,
-} as const;
-const OPENSPEC_NPM_EVIDENCE = {
-  evidenceId:
-    "openspec.npm-tarball.1.6.0.sha1-00b6f63e9671153b8621466a9ed423792349b54f.status-declaration",
-  digest: PUBLISHED_NPM_STATUS_DECLARATION_DIGEST,
-} as const;
-
 export const OPENSPEC_SOURCE_STATUS_CONTRACT =
   "source-commit-19d41714c8b790488732687443713e406ef5aeef" as const;
 export const OPENSPEC_NPM_STATUS_CONTRACT =
@@ -63,68 +46,137 @@ export type OpenSpecStatusContract =
 
 const sha256 = (value: string) => digest(createHash("sha256").update(value).digest("hex"));
 
+const sourceContract = (revision: string) => ({
+  authority: "OpenSpec repository and published package",
+  format: { id: FORMAT_ID, version: VERSION },
+  revision,
+});
+
+const supported = <TOperation extends SpecificationOperation["operation"]>(
+  operation: TOperation,
+  revision: string,
+  fixtures: readonly { readonly fixtureId: string; readonly digest: ReturnType<typeof digest> }[],
+  diagnostics: readonly SpecificationDiagnostic[] = [],
+): SpecificationOperation & { readonly operation: TOperation } =>
+  createSpecificationOperation({
+    operation,
+    sourceContract: sourceContract(revision),
+    disposition: "supported",
+    fixtures,
+    diagnostics,
+  });
+
+const unsupported = <TOperation extends SpecificationOperation["operation"]>(
+  operation: TOperation,
+  revision: string,
+  reason: string,
+): SpecificationOperation & { readonly operation: TOperation } =>
+  createSpecificationOperation({
+    operation,
+    sourceContract: sourceContract(revision),
+    disposition: "unsupported",
+    diagnostics: [],
+    reason,
+  });
+
 export const OPENSPEC_FILE_SUPPORT: SpecificationAdapterSupport = createSpecificationAdapterSupport(
   {
     format: { id: FORMAT_ID, version: VERSION },
-    direction: "import",
-    supportedVersions: [VERSION],
-    levels: ["syntax"],
-    features: [
-      "documented-file-layout-observation",
-      "file-content-preservation",
-      "role-separated-current-and-change-sources",
-    ],
-    preservedExtensionNamespaces: [FORMAT_ID],
+    authority: "OpenSpec repository and published package",
+    revision: "19d41714c8b790488732687443713e406ef5aeef",
     sourceOwnership: "source-owned",
-    writeBack: "unsupported",
-    fixtures: [{ fixtureId: "openspec.file.current-spec.v1.6.0", digest: FILE_FIXTURE_DIGEST }],
-    evidence: [OPENSPEC_SOURCE_EVIDENCE],
+    operations: [
+      supported("observe-native-source", "19d41714c8b790488732687443713e406ef5aeef", [
+        { fixtureId: "openspec.file.current-spec.v1.6.0", digest: FILE_FIXTURE_DIGEST },
+      ]),
+      unsupported(
+        "derive-portable-specification",
+        "19d41714c8b790488732687443713e406ef5aeef",
+        "OpenSpec file content is retained natively but is not yet derived into portable semantics.",
+      ),
+      unsupported(
+        "compile-portable-specification",
+        "19d41714c8b790488732687443713e406ef5aeef",
+        "OpenSpec file compilation is not implemented.",
+      ),
+      unsupported(
+        "export-native-source",
+        "19d41714c8b790488732687443713e406ef5aeef",
+        "OpenSpec file export is not implemented.",
+      ),
+      unsupported(
+        "round-trip-native-source",
+        "19d41714c8b790488732687443713e406ef5aeef",
+        "OpenSpec file round trip is not implemented.",
+      ),
+    ],
   },
 );
 
 export const OPENSPEC_SOURCE_STATUS_CLI_SUPPORT: SpecificationAdapterSupport =
   createSpecificationAdapterSupport({
     format: { id: FORMAT_ID, version: VERSION },
-    direction: "import",
-    supportedVersions: [VERSION],
-    levels: ["syntax", "semantic"],
-    features: [
-      "status-json-source-commit-19d41714c8b790488732687443713e406ef5aeef",
-      "artifact-status-observation",
-      "artifact-dependency-relationships",
-      "skipped-artifact-status",
-    ],
-    preservedExtensionNamespaces: [FORMAT_ID],
+    authority: "OpenSpec repository and published package",
+    revision: OPENSPEC_SOURCE_STATUS_CONTRACT,
     sourceOwnership: "source-owned",
-    writeBack: "unsupported",
-    fixtures: [
-      { fixtureId: "openspec.cli.status.v1.6.0", digest: STATUS_FIXTURE_DIGEST },
-      {
-        fixtureId: "openspec.cli.status.skip-specs.v1.6.0",
-        digest: SKIPPED_STATUS_FIXTURE_DIGEST,
-      },
+    operations: [
+      supported("observe-native-source", OPENSPEC_SOURCE_STATUS_CONTRACT, [
+        { fixtureId: "openspec.cli.status.v1.6.0", digest: STATUS_FIXTURE_DIGEST },
+      ]),
+      supported("derive-portable-specification", OPENSPEC_SOURCE_STATUS_CONTRACT, [
+        { fixtureId: "openspec.cli.status.v1.6.0", digest: STATUS_FIXTURE_DIGEST },
+        {
+          fixtureId: "openspec.cli.status.skip-specs.v1.6.0",
+          digest: SKIPPED_STATUS_FIXTURE_DIGEST,
+        },
+      ]),
+      unsupported(
+        "compile-portable-specification",
+        OPENSPEC_SOURCE_STATUS_CONTRACT,
+        "OpenSpec status compilation is not implemented.",
+      ),
+      unsupported(
+        "export-native-source",
+        OPENSPEC_SOURCE_STATUS_CONTRACT,
+        "OpenSpec status export is not implemented.",
+      ),
+      unsupported(
+        "round-trip-native-source",
+        OPENSPEC_SOURCE_STATUS_CONTRACT,
+        "OpenSpec status round trip is not implemented.",
+      ),
     ],
-    evidence: [OPENSPEC_SOURCE_EVIDENCE],
   });
 
 export const OPENSPEC_NPM_STATUS_CLI_SUPPORT: SpecificationAdapterSupport =
   createSpecificationAdapterSupport({
     format: { id: FORMAT_ID, version: VERSION },
-    direction: "import",
-    supportedVersions: [VERSION],
-    levels: ["syntax", "semantic"],
-    features: [
-      "status-json-npm-tarball-1.6.0",
-      "artifact-status-observation",
-      "dependency-semantics-unavailable",
-    ],
-    preservedExtensionNamespaces: [FORMAT_ID],
+    authority: "OpenSpec repository and published package",
+    revision: OPENSPEC_NPM_STATUS_CONTRACT,
     sourceOwnership: "source-owned",
-    writeBack: "unsupported",
-    fixtures: [
-      { fixtureId: "openspec.cli.status.npm-tarball.v1.6.0", digest: NPM_STATUS_FIXTURE_DIGEST },
+    operations: [
+      supported("observe-native-source", OPENSPEC_NPM_STATUS_CONTRACT, [
+        { fixtureId: "openspec.cli.status.npm-tarball.v1.6.0", digest: NPM_STATUS_FIXTURE_DIGEST },
+      ]),
+      supported("derive-portable-specification", OPENSPEC_NPM_STATUS_CONTRACT, [
+        { fixtureId: "openspec.cli.status.npm-tarball.v1.6.0", digest: NPM_STATUS_FIXTURE_DIGEST },
+      ]),
+      unsupported(
+        "compile-portable-specification",
+        OPENSPEC_NPM_STATUS_CONTRACT,
+        "OpenSpec status compilation is not implemented.",
+      ),
+      unsupported(
+        "export-native-source",
+        OPENSPEC_NPM_STATUS_CONTRACT,
+        "OpenSpec status export is not implemented.",
+      ),
+      unsupported(
+        "round-trip-native-source",
+        OPENSPEC_NPM_STATUS_CONTRACT,
+        "OpenSpec status round trip is not implemented.",
+      ),
     ],
-    evidence: [OPENSPEC_NPM_EVIDENCE],
   });
 
 export type OpenSpecFileKind = "root-config" | "current-specification" | "change-delta" | "archive";
@@ -148,7 +200,7 @@ export interface OpenSpecFileImportInput {
 
 export interface OpenSpecFileImportResult {
   readonly snapshot: SpecificationSourceSnapshot;
-  readonly report: ConversionReport;
+  readonly operation: SpecificationOperation;
 }
 
 export interface OpenSpecStatusCliInput {
@@ -165,7 +217,7 @@ export interface OpenSpecStatusCliInput {
 export interface OpenSpecStatusImportResult {
   /** Detached portable graph input for `loadSpecification`. */
   readonly graph: unknown;
-  readonly report: ConversionReport;
+  readonly operation: SpecificationOperation;
 }
 
 type ArtifactStatus = "done" | "skipped" | "ready" | "blocked";
@@ -262,14 +314,14 @@ const assertFiles = (files: readonly OpenSpecFileObservation[]): void => {
   });
 };
 
-const fileIssues = (
+const fileDiagnostics = (
   sourceId: string,
   files: readonly OpenSpecFileObservation[],
-): readonly ConversionIssue[] =>
+): readonly SpecificationDiagnostic[] =>
   files.map((file) => ({
     code: "openspec.file-content-uninterpreted",
     severity: "warning",
-    disposition: "degraded",
+    impact: "advisory",
     explanation:
       "The documented OpenSpec file and path are preserved, but its source-owned content is not promoted to canonical specification semantics.",
     source: { sourceId: sourceId as never, documentId: file.documentId },
@@ -289,8 +341,7 @@ export const importOpenSpecFiles = (
       "OpenSpec primary, overlay, and reference files must be imported as separate source observations.",
     );
   }
-  const issues = fileIssues(input.sourceId, input.files);
-  const report = createConversionReport({ fidelity: "partial", issues });
+  const diagnostics = fileDiagnostics(input.sourceId, input.files);
   const snapshot = createSpecificationSourceSnapshot({
     sourceId: input.sourceId as never,
     format: { id: FORMAT_ID, version: VERSION },
@@ -316,7 +367,15 @@ export const importOpenSpecFiles = (
       },
     },
   });
-  return cloneFrozen({ snapshot, report });
+  return cloneFrozen({
+    snapshot,
+    operation: supported(
+      "observe-native-source",
+      "19d41714c8b790488732687443713e406ef5aeef",
+      [{ fixtureId: "openspec.file.current-spec.v1.6.0", digest: FILE_FIXTURE_DIGEST }],
+      diagnostics,
+    ),
+  });
 };
 
 const exactRecord = (
@@ -559,23 +618,19 @@ export const importOpenSpecStatusCli = (
       nodeId(input.sourceId, status.changeName, artifact.id),
     ]),
   );
-  const dependencyIssues: readonly ConversionIssue[] =
+  const diagnostics: readonly SpecificationDiagnostic[] =
     input.contract === OPENSPEC_NPM_STATUS_CONTRACT
       ? [
           {
             code: "openspec.status-dependencies-unavailable",
             severity: "warning",
-            disposition: "degraded",
+            impact: "advisory",
             explanation:
               "The official OpenSpec 1.6.0 npm tarball omits each artifact's requires list; current missingDeps are preserved, but dependency relationships are not inferred.",
             source: { sourceId, documentId: "status.json" },
           },
         ]
       : [];
-  const report = createConversionReport({
-    fidelity: dependencyIssues.length === 0 ? "exact" : "partial",
-    issues: dependencyIssues,
-  });
   const snapshot = createSpecificationSourceSnapshot({
     sourceId,
     format: { id: FORMAT_ID, version: VERSION },
@@ -615,14 +670,25 @@ export const importOpenSpecStatusCli = (
       : [],
   );
   return cloneFrozen({
-    report,
+    operation: supported(
+      "derive-portable-specification",
+      input.contract,
+      [
+        input.contract === OPENSPEC_SOURCE_STATUS_CONTRACT
+          ? { fixtureId: "openspec.cli.status.v1.6.0", digest: STATUS_FIXTURE_DIGEST }
+          : {
+              fixtureId: "openspec.cli.status.npm-tarball.v1.6.0",
+              digest: NPM_STATUS_FIXTURE_DIGEST,
+            },
+      ],
+      diagnostics,
+    ),
     graph: {
       graphId: `openspec.status.${sha256(input.stdout).value}`,
       version: VERSION,
       sources: [snapshot],
       nodes,
       relationships,
-      report,
     },
   });
 };

@@ -10,7 +10,7 @@
 // yields a synchronous result; the call only becomes async when observe/apply
 // return a thenable.
 
-import { isDigest, type Digest } from "@geekist/llm-core/contracts";
+import { isDigest, type Digest } from "@aifsd/llm-core/contracts";
 import { maybeAll, maybeThen } from "@wpkernel/pipeline/core";
 import type {
   ChangeApplicationStatus,

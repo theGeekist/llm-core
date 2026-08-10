@@ -9,13 +9,13 @@ import {
 import { compareUtf16CodeUnits } from "#shared/fp";
 import { cloneFrozen, hasOnlyKeys, isPortableRecord } from "#shared/portable-data";
 import {
-  createConversionReport,
   createSpecificationAdapterSupport,
+  createSpecificationOperation,
   createSpecificationSourceSnapshot,
-  type ConversionIssue,
-  type ConversionReport,
+  type SpecificationDiagnostic,
+  type SpecificationOperation,
   type SpecificationAdapterSupport,
-} from "@geekist/llm-core/specifications";
+} from "@aifsd/llm-core/specifications";
 import {
   AI_SDLC_API_VERSION,
   ATTESTATION_SCHEMA_ID,
@@ -35,13 +35,6 @@ const DECISION_FIXTURE_DIGEST = digest(
 const ATTESTATION_FIXTURE_DIGEST = digest(
   "72e09f94393205609421b2781a8ccfbbd44da439a0662774bc8385cc3805e1da",
 );
-const DECISION_SCHEMA_DIGEST = digest(
-  "4c5605f2f199fc90ed4b7e211edef6352dce429d3dba84bc03c3d6afdd466d37",
-);
-const ATTESTATION_SCHEMA_DIGEST = digest(
-  "7ff57106ea497ffd04516a867e2855169a69c8a97df76c01ffe1a4861b0cfff4",
-);
-
 export interface AiSdlcImportInput {
   readonly sourceId: string;
   readonly revision: string;
@@ -52,7 +45,7 @@ export interface AiSdlcImportInput {
 export interface AiSdlcImportResult {
   /** Detached portable graph input for `loadSpecification`. */
   readonly graph: unknown;
-  readonly report: ConversionReport;
+  readonly operation: SpecificationOperation;
 }
 
 const sha256 = (value: string) => digest(createHash("sha256").update(value).digest("hex"));
@@ -106,13 +99,16 @@ const documentIdFor = (document: ParsedAiSdlcDocument): string =>
 const nodeIdFor = (sourceId: string, document: ParsedAiSdlcDocument): string =>
   `ai-sdlc.node.${stableId([sourceId, document.type, identityFor(document)])}`;
 
-const governanceIssue = (document: ParsedAiSdlcDocument, nodeId: string): ConversionIssue => ({
+const governanceDiagnostic = (
+  document: ParsedAiSdlcDocument,
+  nodeId: string,
+): SpecificationDiagnostic => ({
   code:
     document.type === "decision"
       ? "ai-sdlc.decision-governance-untrusted"
       : "ai-sdlc.attestation-unverified-source",
   severity: "warning",
-  disposition: "degraded",
+  impact: "advisory",
   explanation:
     document.type === "decision"
       ? "The entire Decision document, including every identity, routing, lifecycle, answer, option, priority, and event-log field, remains unauthenticated source material; it does not mint llm-core authority."
@@ -166,8 +162,8 @@ export const importAiSdlcDocuments = (rawInput: AiSdlcImportInput): AiSdlcImport
       nodeIdFor(input.sourceId, document),
     ]),
   );
-  const issues: ConversionIssue[] = documents.map((document) =>
-    governanceIssue(document, nodeIds.get(`${document.type}:${identityFor(document)}`)!),
+  const diagnostics: SpecificationDiagnostic[] = documents.map((document) =>
+    governanceDiagnostic(document, nodeIds.get(`${document.type}:${identityFor(document)}`)!),
   );
   const relationships: Record<string, JsonValue>[] = [];
 
@@ -176,18 +172,9 @@ export const importAiSdlcDocuments = (rawInput: AiSdlcImportInput): AiSdlcImport
     document.dependsOn.forEach((dependency, index) => {
       const target = nodeIds.get(`decision:${dependency}`);
       if (target === undefined) {
-        issues.push({
-          code: "ai-sdlc.decision-dependency-unresolved",
-          severity: "warning",
-          disposition: "degraded",
-          explanation: `Decision dependency '${dependency}' is outside this import; no relationship meaning was guessed.`,
-          source: {
-            sourceId,
-            documentId: documentIdFor(document),
-            location: `/spec/dependsOn/${index}`,
-          },
-        });
-        return;
+        throw new TypeError(
+          `AI-SDLC portable derivation is unsupported because dependency '${dependency}' is outside this import.`,
+        );
       }
       relationships.push({
         relationshipId: `ai-sdlc.relationship.${stableId([
@@ -208,7 +195,6 @@ export const importAiSdlcDocuments = (rawInput: AiSdlcImportInput): AiSdlcImport
     });
   });
 
-  const report = createConversionReport({ fidelity: "partial", issues });
   const snapshot = createSpecificationSourceSnapshot({
     sourceId,
     format: { id: FORMAT_ID, version: FORMAT_VERSION },
@@ -253,14 +239,26 @@ export const importAiSdlcDocuments = (rawInput: AiSdlcImportInput): AiSdlcImport
   }));
 
   return cloneFrozen({
-    report,
+    operation: createSpecificationOperation({
+      operation: "derive-portable-specification",
+      sourceContract: {
+        authority: "AI-SDLC repository schemas",
+        format: { id: FORMAT_ID, version: FORMAT_VERSION },
+        revision: ASSESSED_COMMIT,
+      },
+      disposition: "supported",
+      fixtures: [
+        { fixtureId: "ai-sdlc.decision-v1.11f2c83", digest: DECISION_FIXTURE_DIGEST },
+        { fixtureId: "ai-sdlc.attestation-v6.11f2c83", digest: ATTESTATION_FIXTURE_DIGEST },
+      ],
+      diagnostics,
+    }),
     graph: {
       graphId: `ai-sdlc.graph.${stableId([input.sourceId, input.revision])}`,
       version: FORMAT_VERSION,
       sources: [snapshot],
       nodes,
       relationships,
-      report,
     },
   });
 };
@@ -268,29 +266,71 @@ export const importAiSdlcDocuments = (rawInput: AiSdlcImportInput): AiSdlcImport
 export const AI_SDLC_ADAPTER_SUPPORT: SpecificationAdapterSupport =
   createSpecificationAdapterSupport({
     format: { id: FORMAT_ID, version: FORMAT_VERSION },
-    direction: "import",
-    supportedVersions: [FORMAT_VERSION],
-    levels: ["syntax", "semantic"],
-    features: [
-      "apiVersion-ai-sdlc.io-v1alpha1",
-      "decision-v1-draft-2020-12",
-      "decision-dependsOn-relationships",
-      "attestation-envelope-v6-draft-2020-12",
-      "governance-claims-as-untrusted-source",
-    ],
-    preservedExtensionNamespaces: [FORMAT_ID],
+    authority: "AI-SDLC repository schemas",
+    revision: ASSESSED_COMMIT,
     sourceOwnership: "source-owned",
-    writeBack: "unsupported",
-    fixtures: [
-      { fixtureId: "ai-sdlc.decision-v1.11f2c83", digest: DECISION_FIXTURE_DIGEST },
-      { fixtureId: "ai-sdlc.attestation-v6.11f2c83", digest: ATTESTATION_FIXTURE_DIGEST },
-    ],
-    evidence: [
-      { evidenceId: "ai-sdlc.schema.decision-v1.11f2c83", digest: DECISION_SCHEMA_DIGEST },
-      {
-        evidenceId: "ai-sdlc.schema.attestation-v6.11f2c83",
-        digest: ATTESTATION_SCHEMA_DIGEST,
-      },
+    operations: [
+      createSpecificationOperation({
+        operation: "observe-native-source",
+        sourceContract: {
+          authority: "AI-SDLC repository schemas",
+          format: { id: FORMAT_ID, version: FORMAT_VERSION },
+          revision: ASSESSED_COMMIT,
+        },
+        disposition: "supported",
+        fixtures: [
+          { fixtureId: "ai-sdlc.decision-v1.11f2c83", digest: DECISION_FIXTURE_DIGEST },
+          { fixtureId: "ai-sdlc.attestation-v6.11f2c83", digest: ATTESTATION_FIXTURE_DIGEST },
+        ],
+        diagnostics: [],
+      }),
+      createSpecificationOperation({
+        operation: "derive-portable-specification",
+        sourceContract: {
+          authority: "AI-SDLC repository schemas",
+          format: { id: FORMAT_ID, version: FORMAT_VERSION },
+          revision: ASSESSED_COMMIT,
+        },
+        disposition: "supported",
+        fixtures: [
+          { fixtureId: "ai-sdlc.decision-v1.11f2c83", digest: DECISION_FIXTURE_DIGEST },
+          { fixtureId: "ai-sdlc.attestation-v6.11f2c83", digest: ATTESTATION_FIXTURE_DIGEST },
+        ],
+        diagnostics: [],
+      }),
+      createSpecificationOperation({
+        operation: "compile-portable-specification",
+        sourceContract: {
+          authority: "AI-SDLC repository schemas",
+          format: { id: FORMAT_ID, version: FORMAT_VERSION },
+          revision: ASSESSED_COMMIT,
+        },
+        disposition: "unsupported",
+        reason: "AI-SDLC portable compilation is not implemented.",
+        diagnostics: [],
+      }),
+      createSpecificationOperation({
+        operation: "export-native-source",
+        sourceContract: {
+          authority: "AI-SDLC repository schemas",
+          format: { id: FORMAT_ID, version: FORMAT_VERSION },
+          revision: ASSESSED_COMMIT,
+        },
+        disposition: "unsupported",
+        reason: "AI-SDLC native export is not implemented.",
+        diagnostics: [],
+      }),
+      createSpecificationOperation({
+        operation: "round-trip-native-source",
+        sourceContract: {
+          authority: "AI-SDLC repository schemas",
+          format: { id: FORMAT_ID, version: FORMAT_VERSION },
+          revision: ASSESSED_COMMIT,
+        },
+        disposition: "unsupported",
+        reason: "AI-SDLC native round trip is not implemented.",
+        diagnostics: [],
+      }),
     ],
   });
 

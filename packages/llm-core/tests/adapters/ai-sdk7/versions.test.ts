@@ -1,5 +1,6 @@
 import { describe, expect, it } from "bun:test";
 import packageJson from "../../../package.json";
+import { AI_SDK7_AUTHORITY, AI_SDK7_OPERATION_DISPOSITIONS } from "../../../src/adapters/ai-sdk";
 
 const MATRIX = {
   ai: "7.0.37",
@@ -26,5 +27,51 @@ describe("AI SDK 7 direct dependency baseline", () => {
     expect(packageJson.peerDependenciesMeta["@ai-sdk/provider"]?.optional).toBe(true);
     expect(packageJson.overrides).not.toHaveProperty("ai");
     expect(packageJson.overrides).not.toHaveProperty("@ai-sdk/react");
+  });
+
+  it("binds every native operation disposition to the exact tested authority", () => {
+    expect(AI_SDK7_AUTHORITY).toEqual({ ai: "7.0.37", provider: "4.0.3" });
+    expect(AI_SDK7_OPERATION_DISPOSITIONS.map(({ operation }) => operation)).toEqual([
+      "generateText.content",
+      "generateText.text",
+      "generateText.reasoning",
+      "generateText.reasoningText",
+      "generateText.files",
+      "generateText.sources",
+      "generateText.toolCalls",
+      "generateText.staticToolCalls",
+      "generateText.dynamicToolCalls",
+      "generateText.toolResults",
+      "generateText.staticToolResults",
+      "generateText.dynamicToolResults",
+      "generateText.finishReason",
+      "generateText.rawFinishReason",
+      "generateText.usage",
+      "generateText.totalUsage",
+      "generateText.warnings",
+      "generateText.request",
+      "generateText.response",
+      "generateText.responseMessages",
+      "generateText.providerMetadata",
+      "generateText.steps",
+      "generateText.finalStep",
+      "generateText.output",
+      "generateText.steps.model",
+      "generateText.steps.runtimeContext",
+      "generateText.steps.toolsContext",
+      "streamText.parts",
+      "errors.apiCall",
+      "errors.abort",
+      "errors.closed",
+      "errors.otherAiSdk",
+      "errors.stack",
+      "streamText.raw",
+      "tools.providerExecution",
+    ]);
+    expect(AI_SDK7_OPERATION_DISPOSITIONS.every(Object.isFrozen)).toBe(true);
+    expect(Object.isFrozen(AI_SDK7_OPERATION_DISPOSITIONS)).toBe(true);
+    expect(AI_SDK7_OPERATION_DISPOSITIONS).not.toContainEqual(
+      expect.objectContaining({ disposition: "not-applicable" }),
+    );
   });
 });

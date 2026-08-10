@@ -19,7 +19,7 @@ const makeRoot = (): string => {
 const makeFixture = (
   root: string,
   path: string,
-  options: { lockfile?: boolean; qualify?: string } = {},
+  options: { lockfile?: boolean; qualify?: string; prebuiltQualify?: string } = {},
 ): string => {
   const directory = join(root, path, "external-consumer");
   mkdirSync(directory, { recursive: true });
@@ -28,8 +28,12 @@ const makeFixture = (
     JSON.stringify({
       name: "fixture",
       private: true,
-      scripts:
-        options.qualify === undefined ? { qualify: "bun test" } : { qualify: options.qualify },
+      scripts: {
+        qualify: options.qualify === undefined ? "bun test" : options.qualify,
+        ...(options.prebuiltQualify === undefined
+          ? {}
+          : { "qualify:prebuilt": options.prebuiltQualify }),
+      },
     }),
   );
   if (options.lockfile !== false) writeFileSync(join(directory, "bun.lock"), "lock");
@@ -89,5 +93,25 @@ describe("external fixture qualification", () => {
     expect(() => qualifyExternalFixtures(root, () => ({ exitCode: 7 }))).toThrow(
       "failed with exit code 7",
     );
+  });
+
+  test("uses the explicit prebuilt qualifier after the frozen install", () => {
+    const root = makeRoot();
+    const directory = makeFixture(root, "packages/a/tests", {
+      prebuiltQualify: "bun run verify",
+    });
+    const calls: Array<{ command: readonly string[]; cwd: string }> = [];
+    qualifyExternalFixtures(
+      root,
+      (command, cwd) => {
+        calls.push({ command, cwd });
+        return { exitCode: 0 };
+      },
+      true,
+    );
+    expect(calls).toEqual([
+      { command: ["bun", "install", "--frozen-lockfile"], cwd: directory },
+      { command: ["bun", "run", "qualify:prebuilt"], cwd: directory },
+    ]);
   });
 });

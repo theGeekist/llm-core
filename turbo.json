@@ -1,0 +1,39 @@
+{
+  "$schema": "https://turbo.build/schema.json",
+  "ui": "stream",
+  "globalDependencies": [".bun-version", "bun.lock", ".eslintrc.cjs", "tsconfig.json"],
+  "tasks": {
+    "build": {
+      "dependsOn": ["^build"],
+      "outputs": ["dist/**"],
+      "outputLogs": "new-only"
+    },
+    "lint": {
+      "outputs": [],
+      "outputLogs": "errors-only"
+    },
+    "typecheck": {
+      "outputs": [],
+      "outputLogs": "errors-only"
+    },
+    "typecheck:tests": {
+      "outputs": [],
+      "outputLogs": "errors-only"
+    },
+    "test": {
+      "cache": false,
+      "env": ["LLM_CORE_PYDANTIC_AI_PYTHON"],
+      "outputs": [],
+      "outputLogs": "errors-only"
+    },
+    "format:check": {
+      "outputs": [],
+      "outputLogs": "errors-only"
+    },
+    "//#release:repo-check": {
+      "cache": false,
+      "outputs": [],
+      "outputLogs": "errors-only"
+    }
+  }
+}

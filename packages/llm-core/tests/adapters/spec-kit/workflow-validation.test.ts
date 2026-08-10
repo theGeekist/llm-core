@@ -4,7 +4,7 @@ import { parseSpecKitWorkflowYaml } from "../../../src/adapters/spec-kit/yaml";
 import { exactSpecKitPython, fixture, importedFiles, provenance } from "./spec-kit-test-fixtures";
 
 describe("Spec Kit adapter", () => {
-  test("derives exact, partial, and rejected fidelity from issue dispositions", () => {
+  test("keeps advisory diagnostics separate and rejects unsupported derivations", () => {
     const exact = importedFiles([
       {
         path: "workflows/speckit/workflow.yml",
@@ -13,9 +13,9 @@ describe("Spec Kit adapter", () => {
         provenance: provenance("core", "speckit", 0),
       },
     ]);
-    expect(exact.report).toMatchObject({
-      fidelity: "exact",
-      issues: [expect.objectContaining({ disposition: "preserved" })],
+    expect(exact.operation).toMatchObject({
+      disposition: "supported",
+      diagnostics: [expect.objectContaining({ impact: "advisory" })],
     });
 
     const partial = importedFiles([
@@ -26,23 +26,21 @@ describe("Spec Kit adapter", () => {
         provenance: provenance("workflow-run", "run-1", 0),
       },
     ]);
-    expect(partial.report).toMatchObject({
-      fidelity: "partial",
-      issues: [expect.objectContaining({ disposition: "degraded" })],
+    expect(partial.operation).toMatchObject({
+      disposition: "supported",
+      diagnostics: [expect.objectContaining({ impact: "advisory" })],
     });
 
-    const rejected = importedFiles([
-      {
-        path: "workflows/invalid.yml",
-        content: 'schema_version: "2.0"\nworkflow: nope\nsteps: []\n',
-        kind: "workflow",
-        provenance: provenance("core", "speckit", 0),
-      },
-    ]);
-    expect(rejected.report).toMatchObject({
-      fidelity: "rejected",
-      issues: expect.arrayContaining([expect.objectContaining({ disposition: "rejected" })]),
-    });
+    expect(() =>
+      importedFiles([
+        {
+          path: "workflows/invalid.yml",
+          content: 'schema_version: "2.0"\nworkflow: nope\nsteps: []\n',
+          kind: "workflow",
+          provenance: provenance("core", "speckit", 0),
+        },
+      ]),
+    ).toThrow("portable derivation is unsupported");
   });
 
   test("degrades custom extension steps while retaining their complete native definition", () => {
@@ -60,9 +58,9 @@ steps:
     expect(parsed.issues).toEqual([
       expect.objectContaining({
         code: "spec-kit-workflow-custom-step-uninterpreted",
-        disposition: "degraded",
+        impact: "advisory",
       }),
-      expect.objectContaining({ disposition: "preserved" }),
+      expect.objectContaining({ impact: "advisory" }),
     ]);
     expect(parsed.program?.steps[0]?.definition).toEqual({
       id: "deploy",
@@ -91,7 +89,7 @@ workflow:
 ${fragment}
 `);
       expect(parsed.program).toBeUndefined();
-      expect(parsed.issues.some((issue) => issue.disposition === "rejected")).toBe(true);
+      expect(parsed.issues.some((issue) => issue.impact === "blocking")).toBe(true);
     });
   });
 
@@ -133,7 +131,7 @@ steps:
 `);
     expect(numericSchema.program).toBeUndefined();
     expect(numericSchema.issues).toContainEqual(
-      expect.objectContaining({ disposition: "rejected", location: "/schema_version" }),
+      expect.objectContaining({ impact: "blocking", location: "/schema_version" }),
     );
   });
 

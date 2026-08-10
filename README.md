@@ -1,17 +1,14 @@
 # Geekist AI ecosystem
 
-This workspace contains independently owned packages for portable AI
-contracts, runtime integrations, and AI-first software delivery. The packages
-share one ecosystem documentation site while retaining their own engineering
-documents and architecture authority.
+This workspace contains independently owned packages for portable AI contracts, runtime integrations, and AI-first software delivery. The packages share one ecosystem documentation site while retaining their own engineering documents and architecture authority.
 
 ## Packages
 
-| Package                                                    | Purpose                                                                      | Package documents                                                         |
-| ---------------------------------------------------------- | ---------------------------------------------------------------------------- | ------------------------------------------------------------------------- |
-| [`@geekist/llm-core`](./packages/llm-core/README.md)       | Portable contracts, conformance, authority, and evidence for agentic systems | [`packages/llm-core/docs`](./packages/llm-core/docs/README.md)            |
-| [`@aifsd/sdk`](./packages/aifsd/README.md)                 | AI-first software delivery and application-integration journeys              | Private engineering authority; optional local `packages/aifsd/docs` mount |
-| [`@geekist/strict-json`](./packages/strict-json/README.md) | Strict JSON normalisation, canonicalisation, and immutable snapshots         | [`packages/strict-json/docs`](./packages/strict-json/docs/README.md)      |
+| Package | Purpose | Package documents |
+| --- | --- | --- |
+| [`@aifsd/llm-core`](./packages/llm-core/README.md) | Portable contracts, conformance, authority, and evidence for agentic systems | [`packages/llm-core/docs`](./packages/llm-core/docs/README.md) |
+| [`@aifsd/sdk`](./packages/aifsd/README.md) | AI-first software delivery and application-integration journeys | Private engineering authority; optional local `packages/aifsd/docs` mount |
+| [`@aifsd/strict-json`](./packages/strict-json/README.md) | Strict JSON normalisation, canonicalisation, and immutable snapshots | [`packages/strict-json/docs`](./packages/strict-json/docs/README.md) |
 
 Additional packages use the same ownership shape:
 
@@ -23,7 +20,4 @@ packages/<package>/
 └── tests/
 ```
 
-The shared [VitePress site](./docs/index.md) currently documents `llm-core` and
-can aggregate future package sections. Start package work from its README and
-engineering docs. Documentation-only internal material belongs under
-`packages/<package>/docs/internal/`.
+The shared [VitePress site](./docs/index.md) currently documents `llm-core` and can aggregate future package sections. Start package work from its README and engineering docs. Documentation-only internal material belongs under `packages/<package>/docs/internal/`.

@@ -109,7 +109,7 @@ describe("AI-SDLC v1alpha1 resource adapter", () => {
   });
 
   test("retains Decision governance claims as unauthenticated source material", () => {
-    const imported = importFixtures([fixture("decision-v1.json")]);
+    const imported = importFixtures([dependencyDecision(), fixture("decision-v1.json")]);
     const graph = imported.graph as {
       readonly sources: readonly { readonly authority: string }[];
       readonly nodes: readonly {
@@ -117,21 +117,20 @@ describe("AI-SDLC v1alpha1 resource adapter", () => {
         readonly source: { readonly documentId: string };
         readonly extensions: Record<string, { readonly trust: string }>;
       }[];
-      readonly report: {
-        readonly issues: readonly { readonly code: string; readonly disposition: string }[];
-      };
     };
 
     expect(graph.sources[0]).toMatchObject({ authority: "advisory" });
-    expect(graph.nodes[0]).toMatchObject({
+    expect(
+      graph.nodes.find((node) => node.source.documentId === "Decision:DEC-1001"),
+    ).toMatchObject({
       kind: "decision",
       source: { documentId: "Decision:DEC-1001" },
       extensions: { "io.ai-sdlc.resource": { trust: "unverified-source" } },
     });
-    expect(graph.report.issues).toContainEqual(
+    expect(imported.operation.diagnostics).toContainEqual(
       expect.objectContaining({
         code: "ai-sdlc.decision-governance-untrusted",
-        disposition: "degraded",
+        impact: "advisory",
       }),
     );
     expect(graph).not.toHaveProperty("decisionRecord");
@@ -146,9 +145,6 @@ describe("AI-SDLC v1alpha1 resource adapter", () => {
         readonly source: { readonly documentId: string };
         readonly extensions: Record<string, { readonly schema: string; readonly trust: string }>;
       }[];
-      readonly report: {
-        readonly issues: readonly { readonly code: string; readonly disposition: string }[];
-      };
     };
 
     expect(graph.nodes[0]).toMatchObject({
@@ -163,16 +159,20 @@ describe("AI-SDLC v1alpha1 resource adapter", () => {
         },
       },
     });
-    expect(graph.report.issues).toContainEqual(
+    expect(imported.operation.diagnostics).toContainEqual(
       expect.objectContaining({
         code: "ai-sdlc.attestation-unverified-source",
-        disposition: "degraded",
+        impact: "advisory",
       }),
     );
   });
 
   test("uses stable, kind-specific native document identities", () => {
-    const documents = [fixture("decision-v1.json"), fixture("attestation-envelope-v6.json")];
+    const documents = [
+      dependencyDecision(),
+      fixture("decision-v1.json"),
+      fixture("attestation-envelope-v6.json"),
+    ];
     const first = importFixtures(documents).graph as {
       readonly nodes: readonly {
         readonly nodeId: string;
@@ -187,9 +187,12 @@ describe("AI-SDLC v1alpha1 resource adapter", () => {
     };
 
     expect(first.nodes).toEqual(second.nodes);
-    expect(first.nodes[0]!.source.documentId).toBe("Decision:DEC-1001");
-    expect(first.nodes[1]!.source.documentId).toMatch(/^AttestationEnvelopeV6:[0-9a-f]{64}$/);
-    expect(new Set(first.nodes.map((node) => node.nodeId)).size).toBe(2);
+    expect(first.nodes.some((node) => node.source.documentId === "Decision:DEC-1001")).toBe(true);
+    expect(
+      first.nodes.find((node) => node.source.documentId.startsWith("AttestationEnvelopeV6:"))
+        ?.source.documentId,
+    ).toMatch(/^AttestationEnvelopeV6:[0-9a-f]{64}$/);
+    expect(new Set(first.nodes.map((node) => node.nodeId)).size).toBe(3);
   });
 
   test("accepts schema-valid non-safe leaf counts while canonicalizing property order", () => {
@@ -331,20 +334,23 @@ describe("AI-SDLC v1alpha1 resource adapter", () => {
 
   test("returns an immutable detached graph that loadSpecification accepts", () => {
     const sourceDecision = fixture("decision-v1.json");
-    const imported = importFixtures([sourceDecision]);
+    const imported = importFixtures([dependencyDecision(), sourceDecision]);
     const graph = imported.graph as {
       readonly nodes: readonly { readonly content: JsonObject }[];
     };
 
     expect(() => loadSpecification(imported.graph)).not.toThrow();
     expect(Object.isFrozen(imported)).toBe(true);
-    expect(Object.isFrozen(imported.report)).toBe(true);
+    expect(Object.isFrozen(imported.operation)).toBe(true);
     expect(Object.isFrozen(imported.graph)).toBe(true);
     expect(Object.isFrozen(graph.nodes)).toBe(true);
     expect(Object.isFrozen(graph.nodes[0]!.content)).toBe(true);
 
     (sourceDecision.metadata as JsonObject).id = "DEC-9999";
-    expect((graph.nodes[0]!.content.metadata as JsonObject).id).toBe("DEC-1001");
+    const capturedDecision = graph.nodes.find(
+      (node) => (node.content.metadata as JsonObject).id === "DEC-1001",
+    );
+    expect((capturedDecision?.content.metadata as JsonObject).id).toBe("DEC-1001");
   });
 
   test("rejects hostile or non-portable input without invoking accessors", () => {
@@ -377,7 +383,12 @@ describe("AI-SDLC v1alpha1 resource adapter", () => {
     expect(fixtureDigest("attestation-envelope-v6.schema.json")).toBe(
       "7ff57106ea497ffd04516a867e2855169a69c8a97df76c01ffe1a4861b0cfff4",
     );
-    expect(AI_SDLC_ADAPTER_SUPPORT.fixtures).toEqual([
+    const derivation = AI_SDLC_ADAPTER_SUPPORT.operations.find(
+      (operation) => operation.operation === "derive-portable-specification",
+    );
+    if (derivation?.disposition !== "supported")
+      throw new TypeError("Expected derivation support.");
+    expect(derivation.fixtures).toEqual([
       {
         fixtureId: "ai-sdlc.decision-v1.11f2c83",
         digest: expect.objectContaining({
@@ -393,29 +404,10 @@ describe("AI-SDLC v1alpha1 resource adapter", () => {
         }),
       },
     ]);
-    expect(AI_SDLC_ADAPTER_SUPPORT.evidence).toEqual([
-      {
-        evidenceId: "ai-sdlc.schema.decision-v1.11f2c83",
-        digest: {
-          algorithm: "sha-256",
-          value: "4c5605f2f199fc90ed4b7e211edef6352dce429d3dba84bc03c3d6afdd466d37",
-        },
-      },
-      {
-        evidenceId: "ai-sdlc.schema.attestation-v6.11f2c83",
-        digest: {
-          algorithm: "sha-256",
-          value: "7ff57106ea497ffd04516a867e2855169a69c8a97df76c01ffe1a4861b0cfff4",
-        },
-      },
-    ]);
-    expect(AI_SDLC_ADAPTER_SUPPORT.features).toEqual([
-      "apiVersion-ai-sdlc.io-v1alpha1",
-      "decision-v1-draft-2020-12",
-      "decision-dependsOn-relationships",
-      "attestation-envelope-v6-draft-2020-12",
-      "governance-claims-as-untrusted-source",
-    ]);
+    expect(AI_SDLC_ADAPTER_SUPPORT).toMatchObject({
+      authority: "AI-SDLC repository schemas",
+      revision: "11f2c83f17c797e85dcb65d6e1a9c17d02eb0335",
+    });
     expect(DECISION_SCHEMA_ID).toBe("https://ai-sdlc.io/schemas/v1alpha1/decision.v1.schema.json");
   });
 });

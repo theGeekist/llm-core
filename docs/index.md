@@ -37,18 +37,11 @@ npm install @geekist/llm-core
 
 ## The short version
 
-`llm-core` is not an agent SDK or workflow engine. It supplies the portable
-contract, authority, conformance, and evidence layer used by:
+`llm-core` is not an agent SDK or workflow engine. It supplies the portable contract, authority, conformance, and evidence layer used by:
 
-1. AI-first software delivery tools that understand, specify, build, review,
-   evaluate, approve, and release software; and
-2. qualified runtime integrations that execute agentic behavior inside the
-   delivered product.
+1. AI-first software delivery tools that understand, specify, build, review, evaluate, approve, and release software; and
+2. qualified runtime integrations that execute agentic behavior inside the delivered product.
 
-The package does not select a default runner. A host or runtime integration
-implements `AgentRunner` and supplies it explicitly. Concrete runtime adapter
-subpaths become supported only after their own qualification and publication.
+The package does not select a default runner. A host or runtime integration implements `AgentRunner` and supplies it explicitly. Concrete runtime adapter subpaths become supported only after their own qualification and publication.
 
-Start with [Get started](/guide/hello-world), then read
-[Core concepts](/guide/core-concepts) and
-[Package exports](/reference/package-exports).
+Start with [Get started](/guide/hello-world), then read [Core concepts](/guide/core-concepts) and [Package exports](/reference/package-exports).

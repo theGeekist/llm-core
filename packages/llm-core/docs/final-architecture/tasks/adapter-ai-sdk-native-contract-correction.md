@@ -3,16 +3,16 @@ architecture_version: 2
 id: adapter-ai-sdk-native-contract-correction
 title: Preserve the AI SDK native response contract
 stage: adapters
-status: proposed
+status: done
 priority: critical
 preferred_owner_kind: codex
-owner:
-owner_kind:
+owner: codex-root
+owner_kind: coordinator
 lease_started_at:
 lease_expires_at:
-base_sha:
-branch:
-worktree:
+base_sha: ac788c7dbcfa779f305c7a4ceb02a99c1e9f3d93
+branch: main
+worktree: /Users/jasonnathan/Repos/@theGeekist/llm-core
 depends_on:
   - architecture-external-contract-fidelity
   - core-ai-sdk-adapter
@@ -43,7 +43,7 @@ read_scope:
   - packages/llm-core/src/features/control/**
   - packages/llm-core/tests/**
 review_owner: human
-updated_at: 2026-08-07
+updated_at: 2026-08-10
 ---
 
 # adapter-ai-sdk-native-contract-correction — Preserve the AI SDK native response contract
@@ -107,12 +107,64 @@ git diff --check
 
 ## Work log
 
-Not started.
+- Execution mode: shared-checkout.
+- Execution rationale: the coordinator explicitly repartitioned this adapter
+  correction from the concurrent release-history work so both can proceed in
+  the canonical checkout without shared writes.
+- Concurrency evaluation: `release-history-provenance` retains `bun.lock`,
+  `packages/llm-core/package.json`, release and provenance scripts, changelogs
+  and release documentation. This task owns only the AI SDK adapter sources,
+  focused AI SDK tests, the public export characterisation, AI SDK adoption
+  documentation and this task record.
+- Swarm delegation: `codex-root -> release_v2_ledger` for this implementation
+  slice. Base SHA: `ac788c7dbcfa779f305c7a4ceb02a99c1e9f3d93`.
+- Replaced semantic-loss publication with an exact authority and closed
+  operation-disposition matrix.
+- Added an adapter-owned native contract whose redaction and observation ports
+  preserve completion and stream facts without widening the neutral model
+  result. Unsafe projections and failed observation reject the operation.
+- Added exact-version fixtures for warnings, approvals, provider metadata,
+  generated files, sources, stream parts and hostile proxy rejection.
+- Applied the independent contract review: portable warning, response and
+  structured-output projections now derive only from redacted values; observer
+  and return snapshots are independently detached and deeply frozen.
+- Added descriptor-safe snapshots that reject hidden data, accessors, symbols,
+  sparse arrays and array extras without invocation, plus closed Provider 4
+  `APICallError`, abort and generic-error family projections.
+- Added step, final-step and generate-result projections for finish reasons,
+  usage, request, response messages, performance and provider metadata. The
+  matrix explicitly excludes executable model handles and execution-only step
+  contexts rather than serialising live provider state.
+- Added a clean-process pinned fixture using AI SDK 7.0.37's official
+  `MockLanguageModelV4` and real result classes, isolated from the synthetic
+  suite's process-wide Bun module mocks.
+- Closed the final review findings: raw stream parts and provider-executed tool
+  calls or results now reject before observation and portable projection.
+- Moved every proxy guard ahead of `instanceof` and prototype reflection for
+  error and generated-byte paths, with trap-count fixtures proving zero hostile
+  `getPrototypeOf` calls.
+- Closed generated-file and file-part descriptors against unknown strings,
+  hidden data, accessors and symbols. Duplicate base64 and byte representations
+  must agree exactly; recognised AI SDK storage fields are validated without
+  invoking the SDK's lazy prototype accessors.
+- No concurrent-task manifest, lockfile, changelog or release/provenance path
+  was edited by this slice.
 
 ## Blocker
 
-ADR-017 requires human acceptance.
+None. ADR-017 is accepted and governs this correction.
 
 ## Handoff
 
-Not started.
+- Focused adapter tests: 39 passed, 0 failed. Public-export characterisation:
+  5 passed, 0 failed.
+- Package typechecking and `release:build` pass, including 727 package tests,
+  4 exact-authority skips and 0 failures, followed by declaration and
+  distribution emission.
+- `docs:check` passed with 42 public pages, 153 package engineering pages, 6
+  routing pages, 23 embedded snippets and snippet typechecking. `docs:build`
+  passed.
+- Targeted adapter ESLint, package formatting and `git diff --check` pass.
+- No package-manifest or lockfile change is required for this correction.
+- Independent receiving review approved the corrected native boundaries after
+  live raw-part, proxy-trap and hidden-file probes.

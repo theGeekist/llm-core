@@ -1,6 +1,7 @@
 import { afterAll, beforeAll, describe, expect, it, mock } from "bun:test";
 import { newCoreId, type ConversationId, type InvocationId, type ToolCallId } from "#contracts";
 import { createBuiltinModelProfile } from "../../../src/features/model/runtime";
+import { completeGenerateTextResult } from "./model-fixtures";
 
 const TOOL_CALL_ID = newCoreId<ToolCallId>("0190bd0c-0000-7000-8000-000000000081");
 const TOOL_CALL_ID_2 = newCoreId<ToolCallId>("0190bd0c-0000-7000-8000-000000000082");
@@ -26,7 +27,7 @@ beforeAll(async () => {
   mock.module("ai", () => ({
     generateText: (options: Record<string, unknown>) => {
       capturedGenerateOptions = options;
-      return generated;
+      return completeGenerateTextResult(generated);
     },
     streamText: () => {
       throw new Error("not used");
@@ -51,6 +52,7 @@ const createAdapter = (
   createAiSdk7Model({
     model: "test-provider/test-model",
     profile: createBuiltinModelProfile(),
+    nativeContract: { redact: ({ value }) => value, observe: () => undefined },
     createToolCallId,
     toolCallCorrelationStore,
   });

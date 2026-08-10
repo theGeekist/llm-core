@@ -23,7 +23,7 @@ export interface SpecKitWorkflowOverlayProgram {
 
 export interface SpecKitWorkflowOverlayParseIssue {
   readonly code: "spec-kit-workflow-overlay-schema-invalid" | "spec-kit-workflow-overlay-preserved";
-  readonly disposition: "preserved" | "rejected";
+  readonly impact: "advisory" | "blocking";
   readonly explanation: string;
   readonly location?: string;
 }
@@ -51,7 +51,7 @@ const reject = (
 ): void => {
   issues.push({
     code: "spec-kit-workflow-overlay-schema-invalid",
-    disposition: "rejected",
+    impact: "blocking",
     explanation,
     ...(location === undefined ? {} : { location }),
   });
@@ -141,7 +141,7 @@ export const parseSpecKitWorkflowOverlay = (content: string): SpecKitWorkflowOve
         issues: [
           {
             code: "spec-kit-workflow-overlay-schema-invalid" as const,
-            disposition: "rejected" as const,
+            impact: "blocking" as const,
             explanation:
               error instanceof Error ? error.message : "Overlay YAML could not be parsed.",
           },
@@ -170,12 +170,12 @@ export const parseSpecKitWorkflowOverlay = (content: string): SpecKitWorkflowOve
         return parsed === null ? [] : [parsed];
       })
     : [];
-  if (issues.some((issue) => issue.disposition === "rejected")) {
+  if (issues.some((issue) => issue.impact === "blocking")) {
     return capturePortable({ issues }, "Spec Kit workflow overlay parse result");
   }
   issues.push({
     code: "spec-kit-workflow-overlay-preserved",
-    disposition: "preserved",
+    impact: "advisory",
     explanation:
       "The native overlay identity, target, priority, enabled state, and ordered edits remain source-owned portable data.",
   });

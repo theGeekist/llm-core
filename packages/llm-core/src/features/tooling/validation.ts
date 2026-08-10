@@ -1,6 +1,6 @@
 import type { JsonValue } from "#contracts";
 import { maybeMap, type MaybePromise } from "#shared/maybe";
-import { normalize } from "@geekist/strict-json";
+import { normalize } from "@aifsd/strict-json";
 import { isRegisteredToolSchema, type RegisteredToolSchema } from "./schema-registration";
 
 export interface ToolArgumentValidationInput {

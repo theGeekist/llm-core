@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto";
-import { canonicalize } from "@geekist/strict-json";
+import { canonicalize } from "@aifsd/strict-json";
 import {
   digest,
   isCanonicalUuid,

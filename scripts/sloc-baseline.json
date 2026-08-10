@@ -15,48 +15,78 @@
   "exceptions": {
     "packages/llm-core/src/adapters/protocols/a2a/validation.ts": {
       "lines": 600,
-      "sha256": "9dbd2c96b7c25002bb80d43ac577d7a807ead572736f9584521b18a4c6de3ff8",
+      "sha256": "23dff4054fd58a49fcc22111d951a15da2b6a3786cfec36d8220945a418e55e8",
       "waiver": {
         "version": 1,
         "justification": "approximately 500 lines",
         "currentLines": 600,
-        "currentSha256": "9dbd2c96b7c25002bb80d43ac577d7a807ead572736f9584521b18a4c6de3ff8"
+        "currentSha256": "23dff4054fd58a49fcc22111d951a15da2b6a3786cfec36d8220945a418e55e8"
       }
     },
     "packages/llm-core/src/adapters/openspec/public.ts": {
       "lines": 625,
       "sha256": "d34007afda617b1e551541f212bc70db989c5a01814b5eddcaff47f3cef36a6c",
       "waiver": {
-        "version": 1,
+        "version": 3,
         "justification": "committed legacy adapter changed before decomposition",
         "expiresOn": "2026-09-06",
         "followUp": "packages/llm-core/docs/final-architecture/tasks/architecture-adapter-sloc-decomposition.md",
-        "currentLines": 628,
-        "currentSha256": "1a38e08c538a598608eed93e32a76b4e5073265c64dc8256f25d3d5d60cee6d2"
+        "currentLines": 694,
+        "currentSha256": "f9a63db59dcd38e612c3024e223fbe5bf28c7b9ae8a7a7ebcbf2e79167d1531e"
       }
     },
     "packages/llm-core/src/adapters/pydantic-ai-spec/compiler.ts": {
       "lines": 632,
       "sha256": "6e9d4934a0cbc4cc61a1774885aff4905af0adbb86e7543d8fb8e5439daadf5f",
       "waiver": {
-        "version": 1,
+        "version": 3,
         "justification": "committed legacy adapter changed before decomposition",
         "expiresOn": "2026-09-06",
         "followUp": "packages/llm-core/docs/final-architecture/tasks/architecture-adapter-sloc-decomposition.md",
-        "currentLines": 633,
-        "currentSha256": "ba1de86455a7b1b960de7062376368acc88e99a5a817b8d78f88035e93dbe952"
+        "currentLines": 710,
+        "currentSha256": "2c050c85da5803dd7648b6793c0df884ab2c012e3316ab663a354c539390ded6"
       }
     },
     "packages/llm-core/src/adapters/spec-kit/public.ts": {
       "lines": 823,
       "sha256": "758f3b70adcfaab1975ddcd393b6c5d22356af036faebb80dee7a7afc13ccc62",
       "waiver": {
-        "version": 1,
+        "version": 3,
         "justification": "committed legacy adapter changed before decomposition",
         "expiresOn": "2026-09-06",
         "followUp": "packages/llm-core/docs/final-architecture/tasks/architecture-adapter-sloc-decomposition.md",
-        "currentLines": 824,
-        "currentSha256": "485afe3d33d2de14da01f7b47debe5409d15f4c0a5698084477cec6eb7a6de0a"
+        "currentLines": 922,
+        "currentSha256": "0cb1a0ac289b0c152301421ab6e5c740acb3b1e95702ecfb198a46aafa5faf2c"
+      }
+    },
+    "packages/llm-core/src/features/specifications/validation.ts": {
+      "lines": 521,
+      "sha256": "595dc2b6581a907f4d2f08f197b954d6addba74a1a0b3d599558a7bcbe4a57ca",
+      "waiver": {
+        "version": 1,
+        "justification": "approximately 500 lines",
+        "currentLines": 521,
+        "currentSha256": "595dc2b6581a907f4d2f08f197b954d6addba74a1a0b3d599558a7bcbe4a57ca"
+      }
+    },
+    "packages/llm-core/tests/adapters/ai-sdk7/model.test.ts": {
+      "lines": 525,
+      "sha256": "f97ec6c1014c34fe6f9e9df4586142579e4a2daa2856b47261ad176e7f6923f3",
+      "waiver": {
+        "version": 2,
+        "justification": "approximately 500 lines",
+        "currentLines": 530,
+        "currentSha256": "048104839eaa4b9c06b78823793b5eec7fba9ddd5c8223d2c8abd0de9e2a6ee9"
+      }
+    },
+    "packages/llm-core/tests/adapters/ai-sdk7/native-contract.test.ts": {
+      "lines": 537,
+      "sha256": "3976d5e4c48369caa3dabcaef59a9bdfc5d69170147fef0e959606acfe40da5f",
+      "waiver": {
+        "version": 1,
+        "justification": "approximately 500 lines",
+        "currentLines": 537,
+        "currentSha256": "3976d5e4c48369caa3dabcaef59a9bdfc5d69170147fef0e959606acfe40da5f"
       }
     },
     "packages/llm-core/tests/application/agent/local-runner.test.ts": {
@@ -115,12 +145,12 @@
     },
     "packages/llm-core/tests/conformance/pydantic-ai-compatibility.test.ts": {
       "lines": 508,
-      "sha256": "35fb873403f77cbb04cff16a00693232bcdca3e1c141f9f394a9422bc26ab1c1",
+      "sha256": "d44f9608ec4fedd4f4a8d8b4faa91777b85f103f773e369e402672398f9029c7",
       "waiver": {
         "version": 1,
         "justification": "approximately 500 lines",
         "currentLines": 508,
-        "currentSha256": "35fb873403f77cbb04cff16a00693232bcdca3e1c141f9f394a9422bc26ab1c1"
+        "currentSha256": "d44f9608ec4fedd4f4a8d8b4faa91777b85f103f773e369e402672398f9029c7"
       }
     },
     "packages/llm-core/tests/evidence/tool-receipt-journal.test.ts": {
@@ -151,6 +181,26 @@
         "justification": "approximately 500 lines",
         "currentLines": 523,
         "currentSha256": "3f5d29d6eb033ea5f5d0ce0edda239e4cb1ea9795b44e8452af4402a64cdc9d2"
+      }
+    },
+    "scripts/release-history/release-controller.ts": {
+      "lines": 597,
+      "sha256": "4a05766d4ba7b42f91fbeabbc5e94f5eeb6f297c9d982c43a65f2a962e3fffcb",
+      "waiver": {
+        "version": 1,
+        "justification": "approximately 500 lines",
+        "currentLines": 597,
+        "currentSha256": "4a05766d4ba7b42f91fbeabbc5e94f5eeb6f297c9d982c43a65f2a962e3fffcb"
+      }
+    },
+    "scripts/release-provenance.ts": {
+      "lines": 561,
+      "sha256": "8493fbc0d204aa7a2c9179a211df818e57f6b1fd5d00621d4d69c4e6160a7f8c",
+      "waiver": {
+        "version": 1,
+        "justification": "approximately 500 lines",
+        "currentLines": 561,
+        "currentSha256": "8493fbc0d204aa7a2c9179a211df818e57f6b1fd5d00621d4d69c4e6160a7f8c"
       }
     }
   }

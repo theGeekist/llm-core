@@ -106,7 +106,11 @@ describe("configuration public front", () => {
       const packedPaths = sdk.manifest!.files.map(({ path }) => path);
       expect(
         packedPaths.every(
-          (path) => path === "package.json" || path === "README.md" || path.startsWith("dist/"),
+          (path) =>
+            path === "package.json" ||
+            path === "README.md" ||
+            path === "CHANGELOG.md" ||
+            path.startsWith("dist/"),
         ),
       ).toBe(true);
       expect(
@@ -124,8 +128,8 @@ describe("configuration public front", () => {
           type: "module",
           dependencies: {
             "@aifsd/sdk": `file:${sdk.tarball}`,
-            "@geekist/llm-core": `file:${kernel.tarball}`,
-            "@geekist/strict-json": `file:${strictJson.tarball}`,
+            "@aifsd/llm-core": `file:${kernel.tarball}`,
+            "@aifsd/strict-json": `file:${strictJson.tarball}`,
             "@wpkernel/pipeline": `file:${pipeline.tarball}`,
           },
         })}\n`,

@@ -1,4 +1,3 @@
-import type { ProviderMetadata } from "ai";
 import type {
   ConversationId,
   InvocationContext,
@@ -59,11 +58,37 @@ export type AiSdk7ToolApprovalPort = (input: {
   arguments: JsonValue;
 }) => MaybePromise<AiSdk7ToolApprovalDecision>;
 
-/**
- * Provider metadata is omitted unless trusted composition supplies a redactor
- * that returns an explicitly safe JSON projection.
- */
-export type AiSdk7ProviderMetadataRedactor = (metadata: ProviderMetadata) => JsonValue | undefined;
+/** Exact AI SDK operation owning a native fact. */
+export type AiSdk7NativeOperation = "generateText" | "streamText";
+export type AiSdk7NativeEventKind =
+  | "approval"
+  | "content"
+  | "error"
+  | "final-step"
+  | "generate-result"
+  | "generated-file"
+  | "provider-metadata"
+  | "response-metadata"
+  | "source"
+  | "step"
+  | "structured-output"
+  | "warning";
+
+export interface AiSdk7NativeEvent {
+  namespace: "dev.ai-sdk";
+  authority: Readonly<{ ai: "7.0.37"; provider: "4.0.3" }>;
+  operation: AiSdk7NativeOperation;
+  kind: AiSdk7NativeEventKind;
+  path: string;
+  value: JsonValue;
+}
+
+export interface AiSdk7NativeContract {
+  /** Return an explicitly safe projection, or reject the affected operation. */
+  redact(event: Omit<AiSdk7NativeEvent, "namespace">): MaybePromise<JsonValue | undefined>;
+  /** Persist or forward the safe native fact before portable projection continues. */
+  observe(event: AiSdk7NativeEvent): MaybePromise<void>;
+}
 
 export interface CreateAiSdk7ModelInput {
   model: import("ai").LanguageModel;
@@ -71,6 +96,6 @@ export interface CreateAiSdk7ModelInput {
   toolCallCorrelationStore: AiSdk7ToolCallCorrelationStore;
   resolveAbortSignal?: AiSdk7AbortSignalResolver;
   classifyToolApproval?: AiSdk7ToolApprovalPort;
-  redactProviderMetadata?: AiSdk7ProviderMetadataRedactor;
+  nativeContract: AiSdk7NativeContract;
   createToolCallId?: (providerToolCallId: string) => ToolCallId;
 }

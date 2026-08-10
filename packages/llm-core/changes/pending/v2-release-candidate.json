@@ -1,0 +1,49 @@
+{
+  "schemaVersion": 1,
+  "id": "v2-release-candidate",
+  "package": "@aifsd/llm-core",
+  "tasks": ["llm-core/release-v2-readiness", "llm-core/release-history-provenance"],
+  "decisions": ["llm-core/ADR-007", "llm-core/ADR-015"],
+  "releaseImpact": "major",
+  "summary": "Prepare the first evidence-backed v2 release with bounded Turbo qualification, package-owned history and durable publication provenance.",
+  "affectedExports": [
+    ".",
+    "./contracts",
+    "./model",
+    "./model/runtime",
+    "./tools",
+    "./tools/runtime",
+    "./control",
+    "./control/runtime",
+    "./evidence",
+    "./state",
+    "./context",
+    "./artifacts",
+    "./evaluation",
+    "./agent",
+    "./agent/runtime",
+    "./workflow",
+    "./conversation",
+    "./interaction",
+    "./retrieval",
+    "./indexing",
+    "./storage",
+    "./memory",
+    "./media",
+    "./specifications",
+    "./adapters/ai-sdk",
+    "./adapters/ai-sdk-ui",
+    "./adapters/assistant-ui",
+    "./adapters/openai-chatkit",
+    "./adapters/nlux-ui",
+    "./a2a",
+    "./mcp"
+  ],
+  "contributors": ["Jason Nathan"],
+  "assistance": [
+    {
+      "system": "OpenAI Codex",
+      "role": "release architecture, implementation, evidence reconstruction and review"
+    }
+  ]
+}

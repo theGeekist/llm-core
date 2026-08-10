@@ -1,5 +1,5 @@
 {
-  "name": "@geekist/llm-core",
+  "name": "@aifsd/llm-core",
   "version": "2.0.0",
   "license": "Apache-2.0",
   "description": "A vendor-neutral contract, conformance, authority, and evidence kernel for AI-first software delivery and agentic runtime integrations.",
@@ -40,7 +40,7 @@
     "node": ">=22"
   },
   "dependencies": {
-    "@geekist/strict-json": "0.1.0",
+    "@aifsd/strict-json": "0.1.0",
     "@wpkernel/pipeline": "1.2.1"
   },
   "main": "./dist/esm/index.js",
@@ -60,10 +60,10 @@
     "check:examples-deps": "bun scripts/check-examples-deps.ts",
     "release:check": "bun run contracts:schema:check && bun run lint && bun run typecheck && bun run test",
     "release:build": "bun run release:check && bun run build",
-    "publish:npm": "bun run --cwd ../.. release:qualify:llm-core && bun run --cwd ../.. release:check:strict-json-published && bun publish",
     "test": "bun test",
     "test:coverage": "bun test --coverage --coverage-reporter=text",
     "test:package": "node scripts/smoke-package.mjs",
+    "test:package:prebuilt": "node scripts/smoke-package.mjs --prebuilt",
     "typecheck": "tsc --noEmit",
     "typecheck:tests": "tsc -p tsconfig.test.json --noEmit"
   },
@@ -331,6 +331,7 @@
   },
   "files": [
     "dist",
-    "README.md"
+    "README.md",
+    "CHANGELOG.md"
   ]
 }
