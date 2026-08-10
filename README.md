@@ -6,7 +6,7 @@ This workspace contains independently owned packages for portable AI contracts, 
 
 | Package | Purpose | Package documents |
 | --- | --- | --- |
-| [`@aifsd/llm-core`](./packages/llm-core/README.md) | Portable contracts, conformance, authority, and evidence for agentic systems | [`packages/llm-core/docs`](./packages/llm-core/docs/README.md) |
+| [`@geekist/llm-core`](./packages/llm-core/README.md) | Portable contracts, conformance, authority, and evidence for agentic systems | [`packages/llm-core/docs`](./packages/llm-core/docs/README.md) |
 | [`@aifsd/sdk`](./packages/aifsd/README.md) | AI-first software delivery and application-integration journeys | Private engineering authority; optional local `packages/aifsd/docs` mount |
 | [`@aifsd/strict-json`](./packages/strict-json/README.md) | Strict JSON normalisation, canonicalisation, and immutable snapshots | [`packages/strict-json/docs`](./packages/strict-json/docs/README.md) |
 
