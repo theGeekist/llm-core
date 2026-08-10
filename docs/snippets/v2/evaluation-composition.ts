@@ -4,14 +4,14 @@ import {
   evaluationCaseId,
   evaluationCriterionId,
   evaluationEvaluatorId,
-} from "@geekist/llm-core/evaluation";
+} from "@aifsd/llm-core/evaluation";
 import {
   contractVersion,
   digest,
   newCoreId,
   type EvidenceId,
   type ResourceId,
-} from "@geekist/llm-core/contracts";
+} from "@aifsd/llm-core/contracts";
 
 const correctness = evaluationCriterionId("example.correctness");
 const evidence = {

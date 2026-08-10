@@ -1,6 +1,6 @@
 # Contract catalogue
 
-This catalogue points to the portable shapes exported from `@geekist/llm-core/contracts`. For the design rules behind them, start with [Contracts and portability](/capabilities/contracts).
+This catalogue points to the portable shapes exported from `@aifsd/llm-core/contracts`. For the design rules behind them, start with [Contracts and portability](/capabilities/contracts).
 
 ## Identity
 
@@ -48,7 +48,7 @@ Physical paths, signed URLs, buckets, credentials, and live resolver objects do 
 
 Contracts that expose an extensions field use lowercase reverse-DNS keys and finite JSON-compatible values. Compliant handlers preserve unknown entries through round-trips.
 
-An extension field does not by itself prove redaction. Evidence that contains provider-native observations uses the stricter `RedactedNativeExtensions` boundary from `@geekist/llm-core/evidence`.
+An extension field does not by itself prove redaction. Evidence that contains provider-native observations uses the stricter `RedactedNativeExtensions` boundary from `@aifsd/llm-core/evidence`.
 
 ## Generated schema
 

@@ -1,5 +1,5 @@
-import { contractVersion, newCoreId, type InvocationId } from "@geekist/llm-core/contracts";
-import type { AgentRunner } from "@geekist/llm-core/agent/runtime";
+import { contractVersion, newCoreId, type InvocationId } from "@aifsd/llm-core/contracts";
+import type { AgentRunner } from "@aifsd/llm-core/agent/runtime";
 
 export const runKitchenSinkFixture = async (runner: AgentRunner) => {
   const prepared = await runner.prepare({

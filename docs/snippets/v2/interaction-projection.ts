@@ -1,12 +1,12 @@
-import { createInteractionSession } from "@geekist/llm-core/interaction";
-import { createAiSdkUiProjectionMapper } from "@geekist/llm-core/adapters/ai-sdk-ui";
+import { createInteractionSession } from "@aifsd/llm-core/interaction";
+import { createAiSdkUiProjectionMapper } from "@aifsd/llm-core/adapters/ai-sdk-ui";
 import type {
   ConversationStore,
   InteractionSessionIdentityPort,
-} from "@geekist/llm-core/interaction";
-import type { AgentRunner, PreparedAgentDefinition } from "@geekist/llm-core/agent/runtime";
-import type { ConversationId, InvocationContext } from "@geekist/llm-core/contracts";
-import type { AiSdkUiProjectionChunk } from "@geekist/llm-core/adapters/ai-sdk-ui";
+} from "@aifsd/llm-core/interaction";
+import type { AgentRunner, PreparedAgentDefinition } from "@aifsd/llm-core/agent/runtime";
+import type { ConversationId, InvocationContext } from "@aifsd/llm-core/contracts";
+import type { AiSdkUiProjectionChunk } from "@aifsd/llm-core/adapters/ai-sdk-ui";
 
 declare const conversationId: ConversationId;
 declare const agent: PreparedAgentDefinition;

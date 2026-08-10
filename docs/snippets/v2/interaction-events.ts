@@ -3,13 +3,13 @@ import {
   interactionContentEvent,
   reduceInteractionProjection,
   registerInteractionContentEvent,
-} from "@geekist/llm-core/interaction";
+} from "@aifsd/llm-core/interaction";
 import {
   newCoreId,
   type ConversationId,
   type EventId,
   type RunId,
-} from "@geekist/llm-core/contracts";
+} from "@aifsd/llm-core/contracts";
 
 const conversationId = newCoreId<ConversationId>("018f0f4e-8c5b-7a91-8c3b-123456789c01");
 const source = registerInteractionContentEvent({

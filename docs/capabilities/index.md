@@ -6,16 +6,16 @@ This separation lets application code depend on what a component does without de
 
 | Import | Responsibility |
 | --- | --- |
-| `@geekist/llm-core/contracts` | Identity, versioning, schemas, resources, evidence references, and invocation context |
-| `@geekist/llm-core/model` | Model requests, responses, profiles, content, and media |
-| `@geekist/llm-core/tools` | Tool specifications, bindings, strict argument validation, and action digests |
-| `@geekist/llm-core/control` | Policy, approval, cancellation, concurrency, and controlled tool execution |
-| `@geekist/llm-core/evidence` | Redacted execution events and storage-neutral receipt journals |
-| `@geekist/llm-core/state` | State lifetimes, intervention contracts, and resume compatibility |
-| `@geekist/llm-core/context` | Scoped, budgeted context manifests |
-| `@geekist/llm-core/artifacts` | Portable output identity and provenance |
-| `@geekist/llm-core/evaluation` | Evidence-bound cases, evaluators, and results |
-| `@geekist/llm-core/agent` | Portable agent intent and normalized execution facts |
+| `@aifsd/llm-core/contracts` | Identity, versioning, schemas, resources, evidence references, and invocation context |
+| `@aifsd/llm-core/model` | Model requests, responses, profiles, content, and media |
+| `@aifsd/llm-core/tools` | Tool specifications, bindings, strict argument validation, and action digests |
+| `@aifsd/llm-core/control` | Policy, approval, cancellation, concurrency, and controlled tool execution |
+| `@aifsd/llm-core/evidence` | Redacted execution events and storage-neutral receipt journals |
+| `@aifsd/llm-core/state` | State lifetimes, intervention contracts, and resume compatibility |
+| `@aifsd/llm-core/context` | Scoped, budgeted context manifests |
+| `@aifsd/llm-core/artifacts` | Portable output identity and provenance |
+| `@aifsd/llm-core/evaluation` | Evidence-bound cases, evaluators, and results |
+| `@aifsd/llm-core/agent` | Portable agent intent and normalized execution facts |
 
 The capability pages follow the same path you use in an application:
 

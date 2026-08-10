@@ -1,4 +1,4 @@
-import type { WorkflowExecutionPlan } from "@geekist/llm-core";
+import type { WorkflowExecutionPlan } from "@aifsd/llm-core";
 
 declare const portableIntent: WorkflowExecutionPlan;
 declare const langGraphTarget: {

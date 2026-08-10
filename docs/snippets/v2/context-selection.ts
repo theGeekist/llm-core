@@ -1,5 +1,5 @@
-import { selectContext } from "@geekist/llm-core/context";
-import { newCoreId, type InvocationId } from "@geekist/llm-core/contracts";
+import { selectContext } from "@aifsd/llm-core/context";
+import { newCoreId, type InvocationId } from "@aifsd/llm-core/contracts";
 
 const selection = selectContext({
   scope: {

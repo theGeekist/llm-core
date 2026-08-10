@@ -7,14 +7,14 @@ The root exports `defineTool` plus the specification load, review, and compile o
 Important ownership fronts are:
 
 ```text
-@geekist/llm-core/agent
-@geekist/llm-core/agent/runtime
-@geekist/llm-core/workflow
-@geekist/llm-core/conversation
-@geekist/llm-core/interaction
-@geekist/llm-core/specifications
-@geekist/llm-core/a2a
-@geekist/llm-core/mcp
+@aifsd/llm-core/agent
+@aifsd/llm-core/agent/runtime
+@aifsd/llm-core/workflow
+@aifsd/llm-core/conversation
+@aifsd/llm-core/interaction
+@aifsd/llm-core/specifications
+@aifsd/llm-core/a2a
+@aifsd/llm-core/mcp
 ```
 
 `./agent/runtime` exposes the runner SPI but no concrete implementation. Concrete runtime support is published only through exact-version qualified adapter subpaths. `./workflow/runtime` was removed because the kernel does not own a workflow executor.

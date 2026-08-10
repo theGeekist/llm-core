@@ -8,7 +8,7 @@ The facade snapshots its schema, validates every call without coercion, and keep
 
 ## Runtime extensions
 
-Runtime and control implementers import from `@geekist/llm-core/tools/runtime`:
+Runtime and control implementers import from `@aifsd/llm-core/tools/runtime`:
 
 | Contract               | Responsibility                                              |
 | ---------------------- | ----------------------------------------------------------- |

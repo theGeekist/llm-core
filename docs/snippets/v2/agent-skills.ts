@@ -2,13 +2,13 @@ import {
   loadAgentSkills,
   registerAgentSkill,
   type LocalSkillLoader,
-} from "@geekist/llm-core/agent/runtime";
+} from "@aifsd/llm-core/agent/runtime";
 import {
   digest,
   newCoreId,
   type InvocationContext,
   type InvocationId,
-} from "@geekist/llm-core/contracts";
+} from "@aifsd/llm-core/contracts";
 
 declare const loader: LocalSkillLoader;
 

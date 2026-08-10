@@ -1,6 +1,6 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
-import type { AssistantUiProjectionCommand } from "@geekist/llm-core/adapters/assistant-ui";
+import type { AssistantUiProjectionCommand } from "@aifsd/llm-core/adapters/assistant-ui";
 import "./styles.css";
 
 // Shape-only compile fixture. See docs/interaction for common conversations and the session extension.

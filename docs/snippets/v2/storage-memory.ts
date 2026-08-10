@@ -2,9 +2,9 @@ import {
   conversationId,
   type ConversationMessage,
   type ConversationStore,
-} from "@geekist/llm-core/memory";
-import { newCoreId, type InvocationContext, type InvocationId } from "@geekist/llm-core/contracts";
-import { jsonStorageValue, type CacheStore } from "@geekist/llm-core/storage";
+} from "@aifsd/llm-core/memory";
+import { newCoreId, type InvocationContext, type InvocationId } from "@aifsd/llm-core/contracts";
+import { jsonStorageValue, type CacheStore } from "@aifsd/llm-core/storage";
 
 declare const cache: CacheStore;
 declare const conversations: ConversationStore;

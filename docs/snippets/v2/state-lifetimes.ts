@@ -3,7 +3,7 @@ import {
   createSnapshot,
   type LiveContinuation,
   type Snapshot,
-} from "@geekist/llm-core/state";
+} from "@aifsd/llm-core/state";
 
 const continuation: LiveContinuation<{ socket: Map<string, boolean> }> = createLiveContinuation({
   socket: new Map([["connected", true]]),
