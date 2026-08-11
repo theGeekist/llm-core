@@ -29,7 +29,7 @@ The resolver never selects the first candidate, reads credentials, silently down
 The built-in model is deterministic and useful for local composition and tests. Provider integrations remain qualified adapter imports, for example:
 
 ```ts
-import { createAiSdk7Model } from "@aifsd/llm-core/adapters/ai-sdk";
+import { createAiSdk7Model } from "@geekist/llm-core/adapters/ai-sdk";
 ```
 
 The adapter receives live provider dependencies during composition. Provider metadata crosses the boundary only after a trusted redactor projects safe JSON into a namespaced extension.

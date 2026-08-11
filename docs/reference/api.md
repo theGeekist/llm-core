@@ -4,7 +4,7 @@ Version 2 publishes a contract-oriented root and explicit capability and integra
 
 | Subpath | Responsibility | Representative exports |
 | --- | --- | --- |
-| `@aifsd/llm-core` | Portable contracts and specification journey | `defineTool`, `loadSpecification`, `reviewSpecification`, `compileSpecification` |
+| `@geekist/llm-core` | Portable contracts and specification journey | `defineTool`, `loadSpecification`, `reviewSpecification`, `compileSpecification` |
 | `/contracts` | Portable primitives | identity, invocation, schema, versioning, capability claims |
 | `/model` | Model contracts | requests, responses, content, prompts and references |
 | `/model/runtime` | Model extension contracts | profiles, resolution and schema resolution |

@@ -11,7 +11,7 @@ A `ContextSelection` records exactly what entered an invocation, run, or step. E
 `ContextSelection` is an input record, not an authorization grant. When an application must decide whether a source may enter a prompt, use the provider-neutral `ContextCompiler` with declarative, evidence-bearing candidates. The compiler evaluates the supplied source authorization, tenant/purpose applicability, classification ceiling, explicit freshness instant, prompt-injection treatment, precedence, and budget before producing a selection.
 
 ```ts
-import { createContextCompiler } from "@aifsd/llm-core/context";
+import { createContextCompiler } from "@geekist/llm-core/context";
 
 const compiler = createContextCompiler();
 const compilation = compiler.compile({

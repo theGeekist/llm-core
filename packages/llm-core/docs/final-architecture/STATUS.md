@@ -18,6 +18,7 @@ Active tasks: 0
 | adapter-ai-sdlc-release | adapters | proposed | architecture-source-layout-normalization, adapter-ai-sdlc, specification-cross-adapter-conformance, architecture-release-reproducibility | — | — | — |
 | adapter-bmad | adapters | done | specification-api | cf3347d | — | — |
 | adapter-bmad-release | adapters | proposed | architecture-source-layout-normalization, adapter-bmad, specification-cross-adapter-conformance, architecture-release-reproducibility | — | — | — |
+| adapter-catalogue-public-qualification | adapters | proposed | architecture-external-contract-fidelity, architecture-release-reproducibility | — | — | — |
 | adapter-coding-agent-integration | adapters | done | architecture-external-contract-fidelity, architecture-runtime-ownership-correction, capabilities-runtime-conformance, capabilities-operational-evidence | — | — | — |
 | adapter-langgraph-runtime | adapters | proposed | architecture-external-contract-fidelity, architecture-runtime-ownership-correction, runtime-operation-contract-correction, architecture-release-reproducibility, capabilities-runtime-conformance, capabilities-operational-evidence | — | — | — |
 | adapter-openspec | adapters | done | specification-api | cf3347d | — | — |
@@ -35,7 +36,7 @@ Active tasks: 0
 | aifsd-delivery-toolchain | applications | cancelled | aifsd-delivery-characterization | — | aifsd/local-delivery-vertical-slice | — |
 | api-baseline | baseline | done | — | — | — | — |
 | applications-client-characterization | applications | cancelled | architecture-source-layout-normalization, specification-api, integrations-authorization-lifecycle, cost-facts, cost-budget-enforcement, model-routing-qualification | — | aifsd/clients-desktop-mobile-characterization | — |
-| applications-client-contract | applications | cancelled | architecture-source-layout-normalization, applications-client-characterization, integrations-authorization-lifecycle, cost-facts, cost-budget-enforcement, model-routing-qualification | — | aifsd/clients-shared-application-contract | — |
+| applications-client-contract | applications | cancelled | architecture-source-layout-normalization, applications-client-characterization, integrations-authorization-lifecycle, cost-facts, cost-budget-enforcement, model-routing-qualification | — | aifsd/clients-shared-work-control-contract | — |
 | applications-client-platform-qualification | applications | cancelled | architecture-source-layout-normalization, applications-client-contract, architecture-release-reproducibility | — | aifsd/clients-platform-qualification | — |
 | applications-client-subpath-release | applications | cancelled | architecture-source-layout-normalization, applications-client-platform-qualification | — | aifsd/clients-surface-publication | — |
 | applications-desktop | applications | cancelled | architecture-source-layout-normalization, applications-client-subpath-release | — | aifsd/clients-desktop-foundation | — |

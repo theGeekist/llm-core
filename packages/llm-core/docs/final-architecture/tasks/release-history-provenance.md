@@ -262,7 +262,7 @@ Follow [`../COORDINATION.md`](../COORDINATION.md) and the metadata contract in
 - v2 reconstruction: retained `9920425` as the architecture kernel milestone,
   later qualification and ownership corrections as development milestones,
   and `ac788c7dbcfa779f305c7a4ceb02a99c1e9f3d93` as the current release source
-  candidate. The future coordinate is `@aifsd/llm-core@2.0.0`, after its exact
+  candidate. The future coordinate is `@geekist/llm-core@2.0.0`, after its exact
   `@aifsd/strict-json@0.1.0` dependency is governed and published.
 - Release blockers: strict-json is unpublished and its foundation lifecycle is
   unresolved; both changelogs remain undated; release tooling is uncommitted;
@@ -352,17 +352,18 @@ Follow [`../COORDINATION.md`](../COORDINATION.md) and the metadata contract in
   reviewed implementation commit must become the source boundary before a
   later metadata-only release commit and plan are created.
 - Package-family correction: future candidates use the ordered publication
-  topology `@aifsd/strict-json@0.1.0` -> `@aifsd/llm-core@2.0.0` ->
+  topology `@aifsd/strict-json@0.1.0` -> `@geekist/llm-core@2.0.0` ->
   `@aifsd/sdk@0.1.0`; `@wpkernel/pipeline@1.2.1` remains an exact external
-  dependency. Historical `@geekist` registry coordinates remain in the ledger
-  only where they describe releases that already existed under that name.
+  dependency. The llm-core v2 candidate intentionally retains the same
+  `@geekist/llm-core` coordinate as the independently reconstructed 1.x line;
+  ledger entries distinguish published releases from the unpublished candidate.
 - AIFSD candidate boundary: the first SDK release is limited to the
   characterised `./config` and `./integrations` fronts. Exact archive smoke
   proves both fronts in clean Node and NodeNext consumers and fails if the
   host-only qualification or trust declarations escape the package.
 - Three-package implementation: executable identities, workspace imports,
   build externals, packed consumers and lockfile resolution now use
-  `@aifsd/strict-json`, `@aifsd/llm-core` and `@aifsd/sdk`. The controller,
+  `@aifsd/strict-json`, `@geekist/llm-core` and `@aifsd/sdk`. The controller,
   version and provenance validators accept the AIFSD package key and
   `aifsd-v*` tag family while retaining mandatory plans, retry-safe registry
   reconciliation and post-publication receipts for all three packages.

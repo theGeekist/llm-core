@@ -1,6 +1,6 @@
 # Changelog
 
-Notable public changes to `@aifsd/llm-core` are recorded here. A release tag is accepted only after its version has a dated heading.
+Notable public changes to `@geekist/llm-core` are recorded here. A release tag is accepted only after its version has a dated heading.
 
 ## [Unreleased]
 

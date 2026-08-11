@@ -1,8 +1,10 @@
 # AIFSD SDK
 
-This public package is the implementation home for AIFSD: a paved road for building software with AI and integrating AI into delivered software. Source development happens beside `llm-core` so changes across the SDK and its kernel can remain atomic. The first `0.1.0` candidate is publishable as `@aifsd/sdk` after its exact dependency releases and provenance plan exist.
+This public package is the implementation home for the AIFSD application-composition SDK. Its intended boundary lets products declare portable capability requirements, resolve qualified implementations through explicit profiles, produce deterministic composition plans and acquire host-owned resources only after a plan is accepted. The software-creation workbench is an AIFSD product built on that boundary, not the definition of the SDK itself. Source development happens beside `llm-core` so changes across the SDK and its kernel can remain atomic.
 
-AIFSD is one SDK supporting two initial product journeys:
+The application-composition surface remains planned rather than implemented. The current `0.1.0` candidate is limited to the already characterised configuration and integration operations, and becomes publishable as `@aifsd/sdk` only after its exact dependency releases and provenance plan exist.
+
+The SDK supports two initial product journeys:
 
 - **Software delivery**: development orchestration, agents, models, repositories, evaluation, CI/CD, infrastructure and remote work.
 - **Application integration**: application-facing AI composition through qualified native runtime integrations.
@@ -15,10 +17,11 @@ The six operations are `validateManifest`, `resolveManifest`, `createConfigurati
 
 Configuration diagnostics are renderer-neutral portable data with the closed shape `{ code, reasonCode, path? }`. The SDK supplies stable categories, causes and locations; consuming CLIs and UIs own prose and localisation.
 
-`@aifsd/strict-json` owns the consumer-neutral JSON boundary shared with `@aifsd/llm-core`: strict normalisation, canonical bytes and valid-graph freezing. AIFSD retains configuration diagnostics, secret-reference policy, hashing and the point at which accepted configuration becomes immutable.
+`@aifsd/strict-json` owns the consumer-neutral JSON boundary shared with `@geekist/llm-core`: strict normalisation, canonical bytes and valid-graph freezing. AIFSD retains configuration diagnostics, secret-reference policy, hashing and the point at which accepted configuration becomes immutable.
 
 ```bash
-npm install @aifsd/sdk @aifsd/llm-core @aifsd/strict-json @wpkernel/pipeline
+# Available after all four exact releases have registry evidence
+npm install @aifsd/sdk@0.1.0 @geekist/llm-core@2.0.0 @aifsd/strict-json@0.1.0 @wpkernel/pipeline@1.2.1
 ```
 
 The `0.1.0` support claim is deliberately limited to `@aifsd/sdk/config` and `@aifsd/sdk/integrations`. It is not a claim that the complete AIFSD paved road, clients, templates, hosted operations or delivery orchestration are published.

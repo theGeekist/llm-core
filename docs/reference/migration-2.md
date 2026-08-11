@@ -9,7 +9,7 @@ The project is pre-user and does not provide compatibility aliases.
 Replace root `createAgent` and public `createLocalAgentRunner` usage with an explicit qualified runtime adapter implementing `AgentRunner`:
 
 ```ts
-import type { AgentDefinition, AgentRunner } from "@aifsd/llm-core/agent/runtime";
+import type { AgentDefinition, AgentRunner } from "@geekist/llm-core/agent/runtime";
 
 declare const runner: AgentRunner;
 declare const definition: AgentDefinition;

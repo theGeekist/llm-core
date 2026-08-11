@@ -2,7 +2,7 @@
 
 Strict JSON normalisation, canonicalisation, snapshots, and freezing.
 
-This package owns the small data-boundary contract shared by `@aifsd/llm-core` and `@aifsd/sdk`. It does not own AI contracts, configuration policy, retry, telemetry, paths, adapter state machines, or general-purpose utilities.
+This package owns the small data-boundary contract shared by `@geekist/llm-core` and `@aifsd/sdk`. It does not own AI contracts, configuration policy, retry, telemetry, paths, adapter state machines, or general-purpose utilities.
 
 ```sh
 npm install @aifsd/strict-json

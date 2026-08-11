@@ -5,7 +5,7 @@ title: Shared end-user client application contract
 stage: applications
 status: cancelled
 replaced_by:
-  - aifsd/clients-shared-application-contract
+  - aifsd/clients-shared-work-control-contract
 priority: high
 preferred_owner_kind: codex
 owner:
@@ -38,11 +38,11 @@ write_scope:
 required_reading:
   - path: packages/aifsd/docs/final-architecture/LLM-CORE-PARITY.md
     reason: "Retain the cancelled client contract as cross-authority provenance."
-  - path: packages/aifsd/docs/final-architecture/tasks/clients-shared-application-contract.md
+  - path: packages/aifsd/docs/final-architecture/tasks/clients-shared-work-control-contract.md
     reason: "Use the committed AIFSD shared application task as current product authority."
 read_scope:
   - packages/aifsd/docs/final-architecture/LLM-CORE-PARITY.md
-  - packages/aifsd/docs/final-architecture/tasks/clients-shared-application-contract.md
+  - packages/aifsd/docs/final-architecture/tasks/clients-shared-work-control-contract.md
   - packages/llm-core/index.ts
   - packages/llm-core/src/**/public.ts
   - packages/llm-core/src/agent/index.ts

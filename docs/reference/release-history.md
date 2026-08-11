@@ -15,7 +15,7 @@ They share a project lineage, but they are separate implementations and should n
 
 The project later moved into the `theGeekist` GitHub organisation, which is now the canonical home of the source.
 
-npm package history is separate from repository ownership. Existing releases remain under the coordinates they were published with, including the original `@jasonnathan/llm-core` releases and the later `@geekist/llm-core` 1.x line. The current v2 candidates use the `@aifsd` npm organisation for llm-core, the AIFSD SDK and related packages. This history records a candidate coordinate as current package state, but treats it as pin-ready only when registry evidence exists.
+npm package history is separate from repository ownership. Existing releases remain under the coordinates they were published with, including the original `@jasonnathan/llm-core` releases and the later `@geekist/llm-core` 1.x line. The current llm-core v2 candidate retains `@geekist/llm-core`; the related SDK and strict JSON candidates use the `@aifsd` npm organisation. This history records a candidate coordinate as current package state, but treats it as pin-ready only when registry evidence exists.
 
 ## Legacy 1.x
 
@@ -221,7 +221,7 @@ Until `2.0.0` ships, the latest published npm version remains:
 @geekist/llm-core@1.21.5
 ```
 
-The current manifest names `@aifsd/llm-core@2.0.0`. It is a release candidate, not release history or a pin-ready coordinate until publication evidence exists.
+The current manifest names `@geekist/llm-core@2.0.0`. It is a release candidate, not release history or a pin-ready coordinate until publication evidence exists.
 
 ## Release provenance
 

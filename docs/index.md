@@ -29,10 +29,11 @@ features:
 
 ## Install
 
-`llm-core` 2 requires Node.js 22 or newer and publishes ESM only.
+The `llm-core` 2 candidate is ESM-only and requires Node.js 22 or newer. It is not yet published to npm.
 
 ```bash
-npm install @geekist/llm-core
+# Available after the 2.0.0 release has registry evidence
+npm install @geekist/llm-core@2.0.0
 ```
 
 ## The short version

@@ -1,15 +1,16 @@
-# @aifsd/llm-core
+# @geekist/llm-core
 
 Portable contracts, conformance, authority, and evidence for AI applications.
 
-Version 2 publishes ESM and requires Node.js 22 or newer.
+The version 2 candidate is ESM-only and requires Node.js 22 or newer. It is not yet published to npm.
 
 ```bash
-npm install @aifsd/llm-core
+# Available after the 2.0.0 release has registry evidence
+npm install @geekist/llm-core@2.0.0
 ```
 
 ```ts
-import { defineTool } from "@aifsd/llm-core";
+import { defineTool } from "@geekist/llm-core";
 
 const search = defineTool<{ query: string }>({
   name: "search",
@@ -34,7 +35,7 @@ const search = defineTool<{ query: string }>({
 });
 ```
 
-The package does not provide a default agent loop, workflow engine, or conversation executor. Runtime integrations implement the `AgentRunner` port from `@aifsd/llm-core/agent/runtime`; applications select an integration and pass it explicitly to the interaction APIs. `@aifsd/llm-core/workflow` contains portable workflow intent, not a local runtime.
+The package does not provide a default agent loop, workflow engine, or conversation executor. Runtime integrations implement the `AgentRunner` port from `@geekist/llm-core/agent/runtime`; applications select an integration and pass it explicitly to the interaction APIs. `@geekist/llm-core/workflow` contains portable workflow intent, not a local runtime.
 
 The root contains the smallest common contract journey. Explicit subpaths provide specifications, runtime ports, controlled tool execution, interaction sessions, evidence, state, and qualified provider or UI adapters.
 

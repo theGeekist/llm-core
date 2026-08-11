@@ -31,6 +31,7 @@ decision_dependencies:
   - ADR-016
   - ADR-017
 conflicts_with:
+  - adapter-catalogue-public-qualification
   - adapter-langgraph-runtime
   - adapter-pydantic-ai-runtime
   - runtime-temporal-reference

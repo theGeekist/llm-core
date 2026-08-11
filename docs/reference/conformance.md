@@ -1,6 +1,6 @@
 # Packaging and conformance
 
-`@aifsd/llm-core` 2 is ESM-only and declares Node.js 22 or newer. The package smoke test installs a packed artifact into an isolated consumer and verifies all 29 runtime and declaration entry points.
+`@geekist/llm-core` 2 is ESM-only and declares Node.js 22 or newer. The package smoke test installs a packed artifact into an isolated consumer and verifies all 29 runtime and declaration entry points.
 
 The repository-owned Bun version is recorded in `.bun-version`. Local release qualification and every workflow use that exact version, and dependency installation is frozen against the root lockfile.
 

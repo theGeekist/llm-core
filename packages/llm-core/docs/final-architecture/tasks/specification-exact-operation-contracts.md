@@ -178,7 +178,7 @@ with six tests and 40 assertions while shared resolution was being repaired.
 ## Blocker
 
 No specification-owned design or verification blocker remains. ADR-017 is
-accepted and all specification-lane self-imports now use `@aifsd/llm-core`.
+accepted and all specification-lane self-imports now use `@geekist/llm-core`.
 After the concurrent Python and AI SDK corrections were integrated, the full
 package `release:build` passed with 724 tests, four intentional exact-authority
 skips and no failures. Package formatting and the canonical llm-core release
@@ -194,4 +194,4 @@ contains no `ConversionReport`. The isolated packed runtime and declaration
 consumer passed as part of the canonical llm-core release qualification.
 Package-manifest, build-entry, lockfile and release-provenance changes are not
 required by this source contract replacement because the existing
-`@aifsd/llm-core/specifications` export already publishes the changed front.
+`@geekist/llm-core/specifications` export already publishes the changed front.

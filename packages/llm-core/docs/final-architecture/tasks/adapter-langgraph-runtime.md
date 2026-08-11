@@ -26,6 +26,7 @@ decision_dependencies:
   - ADR-016
   - ADR-017
 conflicts_with:
+  - adapter-catalogue-public-qualification
   - adapter-pydantic-ai-runtime
   - adapter-strands-runtime
 write_scope:
