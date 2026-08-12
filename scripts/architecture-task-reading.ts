@@ -241,13 +241,22 @@ const revisionRepository = (sourceRoot: string, configuration: TaskPlanConfigura
   return repository;
 };
 
+const immutableGitObjectPattern = /^[0-9a-f]{40}(?::.*)?$/i;
+const gitObjectTypeCache = new Map<string, string | null>();
+
 const gitObjectType = (repository: string, object: string): string | null => {
+  const cacheKey = `${repository}\0${object}`;
+  if (immutableGitObjectPattern.test(object) && gitObjectTypeCache.has(cacheKey)) {
+    return gitObjectTypeCache.get(cacheKey) ?? null;
+  }
   const result = Bun.spawnSync(["git", "cat-file", "-t", object], {
     cwd: repository,
     stderr: "pipe",
     stdout: "pipe",
   });
-  return result.exitCode === 0 ? result.stdout.toString().trim() : null;
+  const type = result.exitCode === 0 ? result.stdout.toString().trim() : null;
+  if (immutableGitObjectPattern.test(object)) gitObjectTypeCache.set(cacheKey, type);
+  return type;
 };
 
 const validateRevisionReading = ({
