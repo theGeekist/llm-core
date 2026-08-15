@@ -3,22 +3,23 @@ import { readFile, readdir, writeFile } from "node:fs/promises";
 import { basename, dirname, isAbsolute, join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import {
-  parseTaskFrontMatter,
-  type FrontMatterRecord,
-} from "../../../scripts/architecture-task-frontmatter";
-import {
+  canonicalScope,
   createArchitectureTaskPlan,
   parseArchitectureTask,
+  parseTaskFrontMatter,
+  scopesOverlap,
   type ArchitectureDecision,
   type ArchitectureTask,
-} from "../../../scripts/architecture-task-plan";
-import { taskPlanConfiguration } from "../../../scripts/architecture-task-plan.config";
-import { validateRequiredReading } from "../../../scripts/architecture-task-reading";
-import {
-  canonicalScope,
-  scopesOverlap,
+  type FrontMatterRecord,
   type ScopeAlias,
-} from "../../../scripts/architecture-task-scope";
+} from "@geekist/task-graph";
+import { loadTaskGraphRuntime, validateRequiredReading } from "@geekist/task-graph/node";
+
+const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), "../../..");
+const taskPlanConfiguration = loadTaskGraphRuntime(
+  resolve(repositoryRoot, "task-graph.project.json"),
+  repositoryRoot,
+).configuration;
 
 const startMarker = "<!-- architecture-status:generated:start -->";
 const endMarker = "<!-- architecture-status:generated:end -->";
@@ -193,7 +194,7 @@ const externalTask = (
 ): { available: boolean; committed: boolean; exists: boolean } => {
   const [authority, id, extra] = qualifiedId.split("/");
   if (authority === undefined || id === undefined || extra !== undefined || !taskIdPattern.test(id)) return { available: true, committed: false, exists: false };
-  const configuration = taskPlanConfiguration.authorities[authority as "aifsd" | "llm-core"];
+  const configuration = taskPlanConfiguration.authorities[authority];
   if (configuration === undefined || authority === "llm-core") return { available: true, committed: false, exists: false };
   const authorityRoot = join(workspaceRoot, configuration.architectureRoot);
   if (configuration.optional && (configuration.logicalMount === null || !existsSync(join(workspaceRoot, configuration.logicalMount)))) return { available: false, committed: false, exists: false };

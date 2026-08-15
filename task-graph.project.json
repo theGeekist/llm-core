@@ -1,0 +1,127 @@
+{
+  "$schema": "https://raw.githubusercontent.com/theGeekist/task-graph/b497b03546638d74f778d73d218bf1f2364d4a41/schemas/project-manifest.v1.schema.json",
+  "schemaVersion": 1,
+  "taskSchemaVersion": 1,
+  "id": "llm-core",
+  "label": "llm-core architecture",
+  "workspaceRoot": ".",
+  "authorities": {
+    "llm-core": {
+      "architectureVersion": 2,
+      "architectureRoot": "packages/llm-core/docs/final-architecture",
+      "governingReading": [
+        "AGENTS.md",
+        "README.md",
+        "packages/llm-core/README.md",
+        "packages/llm-core/docs/final-architecture/README.md",
+        "packages/llm-core/docs/handoffs/implement-v2-code.md",
+        "packages/llm-core/docs/final-architecture/COORDINATION.md",
+        "packages/llm-core/docs/final-architecture/tasks/README.md"
+      ],
+      "label": "llm-core",
+      "logicalMount": null,
+      "optional": false,
+      "preferredOwnerKind": "codex",
+      "reviewOwner": "coordinator"
+    },
+    "aifsd": {
+      "architectureVersion": 1,
+      "architectureRoot": "packages/aifsd/docs/final-architecture",
+      "governingReading": [
+        "AGENTS.md",
+        "README.md",
+        "packages/aifsd/README.md",
+        "packages/aifsd/docs/final-architecture/README.md",
+        "packages/aifsd/docs/final-architecture/COORDINATION.md",
+        "packages/aifsd/docs/final-architecture/tasks/README.md"
+      ],
+      "label": "AIFSD",
+      "logicalMount": "packages/aifsd/docs",
+      "optional": true,
+      "preferredOwnerKind": null,
+      "reviewOwner": "human"
+    }
+  },
+  "contextSources": [
+    {
+      "mutableReadingStatuses": null,
+      "pathPrefix": "context/aifsd-research",
+      "rootFromWorkspace": "context/aifsd-research"
+    },
+    {
+      "mutableReadingStatuses": [
+        "proposed",
+        "ready",
+        "claimed",
+        "in_progress",
+        "review",
+        "blocked",
+        "done",
+        "cancelled"
+      ],
+      "pathPrefix": "context/simple-chat",
+      "rootFromWorkspace": "context/simple-chat"
+    },
+    {
+      "mutableReadingStatuses": null,
+      "pathPrefix": null,
+      "rootFromWorkspace": "."
+    }
+  ],
+  "commands": [
+    {
+      "id": "architecture.docs",
+      "label": "Check documentation",
+      "description": "Validate public documentation, snippets and architecture projections.",
+      "mutates": false,
+      "requiresTask": false,
+      "invocations": [
+        {
+          "heading": "Documentation checks",
+          "command": ["bun", "run", "docs:check"]
+        }
+      ]
+    },
+    {
+      "id": "architecture.status",
+      "label": "Check architecture status",
+      "description": "Check the generated llm-core architecture status projection.",
+      "mutates": false,
+      "requiresTask": false,
+      "invocations": [
+        {
+          "heading": "Architecture status check",
+          "cwd": "packages/llm-core",
+          "command": ["bun", "run", "check:architecture-status"]
+        }
+      ]
+    },
+    {
+      "id": "architecture.status.write",
+      "label": "Regenerate architecture status",
+      "description": "Regenerate the llm-core architecture status projection.",
+      "mutates": true,
+      "requiresTask": false,
+      "invocations": [
+        {
+          "heading": "Architecture status regeneration",
+          "cwd": "packages/llm-core",
+          "command": ["bun", "run", "write:architecture-status"]
+        }
+      ]
+    },
+    {
+      "id": "architecture.task-graph",
+      "label": "Validate task graph",
+      "description": "Compile the complete project task graph through the pinned standalone package.",
+      "mutates": false,
+      "requiresTask": false,
+      "invocations": [
+        {
+          "heading": "Task graph validation",
+          "command": ["bun", "run", "task-graph:plan", "--", "--format", "json"]
+        }
+      ]
+    }
+  ]
+}
