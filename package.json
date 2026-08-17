@@ -13,13 +13,15 @@
     "apps/*"
   ],
   "scripts": {
+    "prepare": "husky",
     "build": "bun run check:public-boundary && turbo run build --filter='./packages/*' --concurrency=2",
     "check:public-boundary": "bun run scripts/check-public-boundary.ts",
     "contracts:schema": "bun run --cwd packages/llm-core contracts:schema",
     "contracts:schema:check": "bun run --cwd packages/llm-core contracts:schema:check",
     "test": "bun run --cwd packages/strict-json test && bun test",
     "test:package": "bun run --cwd packages/strict-json build && bun run --cwd packages/strict-json test:package && bun run --cwd packages/llm-core test:package && bun run --cwd packages/aifsd test:package",
-    "lint": "bun run --cwd packages/strict-json lint && bun run --cwd packages/llm-core lint && bun run --cwd packages/aifsd lint && bun run lint:apps && eslint \"scripts/**/*.{ts,js}\" \"examples/**/*.{ts,tsx,js,jsx}\" \"docs/snippets/**/*.{ts,tsx,js,jsx}\" --no-error-on-unmatched-pattern",
+    "lint": "turbo run lint --filter='./packages/*' --concurrency=2 && bun run lint:apps && eslint \"scripts/**/*.{ts,js}\" \"examples/**/*.{ts,tsx,js,jsx}\" \"docs/snippets/**/*.{ts,tsx,js,jsx}\" --no-error-on-unmatched-pattern",
+    "lint:staged": "lint-staged",
     "lint:apps": "eslint \"apps/**/*.{ts,tsx,js,jsx}\" --no-error-on-unmatched-pattern",
     "lint:fix": "eslint \"**/*.{ts,tsx,js,jsx}\" --fix",
     "typecheck:packages": "bun run --cwd packages/strict-json typecheck && bun run --cwd packages/llm-core typecheck && bun run --cwd packages/aifsd typecheck && bun run contracts:schema:check",
@@ -56,6 +58,9 @@
     "release:qualify:aifsd": "bun run --cwd packages/aifsd release:build && bun run --cwd packages/aifsd test:package:prebuilt",
     "release:download:published": "bun run scripts/download-published-package.ts"
   },
+  "lint-staged": {
+    "**/*.{ts,tsx,js,jsx,mjs,cjs}": "eslint --no-error-on-unmatched-pattern"
+  },
   "devDependencies": {
     "@playwright/test": "1.57.0",
     "@types/bun": "latest",
@@ -70,6 +75,8 @@
     "eslint": "8.57.0",
     "eslint-config-prettier": "9.1.0",
     "eslint-plugin-sonarjs": "3.0.5",
+    "husky": "^9.1.7",
+    "lint-staged": "^16.2.6",
     "prettier": "3.3.3",
     "remark-gfm": "4.0.1",
     "remark-parse": "11.0.0",
