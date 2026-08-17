@@ -4,7 +4,7 @@
   "workspaces": {
     "": {
       "devDependencies": {
-        "@geekist/task-graph": "0.1.0-beta.0",
+        "@geekist/task-graph": "0.1.0-beta.1",
         "@playwright/test": "1.57.0",
         "@types/bun": "latest",
         "@types/node": "^22.13.5",
@@ -387,7 +387,7 @@
 
     "@geekist/llm-core": ["@geekist/llm-core@workspace:packages/llm-core"],
 
-    "@geekist/task-graph": ["@geekist/task-graph@0.1.0-beta.0", "", { "dependencies": { "@vitejs/plugin-react": "^4.3.0", "@wpkernel/pipeline": "1.2.1", "@xyflow/react": "^12.11.2", "elkjs": "^0.12.0", "react": "19.2.3", "react-dom": "19.2.3", "react-markdown": "^10.1.0", "remark-gfm": "^4.0.1", "vite": "^6.0.0" }, "bin": { "task-graph": "bin/task-graph.ts", "task-workbench": "bin/task-workbench.ts" } }, "sha512-Sn030TpS8dPcEqnUUHCgXm1KKaVaZHKP1cadi3BVI70sfRZKoHczqhXYGJhbie3eTAEg8CKVopKAXV43uy1IPQ=="],
+    "@geekist/task-graph": ["@geekist/task-graph@0.1.0-beta.1", "", { "dependencies": { "@vitejs/plugin-react": "^4.3.0", "@wpkernel/pipeline": "1.2.1", "@xyflow/react": "^12.11.2", "elkjs": "^0.12.0", "react": "19.2.3", "react-dom": "19.2.3", "react-markdown": "^10.1.0", "remark-gfm": "^4.0.1", "vite": "^6.0.0" }, "bin": { "task-graph": "bin/task-graph.ts", "task-workbench": "bin/task-workbench.ts" } }, "sha512-IrPqZUs73qYWiAordQ6aa5IySQBvhnoBTEdkFxyRnfV1U41bGOdhINkfRzRN/wlAGxTA5rdaI4zR09V4IvxIYw=="],
 
     "@google/generative-ai": ["@google/generative-ai@0.24.1", "", {}, "sha512-MqO+MLfM6kjxcKoy0p1wRzG3b4ZZXtPI+z2IE26UogS2Cm/XHO+7gGRBh6gcJsOiIVoH93UwKvW4HdgiOZCy9Q=="],
 
