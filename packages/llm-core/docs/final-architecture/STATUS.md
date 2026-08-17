@@ -11,6 +11,7 @@ Active tasks: 0
 
 ## Task inventory
 
+<!-- prettier-ignore -->
 | Task | Stage | Status | Dependencies | Evidence milestone | Replaced by | Forward to |
 | --- | --- | --- | --- | --- | --- | --- |
 | adapter-ai-sdk-native-contract-correction | adapters | done | architecture-external-contract-fidelity, core-ai-sdk-adapter | — | — | — |

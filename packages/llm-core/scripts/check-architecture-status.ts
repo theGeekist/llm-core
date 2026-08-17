@@ -389,7 +389,7 @@ const renderArchitectureStatusRegion = (tasks: readonly TaskRecord[]): string =>
   const active = tasks.filter(({ plan }) => activeStatuses.has(plan.status as never)).length, rows = [...tasks].sort((left, right) => (left.id < right.id ? -1 : left.id > right.id ? 1 : 0)).map((task) =>
     `| ${task.id} | ${task.stage} | ${task.plan.status} | ${cell(task.plan.dependsOn.map((key) => key.slice("llm-core/".length)))} | ${task.evidenceMilestone ?? "—"} | ${cell(task.replacedBy)} | ${cell(task.forwardTo)} |`);
   // prettier-ignore
-  return [startMarker, "", `Active tasks: ${active}`, "", "## Task inventory", "", "| Task | Stage | Status | Dependencies | Evidence milestone | Replaced by | Forward to |", "| --- | --- | --- | --- | --- | --- | --- |", ...rows, "", endMarker].join("\n");
+  return [startMarker, "", `Active tasks: ${active}`, "", "## Task inventory", "", "<!-- prettier-ignore -->", "| Task | Stage | Status | Dependencies | Evidence milestone | Replaced by | Forward to |", "| --- | --- | --- | --- | --- | --- | --- |", ...rows, "", endMarker].join("\n");
 };
 
 const replaceRegion = (document: string, region: string): string => {
