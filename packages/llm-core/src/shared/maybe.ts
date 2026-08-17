@@ -1,11 +1,12 @@
 import {
-  isPromiseLike,
+  isPromiseLike as pipelineIsPromiseLike,
   maybeAll as pipelineMaybeAll,
   maybeThen,
   maybeTry as pipelineMaybeTry,
-} from "@wpkernel/pipeline/core/async-utils";
-import type { MaybePromise } from "@wpkernel/pipeline/core";
+} from "@wpkernel/pipeline";
 import { bindFirst } from "./fp";
+
+export type MaybePromise<T> = T | PromiseLike<T>;
 
 type MaybeThunk<T> = { (): MaybePromise<T> };
 type Mapper<TIn, TOut> = { (value: TIn): TOut };
@@ -23,9 +24,10 @@ type FoldStepInput<T, TState> = {
   reduce: (state: TState, value: T) => MaybePromise<TState>;
 };
 
-export type { MaybePromise };
 export type MaybeAsyncIterable<T> = StepSource<T> | MaybePromise<StepSource<T>>;
-export { isPromiseLike };
+
+export const isPromiseLike = <T>(value: MaybePromise<T>): value is PromiseLike<T> =>
+  pipelineIsPromiseLike(value);
 
 const returnConstant = <T>(value: T) => value;
 
@@ -165,7 +167,8 @@ export const maybeChain = <TIn, TOut>(
   value: MaybePromise<TIn>,
 ): MaybePromise<TOut> => maybeThen(value, next);
 
-export const maybeAll = pipelineMaybeAll;
+export const maybeAll = <T>(values: readonly MaybePromise<T>[]): MaybePromise<T[]> =>
+  pipelineMaybeAll(values);
 
 export const maybeReduce = <TState, TValue>(
   reduce: MaybeReducer<TState, TValue>,

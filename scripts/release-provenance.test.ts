@@ -48,7 +48,7 @@ const plan = {
   ],
   dependencies: {
     "@aifsd/strict-json": "0.1.0",
-    "@wpkernel/pipeline": "1.2.1",
+    "@wpkernel/pipeline": "1.4.0",
   },
   digests: {
     manifest: `sha256:${"d".repeat(64)}`,
@@ -148,7 +148,7 @@ describe("release provenance", () => {
         dependencies: {
           "@geekist/llm-core": "2.0.0",
           "@aifsd/strict-json": "0.1.0",
-          "@wpkernel/pipeline": "1.2.1",
+          "@wpkernel/pipeline": "1.4.0",
         },
         supportDeclarations: [
           {

@@ -353,7 +353,7 @@ Follow [`../COORDINATION.md`](../COORDINATION.md) and the metadata contract in
   later metadata-only release commit and plan are created.
 - Package-family correction: future candidates use the ordered publication
   topology `@aifsd/strict-json@0.1.0` -> `@geekist/llm-core@2.0.0` ->
-  `@aifsd/sdk@0.1.0`; `@wpkernel/pipeline@1.2.1` remains an exact external
+  `@aifsd/sdk@0.1.0`; `@wpkernel/pipeline@1.4.0` remains an exact external
   dependency. The llm-core v2 candidate intentionally retains the same
   `@geekist/llm-core` coordinate as the independently reconstructed 1.x line;
   ledger entries distinguish published releases from the unpublished candidate.

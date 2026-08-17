@@ -11,7 +11,7 @@
 // return a thenable.
 
 import { isDigest, type Digest } from "@geekist/llm-core/contracts";
-import { maybeAll, maybeThen } from "@wpkernel/pipeline/core";
+import { maybeAll, maybeThen } from "@wpkernel/pipeline";
 import type {
   ChangeApplicationStatus,
   ConfigurationResult,

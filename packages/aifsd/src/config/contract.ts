@@ -13,9 +13,9 @@ import type {
   JsonValue,
   SecretRef,
 } from "@geekist/llm-core/contracts";
-import type { MaybePromise } from "@wpkernel/pipeline/core/types";
+export type MaybePromise<T> = T | PromiseLike<T>;
 
-export type { ContractVersion, Digest, EvidenceRef, JsonValue, MaybePromise, SecretRef };
+export type { ContractVersion, Digest, EvidenceRef, JsonValue, SecretRef };
 
 // --- Result and diagnostics -------------------------------------------------
 

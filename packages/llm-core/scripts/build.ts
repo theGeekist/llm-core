@@ -252,10 +252,6 @@ const forceExternalPlugin: BunPlugin = {
       if (args.path.startsWith("#")) {
         return null;
       }
-      // Allow @wpkernel/pipeline
-      if (args.path === "@wpkernel/pipeline" || args.path.startsWith("@wpkernel/pipeline/")) {
-        return null;
-      }
       // Externalize everything else
       return { path: args.path, external: true };
     });

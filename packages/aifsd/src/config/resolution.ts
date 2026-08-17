@@ -27,7 +27,7 @@ import type {
   Selection,
 } from "./contract.js";
 import { isDigest } from "@geekist/llm-core/contracts";
-import { maybeAll, maybeThen } from "@wpkernel/pipeline/core";
+import { maybeAll, maybeThen } from "@wpkernel/pipeline";
 import { contentDigest, digestsEqual } from "./content-digest.js";
 import {
   captureConfigurationData,

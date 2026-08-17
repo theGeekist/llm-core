@@ -17,6 +17,6 @@
     "@a2a-js/sdk": "1.0.0",
     "@modelcontextprotocol/client": "2.0.0",
     "@modelcontextprotocol/server": "2.0.0",
-    "@wpkernel/pipeline": "1.2.1"
+    "@wpkernel/pipeline": "1.4.0"
   }
 }
