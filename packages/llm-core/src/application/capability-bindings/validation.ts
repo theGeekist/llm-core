@@ -24,10 +24,17 @@ import {
 import { isSensitivePortableString, isPortableJsonValue } from "../../features/storage/public";
 import { CAPABILITY_PORT_DEFINITIONS, type CapabilityPortDefinition } from "./ports";
 import type {
+  AnyCapabilityCandidateDescriptor,
+  AnyRegisteredCapabilityCandidate,
   AnyRegisteredRuntimeCapabilityBinding,
   CapabilityBindingDependencies,
+  CapabilityCandidateDependencies,
+  CapabilityCandidateDescriptor,
+  CapabilityAcquisitionFactoryVerificationInput,
+  CapabilityAcquisitionFactoryVerifier,
   CapabilityPortKind,
   CapabilityPortMap,
+  RegisteredCapabilityCandidate,
   RegisteredRuntimeCapabilityBinding,
   RuntimeCapabilityBinding,
 } from "./types";
@@ -51,6 +58,8 @@ const PORT_KINDS = new Set<CapabilityPortKind>(
   Object.keys(CAPABILITY_PORT_DEFINITIONS) as CapabilityPortKind[],
 );
 const registeredBindings = new WeakSet<object>();
+const registeredCandidates = new WeakSet<object>();
+const candidateFactoryVerifiers = new WeakMap<object, CapabilityAcquisitionFactoryVerifier>();
 
 const hasOnlyDataPropertiesDeep = (value: unknown, ancestors = new Set<object>()): boolean => {
   if (value === null || typeof value !== "object") return true;
@@ -92,6 +101,26 @@ const readClosedBinding = (
       kind: descriptors.kind!.value,
       descriptor: descriptors.descriptor!.value,
       port: descriptors.port!.value,
+    };
+  } catch {
+    return null;
+  }
+};
+
+const readClosedCandidate = (value: unknown): { kind: unknown; descriptor: unknown } | null => {
+  try {
+    if (!isRecord(value)) return null;
+    const descriptors = Object.getOwnPropertyDescriptors(value);
+    if (
+      Reflect.ownKeys(value).some((key) => typeof key !== "string") ||
+      Object.keys(descriptors).sort(compareUtf16CodeUnits).join(",") !== "descriptor,kind" ||
+      !["kind", "descriptor"].every((key) => "value" in descriptors[key]!)
+    ) {
+      return null;
+    }
+    return {
+      kind: descriptors.kind!.value,
+      descriptor: descriptors.descriptor!.value,
     };
   } catch {
     return null;
@@ -287,6 +316,71 @@ const registerDescriptor = (
   return descriptor;
 };
 
+const verifyCandidateClaimEvidence = (
+  kind: CapabilityPortKind,
+  bindingId: string,
+  claim: CapabilityClaim,
+  dependencies: CapabilityCandidateDependencies,
+): boolean =>
+  evidenceForClaim(claim).every((evidence) => {
+    try {
+      return (
+        dependencies.verifyEvidence(
+          Object.freeze({
+            bindingId,
+            kind,
+            claim,
+            evidence,
+          }),
+        ) === true
+      );
+    } catch {
+      return false;
+    }
+  });
+
+const registerCandidateDescriptor = (
+  value: unknown,
+  kind: CapabilityPortKind,
+  dependencies: CapabilityCandidateDependencies,
+): CapabilityBinding => {
+  if (
+    !isRecord(value) ||
+    !hasOnlyDataPropertiesDeep(value) ||
+    !hasOnlyKeys(value, ["bindingId", "claims"], ["extensions"]) ||
+    (value.extensions !== undefined && !isCapabilityExtensions(value.extensions))
+  ) {
+    throw new TypeError("Capability candidates must contain closed portable descriptor data.");
+  }
+  const bindingId = value.bindingId;
+  if (
+    !isSafeExternalId(bindingId) ||
+    !Array.isArray(value.claims) ||
+    value.claims.length === 0 ||
+    !value.claims.every((claim) => isClaim(claim, bindingId))
+  ) {
+    throw new TypeError("Capability candidates must contain closed portable descriptor data.");
+  }
+  const identities = value.claims.map(
+    (claim) => `${(claim as CapabilityClaim).capabilityId}@${(claim as CapabilityClaim).version}`,
+  );
+  if (new Set(identities).size !== identities.length) {
+    throw new TypeError("Capability candidates cannot contain duplicate claim identities.");
+  }
+  const descriptor = frozenDescriptorClone(value) as unknown as CapabilityBinding;
+  if (
+    !descriptor.claims.every((claim) =>
+      verifyCandidateClaimEvidence(kind, descriptor.bindingId, claim, dependencies),
+    )
+  ) {
+    throw new TypeError("Capability candidate evidence verification failed.");
+  }
+  if (!eligibleClaim(descriptor, CAPABILITY_PORT_DEFINITIONS[kind].capabilityId)) {
+    throw new TypeError("Capability candidate does not prove its selected port kind.");
+  }
+  return descriptor;
+};
+
 const eligibleClaim = (
   descriptor: CapabilityBinding,
   capabilityId: string,
@@ -402,6 +496,84 @@ export const registerRuntimeCapabilityBinding = <TKind extends CapabilityPortKin
   }) as RegisteredRuntimeCapabilityBinding<TKind>;
   registeredBindings.add(registered);
   return registered;
+};
+
+export const registerCapabilityCandidate = <TKind extends CapabilityPortKind>(
+  value: CapabilityCandidateDescriptor<TKind>,
+  dependencies: CapabilityCandidateDependencies,
+): RegisteredCapabilityCandidate<TKind> => {
+  if (
+    typeof dependencies?.verifyEvidence !== "function" ||
+    typeof dependencies.verifyAcquisitionFactory !== "function"
+  ) {
+    throw new TypeError(
+      "Capability candidate registration requires trusted evidence and factory verifiers.",
+    );
+  }
+  const candidate = readClosedCandidate(value);
+  if (
+    candidate === null ||
+    typeof candidate.kind !== "string" ||
+    !PORT_KINDS.has(candidate.kind as CapabilityPortKind)
+  ) {
+    throw new TypeError("Capability candidates must use the closed typed candidate union.");
+  }
+  const kind = candidate.kind as TKind;
+  const descriptor = registerCandidateDescriptor(candidate.descriptor, kind, dependencies);
+  const registered = Object.freeze({ kind, descriptor }) as RegisteredCapabilityCandidate<TKind>;
+  registeredCandidates.add(registered);
+  candidateFactoryVerifiers.set(registered, dependencies.verifyAcquisitionFactory);
+  return registered;
+};
+
+export const verifyCandidateAcquisitionFactory = <TKind extends CapabilityPortKind>(
+  candidate: RegisteredCapabilityCandidate<TKind>,
+  input: CapabilityAcquisitionFactoryVerificationInput<TKind>,
+): boolean => {
+  const verifier = candidateFactoryVerifiers.get(candidate);
+  if (!verifier) return false;
+  try {
+    return verifier(Object.freeze(input)) === true;
+  } catch {
+    return false;
+  }
+};
+
+export const registerAcquiredRuntimeCapabilityBinding = <TKind extends CapabilityPortKind>(
+  candidate: RegisteredCapabilityCandidate<TKind>,
+  acquiredPort: CapabilityPortMap[TKind],
+): RegisteredRuntimeCapabilityBinding<TKind> => {
+  if (!isRegisteredCapabilityCandidate(candidate)) {
+    throw new TypeError("Runtime acquisition requires a registered inert candidate.");
+  }
+  if (
+    (typeof acquiredPort !== "object" && typeof acquiredPort !== "function") ||
+    acquiredPort === null
+  ) {
+    throw new TypeError("Capability acquisition did not return a live port.");
+  }
+  const port = bindPortSurface(candidate.kind, acquiredPort);
+  validatePort(candidate.kind, candidate.descriptor, port as object);
+  const registered = Object.freeze({
+    kind: candidate.kind,
+    descriptor: candidate.descriptor,
+    port,
+  }) as RegisteredRuntimeCapabilityBinding<TKind>;
+  registeredBindings.add(registered);
+  return registered;
+};
+
+export const isRegisteredCapabilityCandidate = (
+  value: unknown,
+): value is AnyRegisteredCapabilityCandidate =>
+  typeof value === "object" && value !== null && registeredCandidates.has(value);
+
+export const assertRegisteredCapabilityCandidate = (
+  value: AnyCapabilityCandidateDescriptor,
+): asserts value is AnyRegisteredCapabilityCandidate => {
+  if (!isRegisteredCapabilityCandidate(value)) {
+    throw new TypeError("Capability resolution accepts only registered inert candidates.");
+  }
 };
 
 export const isRegisteredRuntimeCapabilityBinding = (

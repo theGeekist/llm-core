@@ -1,7 +1,7 @@
 # llm-core Architecture v2 Status
 
 Architecture version: v2
-Updated: 10 August 2026
+Updated: 20 August 2026
 Kernel: complete at `9920425`
 Pre-transition source baseline: `c041792`
 
@@ -19,7 +19,7 @@ Active tasks: 0
 | adapter-ai-sdlc-release | adapters | proposed | architecture-source-layout-normalization, adapter-ai-sdlc, specification-cross-adapter-conformance, architecture-release-reproducibility | — | — | — |
 | adapter-bmad | adapters | done | specification-api | cf3347d | — | — |
 | adapter-bmad-release | adapters | proposed | architecture-source-layout-normalization, adapter-bmad, specification-cross-adapter-conformance, architecture-release-reproducibility | — | — | — |
-| adapter-catalogue-public-qualification | adapters | proposed | architecture-external-contract-fidelity, architecture-release-reproducibility | — | — | — |
+| adapter-catalogue-public-qualification | adapters | done | architecture-external-contract-fidelity, architecture-release-reproducibility | — | — | — |
 | adapter-coding-agent-integration | adapters | done | architecture-external-contract-fidelity, architecture-runtime-ownership-correction, capabilities-runtime-conformance, capabilities-operational-evidence | — | — | — |
 | adapter-langgraph-runtime | adapters | proposed | architecture-external-contract-fidelity, architecture-runtime-ownership-correction, runtime-operation-contract-correction, architecture-release-reproducibility, capabilities-runtime-conformance, capabilities-operational-evidence | — | — | — |
 | adapter-openspec | adapters | done | specification-api | cf3347d | — | — |

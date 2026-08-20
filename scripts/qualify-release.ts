@@ -54,6 +54,8 @@ const sealedUnconditionalSurfaces = new Set([
   "./media",
   "./specifications",
   "./adapters/ai-sdk",
+  "./adapters/catalogue",
+  "./adapters/catalogue/runtime",
   "./adapters/ai-sdk-ui",
   "./adapters/assistant-ui",
   "./adapters/openai-chatkit",

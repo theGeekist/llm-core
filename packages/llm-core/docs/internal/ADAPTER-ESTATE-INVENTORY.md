@@ -22,11 +22,11 @@ The missing layer is therefore not an AIFSD wrapper for every llm-core export. T
 
 These provide ecosystem-native implementations of portable llm-core ports.
 
-| Ecosystem  | Implemented capabilities                                                                                                                                                                                    | Current exposure                                                                                                                 | Current evidence                                                                                                 |
-| ---------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
-| AI SDK     | model, embedder, reranker, image generation, speech, transcription, host cache and conversation storage                                                                                                     | model, retrieval and media are exported through `./adapters/ai-sdk`; host cache and conversation implementations remain internal | focused adapter tests, retrieval parity, exact native-contract tests and packed public-subpath smoke             |
-| LangChain  | prompt template, model output parser, document loader, text splitter, embedder, retriever, reranker, vector store, indexer, cache store, conversation state store and key-value store                       | internal                                                                                                                         | retrieval parity, fail-closed boundary tests, model schema tests, storage qualification and memory qualification |
-| LlamaIndex | prompt template, document loader, document transformer, text splitter, embedder, retriever, reranker, vector store, query engine, response synthesizer, cache store, conversation store and key-value store | internal                                                                                                                         | retrieval parity, fail-closed boundary tests, model schema tests, storage qualification and memory qualification |
+| Ecosystem  | Implemented capabilities                                                                                                                                                                                    | Current exposure                                                                                                                 | Current evidence                                                                                                                                |
+| ---------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
+| AI SDK     | model, embedder, reranker, image generation, speech, transcription, host cache and conversation storage                                                                                                     | model, retrieval and media are exported through `./adapters/ai-sdk`; host cache and conversation implementations remain internal | focused adapter tests, retrieval parity, exact native-contract tests and packed public-subpath smoke                                            |
+| LangChain  | prompt template, model output parser, document loader, text splitter, embedder, retriever, reranker, vector store, indexer, cache store, conversation state store and key-value store                       | `retriever` is public through `./adapters/langchain`; other operations remain internal                                           | retrieval parity, fail-closed boundary tests, model schema tests, storage qualification, memory qualification and packed retriever substitution |
+| LlamaIndex | prompt template, document loader, document transformer, text splitter, embedder, retriever, reranker, vector store, query engine, response synthesizer, cache store, conversation store and key-value store | `retriever` is public through `./adapters/llamaindex`; other operations remain internal                                          | retrieval parity, fail-closed boundary tests, model schema tests, storage qualification, memory qualification and packed retriever substitution |
 
 The retrieval parity suite explicitly describes a qualified adapter parity matrix. It runs the same portable retrieval roles through AI SDK, LangChain and LlamaIndex implementations. Storage and memory suites likewise exercise LangChain and LlamaIndex alternatives against shared contracts.
 
@@ -52,11 +52,15 @@ The current PydanticAI publication task proposes a new source boundary rather th
 
 The coding-agent and OpenTelemetry projections serve integration or evidence concerns. They should not be forced into the capability-substitution catalogue unless they actually implement a portable application port.
 
-## Public surface and qualification gap
+## Public surface and qualification disposition
 
 The package archive currently exposes only these adapter or protocol fronts:
 
 - `./adapters/ai-sdk`
+- `./adapters/catalogue`
+- `./adapters/catalogue/runtime`
+- `./adapters/langchain`
+- `./adapters/llamaindex`
 - `./adapters/ai-sdk-ui`
 - `./adapters/assistant-ui`
 - `./adapters/openai-chatkit`
@@ -64,9 +68,11 @@ The package archive currently exposes only these adapter or protocol fronts:
 - `./a2a`
 - `./mcp`
 
-The build entrypoints and packed smoke match that list. LangChain and LlamaIndex implementations are therefore real, tested internal capability alternatives, but a package consumer cannot select them through supported package exports.
+The LangChain and LlamaIndex fronts are intentionally narrow. Each exports only the qualified retriever constructor. Publishing their previous broad internal `public.ts` fronts would have implied support for operations without packed evidence, so those modules remain source-internal.
 
-This is the central estate gap. Implementation parity, package exposure, exact ecosystem qualification and public support are separate states. The current repository has meaningful implementation and test evidence, but it has not yet made a complete public-support decision for the adapter estate.
+`./adapters/catalogue` exposes the frozen 67-row exact-operation portable-capability inventory plus inert candidate registration and resolution. `./adapters/catalogue/runtime` owns the separately invocable acquisition boundary. Candidate evidence is checked before resolution; an authentic accepted plan and an exact complete factory set are required before any acquisition begins. Partial acquisition uses reverse-order release.
+
+The exact ecosystem authority windows represented by the catalogue are `ai` 7.0.37, `@langchain/core` 1.1.8, `@langchain/textsplitters` 1.0.1 and `@llamaindex/core` 0.6.22. The cache and conversation implementations under the AI SDK source boundary are classified separately as host adapters owned by `@geekist/llm-core` 2.0.0 because AI SDK 7 publishes no corresponding storage or conversation-memory contract. The packed consumer installs the LangChain and LlamaIndex optional peers without workspace or source fallback and exercises the same portable `Retriever` request and result through both public fronts.
 
 ## AIFSD's role
 
@@ -98,9 +104,9 @@ Its own focused host and the broader AIFSD desktop host can consume the same Sim
 
 The dogfood proof should be stronger than a single blessed composition. For at least one materially overlapping capability group, the same Simple Chat product behaviour should pass under two qualified adapter compositions. That proves the substitutability already intended by llm-core rather than merely asserting it in the SDK design.
 
-## Direction to characterise before implementation
+## Implemented catalogue boundary and remaining direction
 
-### 1. Close the llm-core adapter catalogue
+### 1. Closed llm-core capability-adapter catalogue
 
 Create one machine-readable inventory whose rows bind:
 
@@ -112,11 +118,11 @@ Create one machine-readable inventory whose rows bind:
 - public, internal, proposed or removed disposition;
 - package export and release task where applicable.
 
-The catalogue should describe evidence. It must not make runtime selection decisions.
+`ADAPTER_CATALOGUE` now records every implemented `CapabilityPortMap` adapter operation across AI SDK, LangChain, LlamaIndex and the host-only cache and conversation adapters as 67 exact-operation rows. This includes both host conversation ports, LlamaIndex metadata-aware splitting, both LlamaIndex key-value implementations, and operation-specific LlamaIndex vector-store limits. UI projections, protocols and specification mappings are excluded explicitly because they do not implement selectable portable capability ports. The catalogue describes exact external and implementation identity, version, operation, limits, exposure and evidence. It does not make runtime selection decisions.
 
-### 2. Decide the LangChain and LlamaIndex public fronts
+### 2. LangChain and LlamaIndex public fronts
 
-Characterise the existing implementations before adding more adapters. Decide which capability groups are coherent public subpaths, which need further exact-version fixtures, and which should remain internal. Qualification can be coordinated at package level while retaining evidence per ecosystem and capability.
+The first public fronts are retriever-only and carry packed cross-ecosystem substitution evidence. Other implemented operations remain internal until an operation-specific task adds exact-version packed evidence and intentionally widens the front.
 
 ### 3. Reconcile agent-runtime work
 
@@ -157,6 +163,8 @@ bun test packages/llm-core/tests/retrieval/parity-matrix.test.ts \
 ```
 
 The adapter source estate is approximately 15,268 physical lines at this snapshot. That size reinforces the need for an explicit catalogue and disposition review before introducing another exposure layer.
+
+The public qualification implementation adds 67 frozen exact-operation catalogue rows, two packed retriever fronts, inert candidate resolution and exact post-acceptance acquisition. The task-owned focused matrix enumerates every implementation, export and operation rather than relying on a row count alone, and covers catalogue closure, candidate authenticity, zero-call preflight failures, rollback and packed substitution before the full release gate.
 
 ## Non-claims
 

@@ -13,6 +13,16 @@
   ],
   "excludedSuffixes": [".generated.ts", ".generated.tsx", ".snap.ts", ".snap.tsx"],
   "exceptions": {
+    "packages/llm-core/src/application/capability-bindings/validation.ts": {
+      "lines": 590,
+      "sha256": "da490e5164b3c22ae428bcdc3f9e90cbc8bd1172af67c7438e210be5aa733d3c",
+      "waiver": {
+        "version": 1,
+        "justification": "approximately 500 lines",
+        "currentLines": 590,
+        "currentSha256": "da490e5164b3c22ae428bcdc3f9e90cbc8bd1172af67c7438e210be5aa733d3c"
+      }
+    },
     "packages/llm-core/src/adapters/protocols/a2a/validation.ts": {
       "lines": 600,
       "sha256": "23dff4054fd58a49fcc22111d951a15da2b6a3786cfec36d8220945a418e55e8",
@@ -111,16 +121,6 @@
         "followUp": "packages/llm-core/docs/final-architecture/tasks/architecture-test-sloc-decomposition.md",
         "currentLines": 782,
         "currentSha256": "5c6ad22fbe082d3816ddfb1aeb47e523a088885ad45523857596841a2c6416d5"
-      }
-    },
-    "packages/llm-core/tests/application/capability-bindings/bindings.test.ts": {
-      "lines": 503,
-      "sha256": "78bae19d5fb3132a1c321e9edada18be766918d6275a0ee3867929cb2d8a5f53",
-      "waiver": {
-        "version": 1,
-        "justification": "approximately 500 lines",
-        "currentLines": 503,
-        "currentSha256": "78bae19d5fb3132a1c321e9edada18be766918d6275a0ee3867929cb2d8a5f53"
       }
     },
     "packages/llm-core/tests/application/interaction/session.test.ts": {

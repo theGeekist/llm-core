@@ -41,6 +41,7 @@ import type {
   ExecutableTool,
   ToolSchemaDigestPort,
 } from "../../features/tooling/runtime";
+import type { MaybePromise } from "../../shared/maybe";
 
 /**
  * The closed set of live feature ports assembled by composition.
@@ -110,6 +111,96 @@ export type AnyRegisteredRuntimeCapabilityBinding = {
   [TKind in CapabilityPortKind]: RegisteredRuntimeCapabilityBinding<TKind>;
 }[CapabilityPortKind];
 
+/** Immutable planning input. It contains identity and evidence, never a live port or factory. */
+export interface CapabilityCandidateDescriptor<
+  TKind extends CapabilityPortKind = CapabilityPortKind,
+> {
+  readonly kind: TKind;
+  readonly descriptor: CapabilityBinding;
+}
+
+export type AnyCapabilityCandidateDescriptor = {
+  [TKind in CapabilityPortKind]: CapabilityCandidateDescriptor<TKind>;
+}[CapabilityPortKind];
+
+declare const registeredCapabilityCandidateBrand: unique symbol;
+
+export interface RegisteredCapabilityCandidate<
+  TKind extends CapabilityPortKind = CapabilityPortKind,
+> extends CapabilityCandidateDescriptor<TKind> {
+  readonly [registeredCapabilityCandidateBrand]: true;
+}
+
+export type AnyRegisteredCapabilityCandidate = {
+  [TKind in CapabilityPortKind]: RegisteredCapabilityCandidate<TKind>;
+}[CapabilityPortKind];
+
+/** A callable acquisition boundary kept separate from the inert planning descriptor. */
+export interface CapabilityAcquisitionFactory<
+  TKind extends CapabilityPortKind = CapabilityPortKind,
+> {
+  readonly kind: TKind;
+  readonly bindingId: PortableImplementationId;
+  readonly acquire: () => MaybePromise<CapabilityAcquiredPort<TKind>>;
+}
+
+export interface CapabilityAcquiredPort<TKind extends CapabilityPortKind = CapabilityPortKind> {
+  readonly port: CapabilityPortMap[TKind];
+  readonly release?: () => MaybePromise<void>;
+}
+
+export type AnyCapabilityAcquisitionFactory = {
+  [TKind in CapabilityPortKind]: CapabilityAcquisitionFactory<TKind>;
+}[CapabilityPortKind];
+
+declare const registeredAcquisitionFactoryBrand: unique symbol;
+
+export interface RegisteredCapabilityAcquisitionFactory<
+  TKind extends CapabilityPortKind = CapabilityPortKind,
+> {
+  /** Opaque proof with kind correlation that exposes neither identity strings nor a callable. */
+  readonly [registeredAcquisitionFactoryBrand]: TKind;
+}
+
+export type AnyRegisteredCapabilityAcquisitionFactory = {
+  [TKind in CapabilityPortKind]: RegisteredCapabilityAcquisitionFactory<TKind>;
+}[CapabilityPortKind];
+
+export interface CapabilityAcquisitionFactoryVerificationInput<
+  TKind extends CapabilityPortKind = CapabilityPortKind,
+> {
+  readonly kind: TKind;
+  readonly bindingId: PortableImplementationId;
+  readonly acquire: CapabilityAcquisitionFactory<TKind>["acquire"];
+}
+
+export type CapabilityAcquisitionFactoryVerifier = (
+  input: CapabilityAcquisitionFactoryVerificationInput,
+) => boolean;
+
+export interface AcquiredCapabilityBindings {
+  readonly bindings: readonly AnyRegisteredRuntimeCapabilityBinding[];
+  /** Releases acquired resources in reverse acquisition order. Safe to invoke once. */
+  readonly release: () => MaybePromise<void>;
+}
+
+export interface CapabilityCandidateEvidenceVerificationInput {
+  readonly bindingId: PortableImplementationId;
+  readonly kind: CapabilityPortKind;
+  readonly claim: CapabilityClaim;
+  readonly evidence: ConformanceEvidence;
+}
+
+export type CapabilityCandidateEvidenceVerifier = (
+  input: CapabilityCandidateEvidenceVerificationInput,
+) => boolean;
+
+export interface CapabilityCandidateDependencies {
+  readonly verifyEvidence: CapabilityCandidateEvidenceVerifier;
+  readonly verifyAcquisitionFactory: CapabilityAcquisitionFactoryVerifier;
+  readonly evaluateCondition?: CapabilityConditionEvaluator;
+}
+
 export interface CapabilityEvidenceVerificationInput {
   readonly bindingId: PortableImplementationId;
   readonly kind: CapabilityPortKind;
@@ -144,9 +235,9 @@ export interface CapabilityPortRequirement<TKind extends CapabilityPortKind = Ca
   readonly capabilities?: readonly CapabilityRequirement[];
 }
 
-export interface CapabilityBindingResolutionRequest {
+export interface CapabilityCandidateResolutionRequest {
   readonly requirements: readonly CapabilityPortRequirement[];
-  readonly bindings: readonly AnyRegisteredRuntimeCapabilityBinding[];
+  readonly candidates: readonly AnyRegisteredCapabilityCandidate[];
   /** Explicit composition-owned defaults, keyed by the neutral port kind. */
   readonly defaults?: Partial<Record<CapabilityPortKind, PortableImplementationId>>;
 }
@@ -172,10 +263,10 @@ export interface CapabilityBindingDiagnostic {
   readonly capabilityId?: string;
 }
 
-export type CapabilityBindingResolutionOutcome =
+export type CapabilityCandidateResolutionOutcome =
   | {
       readonly kind: "resolved";
-      readonly bindings: readonly AnyRegisteredRuntimeCapabilityBinding[];
+      readonly candidates: readonly AnyRegisteredCapabilityCandidate[];
       readonly diagnostics: readonly CapabilityBindingDiagnostic[];
     }
   | {

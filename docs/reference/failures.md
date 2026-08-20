@@ -26,7 +26,7 @@ Diagnostics retain the selection, exclusion, version, constraint, policy, and ev
 
 ## Capability binding diagnostics
 
-`CapabilityBindingResolutionOutcome` is either `resolved` or `unresolved`. Both variants carry `CapabilityBindingDiagnostic` values so selection, duplicates, unsupported ranges, missing bindings, and invalid bindings remain inspectable without parsing an exception message. An unresolved required capability must be handled before execution.
+`CapabilityCandidateResolutionOutcome` is either `resolved` or `unresolved`. Both variants carry `CapabilityBindingDiagnostic` values so selection, duplicates, unsupported ranges, missing candidates, and invalid candidates remain inspectable without parsing an exception message. Resolution consumes inert, evidence-validated descriptors only. An unresolved required capability must be handled before any acquisition factory can run.
 
 ## Controlled effects
 

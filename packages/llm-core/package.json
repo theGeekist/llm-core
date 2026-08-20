@@ -265,6 +265,26 @@
       "import": "./dist/esm/src/adapters/ai-sdk/index.js",
       "default": "./dist/esm/src/adapters/ai-sdk/index.js"
     },
+    "./adapters/langchain": {
+      "types": "./dist/types/src/adapters/langchain/index.d.ts",
+      "import": "./dist/esm/src/adapters/langchain/index.js",
+      "default": "./dist/esm/src/adapters/langchain/index.js"
+    },
+    "./adapters/llamaindex": {
+      "types": "./dist/types/src/adapters/llamaindex/index.d.ts",
+      "import": "./dist/esm/src/adapters/llamaindex/index.js",
+      "default": "./dist/esm/src/adapters/llamaindex/index.js"
+    },
+    "./adapters/catalogue": {
+      "types": "./dist/types/src/composition/capability-bindings/catalogue-public.d.ts",
+      "import": "./dist/esm/src/composition/capability-bindings/catalogue-public.js",
+      "default": "./dist/esm/src/composition/capability-bindings/catalogue-public.js"
+    },
+    "./adapters/catalogue/runtime": {
+      "types": "./dist/types/src/composition/capability-bindings/runtime-public.d.ts",
+      "import": "./dist/esm/src/composition/capability-bindings/runtime-public.js",
+      "default": "./dist/esm/src/composition/capability-bindings/runtime-public.js"
+    },
     "./adapters/ai-sdk-ui": {
       "types": "./dist/types/src/adapters/ai-sdk-ui/index.d.ts",
       "import": "./dist/esm/src/adapters/ai-sdk-ui/index.js",
@@ -303,6 +323,8 @@
     "@a2a-js/sdk": "1.0.0",
     "@ai-sdk/provider": "^4.0.3",
     "@assistant-ui/react": "^0.11.53",
+    "@langchain/core": "1.1.8",
+    "@llamaindex/core": "0.6.22",
     "@nlux/core": "^2.17.1",
     "@openai/chatkit": "^1.2.0",
     "@modelcontextprotocol/server": "2.0.0",
@@ -316,6 +338,12 @@
       "optional": true
     },
     "@assistant-ui/react": {
+      "optional": true
+    },
+    "@langchain/core": {
+      "optional": true
+    },
+    "@llamaindex/core": {
       "optional": true
     },
     "@nlux/core": {

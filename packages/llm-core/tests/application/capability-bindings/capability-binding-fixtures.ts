@@ -11,6 +11,8 @@ import {
   type SupportedCapabilityClaim,
 } from "#contracts";
 import {
+  type CapabilityCandidateDependencies,
+  type CapabilityCandidateDescriptor,
   capabilityIdForPort,
   type CapabilityBindingDependencies,
   type CapabilityPortKind,
@@ -75,6 +77,24 @@ export const runtimeBinding = <TKind extends CapabilityPortKind>(
   },
   port,
 });
+
+export const candidateDescriptor = <TKind extends CapabilityPortKind>(
+  kind: TKind,
+  bindingId: string,
+  claims: readonly CapabilityClaim[] = [],
+): CapabilityCandidateDescriptor<TKind> => ({
+  kind,
+  descriptor: {
+    bindingId,
+    claims: [passingClaim(capabilityIdForPort(kind), bindingId), ...claims],
+  },
+});
+
+export const candidateDependencies = (
+  verifyEvidence: CapabilityCandidateDependencies["verifyEvidence"] = () => true,
+  verifyAcquisitionFactory: CapabilityCandidateDependencies["verifyAcquisitionFactory"] = () =>
+    true,
+): CapabilityCandidateDependencies => ({ verifyEvidence, verifyAcquisitionFactory });
 
 export const verificationDependencies = (
   verifyEvidence: CapabilityBindingDependencies["verifyEvidence"] = () => true,

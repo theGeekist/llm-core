@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "requiredSurfaces": ["./a2a", "./mcp"],
+  "requiredSurfaces": ["./a2a", "./adapters/langchain", "./adapters/llamaindex", "./mcp"],
   "qualifiers": [
     {
       "surface": "./a2a",
@@ -13,6 +13,18 @@
         "packages/llm-core/tests/adapters/protocols/external-consumer",
         "verify:a2a"
       ]
+    },
+    {
+      "surface": "./adapters/langchain",
+      "supportWindow": "@langchain/core 1.1.8 retriever operation",
+      "owner": "adapter-catalogue-public-qualification",
+      "command": ["bun", "run", "--cwd", "packages/llm-core", "test:package:prebuilt"]
+    },
+    {
+      "surface": "./adapters/llamaindex",
+      "supportWindow": "@llamaindex/core 0.6.22 retriever operation",
+      "owner": "adapter-catalogue-public-qualification",
+      "command": ["bun", "run", "--cwd", "packages/llm-core", "test:package:prebuilt"]
     },
     {
       "surface": "./mcp",

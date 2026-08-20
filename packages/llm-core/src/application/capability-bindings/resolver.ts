@@ -13,17 +13,19 @@ import {
 } from "#shared/portable-data";
 import { isPortableJsonValue, isSensitivePortableString } from "../../features/storage/public";
 import { CAPABILITY_PORT_DEFINITIONS } from "./ports";
-import { isRegisteredRuntimeCapabilityBinding } from "./validation";
+import { isRegisteredCapabilityCandidate } from "./validation";
 /* eslint-disable max-params, sonarjs/cognitive-complexity -- Trust-boundary proof tuples and atomic fail-closed resolution remain explicit. */
 import type {
-  AnyRegisteredRuntimeCapabilityBinding,
+  AnyRegisteredCapabilityCandidate,
   CapabilityBindingDiagnostic,
-  CapabilityBindingResolutionOutcome,
-  CapabilityBindingResolutionRequest,
+  CapabilityCandidateResolutionOutcome,
+  CapabilityCandidateResolutionRequest,
   CapabilityConditionEvaluator,
   CapabilityPortKind,
   CapabilityPortRequirement,
 } from "./types";
+
+const resolvedCandidatePlans = new WeakSet<object>();
 
 const CAPABILITY_ID = /^(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$/;
 const PORT_KINDS = new Set<CapabilityPortKind>(
@@ -70,15 +72,15 @@ const isBindingInput = (value: unknown): boolean =>
   isRecord(value.descriptor) &&
   isSafeExternalId(value.descriptor.bindingId);
 
-const validateRequest = (request: CapabilityBindingResolutionRequest): void => {
+const validateRequest = (request: CapabilityCandidateResolutionRequest): void => {
   if (
     !isRecord(request) ||
-    !hasOnlyKeys(request, ["requirements", "bindings"], ["defaults"]) ||
+    !hasOnlyKeys(request, ["requirements", "candidates"], ["defaults"]) ||
     !Array.isArray(request.requirements) ||
     request.requirements.length === 0 ||
     !request.requirements.every(isPortRequirement) ||
-    !Array.isArray(request.bindings) ||
-    !request.bindings.every(isBindingInput) ||
+    !Array.isArray(request.candidates) ||
+    !request.candidates.every(isBindingInput) ||
     (request.defaults !== undefined &&
       (!isRecord(request.defaults) ||
         !Object.entries(request.defaults).every(
@@ -131,7 +133,7 @@ const evaluateRange = (
 };
 
 const matchingClaim = (
-  binding: AnyRegisteredRuntimeCapabilityBinding,
+  binding: AnyRegisteredCapabilityCandidate,
   requirement: CapabilityRequirement,
   diagnostics: CapabilityBindingDiagnostic[],
 ): CapabilityClaim | null => {
@@ -163,7 +165,7 @@ const matchingClaim = (
 // eslint-disable-next-line max-params
 const evaluateConstraint = (
   evaluator: CapabilityConditionEvaluator | undefined,
-  binding: AnyRegisteredRuntimeCapabilityBinding,
+  binding: AnyRegisteredCapabilityCandidate,
   claim: CapabilityClaim,
   requirement: CapabilityRequirement,
   constraint: CapabilityConstraint,
@@ -192,7 +194,7 @@ const evaluateConstraint = (
 // eslint-disable-next-line max-params
 const claimConditionsProven = (
   evaluator: CapabilityConditionEvaluator | undefined,
-  binding: AnyRegisteredRuntimeCapabilityBinding,
+  binding: AnyRegisteredCapabilityCandidate,
   claim: CapabilityClaim,
   requirement: CapabilityRequirement,
 ): boolean => {
@@ -206,7 +208,7 @@ const claimConditionsProven = (
 // Compatibility is evaluated atomically with its safe diagnostic accumulator.
 // eslint-disable-next-line max-params
 const bindingCompatible = (
-  binding: AnyRegisteredRuntimeCapabilityBinding,
+  binding: AnyRegisteredCapabilityCandidate,
   requirement: CapabilityPortRequirement,
   evaluator: CapabilityConditionEvaluator | undefined,
   diagnostics: CapabilityBindingDiagnostic[],
@@ -257,7 +259,9 @@ const bindingCompatible = (
   return true;
 };
 
-const duplicates = (request: CapabilityBindingResolutionRequest): CapabilityBindingDiagnostic[] => {
+const duplicates = (
+  request: CapabilityCandidateResolutionRequest,
+): CapabilityBindingDiagnostic[] => {
   const diagnostics: CapabilityBindingDiagnostic[] = [];
   const requirementKinds = new Set<CapabilityPortKind>();
   for (const requirement of request.requirements) {
@@ -274,7 +278,7 @@ const duplicates = (request: CapabilityBindingResolutionRequest): CapabilityBind
     }
   }
   const bindingKeys = new Set<string>();
-  for (const binding of request.bindings) {
+  for (const binding of request.candidates) {
     const key = `${binding.kind}:${binding.descriptor.bindingId}`;
     if (bindingKeys.has(key)) {
       diagnostics.push(
@@ -287,7 +291,7 @@ const duplicates = (request: CapabilityBindingResolutionRequest): CapabilityBind
 };
 
 const candidateSelection = (
-  request: CapabilityBindingResolutionRequest,
+  request: CapabilityCandidateResolutionRequest,
   requirement: CapabilityPortRequirement,
 ): { bindingId?: string; mode: "exact" | "default" | "unique" } => {
   if (requirement.bindingId !== undefined) {
@@ -301,14 +305,14 @@ const candidateSelection = (
 
 // Resolution deliberately keeps all fail-closed branches in one atomic plan boundary.
 // eslint-disable-next-line sonarjs/cognitive-complexity
-export const resolveCapabilityBindings = (
-  request: CapabilityBindingResolutionRequest,
+export const resolveCapabilityCandidates = (
+  request: CapabilityCandidateResolutionRequest,
   dependencies: { readonly evaluateCondition?: CapabilityConditionEvaluator } = {},
-): CapabilityBindingResolutionOutcome => {
+): CapabilityCandidateResolutionOutcome => {
   validateRequest(request);
   const diagnostics = duplicates(request);
-  for (const binding of request.bindings) {
-    if (!isRegisteredRuntimeCapabilityBinding(binding as unknown)) {
+  for (const binding of request.candidates) {
+    if (!isRegisteredCapabilityCandidate(binding as unknown)) {
       diagnostics.push(
         diagnostic("invalid-binding", { kind: binding.kind }, binding.descriptor.bindingId),
       );
@@ -318,9 +322,9 @@ export const resolveCapabilityBindings = (
     return { kind: "unresolved", diagnostics: sortDiagnostics(diagnostics) };
   }
 
-  const resolved: AnyRegisteredRuntimeCapabilityBinding[] = [];
+  const resolved: AnyRegisteredCapabilityCandidate[] = [];
   for (const requirement of request.requirements) {
-    const allForKind = request.bindings.filter((binding) => binding.kind === requirement.kind);
+    const allForKind = request.candidates.filter((binding) => binding.kind === requirement.kind);
     const selection = candidateSelection(request, requirement);
     if (selection.bindingId !== undefined) {
       const selected = allForKind.find(
@@ -367,11 +371,18 @@ export const resolveCapabilityBindings = (
   if (resolved.length !== request.requirements.length) {
     return { kind: "unresolved", diagnostics: sortDiagnostics(diagnostics) };
   }
-  return {
+  const plan = Object.freeze({
     kind: "resolved",
-    bindings: Object.freeze(
+    candidates: Object.freeze(
       resolved.toSorted((left, right) => left.kind.localeCompare(right.kind)),
     ),
     diagnostics: sortDiagnostics(diagnostics),
-  };
+  }) as CapabilityCandidateResolutionOutcome & { readonly kind: "resolved" };
+  resolvedCandidatePlans.add(plan);
+  return plan;
 };
+
+export const isResolvedCapabilityCandidatePlan = (
+  value: CapabilityCandidateResolutionOutcome,
+): value is CapabilityCandidateResolutionOutcome & { readonly kind: "resolved" } =>
+  typeof value === "object" && value !== null && resolvedCandidatePlans.has(value);

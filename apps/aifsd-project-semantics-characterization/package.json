@@ -1,0 +1,16 @@
+{
+  "name": "@aifsd/project-semantics-characterization",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "check:browser": "bun build browser-consumer.ts --target=browser --format=esm --outdir dist/browser",
+    "check:host": "tsc -p tsconfig.host.json --noEmit",
+    "check:mobile": "tsc -p tsconfig.mobile.json --noEmit && bun build mobile-consumer.ts --target=browser --format=esm --outdir dist/mobile",
+    "check:runtime": "bun test consumer-qualification.test.ts",
+    "check": "bun run check:browser && bun run check:mobile && bun run check:runtime && bun run check:host",
+    "qualify:neo4j": "bun run run-neo4j-qualification.ts"
+  },
+  "devDependencies": {
+    "neo4j-driver": "6.2.0"
+  }
+}

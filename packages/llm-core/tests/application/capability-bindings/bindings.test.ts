@@ -1,20 +1,16 @@
 import { describe, expect, test } from "bun:test";
-import {
-  contractVersion,
-  nativeExtensions,
-  type CapabilityBinding,
-  type CapabilityClaim,
-} from "#contracts";
+import { contractVersion, nativeExtensions, type CapabilityClaim } from "#contracts";
 import {
   capabilityIdForPort,
+  registerCapabilityCandidate,
   registerRuntimeCapabilityBinding,
-  resolveCapabilityBindings,
-  type CapabilityPortMap,
+  resolveCapabilityCandidates,
   type RuntimeCapabilityBinding,
 } from "../../../src/application/capability-bindings/public";
-import { createCapabilityBindingCatalog } from "../../../src/composition/capability-bindings/public";
-import type { CacheStore } from "../../../src/features/storage/public";
+import { createCapabilityCandidateCatalog } from "../../../src/composition/capability-bindings/public";
 import {
+  candidateDependencies,
+  candidateDescriptor,
   conditionalClaim,
   passingClaim,
   runtimeBinding,
@@ -22,12 +18,6 @@ import {
 } from "./capability-binding-fixtures";
 
 const retriever = { retrieve: () => ({ documents: [] }) };
-const cache: CacheStore = {
-  get: () => null,
-  set: () => true,
-  delete: () => true,
-};
-
 describe("runtime capability binding registration", () => {
   test("clones descriptors and binds an immutable callable facade without freezing the source", () => {
     const source = runtimeBinding("retriever", "retriever:a", retriever);
@@ -272,58 +262,33 @@ describe("runtime capability binding registration", () => {
     };
     expect(() => registerRuntimeCapabilityBinding(unsafe, verificationDependencies())).toThrow();
   });
-
-  test("does not expose generic construct, factory, provider or native slots", () => {
-    type DescriptorKeys = keyof CapabilityBinding;
-    type HasConstructs = "constructs" extends DescriptorKeys ? true : false;
-    type HasFactory = "factory" extends DescriptorKeys ? true : false;
-    type HasProvider = "provider" extends keyof RuntimeCapabilityBinding<"retriever">
-      ? true
-      : false;
-    type HasNative = "native" extends keyof RuntimeCapabilityBinding<"retriever"> ? true : false;
-    type HasToolingPorts =
-      | "action-digest"
-      | "tool-schema-digest"
-      | "tool-argument-validation" extends keyof CapabilityPortMap
-      ? true
-      : false;
-
-    const proof: [HasConstructs, HasFactory, HasProvider, HasNative, HasToolingPorts] = [
-      false,
-      false,
-      false,
-      false,
-      true,
-    ];
-    expect(proof).toEqual([false, false, false, false, true]);
-  });
 });
 
 describe("deterministic capability resolution", () => {
   const registeredRetriever = (id: string, claims: CapabilityClaim[] = []) =>
-    registerRuntimeCapabilityBinding(
-      runtimeBinding("retriever", id, retriever, claims),
-      verificationDependencies(),
+    registerCapabilityCandidate(
+      candidateDescriptor("retriever", id, claims),
+      candidateDependencies(),
     );
 
   test("rejects missing, ambiguous, duplicate and forged inputs without partial plans", () => {
     const a = registeredRetriever("retriever:a");
     const b = registeredRetriever("retriever:b");
-    const missing = resolveCapabilityBindings({
+    const missing = resolveCapabilityCandidates({
       requirements: [{ kind: "cache-store" }],
-      bindings: [a],
+      candidates: [a],
     });
-    const ambiguous = resolveCapabilityBindings({
+    const ambiguous = resolveCapabilityCandidates({
       requirements: [{ kind: "retriever" }],
-      bindings: [a, b],
+      candidates: [a, b],
     });
-    const duplicate = resolveCapabilityBindings({
+    const duplicate = resolveCapabilityCandidates({
       requirements: [{ kind: "retriever" }, { kind: "retriever" }],
-      bindings: [a],
+      candidates: [a],
     });
-    const forged = resolveCapabilityBindings({
+    const forged = resolveCapabilityCandidates({
       requirements: [{ kind: "retriever" }],
-      bindings: [runtimeBinding("retriever", "forged", retriever) as never],
+      candidates: [candidateDescriptor("retriever", "forged") as never],
     });
 
     expect(missing).toMatchObject({ kind: "unresolved" });
@@ -334,12 +299,12 @@ describe("deterministic capability resolution", () => {
   });
 
   test("is registration-order independent and never selects the first binding", () => {
-    const forward = createCapabilityBindingCatalog(verificationDependencies());
-    forward.register(runtimeBinding("retriever", "retriever:b", retriever));
-    forward.register(runtimeBinding("retriever", "retriever:a", retriever));
-    const reverse = createCapabilityBindingCatalog(verificationDependencies());
-    reverse.register(runtimeBinding("retriever", "retriever:a", retriever));
-    reverse.register(runtimeBinding("retriever", "retriever:b", retriever));
+    const forward = createCapabilityCandidateCatalog(candidateDependencies());
+    forward.register(candidateDescriptor("retriever", "retriever:b"));
+    forward.register(candidateDescriptor("retriever", "retriever:a"));
+    const reverse = createCapabilityCandidateCatalog(candidateDependencies());
+    reverse.register(candidateDescriptor("retriever", "retriever:a"));
+    reverse.register(candidateDescriptor("retriever", "retriever:b"));
 
     const left = forward.resolve({ requirements: [{ kind: "retriever" }] });
     const right = reverse.resolve({ requirements: [{ kind: "retriever" }] });
@@ -353,7 +318,7 @@ describe("deterministic capability resolution", () => {
     const compatible = registeredRetriever("retriever:other", [
       passingClaim(extraCapability, "retriever:other"),
     ]);
-    const exact = resolveCapabilityBindings({
+    const exact = resolveCapabilityCandidates({
       requirements: [
         {
           kind: "retriever",
@@ -361,18 +326,18 @@ describe("deterministic capability resolution", () => {
           capabilities: [{ capabilityId: extraCapability }],
         },
       ],
-      bindings: [incompatible, compatible],
+      candidates: [incompatible, compatible],
     });
-    const namedDefault = resolveCapabilityBindings({
+    const namedDefault = resolveCapabilityCandidates({
       requirements: [{ kind: "retriever" }],
       defaults: { retriever: "retriever:other" },
-      bindings: [incompatible, compatible],
+      candidates: [incompatible, compatible],
     });
 
     expect(exact.kind).toBe("unresolved");
     expect(namedDefault).toMatchObject({
       kind: "resolved",
-      bindings: [{ descriptor: { bindingId: "retriever:other" } }],
+      candidates: [{ descriptor: { bindingId: "retriever:other" } }],
     });
   });
 
@@ -388,22 +353,22 @@ describe("deterministic capability resolution", () => {
           capabilities: [{ capabilityId, constraints: [{ name: "region", value: "local" }] }],
         },
       ],
-      bindings: [conditional],
+      candidates: [conditional],
     };
 
-    expect(resolveCapabilityBindings(request).kind).toBe("unresolved");
-    expect(resolveCapabilityBindings(request, { evaluateCondition: () => true }).kind).toBe(
+    expect(resolveCapabilityCandidates(request).kind).toBe("unresolved");
+    expect(resolveCapabilityCandidates(request, { evaluateCondition: () => true }).kind).toBe(
       "resolved",
     );
     expect(
-      resolveCapabilityBindings(request, {
+      resolveCapabilityCandidates(request, {
         evaluateCondition: () => {
           throw new Error("native detail");
         },
       }).kind,
     ).toBe("unresolved");
     expect(
-      resolveCapabilityBindings(request, {
+      resolveCapabilityCandidates(request, {
         evaluateCondition: () => "yes" as unknown as boolean,
       }).kind,
     ).toBe("unresolved");
@@ -418,31 +383,31 @@ describe("deterministic capability resolution", () => {
     for (const ordered of [claims, claims.toReversed()]) {
       const binding = registeredRetriever("retriever:versions", ordered);
       expect(
-        resolveCapabilityBindings({
+        resolveCapabilityCandidates({
           requirements: [{ kind: "retriever", capabilities: [{ capabilityId }] }],
-          bindings: [binding],
+          candidates: [binding],
         }).kind,
       ).toBe("unresolved");
       expect(
-        resolveCapabilityBindings({
+        resolveCapabilityCandidates({
           requirements: [
             {
               kind: "retriever",
               capabilities: [{ capabilityId, versionRange: "2.0.0" }],
             },
           ],
-          bindings: [binding],
+          candidates: [binding],
         }).kind,
       ).toBe("resolved");
     }
   });
 
   test("does not resolve a conditional primary port claim without trusted proof", () => {
-    const source = runtimeBinding("retriever", "retriever:primary-conditional", retriever);
+    const source = candidateDescriptor("retriever", "retriever:primary-conditional");
     source.descriptor.claims = [
       conditionalClaim(capabilityIdForPort("retriever"), "retriever:primary-conditional"),
     ];
-    const binding = registerRuntimeCapabilityBinding(source, verificationDependencies());
+    const binding = registerCapabilityCandidate(source, candidateDependencies());
     const request = {
       requirements: [
         {
@@ -455,42 +420,45 @@ describe("deterministic capability resolution", () => {
           ],
         },
       ],
-      bindings: [binding],
+      candidates: [binding],
     };
 
-    expect(resolveCapabilityBindings(request).kind).toBe("unresolved");
-    expect(resolveCapabilityBindings(request, { evaluateCondition: () => true }).kind).toBe(
+    expect(resolveCapabilityCandidates(request).kind).toBe("unresolved");
+    expect(resolveCapabilityCandidates(request, { evaluateCondition: () => true }).kind).toBe(
       "resolved",
     );
   });
 
   test("resolves the complete typed plan atomically", () => {
     const retrieverBinding = registeredRetriever("retriever:a");
-    const cacheBinding = registerRuntimeCapabilityBinding(
-      runtimeBinding("cache-store", "cache:a", cache),
-      verificationDependencies(),
+    const cacheBinding = registerCapabilityCandidate(
+      candidateDescriptor("cache-store", "cache:a"),
+      candidateDependencies(),
     );
-    const outcome = resolveCapabilityBindings({
+    const outcome = resolveCapabilityCandidates({
       requirements: [{ kind: "cache-store" }, { kind: "retriever" }],
-      bindings: [retrieverBinding, cacheBinding],
+      candidates: [retrieverBinding, cacheBinding],
     });
 
     expect(outcome.kind).toBe("resolved");
     if (outcome.kind === "resolved") {
-      expect(outcome.bindings.map((binding) => binding.kind)).toEqual(["cache-store", "retriever"]);
+      expect(outcome.candidates.map((candidate) => candidate.kind)).toEqual([
+        "cache-store",
+        "retriever",
+      ]);
     }
   });
 
   test("reports unsupported ranges without including native or secret data", () => {
     const capabilityId = capabilityIdForPort("retriever");
-    const outcome = resolveCapabilityBindings({
+    const outcome = resolveCapabilityCandidates({
       requirements: [
         {
           kind: "retriever",
           capabilities: [{ capabilityId, versionRange: "^1.0.0" }],
         },
       ],
-      bindings: [registeredRetriever("retriever:a")],
+      candidates: [registeredRetriever("retriever:a")],
     });
 
     expect(outcome.kind).toBe("unresolved");

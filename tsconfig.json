@@ -56,7 +56,21 @@
       "@geekist/llm-core/media": ["./packages/llm-core/src/features/media/public.ts"],
       "@geekist/llm-core/specifications": ["./packages/llm-core/src/specifications/index.ts"],
       "@geekist/llm-core/adapters/ai-sdk": ["./packages/llm-core/src/adapters/ai-sdk/index.ts"],
-      "@geekist/llm-core/adapters/ai-sdk-ui": ["./packages/llm-core/src/adapters/ai-sdk-ui/index.ts"],
+      "@geekist/llm-core/adapters/langchain": [
+        "./packages/llm-core/src/adapters/langchain/index.ts"
+      ],
+      "@geekist/llm-core/adapters/llamaindex": [
+        "./packages/llm-core/src/adapters/llamaindex/index.ts"
+      ],
+      "@geekist/llm-core/adapters/catalogue": [
+        "./packages/llm-core/src/composition/capability-bindings/catalogue-public.ts"
+      ],
+      "@geekist/llm-core/adapters/catalogue/runtime": [
+        "./packages/llm-core/src/composition/capability-bindings/runtime-public.ts"
+      ],
+      "@geekist/llm-core/adapters/ai-sdk-ui": [
+        "./packages/llm-core/src/adapters/ai-sdk-ui/index.ts"
+      ],
       "@geekist/llm-core/adapters/assistant-ui": [
         "./packages/llm-core/src/adapters/assistant-ui/index.ts"
       ],

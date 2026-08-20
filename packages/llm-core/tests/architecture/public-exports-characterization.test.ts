@@ -54,7 +54,8 @@ describe("ADR-016 curated exports", () => {
     expect(Object.keys(workflow)).toEqual([]);
     expect(agentRuntime).not.toHaveProperty("createLocalAgentRunner");
     expect(agentRuntime).not.toHaveProperty("createModelToolAgentProgram");
-    expect(agentRuntime).toHaveProperty("createCapabilityBindingCatalog");
+    expect(agentRuntime).toHaveProperty("createCapabilityCandidateCatalog");
+    expect(agentRuntime).toHaveProperty("acquireCapabilityBindings");
   });
 
   test("publishes only the qualified AI SDK provider front", () => {

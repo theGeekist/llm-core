@@ -1,10 +1,15 @@
 export { capabilityIdForPort } from "./ports";
 export {
+  assertRegisteredCapabilityCandidate,
   assertRegisteredRuntimeCapabilityBinding,
+  isRegisteredCapabilityCandidate,
   isRegisteredRuntimeCapabilityBinding,
+  registerAcquiredRuntimeCapabilityBinding,
+  registerCapabilityCandidate,
   registerRuntimeCapabilityBinding,
 } from "./validation";
-export { resolveCapabilityBindings } from "./resolver";
+export { isResolvedCapabilityCandidatePlan, resolveCapabilityCandidates } from "./resolver";
+export { acquireCapabilityBindings, registerCapabilityAcquisitionFactory } from "./acquisition";
 export {
   registerCapabilityInvocation,
   type CapabilityInvocation,
@@ -20,13 +25,26 @@ export {
   type RetryGuarantee,
 } from "./retry";
 export type {
+  AcquiredCapabilityBindings,
+  AnyCapabilityAcquisitionFactory,
+  AnyRegisteredCapabilityAcquisitionFactory,
+  AnyCapabilityCandidateDescriptor,
+  AnyRegisteredCapabilityCandidate,
   AnyRegisteredRuntimeCapabilityBinding,
   AnyRuntimeCapabilityBinding,
+  CapabilityAcquiredPort,
+  CapabilityAcquisitionFactory,
+  CapabilityAcquisitionFactoryVerificationInput,
+  CapabilityAcquisitionFactoryVerifier,
   CapabilityBindingDependencies,
   CapabilityBindingDiagnostic,
   CapabilityBindingDiagnosticCode,
-  CapabilityBindingResolutionOutcome,
-  CapabilityBindingResolutionRequest,
+  CapabilityCandidateDependencies,
+  CapabilityCandidateDescriptor,
+  CapabilityCandidateEvidenceVerificationInput,
+  CapabilityCandidateEvidenceVerifier,
+  CapabilityCandidateResolutionOutcome,
+  CapabilityCandidateResolutionRequest,
   CapabilityConditionEvaluationInput,
   CapabilityConditionEvaluator,
   CapabilityEvidenceVerificationInput,
@@ -34,6 +52,8 @@ export type {
   CapabilityPortKind,
   CapabilityPortMap,
   CapabilityPortRequirement,
+  RegisteredCapabilityCandidate,
+  RegisteredCapabilityAcquisitionFactory,
   RegisteredRuntimeCapabilityBinding,
   RuntimeCapabilityBinding,
 } from "./types";

@@ -1,54 +1,58 @@
 import {
-  registerRuntimeCapabilityBinding,
-  resolveCapabilityBindings,
-  type AnyRegisteredRuntimeCapabilityBinding,
-  type CapabilityBindingDependencies,
-  type CapabilityBindingResolutionOutcome,
-  type CapabilityBindingResolutionRequest,
+  registerCapabilityCandidate,
+  resolveCapabilityCandidates,
+  type AnyRegisteredCapabilityCandidate,
+  type CapabilityCandidateDependencies,
+  type CapabilityCandidateDescriptor,
+  type CapabilityCandidateResolutionOutcome,
+  type CapabilityCandidateResolutionRequest,
   type CapabilityPortKind,
-  type RegisteredRuntimeCapabilityBinding,
-  type RuntimeCapabilityBinding,
+  type RegisteredCapabilityCandidate,
 } from "../../application/capability-bindings/public";
 
-export interface CapabilityBindingCatalog {
+export interface CapabilityCandidateCatalog {
   register<TKind extends CapabilityPortKind>(
-    binding: RuntimeCapabilityBinding<TKind>,
-  ): RegisteredRuntimeCapabilityBinding<TKind>;
-  list(): readonly AnyRegisteredRuntimeCapabilityBinding[];
+    candidate: CapabilityCandidateDescriptor<TKind>,
+  ): RegisteredCapabilityCandidate<TKind>;
+  list(): readonly AnyRegisteredCapabilityCandidate[];
   resolve(
-    request: Omit<CapabilityBindingResolutionRequest, "bindings">,
-  ): CapabilityBindingResolutionOutcome;
+    request: Omit<CapabilityCandidateResolutionRequest, "candidates">,
+  ): CapabilityCandidateResolutionOutcome;
 }
 
-export const createCapabilityBindingCatalog = (
-  dependencies: CapabilityBindingDependencies,
-): CapabilityBindingCatalog => {
+export const createCapabilityCandidateCatalog = (
+  dependencies: CapabilityCandidateDependencies,
+): CapabilityCandidateCatalog => {
   if (
     typeof dependencies?.verifyEvidence !== "function" ||
+    typeof dependencies.verifyAcquisitionFactory !== "function" ||
     (dependencies.evaluateCondition !== undefined &&
       typeof dependencies.evaluateCondition !== "function")
   ) {
     throw new TypeError("Capability catalog requires explicit trusted verification ports.");
   }
-  const trustedDependencies: CapabilityBindingDependencies = Object.freeze({
+  const trustedDependencies: CapabilityCandidateDependencies = Object.freeze({
     verifyEvidence: dependencies.verifyEvidence,
+    verifyAcquisitionFactory: dependencies.verifyAcquisitionFactory,
     ...(dependencies.evaluateCondition === undefined
       ? {}
       : { evaluateCondition: dependencies.evaluateCondition }),
   });
-  const bindings: AnyRegisteredRuntimeCapabilityBinding[] = [];
-  const register = <TKind extends CapabilityPortKind>(binding: RuntimeCapabilityBinding<TKind>) => {
-    const registered = registerRuntimeCapabilityBinding(binding, trustedDependencies);
+  const candidates: AnyRegisteredCapabilityCandidate[] = [];
+  const register = <TKind extends CapabilityPortKind>(
+    candidate: CapabilityCandidateDescriptor<TKind>,
+  ) => {
+    const registered = registerCapabilityCandidate(candidate, trustedDependencies);
     if (
-      bindings.some(
+      candidates.some(
         (entry) =>
           entry.kind === registered.kind &&
           entry.descriptor.bindingId === registered.descriptor.bindingId,
       )
     ) {
-      throw new TypeError("Capability catalog cannot register a duplicate binding identity.");
+      throw new TypeError("Capability catalogue cannot register a duplicate candidate identity.");
     }
-    bindings.push(registered as AnyRegisteredRuntimeCapabilityBinding);
+    candidates.push(registered as AnyRegisteredCapabilityCandidate);
     return registered;
   };
 
@@ -56,7 +60,7 @@ export const createCapabilityBindingCatalog = (
     register,
     list: () =>
       Object.freeze(
-        bindings
+        candidates
           .slice()
           .toSorted(
             (left, right) =>
@@ -64,13 +68,13 @@ export const createCapabilityBindingCatalog = (
               left.descriptor.bindingId.localeCompare(right.descriptor.bindingId),
           ),
       ),
-    resolve: (request: Omit<CapabilityBindingResolutionRequest, "bindings">) =>
-      resolveCapabilityBindings(
+    resolve: (request: Omit<CapabilityCandidateResolutionRequest, "candidates">) =>
+      resolveCapabilityCandidates(
         {
           ...request,
-          bindings: bindings.slice(),
+          candidates: candidates.slice(),
         },
         { evaluateCondition: trustedDependencies.evaluateCondition },
       ),
-  }) as CapabilityBindingCatalog;
+  }) as CapabilityCandidateCatalog;
 };

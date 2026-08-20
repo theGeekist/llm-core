@@ -65,6 +65,8 @@ const indexFronts = new Map([
   ["adapters/ai-sdk/index.ts", "published ./adapters/ai-sdk front"],
   ["adapters/ai-sdk-ui/index.ts", "published ./adapters/ai-sdk-ui front"],
   ["adapters/assistant-ui/index.ts", "published ./adapters/assistant-ui front"],
+  ["adapters/langchain/index.ts", "published ./adapters/langchain front"],
+  ["adapters/llamaindex/index.ts", "published ./adapters/llamaindex front"],
   ["adapters/nlux-ui/index.ts", "published ./adapters/nlux-ui front"],
   ["adapters/openai-chatkit/index.ts", "published ./adapters/openai-chatkit front"],
   ["adapters/protocols/a2a/index.ts", "published ./a2a front"],

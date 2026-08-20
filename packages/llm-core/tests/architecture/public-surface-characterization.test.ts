@@ -29,6 +29,10 @@ import * as aiSdkUi from "../../src/adapters/ai-sdk-ui/index";
 import * as assistantUi from "../../src/adapters/assistant-ui/index";
 import * as openaiChatkit from "../../src/adapters/openai-chatkit/index";
 import * as nluxUi from "../../src/adapters/nlux-ui/index";
+import * as langchain from "../../src/adapters/langchain/index";
+import * as llamaindex from "../../src/adapters/llamaindex/index";
+import * as adapterCatalogue from "../../src/composition/capability-bindings/catalogue-public";
+import * as adapterCatalogueRuntime from "../../src/composition/capability-bindings/runtime-public";
 import * as a2a from "../../src/adapters/protocols/a2a/index";
 import * as mcp from "../../src/adapters/protocols/mcp/index";
 
@@ -58,6 +62,10 @@ const PUBLIC_SURFACE = {
   "./media": media,
   "./specifications": specifications,
   "./adapters/ai-sdk": aiSdk,
+  "./adapters/langchain": langchain,
+  "./adapters/llamaindex": llamaindex,
+  "./adapters/catalogue": adapterCatalogue,
+  "./adapters/catalogue/runtime": adapterCatalogueRuntime,
   "./adapters/ai-sdk-ui": aiSdkUi,
   "./adapters/assistant-ui": assistantUi,
   "./adapters/openai-chatkit": openaiChatkit,
@@ -91,14 +99,7 @@ describe("ADR-016 public package surface", () => {
   });
 
   test("does not retain legacy public subpaths", () => {
-    for (const subpath of [
-      "./adapters",
-      "./adapters/langchain",
-      "./adapters/llamaindex",
-      "./adapters/primitives",
-      "./recipes",
-      "./diagnostics",
-    ]) {
+    for (const subpath of ["./adapters", "./adapters/primitives", "./recipes", "./diagnostics"]) {
       expect(packageJson.exports[subpath]).toBeUndefined();
     }
   });

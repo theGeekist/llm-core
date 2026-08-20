@@ -1,23 +1,29 @@
 import {
   capabilityIdForPort,
-  createCapabilityBindingCatalog,
-  type CapabilityEvidenceVerifier,
-} from "@geekist/llm-core/agent/runtime";
+  createCapabilityCandidateCatalog,
+  type CapabilityCandidateEvidenceVerifier,
+} from "@geekist/llm-core/adapters/catalogue";
+import {
+  acquireCapabilityBindings,
+  registerCapabilityAcquisitionFactory,
+  type CapabilityAcquisitionFactoryVerifier,
+} from "@geekist/llm-core/adapters/catalogue/runtime";
 import type { CapabilityBinding } from "@geekist/llm-core/contracts";
 import type { Retriever } from "@geekist/llm-core/retrieval";
 
 declare const retriever: Retriever;
 declare const descriptor: CapabilityBinding;
-declare const verifyEvidence: CapabilityEvidenceVerifier;
+declare const verifyEvidence: CapabilityCandidateEvidenceVerifier;
+declare const verifyAcquisitionFactory: CapabilityAcquisitionFactoryVerifier;
 
-const catalog = createCapabilityBindingCatalog({
+const catalog = createCapabilityCandidateCatalog({
   verifyEvidence,
+  verifyAcquisitionFactory,
 });
 
-catalog.register({
+const candidate = catalog.register({
   kind: "retriever",
   descriptor,
-  port: retriever,
 });
 
 const resolution = catalog.resolve({
@@ -28,7 +34,7 @@ const resolution = catalog.resolve({
       capabilities: [
         {
           capabilityId: capabilityIdForPort("retriever"),
-          versionRange: "^1.0.0",
+          versionRange: "1.0.0",
         },
       ],
     },
@@ -38,3 +44,13 @@ const resolution = catalog.resolve({
 if (resolution.kind === "unresolved") {
   throw new Error(JSON.stringify(resolution.diagnostics));
 }
+
+const factory = registerCapabilityAcquisitionFactory(candidate, {
+  kind: "retriever",
+  bindingId: descriptor.bindingId,
+  acquire: () => ({ port: retriever }),
+});
+
+const acquired = await acquireCapabilityBindings(resolution, [factory]);
+const binding = acquired.bindings[0];
+if (binding?.kind === "retriever") void binding.port.retrieve;

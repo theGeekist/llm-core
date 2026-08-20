@@ -3,16 +3,16 @@ architecture_version: 2
 id: adapter-catalogue-public-qualification
 title: Qualify the public adapter catalogue and inert candidate contract
 stage: adapters
-status: proposed
+status: done
 priority: critical
 preferred_owner_kind: codex
-owner:
-owner_kind:
-lease_started_at:
-lease_expires_at:
-base_sha:
-branch:
-worktree:
+owner: codex-root
+owner_kind: codex
+lease_started_at: 2026-08-18T04:36:38+08:00
+lease_expires_at: 2026-08-19T04:36:38+08:00
+base_sha: 32dfe690bbb8472224a65ce3bdb43264dff3d46d
+branch: main
+worktree: /Users/jasonnathan/Repos/@theGeekist/llm-core
 depends_on:
   - architecture-external-contract-fidelity
   - architecture-release-reproducibility
@@ -25,8 +25,13 @@ write_scope:
   - package.json
   - bun.lock
   - turbo.json
+  - tsconfig.json
+  - scripts/sloc-baseline.json
+  - scripts/qualify-release.ts
+  - scripts/release-qualifiers.json
   - packages/llm-core/package.json
-  - packages/llm-core/build.ts
+  - packages/llm-core/scripts/build.ts
+  - packages/llm-core/tsconfig.build.json
   - packages/llm-core/src/application/capability-bindings/**
   - packages/llm-core/src/composition/capability-bindings/**
   - packages/llm-core/src/adapters/langchain/**
@@ -35,11 +40,16 @@ write_scope:
   - packages/llm-core/tests/composition/capability-bindings/**
   - packages/llm-core/tests/adapters/langchain/**
   - packages/llm-core/tests/adapters/llamaindex/**
+  - packages/llm-core/tests/architecture/public-exports-characterization.test.ts
+  - packages/llm-core/tests/architecture/public-surface-characterization.test.ts
+  - packages/llm-core/tests/architecture/source-boundaries.test.ts
   - packages/llm-core/scripts/smoke-package.mjs
   - packages/llm-core/docs/internal/ADAPTER-ESTATE-INVENTORY.md
   - packages/llm-core/docs/final-architecture/tasks/adapter-catalogue-public-qualification.md
   - packages/llm-core/docs/final-architecture/STATUS.md
   - docs/reference/package-exports.md
+  - docs/reference/failures.md
+  - docs/snippets/v2/capability-bindings.ts
 required_reading:
   - path: packages/llm-core/docs/internal/ADAPTER-ESTATE-INVENTORY.md
     reason: Characterise the implemented estate, current public fronts and exact qualification gaps before changing exposure.
@@ -57,7 +67,7 @@ read_scope:
   - packages/llm-core/tests/retrieval/parity-matrix.test.ts
   - docs/reference/package-exports.md
 review_owner: coordinator
-updated_at: 2026-08-11
+updated_at: 2026-08-20
 ---
 
 # adapter-catalogue-public-qualification: Qualify the public adapter catalogue and inert candidate contract
@@ -100,8 +110,31 @@ bun run check:sloc
 
 ## Work log
 
-Not started. The existing estate inventory and parity suites are evidence, not publication proof.
+Execution mode: shared-checkout
+Execution rationale: the canonical checkout is clean and no active task owns an overlapping path.
+Concurrency evaluation: aifsd/project-semantic-control-plane-characterization; start alongside; it began after this claim and production/test owners are disjoint, with shared lockfile and SLOC metadata reconciled through frozen install and the canonical aggregate gate.
+Concurrent task scopes: aifsd/project-semantic-control-plane-characterization owns apps/aifsd-project-semantics-characterization/**, packages/aifsd/src/project-semantics/**, packages/aifsd/src/integrations/neo4j/**, packages/aifsd/tests/project-semantics/** and their bun.lock/SLOC entries; this task owns llm-core sources, tests, public exports, LangChain/LlamaIndex peer entries and its validation SLOC entry.
+Swarm delegation: codex/codex-root -> codex/catalogue_design_audit: contract design review and public-front qualification; packages/llm-core/src/adapters/langchain/**, packages/llm-core/src/adapters/llamaindex/**, package exports and packed-consumer evidence.
+
+- Claim: `codex-root` began implementation from `32dfe690bbb8472224a65ce3bdb43264dff3d46d` with a lease through `2026-08-19T04:36:38+08:00`.
+- Scope repair: replaced the non-existent `packages/llm-core/build.ts` path with its actual owner `packages/llm-core/scripts/build.ts` and added the explicit declaration entrypoint owner `packages/llm-core/tsconfig.build.json`.
+- Scope repair: added the exact architecture export characterisation test required by the deliberate pre-compatibility catalogue API replacement.
+- Scope repair: added the two public documentation owners that referenced the replaced live-binding planning API.
+- Scope repair: added the canonical SLOC baseline owner for the permitted `approximately 500 lines` waiver on the 568-line capability validation boundary.
+- Scope repair: added the canonical conditional-surface inventory and qualifier registry owners required to classify the dependency-neutral catalogue and register both exact-version ecosystem fronts.
+- Scope repair: added the public-surface and source-boundary characterisation owners required to recognise the three deliberate stable subpaths.
+- Scope repair: added the root TypeScript path map required for source-level snippet and workspace consumers of the four new public subpaths.
+- Implementation: published 67 immutable implementation/export/operation catalogue rows with truthful AI SDK, host, LangChain and LlamaIndex authority, exact implementation identity, public exposure, evidence identity and operation-specific limits.
+- Implementation: replaced live-port planning with frozen inert candidates, authentic resolved plans and opaque WeakMap-backed acquisition-factory registrations tied to the exact evidence-verified candidate.
+- Implementation: published `./adapters/catalogue`, `./adapters/catalogue/runtime`, `./adapters/langchain` and `./adapters/llamaindex`; the ecosystem fronts expose only the packed-qualified retriever operation.
+- Remediation delegation: `codex-root` -> `catalogue_accuracy_fix` owned catalogue truth/matrix remediation; `codex-root` -> `factory_identity_fix` owned opaque factory identity and zero-call regressions.
+- Independent review: `independent_catalogue_review` found two P1 defects and one shared-lock P2; both P1s were remediated and its second independent pass reported no actionable issues. The P2 is resolved by the explicit concurrent lock/SLOC ownership record above rather than deleting the AIFSD task's valid state.
+- Verification: task-focused matrix passed 80 tests with 1,054 assertions; package lint, source/test type checks, build, documentation checks and diff checks passed.
+- Packed evidence: an isolated archive consumer verified all 35 ESM-only exports, declarations, both public catalogue rows, inert resolution, opaque factory registration, exact post-acceptance acquisition and equivalent portable retriever results without workspace or source fallback.
+- Archive: `@geekist/llm-core@2.0.0` SHA-256 `5609aadbf42a1c92f989e86232c853e5342a47e2e2798c3cc3079a7062da8eff`.
+- Aggregate qualification: llm-core-owned gates are green. The canonical aggregate command must be rerun after concurrent owner `aifsd/project-semantic-control-plane-characterization` resolves the current 545-line `packages/aifsd/src/integrations/neo4j/public.ts` SLOC entry.
+- Latency audit: a sandboxed packed install consumed its full 600-second timeout before the required elevated rerun; canonical attempts ran 202.2 seconds and 148.9 seconds before unrelated AIFSD timeout/SLOC failures; a standalone AIFSD packed test took 57.97 seconds and passed; package-wide lint took roughly three minutes after focused lint was already green. The independent contract review also started after these expensive attempts and exposed P1 rework. Future qualification should perform an independent contract review immediately after first compile, remediate in parallel, then run one packed and one canonical gate.
 
 ## Handoff
 
-Pending execution. Record the exact public fronts, descriptor and factory contracts, operation matrix, external versions, packed archive digest and isolated consumer results.
+Human review closed this task on 20 August 2026. Public fronts are `./adapters/catalogue`, `./adapters/catalogue/runtime`, `./adapters/langchain` and `./adapters/llamaindex`. The catalogue contains 67 exact operation rows and the packed public support window is `@langchain/core` 1.1.8 plus `@llamaindex/core` 0.6.22 for `Retriever.retrieve` only. Candidate descriptors contain frozen portable identity/evidence data; raw factories remain private behind opaque registrations verified and associated with the exact candidate before acquisition. The final archive digest is `5609aadbf42a1c92f989e86232c853e5342a47e2e2798c3cc3079a7062da8eff` and the isolated consumer verified 35 runtime/declaration fronts plus cross-ecosystem substitution. The final shared canonical release qualification is green. No push, publication or release was performed.

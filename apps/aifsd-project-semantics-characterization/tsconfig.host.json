@@ -1,0 +1,12 @@
+{
+  "extends": "../../tsconfig.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "types": ["bun", "node"]
+  },
+  "include": [
+    "consumer-qualification.test.ts",
+    "neo4j-qualification.test.ts",
+    "run-neo4j-qualification.ts"
+  ]
+}
