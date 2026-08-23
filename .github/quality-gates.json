@@ -1,0 +1,14 @@
+{
+  "schemaVersion": 1,
+  "branch": "main",
+  "requiredChecks": ["Quality", "PydanticAI conformance", "CodeQL"],
+  "pullRequest": {
+    "required": true,
+    "requireConversationResolution": true
+  },
+  "history": {
+    "blockDeletions": true,
+    "blockForcePushes": true,
+    "requireLinearHistory": true
+  }
+}

@@ -45,7 +45,7 @@ describe("architecture task authority validation", () => {
     const errors = await errorsFor((fixture) =>
       mutateTask(fixture, "alpha-task", (content) => content.replace(from, to)),
     );
-    expectError(errors, "invalid owner_kind");
+    expectError(errors, "owner_kind must be a non-empty string");
   });
 
   test.each([

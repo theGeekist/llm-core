@@ -1,14 +1,12 @@
 import { createHash } from "node:crypto";
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { basename, join, relative, resolve } from "node:path";
-import { npmDistTag, validateReleaseVersion } from "../release-version";
-import {
-  readRequiredReleasePlan,
-  validateReleaseReceipt,
-  type PackageKey,
-} from "../release-provenance";
+import { isExactSemver, npmDistTag } from "../release-version";
+import { validateReleaseReceipt, type PackageKey } from "../release-provenance";
 import type { ArtifactMetadata } from "./prepare-artifact";
-import { verifyProvenanceAttestation } from "./verify-provenance-attestation";
+import { boundedResponseBytes } from "./bounded-response";
+import { assertLiveReleaseAuthority } from "./release-live-authority";
+import { inspectProvenanceIdentity } from "./verify-provenance-attestation";
 
 interface PackageConfig {
   readonly directory: string;
@@ -21,6 +19,7 @@ interface RegistryMetadata {
   readonly gitHead?: unknown;
   readonly dist?: {
     readonly integrity?: unknown;
+    readonly shasum?: unknown;
     readonly tarball?: unknown;
     readonly attestations?: { readonly url?: unknown };
   };
@@ -47,6 +46,7 @@ interface PublicationInput {
   readonly key: PackageKey;
   readonly tarball: string;
   readonly artifact: ArtifactMetadata;
+  readonly tag: string;
 }
 
 interface ReceiptInput extends PublicationInput {
@@ -72,11 +72,18 @@ const packageConfigs: Readonly<Record<PackageKey, PackageConfig>> = {
   },
 };
 
-const sha256 = (value: string | Buffer): string =>
-  `sha256:${createHash("sha256").update(value).digest("hex")}`;
-
-const command = (arguments_: readonly string[], cwd: string): string => {
-  const result = Bun.spawnSync([...arguments_], { cwd, stderr: "pipe", stdout: "pipe" });
+const command = (
+  arguments_: readonly string[],
+  cwd: string,
+  limits: { readonly timeout?: number; readonly maxBuffer?: number } = {},
+): string => {
+  const result = Bun.spawnSync([...arguments_], {
+    cwd,
+    stderr: "pipe",
+    stdout: "pipe",
+    timeout: limits.timeout ?? 30_000,
+    maxBuffer: limits.maxBuffer ?? 8 * 1024 * 1024,
+  });
   if (result.exitCode !== 0) {
     throw new Error(result.stderr.toString() || result.stdout.toString() || arguments_.join(" "));
   }
@@ -94,197 +101,41 @@ const packageVersion = (root: string, key: PackageKey): string => {
   return manifest.version;
 };
 
-const planStrings = (value: unknown, name: string): readonly string[] => {
-  if (!Array.isArray(value) || value.some((entry) => typeof entry !== "string")) {
-    throw new TypeError(`${name} must be a string array`);
-  }
-  return value;
-};
-
-const planRecord = (value: unknown, name: string): Readonly<Record<string, unknown>> => {
-  if (typeof value !== "object" || value === null || Array.isArray(value)) {
-    throw new TypeError(`${name} must be an object`);
-  }
-  return value as Readonly<Record<string, unknown>>;
-};
-
-const approvedReleaseMetadataPath = (key: PackageKey, version: string, path: string): boolean => {
-  const packageRoot = packageConfigs[key].directory;
-  return (
-    path === "bun.lock" ||
-    path === `${packageRoot}/package.json` ||
-    path === `${packageRoot}/CHANGELOG.md` ||
-    path === "docs/reference/release-history.md" ||
-    path === `${packageRoot}/releases/${version}/plan.json` ||
-    path.startsWith(`${packageRoot}/changes/pending/`) ||
-    path.startsWith(`${packageRoot}/changes/released/${version}/`)
-  );
-};
-
-export { approvedReleaseMetadataPath };
-
-const validateGitIdentity = (
-  root: string,
-  tag: string,
-  plan: Readonly<Record<string, unknown>>,
-): string => {
-  const releaseSha = git(root, "rev-parse", "HEAD");
-  const releaseTree = git(root, "rev-parse", "HEAD^{tree}");
-  if (git(root, "rev-parse", `${tag}^{commit}`) !== releaseSha) {
-    throw new Error(`${tag} must target the checked-out release commit`);
-  }
-  if (plan.releaseSha !== "SELF" && plan.releaseSha !== releaseSha) {
-    throw new Error("Release plan releaseSha must resolve to the checked-out commit");
-  }
-  if (plan.releaseTree !== "SELF" && plan.releaseTree !== releaseTree) {
-    throw new Error("Release plan releaseTree must resolve to the checked-out tree");
-  }
-  if (git(root, "rev-parse", `${String(plan.sourceSha)}^{tree}`) !== plan.sourceTree) {
-    throw new Error("Release plan sourceTree does not match sourceSha");
-  }
-  command(["git", "merge-base", "--is-ancestor", String(plan.sourceSha), releaseSha], root);
-  return releaseSha;
-};
-
-const validateMetadataDiff = ({
-  root,
-  key,
-  version,
-  plan,
-  releaseSha,
-}: {
-  readonly root: string;
-  readonly key: PackageKey;
+export const validateTaggedReleaseIdentity = (input: {
   readonly version: string;
-  readonly plan: Readonly<Record<string, unknown>>;
-  readonly releaseSha: string;
+  readonly tag: string;
+  readonly tagPrefix: string;
+  readonly head: string;
+  readonly workflowSha: string;
 }): void => {
-  const changed = git(root, "diff", "--name-only", String(plan.sourceSha), releaseSha)
-    .split("\n")
-    .filter(Boolean)
-    .sort();
-  const approved = [...planStrings(plan.approvedMetadataPaths, "approvedMetadataPaths")].sort();
-  if (approved.some((path) => !approvedReleaseMetadataPath(key, version, path))) {
-    throw new Error("Release plan approves a non-metadata path");
+  if (!isExactSemver(input.version) || input.tag !== `${input.tagPrefix}${input.version}`) {
+    throw new Error("Release tag must exactly match the manifest version");
   }
-  if (JSON.stringify(changed) !== JSON.stringify(approved)) {
-    throw new Error("Release commit diff must exactly equal approvedMetadataPaths");
+  if (!/^[0-9a-f]{40}$/.test(input.head) || input.head !== input.workflowSha) {
+    throw new Error("Checked-out release commit differs from GITHUB_SHA");
   }
-};
-
-const validateFragmentBlobs = (
-  root: string,
-  plan: Readonly<Record<string, unknown>>,
-  releaseSha: string,
-): void => {
-  if (!Array.isArray(plan.fragments)) throw new TypeError("fragments must be an array");
-  for (const fragment of plan.fragments) {
-    const record = planRecord(fragment, "fragment");
-    const path = String(record.path);
-    if (git(root, "rev-parse", `${releaseSha}:${path}`) !== record.blob) {
-      throw new Error(`${path} blob does not match the release commit`);
-    }
-  }
-};
-
-const validateSupportDeclarations = (
-  root: string,
-  plan: Readonly<Record<string, unknown>>,
-): void => {
-  const registry = JSON.parse(
-    readFileSync(join(root, "scripts/release-qualifiers.json"), "utf8"),
-  ) as { readonly requiredSurfaces?: unknown };
-  const declarations = Array.isArray(plan.supportDeclarations)
-    ? plan.supportDeclarations.map((entry) =>
-        String(planRecord(entry, "support declaration").surface),
-      )
-    : [];
-  const required = planStrings(registry.requiredSurfaces, "requiredSurfaces");
-  if (JSON.stringify([...declarations].sort()) !== JSON.stringify([...required].sort())) {
-    throw new Error("Release plan support declarations must match the qualifier registry");
-  }
-};
-
-const validatePlanInputs = (
-  root: string,
-  key: PackageKey,
-  plan: Readonly<Record<string, unknown>>,
-): void => {
-  const config = packageConfigs[key];
-  const digests = planRecord(plan.digests, "digests");
-  const packageManifestBytes = readFileSync(join(root, config.directory, "package.json"));
-  const manifest = JSON.parse(packageManifestBytes.toString()) as {
-    readonly dependencies?: Readonly<Record<string, string>>;
-  };
-  if (digests.manifest !== sha256(packageManifestBytes))
-    throw new Error("Manifest digest mismatch");
-  if (digests.lockfile !== sha256(readFileSync(join(root, "bun.lock")))) {
-    throw new Error("Lockfile digest mismatch");
-  }
-  const qualifier =
-    key === "llm-core"
-      ? "scripts/release-qualifiers.json"
-      : key === "aifsd"
-        ? "packages/aifsd/scripts/smoke-package.mjs"
-        : undefined;
-  if (qualifier && digests.qualifierRegistry !== sha256(readFileSync(join(root, qualifier)))) {
-    throw new Error("Qualifier registry digest mismatch");
-  }
-  if (JSON.stringify(plan.dependencies) !== JSON.stringify(manifest.dependencies ?? {})) {
-    throw new Error("Release plan dependencies must exactly match the package manifest");
-  }
-  const toolchain = planRecord(plan.toolchain, "toolchain");
-  if (toolchain.bun !== readFileSync(join(root, ".bun-version"), "utf8").trim()) {
-    throw new Error("Release plan Bun version must match .bun-version");
-  }
-  if (String(toolchain.node) !== "22") throw new Error("Release plan Node version must be 22");
-  if (key === "llm-core") validateSupportDeclarations(root, plan);
-  if (
-    key === "aifsd" &&
-    JSON.stringify(
-      (Array.isArray(plan.supportDeclarations) ? plan.supportDeclarations : [])
-        .map((entry) => String(planRecord(entry, "support declaration").surface))
-        .sort(),
-    ) !== JSON.stringify(["./config", "./integrations"])
-  ) {
-    throw new Error("AIFSD support declarations must exactly cover ./config and ./integrations");
-  }
-};
-
-const validateNoPendingFragments = (root: string, key: PackageKey): void => {
-  const pendingDirectory = join(root, packageConfigs[key].directory, "changes/pending");
-  if (
-    existsSync(pendingDirectory) &&
-    command(["find", pendingDirectory, "-type", "f", "-name", "*.json", "-print"], root)
-  ) {
-    throw new Error("Release plan requires all pending change fragments to be archived");
-  }
-};
-
-export const validatePlanAgainstGit = (
-  root: string,
-  key: PackageKey,
-  tag: string,
-): Readonly<Record<string, unknown>> => {
-  const version = packageVersion(root, key);
-  const plan = readRequiredReleasePlan(root, key, version);
-  const releaseSha = validateGitIdentity(root, tag, plan);
-  validateMetadataDiff({ root, key, version, plan, releaseSha });
-  validateFragmentBlobs(root, plan, releaseSha);
-  validatePlanInputs(root, key, plan);
-  validateNoPendingFragments(root, key);
-  return plan;
 };
 
 const registryMetadata = (root: string, coordinate: string): RegistryMetadata | undefined => {
   const result = Bun.spawnSync(
     ["npm", "view", coordinate, "version", "gitHead", "dist", "--json"],
-    { cwd: root, stderr: "pipe", stdout: "pipe" },
+    {
+      cwd: root,
+      stderr: "pipe",
+      stdout: "pipe",
+      timeout: 30_000,
+      maxBuffer: 8 * 1024 * 1024,
+    },
   );
   return result.exitCode === 0
     ? (JSON.parse(result.stdout.toString()) as RegistryMetadata)
     : undefined;
 };
+
+const registryDistTags = (root: string, packageName: string): Readonly<Record<string, unknown>> =>
+  JSON.parse(command(["npm", "view", packageName, "dist-tags", "--json"], root)) as Readonly<
+    Record<string, unknown>
+  >;
 
 const archiveIntegrity = (archive: Buffer): string =>
   `sha512-${createHash("sha512").update(archive).digest("base64")}`;
@@ -316,9 +167,10 @@ export const verifyRegistryArtifact = async ({
   artifact,
   releaseSha,
   download = async (url) => {
-    const response = await fetch(url);
-    if (!response.ok) throw new Error(`Registry tarball download failed: ${response.status}`);
-    return Buffer.from(await response.arrayBuffer());
+    return boundedResponseBytes(url, {
+      label: "Registry tarball download",
+      limit: 100 * 1024 * 1024,
+    });
   },
 }: RegistryVerificationInput): Promise<void> => {
   const tarball = metadata.dist?.tarball;
@@ -327,14 +179,28 @@ export const verifyRegistryArtifact = async ({
   }
   const archive = await download(tarball);
   const sha512 = `sha512:${createHash("sha512").update(archive).digest("hex")}`;
+  const shasum = createHash("sha1").update(archive).digest("hex");
   if (sha512 !== artifact.sha512 || archiveIntegrity(archive) !== artifact.integrity) {
     throw new Error("Published registry bytes differ from the qualified archive");
   }
   if (metadata.dist?.integrity !== artifact.integrity) {
     throw new Error("Registry integrity differs from the release evidence");
   }
+  if (metadata.dist?.shasum !== shasum) {
+    throw new Error("Registry shasum differs from the qualified archive");
+  }
   if (metadata.gitHead !== undefined && metadata.gitHead !== releaseSha) {
     throw new Error("Registry gitHead differs from the release evidence");
+  }
+};
+
+export const verifyRegistryDistTag = (
+  tags: Readonly<Record<string, unknown>>,
+  distTag: string,
+  version: string,
+): void => {
+  if (tags[distTag] !== version) {
+    throw new Error(`Registry dist-tag ${distTag} differs from the release version`);
   }
 };
 
@@ -372,14 +238,17 @@ export const reconcileNpmPublication = async ({
   key,
   tarball,
   artifact,
+  tag,
 }: PublicationInput): Promise<RegistryMetadata> => {
   validateArtifactIdentity(root, key, artifact);
   verifyLocalArtifact(tarball, artifact);
   const config = packageConfigs[key];
   const releaseSha = git(root, "rev-parse", "HEAD");
   const coordinate = `${config.name}@${artifact.version}`;
+  await assertLiveReleaseAuthority(root, tag);
   let metadata = registryMetadata(root, coordinate);
   if (!metadata) {
+    await assertLiveReleaseAuthority(root, tag);
     command(
       [
         "npm",
@@ -392,10 +261,13 @@ export const reconcileNpmPublication = async ({
         npmDistTag(artifact.version),
       ],
       root,
+      { timeout: 10 * 60_000, maxBuffer: 16 * 1024 * 1024 },
     );
     metadata = await waitForRegistry(root, coordinate);
   }
   await verifyRegistryArtifact({ metadata, artifact, releaseSha });
+  const distTag = npmDistTag(artifact.version);
+  verifyRegistryDistTag(registryDistTags(root, config.name), distTag, artifact.version);
   return metadata;
 };
 
@@ -418,19 +290,20 @@ const requiredEnvironment = (name: string): string => {
 const writeReceipt = async ({ root, key, tag, artifact, output }: ReceiptInput): Promise<void> => {
   const config = packageConfigs[key];
   const version = packageVersion(root, key);
-  const plan = readRequiredReleasePlan(root, key, version);
   const releaseSha = git(root, "rev-parse", "HEAD");
   const metadata = await waitForAttestation(root, `${config.name}@${version}`);
   await verifyRegistryArtifact({ metadata, artifact, releaseSha });
+  const distTag = npmDistTag(version);
+  verifyRegistryDistTag(registryDistTags(root, config.name), distTag, version);
   const attestationUrl = metadata.dist?.attestations?.url;
   if (typeof attestationUrl !== "string") throw new Error("npm provenance attestation is absent");
-  await verifyProvenanceAttestation(attestationUrl, artifact, { tag });
+  await inspectProvenanceIdentity(attestationUrl, artifact, { tag });
   const receipt = {
     schemaVersion: 1,
     package: config.name,
     version,
     tag,
-    sourceSha: plan.sourceSha,
+    sourceSha: releaseSha,
     releaseSha,
     releaseTree: git(root, "rev-parse", "HEAD^{tree}"),
     repository: "theGeekist/llm-core",
@@ -448,6 +321,8 @@ const writeReceipt = async ({ root, key, tag, artifact, output }: ReceiptInput):
     },
     npm: {
       integrity: metadata.dist?.integrity,
+      shasum: metadata.dist?.shasum,
+      distTag,
       tarball: metadata.dist?.tarball,
       ...(typeof metadata.gitHead === "string" ? { gitHead: metadata.gitHead } : {}),
     },
@@ -502,14 +377,14 @@ if (import.meta.main) {
     const arguments_ = parseArguments(process.argv.slice(2));
     const version = packageVersion(root, arguments_.packageKey);
     const distTag = npmDistTag(version);
-    const versionErrors = validateReleaseVersion(root, {
-      packageKey: arguments_.packageKey,
+    validateTaggedReleaseIdentity({
+      version,
       tag: arguments_.tag,
-      distTag,
-      allowUnreleased: false,
+      tagPrefix: packageConfigs[arguments_.packageKey].tagPrefix,
+      head: git(root, "rev-parse", "HEAD"),
+      workflowSha: requiredEnvironment("GITHUB_SHA"),
     });
-    if (versionErrors.length > 0) throw new Error(versionErrors.join("\n"));
-    validatePlanAgainstGit(root, arguments_.packageKey, arguments_.tag);
+    await assertLiveReleaseAuthority(root, arguments_.tag);
     if (arguments_.phase !== "validate") {
       if (!arguments_.tarball || !arguments_.metadata) {
         throw new TypeError("Publish and receipt phases require --tarball and --metadata");
@@ -517,8 +392,11 @@ if (import.meta.main) {
       if (!existsSync(arguments_.tarball)) throw new Error("Qualified tarball is missing");
       const artifact = readArtifact(arguments_.metadata);
       validateArtifactIdentity(root, arguments_.packageKey, artifact);
-      if (resolve(arguments_.tarball) !== resolve(artifact.tarball)) {
-        throw new Error("Tarball path differs from artifact metadata");
+      if (
+        basename(arguments_.tarball) !== artifact.filename ||
+        basename(artifact.tarball) !== artifact.filename
+      ) {
+        throw new Error("Tarball filename differs from artifact metadata");
       }
       verifyLocalArtifact(arguments_.tarball, artifact);
       if (arguments_.phase === "publish") {
@@ -527,6 +405,7 @@ if (import.meta.main) {
           key: arguments_.packageKey,
           tarball: arguments_.tarball,
           artifact,
+          tag: arguments_.tag,
         });
       } else {
         if (!arguments_.receiptOutput)
@@ -548,4 +427,4 @@ if (import.meta.main) {
   }
 }
 
-export { verifyProvenanceAttestation };
+export { inspectProvenanceIdentity };

@@ -1,6 +1,7 @@
 import { createHash } from "node:crypto";
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
+import { boundedResponseBytes } from "./release-history/bounded-response";
 
 type PublishedPackageKey = "llm-core" | "pipeline" | "strict-json";
 
@@ -77,7 +78,12 @@ if (import.meta.main) {
     const coordinate = packageCoordinate(key);
     const result = Bun.spawnSync(
       ["npm", "view", coordinate, "version", "dist", "gitHead", "--json"],
-      { stderr: "pipe", stdout: "pipe" },
+      {
+        stderr: "pipe",
+        stdout: "pipe",
+        timeout: 30_000,
+        maxBuffer: 8 * 1024 * 1024,
+      },
     );
     if (result.exitCode !== 0) throw new Error(`${coordinate} must already be published.`);
     const published = JSON.parse(result.stdout.toString()) as PublishedMetadata;
@@ -94,11 +100,10 @@ if (import.meta.main) {
     if (key !== "pipeline" && typeof published.gitHead !== "string") {
       throw new Error(`${coordinate} lacks release gitHead metadata.`);
     }
-    const response = await fetch(published.dist.tarball);
-    if (!response.ok) {
-      throw new Error(`${coordinate} archive download failed with ${response.status}.`);
-    }
-    const archive = Buffer.from(await response.arrayBuffer());
+    const archive = await boundedResponseBytes(published.dist.tarball, {
+      label: `${coordinate} archive download`,
+      limit: 100 * 1024 * 1024,
+    });
     verifyPublishedArchive(archive, published.dist.integrity, coordinate);
     const resolvedOutput = resolve(output);
     mkdirSync(dirname(resolvedOutput), { recursive: true });

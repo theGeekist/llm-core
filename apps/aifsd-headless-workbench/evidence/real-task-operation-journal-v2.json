@@ -1,0 +1,397 @@
+{
+  "events": [
+    {
+      "admission": {
+        "authority": {
+          "authorityId": "aifsd-headless-workbench-qualification-admission",
+          "kind": "coordinator"
+        },
+        "decidedAt": "2026-08-22T13:31:11.155Z",
+        "decisionId": "headless-workbench:task-context:aifsd/headless-project-workbench-vertical-slice:14c41e922e5f2cab1a831686223f90481e86d7691fef1e58dd1a59405906a213",
+        "policyId": "headless-workbench/real-task-qualification-v1"
+      },
+      "admittedAt": "2026-08-22T13:31:11.155Z",
+      "correlationId": "headless-workbench-real-task-qualification",
+      "eventDigest": {
+        "algorithm": "sha-256",
+        "value": "bb0d43ba8b6cbc6c1d4c96fc9c86ff057f8750691dc1b43fe15eb9e03e00efa3"
+      },
+      "eventId": "018f4000-0000-7000-8000-000000000001",
+      "evidence": ["6573841e-b87c-4516-b55e-7328c25f38b9"],
+      "kind": "observation.accepted",
+      "observationId": "task-context:aifsd/headless-project-workbench-vertical-slice:14c41e922e5f2cab1a831686223f90481e86d7691fef1e58dd1a59405906a213",
+      "observedAt": "2026-08-22T13:31:11.120Z",
+      "payload": {
+        "command": [
+          "/Users/jasonnathan/Repos/@theGeekist/llm-core/node_modules/.bin/task-graph",
+          "--project-config",
+          "/Users/jasonnathan/Repos/@theGeekist/llm-core/task-graph.project.json",
+          "--context",
+          "aifsd/headless-project-workbench-vertical-slice"
+        ],
+        "kind": "task-context-compiled",
+        "outputDigest": {
+          "algorithm": "sha-256",
+          "value": "14c41e922e5f2cab1a831686223f90481e86d7691fef1e58dd1a59405906a213"
+        },
+        "taskKey": "aifsd/headless-project-workbench-vertical-slice"
+      },
+      "payloadDigest": {
+        "algorithm": "sha-256",
+        "value": "be5fbc6a60d0754d958b9c179b85802515f98dbd9da7d7998e532e14847235c6"
+      },
+      "projectId": "repository:llm-core",
+      "provenance": {
+        "contentDigest": {
+          "algorithm": "sha-256",
+          "value": "f7adadd51e273f522177dc042d5b1058bc43776be2d107c3744cda6b9631eba7"
+        },
+        "revision": "e9399df47cb2f9018f7aa8c74f5592972c63b3d5",
+        "sourceKind": "repository",
+        "sourceRef": "/Users/jasonnathan/Repos/@theGeekist/llm-core/task-graph.project.json"
+      },
+      "sourceAuthority": {
+        "authorityId": "aifsd-headless-workbench-repository-corpus",
+        "kind": "integration"
+      }
+    },
+    {
+      "admission": {
+        "authority": {
+          "authorityId": "aifsd-headless-workbench-qualification-admission",
+          "kind": "coordinator"
+        },
+        "decidedAt": "2026-08-22T13:31:34.935Z",
+        "decisionId": "headless-workbench:task-authority-receipt:receipt-8e6734fb835829fdf511a5802190c3b76fb3ca7d5bc824bdf3c79312c1feded8",
+        "policyId": "headless-workbench/real-task-qualification-v1"
+      },
+      "admittedAt": "2026-08-22T13:31:34.935Z",
+      "correlationId": "headless-workbench-real-task-qualification",
+      "eventDigest": {
+        "algorithm": "sha-256",
+        "value": "e9143e1524b2c9bc935741313663896a545db56b3017e12b861b7d4f401f46e9"
+      },
+      "eventId": "018f4000-0000-7000-8000-000000000002",
+      "evidence": ["24609baa-4b0d-4f50-837b-009357cc23e9"],
+      "kind": "observation.accepted",
+      "observationId": "task-authority-receipt:receipt-8e6734fb835829fdf511a5802190c3b76fb3ca7d5bc824bdf3c79312c1feded8",
+      "observedAt": "2026-08-22T13:31:23.756Z",
+      "payload": {
+        "kind": "native-task-authority-receipt",
+        "receipt": {
+          "admissionRevision": "41509f1566be897efbf11886a2fa3c39f97be4e721047aad0951159ad2f70c42",
+          "afterRevision": "39240100ed893286a96aebd43ce4b0209a1e0af83efe1a9f5ee391f1deb9f644",
+          "authenticatedClient": {
+            "audience": "aifsd-headless-workbench",
+            "authenticatedAt": "2026-08-22T13:30:59.568Z",
+            "authenticationReference": "host-composition/aifsd-real-task-qualification",
+            "client": { "issuer": "codex-host-session", "subject": "aifsd-headless-coordinator" },
+            "expiresAt": "2026-08-22T14:30:59.568Z",
+            "projectInstanceId": "tgpi_24e5b10100c1bf49142ec76b5fa9a2e8",
+            "registrationRevision": "842744bbac789900506e82d62fec06bbc1cafa49adfe85748f189e377dd211b5",
+            "schemaVersion": 1
+          },
+          "authorisationDecisionReference": "aifsd-host/service-policy/v1",
+          "beforeRevision": "69f2567793fcfce44c5d47d19f4c7bcd3c1c2194008fd5c542697dd13dee964d",
+          "callerAssertionReference": "aifsd-host/assertion/33de6b55-a4c4-40de-b6a8-2bacf9def40a",
+          "claimFence": "claim-6fb3ca7d5bc824bdf3c79312c1feded8",
+          "commandDigest": "d3dd0469bbd2f214edb202c82f3a7b530eb6c85df63a2b8df76c4fcf0b5fdfe8",
+          "commandId": "018f4000-0000-7000-8000-000000000002",
+          "completedAt": "2026-08-22T13:31:23.756Z",
+          "evidenceDecisionReferences": [],
+          "evidenceDigests": [],
+          "gitEffect": {
+            "after": {
+              "canonicalRefIdentity": "aifsd-headless-workbench-proof-v2",
+              "commit": {
+                "algorithm": "sha1",
+                "digest": "916c638f61dac4c53472a2bc373957b4be5f0908"
+              },
+              "repositoryIdentity": "llm-core-aifsd-composite-authority",
+              "targetBlob": {
+                "algorithm": "sha1",
+                "digest": "27ba87d8a393f022501f5028422fa2cd8ff60b6d"
+              },
+              "tree": { "algorithm": "sha1", "digest": "8f5e98eec2aa9b479c8f0097a3e09ca9b3f2d81f" }
+            },
+            "before": {
+              "canonicalRefIdentity": "aifsd-headless-workbench-proof-v2",
+              "commit": {
+                "algorithm": "sha1",
+                "digest": "8bfe681fda3679d85c28d94b25c4941212cf3a33"
+              },
+              "repositoryIdentity": "llm-core-aifsd-composite-authority",
+              "targetBlob": {
+                "algorithm": "sha1",
+                "digest": "c5a89663476a0db838a95ad2217f5ccb94cdb5fe"
+              },
+              "tree": { "algorithm": "sha1", "digest": "eff3c69fe2bc914ab8925b6474e8a73d415db4e9" }
+            }
+          },
+          "operation": "claim",
+          "outcome": "applied",
+          "priorClaimReceiptId": null,
+          "projectInstanceId": "tgpi_24e5b10100c1bf49142ec76b5fa9a2e8",
+          "reason": "applied",
+          "receiptId": "receipt-8e6734fb835829fdf511a5802190c3b76fb3ca7d5bc824bdf3c79312c1feded8",
+          "registrationRevision": "842744bbac789900506e82d62fec06bbc1cafa49adfe85748f189e377dd211b5",
+          "reservedAt": "2026-08-22T13:31:23.743Z",
+          "schemaVersion": 2,
+          "taskKey": "aifsd/headless-project-workbench-vertical-slice",
+          "workspaceObservation": {
+            "observationId": "aifsd-real-task:8bfe681fda3679d85c28d94b25c4941212cf3a33",
+            "observedAt": "2026-08-22T13:30:59.283Z",
+            "observerIdentity": "aifsd-headless-workbench-service-ref-observer",
+            "revision": "c9dc861544e03718a8a9db9e80591482ef09d3583ff831cfb438a6ce4f11e78f",
+            "schemaVersion": 1
+          }
+        },
+        "replayed": false
+      },
+      "payloadDigest": {
+        "algorithm": "sha-256",
+        "value": "2fe3ee9e4a137062f69a893276e06ef8f38d932ab6c8756f2df7c8441fdd707f"
+      },
+      "projectId": "repository:llm-core",
+      "provenance": {
+        "revision": "39240100ed893286a96aebd43ce4b0209a1e0af83efe1a9f5ee391f1deb9f644",
+        "sourceKind": "integration",
+        "sourceRef": "tgpi_24e5b10100c1bf49142ec76b5fa9a2e8"
+      },
+      "sourceAuthority": {
+        "authorityId": "aifsd-headless-workbench-task-graph-authority",
+        "kind": "integration"
+      }
+    },
+    {
+      "admission": {
+        "authority": {
+          "authorityId": "aifsd-headless-workbench-qualification-admission",
+          "kind": "coordinator"
+        },
+        "decidedAt": "2026-08-22T13:32:07.411Z",
+        "decisionId": "headless-workbench:task-authority-receipt:receipt-9a53271cac62d6e3c9390dc510f1e2b3934451eaa4cb8de710fa0d902d6eb5df",
+        "policyId": "headless-workbench/real-task-qualification-v1"
+      },
+      "admittedAt": "2026-08-22T13:32:07.411Z",
+      "correlationId": "headless-workbench-real-task-qualification",
+      "eventDigest": {
+        "algorithm": "sha-256",
+        "value": "1ee47fdc52458d1f559eca7d5b8cd7599bf8380383f4af8a2bc6707009de8d74"
+      },
+      "eventId": "018f4000-0000-7000-8000-000000000003",
+      "evidence": ["24609baa-4b0d-4f50-837b-009357cc23e9"],
+      "kind": "observation.accepted",
+      "observationId": "task-authority-receipt:receipt-9a53271cac62d6e3c9390dc510f1e2b3934451eaa4cb8de710fa0d902d6eb5df",
+      "observedAt": "2026-08-22T13:31:47.795Z",
+      "payload": {
+        "kind": "native-task-authority-receipt",
+        "receipt": {
+          "admissionRevision": "afcacc9a90ee7411559c3a2144f09c98449cb7706b154d8dd356f712f74d2190",
+          "afterRevision": "31ce7ea99daa18ea3628c6a8db3d1c62aa0c826c2674971e6b8c8a21790f1970",
+          "authenticatedClient": {
+            "audience": "aifsd-headless-workbench",
+            "authenticatedAt": "2026-08-22T13:30:59.568Z",
+            "authenticationReference": "host-composition/aifsd-real-task-qualification",
+            "client": { "issuer": "codex-host-session", "subject": "aifsd-headless-coordinator" },
+            "expiresAt": "2026-08-22T14:30:59.568Z",
+            "projectInstanceId": "tgpi_24e5b10100c1bf49142ec76b5fa9a2e8",
+            "registrationRevision": "842744bbac789900506e82d62fec06bbc1cafa49adfe85748f189e377dd211b5",
+            "schemaVersion": 1
+          },
+          "authorisationDecisionReference": "aifsd-host/service-policy/v1",
+          "beforeRevision": "39240100ed893286a96aebd43ce4b0209a1e0af83efe1a9f5ee391f1deb9f644",
+          "callerAssertionReference": "aifsd-host/assertion/c84244ba-7392-48cc-a475-3ab097ffe719",
+          "claimFence": "claim-934451eaa4cb8de710fa0d902d6eb5df",
+          "commandDigest": "85e06be272eb275d33a1b6b34eaa35152a07d6868ca7e15354eb0a9a16477e2d",
+          "commandId": "018f4000-0000-7000-8000-000000000003",
+          "completedAt": "2026-08-22T13:31:47.795Z",
+          "evidenceDecisionReferences": [],
+          "evidenceDigests": [],
+          "gitEffect": {
+            "after": {
+              "canonicalRefIdentity": "aifsd-headless-workbench-proof-v2",
+              "commit": {
+                "algorithm": "sha1",
+                "digest": "29738b239073e59086cbe6ee00fe4e6f4a36be8a"
+              },
+              "repositoryIdentity": "llm-core-aifsd-composite-authority",
+              "targetBlob": {
+                "algorithm": "sha1",
+                "digest": "ce0f9ab70c980d202bd6eff5c6ccf340924e28f3"
+              },
+              "tree": { "algorithm": "sha1", "digest": "a1b422ac7237c0d167990d366b8c35255e324f63" }
+            },
+            "before": {
+              "canonicalRefIdentity": "aifsd-headless-workbench-proof-v2",
+              "commit": {
+                "algorithm": "sha1",
+                "digest": "916c638f61dac4c53472a2bc373957b4be5f0908"
+              },
+              "repositoryIdentity": "llm-core-aifsd-composite-authority",
+              "targetBlob": {
+                "algorithm": "sha1",
+                "digest": "27ba87d8a393f022501f5028422fa2cd8ff60b6d"
+              },
+              "tree": { "algorithm": "sha1", "digest": "8f5e98eec2aa9b479c8f0097a3e09ca9b3f2d81f" }
+            }
+          },
+          "operation": "delegate",
+          "outcome": "applied",
+          "priorClaimReceiptId": null,
+          "projectInstanceId": "tgpi_24e5b10100c1bf49142ec76b5fa9a2e8",
+          "reason": "applied",
+          "receiptId": "receipt-9a53271cac62d6e3c9390dc510f1e2b3934451eaa4cb8de710fa0d902d6eb5df",
+          "registrationRevision": "842744bbac789900506e82d62fec06bbc1cafa49adfe85748f189e377dd211b5",
+          "reservedAt": "2026-08-22T13:31:47.774Z",
+          "schemaVersion": 2,
+          "taskKey": "aifsd/headless-project-workbench-vertical-slice",
+          "workspaceObservation": {
+            "observationId": "aifsd-real-task:8bfe681fda3679d85c28d94b25c4941212cf3a33",
+            "observedAt": "2026-08-22T13:30:59.283Z",
+            "observerIdentity": "aifsd-headless-workbench-service-ref-observer",
+            "revision": "c9dc861544e03718a8a9db9e80591482ef09d3583ff831cfb438a6ce4f11e78f",
+            "schemaVersion": 1
+          }
+        },
+        "replayed": false
+      },
+      "payloadDigest": {
+        "algorithm": "sha-256",
+        "value": "ff100d460186bba3d2727920a4dbe2eec0760e5df2a7bc8518145ebea21c2fc6"
+      },
+      "projectId": "repository:llm-core",
+      "provenance": {
+        "revision": "31ce7ea99daa18ea3628c6a8db3d1c62aa0c826c2674971e6b8c8a21790f1970",
+        "sourceKind": "integration",
+        "sourceRef": "tgpi_24e5b10100c1bf49142ec76b5fa9a2e8"
+      },
+      "sourceAuthority": {
+        "authorityId": "aifsd-headless-workbench-task-graph-authority",
+        "kind": "integration"
+      }
+    },
+    {
+      "admission": {
+        "authority": {
+          "authorityId": "aifsd-headless-workbench-qualification-admission",
+          "kind": "coordinator"
+        },
+        "decidedAt": "2026-08-22T13:32:07.525Z",
+        "decisionId": "headless-workbench:independent-review-evidence:a671db37bf6dd6efa3dcc00d3537f0856a3ac69a04f180c6b5cbfe991b98e083",
+        "policyId": "headless-workbench/digest-bound-independent-review-v1"
+      },
+      "admittedAt": "2026-08-22T13:32:07.525Z",
+      "correlationId": "headless-workbench-real-task-qualification",
+      "eventDigest": {
+        "algorithm": "sha-256",
+        "value": "f2fd0c53f63a46b1ba946afc0e14f27fda4ef6472238ac0a2177fa01a520abfa"
+      },
+      "eventId": "018f4000-0000-7000-8000-000000000004",
+      "evidence": ["018f4001-0000-7000-8000-000000000001"],
+      "kind": "observation.accepted",
+      "observationId": "independent-review-evidence:a671db37bf6dd6efa3dcc00d3537f0856a3ac69a04f180c6b5cbfe991b98e083",
+      "observedAt": "2026-08-22T13:32:07.428Z",
+      "payload": {
+        "artifactDigest": {
+          "algorithm": "sha-256",
+          "value": "a671db37bf6dd6efa3dcc00d3537f0856a3ac69a04f180c6b5cbfe991b98e083"
+        },
+        "gates": [
+          {
+            "command": "bun run release:check",
+            "name": "aifsd-release-check",
+            "outputDigest": "376d11fd35b1428edfff2c5190883e127b37f90adf0b7e43f05c9149b18b92cf",
+            "result": "passed"
+          },
+          {
+            "command": "bun run check",
+            "name": "app-check",
+            "outputDigest": "a4a0c3ce38f6c412271ab382fc7bbe3daeecbfe21cc7bcd9110e7d92598c00a9",
+            "result": "passed"
+          },
+          {
+            "command": "git diff --check",
+            "name": "workspace-diff-check",
+            "outputDigest": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "result": "passed"
+          }
+        ],
+        "implementationDigest": "c219ec27dcf6c61a01e5d96a3c22ab71bb6cb6117006cc33b4865f1bd751b289",
+        "kind": "headless-workbench-independent-review-evidence",
+        "manifestDigest": "a917ccd3ce9bf53c3abcd63c27799f8e0f729c9ece92ea42d1fb5c990bf36879",
+        "reviewedAt": "2026-08-22T13:29:40.000Z",
+        "taskKey": "aifsd/headless-project-workbench-vertical-slice",
+        "verdict": "accepted"
+      },
+      "payloadDigest": {
+        "algorithm": "sha-256",
+        "value": "874cda5fac0b42ffb3e3f438145c10bd67e3e930593feb40b9fa0b345d17140e"
+      },
+      "projectId": "repository:llm-core",
+      "provenance": {
+        "contentDigest": {
+          "algorithm": "sha-256",
+          "value": "a671db37bf6dd6efa3dcc00d3537f0856a3ac69a04f180c6b5cbfe991b98e083"
+        },
+        "revision": "29738b239073e59086cbe6ee00fe4e6f4a36be8a",
+        "sourceKind": "worker",
+        "sourceRef": "codex-review:/root/headless_workbench_review/final-v2"
+      },
+      "sourceAuthority": { "authorityId": "codex-independent-review/raman", "kind": "worker" }
+    },
+    {
+      "admission": {
+        "authority": {
+          "authorityId": "aifsd-headless-workbench-qualification-admission",
+          "kind": "coordinator"
+        },
+        "decidedAt": "2026-08-22T13:32:07.758Z",
+        "decisionId": "headless-workbench:independent-review-result:f2fd0c53f63a46b1ba946afc0e14f27fda4ef6472238ac0a2177fa01a520abfa",
+        "policyId": "headless-workbench/digest-bound-independent-review-v1"
+      },
+      "admittedAt": "2026-08-22T13:32:07.758Z",
+      "causationId": "018f4000-0000-7000-8000-000000000004",
+      "correlationId": "headless-workbench-real-task-qualification",
+      "eventDigest": {
+        "algorithm": "sha-256",
+        "value": "ad3c0c52968dcf55fda302fa489faab6e432c7eb4df5bb72215efdd8ae521117"
+      },
+      "eventId": "018f4000-0000-7000-8000-000000000005",
+      "evidence": ["018f4001-0000-7000-8000-000000000001"],
+      "kind": "decision.accepted",
+      "observationId": "independent-review-result:f2fd0c53f63a46b1ba946afc0e14f27fda4ef6472238ac0a2177fa01a520abfa",
+      "observedAt": "2026-08-22T13:32:07.544Z",
+      "payload": {
+        "accepted": true,
+        "artifactDigest": {
+          "algorithm": "sha-256",
+          "value": "a671db37bf6dd6efa3dcc00d3537f0856a3ac69a04f180c6b5cbfe991b98e083"
+        },
+        "evidenceEventDigest": {
+          "algorithm": "sha-256",
+          "value": "f2fd0c53f63a46b1ba946afc0e14f27fda4ef6472238ac0a2177fa01a520abfa"
+        },
+        "evidenceEventId": "018f4000-0000-7000-8000-000000000004",
+        "kind": "headless-workbench-result-accepted",
+        "taskKey": "aifsd/headless-project-workbench-vertical-slice"
+      },
+      "payloadDigest": {
+        "algorithm": "sha-256",
+        "value": "6097284910e1911366538507f0872178e9001de4b3aaf45d427e3d3b1361cdd8"
+      },
+      "projectId": "repository:llm-core",
+      "provenance": {
+        "contentDigest": {
+          "algorithm": "sha-256",
+          "value": "a671db37bf6dd6efa3dcc00d3537f0856a3ac69a04f180c6b5cbfe991b98e083"
+        },
+        "revision": "29738b239073e59086cbe6ee00fe4e6f4a36be8a",
+        "sourceKind": "worker",
+        "sourceRef": "codex-review:/root/headless_workbench_review/final-v2"
+      },
+      "sourceAuthority": { "authorityId": "codex-independent-review/raman", "kind": "worker" }
+    }
+  ],
+  "protocolVersion": "aifsd.project-journal/1"
+}

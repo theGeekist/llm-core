@@ -52,6 +52,8 @@ const pack = (packageRoot: string, outputRoot: string): PackResult => {
       cwd: packageRoot,
       stderr: "pipe",
       stdout: "pipe",
+      timeout: 10 * 60_000,
+      maxBuffer: 16 * 1024 * 1024,
       env: { ...process.env, npm_config_cache: join(outputRoot, "npm-cache") },
     },
   );

@@ -203,6 +203,30 @@ const retractAssertions = (
   return { ok: true, value: null };
 };
 
+const correctAssertions = (
+  assertions: Map<string, MaterialisedAssertion>,
+  event: AcceptedProjectEvent,
+  payload: { [key: string]: JsonValue },
+): ProjectResult<null> => {
+  if (!hasExactKeys(payload, ["assertionIds", "assertions"])) return invalidAssertionEvent();
+  const assertionIds = payload.assertionIds;
+  const replacements = payload.assertions;
+  if (
+    !Array.isArray(assertionIds) ||
+    !Array.isArray(replacements) ||
+    (assertionIds.length === 0 && replacements.length === 0)
+  ) {
+    return invalidAssertionEvent();
+  }
+  if (assertionIds.length > 0) {
+    const retracted = retractAssertions(assertions, event, assertionIds);
+    if (!retracted.ok) return retracted;
+  }
+  return replacements.length === 0
+    ? { ok: true, value: null }
+    : recordAssertions(assertions, event, replacements);
+};
+
 const applyAssertionEvent = (
   assertions: Map<string, MaterialisedAssertion>,
   event: AcceptedProjectEvent,
@@ -216,5 +240,6 @@ const applyAssertionEvent = (
     if (!hasExactKeys(payload, ["assertionIds"])) return invalidAssertionEvent();
     return retractAssertions(assertions, event, payload.assertionIds as JsonValue);
   }
+  if (event.kind === "correction.accepted") return correctAssertions(assertions, event, payload);
   return { ok: true, value: null };
 };

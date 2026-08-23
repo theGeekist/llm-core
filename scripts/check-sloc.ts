@@ -1,6 +1,7 @@
 import { createHash } from "node:crypto";
 import { lstatSync, readdirSync, readFileSync, realpathSync } from "node:fs";
 import { basename, extname, join, posix, relative, resolve, sep } from "node:path";
+import { scopesOverlap } from "@geekist/task-graph";
 
 export interface SlocWaiver {
   readonly version: number;
@@ -167,6 +168,11 @@ const isFollowUpPath = (value: string): boolean => {
   );
 };
 
+const packageOwner = (value: string): string | null => {
+  const segments = value.split("/");
+  return segments[0] === "packages" && segments.length > 2 ? (segments[1] ?? null) : null;
+};
+
 const isWithin = (parent: string, candidate: string): boolean => {
   const path = relative(parent, candidate);
   return path === "" || (!path.startsWith(`..${sep}`) && path !== ".." && !posix.isAbsolute(path));
@@ -190,6 +196,7 @@ const canonicalFollowUp = (root: string, followUp: string): string | null => {
 interface TaskFrontMatter {
   readonly id: string;
   readonly status: string;
+  readonly writeScope: readonly string[];
 }
 
 const actionableTaskStatuses = new Set([
@@ -207,18 +214,35 @@ const taskFrontMatter = (content: string): TaskFrontMatter | null => {
   const closing = lines.indexOf("---", 1);
   if (closing < 0) return null;
   const fields = new Map<string, string>();
+  const writeScope: string[] = [];
+  let listField: string | undefined;
   for (const line of lines.slice(1, closing)) {
-    if (line.trim() === "" || line.trimStart().startsWith("#") || /^\s/.test(line)) continue;
+    if (line.trim() === "" || line.trimStart().startsWith("#")) continue;
+    if (/^\s/.test(line)) {
+      const item = line.match(/^\s{2}-\s+(.+)$/)?.[1]?.trim();
+      if (listField === "write_scope" && item !== undefined) {
+        const value = item.replace(/^(?:"(.*)"|'(.*)')$/, "$1$2");
+        if (value === "" || writeScope.includes(value)) return null;
+        writeScope.push(value);
+      }
+      continue;
+    }
     const separator = line.indexOf(":");
     if (separator <= 0) return null;
     const key = line.slice(0, separator);
     if (!/^[a-z][a-z0-9_]*$/.test(key) || fields.has(key)) return null;
-    fields.set(key, line.slice(separator + 1).trim());
+    const value = line.slice(separator + 1).trim();
+    fields.set(key, value);
+    listField = value === "" ? key : undefined;
+    if (key === "write_scope" && value !== "" && value !== "[]") return null;
   }
   const id = fields.get("id");
   const status = fields.get("status");
-  return id !== undefined && /^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(id) && status !== undefined
-    ? { id, status }
+  return id !== undefined &&
+    /^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(id) &&
+    status !== undefined &&
+    fields.has("write_scope")
+    ? { id, status, writeScope }
     : null;
 };
 
@@ -349,6 +373,13 @@ const validateActiveWaiver = ({
   if (!isFollowUpPath(waiver.followUp)) return [];
   const task = canonicalFollowUp(root, waiver.followUp);
   const errors: string[] = [];
+  const sourceOwner = packageOwner(sourcePath);
+  const followUpOwner = packageOwner(waiver.followUp);
+  if (sourceOwner !== null && followUpOwner !== sourceOwner) {
+    errors.push(
+      `${sourcePath} waiver follow-up must belong to package ${sourceOwner}, not ${followUpOwner ?? "repository"}`,
+    );
+  }
   if (task === null) {
     errors.push(
       `${sourcePath} waiver follow-up must be a non-symlink regular file within its package docs task boundary`,
@@ -358,7 +389,7 @@ const validateActiveWaiver = ({
     const frontMatter = taskFrontMatter(readFileSync(task, "utf8"));
     if (frontMatter === null) {
       errors.push(
-        `${sourcePath} waiver follow-up must have canonical front matter with unique id and status fields`,
+        `${sourcePath} waiver follow-up must have canonical front matter with unique id, status and write_scope fields`,
       );
     } else if (frontMatter.id !== expectedId) {
       errors.push(`${sourcePath} waiver follow-up id must match its filename`);
@@ -366,6 +397,8 @@ const validateActiveWaiver = ({
       errors.push(
         `${sourcePath} waiver follow-up status must be actionable: proposed, ready, claimed, in_progress, review, or blocked`,
       );
+    } else if (!frontMatter.writeScope.some((scope) => scopesOverlap(scope, sourcePath))) {
+      errors.push(`${sourcePath} waiver follow-up write_scope does not own the waived source`);
     }
   }
   if (waiver.expiresOn < today) errors.push(`${sourcePath} waiver expired`);

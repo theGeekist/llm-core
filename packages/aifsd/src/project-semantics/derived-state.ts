@@ -1,5 +1,5 @@
 import { canonicalize } from "@aifsd/strict-json";
-import type { DerivedTaskState, EventId, MaterialisedAssertion } from "./contract.js";
+import type { DerivedTaskState, MaterialisedAssertion } from "./contract.js";
 
 const activeAt =
   (validAt: string) =>
@@ -26,6 +26,15 @@ const booleans = (
     .filter(activeAt(validAt))
     .map(({ object }) => object)
     .filter((value): value is boolean => typeof value === "boolean");
+
+const numbers = (
+  assertions: readonly MaterialisedAssertion[],
+  validAt: string,
+): readonly number[] =>
+  assertions
+    .filter(activeAt(validAt))
+    .map(({ object }) => object)
+    .filter((value): value is number => typeof value === "number" && Number.isFinite(value));
 
 const unique = <T>(values: readonly T[]): readonly T[] => [...new Set(values)];
 
@@ -65,19 +74,35 @@ export const deriveTaskStates = (
             : "incomplete",
     );
   }
-  return taskIds(assertions, validAt).map((taskId) => {
+  const states: (DerivedTaskState & { readonly plannerIndex: number })[] = taskIds(
+    assertions,
+    validAt,
+  ).map((taskId) => {
     const dependencies = unique(strings(byTaskPredicate(taskId, "task.depends-on"), validAt));
     const blockers = unique(strings(byTaskPredicate(taskId, "task.blocked-by"), validAt));
     const completion = completionByTask.get(taskId) ?? "unknown";
+    const plannerCanStart = unique(
+      booleans(byTaskPredicate(taskId, "task.planner-can-start"), validAt),
+    );
+    const plannerIndexes = unique(numbers(byTaskPredicate(taskId, "task.planner-index"), validAt));
     const taskAssertions = assertions
       .filter(activeAt(validAt))
       .filter(({ subjectId }) => subjectId === taskId)
       .filter(({ predicate }) =>
-        ["entity.type", "task.completed", "task.depends-on", "task.blocked-by"].includes(predicate),
+        [
+          "entity.type",
+          "task.completed",
+          "task.depends-on",
+          "task.blocked-by",
+          "task.planner-can-start",
+          "task.planner-index",
+        ].includes(predicate),
       );
     const conflictingGroups = new Map<string, MaterialisedAssertion[]>();
-    for (const assertion of taskAssertions.filter(
-      ({ predicate }) => predicate === "entity.type" || predicate === "task.completed",
+    for (const assertion of taskAssertions.filter(({ predicate }) =>
+      ["entity.type", "task.completed", "task.planner-can-start", "task.planner-index"].includes(
+        predicate,
+      ),
     )) {
       const key = `${assertion.predicate}:${canonicalize(assertion.object)}`;
       const predicateValues = taskAssertions.filter(
@@ -102,15 +127,17 @@ export const deriveTaskStates = (
       .filter(({ subjectId }) => dependencies.includes(subjectId))
       .filter(({ predicate }) => predicate === "entity.type" || predicate === "task.completed");
     const preconditionAssertions = [...taskAssertions, ...dependencyAssertions];
-    const sourceEventIds = unique(
-      preconditionAssertions.map(({ sourceEventId }) => sourceEventId),
-    ) as readonly EventId[];
-    const contradictory = contradictionAssertionIds.length > 0 || completion === "contradictory";
+    const sourceEventIds = unique(preconditionAssertions.map(({ sourceEventId }) => sourceEventId));
+    const contradictory =
+      contradictionAssertionIds.length > 0 ||
+      completion === "contradictory" ||
+      plannerCanStart.length > 1 ||
+      plannerIndexes.length > 1;
     const readiness = contradictory
       ? "contradictory"
       : completion === "complete"
         ? "complete"
-        : blockers.length > 0 || dependencyBlocked.length > 0
+        : blockers.length > 0 || dependencyBlocked.length > 0 || plannerCanStart[0] === false
           ? "blocked"
           : "ready";
     return {
@@ -124,6 +151,12 @@ export const deriveTaskStates = (
       ].sort(),
       contradictionAssertionIds,
       sourceEventIds,
+      plannerIndex: plannerIndexes[0] ?? Number.MAX_SAFE_INTEGER,
     };
   });
+  states.sort(
+    (left, right) =>
+      left.plannerIndex - right.plannerIndex || left.taskId.localeCompare(right.taskId),
+  );
+  return states.map(({ plannerIndex: _plannerIndex, ...state }) => state);
 };

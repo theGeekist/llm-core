@@ -1,5 +1,6 @@
 import { X509Certificate } from "node:crypto";
 import type { ArtifactMetadata } from "./prepare-artifact";
+import { boundedResponseJson } from "./bounded-response";
 
 interface ProvenanceAttestation {
   readonly predicateType?: unknown;
@@ -35,12 +36,13 @@ const certificateBytes = (attestation: ProvenanceAttestation): string | undefine
 };
 
 const downloadAttestation = async (url: string): Promise<unknown> => {
-  const response = await fetch(url);
-  if (!response.ok) throw new Error(`Attestation download failed: ${response.status}`);
-  return response.json();
+  return boundedResponseJson(url, {
+    label: "Attestation download",
+    limit: 8 * 1024 * 1024,
+  });
 };
 
-export const verifyProvenanceAttestation = async (
+export const inspectProvenanceIdentity = async (
   url: string,
   artifact: ArtifactMetadata,
   options: ProvenanceVerificationOptions,
@@ -67,6 +69,6 @@ export const verifyProvenanceAttestation = async (
   const identity = new X509Certificate(Buffer.from(certificate, "base64")).subjectAltName;
   const expectedIdentity = `URI:https://github.com/theGeekist/llm-core/.github/workflows/release.yml@refs/tags/${options.tag}`;
   if (identity !== expectedIdentity) {
-    throw new Error("npm provenance signer is not the exact release workflow tag");
+    throw new Error("npm provenance identity is not the exact release workflow tag");
   }
 };

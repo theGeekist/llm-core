@@ -325,6 +325,18 @@ describe("canonical release qualification", () => {
     expect(errors).toContain("must not contain a direct npm or Bun publish command");
   });
 
+  test("keeps qualified evidence discoverable across failed-job reruns", () => {
+    const root = makeRoot();
+    const workflowPath = join(root, ".github/workflows/release.yml");
+    writeFileSync(
+      workflowPath,
+      `${readFileSync(workflowPath, "utf8")}\nname: package-\${{ github.run_attempt }}-release-evidence\n`,
+    );
+    expect(validateReleaseEntrypoints(root)).toContain(
+      "release evidence artifact names must remain stable across failed-job reruns",
+    );
+  });
+
   test("requires a root lockfile", () => {
     const root = makeRoot();
     rmSync(join(root, "bun.lock"));

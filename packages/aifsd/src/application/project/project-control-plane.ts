@@ -2,13 +2,13 @@ import type {
   AcceptedProjectEvent,
   AdmissionAuthority,
   AdmissionRequest,
+  JournalAppendResult,
   ProjectContentDigester,
   ProjectEventJournal,
   ProjectProjection,
   ProjectResult,
   RuntimeNeutralProjectView,
 } from "../../project-semantics/public.js";
-import { admitProjectEvent } from "../../project-semantics/admission.js";
 import { buildProjectProjection } from "../../project-semantics/projection.js";
 
 export interface ProjectProjectionStore {
@@ -17,7 +17,12 @@ export interface ProjectProjectionStore {
 }
 
 export interface ProjectControlPlane {
-  readonly admit: (request: AdmissionRequest) => Promise<ProjectResult<RuntimeNeutralProjectView>>;
+  readonly admit: (request: AdmissionRequest) => Promise<
+    ProjectResult<{
+      readonly append: JournalAppendResult;
+      readonly view: RuntimeNeutralProjectView;
+    }>
+  >;
   readonly rebuild: (projectId: string) => Promise<ProjectResult<RuntimeNeutralProjectView>>;
   readonly view: (projectId: string) => Promise<ProjectResult<RuntimeNeutralProjectView>>;
 }
@@ -79,20 +84,31 @@ export const createProjectControlPlane = (
     const fresh =
       actual !== null &&
       actual.protocolVersion === expected.value.protocolVersion &&
+      actual.checkpoint.projectId === expected.value.checkpoint.projectId &&
       actual.checkpoint.position === expected.value.checkpoint.position &&
+      actual.checkpoint.lastEventId === expected.value.checkpoint.lastEventId &&
+      actual.checkpoint.journalDigest.algorithm ===
+        expected.value.checkpoint.journalDigest.algorithm &&
       actual.checkpoint.journalDigest.value === expected.value.checkpoint.journalDigest.value &&
+      actual.projectionDigest.algorithm === expected.value.projectionDigest.algorithm &&
       actual.projectionDigest.value === expected.value.projectionDigest.value;
     return { ok: true, value: viewFrom(expected.value, fresh) };
   };
 
   const admit = async (
     request: AdmissionRequest,
-  ): Promise<ProjectResult<RuntimeNeutralProjectView>> => {
-    const admitted = await admitProjectEvent(request, admissionAuthority, digester);
-    if (!admitted.ok) return admitted;
-    const appended = await journal.append(admitted.value);
+  ): Promise<
+    ProjectResult<{
+      readonly append: JournalAppendResult;
+      readonly view: RuntimeNeutralProjectView;
+    }>
+  > => {
+    const appended = await journal.admit(request, admissionAuthority);
     if (!appended.ok) return appended;
-    return rebuild(admitted.value.projectId);
+    const rebuilt = await rebuild(appended.value.event.projectId);
+    return rebuilt.ok
+      ? { ok: true, value: { append: appended.value, view: rebuilt.value } }
+      : rebuilt;
   };
 
   return { admit, rebuild, view };

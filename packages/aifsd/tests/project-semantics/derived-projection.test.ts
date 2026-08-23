@@ -1,4 +1,6 @@
 import { describe, expect, test } from "bun:test";
+import { isPromiseLike } from "@wpkernel/pipeline";
+import type { ProjectContentDigester } from "../../src/project-semantics/public.js";
 import {
   buildProjectProjection,
   materialiseAssertions,
@@ -15,6 +17,14 @@ import {
   projectId,
 } from "./fixtures/project.js";
 
+const customResolved = <T>(value: T): PromiseLike<T> => ({
+  then: (onFulfilled, onRejected) => Promise.resolve(value).then(onFulfilled, onRejected),
+});
+
+const customRejected = <T>(error: unknown): PromiseLike<T> => ({
+  then: (onFulfilled, onRejected) => Promise.reject(error).then(onFulfilled, onRejected),
+});
+
 const admitted = async (
   sequence: number,
   kind: "assertions.recorded" | "assertions.retracted",
@@ -30,6 +40,77 @@ const admitted = async (
 };
 
 describe("project assertion and derived-state projection", () => {
+  test("preserves synchronous projection and promotes native or custom thenables", async () => {
+    const eventResult = admitProjectEvent(
+      admissionRequest(1, "assertions.recorded", {
+        assertions: [assertion("task-type", "task-a", "entity.type", "task")],
+      }),
+      authority(),
+      digester,
+    );
+    if (isPromiseLike(eventResult) || !eventResult.ok) {
+      throw new Error("fixture admission must settle synchronously");
+    }
+
+    const synchronous = buildProjectProjection([eventResult.value], digester);
+    expect(isPromiseLike(synchronous)).toBeFalse();
+    if (isPromiseLike(synchronous)) throw new Error("synchronous projection became asynchronous");
+    expect(synchronous.ok).toBeTrue();
+
+    const native = buildProjectProjection([eventResult.value], {
+      digest: async (value) => digester.digest(value),
+    });
+    expect(isPromiseLike(native)).toBeTrue();
+    expect((await native).ok).toBeTrue();
+
+    const custom = buildProjectProjection([eventResult.value], {
+      digest: (value) => {
+        const digest = digester.digest(value);
+        if (isPromiseLike(digest)) throw new Error("fixture digester became asynchronous");
+        return customResolved(digest);
+      },
+    });
+    expect(isPromiseLike(custom)).toBeTrue();
+    expect((await custom).ok).toBeTrue();
+  });
+
+  test("fails closed on rejected, hostile and malformed projection digests", async () => {
+    const event = await admitted(1, "assertions.recorded", {
+      assertions: [assertion("task-type", "task-a", "entity.type", "task")],
+    });
+    const validDigest = digester.digest({ fixture: true });
+    if (isPromiseLike(validDigest)) throw new Error("fixture digest must settle synchronously");
+    const hostileAccessor = Object.defineProperty({ ...validDigest }, "then", {
+      get: () => {
+        throw new Error("hostile then accessor");
+      },
+    });
+    const hostileProxy = new Proxy(validDigest, {
+      getOwnPropertyDescriptor: () => {
+        throw new Error("hostile descriptor trap");
+      },
+    });
+    const digesters: readonly ProjectContentDigester[] = [
+      { digest: () => Promise.reject(new Error("native rejection")) },
+      { digest: () => customRejected(new Error("thenable rejection")) },
+      { digest: () => hostileAccessor as never },
+      { digest: () => hostileProxy as never },
+      { digest: () => undefined as never },
+      { digest: () => "digest" as never },
+      new Proxy(digester, {
+        get: (target, property, receiver) => {
+          if (property === "digest") throw new Error("hostile digest accessor");
+          return Reflect.get(target, property, receiver);
+        },
+      }),
+    ];
+
+    for (const candidate of digesters) {
+      const projection = await buildProjectProjection([event], candidate);
+      expect(projection.ok).toBeFalse();
+    }
+  });
+
   test("derives readiness and completion only from accepted assertions", async () => {
     const event = await admitted(1, "assertions.recorded", {
       assertions: [
@@ -65,6 +146,35 @@ describe("project assertion and derived-state projection", () => {
       expect.objectContaining({ taskId: "task-c", readiness: "complete" }),
     ]);
     expect(projection.value.checkpoint.lastEventId).toBe(eventId(1));
+  });
+
+  test("preserves admitted planner order, startability and contradictions", async () => {
+    const event = await admitted(1, "assertions.recorded", {
+      assertions: [
+        assertion("later-type", "task-later", "entity.type", "task"),
+        assertion("later-complete", "task-later", "task.completed", false),
+        assertion("later-index", "task-later", "task.planner-index", 2),
+        assertion("later-start", "task-later", "task.planner-can-start", false),
+        assertion("first-type", "task-first", "entity.type", "task"),
+        assertion("first-complete", "task-first", "task.completed", false),
+        assertion("first-index", "task-first", "task.planner-index", 1),
+        assertion("first-start", "task-first", "task.planner-can-start", true),
+        assertion("first-start-conflict", "task-first", "task.planner-can-start", false),
+      ],
+    });
+    const projection = await buildProjectProjection([event], digester);
+    if (!projection.ok) throw new Error("projection failed");
+    expect(projection.value.tasks.map(({ taskId }) => taskId)).toEqual([
+      "task-first",
+      "task-later",
+    ]);
+    expect(projection.value.tasks[0]).toEqual(
+      expect.objectContaining({
+        contradictionAssertionIds: ["first-start", "first-start-conflict"],
+        readiness: "contradictory",
+      }),
+    );
+    expect(projection.value.tasks[1]).toEqual(expect.objectContaining({ readiness: "blocked" }));
   });
 
   test("surfaces contradiction instead of selecting the latest assertion", async () => {
@@ -179,10 +289,10 @@ describe("project assertion and derived-state projection", () => {
     const projection = await buildProjectProjection(await journal.read(projectId), digester);
     if (!projection.ok) throw new Error("projection failed");
     expect(append.value.checkpoint.journalDigest.value).toBe(
-      "1cd604a07fda8bf8b1f6df75084fb854f9f763be6967373d2eac658ba48e09f8",
+      "f4c753bb63e282be128c1b92ab8e7905e016120aae4dc1597048d18356663837",
     );
     expect(projection.value.projectionDigest.value).toBe(
-      "ba771e4ae96ba9984272b4c3012e8c646521e3536009f0f7ea592b52426f2ad3",
+      "e3f14193e7b997875fc498c3e91de39cdb9b4b93ca77c8293bd9ba54bafe2f3e",
     );
   });
 

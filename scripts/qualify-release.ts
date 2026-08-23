@@ -247,10 +247,24 @@ export const validateReleaseEntrypoints = (root: string): string[] => {
   if (/\b(?:npm|bun)\s+publish\b/.test(releaseWorkflow)) {
     errors.push("release workflow must not contain a direct npm or Bun publish command");
   }
+  if (
+    releaseWorkflow.includes("release-evidence") &&
+    releaseWorkflow.includes("github.run_attempt")
+  ) {
+    errors.push("release evidence artifact names must remain stable across failed-job reruns");
+  }
+  const sharedPublish = releaseWorkflow.indexOf('--phase publish --package "$PACKAGE_KEY"');
+  const sharedReceipt = releaseWorkflow.indexOf('--phase receipt --package "$PACKAGE_KEY"');
   for (const packageKey of ["strict-json", "llm-core", "aifsd"] as const) {
-    const phases = (["validate", "publish", "receipt"] as const).map((phase) =>
-      releaseWorkflow.indexOf(`--phase ${phase} --package ${packageKey}`),
-    );
+    const phases = [
+      releaseWorkflow.indexOf(`--phase validate --package ${packageKey}`),
+      sharedPublish >= 0
+        ? sharedPublish
+        : releaseWorkflow.indexOf(`--phase publish --package ${packageKey}`),
+      sharedReceipt >= 0
+        ? sharedReceipt
+        : releaseWorkflow.indexOf(`--phase receipt --package ${packageKey}`),
+    ];
     if (phases.some((index) => index < 0) || phases[1]! <= phases[0]! || phases[2]! <= phases[1]!) {
       errors.push(
         `${packageKey} workflow must delegate ordered validation, publication and receipt phases to the release controller`,
@@ -316,7 +330,7 @@ const isMutableBunInstall = (command: string): boolean =>
 
 const workflowPolicyErrors = (root: string, path: string): string[] => {
   const lines = readFileSync(join(root, path), "utf8").split("\n");
-  const setupCount = lines.filter((line) => line.includes("uses: oven-sh/setup-bun@v2")).length;
+  const setupCount = lines.filter((line) => line.includes("uses: oven-sh/setup-bun@")).length;
   const pinCount = lines.filter(
     (line) => line.trim() === 'bun-version-file: ".bun-version"',
   ).length;

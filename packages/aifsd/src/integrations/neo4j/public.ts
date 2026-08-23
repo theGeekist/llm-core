@@ -171,6 +171,7 @@ const relationshipIdentity = ({
 const projectionParameters = (
   projection: ProjectProjection,
 ): Readonly<Record<string, unknown>> => ({
+  authorised: true,
   projectId: projection.projectId,
   protocolVersion: projection.protocolVersion,
   position: projection.checkpoint.position,
@@ -371,6 +372,7 @@ export const createNeo4jProjectProjectionAdapter = (
       return failure("projection-missing");
     try {
       const project = properties(record.project);
+      if (typeof project.authorised !== "boolean") return failure("projection-divergent");
       const assertions = ((record.assertions ?? []) as readonly unknown[])
         .map((value) => {
           const item = properties(value);
@@ -448,7 +450,7 @@ export const createNeo4jProjectProjectionAdapter = (
           assertions,
           tasks,
           relationships,
-          authorised: project.authorised !== false,
+          authorised: project.authorised === true,
         },
       };
     } catch {

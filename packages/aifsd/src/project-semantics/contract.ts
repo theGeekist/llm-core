@@ -58,13 +58,22 @@ export interface AdmissionRequest {
   readonly observation: ProjectObservation;
 }
 
+export interface AdmissionDecisionContext {
+  readonly currentEvents: readonly AcceptedProjectEvent[];
+  readonly latestAdmittedAt: string | null;
+}
+
 export interface AdmissionAuthority {
   readonly authorityId: string;
-  readonly decide: (request: AdmissionRequest) => MaybePromise<AdmissionDecision | null>;
+  readonly decide: (
+    request: AdmissionRequest,
+    context: AdmissionDecisionContext,
+  ) => MaybePromise<AdmissionDecision | null>;
 }
 
 export interface AcceptedProjectEvent {
   readonly eventId: EventId;
+  readonly observationId: string;
   readonly projectId: string;
   readonly kind: ProjectEventKind;
   readonly sourceAuthority: ProjectAuthority;
@@ -154,6 +163,10 @@ export interface JournalAppendResult {
 }
 
 export interface ProjectEventJournal {
+  readonly admit: (
+    request: AdmissionRequest,
+    authority: AdmissionAuthority,
+  ) => Promise<ProjectResult<JournalAppendResult>>;
   readonly append: (
     receipt: ProjectAdmissionReceipt,
   ) => Promise<ProjectResult<JournalAppendResult>>;

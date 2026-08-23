@@ -25,7 +25,7 @@ SET project.protocolVersion = $protocolVersion, project.position = $position,
     project.journalDigestValue = $journalDigestValue,
     project.projectionDigestAlgorithm = $projectionDigestAlgorithm,
     project.projectionDigestValue = $projectionDigestValue, project.schemaId = $schemaId,
-    project.migrationId = $migrationId
+    project.migrationId = $migrationId, project.authorised = $authorised
 WITH project
 UNWIND $assertions AS item
 MERGE (assertion:AIFSDAssertion {projectId: $projectId, assertionId: item.assertionId})
@@ -69,7 +69,7 @@ RETURN project.projectId AS projectId, project.protocolVersion AS protocolVersio
        project.projectionDigestAlgorithm AS projectionDigestAlgorithm,
        project.projectionDigestValue AS projectionDigestValue,
        project.schemaId AS schemaId, project.migrationId AS migrationId,
-       coalesce(project.authorised, true) AS authorised`,
+       project.authorised AS authorised`,
   temporalRelationships: `MATCH (subject:AIFSDEntity {projectId: $projectId})
 -[relation:AIFSD_RELATION {projectId: $projectId}]->
 (object:AIFSDEntity {projectId: $projectId})

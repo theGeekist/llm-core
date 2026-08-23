@@ -1,0 +1,14 @@
+{
+  "version": 1,
+  "branches": null,
+  "functions": {
+    "found": 3525,
+    "hit": 3210,
+    "percentage": 91.06
+  },
+  "lines": {
+    "found": 34873,
+    "hit": 30118,
+    "percentage": 86.36
+  }
+}

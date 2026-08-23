@@ -55,8 +55,12 @@
     "validate": "bun run release:check"
   },
   "dependencies": {
-    "@geekist/llm-core": "2.0.0",
     "@aifsd/strict-json": "0.1.0",
-    "@wpkernel/pipeline": "1.4.0"
+    "@geekist/llm-core": "2.0.0",
+    "@wpkernel/pipeline": "1.4.1"
+  },
+  "devDependencies": {
+    "@geekist/task-graph": "0.1.0-beta.5",
+    "fast-check": "4.5.3"
   }
 }

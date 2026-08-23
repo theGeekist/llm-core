@@ -89,6 +89,8 @@ const receipt = {
   },
   npm: {
     integrity: `sha512-${Buffer.alloc(64, 7).toString("base64")}`,
+    shasum: "1".repeat(40),
+    distTag: "latest",
     tarball: "https://registry.npmjs.org/example.tgz",
     gitHead: "b".repeat(40),
   },
@@ -228,11 +230,16 @@ describe("release provenance", () => {
         ...receipt,
         npm: { ...receipt.npm, integrity: "" },
       }).join("\n"),
-    ).toContain("exact integrity and the registry tarball");
+    ).toContain("exact integrity, shasum, dist-tag and registry tarball");
     expect(
       validateReleaseReceipt({
         ...receipt,
-        npm: { integrity: receipt.npm.integrity, tarball: receipt.npm.tarball },
+        npm: {
+          integrity: receipt.npm.integrity,
+          shasum: receipt.npm.shasum,
+          distTag: receipt.npm.distTag,
+          tarball: receipt.npm.tarball,
+        },
       }),
     ).toEqual([]);
     expect(validateReleaseReceipt({ ...receipt, result: "pending" }).join("\n")).toContain(

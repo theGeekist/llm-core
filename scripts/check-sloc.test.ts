@@ -41,8 +41,12 @@ const writeSource = (root: string, content: string): void => {
   writeFileSync(join(root, sourcePath), content);
 };
 
-const taskFrontMatter = (id = "decompose-large", status = "proposed"): string =>
-  `---\narchitecture_version: 2\nid: ${id}\ntitle: Decompose large\nstage: architecture\nstatus: ${status}\n---\n`;
+const taskFrontMatter = (
+  id = "decompose-large",
+  status = "proposed",
+  writeScope: readonly string[] = [sourcePath],
+): string =>
+  `---\narchitecture_version: 2\nid: ${id}\ntitle: Decompose large\nstage: architecture\nstatus: ${status}\nwrite_scope:\n${writeScope.map((path) => `  - ${path}`).join("\n")}\n---\n`;
 
 const exceptionFor = (content: string, waiver?: SlocException["waiver"]): SlocException => ({
   lines: physicalSourceLines(content),
@@ -185,7 +189,7 @@ describe("SLOC enforcement", () => {
     expect(runCheck(root, baselineFor(exceptionFor(original, waiver))).errors).toEqual([]);
   });
 
-  test("allows a package source to reference an explicit package-owned follow-up", () => {
+  test("rejects a package source delegated to another package's follow-up", () => {
     const root = makeRoot();
     const ownedSourcePath = "packages/example/src/large.ts";
     const content = contentWithLines(602);
@@ -206,7 +210,9 @@ describe("SLOC enforcement", () => {
       exceptions: { [ownedSourcePath]: exceptionFor(original, waiver) },
     };
 
-    expect(runCheck(root, baseline).errors).toEqual([]);
+    expect(runCheck(root, baseline).errors).toContain(
+      `${ownedSourcePath} waiver follow-up must belong to package example, not llm-core`,
+    );
   });
 
   test("allows a repository-level source to reference an explicit package-owned follow-up", () => {
@@ -216,7 +222,10 @@ describe("SLOC enforcement", () => {
     const original = contentWithLines(601, "original");
     mkdirSync(join(root, "scripts"), { recursive: true });
     writeFileSync(join(root, repositorySourcePath), content);
-    writeFileSync(join(root, followUpPath), taskFrontMatter());
+    writeFileSync(
+      join(root, followUpPath),
+      taskFrontMatter("decompose-large", "proposed", [repositorySourcePath]),
+    );
     const waiver = {
       version: 2,
       justification: hardWaiverJustification,
@@ -312,6 +321,29 @@ describe("SLOC enforcement", () => {
     );
   });
 
+  test("rejects a same-package follow-up that does not own the waived source", () => {
+    const root = makeRoot();
+    const content = contentWithLines(602);
+    const original = contentWithLines(601, "original");
+    writeSource(root, content);
+    writeFileSync(
+      join(root, followUpPath),
+      taskFrontMatter("decompose-large", "proposed", ["packages/llm-core/src/other/**"]),
+    );
+    const waiver = {
+      version: 2,
+      justification: hardWaiverJustification,
+      expiresOn: "2026-12-31",
+      followUp: followUpPath,
+      currentLines: physicalSourceLines(content),
+      currentSha256: sourceDigest(content),
+    };
+
+    expect(runCheck(root, baselineFor(exceptionFor(original, waiver))).errors).toContain(
+      `${sourcePath} waiver follow-up write_scope does not own the waived source`,
+    );
+  });
+
   test("rejects a task without valid front matter", () => {
     const root = makeRoot();
     const content = contentWithLines(602);
@@ -327,7 +359,7 @@ describe("SLOC enforcement", () => {
     };
 
     expect(runCheck(root, baselineFor(exceptionFor(original, waiver))).errors).toContain(
-      `${sourcePath} waiver follow-up must have canonical front matter with unique id and status fields`,
+      `${sourcePath} waiver follow-up must have canonical front matter with unique id, status and write_scope fields`,
     );
   });
 
@@ -373,7 +405,7 @@ describe("SLOC enforcement", () => {
     };
 
     expect(runCheck(root, baselineFor(exceptionFor(original, waiver))).errors).toContain(
-      `${sourcePath} waiver follow-up must have canonical front matter with unique id and status fields`,
+      `${sourcePath} waiver follow-up must have canonical front matter with unique id, status and write_scope fields`,
     );
   });
 

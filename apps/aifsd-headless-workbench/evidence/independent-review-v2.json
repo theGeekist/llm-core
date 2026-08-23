@@ -1,0 +1,32 @@
+{
+  "authorityId": "codex-independent-review/raman",
+  "canonicalRef": "refs/task-graph/authority/aifsd-headless-workbench-proof-v2",
+  "gates": [
+    {
+      "command": "bun run release:check",
+      "name": "aifsd-release-check",
+      "outputDigest": "376d11fd35b1428edfff2c5190883e127b37f90adf0b7e43f05c9149b18b92cf",
+      "result": "passed"
+    },
+    {
+      "command": "bun run check",
+      "name": "app-check",
+      "outputDigest": "a4a0c3ce38f6c412271ab382fc7bbe3daeecbfe21cc7bcd9110e7d92598c00a9",
+      "result": "passed"
+    },
+    {
+      "command": "git diff --check",
+      "name": "workspace-diff-check",
+      "outputDigest": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "result": "passed"
+    }
+  ],
+  "implementationDigest": "c219ec27dcf6c61a01e5d96a3c22ab71bb6cb6117006cc33b4865f1bd751b289",
+  "manifestDigest": "a917ccd3ce9bf53c3abcd63c27799f8e0f729c9ece92ea42d1fb5c990bf36879",
+  "projectId": "repository:llm-core",
+  "reviewedAt": "2026-08-22T13:29:40.000Z",
+  "schemaVersion": 1,
+  "sourceRef": "codex-review:/root/headless_workbench_review/final-v2",
+  "taskKey": "aifsd/headless-project-workbench-vertical-slice",
+  "verdict": "accepted"
+}

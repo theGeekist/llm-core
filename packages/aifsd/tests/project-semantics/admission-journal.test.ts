@@ -1,7 +1,9 @@
 import { describe, expect, test } from "bun:test";
+import { isPromiseLike } from "@wpkernel/pipeline";
 import {
   acceptedEventIdentityInput,
   type AcceptedProjectEvent,
+  type AdmissionAuthority,
   type EventId,
   type JsonValue,
   type ProjectAdmissionReceipt,
@@ -20,7 +22,95 @@ import {
   projectId,
 } from "./fixtures/project.js";
 
+const customResolved = <T>(value: T): PromiseLike<T> => ({
+  then: (onFulfilled, onRejected) => Promise.resolve(value).then(onFulfilled, onRejected),
+});
+
+const customRejected = <T>(error: unknown): PromiseLike<T> => ({
+  then: (onFulfilled, onRejected) => Promise.reject(error).then(onFulfilled, onRejected),
+});
+
 describe("project admission and journal", () => {
+  test("preserves synchronous admission and promotes only genuine asynchronous work", async () => {
+    const request = admissionRequest(1, "observation.accepted", { value: "settlement" });
+    const synchronous = admitProjectEvent(request, authority(), digester);
+    expect(isPromiseLike(synchronous)).toBeFalse();
+    if (isPromiseLike(synchronous)) throw new Error("synchronous admission became asynchronous");
+    expect(synchronous.ok).toBeTrue();
+
+    const nativeAuthority = authority();
+    const native = admitProjectEvent(
+      request,
+      {
+        ...nativeAuthority,
+        decide: (candidate, context) => Promise.resolve(nativeAuthority.decide(candidate, context)),
+      },
+      digester,
+    );
+    expect(isPromiseLike(native)).toBeTrue();
+    expect((await native).ok).toBeTrue();
+
+    const customAuthority = authority();
+    const custom = admitProjectEvent(
+      request,
+      {
+        ...customAuthority,
+        decide: (candidate, context) => {
+          const decision = customAuthority.decide(candidate, context);
+          if (isPromiseLike(decision)) throw new Error("fixture authority became asynchronous");
+          return customResolved(decision);
+        },
+      },
+      digester,
+    );
+    expect(isPromiseLike(custom)).toBeTrue();
+    expect((await custom).ok).toBeTrue();
+  });
+
+  test("fails closed on rejected, hostile and malformed authority outputs", async () => {
+    const request = admissionRequest(1, "observation.accepted", { value: "authority" });
+    const validAuthority = authority();
+    const validDecision = validAuthority.decide(request, {
+      currentEvents: [],
+      latestAdmittedAt: null,
+    });
+    if (isPromiseLike(validDecision) || validDecision === null) {
+      throw new Error("fixture authority must settle synchronously");
+    }
+    const hostileAccessor = Object.defineProperty({ ...validDecision }, "then", {
+      get: () => {
+        throw new Error("hostile then accessor");
+      },
+    });
+    const hostileProxy = new Proxy(validDecision, {
+      getOwnPropertyDescriptor: () => {
+        throw new Error("hostile descriptor trap");
+      },
+    });
+    const authorities: readonly AdmissionAuthority[] = [
+      { ...validAuthority, decide: () => Promise.reject(new Error("native rejection")) },
+      {
+        ...validAuthority,
+        decide: () => customRejected(new Error("thenable rejection")),
+      },
+      { ...validAuthority, decide: () => hostileAccessor as never },
+      { ...validAuthority, decide: () => hostileProxy as never },
+      { ...validAuthority, decide: () => undefined as never },
+      { ...validAuthority, decide: () => "true" as never },
+      new Proxy(validAuthority, {
+        get: (target, property, receiver) => {
+          if (property === "decide") throw new Error("hostile decide accessor");
+          return Reflect.get(target, property, receiver);
+        },
+      }),
+    ];
+
+    for (const candidate of authorities) {
+      const result = await admitProjectEvent(request, candidate, digester);
+      expect(result.ok).toBeFalse();
+    }
+  });
+
   test("rejects incomplete, hostile and unauthorised observations before admission", async () => {
     const incomplete = admissionRequest(1, "observation.accepted", { status: "observed" });
     const noEvidence = {

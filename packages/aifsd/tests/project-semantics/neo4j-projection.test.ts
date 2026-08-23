@@ -55,7 +55,7 @@ const fakeNeo4j = (): FakeNeo4j => {
               projectionDigestValue: stored.projectionDigestValue,
               schemaId: stored.schemaId,
               migrationId: stored.migrationId,
-              authorised: stored.authorised ?? true,
+              authorised: stored.authorised,
             },
           },
           assertions: (stored.assertions as readonly unknown[]).map((properties) => ({
@@ -204,6 +204,21 @@ describe("Neo4j project projection adapter", () => {
     if (!missing.ok) throw new Error("reconciliation failed");
     expect(missing.value.drift).toEqual([{ kind: "missing", identity: projection.projectId }]);
   });
+
+  test.each([undefined, "true"])(
+    "rejects missing and non-boolean projection authorisation",
+    async (authorised) => {
+      const port = fakeNeo4j();
+      const adapter = createNeo4jProjectProjectionAdapter(port);
+      const projection = await projectionFixture();
+      await adapter.project(projection);
+      port.drift({ authorised });
+      expect(await adapter.read(projection.projectId)).toEqual({
+        ok: false,
+        diagnostics: [{ code: "projection-drift", reasonCode: "projection-divergent" }],
+      });
+    },
+  );
 
   test("recomputes assertion identity from every graph-owned assertion field", async () => {
     const port = fakeNeo4j();

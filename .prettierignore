@@ -3,6 +3,11 @@ pipeline
 pipeline/**
 dist/**
 coverage/**
+context/**
+packages/aifsd/docs/**
+packages/llm-core/src/contracts/generated/**
+packages/llm-core/tests/adapters/spec-kit/fixtures/workflow-overlay-installed-c0fe0e4.yml
 .gitnexus/**
+.serena/**
 .codex/**
 .claude/settings.local.json

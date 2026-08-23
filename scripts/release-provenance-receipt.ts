@@ -19,7 +19,7 @@ const receiptKeys = new Set([
 ]);
 const workflowKeys = new Set(["runId", "attempt", "repository", "ref", "sha"]);
 const artifactKeys = new Set(["sha512", "inventory", "filename"]);
-const npmKeys = new Set(["integrity", "tarball", "gitHead"]);
+const npmKeys = new Set(["integrity", "shasum", "distTag", "tarball", "gitHead"]);
 const githubReleaseKeys = new Set(["url"]);
 const attestationKeys = new Set(["identity", "url"]);
 const packageTags = new Map([
@@ -82,14 +82,31 @@ const validateArtifact = (value: unknown, path: string): string[] => {
   return errors;
 };
 
-const validateNpm = (value: unknown, releaseSha: unknown, path: string): string[] => {
+const validateNpm = ({
+  value,
+  releaseSha,
+  receiptVersion,
+  path,
+}: Readonly<{
+  value: unknown;
+  releaseSha: unknown;
+  receiptVersion: unknown;
+  path: string;
+}>): string[] => {
   if (!isRecord(value)) return [`${path}.npm must contain integrity and tarball evidence`];
   const errors = exactKeys(value, npmKeys, `${path}.npm`);
+  const expectedDistTag =
+    typeof receiptVersion === "string" && isExactSemver(receiptVersion)
+      ? npmDistTag(receiptVersion)
+      : undefined;
   if (
     !/^sha512-[A-Za-z0-9+/]+={0,2}$/.test(String(value.integrity)) ||
+    !/^[0-9a-f]{40}$/.test(String(value.shasum)) ||
+    expectedDistTag === undefined ||
+    value.distTag !== expectedDistTag ||
     !httpsUrl(value.tarball, new Set(["registry.npmjs.org"]))
   ) {
-    errors.push(`${path}.npm must contain exact integrity and the registry tarball`);
+    errors.push(`${path}.npm must contain exact integrity, shasum, dist-tag and registry tarball`);
   }
   if (value.gitHead !== undefined && (!sha(value.gitHead) || value.gitHead !== releaseSha)) {
     errors.push(`${path}.npm.gitHead must equal releaseSha when the registry provides it`);
@@ -136,7 +153,14 @@ export const validateReleaseReceipt = (value: unknown, path = "receipt"): string
   }
   errors.push(...validateWorkflow(value.workflow, value, path));
   errors.push(...validateArtifact(value.artifact, path));
-  errors.push(...validateNpm(value.npm, value.releaseSha, path));
+  errors.push(
+    ...validateNpm({
+      value: value.npm,
+      releaseSha: value.releaseSha,
+      receiptVersion: value.version,
+      path,
+    }),
+  );
   errors.push(...validateGithubRelease(value.githubRelease, path));
   errors.push(...validateAttestation(value.attestation, path));
   if (
@@ -149,4 +173,4 @@ export const validateReleaseReceipt = (value: unknown, path = "receipt"): string
   if (value.result !== "verified") errors.push(`${path}.result must be verified`);
   return errors;
 };
-import { isExactSemver } from "./release-version";
+import { isExactSemver, npmDistTag } from "./release-version";

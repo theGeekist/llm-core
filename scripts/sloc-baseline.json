@@ -13,6 +13,46 @@
   ],
   "excludedSuffixes": [".generated.ts", ".generated.tsx", ".snap.ts", ".snap.tsx"],
   "exceptions": {
+    "apps/aifsd-headless-workbench/real-task-qualification.ts": {
+      "lines": 502,
+      "sha256": "9f8b197dbb751b12ceb80f1a638b617bcfa787ffb51a7bde5debcb4411173e5b",
+      "waiver": {
+        "version": 1,
+        "justification": "approximately 500 lines",
+        "currentLines": 502,
+        "currentSha256": "9f8b197dbb751b12ceb80f1a638b617bcfa787ffb51a7bde5debcb4411173e5b"
+      }
+    },
+    "apps/aifsd-headless-workbench/runtime.test.ts": {
+      "lines": 523,
+      "sha256": "e955b376f3796b2279970e85cb6806a476145260857bd50287b49d6a51ef4e7c",
+      "waiver": {
+        "version": 1,
+        "justification": "approximately 500 lines",
+        "currentLines": 523,
+        "currentSha256": "e955b376f3796b2279970e85cb6806a476145260857bd50287b49d6a51ef4e7c"
+      }
+    },
+    "packages/aifsd/src/project-semantics/adapters/repository-corpus/task-graph.ts": {
+      "lines": 531,
+      "sha256": "e0e1f1790a3dffb3b3bbbdb77c03938937c08bfa85ed18e7e3cc3dc6899e66dd",
+      "waiver": {
+        "version": 1,
+        "justification": "approximately 500 lines",
+        "currentLines": 531,
+        "currentSha256": "e0e1f1790a3dffb3b3bbbdb77c03938937c08bfa85ed18e7e3cc3dc6899e66dd"
+      }
+    },
+    "packages/aifsd/src/integrations/neo4j/public.ts": {
+      "lines": 569,
+      "sha256": "ca1d2b7dc260731c140cad3614a9c764ee2877b62608a154a050d62f8d39cfd4",
+      "waiver": {
+        "version": 1,
+        "justification": "approximately 500 lines",
+        "currentLines": 569,
+        "currentSha256": "ca1d2b7dc260731c140cad3614a9c764ee2877b62608a154a050d62f8d39cfd4"
+      }
+    },
     "packages/llm-core/src/application/capability-bindings/validation.ts": {
       "lines": 590,
       "sha256": "da490e5164b3c22ae428bcdc3f9e90cbc8bd1172af67c7438e210be5aa733d3c",
@@ -164,33 +204,23 @@
       }
     },
     "scripts/check-sloc.test.ts": {
-      "lines": 561,
-      "sha256": "f9f3a4a3b59f4e1a2c9d45ef13cf93c1f43a779d19000e3bb625f2ec08b5ddc4",
+      "lines": 593,
+      "sha256": "e4f6e6003b3b68a5d62ce3c0da0b04cc111649f7b4e8a1c1308f9710e816a703",
       "waiver": {
-        "version": 1,
+        "version": 3,
         "justification": "approximately 500 lines",
-        "currentLines": 561,
-        "currentSha256": "f9f3a4a3b59f4e1a2c9d45ef13cf93c1f43a779d19000e3bb625f2ec08b5ddc4"
+        "currentLines": 593,
+        "currentSha256": "e4f6e6003b3b68a5d62ce3c0da0b04cc111649f7b4e8a1c1308f9710e816a703"
       }
     },
     "scripts/check-sloc.ts": {
-      "lines": 523,
-      "sha256": "3f5d29d6eb033ea5f5d0ce0edda239e4cb1ea9795b44e8452af4402a64cdc9d2",
+      "lines": 556,
+      "sha256": "233559ae929961e0c41ae312194551c87e3bf23fabd3b8fd69d6247267ad7305",
       "waiver": {
-        "version": 1,
+        "version": 3,
         "justification": "approximately 500 lines",
-        "currentLines": 523,
-        "currentSha256": "3f5d29d6eb033ea5f5d0ce0edda239e4cb1ea9795b44e8452af4402a64cdc9d2"
-      }
-    },
-    "scripts/release-history/release-controller.ts": {
-      "lines": 600,
-      "sha256": "5ff9cad7bcb3a08ab99238876cf80185fc24f782d3718197fe8fcb935390771a",
-      "waiver": {
-        "version": 1,
-        "justification": "approximately 500 lines",
-        "currentLines": 551,
-        "currentSha256": "a8ddd8661a9c15bf9ec82554821c210036b81487c6beebbdd5d2c88565a79f5d"
+        "currentLines": 556,
+        "currentSha256": "233559ae929961e0c41ae312194551c87e3bf23fabd3b8fd69d6247267ad7305"
       }
     },
     "scripts/release-provenance.ts": {

@@ -1,0 +1,15 @@
+{
+  "name": "@aifsd/headless-workbench",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "check": "bun run check:types && bun test .",
+    "check:types": "tsc -p tsconfig.json --noEmit",
+    "qualify:real-task": "bun run real-task-qualification.ts",
+    "start": "bun run main.ts"
+  },
+  "dependencies": {
+    "@geekist/task-graph": "0.1.0-beta.5",
+    "neo4j-driver": "6.2.0"
+  }
+}
