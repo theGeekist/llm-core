@@ -1,4 +1,7 @@
-import { authorizePolicyDecision, type PolicyEvaluationRef } from "@geekist/llm-core/control/runtime";
+import {
+  authorizePolicyDecision,
+  type PolicyEvaluationRef,
+} from "@geekist/llm-core/control/runtime";
 import type { PolicyDecision } from "@geekist/llm-core/control";
 import { contractVersion } from "@geekist/llm-core/contracts";
 

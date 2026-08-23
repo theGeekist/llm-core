@@ -83,6 +83,41 @@
   repository architecture authority and must not be listed in task
   `required_reading`.
 
+## Task completion cadence
+
+- Treat the first coherent implementation with focused tests and package type
+  checks passing as the review-ready threshold. Do not postpone independent
+  review until documentation, aggregate repository gates, release
+  qualification or receiving evidence are complete.
+- When the user requests an independent review, spawn the reviewer immediately
+  after that focused-green threshold. Run slow external or exact-version gates
+  in parallel with review when they do not mutate overlapping state.
+- Keep the coordinator on the critical path. Delegate bounded review,
+  qualification or diagnostic work, but do not create overlapping broad
+  audits. Stop auxiliary investigations after they answer their assigned
+  question.
+- Run focused checks while implementing. After review fixes, send the same
+  reviewer through the current diff and run one final task-focused gate set.
+  Do not repeat unchanged broad gates after every small edit.
+- Run root-wide, release-wide and private-corpus gates only when the selected
+  task explicitly requires them or focused evidence shows a plausible
+  repository-wide interaction. Record unrelated failures as external blockers;
+  do not pull them onto the current task's critical path.
+- Do not monitor, review, qualify or repair another active task while the
+  selected task is incomplete unless the user explicitly orders that work or
+  an immediate shared-path decision is required. Once the shared-path decision
+  is made, return to the selected task.
+- For host-sensitive or container qualification, perform one diagnostic rerun
+  after a failure, fix from the returned evidence, then rerun only the affected
+  gate. Avoid speculative full-suite reruns.
+- Keep lifecycle and handoff evidence current, but update it after substantive
+  implementation and review milestones rather than interleaving documentation
+  edits with every code change.
+- A task is ready when its scoped acceptance evidence passes, the independent
+  reviewer reports no actionable findings on the final diff, and known
+  unrelated dirty-state failures are clearly separated. Commit, push,
+  publication and review of other tasks remain separate user-authorised steps.
+
 ## Internationalisation and configuration cadence
 
 - Treat internationalisation and runtime configuration as normal concerns when

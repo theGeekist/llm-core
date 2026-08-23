@@ -7,7 +7,7 @@ Pre-transition source baseline: `c041792`
 
 <!-- architecture-status:generated:start -->
 
-Active tasks: 2
+Active tasks: 0
 
 ## Task inventory
 
@@ -89,8 +89,8 @@ Active tasks: 2
 | model-routing-qualification | qualification | proposed | architecture-source-layout-normalization, cost-facts, capabilities-evaluation-qualification | — | — | — |
 | native-agent-conversation-runtime-contract | integrations | proposed | architecture-runtime-ownership-correction, core-agent-runner, core-interactions | — | — | — |
 | native-agent-cross-provider-conformance | qualification | proposed | adapter-codex-app-server-runtime, adapter-codex-desktop-hooks-runtime, adapter-claude-native-session-runtime, adapter-antigravity-cli-hooks-runtime, adapter-antigravity-desktop-sidecar-runtime | — | — | — |
-| native-agent-runtime-governance-reconciliation | architecture | review | — | — | — | — |
-| production-quality-gates | qualification | review | — | — | — | — |
+| native-agent-runtime-governance-reconciliation | architecture | done | — | — | — | — |
+| production-quality-gates | qualification | done | — | — | — | — |
 | release-history-provenance | qualification | done | release-v2-readiness | — | — | — |
 | release-v2-readiness | architecture | done | architecture-release-reproducibility, adapters-protocol-qualification | — | — | — |
 | runtime-adapter-substitution | qualification | proposed | architecture-external-contract-fidelity, runtime-operation-contract-correction, adapter-langgraph-runtime, adapter-pydantic-ai-runtime | — | — | — |

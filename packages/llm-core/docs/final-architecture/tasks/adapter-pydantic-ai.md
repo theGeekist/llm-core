@@ -11,7 +11,7 @@ owner: codex-root
 owner_kind: coordinator
 lease_started_at:
 lease_expires_at:
-base_sha: 9920425
+base_sha: "9920425"
 branch: main
 worktree: /Users/jasonnathan/Repos/@theGeekist/llm-core
 depends_on:

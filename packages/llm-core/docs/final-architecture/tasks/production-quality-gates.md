@@ -1,17 +1,17 @@
 ---
 architecture_version: 2
 id: production-quality-gates
-title: Establish production code-quality and independent-review gates
+title: Establish production code-quality gates
 stage: qualification
-status: review
+status: done
 priority: critical
 replaced_by: []
 forward_to: []
 preferred_owner_kind: codex
 owner: codex
 owner_kind: codex
-lease_started_at: 2026-08-22T22:16:32+08:00
-lease_expires_at: 2026-08-23T04:29:30+08:00
+lease_started_at: 2026-08-24T01:36:49+08:00
+lease_expires_at: 2026-08-24T09:42:50+08:00
 base_sha: e9399df47cb2f9018f7aa8c74f5592972c63b3d5
 branch: main
 worktree: /Users/jasonnathan/Repos/@theGeekist/llm-core
@@ -26,9 +26,7 @@ write_scope:
   - .github/workflows/ci.yml
   - .github/workflows/codeql.yml
   - .github/workflows/docs.yml
-  - .github/workflows/independent-review.yml
   - .github/workflows/release.yml
-  - .github/workflows/publish-release.yml
   - .github/quality-gates.json
   - packages/llm-core/tsconfig.eslint.json
   - packages/aifsd/tsconfig.eslint.json
@@ -40,6 +38,17 @@ write_scope:
   - scripts/release-provenance.test.ts
   - scripts/release-history/release-controller.ts
   - scripts/release-history/release-controller.test.ts
+  - scripts/release-history/bounded-response.ts
+  - scripts/release-history/bounded-response.test.ts
+  - scripts/release-history/reconcile-receipt-asset.ts
+  - scripts/release-history/reconcile-receipt-asset.test.ts
+  - scripts/release-history/release-live-authority.ts
+  - scripts/release-history/release-live-authority.test.ts
+  - scripts/release-history/prepare-artifact.test.ts
+  - scripts/release-history/resolve-release-artifact.mjs
+  - scripts/release-history/resolve-release-artifact.test.ts
+  - scripts/download-published-package.ts
+  - scripts/download-published-package.test.ts
   - scripts/check-sloc.ts
   - scripts/check-sloc.test.ts
   - scripts/sloc-baseline.json
@@ -79,24 +88,24 @@ read_scope:
   - packages/llm-core/docs/final-architecture/**
   - sonar-project.properties
 review_owner: coordinator
-updated_at: 2026-08-23
+updated_at: 2026-08-24
 ---
 
-# production-quality-gates — Establish production code-quality and independent-review gates
+# production-quality-gates — Establish production code-quality gates
 
 ## Objective
 
 Provide one enforceable, reproducible quality boundary for llm-core, AIFSD and
 the supporting workspace that combines modern linting, typed architectural
-checks, deterministic qualification, external analysis and review evidence
-bound to the exact proposed revision.
+checks, deterministic qualification and external analysis. Independent semantic
+review remains task evidence rather than a CI authority.
 
 ## Why this exists
 
 The workspace still uses end-of-life ESLint 8 and legacy eslintrc configuration.
 Its CI includes valuable SonarQube, exact PydanticAI and packed-release evidence,
-but the repository has no checked-in CodeQL lane or independently verifiable
-semantic-review contract. WPKernel, Task Graph and Simple Chat each contain
+but the repository has no checked-in CodeQL lane. WPKernel, Task Graph and
+Simple Chat each contain
 useful quality patterns, but their ESLint versions, debt profiles and package
 boundaries are not authority for this workspace.
 
@@ -118,8 +127,7 @@ boundaries are not authority for this workspace.
 - Preserve hard architectural, SLOC, conformance and release checks while
   ratcheting inherited non-architectural debt.
 - Provide one canonical `quality:check` command and pinned pull-request CI.
-- Add CodeQL analysis and a machine-verifiable independent-review evidence
-  contract bound to the exact commit or diff digest.
+- Add CodeQL analysis while keeping semantic-review evidence in task handoffs.
 - Document the expected GitHub ruleset and required checks separately from the
   checked-in workflow implementation.
 
@@ -140,7 +148,7 @@ boundaries are not authority for this workspace.
   increased; the intended final rule remains explicit.
 - Roughly 500 physical lines is the design target and 600 is the hard boundary.
 - External static analysis is not represented as independent semantic review.
-- CI verifies independent review evidence but never manufactures approval.
+- CI neither verifies nor manufactures GitHub approval.
 
 ## File ownership
 
@@ -165,9 +173,6 @@ and script changes required by its scope and must preserve every existing hunk.
   duplicating release-only external qualification.
 - Pull-request CI uses immutable action references and frozen dependencies.
 - CodeQL runs through a pinned workflow and can be named as a required check.
-- Independent review evidence identifies the reviewer identity, exact revision
-  or diff digest, verdict and findings digest; invalid, stale, self-authored or
-  absent evidence fails its verifier.
 - The expected GitHub ruleset names the exact checks that must protect `main`.
 - No `MaybePromise` boundary becomes unconditionally asynchronous as a lint fix.
 - New or materially changed hand-written source/test modules target roughly 500
@@ -225,11 +230,10 @@ unused values, parameter boundaries and fallthrough remain hard failures.
 MaybePromise-sensitive `require-await` and Sonar's incompatible function-return
 rule remain disabled. Deterministic alphabetical ordering remains permitted.
 
-2026-08-22: Added pinned CI, CodeQL, checked-in ruleset expectations and a
-trusted-base independent-review verifier. Review evidence binds repository,
-base and head SHAs, the full binary diff SHA-256, `bun.lock` SHA-256, reviewer
-identity, latest verdict and findings digest. The verifier cannot create an
-approval and candidate code is never executed by the privileged workflow.
+2026-08-22: An earlier candidate added pinned CI, CodeQL and an exact-diff
+independent-review verifier. That verifier and its ruleset expectation were
+subsequently retired by the 2026-08-24 correction below and are not part of the
+current implementation.
 
 2026-08-22: Full coverage exposed an adjacent headless-workbench test fixture
 resolving the repository manifest relative to process cwd. Its focused repair
@@ -239,29 +243,36 @@ fail-closed and currently times out after 60 seconds in its sandbox.
 
 2026-08-23: Independent security review rejected generic GitHub Actions check
 projection as an authority boundary because trusted and candidate workflows
-share the same producer App identity. The workflow is read-only evidence
-validation. Production `Independent review` activation is blocked on a distinct
-verifier App bound by App ID, or an entitled source-bound required-workflow
-policy, followed by live same-repository and supported-fork qualification.
+share the same producer App identity. The provisional read-only evidence
+workflow and dedicated-App activation proposal were subsequently retired by
+the 2026-08-24 correction below.
 
-2026-08-23: Review evidence now requires a reviewer-authored closed v1 JSON
-envelope matching repository, PR, base, head, binary diff, exact-head lockfile
-and verdict. Equal-second review states tie-break by GitHub review ID. Commit
-author/committer identity is named `latestCommitActor` and is defence in depth;
-the live ruleset owns actual last-push separation.
+2026-08-23: The provisional design used a reviewer-authored JSON envelope and
+GitHub review metadata. That design was never activated and was removed by the
+2026-08-24 correction below.
+
+2026-08-24: The GitHub exact-diff approval verifier, required-check expectation
+and dedicated-App activation plan were retired. They were an invented
+deployment authority, not the intended process. Independent semantic review is
+task evidence, CodeRabbit is the external pull-request reviewer, and the
+repository owner may review, merge or close directly.
+
+2026-08-24: The separately committed documentation/governance update moved the
+quality candidate's real Git base to `757dc5f07ef263e21c77b51d56e0f177dddbc9cc`.
+The one-time lint and coverage bootstrap predicates now bind that exact base;
+the ESLint bootstrap additionally binds the exact observed candidate digest.
 
 ## Blocker
 
 The separately owned native-agent governance reconciliation is locally accepted
 and must be received with this task so STATUS remains reproducible from the
-committed task sources. External review-check activation remains blocked on a
-source-distinct verifier App or entitled source-bound required workflow plus
-live PR qualification.
+committed task sources. There is no external review-check activation blocker.
 
 2026-08-23: Focused quality-policy qualification is green with 13 tests and 19
 expectations. The GitHub policy verifier accepts only immutable action SHAs,
 detects both step-level YAML `uses` forms, forbids generic Actions check
-projection and keeps the external App contract blocked. Full ESLint 10
+projection and, in that earlier candidate, kept an external App contract
+blocked. That App proposal was retired by the 2026-08-24 correction. Full ESLint 10
 qualification was green at the then-current 306-warning and 96-suppression
 ratchets. The task remains claimed until final canonical qualification and
 review complete.
@@ -283,17 +294,14 @@ whose hard-boundary follow-up belongs to another package; 46 focused SLOC tests
 and the 597-module repository gate are green.
 
 2026-08-23: Coverage compares exact hit/found ratios by cross multiplication
-and includes a regression hidden by two-decimal display rounding. External
-review activation requires an empty blocker list, and the read-only verifier
-reacts to inline review-comment creation, editing and deletion because those
-comments contribute to the findings digest.
+and includes a regression hidden by two-decimal display rounding. The earlier
+candidate also experimented with a read-only review-evidence verifier; that
+provisional machinery was retired by the 2026-08-24 correction.
 
-2026-08-23: Release-authority hardening expanded into the existing candidate
-controller because its callable publish and schema-v1 receipt phases became
-invalid after the privilege split. The controller is now validation-only;
-publication and the v2 receipt are owned by the trusted default-branch
-`workflow_run` consumer. The task therefore owns the controller and its focused
-test alongside the two release workflows and provenance scripts.
+2026-08-24: Release publication remains one tagged workflow. The candidate
+`workflow_run` publisher and its transfer/verifier policy were removed because
+they duplicated the qualified pack, registry reconciliation and trusted
+publishing path without improving the owner-controlled release model.
 
 2026-08-23: The final lint ratchet contains 302 warnings and 96 suppressions.
 Candidate anchors must equal observed ESLint debt, use positive safe-integer
@@ -308,13 +316,26 @@ SonarQube and Codecov credentials were removed from pull-request execution and
 are main-push-only evidence. SonarQube is therefore no longer claimed as a PR
 required check.
 
-2026-08-23: Release authority is split between read-only tag qualification and
-a trusted-default-branch `workflow_run` consumer. The consumer independently
-binds the exact source, tree, plan, tag, archive and inner manifest. The OIDC
-publisher has no checkout or candidate scripts; the contents-write projection
-has no OIDC and follows registry and provenance-identity inspection. Focused
-quality, SLOC, release, provenance and controller evidence is green at 107
-tests, 0 failures and 163 expectations pending final exact-diff review.
+2026-08-24: The minimal release path uses one version/tag and one tagged
+workflow for package qualification, pack-once npm OIDC publication, exact
+registry byte/integrity reconciliation, provenance receipt and GitHub release
+projection. Actions remain immutable SHA pins. CodeRabbit review and owner
+merge or close authority remain pull-request process, not release jobs.
+
+2026-08-24: Final release review added four bounded retry and authority guards.
+Publication now re-reads the live remote tag and main containment immediately
+before npm, registry reconciliation includes exact SHA-1 shasum and derived
+dist-tag checks, evidence names survive failed-job reruns, and receipt upload is
+idempotent only when an existing asset preserves the same stable publication facts.
+
+2026-08-24: The direct sharp-edge audit removed release-plan and
+`approvedMetadataPaths` ceremony from tagged workflow admission. Tagged phases
+now bind the package manifest version directly to the tag, checked-out HEAD,
+`GITHUB_SHA`, live remote tag and live main. Registry, dependency and
+attestation downloads use bounded streaming reads with timeouts; process
+helpers use explicit timeout and output caps. Included DSSE subject and
+certificate parsing is described only as provenance identity inspection, not
+cryptographic signature verification.
 
 ## Handoff
 
@@ -322,8 +343,8 @@ tests, 0 failures and 163 expectations pending final exact-diff review.
 
 Implementation and local qualification are complete. The candidate is ready for
 a coordinated commit with the separately reviewed governance reconciliation so
-the generated architecture STATUS remains reproducible. Live review enforcement
-and publication activation remain explicitly external.
+the generated architecture STATUS remains reproducible. Publication activation
+remains explicitly external.
 
 ### Decisions applied
 
@@ -333,36 +354,38 @@ and publication activation remain explicitly external.
   base; Bun branch counters remain truthfully unavailable.
 - Candidate-controlled pull-request workflows receive no SonarQube or Codecov
   credentials.
-- Tag qualification is read-only; npm OIDC publication and GitHub release
-  projection run in separate trusted-default-branch jobs with disjoint
-  privileges.
-- Generic GitHub Actions cannot produce the authoritative independent-review
-  check. Activation remains blocked on a source-distinct producer.
+- Tag qualification, npm OIDC publication, registry reconciliation and GitHub
+  release projection run in one minimal tagged workflow.
+- Independent semantic review remains task evidence and is not projected as a
+  GitHub required check.
 
 ### Files changed
 
 ESLint 10 flat configuration and explicit production tsconfigs; canonical
-quality runner and policy/baseline tests; immutable CI, CodeQL and read-only
-review-evidence workflows; checked-in GitHub policy; split release workflows,
-qualifier, provenance receipt and validation-only controller; SLOC policy and
+quality runner and policy/baseline tests; immutable CI and CodeQL workflows;
+checked-in GitHub policy; one tagged release workflow, qualifier, provenance
+receipt and release controller; SLOC policy and
 baseline; package manifests, lockfile and quality documentation. Exact paths are
 the task `write_scope` above.
 
 ### Verification evidence
 
-- `bun run quality:check`: pass.
-- Full suite: 1,357 pass, 7 intentional skips, 0 fail, 5,688 expectations.
-- Coverage: 86.58 per cent lines and 91.08 per cent functions; exact trusted
-  baseline comparison passed; Bun branch counters unavailable.
-- ESLint 10.9.0: 302 anchored warnings and 96 digest-bound suppressions; pass.
-- SLOC: 597 source modules checked at the 500-line target and 600-line hard
+- `bun run quality:lint`: ESLint 10.9.0 passed with 301 anchored warnings and
+  96 digest-bound suppressions against the exact current bootstrap base.
+- GitHub policy: 4 workflows, immutable action references and 3 active checks;
+  pass. No independent-review check or approval expectation remains.
+- Release authority and GitHub policy: 51 focused tests and 322 assertions pass;
+  final bounded security review found no actionable defect after the atomic
+  publish/reconcile repair.
+- SLOC: 609 source modules checked at the 500-line target and 600-line hard
   limit; pass.
-- GitHub policy: 6 workflows, immutable action references and 4 active PR
-  checks; pass.
-- Production builds: strict-json, llm-core and AIFSD; pass.
-- `bun install --frozen-lockfile`: 1,474 installs across 1,347 packages, no
-  changes.
-- Final independent code/security review: no actionable findings.
+- `bun run quality:check`: 1,395 tests passed, 7 skipped, 0 failed and 5,832
+  assertions; coverage passed at 86.6% lines and 91.27% functions; all three
+  production package builds passed under Node 24.13.
+- Node 24.13 packed-package smoke checks passed for strict-json, llm-core and
+  AIFSD; llm-core verified 35 ESM-only ADR-016 exports from isolated runtime and
+  declaration consumers.
+- Independent final review found no remaining actionable findings.
 - `git diff --check`: pass.
 
 ### Deviations
@@ -376,15 +399,9 @@ the task `write_scope` above.
 
 ### Remaining risks
 
-- Install and bind the dedicated independent-review App, then live-qualify
-  same-repository and supported-fork attachment and staleness under the intended
-  ruleset.
 - Configure each npm package trusted publisher for exact workflow
-  `publish-release.yml`, environment `npm-release` and action `npm publish`.
-- Create and live-qualify protected `npm-release` and `github-release`
-  environments and their intended approval settings.
-- Until those steps pass, neither independent-review enforcement nor live
-  publication through the new route is claimed.
+  `release.yml` and action `npm publish`.
+- Until that configuration passes, live publication through the route is not claimed.
 
 ### Recommended next task
 
