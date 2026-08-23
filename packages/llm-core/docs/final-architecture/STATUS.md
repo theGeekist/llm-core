@@ -1,13 +1,13 @@
 # llm-core Architecture v2 Status
 
 Architecture version: v2
-Updated: 20 August 2026
+Updated: 23 August 2026
 Kernel: complete at `9920425`
 Pre-transition source baseline: `c041792`
 
 <!-- architecture-status:generated:start -->
 
-Active tasks: 0
+Active tasks: 2
 
 ## Task inventory
 
@@ -17,9 +17,14 @@ Active tasks: 0
 | adapter-ai-sdk-native-contract-correction | adapters | done | architecture-external-contract-fidelity, core-ai-sdk-adapter | — | — | — |
 | adapter-ai-sdlc | adapters | done | specification-api | cf3347d | — | — |
 | adapter-ai-sdlc-release | adapters | proposed | architecture-source-layout-normalization, adapter-ai-sdlc, specification-cross-adapter-conformance, architecture-release-reproducibility | — | — | — |
+| adapter-antigravity-cli-hooks-runtime | adapters | proposed | native-agent-conversation-runtime-contract | — | — | — |
+| adapter-antigravity-desktop-sidecar-runtime | adapters | proposed | native-agent-conversation-runtime-contract | — | — | — |
 | adapter-bmad | adapters | done | specification-api | cf3347d | — | — |
 | adapter-bmad-release | adapters | proposed | architecture-source-layout-normalization, adapter-bmad, specification-cross-adapter-conformance, architecture-release-reproducibility | — | — | — |
 | adapter-catalogue-public-qualification | adapters | done | architecture-external-contract-fidelity, architecture-release-reproducibility | — | — | — |
+| adapter-claude-native-session-runtime | adapters | proposed | native-agent-conversation-runtime-contract | — | — | — |
+| adapter-codex-app-server-runtime | adapters | proposed | native-agent-conversation-runtime-contract | — | — | — |
+| adapter-codex-desktop-hooks-runtime | adapters | proposed | native-agent-conversation-runtime-contract | — | — | — |
 | adapter-coding-agent-integration | adapters | done | architecture-external-contract-fidelity, architecture-runtime-ownership-correction, capabilities-runtime-conformance, capabilities-operational-evidence | — | — | — |
 | adapter-langgraph-runtime | adapters | proposed | architecture-external-contract-fidelity, architecture-runtime-ownership-correction, runtime-operation-contract-correction, architecture-release-reproducibility, capabilities-runtime-conformance, capabilities-operational-evidence | — | — | — |
 | adapter-openspec | adapters | done | specification-api | cf3347d | — | — |
@@ -82,6 +87,10 @@ Active tasks: 0
 | language-rollout | language | done | language-vocabulary | — | — | — |
 | language-vocabulary | language | done | language-audit | — | — | — |
 | model-routing-qualification | qualification | proposed | architecture-source-layout-normalization, cost-facts, capabilities-evaluation-qualification | — | — | — |
+| native-agent-conversation-runtime-contract | integrations | proposed | architecture-runtime-ownership-correction, core-agent-runner, core-interactions | — | — | — |
+| native-agent-cross-provider-conformance | qualification | proposed | adapter-codex-app-server-runtime, adapter-codex-desktop-hooks-runtime, adapter-claude-native-session-runtime, adapter-antigravity-cli-hooks-runtime, adapter-antigravity-desktop-sidecar-runtime | — | — | — |
+| native-agent-runtime-governance-reconciliation | architecture | review | — | — | — | — |
+| production-quality-gates | qualification | review | — | — | — | — |
 | release-history-provenance | qualification | done | release-v2-readiness | — | — | — |
 | release-v2-readiness | architecture | done | architecture-release-reproducibility, adapters-protocol-qualification | — | — | — |
 | runtime-adapter-substitution | qualification | proposed | architecture-external-contract-fidelity, runtime-operation-contract-correction, adapter-langgraph-runtime, adapter-pydantic-ai-runtime | — | — | — |
@@ -98,6 +107,7 @@ Active tasks: 0
 | specification-exact-operation-contracts | specifications | done | architecture-external-contract-fidelity, specification-api | — | — | — |
 | specification-semantic-path-characterization | specifications | proposed | architecture-external-contract-fidelity, architecture-runtime-ownership-correction, specification-api, adapter-openspec, adapter-pydantic-ai, adapter-ai-sdlc, adapter-spec-kit, adapter-bmad | — | — | — |
 | specification-semantic-reconciliation | specifications | proposed | specification-exact-operation-contracts, specification-semantic-path-characterization | — | — | — |
+| task-graph-native-agent-runtime-migration-qualification | qualification | proposed | native-agent-cross-provider-conformance | — | — | — |
 
 <!-- architecture-status:generated:end -->
 
