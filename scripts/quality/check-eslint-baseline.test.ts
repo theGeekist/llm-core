@@ -92,7 +92,7 @@ describe("ESLint debt anchors", () => {
     expect(
       baselineEvolutionErrors(candidate, undefined, {
         candidateSha256: "11c6ea54d2e4fff302135e56f2138da59e9b53b07a5996ae56af9426f45ea861",
-        revision: "757dc5f07ef263e21c77b51d56e0f177dddbc9cc",
+        revision: "e9399df47cb2f9018f7aa8c74f5592972c63b3d5",
       }),
     ).toEqual([]);
   });

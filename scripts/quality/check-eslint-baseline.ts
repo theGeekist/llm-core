@@ -31,7 +31,7 @@ const baselinePath = resolve(root, "scripts/quality/eslint-baseline.json");
 const baselineRepositoryPath = "scripts/quality/eslint-baseline.json";
 const eslintPath = resolve(root, "node_modules/.bin/eslint");
 const writeBaseline = process.argv.includes("--write-baseline");
-const initialBaselineBase = "757dc5f07ef263e21c77b51d56e0f177dddbc9cc";
+const initialBaselineBase = "e9399df47cb2f9018f7aa8c74f5592972c63b3d5";
 const initialBaselineSha256 = "11c6ea54d2e4fff302135e56f2138da59e9b53b07a5996ae56af9426f45ea861";
 
 const childScopes = (directory: string): readonly (readonly string[])[] =>
@@ -305,8 +305,13 @@ if (import.meta.main) {
   };
   const baseRevision = trustedRevision();
   const trustedBaseline = loadTrustedBaseline(baseRevision);
+  const checkedInBaselineSha256 =
+    trustedBaseline === undefined && existsSync(baselinePath)
+      ? createHash("sha256").update(readFileSync(baselinePath)).digest("hex")
+      : undefined;
   const evolutionErrors = baselineEvolutionErrors(candidateBaseline, trustedBaseline, {
     revision: baseRevision,
+    ...(checkedInBaselineSha256 === undefined ? {} : { candidateSha256: checkedInBaselineSha256 }),
   });
 
   if (hardErrors.length > 0) {

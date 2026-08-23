@@ -21,7 +21,7 @@ const lcovPath = resolve(root, "coverage/lcov.info");
 const baselinePath = resolve(root, "scripts/quality/coverage-baseline.json");
 const baselineRepositoryPath = "scripts/quality/coverage-baseline.json";
 const writeBaseline = process.argv.includes("--write-baseline");
-const initialBaselineBase = "757dc5f07ef263e21c77b51d56e0f177dddbc9cc";
+const initialBaselineBase = "e9399df47cb2f9018f7aa8c74f5592972c63b3d5";
 const initialBaselineSha256 = "da4f678bf364cb992641311dd9ea20202a4536f67c7fbf26141aa642a7fd9e38";
 
 const percentage = (hit: number, found: number): number =>

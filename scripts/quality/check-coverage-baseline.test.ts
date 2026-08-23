@@ -88,7 +88,7 @@ end_of_record
     expect(
       coverageBaselineEvolutionErrors(candidate, undefined, {
         candidateSha256: "da4f678bf364cb992641311dd9ea20202a4536f67c7fbf26141aa642a7fd9e38",
-        revision: "757dc5f07ef263e21c77b51d56e0f177dddbc9cc",
+        revision: "e9399df47cb2f9018f7aa8c74f5592972c63b3d5",
       }),
     ).toEqual([]);
   });

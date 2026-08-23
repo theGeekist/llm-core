@@ -12,6 +12,8 @@ const projection: PublicProjection = {
     "packages/aifsd/README.md",
     "packages/aifsd/internal/typecheck-root.d.ts",
     "packages/aifsd/package.json",
+    "packages/aifsd/tsconfig.build.json",
+    "packages/aifsd/tsconfig.eslint.json",
     "packages/aifsd/tsconfig.json",
   ],
   aifsdCodeRoots: [
