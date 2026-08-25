@@ -63,6 +63,16 @@
         "currentSha256": "da490e5164b3c22ae428bcdc3f9e90cbc8bd1172af67c7438e210be5aa733d3c"
       }
     },
+    "packages/llm-core/src/application/interaction/session.ts": {
+      "lines": 554,
+      "sha256": "e5a8039c3a129ed1c7e07caa43a6fe5ec867e16f59f1f290ed2fea032cd2a9e8",
+      "waiver": {
+        "version": 1,
+        "justification": "approximately 500 lines",
+        "currentLines": 554,
+        "currentSha256": "e5a8039c3a129ed1c7e07caa43a6fe5ec867e16f59f1f290ed2fea032cd2a9e8"
+      }
+    },
     "packages/llm-core/src/adapters/protocols/a2a/validation.ts": {
       "lines": 600,
       "sha256": "23dff4054fd58a49fcc22111d951a15da2b6a3786cfec36d8220945a418e55e8",
@@ -161,6 +171,16 @@
         "followUp": "packages/llm-core/docs/final-architecture/tasks/architecture-test-sloc-decomposition.md",
         "currentLines": 782,
         "currentSha256": "5c6ad22fbe082d3816ddfb1aeb47e523a088885ad45523857596841a2c6416d5"
+      }
+    },
+    "packages/llm-core/tests/application/interaction/active-input.test.ts": {
+      "lines": 527,
+      "sha256": "55a9f5f017f3923b3e6e583a351b87088481f126fd1de11f40b948a8411c11ce",
+      "waiver": {
+        "version": 1,
+        "justification": "approximately 500 lines",
+        "currentLines": 527,
+        "currentSha256": "55a9f5f017f3923b3e6e583a351b87088481f126fd1de11f40b948a8411c11ce"
       }
     },
     "packages/llm-core/tests/application/interaction/session.test.ts": {

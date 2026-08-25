@@ -5,6 +5,7 @@ import {
   isExternalId,
   type CorrelationId,
   type EventId,
+  type JsonValue,
   type RunId,
 } from "#contracts";
 import type { ConversationEvent } from "./types";
@@ -93,21 +94,52 @@ const commonIdentity = (value: Record<string, unknown>): { eventId: EventId; run
 const optionalReason = (value: unknown): string | null =>
   value === undefined ? null : requiredSafeCode(value, "reasonCode");
 
+const invalidConversationEvent = (): never => {
+  throw new TypeError("Conversation projection events must use a closed safe shape.");
+};
+
+const requireOnlyKeys = (value: Record<string, unknown>, keys: readonly string[]): void => {
+  if (!hasOnlyKeys(value, keys)) {
+    invalidConversationEvent();
+  }
+};
+
+const requiredMember = <const TChoices extends readonly string[]>(
+  value: unknown,
+  choices: TChoices,
+): TChoices[number] => {
+  return choices.find((choice) => choice === value) ?? invalidConversationEvent();
+};
+
+const requiredProjectionJson = (value: unknown): JsonValue => {
+  if (isSafeInteractionProjectionJson(value)) {
+    return structuredClone(value);
+  }
+  return invalidConversationEvent();
+};
+
+const requiredBoolean = (value: unknown): boolean => {
+  if (typeof value === "boolean") {
+    return value;
+  }
+  return invalidConversationEvent();
+};
+
 const allowedDecisions = (value: unknown): readonly string[] => {
+  if (!Array.isArray(value)) {
+    throw new TypeError("Conversation snapshot intervention decisions must be closed.");
+  }
+  const decisions = value.map((entry) => requiredString(entry, "intervention decision"));
   if (
-    !Array.isArray(value) ||
-    value.length === 0 ||
-    new Set(value).size !== value.length ||
-    !value.every((entry) =>
-      INTERVENTION_DECISIONS.includes(entry as (typeof INTERVENTION_DECISIONS)[number]),
-    )
+    decisions.length === 0 ||
+    new Set(decisions).size !== decisions.length ||
+    !decisions.every((entry) => INTERVENTION_DECISIONS.includes(entry as never))
   ) {
     throw new TypeError("Conversation snapshot intervention decisions must be closed.");
   }
-  return [...value] as string[];
+  return decisions;
 };
 
-// eslint-disable-next-line sonarjs/cognitive-complexity -- registers one exhaustive closed UI event union
 export const registerConversationEvent = (value: unknown): ConversationEvent => {
   if (!isRecord(value)) {
     throw new TypeError("Conversation projection events must be closed objects.");
@@ -115,251 +147,210 @@ export const registerConversationEvent = (value: unknown): ConversationEvent => 
   const kind = requiredString(value.kind, "event kind");
   const common = commonIdentity(value);
   switch (kind) {
-    case "run-started":
-      if (hasOnlyKeys(value, ["kind", "eventId", "runId", "agentId"])) {
-        return { kind, ...common, agentId: requiredExternalId(value.agentId, "agentId") };
-      }
-      break;
-    case "run-progress":
-      if (hasOnlyKeys(value, ["kind", "eventId", "runId", "code"])) {
-        return { kind, ...common, code: requiredSafeCode(value.code, "progress code") };
-      }
-      break;
-    case "intervention-requested":
-      if (
-        hasOnlyKeys(value, ["kind", "eventId", "runId", "interventionId", "allowed", "expiresAt"])
-      ) {
-        return {
-          kind,
-          ...common,
-          interventionId: canonicalId(value.interventionId, "interventionId"),
-          allowed: allowedDecisions(value.allowed),
-          expiresAt: requiredTimestamp(value.expiresAt, "expiresAt"),
-        };
-      }
-      break;
-    case "cancellation-requested":
-      if (hasOnlyKeys(value, ["kind", "eventId", "runId"])) {
-        return { kind, ...common };
-      }
-      break;
-    case "active-input-accepted":
-      if (
-        hasOnlyKeys(value, [
-          "kind",
-          "eventId",
-          "runId",
-          "messageId",
-          "correlationId",
-          "acceptedAt",
-          "deliveryMode",
-        ]) &&
-        ACTIVE_INPUT_DELIVERY_MODES.includes(
-          value.deliveryMode as (typeof ACTIVE_INPUT_DELIVERY_MODES)[number],
-        )
-      ) {
-        return {
-          kind,
-          ...common,
-          messageId: requiredExternalId(value.messageId, "messageId"),
-          correlationId: requiredCorrelationId(value.correlationId),
-          acceptedAt: requiredTimestamp(value.acceptedAt, "acceptedAt"),
-          deliveryMode: value.deliveryMode as (typeof ACTIVE_INPUT_DELIVERY_MODES)[number],
-        };
-      }
-      break;
-    case "active-input-recipient-observed":
-      if (
-        hasOnlyKeys(value, [
-          "kind",
-          "eventId",
-          "runId",
-          "messageId",
-          "correlationId",
-          "observedAt",
-          "evidenceRef",
-        ])
-      ) {
-        return {
-          kind,
-          ...common,
-          messageId: requiredExternalId(value.messageId, "messageId"),
-          correlationId: requiredCorrelationId(value.correlationId),
-          observedAt: requiredTimestamp(value.observedAt, "observedAt"),
-          evidenceRef: requiredExternalId(value.evidenceRef, "evidenceRef"),
-        };
-      }
-      break;
-    case "active-input-processing-observed":
-      if (
-        hasOnlyKeys(value, [
-          "kind",
-          "eventId",
-          "runId",
-          "messageId",
-          "correlationId",
-          "observedAt",
-          "causationRef",
-        ])
-      ) {
-        return {
-          kind,
-          ...common,
-          messageId: requiredExternalId(value.messageId, "messageId"),
-          correlationId: requiredCorrelationId(value.correlationId),
-          observedAt: requiredTimestamp(value.observedAt, "observedAt"),
-          causationRef: requiredExternalId(value.causationRef, "causationRef"),
-        };
-      }
-      break;
-    case "active-input-evidence-unavailable":
-      if (
-        hasOnlyKeys(value, [
-          "kind",
-          "eventId",
-          "runId",
-          "messageId",
-          "correlationId",
-          "stage",
-          "declaredAt",
-          "reasonCode",
-        ]) &&
-        ACTIVE_INPUT_EVIDENCE_STAGES.includes(
-          value.stage as (typeof ACTIVE_INPUT_EVIDENCE_STAGES)[number],
-        ) &&
-        ACTIVE_INPUT_UNAVAILABLE_REASONS.includes(
-          value.reasonCode as (typeof ACTIVE_INPUT_UNAVAILABLE_REASONS)[number],
-        )
-      ) {
-        return {
-          kind,
-          ...common,
-          messageId: requiredExternalId(value.messageId, "messageId"),
-          correlationId: requiredCorrelationId(value.correlationId),
-          stage: value.stage as (typeof ACTIVE_INPUT_EVIDENCE_STAGES)[number],
-          declaredAt: requiredTimestamp(value.declaredAt, "declaredAt"),
-          reasonCode: value.reasonCode as (typeof ACTIVE_INPUT_UNAVAILABLE_REASONS)[number],
-        };
-      }
-      break;
+    case "run-started": {
+      requireOnlyKeys(value, ["kind", "eventId", "runId", "agentId"]);
+      return { kind, ...common, agentId: requiredExternalId(value.agentId, "agentId") };
+    }
+    case "run-progress": {
+      requireOnlyKeys(value, ["kind", "eventId", "runId", "code"]);
+      return { kind, ...common, code: requiredSafeCode(value.code, "progress code") };
+    }
+    case "intervention-requested": {
+      requireOnlyKeys(value, [
+        "kind",
+        "eventId",
+        "runId",
+        "interventionId",
+        "allowed",
+        "expiresAt",
+      ]);
+      return {
+        kind,
+        ...common,
+        interventionId: canonicalId(value.interventionId, "interventionId"),
+        allowed: allowedDecisions(value.allowed),
+        expiresAt: requiredTimestamp(value.expiresAt, "expiresAt"),
+      };
+    }
+    case "cancellation-requested": {
+      requireOnlyKeys(value, ["kind", "eventId", "runId"]);
+      return { kind, ...common };
+    }
+    case "active-input-accepted": {
+      requireOnlyKeys(value, [
+        "kind",
+        "eventId",
+        "runId",
+        "messageId",
+        "correlationId",
+        "acceptedAt",
+        "deliveryMode",
+      ]);
+      return {
+        kind,
+        ...common,
+        messageId: requiredExternalId(value.messageId, "messageId"),
+        correlationId: requiredCorrelationId(value.correlationId),
+        acceptedAt: requiredTimestamp(value.acceptedAt, "acceptedAt"),
+        deliveryMode: requiredMember(value.deliveryMode, ACTIVE_INPUT_DELIVERY_MODES),
+      };
+    }
+    case "active-input-recipient-observed": {
+      requireOnlyKeys(value, [
+        "kind",
+        "eventId",
+        "runId",
+        "messageId",
+        "correlationId",
+        "observedAt",
+        "evidenceRef",
+      ]);
+      return {
+        kind,
+        ...common,
+        messageId: requiredExternalId(value.messageId, "messageId"),
+        correlationId: requiredCorrelationId(value.correlationId),
+        observedAt: requiredTimestamp(value.observedAt, "observedAt"),
+        evidenceRef: requiredExternalId(value.evidenceRef, "evidenceRef"),
+      };
+    }
+    case "active-input-processing-observed": {
+      requireOnlyKeys(value, [
+        "kind",
+        "eventId",
+        "runId",
+        "messageId",
+        "correlationId",
+        "observedAt",
+        "causationRef",
+      ]);
+      return {
+        kind,
+        ...common,
+        messageId: requiredExternalId(value.messageId, "messageId"),
+        correlationId: requiredCorrelationId(value.correlationId),
+        observedAt: requiredTimestamp(value.observedAt, "observedAt"),
+        causationRef: requiredExternalId(value.causationRef, "causationRef"),
+      };
+    }
+    case "active-input-evidence-unavailable": {
+      requireOnlyKeys(value, [
+        "kind",
+        "eventId",
+        "runId",
+        "messageId",
+        "correlationId",
+        "stage",
+        "declaredAt",
+        "reasonCode",
+      ]);
+      return {
+        kind,
+        ...common,
+        messageId: requiredExternalId(value.messageId, "messageId"),
+        correlationId: requiredCorrelationId(value.correlationId),
+        stage: requiredMember(value.stage, ACTIVE_INPUT_EVIDENCE_STAGES),
+        declaredAt: requiredTimestamp(value.declaredAt, "declaredAt"),
+        reasonCode: requiredMember(value.reasonCode, ACTIVE_INPUT_UNAVAILABLE_REASONS),
+      };
+    }
     case "tool-status": {
-      if (
-        !hasOnlyKeys(value, [
-          "kind",
-          "eventId",
-          "runId",
-          "toolCallId",
-          "receiptState",
-          "reasonCode",
-        ]) ||
-        !RECEIPT_STATES.includes(value.receiptState as (typeof RECEIPT_STATES)[number])
-      ) {
-        break;
-      }
+      requireOnlyKeys(value, [
+        "kind",
+        "eventId",
+        "runId",
+        "toolCallId",
+        "receiptState",
+        "reasonCode",
+      ]);
       const reasonCode = optionalReason(value.reasonCode);
       return {
         kind,
         ...common,
         toolCallId: canonicalId(value.toolCallId, "toolCallId"),
-        receiptState: value.receiptState as (typeof RECEIPT_STATES)[number],
+        receiptState: requiredMember(value.receiptState, RECEIPT_STATES),
         ...(reasonCode ? { reasonCode } : {}),
       };
     }
     case "run-finished": {
-      if (
-        !hasOnlyKeys(value, ["kind", "eventId", "runId", "status", "reasonCode"]) ||
-        !TERMINAL_STATUSES.includes(value.status as (typeof TERMINAL_STATUSES)[number])
-      ) {
-        break;
-      }
+      requireOnlyKeys(value, ["kind", "eventId", "runId", "status", "reasonCode"]);
       const reasonCode = optionalReason(value.reasonCode);
       return {
         kind,
         ...common,
-        status: value.status as (typeof TERMINAL_STATUSES)[number],
+        status: requiredMember(value.status, TERMINAL_STATUSES),
         ...(reasonCode ? { reasonCode } : {}),
       };
     }
     case "message-started":
-    case "message-finished":
-      if (hasOnlyKeys(value, ["kind", "eventId", "runId", "messageId"])) {
-        return {
-          kind,
-          ...common,
-          messageId: requiredExternalId(value.messageId, "messageId"),
-        };
-      }
-      break;
+    case "message-finished": {
+      requireOnlyKeys(value, ["kind", "eventId", "runId", "messageId"]);
+      return {
+        kind,
+        ...common,
+        messageId: requiredExternalId(value.messageId, "messageId"),
+      };
+    }
     case "text-delta":
-    case "reasoning-delta":
-      if (hasOnlyKeys(value, ["kind", "eventId", "runId", "messageId", "text"])) {
-        return {
-          kind,
-          ...common,
-          messageId: requiredExternalId(value.messageId, "messageId"),
-          text: requiredString(value.text, "projected text"),
-        };
-      }
-      break;
-    case "tool-call":
-      if (
-        hasOnlyKeys(value, [
-          "kind",
-          "eventId",
-          "runId",
-          "messageId",
-          "toolCallId",
-          "toolName",
-          "projectedInput",
-        ]) &&
-        isSafeInteractionProjectionJson(value.projectedInput)
-      ) {
-        return {
-          kind,
-          ...common,
-          messageId: requiredExternalId(value.messageId, "messageId"),
-          toolCallId: requiredExternalId(value.toolCallId, "toolCallId"),
-          toolName: requiredExternalId(value.toolName, "toolName"),
-          projectedInput: structuredClone(value.projectedInput),
-        };
-      }
-      break;
-    case "tool-result":
-      if (
-        hasOnlyKeys(value, [
-          "kind",
-          "eventId",
-          "runId",
-          "messageId",
-          "toolCallId",
-          "toolName",
-          "projectedResult",
-          "isError",
-        ]) &&
-        isSafeInteractionProjectionJson(value.projectedResult) &&
-        typeof value.isError === "boolean"
-      ) {
-        return {
-          kind,
-          ...common,
-          messageId: requiredExternalId(value.messageId, "messageId"),
-          toolCallId: requiredExternalId(value.toolCallId, "toolCallId"),
-          toolName: requiredExternalId(value.toolName, "toolName"),
-          projectedResult: structuredClone(value.projectedResult),
-          isError: value.isError,
-        };
-      }
-      break;
-    case "message-failed":
-      if (hasOnlyKeys(value, ["kind", "eventId", "runId", "messageId", "reasonCode"])) {
-        return {
-          kind,
-          ...common,
-          messageId: requiredExternalId(value.messageId, "messageId"),
-          reasonCode: requiredSafeCode(value.reasonCode, "reasonCode"),
-        };
-      }
-      break;
+    case "reasoning-delta": {
+      requireOnlyKeys(value, ["kind", "eventId", "runId", "messageId", "text"]);
+      return {
+        kind,
+        ...common,
+        messageId: requiredExternalId(value.messageId, "messageId"),
+        text: requiredString(value.text, "projected text"),
+      };
+    }
+    case "tool-call": {
+      requireOnlyKeys(value, [
+        "kind",
+        "eventId",
+        "runId",
+        "messageId",
+        "toolCallId",
+        "toolName",
+        "projectedInput",
+      ]);
+      return {
+        kind,
+        ...common,
+        messageId: requiredExternalId(value.messageId, "messageId"),
+        toolCallId: requiredExternalId(value.toolCallId, "toolCallId"),
+        toolName: requiredExternalId(value.toolName, "toolName"),
+        projectedInput: requiredProjectionJson(value.projectedInput),
+      };
+    }
+    case "tool-result": {
+      requireOnlyKeys(value, [
+        "kind",
+        "eventId",
+        "runId",
+        "messageId",
+        "toolCallId",
+        "toolName",
+        "projectedResult",
+        "isError",
+      ]);
+      return {
+        kind,
+        ...common,
+        messageId: requiredExternalId(value.messageId, "messageId"),
+        toolCallId: requiredExternalId(value.toolCallId, "toolCallId"),
+        toolName: requiredExternalId(value.toolName, "toolName"),
+        projectedResult: requiredProjectionJson(value.projectedResult),
+        isError: requiredBoolean(value.isError),
+      };
+    }
+    case "message-failed": {
+      requireOnlyKeys(value, ["kind", "eventId", "runId", "messageId", "reasonCode"]);
+      return {
+        kind,
+        ...common,
+        messageId: requiredExternalId(value.messageId, "messageId"),
+        reasonCode: requiredSafeCode(value.reasonCode, "reasonCode"),
+      };
+    }
+    default:
+      return invalidConversationEvent();
   }
-  throw new TypeError("Conversation projection events must use a closed safe shape.");
 };

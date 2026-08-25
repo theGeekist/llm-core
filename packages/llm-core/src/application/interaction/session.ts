@@ -20,24 +20,23 @@ import {
   createAgentActiveInputRejection,
   isAgentOutput,
   isNativeAgentRun,
-  isRegisteredNativeAgentConversationProfile,
   nativeAgentConversationContinuity,
   nativeAgentOperation,
   registerAgentActiveInputAcknowledgement,
   registerAgentActiveInputProcessingEvidence,
   registerAgentActiveInputRequest,
+  type AgentResult,
   type RegisteredNativeAgentConversationProfile,
 } from "../../features/agent/public";
+import { interactionContentEvent, interactionExecutionEvent, interactionRunId } from "./events";
 import {
-  interactionAgentEvent,
-  interactionContentEvent,
-  interactionExecutionEvent,
-  interactionRunId,
-} from "./events";
-import { createInteractionProjection, reduceInteractionProjection } from "./projection";
+  createInteractionProjection,
+  observeInteractionAgentEvents,
+  reduceInteractionProjection,
+  type InteractionTerminalObservation,
+} from "./projection";
 import { registerConversationSnapshot } from "./registration";
 import { AsyncEventLog } from "../async-event-log";
-import { registerInteractionProviderSession } from "./provider-session-registration";
 import type {
   ConversationStoreReservation,
   ConversationSnapshot,
@@ -53,8 +52,8 @@ import type {
 import { isSafeInteractionCode } from "./content-registration";
 import {
   readEarlyNativeProviderSession,
-  requireNativeConversationRoute,
-  resolveTerminalNativeProviderSession,
+  resolveInteractionProviderSession,
+  resolveNativeConversationRoute,
 } from "./native-route";
 
 const emptyValue = (conversationId: ConversationId): ConversationState => ({
@@ -63,6 +62,39 @@ const emptyValue = (conversationId: ConversationId): ConversationState => ({
   turns: Object.freeze([]),
   projection: createInteractionProjection(conversationId),
 });
+
+interface ActiveInteractionRun {
+  readonly runId: RunId;
+  readonly log: AsyncEventLog<InteractionEvent>;
+  readonly agentRun: InteractionRun["agentRun"];
+  readonly nativeConversation?: RegisteredNativeAgentConversationProfile;
+  readonly inputMessageIds: Set<string>;
+  readonly inputCorrelationIds: Set<string>;
+  readonly acceptedInputMessages: Map<string, string>;
+  projection: ConversationState["projection"];
+}
+
+const requireMatchingAgentResult = (
+  runId: RunId,
+  terminal: InteractionTerminalObservation,
+  run: AgentResult,
+): void => {
+  if (run.identity.runId !== runId) {
+    throw new TypeError("Agent results must bind to the active run.");
+  }
+  if (terminal.status !== run.status) {
+    throw new TypeError("Agent result status must agree with its terminal event.");
+  }
+  if (
+    run.reasonCode !== terminal.reasonCode ||
+    (run.reasonCode !== undefined && !isSafeInteractionCode(run.reasonCode))
+  ) {
+    throw new TypeError("Agent result reason code must safely agree with its terminal event.");
+  }
+  if (run.output !== undefined && !isAgentOutput(run.output)) {
+    throw new TypeError("Agent output must use the closed portable result contract.");
+  }
+};
 
 const asSnapshot = (
   options: CreateInteractionSessionOptions,
@@ -121,18 +153,7 @@ export const createInteractionSession = (
     throw new TypeError("Interaction sessions require a canonical conversation ID.");
   }
   let current = asSnapshot(options, emptyValue(options.conversationId));
-  let active:
-    | {
-        readonly runId: RunId;
-        readonly log: AsyncEventLog<InteractionEvent>;
-        readonly agentRun: InteractionRun["agentRun"];
-        readonly nativeConversation?: RegisteredNativeAgentConversationProfile;
-        readonly inputMessageIds: Set<string>;
-        readonly inputCorrelationIds: Set<string>;
-        readonly acceptedInputMessages: Map<string, string>;
-        projection: ConversationState["projection"];
-      }
-    | undefined;
+  let active: ActiveInteractionRun | undefined;
   let busy = false;
   let startingEvents: InteractionEvent[] | undefined;
 
@@ -257,9 +278,178 @@ export const createInteractionSession = (
     return acknowledgement;
   };
 
+  const requireSendRequest = (request: Parameters<InteractionSession["send"]>[0]): JsonValue => {
+    if (
+      request.invocationContext.conversationId !== undefined &&
+      request.invocationContext.conversationId !== options.conversationId
+    ) {
+      throw new TypeError("Invocation and session conversation identities must match.");
+    }
+    if (!isJsonValue(request.input)) {
+      throw new TypeError("Interaction input must be strict portable JSON.");
+    }
+    return structuredClone(request.input);
+  };
+
+  const reserveCurrent = async (
+    loaded: ConversationSnapshot,
+  ): Promise<ConversationStoreReservation> => {
+    const reservationId = options.identity.newReservationId();
+    if (!isExternalId(reservationId)) {
+      throw new TypeError("Conversation reservation IDs must be opaque external IDs.");
+    }
+    const reservation = await options.store.reserve({
+      conversationId: options.conversationId,
+      expectedRevision: loaded.value.revision,
+      reservationId,
+    });
+    if (
+      reservation === null ||
+      reservation.conversationId !== options.conversationId ||
+      reservation.expectedRevision !== loaded.value.revision ||
+      reservation.reservationId !== reservationId
+    ) {
+      throw new Error("Conversation session could not reserve its current revision.");
+    }
+    return reservation;
+  };
+
+  const startAgentRun = async (input: {
+    readonly request: Parameters<InteractionSession["send"]>[0];
+    readonly loaded: ConversationSnapshot;
+    readonly submittedInput: JsonValue;
+    readonly nativeConversation: RegisteredNativeAgentConversationProfile | undefined;
+  }): Promise<{
+    readonly agentRun: InteractionRun["agentRun"];
+    readonly earlyProviderSession: ProviderSessionRef | undefined;
+  }> => {
+    const agentRun = await options.runner.start({
+      agent: options.agent,
+      invocationContext: structuredClone({
+        ...input.request.invocationContext,
+        conversationId: options.conversationId,
+      }),
+      input: structuredClone(input.submittedInput),
+      ...(input.loaded.value.providerSession
+        ? { providerSession: input.loaded.value.providerSession }
+        : {}),
+    });
+    if (!isUuidV7(agentRun.identity.runId)) {
+      throw new TypeError("New interaction agent runs must use UUIDv7 run IDs.");
+    }
+    if (input.nativeConversation === undefined) {
+      return { agentRun, earlyProviderSession: input.loaded.value.providerSession };
+    }
+    if (!isNativeAgentRun(agentRun)) {
+      throw new TypeError("A native-agent route profile requires the complete native run surface.");
+    }
+    return {
+      agentRun,
+      earlyProviderSession: await readEarlyNativeProviderSession(
+        agentRun,
+        input.nativeConversation,
+      ),
+    };
+  };
+
+  const activateAgentRun = (
+    loaded: ConversationSnapshot,
+    agentRun: InteractionRun["agentRun"],
+    nativeConversation: RegisteredNativeAgentConversationProfile | undefined,
+  ): ActiveInteractionRun => {
+    const log = new AsyncEventLog<InteractionEvent>();
+    const activation: ActiveInteractionRun = {
+      runId: agentRun.identity.runId,
+      log,
+      agentRun,
+      ...(nativeConversation ? { nativeConversation } : {}),
+      inputMessageIds: new Set<string>(),
+      inputCorrelationIds: new Set<string>(),
+      acceptedInputMessages: new Map<string, string>(),
+      projection: loaded.value.projection,
+    };
+    active = activation;
+    for (const event of startingEvents ?? []) {
+      if (interactionRunId(event) !== activation.runId) {
+        throw new TypeError("Execution events must bind to the active conversation run.");
+      }
+      activation.projection = reduceInteractionProjection(activation.projection, event);
+      log.append(event);
+    }
+    startingEvents = undefined;
+    return activation;
+  };
+
+  const settleRun = async (input: {
+    readonly loaded: ConversationSnapshot;
+    readonly submittedInput: JsonValue;
+    readonly activation: ActiveInteractionRun;
+    readonly reservation: ConversationStoreReservation;
+    readonly earlyProviderSession: ProviderSessionRef | undefined;
+    readonly nativeConversation: RegisteredNativeAgentConversationProfile | undefined;
+  }): Promise<InteractionRunResult> => {
+    try {
+      const terminal = await observeInteractionAgentEvents({
+        conversationId: options.conversationId,
+        runId: input.activation.runId,
+        events: input.activation.agentRun.events(),
+        emit: (event) => {
+          input.activation.projection = reduceInteractionProjection(
+            input.activation.projection,
+            event,
+          );
+          input.activation.log.append(event);
+        },
+      });
+      const run = await input.activation.agentRun.result();
+      requireMatchingAgentResult(input.activation.runId, terminal, run);
+      const providerSession = resolveInteractionProviderSession({
+        terminal: run.providerSession,
+        early: input.earlyProviderSession,
+        nativeConversation: input.nativeConversation,
+      });
+      const output = run.output === undefined ? {} : { output: structuredClone(run.output) };
+      const value: ConversationState = {
+        conversationId: options.conversationId,
+        revision: input.loaded.value.revision + 1,
+        turns: [
+          ...input.loaded.value.turns,
+          {
+            runId: run.identity.runId,
+            input: input.submittedInput,
+            status: run.status,
+            ...output,
+            ...(run.reasonCode ? { reasonCode: run.reasonCode } : {}),
+          },
+        ],
+        projection: input.activation.projection,
+        ...(providerSession ? { providerSession } : {}),
+        ...(providerSession && input.nativeConversation
+          ? { nativeConversation: nativeAgentConversationContinuity(input.nativeConversation) }
+          : {}),
+      };
+      const snapshot = asSnapshot(options, value);
+      const saved = await options.store.save({
+        conversationId: options.conversationId,
+        expectedRevision: input.loaded.value.revision,
+        reservationId: input.reservation.reservationId,
+        snapshot,
+      });
+      if (saved !== "saved") {
+        throw new Error("Conversation session revision conflicted during persistence.");
+      }
+      current = snapshot;
+      return Object.freeze({ conversationId: options.conversationId, run, snapshot });
+    } finally {
+      input.activation.log.close();
+      active = undefined;
+      busy = false;
+      await releaseReservation(input.reservation);
+    }
+  };
+
   const send = async (
     request: Parameters<InteractionSession["send"]>[0],
-    // eslint-disable-next-line sonarjs/cognitive-complexity -- reservation and activation form one atomic lifecycle boundary
   ): Promise<InteractionRun> => {
     if (busy) {
       throw new TypeError("A conversation session cannot start concurrent runs.");
@@ -273,107 +463,32 @@ export const createInteractionSession = (
     let nativeConversation: RegisteredNativeAgentConversationProfile | undefined;
     let earlyProviderSession: ProviderSessionRef | undefined;
     let reservation: ConversationStoreReservation | undefined;
-    const inputMessageIds = new Set<string>();
-    const inputCorrelationIds = new Set<string>();
-    const acceptedInputMessages = new Map<string, string>();
+    let activation: ActiveInteractionRun;
     try {
       loaded = await load();
-      if (
-        request.invocationContext.conversationId !== undefined &&
-        request.invocationContext.conversationId !== options.conversationId
-      ) {
-        throw new TypeError("Invocation and session conversation identities must match.");
-      }
-      if (!isJsonValue(request.input)) {
-        throw new TypeError("Interaction input must be strict portable JSON.");
-      }
-      const reservationId = options.identity.newReservationId();
-      if (!isExternalId(reservationId)) {
-        throw new TypeError("Conversation reservation IDs must be opaque external IDs.");
-      }
-      reservation =
-        (await options.store.reserve({
-          conversationId: options.conversationId,
-          expectedRevision: loaded.value.revision,
-          reservationId,
-        })) ?? undefined;
-      if (
-        !reservation ||
-        reservation.conversationId !== options.conversationId ||
-        reservation.expectedRevision !== loaded.value.revision ||
-        reservation.reservationId !== reservationId
-      ) {
-        throw new Error("Conversation session could not reserve its current revision.");
-      }
+      submittedInput = requireSendRequest(request);
+      reservation = await reserveCurrent(loaded);
       const capabilities = await options.runner.capabilities();
-      if (
-        capabilities.nativeConversation !== undefined &&
-        !isRegisteredNativeAgentConversationProfile(capabilities.nativeConversation)
-      ) {
-        throw new TypeError("Native-agent capabilities require a registered route profile.");
-      }
-      nativeConversation = capabilities.nativeConversation;
-      if (nativeConversation) {
-        requireNativeConversationRoute({
-          profile: nativeConversation,
+      nativeConversation =
+        resolveNativeConversationRoute({
+          capabilities,
           ...(loaded.value.providerSession
             ? { storedProviderSession: loaded.value.providerSession }
             : {}),
           ...(loaded.value.nativeConversation
             ? { storedContinuity: loaded.value.nativeConversation }
             : {}),
-          providerSessionContinuation: capabilities.providerSessionContinuation,
-          cancellation: capabilities.cancellation,
-        });
-      } else if (loaded.value.nativeConversation) {
-        throw new TypeError(
-          "Stored native-agent continuity requires the exact registered route profile.",
-        );
-      } else if (loaded.value.providerSession && !capabilities.providerSessionContinuation) {
-        throw new TypeError("The selected runner cannot continue the stored provider session.");
-      }
-      submittedInput = structuredClone(request.input);
-      agentRun = await options.runner.start({
-        agent: options.agent,
-        invocationContext: structuredClone({
-          ...request.invocationContext,
-          conversationId: options.conversationId,
-        }),
-        input: structuredClone(submittedInput),
-        ...(loaded.value.providerSession ? { providerSession: loaded.value.providerSession } : {}),
+        }) ?? undefined;
+      const started = await startAgentRun({
+        request,
+        loaded,
+        submittedInput,
+        nativeConversation,
       });
-      if (!isUuidV7(agentRun.identity.runId)) {
-        throw new TypeError("New interaction agent runs must use UUIDv7 run IDs.");
-      }
-      if (nativeConversation) {
-        if (!isNativeAgentRun(agentRun)) {
-          throw new TypeError(
-            "A native-agent route profile requires the complete native run surface.",
-          );
-        }
-        earlyProviderSession = await readEarlyNativeProviderSession(agentRun, nativeConversation);
-      } else {
-        earlyProviderSession = loaded.value.providerSession;
-      }
-      log = new AsyncEventLog<InteractionEvent>();
-      active = {
-        runId: agentRun.identity.runId,
-        log,
-        agentRun,
-        ...(nativeConversation ? { nativeConversation } : {}),
-        inputMessageIds,
-        inputCorrelationIds,
-        acceptedInputMessages,
-        projection: loaded.value.projection,
-      };
-      for (const event of startingEvents) {
-        if (interactionRunId(event) !== agentRun.identity.runId) {
-          throw new TypeError("Execution events must bind to the active conversation run.");
-        }
-        active.projection = reduceInteractionProjection(active.projection, event);
-        log.append(event);
-      }
-      startingEvents = undefined;
+      agentRun = started.agentRun;
+      earlyProviderSession = started.earlyProviderSession;
+      activation = activateAgentRun(loaded, agentRun, nativeConversation);
+      log = activation.log;
     } catch (error) {
       startingEvents = undefined;
       active = undefined;
@@ -382,105 +497,17 @@ export const createInteractionSession = (
       throw error;
     }
 
-    const readProviderSession = async () => earlyProviderSession;
+    const acceptedInputMessages = activation.acceptedInputMessages;
 
-    // eslint-disable-next-line sonarjs/cognitive-complexity -- terminal validation and persistence must settle in one guarded path
-    const resultPromise = (async (): Promise<InteractionRunResult> => {
-      let terminalStatus: InteractionRunResult["run"]["status"] | undefined;
-      let terminalReasonCode: string | undefined;
-      try {
-        for await (const source of agentRun.events()) {
-          if (source.identity.runId !== agentRun.identity.runId) {
-            throw new TypeError("Agent events must bind to the active run.");
-          }
-          if (
-            source.kind === "agent.run.completed" ||
-            source.kind === "agent.run.failed" ||
-            source.kind === "agent.run.denied" ||
-            source.kind === "agent.run.cancelled"
-          ) {
-            if (terminalStatus) {
-              throw new TypeError("Agent runs can emit exactly one terminal event.");
-            }
-            terminalStatus = source.facts.status;
-            terminalReasonCode = source.facts.reasonCode;
-            if (terminalReasonCode !== undefined && !isSafeInteractionCode(terminalReasonCode)) {
-              throw new TypeError("Agent terminal events require a safe reason code.");
-            }
-          }
-          const event = interactionAgentEvent(options.conversationId, source);
-          active!.projection = reduceInteractionProjection(active!.projection, event);
-          log.append(event);
-        }
-        const run = await agentRun.result();
-        if (run.identity.runId !== agentRun.identity.runId) {
-          throw new TypeError("Agent results must bind to the active run.");
-        }
-        if (terminalStatus !== run.status) {
-          throw new TypeError("Agent result status must agree with its terminal event.");
-        }
-        if (
-          run.reasonCode !== terminalReasonCode ||
-          (run.reasonCode !== undefined && !isSafeInteractionCode(run.reasonCode))
-        ) {
-          throw new TypeError(
-            "Agent result reason code must safely agree with its terminal event.",
-          );
-        }
-        if (run.output !== undefined && !isAgentOutput(run.output)) {
-          throw new TypeError("Agent output must use the closed portable result contract.");
-        }
-        const providerSession = nativeConversation
-          ? resolveTerminalNativeProviderSession(
-              run.providerSession,
-              earlyProviderSession,
-              nativeConversation,
-            )
-          : run.providerSession
-            ? registerInteractionProviderSession(run.providerSession)
-            : earlyProviderSession;
-        const value: ConversationState = {
-          conversationId: options.conversationId,
-          revision: loaded.value.revision + 1,
-          turns: [
-            ...loaded.value.turns,
-            {
-              runId: run.identity.runId,
-              input: submittedInput,
-              status: run.status,
-              ...(run.output !== undefined ? { output: structuredClone(run.output) } : {}),
-              ...(run.reasonCode ? { reasonCode: run.reasonCode } : {}),
-            },
-          ],
-          projection: active!.projection,
-          ...(providerSession ? { providerSession } : {}),
-          ...(providerSession && nativeConversation
-            ? { nativeConversation: nativeAgentConversationContinuity(nativeConversation) }
-            : {}),
-        };
-        const snapshot = asSnapshot(options, value);
-        const saved = await options.store.save({
-          conversationId: options.conversationId,
-          expectedRevision: loaded.value.revision,
-          reservationId: reservation!.reservationId,
-          snapshot,
-        });
-        if (saved !== "saved") {
-          throw new Error("Conversation session revision conflicted during persistence.");
-        }
-        current = snapshot;
-        return Object.freeze({
-          conversationId: options.conversationId,
-          run,
-          snapshot,
-        });
-      } finally {
-        log.close();
-        active = undefined;
-        busy = false;
-        await releaseReservation(reservation);
-      }
-    })();
+    const readProviderSession = async () => earlyProviderSession;
+    const resultPromise = settleRun({
+      loaded,
+      submittedInput,
+      activation,
+      reservation,
+      earlyProviderSession,
+      nativeConversation,
+    });
 
     const connection: InteractionLiveConnection = Object.freeze({
       conversationId: options.conversationId,

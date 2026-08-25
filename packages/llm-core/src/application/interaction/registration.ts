@@ -87,11 +87,45 @@ const acceptedActiveInputIdentity = (value: unknown): InteractionAcceptedActiveI
   };
 };
 
-const normalizeProjection = (
+interface StoredProjection extends Record<string, unknown> {
+  readonly conversationId: unknown;
+  readonly status: InteractionRunStatus;
+  readonly runId: unknown;
+  readonly eventIds: unknown[];
+  readonly eventFingerprints: Record<string, unknown>;
+  readonly events: unknown[];
+  readonly lastSequences: Record<string, unknown>;
+  readonly terminalRunIds: unknown[];
+  readonly terminalMessageKeys: unknown[];
+  readonly startedMessageKeys: unknown[];
+  readonly seenToolCallKeys: unknown[];
+  readonly acceptedActiveInputs: unknown[];
+}
+
+interface DerivedProjectionIndexes {
+  readonly terminalRunIds: RunId[];
+  readonly terminalMessageKeys: string[];
+  readonly startedMessageKeys: string[];
+  readonly seenToolCallKeys: string[];
+  readonly acceptedActiveInputs: InteractionAcceptedActiveInputIdentity[];
+  readonly closedMessageKeys: Set<string>;
+}
+
+const isInteractionRunStatus = (value: unknown): value is InteractionRunStatus =>
+  RUN_STATUSES.includes(value as InteractionRunStatus);
+
+const interactionRunStatus = (value: unknown): InteractionRunStatus => {
+  const status = RUN_STATUSES.find((candidate) => candidate === value);
+  if (status === undefined) {
+    throw new TypeError("Conversation snapshot status must be a closed run status.");
+  }
+  return status;
+};
+
+const requireProjectionShape: (
   value: unknown,
   conversationId: ConversationId,
-  // eslint-disable-next-line sonarjs/cognitive-complexity -- validates one closed, mutually dependent projection snapshot
-): InteractionProjection => {
+) => asserts value is StoredProjection = (value, conversationId) => {
   if (
     !isRecord(value) ||
     !hasOnlyKeys(value, [
@@ -109,7 +143,7 @@ const normalizeProjection = (
       "acceptedActiveInputs",
     ]) ||
     value.conversationId !== conversationId ||
-    !RUN_STATUSES.includes(value.status as InteractionRunStatus) ||
+    !isInteractionRunStatus(value.status) ||
     !Array.isArray(value.eventIds) ||
     !Array.isArray(value.events) ||
     !isRecord(value.eventFingerprints) ||
@@ -122,6 +156,11 @@ const normalizeProjection = (
   ) {
     throw new TypeError("Conversation snapshots require a closed interaction projection.");
   }
+};
+
+const registerProjectionEvents = (
+  value: StoredProjection,
+): { readonly ids: EventId[]; readonly events: ReturnType<typeof registerConversationEvent>[] } => {
   const ids = value.eventIds.map(eventId);
   const events = value.events.map(registerConversationEvent);
   const projectedIds = events.map((event) => event.eventId);
@@ -134,132 +173,199 @@ const normalizeProjection = (
   ) {
     throw new TypeError("Stored projection indexes must be canonical and reconstructable.");
   }
-  const derivedTerminalRunIds = [
-    ...new Set(events.filter((event) => event.kind === "run-finished").map((event) => event.runId)),
-  ];
-  const derivedTerminalMessageKeys = [
-    ...new Set(
-      events
-        .filter((event) => event.kind === "message-finished" || event.kind === "message-failed")
-        .map((event) => `${event.runId}:${event.messageId}`),
-    ),
-  ];
-  const derivedStartedMessageKeys: string[] = [];
-  const derivedSeenToolCallKeys: string[] = [];
-  const acceptedActiveInputs = value.acceptedActiveInputs.map(acceptedActiveInputIdentity);
-  const derivedAcceptedActiveInputs: InteractionAcceptedActiveInputIdentity[] = [];
-  const closedMessageKeys = new Set<string>();
-  for (const event of events) {
-    if (
-      event.kind === "run-finished" &&
-      derivedStartedMessageKeys.some(
-        (key) => key.startsWith(`${event.runId}:`) && !closedMessageKeys.has(key),
-      )
-    ) {
-      throw new TypeError(
-        "Stored projections cannot terminate a run with an open content message.",
-      );
-    }
-    if (event.kind === "active-input-accepted") {
-      if (
-        derivedAcceptedActiveInputs.some(
-          (identity) =>
-            identity.runId === event.runId &&
-            (identity.messageId === event.messageId ||
-              identity.correlationId === event.correlationId),
-        )
-      ) {
-        throw new TypeError(
-          "Stored active-input acceptance cannot reuse a message or correlation within one run.",
-        );
-      }
-      derivedAcceptedActiveInputs.push({
-        runId: event.runId,
-        messageId: event.messageId,
-        correlationId: event.correlationId,
-      });
-    } else if (
-      event.kind === "active-input-recipient-observed" ||
-      event.kind === "active-input-processing-observed" ||
-      event.kind === "active-input-evidence-unavailable"
-    ) {
-      const accepted = derivedAcceptedActiveInputs.some(
-        (identity) =>
-          identity.runId === event.runId &&
-          identity.messageId === event.messageId &&
-          identity.correlationId === event.correlationId,
-      );
-      if (!accepted) {
-        throw new TypeError(
-          "Stored active-input evidence requires the exact prior accepted message and correlation.",
-        );
-      }
-    }
-    if (
-      event.kind !== "message-started" &&
-      event.kind !== "text-delta" &&
-      event.kind !== "reasoning-delta" &&
-      event.kind !== "tool-call" &&
-      event.kind !== "tool-result" &&
-      event.kind !== "message-finished" &&
-      event.kind !== "message-failed"
-    ) {
-      continue;
-    }
-    const messageKey = `${event.runId}:${event.messageId}`;
-    if (closedMessageKeys.has(messageKey)) {
-      throw new TypeError("Stored projection content follows a terminal message.");
-    }
-    if (event.kind === "message-started") {
-      if (derivedStartedMessageKeys.includes(messageKey)) {
-        throw new TypeError("Stored projection messages can start exactly once.");
-      }
-      derivedStartedMessageKeys.push(messageKey);
-      continue;
-    }
-    if (!derivedStartedMessageKeys.includes(messageKey)) {
-      throw new TypeError("Stored projection content requires a preceding message start.");
-    }
-    if (event.kind === "tool-call") {
-      const toolKey = `${event.runId}:${event.toolCallId}`;
-      if (derivedSeenToolCallKeys.includes(toolKey)) {
-        throw new TypeError("Stored projection tool calls must be unique.");
-      }
-      derivedSeenToolCallKeys.push(toolKey);
-    } else if (
-      event.kind === "tool-result" &&
-      !derivedSeenToolCallKeys.includes(`${event.runId}:${event.toolCallId}`)
-    ) {
-      throw new TypeError("Stored projection tool results require a preceding call.");
-    } else if (event.kind === "message-finished" || event.kind === "message-failed") {
-      closedMessageKeys.add(messageKey);
-    }
-  }
-  const terminalRunIds = value.terminalRunIds.map(runId);
+  return { ids, events };
+};
+
+const requireAcceptedActiveInput = (
+  indexes: DerivedProjectionIndexes,
+  event: ReturnType<typeof registerConversationEvent>,
+): void => {
   if (
-    terminalRunIds.length !== derivedTerminalRunIds.length ||
-    terminalRunIds.some((id, index) => id !== derivedTerminalRunIds[index]) ||
-    value.terminalMessageKeys.length !== derivedTerminalMessageKeys.length ||
-    value.terminalMessageKeys.some((key, index) => key !== derivedTerminalMessageKeys[index]) ||
-    value.startedMessageKeys.length !== derivedStartedMessageKeys.length ||
-    value.startedMessageKeys.some((key, index) => key !== derivedStartedMessageKeys[index]) ||
-    value.seenToolCallKeys.length !== derivedSeenToolCallKeys.length ||
-    value.seenToolCallKeys.some((key, index) => key !== derivedSeenToolCallKeys[index]) ||
-    acceptedActiveInputs.length !== derivedAcceptedActiveInputs.length ||
-    acceptedActiveInputs.some((identity, index) => {
-      const derived = derivedAcceptedActiveInputs[index];
-      return (
-        !derived ||
-        identity.runId !== derived.runId ||
-        identity.messageId !== derived.messageId ||
-        identity.correlationId !== derived.correlationId
-      );
-    })
+    event.kind !== "active-input-recipient-observed" &&
+    event.kind !== "active-input-processing-observed" &&
+    event.kind !== "active-input-evidence-unavailable"
+  ) {
+    return;
+  }
+  const accepted = indexes.acceptedActiveInputs.some(
+    (identity) =>
+      identity.runId === event.runId &&
+      identity.messageId === event.messageId &&
+      identity.correlationId === event.correlationId,
+  );
+  if (!accepted) {
+    throw new TypeError(
+      "Stored active-input evidence requires the exact prior accepted message and correlation.",
+    );
+  }
+};
+
+const recordActiveInput = (
+  indexes: DerivedProjectionIndexes,
+  event: ReturnType<typeof registerConversationEvent>,
+): void => {
+  if (event.kind !== "active-input-accepted") {
+    requireAcceptedActiveInput(indexes, event);
+    return;
+  }
+  const duplicate = indexes.acceptedActiveInputs.some(
+    (identity) =>
+      identity.runId === event.runId &&
+      (identity.messageId === event.messageId || identity.correlationId === event.correlationId),
+  );
+  if (duplicate) {
+    throw new TypeError(
+      "Stored active-input acceptance cannot reuse a message or correlation within one run.",
+    );
+  }
+  indexes.acceptedActiveInputs.push({
+    runId: event.runId,
+    messageId: event.messageId,
+    correlationId: event.correlationId,
+  });
+};
+
+const requireOpenMessagesSettled = (
+  indexes: DerivedProjectionIndexes,
+  event: ReturnType<typeof registerConversationEvent>,
+): void => {
+  if (event.kind !== "run-finished") {
+    return;
+  }
+  const hasOpenMessage = indexes.startedMessageKeys.some(
+    (key) => key.startsWith(`${event.runId}:`) && !indexes.closedMessageKeys.has(key),
+  );
+  if (hasOpenMessage) {
+    throw new TypeError("Stored projections cannot terminate a run with an open content message.");
+  }
+};
+
+const messageKey = (event: ReturnType<typeof registerConversationEvent>): string | null => {
+  switch (event.kind) {
+    case "message-started":
+    case "text-delta":
+    case "reasoning-delta":
+    case "tool-call":
+    case "tool-result":
+    case "message-finished":
+    case "message-failed":
+      return `${event.runId}:${event.messageId}`;
+    default:
+      return null;
+  }
+};
+
+const recordMessageEvent = (
+  indexes: DerivedProjectionIndexes,
+  event: ReturnType<typeof registerConversationEvent>,
+): void => {
+  const key = messageKey(event);
+  if (key === null) {
+    return;
+  }
+  if (indexes.closedMessageKeys.has(key)) {
+    throw new TypeError("Stored projection content follows a terminal message.");
+  }
+  if (event.kind === "message-started") {
+    if (indexes.startedMessageKeys.includes(key)) {
+      throw new TypeError("Stored projection messages can start exactly once.");
+    }
+    indexes.startedMessageKeys.push(key);
+    return;
+  }
+  if (!indexes.startedMessageKeys.includes(key)) {
+    throw new TypeError("Stored projection content requires a preceding message start.");
+  }
+  if (event.kind === "tool-call") {
+    const toolKey = `${event.runId}:${event.toolCallId}`;
+    if (indexes.seenToolCallKeys.includes(toolKey)) {
+      throw new TypeError("Stored projection tool calls must be unique.");
+    }
+    indexes.seenToolCallKeys.push(toolKey);
+    return;
+  }
+  if (
+    event.kind === "tool-result" &&
+    !indexes.seenToolCallKeys.includes(`${event.runId}:${event.toolCallId}`)
+  ) {
+    throw new TypeError("Stored projection tool results require a preceding call.");
+  }
+  if (event.kind === "message-finished" || event.kind === "message-failed") {
+    indexes.closedMessageKeys.add(key);
+  }
+};
+
+const deriveProjectionIndexes = (
+  events: readonly ReturnType<typeof registerConversationEvent>[],
+): DerivedProjectionIndexes => {
+  const indexes: DerivedProjectionIndexes = {
+    terminalRunIds: [
+      ...new Set(
+        events.filter((event) => event.kind === "run-finished").map((event) => event.runId),
+      ),
+    ],
+    terminalMessageKeys: [
+      ...new Set(
+        events
+          .filter((event) => event.kind === "message-finished" || event.kind === "message-failed")
+          .map((event) => `${event.runId}:${event.messageId}`),
+      ),
+    ],
+    startedMessageKeys: [],
+    seenToolCallKeys: [],
+    acceptedActiveInputs: [],
+    closedMessageKeys: new Set<string>(),
+  };
+  for (const event of events) {
+    requireOpenMessagesSettled(indexes, event);
+    recordActiveInput(indexes, event);
+    recordMessageEvent(indexes, event);
+  }
+  return indexes;
+};
+
+const sameAcceptedInputs = (
+  stored: readonly InteractionAcceptedActiveInputIdentity[],
+  derived: readonly InteractionAcceptedActiveInputIdentity[],
+): boolean =>
+  stored.length === derived.length &&
+  stored.every((identity, index) => {
+    const counterpart = derived[index];
+    return (
+      counterpart !== undefined &&
+      identity.runId === counterpart.runId &&
+      identity.messageId === counterpart.messageId &&
+      identity.correlationId === counterpart.correlationId
+    );
+  });
+
+const sameOrderedValues = (stored: readonly unknown[], derived: readonly unknown[]): boolean =>
+  stored.length === derived.length && stored.every((item, index) => item === derived[index]);
+
+const requireMatchingIndexes = (
+  value: StoredProjection,
+  indexes: DerivedProjectionIndexes,
+): RunId[] => {
+  const terminalRunIds = value.terminalRunIds.map(runId);
+  const acceptedActiveInputs = value.acceptedActiveInputs.map(acceptedActiveInputIdentity);
+  if (
+    !sameOrderedValues(terminalRunIds, indexes.terminalRunIds) ||
+    !sameOrderedValues(value.terminalMessageKeys, indexes.terminalMessageKeys) ||
+    !sameOrderedValues(value.startedMessageKeys, indexes.startedMessageKeys) ||
+    !sameOrderedValues(value.seenToolCallKeys, indexes.seenToolCallKeys) ||
+    !sameAcceptedInputs(acceptedActiveInputs, indexes.acceptedActiveInputs)
   ) {
     throw new TypeError(
       "Stored projection terminal indexes or active-input lifecycle indexes are inconsistent.",
     );
   }
+  return terminalRunIds;
+};
+
+const requireMatchingStatus = (
+  value: StoredProjection,
+  events: readonly ReturnType<typeof registerConversationEvent>[],
+): void => {
   const lastTerminal = events.findLast((event) => event.kind === "run-finished");
   if (
     (lastTerminal === undefined && (value.status !== "idle" || value.runId !== undefined)) ||
@@ -268,19 +374,30 @@ const normalizeProjection = (
   ) {
     throw new TypeError("Stored projection status must match its terminal event.");
   }
+};
+
+const normalizeProjection = (
+  value: unknown,
+  conversationId: ConversationId,
+): InteractionProjection => {
+  requireProjectionShape(value, conversationId);
+  const { ids, events } = registerProjectionEvents(value);
+  const indexes = deriveProjectionIndexes(events);
+  const terminalRunIds = requireMatchingIndexes(value, indexes);
+  requireMatchingStatus(value, events);
   return {
     conversationId,
-    status: value.status as InteractionRunStatus,
+    status: interactionRunStatus(value.status),
     ...(value.runId === undefined ? {} : { runId: runId(value.runId) }),
     eventIds: ids,
     eventFingerprints: {},
     events,
     lastSequences: {},
     terminalRunIds,
-    terminalMessageKeys: [...derivedTerminalMessageKeys],
-    startedMessageKeys: [...derivedStartedMessageKeys],
-    seenToolCallKeys: [...derivedSeenToolCallKeys],
-    acceptedActiveInputs: derivedAcceptedActiveInputs,
+    terminalMessageKeys: [...indexes.terminalMessageKeys],
+    startedMessageKeys: [...indexes.startedMessageKeys],
+    seenToolCallKeys: [...indexes.seenToolCallKeys],
+    acceptedActiveInputs: indexes.acceptedActiveInputs,
   };
 };
 

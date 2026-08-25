@@ -3,6 +3,8 @@ import {
   isNativeAgentRun,
   nativeAgentConversationMatches,
   nativeAgentOperation,
+  isRegisteredNativeAgentConversationProfile,
+  type AgentRunnerProfile,
   type NativeAgentConversationContinuity,
   type RegisteredNativeAgentConversationProfile,
   type NativeAgentRun,
@@ -60,6 +62,41 @@ export const requireNativeConversationRoute = (input: {
   requireSupported(input.profile, "conversation.continue");
 };
 
+export const resolveNativeConversationRoute = (input: {
+  readonly capabilities: AgentRunnerProfile;
+  readonly storedProviderSession?: ProviderSessionRef;
+  readonly storedContinuity?: NativeAgentConversationContinuity;
+}): RegisteredNativeAgentConversationProfile | null => {
+  const nativeConversation = input.capabilities.nativeConversation;
+  if (
+    nativeConversation !== undefined &&
+    !isRegisteredNativeAgentConversationProfile(nativeConversation)
+  ) {
+    throw new TypeError("Native-agent capabilities require a registered route profile.");
+  }
+  if (nativeConversation !== undefined) {
+    requireNativeConversationRoute({
+      profile: nativeConversation,
+      ...(input.storedProviderSession
+        ? { storedProviderSession: input.storedProviderSession }
+        : {}),
+      ...(input.storedContinuity ? { storedContinuity: input.storedContinuity } : {}),
+      providerSessionContinuation: input.capabilities.providerSessionContinuation,
+      cancellation: input.capabilities.cancellation,
+    });
+    return nativeConversation;
+  }
+  if (input.storedContinuity) {
+    throw new TypeError(
+      "Stored native-agent continuity requires the exact registered route profile.",
+    );
+  }
+  if (input.storedProviderSession && !input.capabilities.providerSessionContinuation) {
+    throw new TypeError("The selected runner cannot continue the stored provider session.");
+  }
+  return null;
+};
+
 export const readEarlyNativeProviderSession = async (
   run: NativeAgentRun,
   profile: RegisteredNativeAgentConversationProfile,
@@ -107,4 +144,22 @@ export const resolveTerminalNativeProviderSession = (
     );
   }
   return session;
+};
+
+export const resolveInteractionProviderSession = (input: {
+  readonly terminal: unknown;
+  readonly early: ProviderSessionRef | undefined;
+  readonly nativeConversation: RegisteredNativeAgentConversationProfile | undefined;
+}): ProviderSessionRef | undefined => {
+  if (input.nativeConversation !== undefined) {
+    return resolveTerminalNativeProviderSession(
+      input.terminal,
+      input.early,
+      input.nativeConversation,
+    );
+  }
+  if (input.terminal !== undefined) {
+    return registerInteractionProviderSession(input.terminal);
+  }
+  return input.early;
 };
