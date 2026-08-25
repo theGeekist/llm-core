@@ -3,18 +3,18 @@ architecture_version: 2
 id: native-agent-conversation-runtime-contract
 title: Define the portable native-agent conversation runtime contract
 stage: integrations
-status: proposed
+status: done
 priority: critical
 replaced_by: []
 forward_to: []
 preferred_owner_kind: codex
-owner: null
-owner_kind: null
-lease_started_at: null
-lease_expires_at: null
-base_sha: null
-branch: null
-worktree: null
+owner: codex-native-agent-sdk
+owner_kind: codex
+lease_started_at: 2026-08-25T09:48:00+08:00
+lease_expires_at: 2026-08-27T09:48:00+08:00
+base_sha: 459154191a946c8710de2a06ea507862de870398
+branch: main
+worktree: /Users/jasonnathan/Repos/@theGeekist/llm-core
 depends_on:
   - architecture-runtime-ownership-correction
   - core-agent-runner
@@ -187,7 +187,43 @@ Follow [`../COORDINATION.md`](../COORDINATION.md) and the metadata contract in
 
 ## Work log
 
-Pending.
+Execution mode: shared-checkout
+Execution rationale: The task owns the portable native-agent and interaction contract surfaces in the canonical checkout.
+Concurrency evaluation: integrations-connector-characterization; start alongside because production/runtime and characterization-test write scopes are disjoint.
+Concurrent task scopes: integrations-connector-characterization owns only `packages/llm-core/tests/integrations/characterization/**` and its task record.
+Swarm delegation: codex-root -> codex-native-agent-sdk: implement and qualify the portable native-agent conversation runtime contract; declared task write scope.
+
+2026-08-25: Claimed by the coordinator from
+`459154191a946c8710de2a06ea507862de870398` for an SDK-directed shared-checkout
+implementation alongside the disjoint connector characterization task.
+
+2026-08-25: Implemented and qualified the portable native-agent conversation
+runtime contract. Registered route profiles now declare one exact disposition
+for each of the five conversation operations; native runs expose provider
+identity before completion; active input is admitted through an injected,
+run-bound authority verifier; and interaction events keep provider acceptance,
+recipient observation, processing observation and evidence unavailability
+distinct. Forged, unauthorised and stale capabilities are rejected before the
+adapter ingress boundary.
+
+2026-08-25: Closed every actionable independent-review finding. Active-input
+events now survive the closed save-load-terminal boundary; native continuation
+persists and checks exact provider and route-profile identity; start, continue,
+observe and cancellation capability consult the registered operation matrix;
+early provider identity is cached and must agree with terminal identity;
+authority expiry is sampled again after deferred verification; and duplicate or
+mismatched message/correlation identities fail before native ingress or
+evidence registration.
+
+2026-08-25: Closed the same reviewer's residual projection-ordering finding.
+Projection state now indexes each accepted run, message and correlation tuple,
+rejects duplicate acceptance and requires the exact prior pair before any
+recipient, processing or unavailable evidence. Snapshot reload reconstructs
+and verifies the same lifecycle and indexes instead of trusting serialized
+projection metadata.
+
+2026-08-26: The same independent reviewer approved the final task-owned diff
+with no actionable findings. The approved implementation is commit `a43dd94`.
 
 ## Blocker
 
@@ -197,27 +233,84 @@ None recorded.
 
 ### Result
 
-Pending.
+Review-ready portable SDK and application contract for native conversations and
+active input, without claiming support from any provider adapter that has not
+implemented the complete registered surface.
 
 ### Decisions applied
 
-Pending.
+- Preserved the existing `AgentRunner` and `AgentRun` base contract for
+  non-native runtimes and introduced a stricter registered native-conversation
+  subtype.
+- Kept portable capability facts under `features/agent`, application admission
+  and routing under `application/interaction`, and the supported public runtime
+  front under `agent/runtime`.
+- Preserved `MaybePromise` through authority verification and adapter ingress.
+- Required the exact ordered operation matrix for `conversation.start`,
+  `conversation.continue`, `run.observe`, `run.input.submit` and `run.cancel`.
+- Kept provider acceptance separate from recipient and model-processing
+  evidence, including an explicit evidence-unavailable outcome.
+- Bound active-input authority to the exact provider, route profile,
+  conversation, run and revision before invoking native ingress.
+- Persisted native provider, route-profile ID and route-profile version beside
+  the opaque provider-session reference, rejecting drift before recreated
+  continuation starts.
+- Made start, continuation and observation admission consult their exact
+  operation dispositions and required base cancellation capability to agree
+  with `run.cancel` without adding another application cancellation API.
+- Cached the validated early provider-session reference and required any
+  terminal reference to match it exactly.
+- Rechecked expiry with the injected clock after asynchronous verification and
+  immediately before minting admitted input.
+- Rejected duplicate message or correlation identity within one run and bound
+  later evidence to the exact accepted pair.
+- Added reconstructable accepted active-input identity indexes to projection
+  state and made both live reduction and snapshot reload enforce acceptance
+  before every evidence state.
 
 ### Files changed
 
-Pending.
+- `docs/capabilities/agent.md`
+- `packages/llm-core/src/agent/runtime.ts`
+- `packages/llm-core/src/features/agent/{active-input,native-conversation,public,types}.ts`
+- `packages/llm-core/src/application/interaction/{events,native-route,projection,public,registration,session,types,ui-event-registration}.ts`
+- `packages/llm-core/tests/agent/native-conversation.test.ts`
+- `packages/llm-core/tests/application/interaction/{active-input,active-input-projection,native-conversation-continuity}.test.ts`
 
 ### Verification evidence
 
-Pending.
+- `bun test packages/llm-core/tests/agent packages/llm-core/tests/application/interaction`:
+  41 passed, 0 failed, 169 assertions across 9 files.
+- `bun run --cwd packages/llm-core typecheck`: passed.
+- `bun run --cwd packages/llm-core typecheck:tests`: passed.
+- `bun run typecheck:packages`: passed for strict-json, llm-core and AIFSD,
+  including schema freshness.
+- `bun run --cwd packages/llm-core contracts:schema:check`: passed.
+- `bun run --cwd packages/llm-core lint`: passed with 0 errors and the unchanged
+  251-warning baseline.
+- `bun run --cwd packages/llm-core build`: passed.
+- Exact Prettier check for every task-owned changed source, test and capability
+  document: passed.
+- `git diff --check`: passed.
+- All touched hand-written production and test modules remain at or below the
+  lightweight waiver band. `session.ts` and `active-input.test.ts` are each 527
+  physical lines: approximately 500 lines.
 
 ### Deviations
 
-None recorded.
+No concrete provider adapter or root-level runnable facade was added. Provider
+support remains an exact-version adapter responsibility, and the public runtime
+front remains `@geekist/llm-core/agent/runtime`.
 
 ### Remaining risks
 
-Pending.
+Provider acceptance alone cannot prove recipient delivery or model-context
+processing. The contract preserves those distinctions, but exact provider
+adapters still need to emit evidence honestly and qualify failure and downgrade
+behaviour against native SDKs. The interaction session awaits
+`providerSession()` before consuming events, so the first concrete adapter's
+conformance suite must prove that early provider identity settles independently
+of its event pump.
 
 ### Recommended next task
 

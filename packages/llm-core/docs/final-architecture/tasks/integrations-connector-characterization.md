@@ -3,16 +3,16 @@ architecture_version: 2
 id: integrations-connector-characterization
 title: Characterize unlike connector vertical slices
 stage: integrations
-status: proposed
+status: done
 priority: high
 preferred_owner_kind: codex
-owner:
-owner_kind:
-lease_started_at:
-lease_expires_at:
-base_sha:
-branch:
-worktree:
+owner: codex-connector-characterization
+owner_kind: codex
+lease_started_at: 2026-08-25T09:48:00+08:00
+lease_expires_at: 2026-08-27T09:48:00+08:00
+base_sha: 459154191a946c8710de2a06ea507862de870398
+branch: main
+worktree: /Users/jasonnathan/Repos/@theGeekist/llm-core
 depends_on:
   - architecture-external-contract-fidelity
   - architecture-source-layout-normalization
@@ -94,8 +94,51 @@ bun run lint
 
 ## Work log
 
-Planned by ADR-015; not claimed.
+Execution mode: shared-checkout
+Execution rationale: Characterization is confined to a new task-owned test subtree and its task record.
+Concurrency evaluation: native-agent-conversation-runtime-contract; start alongside because the characterization task cannot edit production or native-agent paths.
+Concurrent task scopes: native-agent-conversation-runtime-contract owns agent, interaction, focused tests, agent capability documentation and its task record.
+Swarm delegation: codex-root -> codex-connector-characterization: implement the two unlike executable connector slices and evidence report; declared task write scope.
+
+2026-08-25: Claimed by the coordinator from
+`459154191a946c8710de2a06ea507862de870398` alongside the disjoint native-agent
+conversation contract task. Planned by ADR-015.
+
+2026-08-25: Executed two task-local characterization slices without production
+changes. The MCP slice uses the qualified stateless public host for tool and
+resource discovery, controlled invocation, sanitised failure and receipt
+reconciliation. The independent OAuth SaaS slice owns its consent reference,
+pagination cursor, rate-limit disposition, webhook deduplication and
+receipt-bound reconciliation while using the same existing controlled-effect
+path. The
+evidence report rejects a connector base, shared lifecycle, shared retry or
+pagination model, credential fields and A2A mapping.
 
 ## Handoff
 
-Pending.
+Request transition to `review`.
+
+- Base SHA: `459154191a946c8710de2a06ea507862de870398`.
+- Execution mode: shared checkout, alongside the disjoint
+  `native-agent-conversation-runtime-contract` scope.
+- Changed files: task-owned MCP and OAuth characterization tests, the
+  task-owned evidence report, and this work log/handoff only.
+- Evidence: `bun test packages/llm-core/tests/integrations/characterization`
+  passes 2 tests and 23 assertions; package test typecheck passes; scoped ESLint
+  and Prettier checks pass; `git diff --check` passes.
+- No shared connector abstraction, production connector type, credential
+  fixture, provider SDK object or A2A identity/delegation state was introduced.
+- Remaining risk: two executable slices establish only the limited common
+  controlled-effect boundary. A later contract task must not promote any other
+  field without further unlike-consumer evidence.
+
+2026-08-25 review remediation: the evidence report now maps each observed
+operation, each proposed common controlled-effect operation and every rejected
+similarity to the named executable test plus exact source lines. MCP failure
+now asserts its bounded sanitised protocol result and excludes the underlying
+native error text. OAuth reconciliation now consumes the accepted receipt-bound
+webhook, rejects its duplicate before state change, and asserts webhook-before-
+reconciliation ordering. Request same-reviewer re-review.
+
+2026-08-26: The same independent reviewer approved the final task-owned diff
+with no actionable findings. The approved implementation is commit `a43dd94`.

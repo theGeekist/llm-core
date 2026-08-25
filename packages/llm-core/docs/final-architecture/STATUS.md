@@ -81,13 +81,13 @@ Active tasks: 0
 | cost-budget-enforcement | qualification | proposed | architecture-source-layout-normalization, cost-budget-control, runtime-tools-front-boundary | — | — | — |
 | cost-facts | qualification | proposed | architecture-source-layout-normalization, capabilities-operational-evidence | — | — | — |
 | integrations-authorization-lifecycle | integrations | proposed | architecture-source-layout-normalization, integrations-connector-contracts | — | — | — |
-| integrations-connector-characterization | integrations | proposed | architecture-external-contract-fidelity, architecture-source-layout-normalization, language-rollout, adapters-protocol-qualification | — | — | — |
+| integrations-connector-characterization | integrations | done | architecture-external-contract-fidelity, architecture-source-layout-normalization, language-rollout, adapters-protocol-qualification | — | — | — |
 | integrations-connector-contracts | integrations | proposed | architecture-external-contract-fidelity, architecture-source-layout-normalization, integrations-connector-characterization | — | — | — |
 | language-audit | language | done | capabilities-context-artifacts, capabilities-evaluation, capabilities-runtime-conformance | — | — | — |
 | language-rollout | language | done | language-vocabulary | — | — | — |
 | language-vocabulary | language | done | language-audit | — | — | — |
 | model-routing-qualification | qualification | proposed | architecture-source-layout-normalization, cost-facts, capabilities-evaluation-qualification | — | — | — |
-| native-agent-conversation-runtime-contract | integrations | proposed | architecture-runtime-ownership-correction, core-agent-runner, core-interactions | — | — | — |
+| native-agent-conversation-runtime-contract | integrations | done | architecture-runtime-ownership-correction, core-agent-runner, core-interactions | — | — | — |
 | native-agent-cross-provider-conformance | qualification | proposed | adapter-codex-app-server-runtime, adapter-codex-desktop-hooks-runtime, adapter-claude-native-session-runtime, adapter-antigravity-cli-hooks-runtime, adapter-antigravity-desktop-sidecar-runtime | — | — | — |
 | native-agent-runtime-governance-reconciliation | architecture | done | — | — | — | — |
 | production-quality-gates | qualification | done | — | — | — | — |
