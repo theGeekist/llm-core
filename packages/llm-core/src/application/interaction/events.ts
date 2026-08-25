@@ -56,6 +56,35 @@ const agentFacts = (event: AgentEvent): AgentEvent["facts"] => {
       };
     case "agent.run.cancellation.acknowledged":
       return { acknowledgedAt: event.facts.acknowledgedAt };
+    case "agent.run.input.accepted":
+      return {
+        messageId: event.facts.messageId,
+        correlationId: event.facts.correlationId,
+        acceptedAt: event.facts.acceptedAt,
+        deliveryMode: event.facts.deliveryMode,
+      };
+    case "agent.run.input.recipient-observed":
+      return {
+        messageId: event.facts.messageId,
+        correlationId: event.facts.correlationId,
+        observedAt: event.facts.observedAt,
+        evidenceRef: event.facts.evidenceRef,
+      };
+    case "agent.run.input.processing-observed":
+      return {
+        messageId: event.facts.messageId,
+        correlationId: event.facts.correlationId,
+        observedAt: event.facts.observedAt,
+        causationRef: event.facts.causationRef,
+      };
+    case "agent.run.input.evidence-unavailable":
+      return {
+        messageId: event.facts.messageId,
+        correlationId: event.facts.correlationId,
+        stage: event.facts.stage,
+        declaredAt: event.facts.declaredAt,
+        reasonCode: event.facts.reasonCode,
+      };
     case "agent.run.completed":
     case "agent.run.failed":
     case "agent.run.denied":

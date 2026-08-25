@@ -1,15 +1,20 @@
 import {
   coreId,
+  externalId,
   isCanonicalUuid,
   isExternalId,
   isJsonValue,
   type ConversationId,
+  type CorrelationId,
   type EventId,
   type JsonValue,
   type RunId,
 } from "#contracts";
 import { createSnapshot } from "../../features/state/public";
-import { registerAgentOutput } from "../../features/agent/public";
+import {
+  registerAgentOutput,
+  registerNativeAgentConversationContinuity,
+} from "../../features/agent/public";
 import { isCanonicalInteractionTimestamp, isSafeInteractionCode } from "./content-registration";
 import { registerInteractionProviderSession } from "./provider-session-registration";
 import { registerConversationEvent } from "./ui-event-registration";
@@ -17,6 +22,7 @@ import type {
   ConversationSnapshot,
   ConversationState,
   ConversationRunRecord,
+  InteractionAcceptedActiveInputIdentity,
   InteractionProjection,
   InteractionRunStatus,
 } from "./types";
@@ -63,6 +69,24 @@ const optionalReason = (value: unknown): string | null => {
   return requiredSafeCode(value, "reasonCode");
 };
 
+const acceptedActiveInputIdentity = (value: unknown): InteractionAcceptedActiveInputIdentity => {
+  if (
+    !isRecord(value) ||
+    !hasOnlyKeys(value, ["runId", "messageId", "correlationId"]) ||
+    !isExternalId(value.messageId) ||
+    !isExternalId(value.correlationId)
+  ) {
+    throw new TypeError(
+      "Stored active-input indexes require exact run, message and correlation identity.",
+    );
+  }
+  return {
+    runId: runId(value.runId),
+    messageId: value.messageId,
+    correlationId: externalId<CorrelationId>(value.correlationId),
+  };
+};
+
 const normalizeProjection = (
   value: unknown,
   conversationId: ConversationId,
@@ -82,6 +106,7 @@ const normalizeProjection = (
       "terminalMessageKeys",
       "startedMessageKeys",
       "seenToolCallKeys",
+      "acceptedActiveInputs",
     ]) ||
     value.conversationId !== conversationId ||
     !RUN_STATUSES.includes(value.status as InteractionRunStatus) ||
@@ -92,7 +117,8 @@ const normalizeProjection = (
     !Array.isArray(value.terminalRunIds) ||
     !Array.isArray(value.terminalMessageKeys) ||
     !Array.isArray(value.startedMessageKeys) ||
-    !Array.isArray(value.seenToolCallKeys)
+    !Array.isArray(value.seenToolCallKeys) ||
+    !Array.isArray(value.acceptedActiveInputs)
   ) {
     throw new TypeError("Conversation snapshots require a closed interaction projection.");
   }
@@ -120,6 +146,8 @@ const normalizeProjection = (
   ];
   const derivedStartedMessageKeys: string[] = [];
   const derivedSeenToolCallKeys: string[] = [];
+  const acceptedActiveInputs = value.acceptedActiveInputs.map(acceptedActiveInputIdentity);
+  const derivedAcceptedActiveInputs: InteractionAcceptedActiveInputIdentity[] = [];
   const closedMessageKeys = new Set<string>();
   for (const event of events) {
     if (
@@ -131,6 +159,41 @@ const normalizeProjection = (
       throw new TypeError(
         "Stored projections cannot terminate a run with an open content message.",
       );
+    }
+    if (event.kind === "active-input-accepted") {
+      if (
+        derivedAcceptedActiveInputs.some(
+          (identity) =>
+            identity.runId === event.runId &&
+            (identity.messageId === event.messageId ||
+              identity.correlationId === event.correlationId),
+        )
+      ) {
+        throw new TypeError(
+          "Stored active-input acceptance cannot reuse a message or correlation within one run.",
+        );
+      }
+      derivedAcceptedActiveInputs.push({
+        runId: event.runId,
+        messageId: event.messageId,
+        correlationId: event.correlationId,
+      });
+    } else if (
+      event.kind === "active-input-recipient-observed" ||
+      event.kind === "active-input-processing-observed" ||
+      event.kind === "active-input-evidence-unavailable"
+    ) {
+      const accepted = derivedAcceptedActiveInputs.some(
+        (identity) =>
+          identity.runId === event.runId &&
+          identity.messageId === event.messageId &&
+          identity.correlationId === event.correlationId,
+      );
+      if (!accepted) {
+        throw new TypeError(
+          "Stored active-input evidence requires the exact prior accepted message and correlation.",
+        );
+      }
     }
     if (
       event.kind !== "message-started" &&
@@ -181,9 +244,21 @@ const normalizeProjection = (
     value.startedMessageKeys.length !== derivedStartedMessageKeys.length ||
     value.startedMessageKeys.some((key, index) => key !== derivedStartedMessageKeys[index]) ||
     value.seenToolCallKeys.length !== derivedSeenToolCallKeys.length ||
-    value.seenToolCallKeys.some((key, index) => key !== derivedSeenToolCallKeys[index])
+    value.seenToolCallKeys.some((key, index) => key !== derivedSeenToolCallKeys[index]) ||
+    acceptedActiveInputs.length !== derivedAcceptedActiveInputs.length ||
+    acceptedActiveInputs.some((identity, index) => {
+      const derived = derivedAcceptedActiveInputs[index];
+      return (
+        !derived ||
+        identity.runId !== derived.runId ||
+        identity.messageId !== derived.messageId ||
+        identity.correlationId !== derived.correlationId
+      );
+    })
   ) {
-    throw new TypeError("Stored projection terminal indexes are inconsistent.");
+    throw new TypeError(
+      "Stored projection terminal indexes or active-input lifecycle indexes are inconsistent.",
+    );
   }
   const lastTerminal = events.findLast((event) => event.kind === "run-finished");
   if (
@@ -205,6 +280,7 @@ const normalizeProjection = (
     terminalMessageKeys: [...derivedTerminalMessageKeys],
     startedMessageKeys: [...derivedStartedMessageKeys],
     seenToolCallKeys: [...derivedSeenToolCallKeys],
+    acceptedActiveInputs: derivedAcceptedActiveInputs,
   };
 };
 
@@ -233,7 +309,14 @@ const normalizeValue = (
 ): ConversationState => {
   if (
     !isRecord(value) ||
-    !hasOnlyKeys(value, ["conversationId", "revision", "turns", "projection", "providerSession"]) ||
+    !hasOnlyKeys(value, [
+      "conversationId",
+      "revision",
+      "turns",
+      "projection",
+      "providerSession",
+      "nativeConversation",
+    ]) ||
     value.conversationId !== expectedConversationId ||
     !Number.isSafeInteger(value.revision) ||
     (value.revision as number) < 0 ||
@@ -245,12 +328,25 @@ const normalizeValue = (
   if (value.providerSession !== undefined) {
     providerSession = registerInteractionProviderSession(value.providerSession);
   }
+  const nativeConversation =
+    value.nativeConversation === undefined
+      ? undefined
+      : registerNativeAgentConversationContinuity(value.nativeConversation);
+  if (
+    nativeConversation &&
+    (!providerSession || providerSession.providerId !== nativeConversation.providerId)
+  ) {
+    throw new TypeError(
+      "Native-agent continuity requires a matching opaque provider-session reference.",
+    );
+  }
   return {
     conversationId: expectedConversationId,
     revision: value.revision as number,
     turns: value.turns.map(normalizeTurn),
     projection: normalizeProjection(value.projection, expectedConversationId),
     ...(providerSession ? { providerSession } : {}),
+    ...(nativeConversation ? { nativeConversation } : {}),
   };
 };
 

@@ -8,6 +8,24 @@ export {
 } from "./result";
 export type { AgentJsonOutput, AgentOutput, AgentTextOutput } from "./result";
 export { loadAgentSkills, registerAgentSkill } from "./skills";
+export {
+  isRegisteredNativeAgentConversationProfile,
+  isNativeAgentConversationProfile,
+  nativeAgentConversationContinuity,
+  nativeAgentConversationMatches,
+  nativeAgentOperation,
+  registerNativeAgentConversationContinuity,
+  registerNativeAgentConversationProfile,
+} from "./native-conversation";
+export {
+  admitAgentActiveInput,
+  createAgentActiveInputRejection,
+  isAdmittedAgentActiveInput,
+  isNativeAgentRun,
+  registerAgentActiveInputAcknowledgement,
+  registerAgentActiveInputProcessingEvidence,
+  registerAgentActiveInputRequest,
+} from "./active-input";
 export type {
   AgentSkillRef,
   LoadAgentSkillsInput,
@@ -19,6 +37,21 @@ export type {
   SkillScope,
 } from "./skills";
 export type {
+  AdmittedAgentActiveInput,
+  AgentActiveInputAcknowledgement,
+  AgentActiveInputAdmission,
+  AgentActiveInputAuthorityCapability,
+  AgentActiveInputClock,
+  AgentActiveInputIdentity,
+  AgentActiveInputAuthorityReceipt,
+  AgentActiveInputAuthorityScope,
+  AgentActiveInputAuthorityVerification,
+  AgentActiveInputAuthorityVerificationInput,
+  AgentActiveInputAuthorityVerifier,
+  AgentActiveInputDeliveryMode,
+  AgentActiveInputProcessingEvidence,
+  AgentActiveInputRejectionReasonCode,
+  AgentActiveInputRequest,
   AgentCancellationAcknowledgement,
   AgentCancellationRequest,
   AgentEffectRequirement,
@@ -39,4 +72,15 @@ export type {
   AgentDefinition,
   PreparedAgentDefinition,
   AgentResult,
+  NativeAgentConversationProfile,
+  NativeAgentConversationContinuity,
+  NativeAgentOperationDeclaration,
+  NativeAgentOperationDisposition,
+  NativeAgentOperationId,
+  NativeAgentOperationMatrix,
+  NativeAgentRun,
+  NativeAgentRunner,
+  NativeAgentSourceContract,
+  NativeAgentUnsupportedReasonCode,
+  RegisteredNativeAgentConversationProfile,
 } from "./types";

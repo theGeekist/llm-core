@@ -39,6 +39,7 @@ export const createInteractionProjection = (
     terminalMessageKeys: Object.freeze([]),
     startedMessageKeys: Object.freeze([]),
     seenToolCallKeys: Object.freeze([]),
+    acceptedActiveInputs: Object.freeze([]),
   });
 
 export const projectInteractionEvent = (event: InteractionEvent): ConversationEvent | null => {
@@ -141,6 +142,47 @@ export const projectInteractionEvent = (event: InteractionEvent): ConversationEv
       });
     case "agent.run.cancellation.requested":
       return Object.freeze({ kind: "cancellation-requested", eventId, runId });
+    case "agent.run.input.accepted":
+      return Object.freeze({
+        kind: "active-input-accepted",
+        eventId,
+        runId,
+        messageId: event.event.facts.messageId,
+        correlationId: event.event.facts.correlationId,
+        acceptedAt: event.event.facts.acceptedAt,
+        deliveryMode: event.event.facts.deliveryMode,
+      });
+    case "agent.run.input.recipient-observed":
+      return Object.freeze({
+        kind: "active-input-recipient-observed",
+        eventId,
+        runId,
+        messageId: event.event.facts.messageId,
+        correlationId: event.event.facts.correlationId,
+        observedAt: event.event.facts.observedAt,
+        evidenceRef: event.event.facts.evidenceRef,
+      });
+    case "agent.run.input.processing-observed":
+      return Object.freeze({
+        kind: "active-input-processing-observed",
+        eventId,
+        runId,
+        messageId: event.event.facts.messageId,
+        correlationId: event.event.facts.correlationId,
+        observedAt: event.event.facts.observedAt,
+        causationRef: event.event.facts.causationRef,
+      });
+    case "agent.run.input.evidence-unavailable":
+      return Object.freeze({
+        kind: "active-input-evidence-unavailable",
+        eventId,
+        runId,
+        messageId: event.event.facts.messageId,
+        correlationId: event.event.facts.correlationId,
+        stage: event.event.facts.stage,
+        declaredAt: event.event.facts.declaredAt,
+        reasonCode: event.event.facts.reasonCode,
+      });
     case "agent.run.completed":
     case "agent.run.failed":
     case "agent.run.denied":
@@ -229,6 +271,40 @@ export const reduceInteractionProjection = (
     throw new TypeError("Interaction event sequences must increase monotonically.");
   }
   const projected = projectInteractionEvent(event);
+  switch (projected?.kind) {
+    case "active-input-accepted": {
+      const duplicate = state.acceptedActiveInputs.some(
+        (accepted) =>
+          accepted.runId === projected.runId &&
+          (accepted.messageId === projected.messageId ||
+            accepted.correlationId === projected.correlationId),
+      );
+      if (duplicate) {
+        throw new TypeError(
+          "Active-input acceptance cannot reuse a message or correlation within one run.",
+        );
+      }
+      break;
+    }
+    case "active-input-recipient-observed":
+    case "active-input-processing-observed":
+    case "active-input-evidence-unavailable": {
+      const accepted = state.acceptedActiveInputs.some(
+        (identity) =>
+          identity.runId === projected.runId &&
+          identity.messageId === projected.messageId &&
+          identity.correlationId === projected.correlationId,
+      );
+      if (!accepted) {
+        throw new TypeError(
+          "Active-input evidence requires the exact prior accepted message and correlation.",
+        );
+      }
+      break;
+    }
+    default:
+      break;
+  }
   let status: InteractionRunStatus = terminalStatus(event) ?? state.status;
   if (event.kind === "agent-run") {
     if (event.event.kind === "agent.run.started") {
@@ -276,5 +352,16 @@ export const reduceInteractionProjection = (
       event.event.kind === "interaction.message.tool.call"
         ? Object.freeze([...state.seenToolCallKeys, toolCallKey])
         : state.seenToolCallKeys,
+    acceptedActiveInputs:
+      projected?.kind === "active-input-accepted"
+        ? Object.freeze([
+            ...state.acceptedActiveInputs,
+            Object.freeze({
+              runId: projected.runId,
+              messageId: projected.messageId,
+              correlationId: projected.correlationId,
+            }),
+          ])
+        : state.acceptedActiveInputs,
   });
 };

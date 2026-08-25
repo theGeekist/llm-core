@@ -33,6 +33,8 @@ export type {
   InteractionContentEvent,
   InteractionContentEventFactsByKind,
   InteractionContentEventKind,
+  InteractionActiveInputRequest,
+  InteractionAcceptedActiveInputIdentity,
   RegisteredInteractionContentEvent,
   InteractionLiveConnection,
   InteractionProjection,

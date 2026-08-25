@@ -1,11 +1,25 @@
-import type { ConversationId, EventId, InvocationContext, JsonValue, RunId } from "#contracts";
+import type {
+  ConversationId,
+  CorrelationId,
+  EventId,
+  InvocationContext,
+  JsonValue,
+  RunId,
+} from "#contracts";
 import type { MaybePromise } from "#shared/maybe";
 import type {
+  AgentActiveInputAcknowledgement,
+  AgentActiveInputAuthorityCapability,
+  AgentActiveInputAuthorityVerifier,
+  AgentActiveInputIdentity,
+  AgentActiveInputProcessingEvidence,
+  AgentActiveInputRequest,
   AgentRun,
   AgentEvent,
   AgentRunner,
   PreparedAgentDefinition,
   AgentResult,
+  NativeAgentConversationContinuity,
 } from "../../features/agent/public";
 import type {
   EventSink,
@@ -123,6 +137,43 @@ export type ConversationEvent =
       readonly runId: RunId;
     }
   | {
+      readonly kind: "active-input-accepted";
+      readonly eventId: EventId;
+      readonly runId: RunId;
+      readonly messageId: string;
+      readonly correlationId: CorrelationId;
+      readonly acceptedAt: string;
+      readonly deliveryMode: "native-live" | "execution-boundary";
+    }
+  | {
+      readonly kind: "active-input-recipient-observed";
+      readonly eventId: EventId;
+      readonly runId: RunId;
+      readonly messageId: string;
+      readonly correlationId: CorrelationId;
+      readonly observedAt: string;
+      readonly evidenceRef: string;
+    }
+  | {
+      readonly kind: "active-input-processing-observed";
+      readonly eventId: EventId;
+      readonly runId: RunId;
+      readonly messageId: string;
+      readonly correlationId: CorrelationId;
+      readonly observedAt: string;
+      readonly causationRef: string;
+    }
+  | {
+      readonly kind: "active-input-evidence-unavailable";
+      readonly eventId: EventId;
+      readonly runId: RunId;
+      readonly messageId: string;
+      readonly correlationId: CorrelationId;
+      readonly stage: "recipient-observation" | "semantic-processing";
+      readonly declaredAt: string;
+      readonly reasonCode: "provider-unobservable" | "evidence-not-retained";
+    }
+  | {
       readonly kind: "tool-status";
       readonly eventId: EventId;
       readonly runId: RunId;
@@ -195,6 +246,13 @@ export interface InteractionProjection {
   readonly terminalMessageKeys: readonly string[];
   readonly startedMessageKeys: readonly string[];
   readonly seenToolCallKeys: readonly string[];
+  readonly acceptedActiveInputs: readonly InteractionAcceptedActiveInputIdentity[];
+}
+
+export interface InteractionAcceptedActiveInputIdentity {
+  readonly runId: RunId;
+  readonly messageId: string;
+  readonly correlationId: CorrelationId;
 }
 
 export interface ConversationRunRecord {
@@ -211,6 +269,7 @@ export interface ConversationState {
   readonly turns: readonly ConversationRunRecord[];
   readonly projection: InteractionProjection;
   readonly providerSession?: ProviderSessionRef;
+  readonly nativeConversation?: NativeAgentConversationContinuity;
 }
 
 export type ConversationSnapshot = Omit<Snapshot, "value"> & {
@@ -268,6 +327,11 @@ export interface InteractionSendRequest {
   readonly invocationContext: InvocationContext;
 }
 
+export interface InteractionActiveInputRequest {
+  readonly request: AgentActiveInputRequest;
+  readonly authority: AgentActiveInputAuthorityCapability;
+}
+
 export interface InteractionRunResult {
   readonly conversationId: ConversationId;
   readonly run: AgentResult;
@@ -284,6 +348,10 @@ export interface InteractionLiveConnection {
 export interface InteractionRun extends InteractionLiveConnection {
   readonly continuation: LiveContinuation<InteractionLiveConnection>;
   readonly agentRun: AgentRun;
+  providerSession(): Promise<ProviderSessionRef | undefined>;
+  activeInputEvidence(
+    identity: AgentActiveInputIdentity,
+  ): Promise<AgentActiveInputProcessingEvidence>;
 }
 
 export interface InteractionSession {
@@ -292,6 +360,7 @@ export interface InteractionSession {
   emitContent(event: RegisteredInteractionContentEvent): Promise<void>;
   load(): Promise<ConversationSnapshot>;
   send(request: InteractionSendRequest): Promise<InteractionRun>;
+  submitInput(request: InteractionActiveInputRequest): Promise<AgentActiveInputAcknowledgement>;
   reconnect(continuation: LiveContinuation<InteractionLiveConnection>): InteractionLiveConnection;
 }
 
@@ -307,4 +376,5 @@ export interface CreateInteractionSessionOptions {
   readonly runner: AgentRunner;
   readonly store: ConversationStore;
   readonly identity: InteractionSessionIdentityPort;
+  readonly activeInputAuthority?: AgentActiveInputAuthorityVerifier;
 }
