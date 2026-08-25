@@ -4,7 +4,7 @@ Notable public changes to `@geekist/llm-core` are recorded here. A release tag i
 
 ## [Unreleased]
 
-Target version: 2.0.0.
+## [2.0.0] - 2026-08-26
 
 ### Breaking changes
 

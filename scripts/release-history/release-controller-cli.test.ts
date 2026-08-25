@@ -76,6 +76,7 @@ const makeControllerFixture = () => {
     join(packageRoot, "package.json"),
     `${JSON.stringify({ name: "@geekist/llm-core", version: "2.0.0" })}\n`,
   );
+  writeFileSync(join(packageRoot, "CHANGELOG.md"), "## [2.0.0] - 2026-08-26\n");
 
   expect(run(["git", "init", "-q"], root).status).toBe(0);
   expect(run(["git", "config", "user.email", "release-fixture@example.test"], root).status).toBe(0);
@@ -237,6 +238,99 @@ const makeControllerFixture = () => {
 };
 
 describe("release controller CLI fixture", () => {
+  test("rejects a tag without its dated changelog heading", () => {
+    const fixture = makeControllerFixture();
+    writeFileSync(
+      join(fixture.root, "packages/llm-core/CHANGELOG.md"),
+      "## [Unreleased]\n\nTarget version: 2.0.0.\n",
+    );
+    const validate = run(
+      [
+        process.execPath,
+        "--preload",
+        fixture.preload,
+        fixture.controller,
+        "--phase",
+        "validate",
+        "--package",
+        "llm-core",
+        "--tag",
+        "v2.0.0",
+      ],
+      fixture.root,
+      fixture.env,
+    );
+    expect(validate.status).toBe(1);
+    expect(validate.stderr).toContain("dated 2.0.0 release heading");
+  }, 30_000);
+
+  test("rejects a corrupt changelog before publish side effects", () => {
+    const fixture = makeControllerFixture();
+    writeFileSync(
+      join(fixture.root, "packages/llm-core/CHANGELOG.md"),
+      "## [Unreleased]\n\nTarget version: 2.0.0.\n",
+    );
+    const publish = run(
+      [
+        process.execPath,
+        "--preload",
+        fixture.preload,
+        fixture.controller,
+        "--phase",
+        "publish",
+        "--package",
+        "llm-core",
+        "--tag",
+        "v2.0.0",
+        "--tarball",
+        fixture.tarball,
+        "--metadata",
+        fixture.artifactPath,
+      ],
+      fixture.root,
+      fixture.env,
+    );
+    expect(publish.status).toBe(1);
+    expect(publish.stderr).toContain("dated 2.0.0 release heading");
+    expect(existsSync(fixture.state)).toBe(false);
+    expect(existsSync(fixture.npmLog)).toBe(false);
+  }, 30_000);
+
+  test("rejects a corrupt changelog before receipt side effects", () => {
+    const fixture = makeControllerFixture();
+    const receiptOutput = join(fixture.qualification, "rejected-release-receipt.json");
+    writeFileSync(
+      join(fixture.root, "packages/llm-core/CHANGELOG.md"),
+      "## [Unreleased]\n\nTarget version: 2.0.0.\n",
+    );
+    const receipt = run(
+      [
+        process.execPath,
+        "--preload",
+        fixture.preload,
+        fixture.controller,
+        "--phase",
+        "receipt",
+        "--package",
+        "llm-core",
+        "--tag",
+        "v2.0.0",
+        "--tarball",
+        fixture.tarball,
+        "--metadata",
+        fixture.artifactPath,
+        "--receipt-output",
+        receiptOutput,
+      ],
+      fixture.root,
+      fixture.env,
+    );
+    expect(receipt.status).toBe(1);
+    expect(receipt.stderr).toContain("dated 2.0.0 release heading");
+    expect(existsSync(receiptOutput)).toBe(false);
+    expect(existsSync(fixture.npmLog)).toBe(false);
+  }, 30_000);
+
   test("executes every CLI phase through Node 24 fixture boundaries", () => {
     const fixture = makeControllerFixture();
     expect(run([releaseFixtureNode, "--version"], fixture.root).stdout.trim()).toMatch(/^v24\./);
@@ -343,5 +437,5 @@ describe("release controller CLI fixture", () => {
       releaseSha: fixture.env.GITHUB_SHA,
       result: "verified",
     });
-  });
+  }, 30_000);
 });

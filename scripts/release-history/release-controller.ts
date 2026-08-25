@@ -1,7 +1,7 @@
 import { createHash } from "node:crypto";
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { basename, join, relative, resolve } from "node:path";
-import { isExactSemver, npmDistTag } from "../release-version";
+import { isExactSemver, npmDistTag, validateReleaseVersion } from "../release-version";
 import { validateReleaseReceipt, type PackageKey } from "../release-provenance";
 import type { ArtifactMetadata } from "./prepare-artifact";
 import { boundedResponseBytes } from "./bounded-response";
@@ -371,55 +371,78 @@ const parseArguments = (arguments_: readonly string[]): ControllerArguments => {
   };
 };
 
+const validateRelease = async (root: string, arguments_: ControllerArguments): Promise<string> => {
+  const version = packageVersion(root, arguments_.packageKey);
+  const distTag = npmDistTag(version);
+  validateTaggedReleaseIdentity({
+    version,
+    tag: arguments_.tag,
+    tagPrefix: packageConfigs[arguments_.packageKey].tagPrefix,
+    head: git(root, "rev-parse", "HEAD"),
+    workflowSha: requiredEnvironment("GITHUB_SHA"),
+  });
+  const versionErrors = validateReleaseVersion(root, {
+    packageKey: arguments_.packageKey,
+    tag: arguments_.tag,
+    distTag,
+    allowUnreleased: false,
+  });
+  if (versionErrors.length > 0) throw new Error(versionErrors.join("\n"));
+  await assertLiveReleaseAuthority(root, arguments_.tag);
+  return distTag;
+};
+
+const qualifiedArtifact = (root: string, arguments_: ControllerArguments): ArtifactMetadata => {
+  if (!arguments_.tarball || !arguments_.metadata) {
+    throw new TypeError("Publish and receipt phases require --tarball and --metadata");
+  }
+  if (!existsSync(arguments_.tarball)) throw new Error("Qualified tarball is missing");
+  const artifact = readArtifact(arguments_.metadata);
+  validateArtifactIdentity(root, arguments_.packageKey, artifact);
+  if (
+    basename(arguments_.tarball) !== artifact.filename ||
+    basename(artifact.tarball) !== artifact.filename
+  ) {
+    throw new Error("Tarball filename differs from artifact metadata");
+  }
+  verifyLocalArtifact(arguments_.tarball, artifact);
+  return artifact;
+};
+
+const executeReleasePhase = async (
+  root: string,
+  arguments_: ControllerArguments,
+): Promise<string> => {
+  const distTag = await validateRelease(root, arguments_);
+  if (arguments_.phase === "validate") return distTag;
+  const artifact = qualifiedArtifact(root, arguments_);
+  if (arguments_.phase === "publish") {
+    await reconcileNpmPublication({
+      root,
+      key: arguments_.packageKey,
+      tarball: arguments_.tarball!,
+      artifact,
+      tag: arguments_.tag,
+    });
+    return distTag;
+  }
+  if (!arguments_.receiptOutput) throw new TypeError("Receipt phase requires --receipt-output");
+  await writeReceipt({
+    root,
+    key: arguments_.packageKey,
+    tag: arguments_.tag,
+    tarball: arguments_.tarball!,
+    artifact,
+    output: arguments_.receiptOutput,
+  });
+  return distTag;
+};
+
 if (import.meta.main) {
   try {
     const root = resolve(import.meta.dir, "../..");
     const arguments_ = parseArguments(process.argv.slice(2));
-    const version = packageVersion(root, arguments_.packageKey);
-    const distTag = npmDistTag(version);
-    validateTaggedReleaseIdentity({
-      version,
-      tag: arguments_.tag,
-      tagPrefix: packageConfigs[arguments_.packageKey].tagPrefix,
-      head: git(root, "rev-parse", "HEAD"),
-      workflowSha: requiredEnvironment("GITHUB_SHA"),
-    });
-    await assertLiveReleaseAuthority(root, arguments_.tag);
-    if (arguments_.phase !== "validate") {
-      if (!arguments_.tarball || !arguments_.metadata) {
-        throw new TypeError("Publish and receipt phases require --tarball and --metadata");
-      }
-      if (!existsSync(arguments_.tarball)) throw new Error("Qualified tarball is missing");
-      const artifact = readArtifact(arguments_.metadata);
-      validateArtifactIdentity(root, arguments_.packageKey, artifact);
-      if (
-        basename(arguments_.tarball) !== artifact.filename ||
-        basename(artifact.tarball) !== artifact.filename
-      ) {
-        throw new Error("Tarball filename differs from artifact metadata");
-      }
-      verifyLocalArtifact(arguments_.tarball, artifact);
-      if (arguments_.phase === "publish") {
-        await reconcileNpmPublication({
-          root,
-          key: arguments_.packageKey,
-          tarball: arguments_.tarball,
-          artifact,
-          tag: arguments_.tag,
-        });
-      } else {
-        if (!arguments_.receiptOutput)
-          throw new TypeError("Receipt phase requires --receipt-output");
-        await writeReceipt({
-          root,
-          key: arguments_.packageKey,
-          tag: arguments_.tag,
-          tarball: arguments_.tarball,
-          artifact,
-          output: arguments_.receiptOutput,
-        });
-      }
-    }
+    const distTag = await executeReleasePhase(root, arguments_);
     console.log(`${arguments_.packageKey} release ${arguments_.phase} phase passed (${distTag}).`);
   } catch (error) {
     console.error(error instanceof Error ? error.message : String(error));

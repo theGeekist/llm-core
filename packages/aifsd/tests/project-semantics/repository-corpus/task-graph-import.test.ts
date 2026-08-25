@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, test } from "bun:test";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
 import { coreId, externalId, type EventId } from "@geekist/llm-core/contracts";
 import fc from "fast-check";
 import { createArchitectureTaskPlan } from "@geekist/task-graph";
@@ -43,8 +44,8 @@ const normalised = (plan: Awaited<ReturnType<typeof createArchitectureTaskPlan>>
   }));
 
 const taskGraphBinary = join(
-  process.cwd(),
-  "node_modules/@geekist/task-graph/dist/bin/task-graph.js",
+  dirname(fileURLToPath(import.meta.resolve("@geekist/task-graph"))),
+  "bin/task-graph.js",
 );
 
 const nativeCommand = async (command: readonly string[], options: { readonly cwd: string }) => {

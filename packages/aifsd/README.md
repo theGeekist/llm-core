@@ -21,7 +21,7 @@ Configuration diagnostics are renderer-neutral portable data with the closed sha
 
 ```bash
 # Available after all four exact releases have registry evidence
-npm install @aifsd/sdk@0.1.0 @geekist/llm-core@2.0.0 @aifsd/strict-json@0.1.0 @wpkernel/pipeline@1.4.0
+npm install @aifsd/sdk@0.1.0 @geekist/llm-core@2.0.0 @aifsd/strict-json@0.1.0 @wpkernel/pipeline@1.4.1
 ```
 
 The `0.1.0` support claim is deliberately limited to `@aifsd/sdk/config` and `@aifsd/sdk/integrations`. It is not a claim that the complete AIFSD paved road, clients, templates, hosted operations or delivery orchestration are published.

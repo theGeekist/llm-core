@@ -4,7 +4,7 @@ All notable changes to `@aifsd/sdk` are recorded here.
 
 ## [Unreleased]
 
-Target version: 0.1.0.
+## [0.1.0] - 2026-08-26
 
 ### Added
 
