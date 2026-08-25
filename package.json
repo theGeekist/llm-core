@@ -22,7 +22,7 @@
     "test": "bun run --cwd packages/strict-json test && bun test",
     "test:package": "bun run --cwd packages/strict-json build && bun run --cwd packages/strict-json test:package && bun run --cwd packages/llm-core test:package && bun run --cwd packages/aifsd test:package",
     "lint": "bun run quality:lint",
-    "lint:staged": "lint-staged",
+    "lint:staged": "lint-staged --verbose",
     "lint:apps": "eslint \"apps/**/*.{ts,tsx,js,jsx}\" --no-error-on-unmatched-pattern",
     "lint:fix": "eslint \"**/*.{ts,tsx,js,jsx}\" --fix",
     "format:check": "prettier \"**/*.{ts,tsx,js,jsx,json,md,yml,yaml}\" --check",
@@ -32,6 +32,9 @@
     "quality:github": "bun run scripts/quality/check-github-quality-gates.ts",
     "quality:lint": "bun run scripts/quality/check-eslint-baseline.ts",
     "quality:lint:baseline": "bun run scripts/quality/check-eslint-baseline.ts --write-baseline",
+    "quality:prepush:fix": "bun run scripts/quality/fix-prepush.ts",
+    "quality:prepush:hook": "sh scripts/quality/with-node-version.sh sh scripts/quality/pre-push.sh",
+    "quality:prepush": "bun run build && bun run quality:check",
     "quality:test": "bun run scripts/quality/run-quality-tests.ts",
     "typecheck:packages": "bun run --cwd packages/strict-json typecheck && bun run --cwd packages/llm-core typecheck && bun run --cwd packages/aifsd typecheck && bun run contracts:schema:check",
     "typecheck": "bun run typecheck:packages && bun run typecheck:examples && bun run docs:snippets:typecheck",
@@ -68,7 +71,11 @@
     "release:download:published": "bun run scripts/download-published-package.ts"
   },
   "lint-staged": {
-    "**/*.{ts,tsx,js,jsx,mjs,cjs}": "eslint --no-error-on-unmatched-pattern"
+    "**/*.{ts,tsx,js,jsx,mjs,cjs}": [
+      "prettier --write",
+      "eslint --fix --no-error-on-unmatched-pattern"
+    ],
+    "**/*.{json,md,yml,yaml}": "prettier --write"
   },
   "devDependencies": {
     "@eslint/js": "10.0.1",

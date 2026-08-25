@@ -1,3 +1,6 @@
 #!/usr/bin/env sh
+set -eu
 
-bun run lint:staged
+# lint-staged hides unstaged hunks from partially staged files, restores them
+# afterwards, and adds only successful formatter and ESLint fixes back to the index.
+exec bun run lint:staged

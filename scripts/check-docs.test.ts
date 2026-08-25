@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, test } from "bun:test";
-import { mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { dirname, join, resolve } from "node:path";
+import { dirname, join } from "node:path";
 import { checkDocumentation, markdownLinkTargets } from "./check-docs";
 
 const roots: string[] = [];
@@ -75,28 +75,6 @@ describe("Markdown link extraction", () => {
         ].join("\n\n"),
       ),
     ).toEqual(["images/diagram.svg", "https://example.com/reference", "archived.md"]);
-  });
-});
-
-describe("documentation hook routing", () => {
-  test("runs documentation checks for root and package routing pages", () => {
-    const hook = readFileSync(resolve(import.meta.dir, "../.githooks/pre-commit"), "utf8");
-    const pattern = hook.match(/^DOCS_PATTERN="(.+)"$/m)?.[1];
-
-    expect(pattern).toBeDefined();
-    const docsPattern = new RegExp(pattern!);
-    expect(
-      [
-        "README.md",
-        "CLAUDE.md",
-        "AGENTS.md",
-        "docs/guide.md",
-        "packages/alpha/README.md",
-        "packages/alpha/docs/guide.md",
-        "scripts/check-docs.ts",
-        "scripts/check-docs.test.ts",
-      ].every((path) => docsPattern.test(path)),
-    ).toBe(true);
   });
 });
 

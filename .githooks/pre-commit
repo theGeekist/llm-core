@@ -1,59 +1,6 @@
-#!/bin/sh
-set -e
+#!/usr/bin/env sh
+set -eu
 
-# Get changed files
-STAGED_FILES=$(git diff --cached --name-only)
-
-# Define patterns
-CORE_PATTERN="^packages/|^package.json|^tsconfig.json|^.eslintrc.cjs"
-DOCS_PATTERN="^docs/|^packages/[^/]+/docs/|^packages/[^/]+/README\.md$|^(README|CLAUDE|AGENTS)\.md$|^scripts/check-docs(\.test)?\.ts$"
-EXAMPLES_PATTERN="^examples/"
-
-# Function to check if files matching pattern changed
-has_changes() {
-  echo "$STAGED_FILES" | grep -qE "$1"
-}
-
-if [ -n "$STAGED_FILES" ]; then
-  echo "🔒 Checking the public repository boundary..."
-  bun run check:public-boundary
-fi
-
-# Run core checks if core files changed
-if has_changes "$CORE_PATTERN"; then
-  echo "📦 Core changes detected. Running core checks..."
-  echo "  - Format"
-  bun run format
-  echo "  - Lint"
-  bun run lint:fix
-  echo "  - Typecheck"
-  bun run typecheck
-  echo "  - Test"
-  bun run test
-fi
-
-# Run doc checks if docs changed
-if has_changes "$DOCS_PATTERN"; then
-  echo "📚 Docs changes detected. Running doc checks..."
-  echo "  - Validate"
-  bun run docs:check
-  echo "  - Build"
-  bun run docs:build
-fi
-
-# Run example checks if examples changed
-if has_changes "$EXAMPLES_PATTERN"; then
-  echo "🧪 Example changes detected. Running example checks..."
-  echo "  - Typecheck Examples"
-  bun run typecheck:examples
-fi
-
-# Check for unstaged changes after auto-formatting
-if [ -n "$STAGED_FILES" ]; then
-  CHANGED=$(git diff --name-only -- $STAGED_FILES)
-  if [ -n "$CHANGED" ]; then
-    echo "⚠️  Staged files changed after formatting/lint. Please review and re-stage:"
-    echo "$CHANGED"
-    exit 1
-  fi
-fi
+# Compatibility hook path for checkouts that explicitly use .githooks.
+# lint-staged preserves unstaged hunks and reapplies successful fixes to the index.
+exec bun run lint:staged
