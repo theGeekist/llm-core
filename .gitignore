@@ -24,3 +24,6 @@ copilot-sdk
 SKILLS.md
 internal/agent-orchestration-wip.md
 codex/
+
+# Local Simple Assembly project state.
+.simpleassembly/
