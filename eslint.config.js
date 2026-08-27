@@ -110,7 +110,7 @@ export default [
       "no-fallthrough": "error",
       "no-useless-assignment": "warn",
       "preserve-caught-error": "warn",
-      "sonarjs/cognitive-complexity": ["warn", 15],
+      "sonarjs/cognitive-complexity": ["warn", 10],
       "sonarjs/array-constructor": "off",
       "sonarjs/arrow-function-convention": "off",
       "sonarjs/cyclomatic-complexity": "off",
