@@ -243,6 +243,16 @@
         "currentSha256": "233559ae929961e0c41ae312194551c87e3bf23fabd3b8fd69d6247267ad7305"
       }
     },
+    "scripts/quality/check-eslint-baseline.ts": {
+      "lines": 518,
+      "sha256": "a60cff44e4f20c45269cd63c1d9a6946b482845064738974a0f4fd5ff8349300",
+      "waiver": {
+        "version": 1,
+        "justification": "approximately 500 lines",
+        "currentLines": 518,
+        "currentSha256": "a60cff44e4f20c45269cd63c1d9a6946b482845064738974a0f4fd5ff8349300"
+      }
+    },
     "scripts/release-provenance.ts": {
       "lines": 561,
       "sha256": "8493fbc0d204aa7a2c9179a211df818e57f6b1fd5d00621d4d69c4e6160a7f8c",
