@@ -1,20 +1,11 @@
 ---
-architecture_version: 2
 id: applications-client-characterization
 title: Characterize desktop and mobile client journeys
 stage: applications
 status: cancelled
-replaced_by:
+forward_to:
   - aifsd/clients-desktop-mobile-characterization
 priority: normal
-preferred_owner_kind: codex
-owner:
-owner_kind:
-lease_started_at:
-lease_expires_at:
-base_sha:
-branch:
-worktree:
 depends_on:
   - architecture-source-layout-normalization
   - specification-api

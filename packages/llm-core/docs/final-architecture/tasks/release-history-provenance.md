@@ -1,20 +1,10 @@
 ---
-architecture_version: 2
 id: release-history-provenance
 title: Reconstruct release history and preserve publication provenance
 stage: qualification
 status: done
 priority: critical
-replaced_by: []
 forward_to: []
-preferred_owner_kind: coordinator
-owner: codex-root
-owner_kind: coordinator
-lease_started_at: 2026-08-09T23:26:59+08:00
-lease_expires_at: 2026-08-11T23:26:59+08:00
-base_sha: ac788c7dbcfa779f305c7a4ceb02a99c1e9f3d93
-branch: main
-worktree: /Users/jasonnathan/Repos/@theGeekist/llm-core
 depends_on:
   - release-v2-readiness
 decision_dependencies:

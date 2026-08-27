@@ -1,18 +1,9 @@
 ---
-architecture_version: 2
 id: architecture-test-sloc-decomposition
 title: Decompose legacy runner test modules above the hard SLOC boundary
 stage: architecture
 status: proposed
 priority: medium
-preferred_owner_kind: coordinator
-owner:
-owner_kind:
-lease_started_at:
-lease_expires_at:
-base_sha:
-branch:
-worktree:
 depends_on:
   - architecture-runtime-ownership-correction
 decision_dependencies:

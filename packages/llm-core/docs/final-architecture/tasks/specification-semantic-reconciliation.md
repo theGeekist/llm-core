@@ -1,18 +1,9 @@
 ---
-architecture_version: 2
 id: specification-semantic-reconciliation
 title: Define document-to-intent reconciliation
 stage: specifications
 status: proposed
 priority: normal
-preferred_owner_kind: coordinator
-owner:
-owner_kind:
-lease_started_at:
-lease_expires_at:
-base_sha:
-branch:
-worktree:
 depends_on:
   - specification-exact-operation-contracts
   - specification-semantic-path-characterization

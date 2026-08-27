@@ -9,14 +9,14 @@ import {
   createGitTaskDocumentStore,
   createServiceOwnedGitTaskAuthorityService,
   type ProjectReconciliationPolicy,
-} from "@geekist/task-graph/node";
+} from "@geekist/task-graph-authority-compat/node";
 import {
   authorisationRequestDigest,
   createTaskAuthorityServiceRegistrationIdentity,
   taskAuthorityServiceAuthorisationRequestDigest,
   type TaskAuthorityServiceClientV2,
   type WorkspaceObservationReference,
-} from "@geekist/task-graph/task-authority";
+} from "@geekist/task-graph-authority-compat/task-authority";
 import {
   coreId,
   externalId,

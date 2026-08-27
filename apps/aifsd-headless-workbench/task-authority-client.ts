@@ -4,7 +4,7 @@ import {
   taskAuthorityServiceClientContractVersion,
   validateTaskAuthorityServiceReservationIdentity,
   type TaskAuthorityServiceClientV2,
-} from "@geekist/task-graph/task-authority";
+} from "@geekist/task-graph-authority-compat/task-authority";
 
 const isClient = (value: unknown): value is TaskAuthorityServiceClientV2 =>
   value !== null &&

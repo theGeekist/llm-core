@@ -1,19 +1,9 @@
 ---
-architecture_version: 2
 id: capabilities-evaluation
-legacy_id: P1-220
 title: Evaluation domain
 stage: capabilities
 status: done
 priority: high
-preferred_owner_kind: codex
-owner: codex-evaluation-domain
-owner_kind: codex
-lease_started_at: 2026-07-30T04:15:41+08:00
-lease_expires_at: 2026-08-01T04:15:41+08:00
-base_sha: 2693e91e22c8429d5067509a72a88d879d3cb9c4
-branch: task/P1-220-evaluation
-worktree: /Users/jasonnathan/Repos/@theGeekist/llm-core/.worktrees/P1-220-evaluation
 depends_on:
   - core-convergence
   - capabilities-context-artifacts

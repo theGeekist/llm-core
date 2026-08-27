@@ -1,20 +1,10 @@
 ---
-architecture_version: 2
 id: adapter-antigravity-cli-hooks-runtime
 title: Qualify the Antigravity CLI and hooks conversation adapter
 stage: adapters
 status: proposed
 priority: critical
-replaced_by: []
 forward_to: []
-preferred_owner_kind: codex
-owner: null
-owner_kind: null
-lease_started_at: null
-lease_expires_at: null
-base_sha: null
-branch: null
-worktree: null
 depends_on:
   - native-agent-conversation-runtime-contract
 decision_dependencies:

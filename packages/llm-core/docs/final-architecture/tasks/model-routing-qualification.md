@@ -1,18 +1,9 @@
 ---
-architecture_version: 2
 id: model-routing-qualification
 title: Evaluation-backed model routing qualification
 stage: qualification
 status: proposed
 priority: normal
-preferred_owner_kind: codex
-owner:
-owner_kind:
-lease_started_at:
-lease_expires_at:
-base_sha:
-branch:
-worktree:
 depends_on:
   - architecture-source-layout-normalization
   - cost-facts
@@ -22,7 +13,7 @@ decision_dependencies:
   - ADR-013
   - ADR-014
   - ADR-015
-conflicts_with:
+conflicts_with: []
 write_scope:
   - packages/llm-core/src/features/model/**
   - packages/llm-core/src/features/evaluation/**

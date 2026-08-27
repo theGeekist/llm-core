@@ -1,19 +1,9 @@
 ---
-architecture_version: 2
 id: architecture-decisions
-legacy_id: A0-001
 title: Accept Architecture v2 decisions
 stage: architecture
 status: done
 priority: critical
-preferred_owner_kind: coordinator
-owner: architecture-coordinator
-owner_kind: coordinator
-lease_started_at: 2026-07-29T15:48:27+08:00
-lease_expires_at: 2026-07-30T15:48:27+08:00
-base_sha: 556ab843c7ef11fed69161981da41d1342e357c2
-branch: main
-worktree: /Users/jasonnathan/Repos/@theGeekist/llm-core
 depends_on: []
 decision_dependencies: []
 conflicts_with: []

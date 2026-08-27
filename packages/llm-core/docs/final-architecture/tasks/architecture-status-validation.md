@@ -1,18 +1,9 @@
 ---
-architecture_version: 2
 id: architecture-status-validation
 title: Mechanically validate the architecture status projection
 stage: architecture
 status: done
 priority: high
-preferred_owner_kind: coordinator
-owner: codex-root
-owner_kind: codex
-lease_started_at: 2026-08-10T14:58:44+08:00
-lease_expires_at: 2026-08-11T14:58:44+08:00
-base_sha: e91f1fa36dbbc63b961c5b646c256e5372bd5717
-branch: main
-worktree: /Users/jasonnathan/Repos/@theGeekist/llm-core
 depends_on:
   - architecture-decisions
   - architecture-source-layout-normalization

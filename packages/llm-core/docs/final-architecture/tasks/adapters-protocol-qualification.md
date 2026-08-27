@@ -1,18 +1,9 @@
 ---
-architecture_version: 2
 id: adapters-protocol-qualification
 title: Publish exact A2A and stateless MCP protocol surfaces
 stage: adapters
 status: done
 priority: critical
-preferred_owner_kind: coordinator
-owner: codex-root
-owner_kind: coordinator
-lease_started_at: 2026-08-09T03:31:44+08:00
-lease_expires_at: 2026-08-11T03:31:44+08:00
-base_sha: 36543ce8d58cea8008c37df38d0b6b1943310bae
-branch: main
-worktree: /Users/jasonnathan/Repos/@theGeekist/llm-core
 depends_on:
   - architecture-external-contract-fidelity
   - runtime-operation-contract-correction

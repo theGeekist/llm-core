@@ -1,20 +1,10 @@
 ---
-architecture_version: 2
 id: native-agent-cross-provider-conformance
 title: Qualify native-agent conversation conformance across providers
 stage: qualification
 status: proposed
 priority: critical
-replaced_by: []
 forward_to: []
-preferred_owner_kind: codex
-owner: null
-owner_kind: null
-lease_started_at: null
-lease_expires_at: null
-base_sha: null
-branch: null
-worktree: null
 depends_on:
   - adapter-codex-app-server-runtime
   - adapter-codex-desktop-hooks-runtime

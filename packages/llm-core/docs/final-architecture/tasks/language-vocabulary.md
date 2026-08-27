@@ -1,18 +1,9 @@
 ---
-architecture_version: 2
 id: language-vocabulary
 title: Exact public vocabulary and package surfaces
 stage: language
 status: done
 priority: critical
-preferred_owner_kind: coordinator
-owner: codex-root
-owner_kind: codex
-lease_started_at: 2026-07-31T04:56:07+08:00
-lease_expires_at: 2026-08-01T04:56:07+08:00
-base_sha: b87116c21ccb833cf3084bf2f12e277d5cbb6c0e
-branch: main
-worktree: /Users/jasonnathan/Repos/@theGeekist/llm-core
 depends_on:
   - language-audit
 decision_dependencies:

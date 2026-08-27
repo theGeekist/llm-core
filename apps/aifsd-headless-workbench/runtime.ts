@@ -2,7 +2,7 @@ import { createHash } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
 import { coreId, type EvidenceId } from "@geekist/llm-core/contracts";
-import type { TaskAuthorityServiceClientV2 } from "@geekist/task-graph/task-authority";
+import type { TaskAuthorityServiceClientV2 } from "@geekist/task-graph-authority-compat/task-authority";
 import {
   createTaskAuthorityServiceReservationIdentity,
   taskAuthorityServiceRegistrationDigest,
@@ -10,7 +10,7 @@ import {
   validateAuthenticatedTaskAuthorityClient,
   validateTaskAuthorityServiceRegistrationIdentity,
   validateTaskAuthorityServiceReservationIdentity,
-} from "@geekist/task-graph/task-authority/service-contract";
+} from "@geekist/task-graph-authority-compat/task-authority/service-contract";
 import {
   createHeadlessWorkbench,
   type HeadlessWorkbench,

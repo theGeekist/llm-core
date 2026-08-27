@@ -1,20 +1,10 @@
 ---
-architecture_version: 2
 id: production-quality-gates
 title: Establish production code-quality gates
 stage: qualification
 status: done
 priority: critical
-replaced_by: []
 forward_to: []
-preferred_owner_kind: codex
-owner: codex
-owner_kind: codex
-lease_started_at: 2026-08-24T01:36:49+08:00
-lease_expires_at: 2026-08-24T09:42:50+08:00
-base_sha: e9399df47cb2f9018f7aa8c74f5592972c63b3d5
-branch: main
-worktree: /Users/jasonnathan/Repos/@theGeekist/llm-core
 depends_on: []
 decision_dependencies: []
 conflicts_with: []

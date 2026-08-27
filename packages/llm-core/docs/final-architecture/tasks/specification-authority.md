@@ -1,18 +1,9 @@
 ---
-architecture_version: 2
 id: specification-authority
 title: Recheck specification decision before execution
 stage: specifications
 status: done
 priority: high
-preferred_owner_kind: coordinator
-owner: codex-root
-owner_kind: coordinator
-lease_started_at:
-lease_expires_at:
-base_sha: df7c34c
-branch: main
-worktree: /Users/jasonnathan/Repos/@theGeekist/llm-core
 depends_on:
   - specification-compiler
 decision_dependencies:

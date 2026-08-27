@@ -1,18 +1,9 @@
 ---
-architecture_version: 2
 id: adapter-catalogue-public-qualification
 title: Qualify the public adapter catalogue and inert candidate contract
 stage: adapters
 status: done
 priority: critical
-preferred_owner_kind: codex
-owner: codex-root
-owner_kind: codex
-lease_started_at: 2026-08-18T04:36:38+08:00
-lease_expires_at: 2026-08-19T04:36:38+08:00
-base_sha: 32dfe690bbb8472224a65ce3bdb43264dff3d46d
-branch: main
-worktree: /Users/jasonnathan/Repos/@theGeekist/llm-core
 depends_on:
   - architecture-external-contract-fidelity
   - architecture-release-reproducibility

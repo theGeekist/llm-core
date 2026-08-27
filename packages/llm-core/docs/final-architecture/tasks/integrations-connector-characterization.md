@@ -1,18 +1,9 @@
 ---
-architecture_version: 2
 id: integrations-connector-characterization
 title: Characterize unlike connector vertical slices
 stage: integrations
 status: done
 priority: high
-preferred_owner_kind: codex
-owner: codex-connector-characterization
-owner_kind: codex
-lease_started_at: 2026-08-25T09:48:00+08:00
-lease_expires_at: 2026-08-27T09:48:00+08:00
-base_sha: 459154191a946c8710de2a06ea507862de870398
-branch: main
-worktree: /Users/jasonnathan/Repos/@theGeekist/llm-core
 depends_on:
   - architecture-external-contract-fidelity
   - architecture-source-layout-normalization
@@ -25,7 +16,7 @@ decision_dependencies:
   - ADR-014
   - ADR-015
   - ADR-017
-conflicts_with:
+conflicts_with: []
 write_scope:
   - packages/llm-core/tests/integrations/characterization/**
   - packages/llm-core/docs/final-architecture/tasks/integrations-connector-characterization.md

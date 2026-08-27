@@ -1,18 +1,9 @@
 ---
-architecture_version: 2
 id: capabilities-workspace-sandbox
 title: Execution workspace and sandbox port
 stage: qualification
 status: proposed
 priority: medium
-preferred_owner_kind: codex
-owner:
-owner_kind:
-lease_started_at:
-lease_expires_at:
-base_sha:
-branch:
-worktree:
 depends_on:
   - architecture-source-layout-normalization
   - runtime-receipt-reconciliation

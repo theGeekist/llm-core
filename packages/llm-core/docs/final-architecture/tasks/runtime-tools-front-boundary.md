@@ -1,18 +1,9 @@
 ---
-architecture_version: 2
 id: runtime-tools-front-boundary
 title: Remove the tooling feature-to-application boundary exception
 stage: qualification
 status: done
 priority: critical
-preferred_owner_kind: coordinator
-owner: codex-root
-owner_kind: coordinator
-lease_started_at: 2026-08-09T01:01:01+08:00
-lease_expires_at: 2026-08-11T01:01:01+08:00
-base_sha: 8da1b87ae7a3091d6092e02e8356d1aa44eb184c
-branch: main
-worktree: /Users/jasonnathan/Repos/@theGeekist/llm-core
 depends_on:
   - architecture-source-layout-normalization
   - runtime-tool-execution-decomposition

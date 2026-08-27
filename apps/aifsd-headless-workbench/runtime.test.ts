@@ -8,14 +8,14 @@ import { externalId, type CorrelationId, type EventId } from "@geekist/llm-core/
 import type {
   NativeTaskAuthorityCommand,
   TaskAuthorityServiceClientV2,
-} from "@geekist/task-graph/task-authority";
+} from "@geekist/task-graph-authority-compat/task-authority";
 import {
   createNativeTaskAuthorityReceiptV2,
   createTaskAuthorityServiceRegistrationIdentity,
   createTaskAuthorityServiceReservationIdentity,
   taskAuthorityServiceCommandDigest,
   type NativeTaskAuthorityReceiptV2,
-} from "@geekist/task-graph/task-authority/service-contract";
+} from "@geekist/task-graph-authority-compat/task-authority/service-contract";
 import type { Neo4jProjectionAdapter } from "../../packages/aifsd/src/integrations/neo4j/public.js";
 import { contentDigest } from "../../packages/aifsd/src/config/content-digest.js";
 import { createFileProjectJournal } from "../../packages/aifsd/src/project-semantics/adapters/file-journal/public.js";

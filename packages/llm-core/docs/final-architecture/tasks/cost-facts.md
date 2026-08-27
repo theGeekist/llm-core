@@ -1,18 +1,9 @@
 ---
-architecture_version: 2
 id: cost-facts
 title: Usage, estimate and reconciled cost facts
 stage: qualification
 status: proposed
 priority: high
-preferred_owner_kind: codex
-owner:
-owner_kind:
-lease_started_at:
-lease_expires_at:
-base_sha:
-branch:
-worktree:
 depends_on:
   - architecture-source-layout-normalization
   - capabilities-operational-evidence
@@ -21,7 +12,7 @@ decision_dependencies:
   - ADR-013
   - ADR-014
   - ADR-015
-conflicts_with:
+conflicts_with: []
 write_scope:
   - packages/llm-core/src/features/evidence/**
   - packages/llm-core/tests/evidence/**

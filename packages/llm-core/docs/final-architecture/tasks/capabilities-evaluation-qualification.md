@@ -1,19 +1,10 @@
 ---
-architecture_version: 2
 id: capabilities-evaluation-qualification
 title: Evaluation qualification and promotion
 stage: qualification
 status: done
 evidence_milestone: pre-completion
 priority: high
-preferred_owner_kind: codex
-owner: codex-evaluation-qualification
-owner_kind: coordinator
-lease_started_at: 2026-08-01T04:02:25Z
-lease_expires_at: 2026-08-01T12:02:25Z
-base_sha: df7c34c85c783b42d2375a854792ae4808cb487a
-branch: main
-worktree: .
 depends_on:
   - capabilities-evaluation
   - language-rollout
@@ -36,7 +27,7 @@ read_scope:
   - packages/llm-core/src/features/evidence/**
   - packages/llm-core/src/features/artifacts/**
 review_owner: coordinator
-updated_at: 2026-08-01T06:56:05Z
+updated_at: 2026-08-01
 ---
 
 # capabilities-evaluation-qualification — Evaluation qualification and promotion

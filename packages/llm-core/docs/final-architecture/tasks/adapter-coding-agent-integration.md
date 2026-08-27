@@ -1,18 +1,9 @@
 ---
-architecture_version: 2
 id: adapter-coding-agent-integration
 title: Characterize and qualify a coding-agent integration
 stage: adapters
 status: done
 priority: high
-preferred_owner_kind: coordinator
-owner: codex-root
-owner_kind: codex
-lease_started_at: 2026-08-10T15:19:38+08:00
-lease_expires_at: 2026-08-11T15:19:38+08:00
-base_sha: e91f1fa36dbbc63b961c5b646c256e5372bd5717
-branch: main
-worktree: /Users/jasonnathan/Repos/@theGeekist/llm-core
 depends_on:
   - architecture-external-contract-fidelity
   - architecture-runtime-ownership-correction

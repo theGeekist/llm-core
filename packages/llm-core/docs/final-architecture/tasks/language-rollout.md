@@ -1,18 +1,9 @@
 ---
-architecture_version: 2
 id: language-rollout
 title: Atomic public-language rollout
 stage: language
 status: done
 priority: critical
-preferred_owner_kind: coordinator
-owner: codex-root
-owner_kind: codex
-lease_started_at: 2026-07-31T06:00:00+08:00
-lease_expires_at:
-base_sha: 17d2b38a
-branch: main
-worktree: /Users/jasonnathan/Repos/@theGeekist/llm-core
 depends_on:
   - language-vocabulary
 decision_dependencies:

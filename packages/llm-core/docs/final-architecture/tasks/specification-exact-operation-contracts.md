@@ -1,18 +1,9 @@
 ---
-architecture_version: 2
 id: specification-exact-operation-contracts
 title: Replace specification conversion fidelity with exact operations
 stage: specifications
 status: done
 priority: critical
-preferred_owner_kind: coordinator
-owner: codex-root
-owner_kind: coordinator
-lease_started_at:
-lease_expires_at:
-base_sha: ac788c7dbcfa779f305c7a4ceb02a99c1e9f3d93
-branch: main
-worktree: /Users/jasonnathan/Repos/@theGeekist/llm-core
 depends_on:
   - architecture-external-contract-fidelity
   - specification-api

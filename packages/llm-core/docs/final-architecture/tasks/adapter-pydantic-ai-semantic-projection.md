@@ -1,18 +1,9 @@
 ---
-architecture_version: 2
 id: adapter-pydantic-ai-semantic-projection
 title: Align PydanticAI projection with accepted intent
 stage: adapters
 status: proposed
 priority: normal
-preferred_owner_kind: codex
-owner:
-owner_kind:
-lease_started_at:
-lease_expires_at:
-base_sha:
-branch:
-worktree:
 depends_on:
   - adapter-pydantic-ai
   - specification-exact-operation-contracts

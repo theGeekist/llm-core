@@ -1,18 +1,9 @@
 ---
-architecture_version: 2
 id: architecture-legacy-functional-removal
 title: Remove the retired functional workspace alias
 stage: architecture
 status: proposed
 priority: high
-preferred_owner_kind: coordinator
-owner:
-owner_kind:
-lease_started_at:
-lease_expires_at:
-base_sha:
-branch:
-worktree:
 depends_on:
   - architecture-source-layout-normalization
   - language-rollout

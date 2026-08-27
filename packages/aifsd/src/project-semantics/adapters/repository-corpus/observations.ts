@@ -105,14 +105,14 @@ const taskAssertions = ({
   });
   const readScope = task.readScope.map((scope) => fromTask("task.read-scope", scope));
   const writeScope = task.writeScope.map((scope) => fromTask("task.write-scope", scope));
-  const blockers = [...planEntry.blockers, ...planEntry.safetyBlockers].map((blocker) =>
-    fromTask("task.blocked-by", blocker),
-  );
+  const blockers = planEntry.blockers.map((blocker) => fromTask("task.blocked-by", blocker));
   const planner = [
     fromTask("task.planner-index", planEntry.pipelineIndex),
     fromTask("task.planner-can-start", planEntry.canStart),
     ...planEntry.blockers.map((blocker) => fromTask("task.planner-blocker", blocker)),
-    ...planEntry.safetyBlockers.map((blocker) => fromTask("task.planner-safety-blocker", blocker)),
+    ...planEntry.warnings.map(({ code, knowledge, message }) =>
+      fromTask("task.planner-warning", { code, knowledge, message }),
+    ),
   ];
   const metadata = [
     lifecycle.owner === undefined ? [] : [fromTask("task.owner", lifecycle.owner)],
@@ -308,10 +308,10 @@ export const repositoryCorpusObservation = (
 
 export const repositoryCorpusSnapshotDigest = (import_: RepositoryCorpusImport) =>
   contentDigest({
-    plan: import_.plan.ordered.map(({ blockers, safetyBlockers, task }) => ({
+    plan: import_.plan.ordered.map(({ blockers, task, warnings }) => ({
       blockers,
-      safetyBlockers,
       taskKey: task.key,
+      warnings,
     })),
     projectId: import_.projectId,
     revision: import_.revision,
@@ -335,12 +335,22 @@ export const repositoryCorpusSnapshotDigest = (import_: RepositoryCorpusImport) 
     planner: {
       diagnostics: import_.plan.diagnostics,
       ordered: import_.plan.ordered.map(
-        ({ blockers, canStart, pipelineIndex, safetyBlockers, task }) => ({
+        ({
           blockers,
           canStart,
+          dependenciesSatisfied,
+          lifecycleEligible,
           pipelineIndex,
-          safetyBlockers,
+          task,
+          warnings,
+        }) => ({
+          blockers,
+          canStart,
+          dependenciesSatisfied,
+          lifecycleEligible,
+          pipelineIndex,
           taskKey: task.key,
+          warnings,
         }),
       ),
     },

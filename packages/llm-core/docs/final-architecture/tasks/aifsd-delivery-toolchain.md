@@ -1,20 +1,11 @@
 ---
-architecture_version: 2
 id: aifsd-delivery-toolchain
 title: Derive the AIFSD delivery SDK or CLI
 stage: applications
 status: cancelled
-replaced_by:
+forward_to:
   - aifsd/local-delivery-vertical-slice
 priority: high
-preferred_owner_kind: coordinator
-owner:
-owner_kind:
-lease_started_at:
-lease_expires_at:
-base_sha:
-branch:
-worktree:
 depends_on:
   - aifsd-delivery-characterization
 decision_dependencies:

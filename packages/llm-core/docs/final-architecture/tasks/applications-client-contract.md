@@ -1,20 +1,11 @@
 ---
-architecture_version: 2
 id: applications-client-contract
 title: Shared end-user client application contract
 stage: applications
 status: cancelled
-replaced_by:
+forward_to:
   - aifsd/clients-shared-work-control-contract
 priority: high
-preferred_owner_kind: codex
-owner:
-owner_kind:
-lease_started_at:
-lease_expires_at:
-base_sha:
-branch:
-worktree:
 depends_on:
   - architecture-source-layout-normalization
   - applications-client-characterization
@@ -29,7 +20,7 @@ decision_dependencies:
   - ADR-014
   - ADR-015
   - ADR-016
-conflicts_with:
+conflicts_with: []
 write_scope:
   - packages/llm-core/src/client/**
   - packages/llm-core/tests/client/**

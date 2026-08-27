@@ -1,18 +1,9 @@
 ---
-architecture_version: 2
 id: adapter-bmad-release
 title: Publish the qualified BMAD adapter
 stage: adapters
 status: proposed
 priority: normal
-preferred_owner_kind: coordinator
-owner:
-owner_kind:
-lease_started_at:
-lease_expires_at:
-base_sha:
-branch:
-worktree:
 depends_on:
   - architecture-source-layout-normalization
   - adapter-bmad

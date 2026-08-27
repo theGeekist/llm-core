@@ -1,18 +1,9 @@
 ---
-architecture_version: 2
 id: specification-api
 title: Specification API and format compatibility
 stage: specifications
 status: done
 priority: high
-preferred_owner_kind: coordinator
-owner: codex-root
-owner_kind: coordinator
-lease_started_at: 2026-08-01T00:00:00.000Z
-lease_expires_at: 2026-08-01T08:00:00.000Z
-base_sha: fc64195
-branch: main
-worktree: /Users/jasonnathan/Repos/@theGeekist/llm-core
 depends_on:
   - specification-authority
 decision_dependencies:

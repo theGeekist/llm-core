@@ -1,18 +1,9 @@
 ---
-architecture_version: 2
 id: architecture-external-contract-fidelity
 title: Enforce exact external contract fidelity
 stage: architecture
 status: done
 priority: critical
-preferred_owner_kind: coordinator
-owner:
-owner_kind:
-lease_started_at:
-lease_expires_at:
-base_sha:
-branch:
-worktree:
 depends_on:
   - architecture-runtime-ownership-correction
 decision_dependencies:

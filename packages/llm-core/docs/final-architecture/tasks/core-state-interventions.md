@@ -1,19 +1,9 @@
 ---
-architecture_version: 2
 id: core-state-interventions
-legacy_id: P0-130
 title: Implement state and intervention vertical slice
 stage: core
 status: done
 priority: critical
-preferred_owner_kind: codex
-owner: codex-root
-owner_kind: codex
-lease_started_at: 2026-07-29T19:15:00+08:00
-lease_expires_at: null
-base_sha: 6b9838c
-branch: task/P0-130-codex
-worktree: /Users/jasonnathan/Repos/@theGeekist/llm-core/.worktrees/P0-130-codex
 depends_on:
   - core-tool-control-events
 decision_dependencies:

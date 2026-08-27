@@ -1,19 +1,9 @@
 ---
-architecture_version: 2
 id: core-agent-runner
-legacy_id: P0-140
 title: Implement AgentRunner and local runner
 stage: core
 status: done
 priority: critical
-preferred_owner_kind: codex
-owner: codex-root
-owner_kind: codex
-lease_started_at: 2026-07-29T22:35:00+08:00
-lease_expires_at: null
-base_sha: e13eff0
-branch: task/P0-140-codex
-worktree: /Users/jasonnathan/Repos/@theGeekist/llm-core/.worktrees/P0-140-codex
 depends_on:
   - core-tool-control-events
   - core-model-runtime

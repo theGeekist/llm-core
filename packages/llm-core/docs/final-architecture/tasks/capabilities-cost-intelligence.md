@@ -1,23 +1,14 @@
 ---
-architecture_version: 2
 id: capabilities-cost-intelligence
 title: Cost attribution, budgets and routing evidence
 stage: qualification
 status: cancelled
-replaced_by:
+forward_to:
   - cost-facts
   - cost-budget-control
   - cost-budget-enforcement
   - model-routing-qualification
 priority: high
-preferred_owner_kind: codex
-owner:
-owner_kind:
-lease_started_at:
-lease_expires_at:
-base_sha:
-branch:
-worktree:
 depends_on:
   - capabilities-operational-evidence
   - capabilities-evaluation-qualification
@@ -27,7 +18,7 @@ decision_dependencies:
   - ADR-013
   - ADR-014
   - ADR-015
-conflicts_with:
+conflicts_with: []
 write_scope:
   - packages/llm-core/src/features/evidence/**
   - packages/llm-core/src/features/model/**

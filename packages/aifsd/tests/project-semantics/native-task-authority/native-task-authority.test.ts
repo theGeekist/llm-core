@@ -9,7 +9,7 @@ import {
 import type {
   NativeTaskAuthorityCommand,
   TaskAuthorityServiceClientV2,
-} from "@geekist/task-graph/task-authority";
+} from "@geekist/task-graph-authority-compat/task-authority";
 import {
   createNativeTaskAuthorityReceiptV2,
   createTaskAuthorityServiceReservationIdentity,
@@ -17,7 +17,7 @@ import {
   taskAuthorityServiceCommandDigest,
   validateProjectInstanceId,
   type NativeTaskAuthorityReceiptV2,
-} from "@geekist/task-graph/task-authority/service-contract";
+} from "@geekist/task-graph-authority-compat/task-authority/service-contract";
 import type { NativeTaskOperation } from "../../../src/application/headless-workbench/public.js";
 import { createTaskGraphNativeTaskAuthority } from "../../../src/project-semantics/adapters/native-task-authority/public.js";
 

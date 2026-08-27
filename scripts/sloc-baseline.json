@@ -15,22 +15,22 @@
   "exceptions": {
     "apps/aifsd-headless-workbench/real-task-qualification.ts": {
       "lines": 502,
-      "sha256": "9f8b197dbb751b12ceb80f1a638b617bcfa787ffb51a7bde5debcb4411173e5b",
+      "sha256": "8b691a2025a5b7016e74588e0e766d0924a12f9abf849b63b176327add5054f0",
       "waiver": {
         "version": 1,
         "justification": "approximately 500 lines",
         "currentLines": 502,
-        "currentSha256": "9f8b197dbb751b12ceb80f1a638b617bcfa787ffb51a7bde5debcb4411173e5b"
+        "currentSha256": "8b691a2025a5b7016e74588e0e766d0924a12f9abf849b63b176327add5054f0"
       }
     },
     "apps/aifsd-headless-workbench/runtime.test.ts": {
       "lines": 523,
-      "sha256": "e955b376f3796b2279970e85cb6806a476145260857bd50287b49d6a51ef4e7c",
+      "sha256": "fa6a94629e9f91a87475278a9f00deb2650f9ea846e3be05df0187e81f00728a",
       "waiver": {
         "version": 1,
         "justification": "approximately 500 lines",
         "currentLines": 523,
-        "currentSha256": "e955b376f3796b2279970e85cb6806a476145260857bd50287b49d6a51ef4e7c"
+        "currentSha256": "fa6a94629e9f91a87475278a9f00deb2650f9ea846e3be05df0187e81f00728a"
       }
     },
     "packages/aifsd/src/project-semantics/adapters/repository-corpus/task-graph.ts": {

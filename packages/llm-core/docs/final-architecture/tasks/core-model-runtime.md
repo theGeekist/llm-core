@@ -1,19 +1,9 @@
 ---
-architecture_version: 2
 id: core-model-runtime
-legacy_id: P0-120
 title: Implement model and profile vertical slice
 stage: core
 status: done
 priority: critical
-preferred_owner_kind: claude-code
-owner: Claude Code
-owner_kind: claude-code
-lease_started_at: 2026-07-29T16:48:00+08:00
-lease_expires_at: null
-base_sha: 6e8e6a5
-branch: task/P0-120-claude
-worktree: /Users/jasonnathan/Repos/@theGeekist/llm-core/.worktrees/P0-120-claude
 depends_on:
   - core-contracts
 decision_dependencies:

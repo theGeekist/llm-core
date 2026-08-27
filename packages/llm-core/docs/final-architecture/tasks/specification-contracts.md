@@ -1,18 +1,9 @@
 ---
-architecture_version: 2
 id: specification-contracts
 title: Specification model and conversion
 stage: specifications
 status: done
 priority: high
-preferred_owner_kind: coordinator
-owner: codex-specification-contracts-review
-owner_kind: codex
-lease_started_at: 2026-08-01T07:05:15+08:00
-lease_expires_at: 2026-08-02T07:05:15+08:00
-base_sha: af4b6bc
-branch: task/specification-contracts-review
-worktree: /Users/jasonnathan/Repos/@theGeekist/llm-core/.worktrees/specification-contracts-review
 depends_on:
   - language-rollout
 decision_dependencies:

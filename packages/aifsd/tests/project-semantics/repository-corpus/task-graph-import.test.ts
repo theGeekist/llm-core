@@ -35,13 +35,27 @@ const imported = async () => {
   return result.value;
 };
 
-const normalised = (plan: Awaited<ReturnType<typeof createArchitectureTaskPlan>>) =>
+const normalisedCompatibilityPlan = (
+  plan: Awaited<ReturnType<typeof createArchitectureTaskPlan>>,
+) =>
   plan.ordered.map(({ blockers, canStart, safetyBlockers, task }) => ({
     blockers,
-    canStart,
+    canStart: canStart && safetyBlockers.length === 0,
     safetyBlockers,
     task: task.key,
   }));
+
+const normalisedPlan = (plan: Awaited<ReturnType<typeof createArchitectureTaskPlan>>) =>
+  plan.ordered.map(
+    ({ blockers, canStart, dependenciesSatisfied, lifecycleEligible, task, warnings }) => ({
+      blockers,
+      canStart,
+      dependenciesSatisfied,
+      lifecycleEligible,
+      task: task.key,
+      warnings,
+    }),
+  );
 
 const taskGraphBinary = join(
   dirname(fileURLToPath(import.meta.resolve("@geekist/task-graph"))),
@@ -128,6 +142,11 @@ describe("Task Graph repository corpus adapter", () => {
           object: expect.any(Number),
         }),
         expect.objectContaining({
+          subjectId: "task:aifsd/conflicted",
+          predicate: "task.planner-warning",
+          object: expect.objectContaining({ code: "declared-conflict" }),
+        }),
+        expect.objectContaining({
           subjectId: "project:repository:fixture-project",
           predicate: "project.governing-reading",
           object: expect.objectContaining({
@@ -139,13 +158,15 @@ describe("Task Graph repository corpus adapter", () => {
       ]),
     );
     expect(
-      result.plan.ordered.find(({ task }) => task.key === "aifsd/conflicted")?.safetyBlockers,
+      result.plan.ordered
+        .find(({ task }) => task.key === "aifsd/conflicted")
+        ?.warnings.map(({ message }) => message),
     ).toContain("conflicts with active aifsd/active");
   });
 
   test("fails closed when the pinned Task Graph governing-reading preflight fails", async () => {
     fixture = await createCorpusFixture();
-    const manifest = join(fixture.root, "task-graph.project.json");
+    const manifest = fixture.source.manifestPath;
     await writeFile(
       manifest,
       JSON.stringify({
@@ -168,6 +189,7 @@ describe("Task Graph repository corpus adapter", () => {
         },
       }),
     );
+
     const runtime = loadTaskGraphRuntime(manifest, manifest);
     expect(() =>
       validateGoverningReading(
@@ -194,7 +216,7 @@ describe("Task Graph repository corpus adapter", () => {
     expect(cli.exitCode).toBe(1);
   });
 
-  test("matches the beta.5 failure for unavailable required reading", async () => {
+  test("matches the beta.6 failure for unavailable required reading", async () => {
     fixture = await createCorpusFixture();
     const path = join(fixture.root, "architecture", "tasks", "ready.md");
     await writeFile(
@@ -286,7 +308,7 @@ describe("Task Graph repository corpus adapter", () => {
     );
   });
 
-  test("matches the installed beta.5 CLI for plan and context in a real Git fixture", async () => {
+  test("matches the installed beta.6 compatibility CLI for a legacy foreign corpus", async () => {
     fixture = await createCorpusFixture();
     const current = fixture;
     await mkdir(join(current.root, "packages", "ready"), { recursive: true });
@@ -320,7 +342,7 @@ describe("Task Graph repository corpus adapter", () => {
         readonly safetyBlockers: readonly string[];
       }[];
     };
-    expect(normalised(adapterPlan.value.plan)).toEqual(
+    expect(normalisedCompatibilityPlan(adapterPlan.value.plan)).toEqual(
       native.tasks.map(({ blockers, canStart, key, safetyBlockers }) => ({
         blockers,
         canStart,
@@ -422,7 +444,7 @@ describe("Task Graph repository corpus adapter", () => {
             dirtyPaths: current.state.dirtyPaths,
             tasks,
           });
-          expect(normalised(actual.value.plan)).toEqual(normalised(reference));
+          expect(normalisedPlan(actual.value.plan)).toEqual(normalisedPlan(reference));
         },
       ),
       { numRuns: 30 },

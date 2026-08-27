@@ -1,19 +1,9 @@
 ---
-architecture_version: 2
 id: core-conversations
-legacy_id: P0-142
 title: Implement storage and conversation fronts
 stage: core
 status: done
 priority: critical
-preferred_owner_kind: codex
-owner: codex-root
-owner_kind: codex
-lease_started_at: 2026-07-29T23:05:00+08:00
-lease_expires_at: null
-base_sha: e80b33ec370f18c7dfef94c33da71fa63ef631bc
-branch: task/P0-142-codex
-worktree: /Users/jasonnathan/Repos/@theGeekist/llm-core/.worktrees/P0-142-codex
 depends_on:
   - core-contracts
   - core-model-runtime

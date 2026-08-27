@@ -3,7 +3,7 @@ import {
   validateNativeTaskAuthorityCommand,
   type NativeTaskAuthorityCommand,
   type TaskAuthorityServiceClientV2,
-} from "@geekist/task-graph/task-authority";
+} from "@geekist/task-graph-authority-compat/task-authority";
 import {
   nativeTaskAuthorityReceiptV2Digest,
   taskAuthorityServiceCommandDigest,
@@ -15,7 +15,7 @@ import {
   validateTaskAuthorityServiceRegistrationIdentity,
   validateTaskAuthorityServiceReservationIdentity,
   type NativeTaskAuthorityReceiptV2,
-} from "@geekist/task-graph/task-authority/service-contract";
+} from "@geekist/task-graph-authority-compat/task-authority/service-contract";
 import {
   createNativeTaskExecutionIntent,
   validateNativeTaskExecutionIntent,

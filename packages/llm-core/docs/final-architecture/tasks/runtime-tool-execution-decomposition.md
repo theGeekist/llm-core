@@ -1,18 +1,9 @@
 ---
-architecture_version: 2
 id: runtime-tool-execution-decomposition
 title: Decompose controlled tool execution orchestration
 stage: qualification
 status: done
 priority: high
-preferred_owner_kind: codex
-owner: codex-root
-owner_kind: codex
-lease_started_at: 2026-08-03T17:07:27+08:00
-lease_expires_at: 2026-08-04T17:07:27+08:00
-base_sha: ca027dcc3f3b215d8cbd1f2eb376612e68d2f12e
-branch: main
-worktree: /Users/jasonnathan/Repos/@theGeekist/llm-core
 depends_on:
   - architecture-source-layout-normalization
   - runtime-receipt-reconciliation

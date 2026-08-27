@@ -1,20 +1,10 @@
 ---
-architecture_version: 2
 id: native-agent-conversation-runtime-contract
 title: Define the portable native-agent conversation runtime contract
 stage: integrations
 status: done
 priority: critical
-replaced_by: []
 forward_to: []
-preferred_owner_kind: codex
-owner: codex-native-agent-sdk
-owner_kind: codex
-lease_started_at: 2026-08-25T09:48:00+08:00
-lease_expires_at: 2026-08-27T09:48:00+08:00
-base_sha: 459154191a946c8710de2a06ea507862de870398
-branch: main
-worktree: /Users/jasonnathan/Repos/@theGeekist/llm-core
 depends_on:
   - architecture-runtime-ownership-correction
   - core-agent-runner

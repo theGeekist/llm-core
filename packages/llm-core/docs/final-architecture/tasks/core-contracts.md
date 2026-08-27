@@ -1,19 +1,9 @@
 ---
-architecture_version: 2
 id: core-contracts
-legacy_id: P0-100
 title: Implement narrow-waist contracts
 stage: core
 status: done
 priority: critical
-preferred_owner_kind: codex
-owner: codex-root
-owner_kind: codex
-lease_started_at: 2026-07-29T16:04:54+08:00
-lease_expires_at: 2026-07-30T16:04:54+08:00
-base_sha: 4640a1fd7351c54bf965513cdfdfde53edce1825
-branch: task/P0-100-codex
-worktree: /Users/jasonnathan/Repos/@theGeekist/llm-core/.worktrees/P0-100-codex
 depends_on:
   - architecture-decisions
 decision_dependencies:

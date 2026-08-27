@@ -1,20 +1,11 @@
 ---
-architecture_version: 2
 id: aifsd-delivery-characterization
 title: Characterize one governed AIFSD delivery slice
 stage: applications
 status: cancelled
-replaced_by:
+forward_to:
   - aifsd/local-delivery-vertical-slice
 priority: critical
-preferred_owner_kind: coordinator
-owner:
-owner_kind:
-lease_started_at:
-lease_expires_at:
-base_sha:
-branch:
-worktree:
 depends_on:
   - architecture-runtime-ownership-correction
   - adapter-openspec

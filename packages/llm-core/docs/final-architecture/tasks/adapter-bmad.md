@@ -1,19 +1,10 @@
 ---
-architecture_version: 2
 id: adapter-bmad
 title: BMAD file and CLI adapter
 stage: adapters
 status: done
 evidence_milestone: cf3347d
 priority: normal
-preferred_owner_kind: codex
-owner: codex-root
-owner_kind: coordinator
-lease_started_at:
-lease_expires_at:
-base_sha: "9920425"
-branch: main
-worktree: /Users/jasonnathan/Repos/@theGeekist/llm-core
 depends_on:
   - specification-api
 decision_dependencies:

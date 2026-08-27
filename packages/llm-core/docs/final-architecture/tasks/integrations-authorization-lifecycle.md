@@ -1,18 +1,9 @@
 ---
-architecture_version: 2
 id: integrations-authorization-lifecycle
 title: Connector authorization and secret-reference lifecycle
 stage: integrations
 status: proposed
 priority: high
-preferred_owner_kind: codex
-owner:
-owner_kind:
-lease_started_at:
-lease_expires_at:
-base_sha:
-branch:
-worktree:
 depends_on:
   - architecture-source-layout-normalization
   - integrations-connector-contracts
@@ -21,7 +12,7 @@ decision_dependencies:
   - ADR-005
   - ADR-014
   - ADR-015
-conflicts_with:
+conflicts_with: []
 write_scope:
   - packages/llm-core/src/features/integrations/**
   - packages/llm-core/src/application/integrations/**

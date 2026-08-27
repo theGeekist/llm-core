@@ -1,19 +1,9 @@
 ---
-architecture_version: 2
 id: core-knowledge
-legacy_id: P0-141
 title: Implement knowledge retrieval and indexing fronts
 stage: core
 status: done
 priority: critical
-preferred_owner_kind: codex
-owner: codex-root
-owner_kind: codex
-lease_started_at: 2026-07-29T23:05:00+08:00
-lease_expires_at: null
-base_sha: ab397fc
-branch: task/P0-141-codex
-worktree: /Users/jasonnathan/Repos/@theGeekist/llm-core/.worktrees/P0-141-codex
 depends_on:
   - core-contracts
   - core-model-runtime

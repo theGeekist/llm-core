@@ -1,18 +1,9 @@
 ---
-architecture_version: 2
 id: architecture-source-layout-normalization
 title: Normalize source filenames and directory depth
 stage: architecture
 status: done
 priority: critical
-preferred_owner_kind: coordinator
-owner: codex-root
-owner_kind: coordinator
-lease_started_at:
-lease_expires_at:
-base_sha: 85dd8cdafb5c143c99cdd1f2c2ebbdd68e741043
-branch: main
-worktree: /Users/jasonnathan/Repos/@theGeekist/llm-core
 depends_on:
   - architecture-decisions
 decision_dependencies:

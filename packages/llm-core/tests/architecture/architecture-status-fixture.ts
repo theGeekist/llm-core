@@ -33,20 +33,11 @@ export const taskDocument = ({
   workLog = "",
   writeScope = [`fixtures/${id}/**`],
 }: FixtureTask): string => `---
-architecture_version: 2
 id: ${id}
 title: ${id}
 stage: ${stage}
 status: ${status}
 priority: high
-preferred_owner_kind: codex
-owner:
-owner_kind:
-lease_started_at:
-lease_expires_at:
-base_sha:
-branch:
-worktree:
 depends_on: ${yamlList(dependencies)}
 decision_dependencies: ${yamlList(decisions)}
 conflicts_with: ${yamlList(conflicts)}

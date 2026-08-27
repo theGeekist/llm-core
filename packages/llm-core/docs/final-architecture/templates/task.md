@@ -1,21 +1,10 @@
 ---
-architecture_version: 2
 id: TASK-ID
 title: Task title
 stage: STAGE
 status: proposed
 priority: critical
-evidence_milestone: null
-replaced_by: []
 forward_to: []
-preferred_owner_kind: codex
-owner: null
-owner_kind: null
-lease_started_at: null
-lease_expires_at: null
-base_sha: null
-branch: null
-worktree: null
 depends_on: []
 decision_dependencies: []
 conflicts_with: []
@@ -32,11 +21,10 @@ updated_at: YYYY-MM-DD
 
 # TASK-ID — Task title
 
-Choose `stage`, `status`, `priority`, `preferred_owner_kind` and `owner_kind`
-only from the canonical vocabularies in [`../tasks/README.md`](../tasks/README.md).
-Use `replaced_by` only for an existing local task ID or committed
-`<package-name>/<task-id>` replacement. Use `forward_to` for a planned,
-uncommitted cross-package authority in `<package-name>/<task-id>` form.
+Choose `stage`, `status` and `priority` only from the canonical vocabularies in
+[`../tasks/README.md`](../tasks/README.md). Use `forward_to` for local or
+package-qualified successor tasks. Keep cooperative claim state outside the
+brief under `.taskgraph/local/`.
 Use `required_reading` only for exact task-specific historical, caveat or
 evidence files. Give every entry a one-line `reason`, add optional full-revision
 `ref` only when historical source identity matters, and ensure every path is

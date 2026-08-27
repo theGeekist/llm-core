@@ -1,18 +1,9 @@
 ---
-architecture_version: 2
 id: integrations-connector-contracts
 title: Connector manifest and lifecycle contracts
 stage: integrations
 status: proposed
 priority: high
-preferred_owner_kind: codex
-owner:
-owner_kind:
-lease_started_at:
-lease_expires_at:
-base_sha:
-branch:
-worktree:
 depends_on:
   - architecture-external-contract-fidelity
   - architecture-source-layout-normalization
@@ -24,7 +15,7 @@ decision_dependencies:
   - ADR-014
   - ADR-015
   - ADR-017
-conflicts_with:
+conflicts_with: []
 write_scope:
   - packages/llm-core/src/features/integrations/**
   - packages/llm-core/tests/integrations/**

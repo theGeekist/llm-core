@@ -72,7 +72,7 @@ describe("headless project workbench", () => {
     ).toBeTrue();
     expect(
       corrected.value.view.tasks.find(({ taskId }) => taskId === "task:aifsd/ready")?.readiness,
-    ).toBe("blocked");
+    ).toBe("ready");
     expect(
       corrected.value.view.tasks.find(({ taskId }) => taskId === "task:aifsd/ready")
         ?.contradictionAssertionIds,
@@ -397,7 +397,7 @@ describe("headless project workbench", () => {
     expect(corpus.value.view.tasks).toEqual(
       expect.arrayContaining([
         expect.objectContaining({ taskId: "task:aifsd/completed", readiness: "complete" }),
-        expect.objectContaining({ taskId: "task:aifsd/conflicted", readiness: "blocked" }),
+        expect.objectContaining({ taskId: "task:aifsd/conflicted", readiness: "ready" }),
       ]),
     );
     const replay = await instance.dispatch({

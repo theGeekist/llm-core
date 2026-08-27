@@ -1,19 +1,9 @@
 ---
-architecture_version: 2
 id: core-ai-sdk-packaging
-legacy_id: P0-155
 title: Resolve AI SDK 7 dependency and module-format gate
 stage: core
 status: done
 priority: critical
-preferred_owner_kind: coordinator
-owner: codex-root
-owner_kind: codex
-lease_started_at: 2026-07-29T19:15:00+08:00
-lease_expires_at: null
-base_sha: 6b9838c
-branch: task/P0-155-codex
-worktree: /Users/jasonnathan/Repos/@theGeekist/llm-core/.worktrees/P0-155-codex
 depends_on:
   - core-tool-control-events
   - core-model-runtime

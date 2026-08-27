@@ -9,7 +9,8 @@
     "start": "bun run main.ts"
   },
   "dependencies": {
-    "@geekist/task-graph": "0.1.0-beta.5",
+    "@geekist/task-graph": "0.1.0-beta.6",
+    "@geekist/task-graph-authority-compat": "npm:@geekist/task-graph@0.1.0-beta.5",
     "neo4j-driver": "6.2.0"
   }
 }

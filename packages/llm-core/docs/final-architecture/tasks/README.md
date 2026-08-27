@@ -14,18 +14,17 @@ Use only these values:
 
 - `stage`: `architecture`, `baseline`, `core`, `capabilities`, `language`, `specifications`, `qualification`, `integrations`, `adapters`, `applications`;
 - `status`: `proposed`, `ready`, `claimed`, `in_progress`, `review`, `blocked`, `done`, `cancelled`;
-- `priority`: `critical`, `high`, `medium`, `normal`;
-- owner kinds: `coordinator`, `codex`, `claude-code`.
+- `priority`: `critical`, `high`, `medium`, `normal`.
 
-Empty YAML values and `null` are equivalent only for unassigned metadata. `proposed`, `ready` and never-started `cancelled` tasks have no assignment. `claimed`, `in_progress`, `review` and actively leased `blocked` tasks require owner, owner kind, lease start/expiry, base SHA, branch and `worktree`. The historical field name `worktree` records the selected checkout path, including the shared primary checkout.
+Task assignment is cooperative repository-local state under `.taskgraph/local/`, not task-frontmatter authority. Claims do not grant filesystem permissions or replace Git and worktrees as integration evidence.
 
-`evidence_milestone` is optional structured STATUS evidence for completed work. `replaced_by` is an optional reference list for existing replacement tasks; a local replacement uses its task ID and a committed cross-package replacement uses `<package-name>/<task-id>`. `forward_to` is an optional package-qualified reference list for planned cross-package authority that is not yet committed. Forward targets are projected distinctly, are not replacements, and carry no claim about target existence or lifecycle. Prose work logs are not projection inputs. A task must not set both `replaced_by` and `forward_to`.
+`evidence_milestone` is optional structured STATUS evidence for completed work. `forward_to` records local or package-qualified successor tasks without making their existence or lifecycle a hard graph dependency. Prose work logs are not projection inputs.
 
 The coordinator owns lifecycle changes and updates task front matter plus `STATUS.md` together. Workers request transitions. A committed governance set must contain every task-frontmatter source needed for the exact STATUS projection; do not place a partial set in an implementation commit.
 
-## Active work log
+## Work log
 
-Use these exact labels:
+Work logs retain execution and review evidence as prose. They are not claim, lease or admission authority. Useful evidence may include:
 
 ```text
 Execution mode: shared-checkout | dedicated-worktree
@@ -35,7 +34,7 @@ Concurrent task scopes: none | <task IDs and disjoint scopes>
 Swarm delegation: none | <parent runtime/owner> -> <child runtime/owner>: <role>; <disjoint subpath/output or review output>
 ```
 
-`done` tasks retain assignment provenance and record the approved commit. Cancelled tasks remain in place and name an existing replacement or an explicit planned forward target when applicable. Renamed completed tasks may retain immutable `legacy_id`, branch and checkout values.
+`done` tasks retain implementation and review evidence. Cancelled tasks remain in place and name a successor through `forward_to` when applicable.
 
 ## Brief contract
 

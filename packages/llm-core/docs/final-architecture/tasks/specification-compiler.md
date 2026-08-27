@@ -1,18 +1,9 @@
 ---
-architecture_version: 2
 id: specification-compiler
 title: Specification review and compilation
 stage: specifications
 status: done
 priority: high
-preferred_owner_kind: coordinator
-owner: codex-specification-compiler-review
-owner_kind: codex
-lease_started_at: 2026-08-01T08:01:21+08:00
-lease_expires_at: 2026-08-02T08:01:21+08:00
-base_sha: 89cd5720256969917750a9b72cba03894fde77d2
-branch: task/specification-compiler-review
-worktree: /Users/jasonnathan/Repos/@theGeekist/llm-core/.worktrees/specification-compiler-review
 depends_on:
   - specification-contracts
 decision_dependencies:

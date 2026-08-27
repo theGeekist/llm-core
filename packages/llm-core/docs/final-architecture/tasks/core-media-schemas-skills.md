@@ -1,19 +1,9 @@
 ---
-architecture_version: 2
 id: core-media-schemas-skills
-legacy_id: P0-143
 title: Implement media, schema resolution and skill fronts
 stage: core
 status: done
 priority: critical
-preferred_owner_kind: codex
-owner: codex-root
-owner_kind: codex
-lease_started_at: 2026-07-29T23:56:00+08:00
-lease_expires_at: 2026-07-30T23:56:00+08:00
-base_sha: 16290df
-branch: task/P0-143-codex
-worktree: /Users/jasonnathan/Repos/@theGeekist/llm-core/.worktrees/P0-143-codex
 depends_on:
   - core-contracts
   - core-model-runtime

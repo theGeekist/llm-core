@@ -1,18 +1,9 @@
 ---
-architecture_version: 2
 id: adapter-langgraph-runtime
 title: Qualify the LangGraph runtime integration
 stage: adapters
 status: proposed
 priority: high
-preferred_owner_kind: codex
-owner:
-owner_kind:
-lease_started_at:
-lease_expires_at:
-base_sha:
-branch:
-worktree:
 depends_on:
   - architecture-external-contract-fidelity
   - architecture-runtime-ownership-correction

@@ -1,20 +1,11 @@
 ---
-architecture_version: 2
 id: applications-client-platform-qualification
 title: Prequalify client platforms and build the packed-package gate
 stage: applications
 status: cancelled
-replaced_by:
+forward_to:
   - aifsd/clients-platform-qualification
 priority: high
-preferred_owner_kind: coordinator
-owner:
-owner_kind:
-lease_started_at:
-lease_expires_at:
-base_sha:
-branch:
-worktree:
 depends_on:
   - architecture-source-layout-normalization
   - applications-client-contract

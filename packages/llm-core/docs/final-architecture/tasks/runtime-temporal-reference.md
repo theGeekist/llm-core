@@ -1,18 +1,9 @@
 ---
-architecture_version: 2
 id: runtime-temporal-reference
 title: Temporal durable execution reference
 stage: qualification
 status: proposed
 priority: high
-preferred_owner_kind: coordinator
-owner:
-owner_kind:
-lease_started_at:
-lease_expires_at:
-base_sha:
-branch:
-worktree:
 depends_on:
   - architecture-external-contract-fidelity
   - runtime-operation-contract-correction

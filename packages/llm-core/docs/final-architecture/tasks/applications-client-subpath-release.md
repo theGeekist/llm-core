@@ -1,20 +1,11 @@
 ---
-architecture_version: 2
 id: applications-client-subpath-release
 title: Qualify and publish the shared client subpath
 stage: applications
 status: cancelled
-replaced_by:
+forward_to:
   - aifsd/clients-surface-publication
 priority: high
-preferred_owner_kind: coordinator
-owner:
-owner_kind:
-lease_started_at:
-lease_expires_at:
-base_sha:
-branch:
-worktree:
 depends_on:
   - architecture-source-layout-normalization
   - applications-client-platform-qualification

@@ -1,19 +1,9 @@
 ---
-architecture_version: 2
 id: core-ai-sdk-adapter
-legacy_id: P0-160
 title: Convert AI SDK adapter to version 7
 stage: core
 status: done
 priority: critical
-preferred_owner_kind: codex
-owner: codex-root
-owner_kind: codex
-lease_started_at: 2026-07-29T19:27:00+08:00
-lease_expires_at: null
-base_sha: 23f88ee
-branch: task/P0-160-codex
-worktree: /Users/jasonnathan/Repos/@theGeekist/llm-core/.worktrees/P0-160-codex
 depends_on:
   - core-tool-control-events
   - core-model-runtime

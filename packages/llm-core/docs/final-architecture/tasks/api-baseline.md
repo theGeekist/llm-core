@@ -1,19 +1,9 @@
 ---
-architecture_version: 2
 id: api-baseline
-legacy_id: I0-010
 title: Characterize current public API and migration blast radius
 stage: baseline
 status: done
 priority: critical
-preferred_owner_kind: claude-code
-owner: Claude Code
-owner_kind: claude-code
-lease_started_at: 2026-07-29T16:00:11+0800
-lease_expires_at: null
-base_sha: 8021ac6c3103115422d943b30f5ddb5df2e58ec8
-branch: main
-worktree: main
 depends_on: []
 decision_dependencies: []
 conflicts_with: []

@@ -1,0 +1,116 @@
+{
+  "commands": [
+    {
+      "description": "Validate public documentation, snippets and architecture projections.",
+      "id": "architecture.docs",
+      "invocations": [
+        {
+          "command": ["bun", "run", "docs:check"],
+          "heading": "Documentation checks"
+        }
+      ],
+      "label": "Check documentation",
+      "mutates": false,
+      "requiresTask": false
+    },
+    {
+      "description": "Check the generated llm-core architecture status projection.",
+      "id": "architecture.status",
+      "invocations": [
+        {
+          "command": ["bun", "run", "check:architecture-status"],
+          "cwd": "packages/llm-core",
+          "heading": "Architecture status check"
+        }
+      ],
+      "label": "Check architecture status",
+      "mutates": false,
+      "requiresTask": false
+    },
+    {
+      "description": "Regenerate the llm-core architecture status projection.",
+      "id": "architecture.status.write",
+      "invocations": [
+        {
+          "command": ["bun", "run", "write:architecture-status"],
+          "cwd": "packages/llm-core",
+          "heading": "Architecture status regeneration"
+        }
+      ],
+      "label": "Regenerate architecture status",
+      "mutates": true,
+      "requiresTask": false
+    },
+    {
+      "description": "Compile the complete project task graph through the pinned standalone package.",
+      "id": "architecture.task-graph",
+      "invocations": [
+        {
+          "command": ["bun", "run", "task-graph:plan", "--", "--format", "json"],
+          "heading": "Task graph validation"
+        }
+      ],
+      "label": "Validate task graph",
+      "mutates": false,
+      "requiresTask": false
+    }
+  ],
+  "externalReadingSources": [
+    {
+      "mutableReadingStatuses": null,
+      "pathPrefix": "packages/aifsd/docs",
+      "root": "packages/aifsd/docs"
+    },
+    {
+      "mutableReadingStatuses": null,
+      "pathPrefix": "context/aifsd-research",
+      "root": "context/aifsd-research"
+    },
+    {
+      "mutableReadingStatuses": [
+        "proposed",
+        "ready",
+        "claimed",
+        "in_progress",
+        "review",
+        "blocked",
+        "done",
+        "cancelled"
+      ],
+      "pathPrefix": "context/simple-chat",
+      "root": "context/simple-chat"
+    }
+  ],
+  "graphs": [
+    {
+      "decisionsRoot": "packages/llm-core/docs/final-architecture/decisions",
+      "governingReading": [
+        "AGENTS.md",
+        "README.md",
+        "packages/llm-core/README.md",
+        "packages/llm-core/docs/final-architecture/README.md",
+        "packages/llm-core/docs/handoffs/implement-v2-code.md",
+        "packages/llm-core/docs/final-architecture/COORDINATION.md",
+        "packages/llm-core/docs/final-architecture/tasks/README.md"
+      ],
+      "id": "llm-core",
+      "label": "llm-core",
+      "tasksRoot": "packages/llm-core/docs/final-architecture/tasks"
+    }
+  ],
+  "localState": {
+    "root": ".taskgraph/local",
+    "tracking": "ignored"
+  },
+  "outputContractVersion": 2,
+  "planning": {
+    "root": ".",
+    "tracking": "tracked"
+  },
+  "project": {
+    "id": "llm-core",
+    "label": "llm-core architecture"
+  },
+  "schemaVersion": 1,
+  "taskSchemaVersion": 2
+}

@@ -1,19 +1,10 @@
 ---
-architecture_version: 2
 id: capabilities-operational-evidence
 title: Usage receipts and observability projection
 stage: qualification
 status: done
 evidence_milestone: pre-completion
 priority: high
-preferred_owner_kind: codex
-owner: codex-operational-evidence
-owner_kind: coordinator
-lease_started_at: 2026-08-01T06:56:05Z
-lease_expires_at: 2026-08-01T14:56:05Z
-base_sha: df1e4f36cf3cbf46e820dcf04242de3d077e4a0c
-branch: main
-worktree: .
 depends_on:
   - language-rollout
 decision_dependencies:
@@ -41,7 +32,7 @@ read_scope:
   - packages/llm-core/src/features/control/**
   - packages/llm-core/src/application/**
 review_owner: coordinator
-updated_at: 2026-08-01T12:56:01Z
+updated_at: 2026-08-01
 ---
 
 # capabilities-operational-evidence — Usage receipts and observability projection

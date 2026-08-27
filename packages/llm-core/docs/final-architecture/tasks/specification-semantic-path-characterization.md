@@ -1,18 +1,9 @@
 ---
-architecture_version: 2
 id: specification-semantic-path-characterization
 title: Characterize the specification semantic path
 stage: specifications
 status: proposed
 priority: normal
-preferred_owner_kind: codex
-owner:
-owner_kind:
-lease_started_at:
-lease_expires_at:
-base_sha:
-branch:
-worktree:
 depends_on:
   - architecture-external-contract-fidelity
   - architecture-runtime-ownership-correction

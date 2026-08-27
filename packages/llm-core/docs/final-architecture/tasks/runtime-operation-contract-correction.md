@@ -1,18 +1,9 @@
 ---
-architecture_version: 2
 id: runtime-operation-contract-correction
 title: Replace projected runtime support with exact operations
 stage: adapters
 status: done
 priority: critical
-preferred_owner_kind: coordinator
-owner: codex-root
-owner_kind: coordinator
-lease_started_at: 2026-08-08T00:31:35+08:00
-lease_expires_at: 2026-08-10T00:31:35+08:00
-base_sha: 4c8cd971e73e2428d08cec3d219508b7bfdf5515
-branch: main
-worktree: /Users/jasonnathan/Repos/@theGeekist/llm-core
 depends_on:
   - architecture-external-contract-fidelity
   - capabilities-runtime-conformance

@@ -1,19 +1,9 @@
 ---
-architecture_version: 2
 id: core-interactions
-legacy_id: P0-170
 title: Convert interaction sessions and UI projections
 stage: core
 status: done
 priority: critical
-preferred_owner_kind: codex
-owner: codex-root
-owner_kind: codex
-lease_started_at: 2026-07-29T22:55:00+08:00
-lease_expires_at: null
-base_sha: 104e8a8
-branch: task/P0-170-codex
-worktree: /Users/jasonnathan/Repos/@theGeekist/llm-core/.worktrees/P0-170-codex
 depends_on:
   - core-state-interventions
   - core-agent-runner

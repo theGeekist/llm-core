@@ -1,19 +1,9 @@
 ---
-architecture_version: 2
 id: core-convergence
-legacy_id: P0-150
 title: Converge the core and delete old contracts
 stage: core
 status: done
 priority: critical
-preferred_owner_kind: coordinator
-owner: codex-root
-owner_kind: coordinator
-lease_started_at: 2026-07-30T01:30:00+08:00
-lease_expires_at: 2026-08-01T01:30:00+08:00
-base_sha: 6f57ac7
-branch: task/P0-150-convergence
-worktree: /Users/jasonnathan/Repos/@theGeekist/llm-core/.worktrees/P0-150-convergence
 depends_on:
   - api-baseline
   - core-agent-runner

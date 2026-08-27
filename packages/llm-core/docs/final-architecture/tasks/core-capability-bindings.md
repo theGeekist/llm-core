@@ -1,19 +1,9 @@
 ---
-architecture_version: 2
 id: core-capability-bindings
-legacy_id: P0-149
 title: Implement capability bindings and invocation bridge
 stage: core
 status: done
 priority: critical
-preferred_owner_kind: codex
-owner: codex-root
-owner_kind: codex
-lease_started_at: 2026-07-30T00:38:10+08:00
-lease_expires_at: 2026-07-31T00:38:10+08:00
-base_sha: a532ce8337e670cc05a623a80446dacd4a04085e
-branch: task/P0-149-codex
-worktree: /Users/jasonnathan/Repos/@theGeekist/llm-core/.worktrees/P0-149-codex
 depends_on:
   - core-tool-control-events
   - core-state-interventions

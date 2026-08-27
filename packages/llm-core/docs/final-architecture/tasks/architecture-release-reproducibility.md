@@ -1,18 +1,9 @@
 ---
-architecture_version: 2
 id: architecture-release-reproducibility
 title: Freeze release installs and reusable qualification gates
 stage: architecture
 status: done
 priority: critical
-preferred_owner_kind: coordinator
-owner: codex-root
-owner_kind: coordinator
-lease_started_at: 2026-08-03T17:08:28+08:00
-lease_expires_at: 2026-08-04T17:08:28+08:00
-base_sha: ca027dcc3f3b215d8cbd1f2eb376612e68d2f12e
-branch: main
-worktree: /Users/jasonnathan/Repos/@theGeekist/llm-core
 depends_on:
   - architecture-decisions
   - architecture-source-layout-normalization

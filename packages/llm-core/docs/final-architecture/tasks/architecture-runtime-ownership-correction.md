@@ -1,18 +1,9 @@
 ---
-architecture_version: 2
 id: architecture-runtime-ownership-correction
 title: Correct runtime ownership and mark v1 architecture
 stage: architecture
 status: done
 priority: critical
-preferred_owner_kind: coordinator
-owner: architecture-coordinator
-owner_kind: coordinator
-lease_started_at: 2026-08-04T00:00:00+08:00
-lease_expires_at: 2026-08-05T00:00:00+08:00
-base_sha: 059f3e5c387eee5991d433b4e6c1e2feae18a691
-branch: main
-worktree: /Users/jasonnathan/Repos/@theGeekist/llm-core
 depends_on:
   - architecture-decisions
 decision_dependencies:

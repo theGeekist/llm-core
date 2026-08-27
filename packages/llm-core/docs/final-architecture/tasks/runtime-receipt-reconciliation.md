@@ -1,19 +1,10 @@
 ---
-architecture_version: 2
 id: runtime-receipt-reconciliation
 title: Receipt fencing and ambiguous-effect recovery
 stage: qualification
 status: done
 evidence_milestone: bb7f7f7
 priority: high
-preferred_owner_kind: codex
-owner: codex-root
-owner_kind: codex
-lease_started_at: 2026-08-02T06:15:30Z
-lease_expires_at: null
-base_sha: 9920425b37ac8e83d94dcd1caad171e03113f34c
-branch: main
-worktree: .
 depends_on:
   - core-tool-control-events
   - core-state-interventions

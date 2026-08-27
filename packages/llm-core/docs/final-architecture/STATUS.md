@@ -38,15 +38,15 @@ Active tasks: 0
 | adapter-strands-runtime | adapters | proposed | architecture-external-contract-fidelity, architecture-runtime-ownership-correction, runtime-operation-contract-correction, architecture-source-layout-normalization, capabilities-operational-evidence, capabilities-runtime-conformance, architecture-release-reproducibility | — | — | — |
 | adapter-strands-runtime-release | adapters | proposed | architecture-external-contract-fidelity, architecture-runtime-ownership-correction, runtime-operation-contract-correction, architecture-source-layout-normalization, adapter-strands-runtime | — | — | — |
 | adapters-protocol-qualification | adapters | done | architecture-external-contract-fidelity, runtime-operation-contract-correction, architecture-source-layout-normalization, runtime-receipt-reconciliation, capabilities-operational-evidence, architecture-release-reproducibility, runtime-tools-front-boundary | — | — | — |
-| aifsd-delivery-characterization | applications | cancelled | architecture-runtime-ownership-correction, adapter-openspec, adapter-coding-agent-integration, capabilities-evaluation-qualification, capabilities-operational-evidence | — | aifsd/local-delivery-vertical-slice | — |
-| aifsd-delivery-toolchain | applications | cancelled | aifsd-delivery-characterization | — | aifsd/local-delivery-vertical-slice | — |
+| aifsd-delivery-characterization | applications | cancelled | architecture-runtime-ownership-correction, adapter-openspec, adapter-coding-agent-integration, capabilities-evaluation-qualification, capabilities-operational-evidence | — | — | aifsd/local-delivery-vertical-slice |
+| aifsd-delivery-toolchain | applications | cancelled | aifsd-delivery-characterization | — | — | aifsd/local-delivery-vertical-slice |
 | api-baseline | baseline | done | — | — | — | — |
-| applications-client-characterization | applications | cancelled | architecture-source-layout-normalization, specification-api, integrations-authorization-lifecycle, cost-facts, cost-budget-enforcement, model-routing-qualification | — | aifsd/clients-desktop-mobile-characterization | — |
-| applications-client-contract | applications | cancelled | architecture-source-layout-normalization, applications-client-characterization, integrations-authorization-lifecycle, cost-facts, cost-budget-enforcement, model-routing-qualification | — | aifsd/clients-shared-work-control-contract | — |
-| applications-client-platform-qualification | applications | cancelled | architecture-source-layout-normalization, applications-client-contract, architecture-release-reproducibility | — | aifsd/clients-platform-qualification | — |
-| applications-client-subpath-release | applications | cancelled | architecture-source-layout-normalization, applications-client-platform-qualification | — | aifsd/clients-surface-publication | — |
-| applications-desktop | applications | cancelled | architecture-source-layout-normalization, applications-client-subpath-release | — | aifsd/clients-desktop-foundation | — |
-| applications-mobile | applications | cancelled | architecture-source-layout-normalization, applications-client-subpath-release | — | aifsd/clients-mobile-foundation | — |
+| applications-client-characterization | applications | cancelled | architecture-source-layout-normalization, specification-api, integrations-authorization-lifecycle, cost-facts, cost-budget-enforcement, model-routing-qualification | — | — | aifsd/clients-desktop-mobile-characterization |
+| applications-client-contract | applications | cancelled | architecture-source-layout-normalization, applications-client-characterization, integrations-authorization-lifecycle, cost-facts, cost-budget-enforcement, model-routing-qualification | — | — | aifsd/clients-shared-work-control-contract |
+| applications-client-platform-qualification | applications | cancelled | architecture-source-layout-normalization, applications-client-contract, architecture-release-reproducibility | — | — | aifsd/clients-platform-qualification |
+| applications-client-subpath-release | applications | cancelled | architecture-source-layout-normalization, applications-client-platform-qualification | — | — | aifsd/clients-surface-publication |
+| applications-desktop | applications | cancelled | architecture-source-layout-normalization, applications-client-subpath-release | — | — | aifsd/clients-desktop-foundation |
+| applications-mobile | applications | cancelled | architecture-source-layout-normalization, applications-client-subpath-release | — | — | aifsd/clients-mobile-foundation |
 | architecture-adapter-sloc-decomposition | architecture | proposed | architecture-source-layout-normalization | — | — | — |
 | architecture-decisions | architecture | done | — | — | — | — |
 | architecture-external-contract-fidelity | architecture | done | architecture-runtime-ownership-correction | — | — | — |
@@ -58,7 +58,7 @@ Active tasks: 0
 | architecture-test-sloc-decomposition | architecture | proposed | architecture-runtime-ownership-correction | — | — | — |
 | capabilities-context-artifacts | capabilities | done | core-convergence | — | — | — |
 | capabilities-context-qualification | qualification | done | language-rollout | pre-completion | — | — |
-| capabilities-cost-intelligence | qualification | cancelled | capabilities-operational-evidence, capabilities-evaluation-qualification | — | cost-facts, cost-budget-control, cost-budget-enforcement, model-routing-qualification | — |
+| capabilities-cost-intelligence | qualification | cancelled | capabilities-operational-evidence, capabilities-evaluation-qualification | — | — | cost-facts, cost-budget-control, cost-budget-enforcement, model-routing-qualification |
 | capabilities-evaluation | capabilities | done | core-convergence, capabilities-context-artifacts | — | — | — |
 | capabilities-evaluation-qualification | qualification | done | capabilities-evaluation, language-rollout | pre-completion | — | — |
 | capabilities-operational-evidence | qualification | done | language-rollout | pre-completion | — | — |

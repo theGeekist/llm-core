@@ -1,20 +1,11 @@
 ---
-architecture_version: 2
 id: applications-desktop
 title: Desktop application foundation
 stage: applications
 status: cancelled
-replaced_by:
+forward_to:
   - aifsd/clients-desktop-foundation
 priority: medium
-preferred_owner_kind: codex
-owner:
-owner_kind:
-lease_started_at:
-lease_expires_at:
-base_sha:
-branch:
-worktree:
 depends_on:
   - architecture-source-layout-normalization
   - applications-client-subpath-release

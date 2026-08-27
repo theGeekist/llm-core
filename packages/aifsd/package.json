@@ -60,7 +60,8 @@
     "@wpkernel/pipeline": "1.4.1"
   },
   "devDependencies": {
-    "@geekist/task-graph": "0.1.0-beta.5",
+    "@geekist/task-graph": "0.1.0-beta.6",
+    "@geekist/task-graph-authority-compat": "npm:@geekist/task-graph@0.1.0-beta.5",
     "fast-check": "4.5.3"
   }
 }

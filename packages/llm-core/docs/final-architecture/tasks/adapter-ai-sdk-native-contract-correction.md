@@ -1,18 +1,9 @@
 ---
-architecture_version: 2
 id: adapter-ai-sdk-native-contract-correction
 title: Preserve the AI SDK native response contract
 stage: adapters
 status: done
 priority: critical
-preferred_owner_kind: codex
-owner: codex-root
-owner_kind: coordinator
-lease_started_at:
-lease_expires_at:
-base_sha: ac788c7dbcfa779f305c7a4ceb02a99c1e9f3d93
-branch: main
-worktree: /Users/jasonnathan/Repos/@theGeekist/llm-core
 depends_on:
   - architecture-external-contract-fidelity
   - core-ai-sdk-adapter

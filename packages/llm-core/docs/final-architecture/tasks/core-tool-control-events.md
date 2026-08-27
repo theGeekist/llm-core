@@ -1,19 +1,9 @@
 ---
-architecture_version: 2
 id: core-tool-control-events
-legacy_id: P0-110
 title: Implement tool control and execution-event kernel
 stage: core
 status: done
 priority: critical
-preferred_owner_kind: codex
-owner: codex-root
-owner_kind: codex
-lease_started_at: 2026-07-29T16:49:00+08:00
-lease_expires_at: 2026-07-30T16:49:00+08:00
-base_sha: e4ebd2b
-branch: task/P0-110-codex
-worktree: /Users/jasonnathan/Repos/@theGeekist/llm-core/.worktrees/P0-110-codex
 depends_on:
   - core-contracts
 decision_dependencies:
