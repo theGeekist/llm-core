@@ -33,6 +33,9 @@ const eslintPath = resolve(root, "node_modules/.bin/eslint");
 const writeBaseline = process.argv.includes("--write-baseline");
 const initialBaselineBase = "e9399df47cb2f9018f7aa8c74f5592972c63b3d5";
 const initialBaselineSha256 = "11c6ea54d2e4fff302135e56f2138da59e9b53b07a5996ae56af9426f45ea861";
+const cognitiveComplexityRule = "sonarjs/cognitive-complexity";
+const cognitiveComplexityMessage =
+  /^Refactor this function to reduce its Cognitive Complexity from (\d+) to the (\d+) allowed\.$/;
 
 const childScopes = (directory: string): readonly (readonly string[])[] =>
   readdirSync(resolve(root, directory), { withFileTypes: true })
@@ -159,18 +162,31 @@ const trustedRevision = (): string => {
   return revision;
 };
 
-const loadTrustedBaseline = (revision: string): EslintBaseline | undefined => {
-  const result = Bun.spawnSync(["git", "show", `${revision}:${baselineRepositoryPath}`], {
+const revisionFile = (revision: string, path: string): string | undefined => {
+  const result = Bun.spawnSync(["git", "show", `${revision}:${path}`], {
     cwd: root,
     stderr: "pipe",
     stdout: "pipe",
   });
-  if (result.exitCode !== 0) return undefined;
+  return result.exitCode === 0 ? result.stdout.toString() : undefined;
+};
+
+const loadTrustedBaseline = (revision: string): EslintBaseline | undefined => {
+  const content = revisionFile(revision, baselineRepositoryPath);
+  if (content === undefined) return undefined;
   try {
-    return JSON.parse(result.stdout.toString()) as EslintBaseline;
+    return JSON.parse(content) as EslintBaseline;
   } catch (error) {
     throw new Error(`Trusted ESLint baseline at ${revision} is invalid JSON`, { cause: error });
   }
+};
+
+const cognitiveComplexityThreshold = (config: string): number | undefined => {
+  const match =
+    /["']sonarjs\/cognitive-complexity["']\s*:\s*\[\s*["']warn["']\s*,\s*(\d+)\s*\]/.exec(config);
+  if (match === null) return undefined;
+  const threshold = Number(match[1]);
+  return Number.isSafeInteger(threshold) ? threshold : undefined;
 };
 
 const eslintVersion = async (): Promise<string> => {
@@ -194,6 +210,145 @@ export const compareAnchors = (
   return errors;
 };
 
+interface CognitiveComplexityAnchor {
+  readonly allowed: number;
+  readonly complexity: number;
+  readonly identity: string;
+}
+
+const cognitiveComplexityAnchor = (anchor: string): CognitiveComplexityAnchor | undefined => {
+  try {
+    const value: unknown = JSON.parse(anchor);
+    if (!Array.isArray(value) || value.length !== 6) return undefined;
+    const [path, line, column, rule, message, source] = value;
+    if (
+      typeof path !== "string" ||
+      typeof line !== "number" ||
+      typeof column !== "number" ||
+      rule !== cognitiveComplexityRule ||
+      typeof message !== "string" ||
+      typeof source !== "string"
+    ) {
+      return undefined;
+    }
+    const match = cognitiveComplexityMessage.exec(message);
+    if (match === null) return undefined;
+    const complexity = Number(match[1]);
+    const allowed = Number(match[2]);
+    if (!Number.isSafeInteger(complexity) || !Number.isSafeInteger(allowed)) return undefined;
+    return {
+      allowed,
+      complexity,
+      identity: JSON.stringify([path, line, column, rule, source]),
+    };
+  } catch {
+    return undefined;
+  }
+};
+
+const cognitiveComplexityTightening = (
+  thresholds: Readonly<{ candidate?: number; trusted?: number }> | undefined,
+): thresholds is Readonly<{ candidate: number; trusted: number }> =>
+  Number.isSafeInteger(thresholds?.candidate) &&
+  Number.isSafeInteger(thresholds?.trusted) &&
+  thresholds.candidate < thresholds.trusted;
+
+interface EvolutionAnchorOptions {
+  readonly candidate: Readonly<Record<string, number>>;
+  readonly label: string;
+  readonly thresholds: Readonly<{ candidate?: number; trusted?: number }> | undefined;
+  readonly trusted: Readonly<Record<string, number>>;
+}
+
+interface CognitiveComplexityReconciliation {
+  readonly anchor: string;
+  readonly outstanding: number;
+  readonly remainingTrusted: Map<string, number>;
+  readonly thresholds: Readonly<{ candidate: number; trusted: number }>;
+}
+
+const consumeExactAnchor = (
+  remainingTrusted: Map<string, number>,
+  anchor: string,
+  count: number,
+): number => {
+  const consumed = Math.min(count, remainingTrusted.get(anchor) ?? 0);
+  if (consumed > 0) remainingTrusted.set(anchor, (remainingTrusted.get(anchor) ?? 0) - consumed);
+  return count - consumed;
+};
+
+const equivalentTrustedCognitiveAnchor = (
+  remainingTrusted: ReadonlyMap<string, number>,
+  current: CognitiveComplexityAnchor,
+  trustedThreshold: number,
+): readonly [string, number] | undefined =>
+  [...remainingTrusted.entries()].find(([anchor, count]) => {
+    const previous = cognitiveComplexityAnchor(anchor);
+    return (
+      count > 0 &&
+      previous?.identity === current.identity &&
+      previous.complexity === current.complexity &&
+      previous.allowed === trustedThreshold
+    );
+  });
+
+const newlyExposedCognitiveComplexity = (
+  anchor: CognitiveComplexityAnchor | undefined,
+  thresholds: Readonly<{ candidate: number; trusted: number }>,
+): boolean =>
+  anchor?.allowed === thresholds.candidate &&
+  anchor.complexity > thresholds.candidate &&
+  anchor.complexity <= thresholds.trusted;
+
+const reconcileCognitiveComplexityTightening = ({
+  anchor,
+  outstanding,
+  remainingTrusted,
+  thresholds,
+}: CognitiveComplexityReconciliation): number => {
+  const current = cognitiveComplexityAnchor(anchor);
+  if (current === undefined || current.allowed !== thresholds.candidate) return outstanding;
+  let unresolved = outstanding;
+  while (unresolved > 0) {
+    const previous = equivalentTrustedCognitiveAnchor(
+      remainingTrusted,
+      current,
+      thresholds.trusted,
+    );
+    if (previous === undefined) break;
+    const [previousAnchor, previousCount] = previous;
+    const reconciled = Math.min(unresolved, previousCount);
+    remainingTrusted.set(previousAnchor, previousCount - reconciled);
+    unresolved -= reconciled;
+  }
+  return newlyExposedCognitiveComplexity(current, thresholds) ? 0 : unresolved;
+};
+
+const evolutionAnchorErrors = ({
+  candidate,
+  label,
+  thresholds,
+  trusted,
+}: EvolutionAnchorOptions): readonly string[] => {
+  const remainingTrusted = new Map(Object.entries(trusted));
+  const errors: string[] = [];
+  const permitsTightening = cognitiveComplexityTightening(thresholds);
+
+  for (const [anchor, count] of Object.entries(candidate)) {
+    const outstanding = consumeExactAnchor(remainingTrusted, anchor, count);
+    const unresolved = permitsTightening
+      ? reconcileCognitiveComplexityTightening({
+          anchor,
+          outstanding,
+          remainingTrusted,
+          thresholds,
+        })
+      : outstanding;
+    if (unresolved > 0) errors.push(`${label} ${anchor} increased from 0 to ${unresolved}`);
+  }
+  return errors;
+};
+
 const anchorCountErrors = (
   label: string,
   anchors: Readonly<Record<string, number>>,
@@ -207,7 +362,11 @@ const anchorCountErrors = (
 export const baselineEvolutionErrors = (
   candidate: EslintBaseline,
   trusted: EslintBaseline | undefined,
-  options: Readonly<{ candidateSha256?: string; revision: string }>,
+  options: Readonly<{
+    candidateSha256?: string;
+    cognitiveComplexityThresholds?: Readonly<{ candidate?: number; trusted?: number }>;
+    revision: string;
+  }>,
 ): readonly string[] => {
   const candidateSha256 =
     options.candidateSha256 ??
@@ -221,12 +380,18 @@ export const baselineEvolutionErrors = (
   }
   if (trusted.version !== 2) return ["trusted ESLint baseline version must be 2"];
   return [
-    ...compareAnchors("trusted warning", candidate.warnings ?? {}, trusted.warnings ?? {}),
-    ...compareAnchors(
-      "trusted suppression",
-      candidate.suppressions ?? {},
-      trusted.suppressions ?? {},
-    ),
+    ...evolutionAnchorErrors({
+      candidate: candidate.warnings ?? {},
+      label: "trusted warning",
+      thresholds: options.cognitiveComplexityThresholds,
+      trusted: trusted.warnings ?? {},
+    }),
+    ...evolutionAnchorErrors({
+      candidate: candidate.suppressions ?? {},
+      label: "trusted suppression",
+      thresholds: options.cognitiveComplexityThresholds,
+      trusted: trusted.suppressions ?? {},
+    }),
   ];
 };
 
@@ -305,11 +470,21 @@ if (import.meta.main) {
   };
   const baseRevision = trustedRevision();
   const trustedBaseline = loadTrustedBaseline(baseRevision);
+  const cognitiveComplexityThresholds = {
+    candidate: cognitiveComplexityThreshold(
+      readFileSync(resolve(root, "eslint.config.js"), "utf8"),
+    ),
+    trusted: (() => {
+      const trustedConfig = revisionFile(baseRevision, "eslint.config.js");
+      return trustedConfig === undefined ? undefined : cognitiveComplexityThreshold(trustedConfig);
+    })(),
+  };
   const checkedInBaselineSha256 =
     trustedBaseline === undefined && existsSync(baselinePath)
       ? createHash("sha256").update(readFileSync(baselinePath)).digest("hex")
       : undefined;
   const evolutionErrors = baselineEvolutionErrors(candidateBaseline, trustedBaseline, {
+    cognitiveComplexityThresholds,
     revision: baseRevision,
     ...(checkedInBaselineSha256 === undefined ? {} : { candidateSha256: checkedInBaselineSha256 }),
   });
