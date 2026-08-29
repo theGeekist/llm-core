@@ -2,6 +2,8 @@
 
 Portable contracts, conformance, authority, and evidence for AI applications.
 
+`llm-core` gives AIFSD and other hosts one precise contract for describing AI intent, qualifying implementations, controlling effects, and retaining evidence. Hosts choose and run integrations. The kernel does not hide that choice or execute work on their behalf.
+
 The version 2 candidate is ESM-only and requires Node.js 22 or newer. It is not yet published to npm.
 
 ```bash
@@ -35,10 +37,17 @@ const search = defineTool<{ query: string }>({
 });
 ```
 
-The package does not provide a default agent loop, workflow engine, or conversation executor. Runtime integrations implement the `AgentRunner` port from `@geekist/llm-core/agent/runtime`; applications select an integration and pass it explicitly to the interaction APIs. `@geekist/llm-core/workflow` contains portable workflow intent, not a local runtime.
+The package does not provide a default agent loop, workflow engine, or conversation executor. Runtime integrations implement the `AgentRunner` port from `@geekist/llm-core/agent/runtime`. Applications select an integration and pass it explicitly to the interaction APIs. `@geekist/llm-core/workflow` contains portable workflow intent, not a local runtime.
 
 The root contains the smallest common contract journey. Explicit subpaths provide specifications, runtime ports, controlled tool execution, interaction sessions, evidence, state, and qualified provider or UI adapters.
 
 Provider-native data is projected only as validated, namespaced, redacted JSON. Portable values never contain credentials, physical paths, or live framework objects.
 
-See the [documentation](https://llm-core.geekist.co/), the [package engineering documents](https://github.com/theGeekist/llm-core/blob/main/packages/llm-core/docs/README.md), the [architecture](https://github.com/theGeekist/llm-core/blob/main/packages/llm-core/docs/final-architecture/README.md), and the [version 2 migration guide](https://github.com/theGeekist/llm-core/blob/main/docs/reference/migration-2.md).
+Choose the route that matches your work:
+
+- Portable-contract users: [capabilities](https://llm-core.geekist.co/capabilities/) and [API by subpath](https://llm-core.geekist.co/reference/api).
+- Runtime and adapter implementers: [agents and runtime integrations](https://llm-core.geekist.co/guide/agent) and [adapters](https://llm-core.geekist.co/adapters/).
+- Conformance and evidence consumers: [packaging and conformance](https://llm-core.geekist.co/reference/conformance) and [evidence](https://llm-core.geekist.co/capabilities/evidence).
+- AIFSD composition consumers: start with [`@aifsd/sdk`](../aifsd/README.md). Its currently characterised public fronts are `@aifsd/sdk/config` and `@aifsd/sdk/integrations`.
+
+See also the [package engineering documents](https://github.com/theGeekist/llm-core/blob/main/packages/llm-core/docs/README.md), the [architecture](https://github.com/theGeekist/llm-core/blob/main/packages/llm-core/docs/final-architecture/README.md), and the [version 2 migration guide](https://llm-core.geekist.co/reference/migration-2).

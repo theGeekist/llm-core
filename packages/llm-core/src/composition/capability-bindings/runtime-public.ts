@@ -1,5 +1,7 @@
 export {
   acquireCapabilityBindings,
+  executeWithQualifiedRetry,
+  registerCapabilityInvocation,
   registerCapabilityAcquisitionFactory,
 } from "../../application/capability-bindings/public";
 export type {
@@ -10,6 +12,14 @@ export type {
   CapabilityAcquisitionFactory,
   CapabilityAcquisitionFactoryVerificationInput,
   CapabilityAcquisitionFactoryVerifier,
+  CapabilityInvocation,
+  CapabilityInvocationState,
+  CapabilityRetryReason,
+  CapabilityRetryScheduler,
+  ExecuteWithQualifiedRetryInput,
+  QualifiedRetryPolicy,
   RegisteredCapabilityAcquisitionFactory,
   RegisteredRuntimeCapabilityBinding,
+  RetryGuarantee,
+  AnyRegisteredRuntimeCapabilityBinding,
 } from "../../application/capability-bindings/public";

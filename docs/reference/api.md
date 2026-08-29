@@ -15,11 +15,13 @@ Version 2 publishes a contract-oriented root and explicit capability and integra
 | `/evidence` | Events and receipts | redaction, execution events and journals |
 | `/state` | State lifetimes | snapshots, native checkpoints and compatibility |
 | `/agent` | Portable agent intent and facts | definitions, events, results and skills |
-| `/agent/runtime` | Runtime-integration SPI | `AgentRunner`, preparation, capability bindings |
+| `/agent/runtime` | Agent runtime SPI | `AgentRunner`, preparation and native-session contracts |
 | `/workflow` | Portable workflow intent | `WorkflowExecutionPlan` |
 | `/conversation` | Portable conversation state | events, snapshots and store contracts |
 | `/interaction` | Explicit interaction orchestration | injected-runner sessions and projections |
 | `/specifications` | Exact specification operations | source snapshots, closed five-operation matrices, target-bound change proposals, review, project and authority-bound compile results |
+| `/adapters/catalogue` | Inert adapter selection | candidate descriptions, registration and deterministic resolution |
+| `/adapters/catalogue/runtime` | Accepted adapter runtime | acquisition, invocation and bounded qualified retry |
 
 The remaining context, artifact, evaluation, retrieval, indexing, storage, memory, media, UI, and qualified provider subpaths retain their documented capability ownership.
 

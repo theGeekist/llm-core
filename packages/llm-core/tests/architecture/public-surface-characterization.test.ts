@@ -74,6 +74,44 @@ const PUBLIC_SURFACE = {
   "./mcp": mcp,
 } as const;
 
+const PUBLIC_FRONT_CLASSIFICATION = {
+  "portable-kernel": [
+    ".",
+    "./contracts",
+    "./model",
+    "./tools",
+    "./control",
+    "./evidence",
+    "./state",
+    "./context",
+    "./artifacts",
+    "./evaluation",
+    "./agent",
+    "./workflow",
+    "./conversation",
+    "./interaction",
+    "./retrieval",
+    "./indexing",
+    "./storage",
+    "./memory",
+    "./media",
+    "./specifications",
+  ],
+  "runtime-spi": ["./model/runtime", "./tools/runtime", "./control/runtime", "./agent/runtime"],
+  "qualified-adapter": [
+    "./adapters/ai-sdk",
+    "./adapters/langchain",
+    "./adapters/llamaindex",
+    "./adapters/catalogue",
+    "./adapters/catalogue/runtime",
+    "./adapters/ai-sdk-ui",
+    "./adapters/assistant-ui",
+    "./adapters/openai-chatkit",
+    "./adapters/nlux-ui",
+  ],
+  protocol: ["./a2a", "./mcp"],
+} as const;
+
 const packageJson = (await Bun.file(new URL("../../package.json", import.meta.url)).json()) as {
   exports: Record<string, unknown>;
   version: string;
@@ -85,6 +123,13 @@ describe("ADR-016 public package surface", () => {
     expect(Object.keys(packageJson.exports)).toEqual(Object.keys(PUBLIC_SURFACE));
     expect(Object.values(PUBLIC_SURFACE).every(Boolean)).toBe(true);
     expect("rebindValidatedToolCall" in tools).toBe(false);
+  });
+
+  test("classifies every manifest export under one public owner", () => {
+    const classified: string[] = Object.values(PUBLIC_FRONT_CLASSIFICATION).flat();
+
+    expect(new Set(classified).size).toBe(classified.length);
+    expect([...classified].sort()).toEqual(Object.keys(packageJson.exports).sort());
   });
 
   test("keeps specification graph and authority internals private", () => {

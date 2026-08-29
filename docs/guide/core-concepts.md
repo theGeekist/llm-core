@@ -6,7 +6,7 @@
 
 **Agentic product runtime** covers models, tools, context, workflows, human decisions, policy, telemetry, and outcomes inside the delivered software.
 
-`llm-core` owns the stable contracts between those use cases. An AIFSD SDK, CLI, portal, or runtime framework sits above or behind those contracts.
+`llm-core` owns the stable contracts between those use cases. AIFSD composes those contracts into products and host plans. A qualified runtime adapter executes them through its native framework.
 
 ## Ownership
 

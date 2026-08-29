@@ -1,7 +1,7 @@
 # llm-core Architecture v2 Status
 
 Architecture version: v2
-Updated: 23 August 2026
+Updated: 29 August 2026
 Kernel: complete at `9920425`
 Pre-transition source baseline: `c041792`
 
@@ -83,6 +83,7 @@ Active tasks: 0
 | integrations-authorization-lifecycle | integrations | proposed | architecture-source-layout-normalization, integrations-connector-contracts | — | — | — |
 | integrations-connector-characterization | integrations | done | architecture-external-contract-fidelity, architecture-source-layout-normalization, language-rollout, adapters-protocol-qualification | — | — | — |
 | integrations-connector-contracts | integrations | proposed | architecture-external-contract-fidelity, architecture-source-layout-normalization, integrations-connector-characterization | — | — | — |
+| kernel-aifsd-public-front-language | language | done | language-rollout, integrations-connector-characterization | — | — | — |
 | language-audit | language | done | capabilities-context-artifacts, capabilities-evaluation, capabilities-runtime-conformance | — | — | — |
 | language-rollout | language | done | language-vocabulary | — | — | — |
 | language-vocabulary | language | done | language-audit | — | — | — |

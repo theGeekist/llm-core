@@ -1,8 +1,12 @@
 # AIFSD SDK
 
-This public package is the implementation home for the AIFSD application-composition SDK. Its intended boundary lets products declare portable capability requirements, resolve qualified implementations through explicit profiles, produce deterministic composition plans and acquire host-owned resources only after a plan is accepted. The software-creation workbench is an AIFSD product built on that boundary, not the definition of the SDK itself. Source development happens beside `llm-core` so changes across the SDK and its kernel can remain atomic.
+This package is the public home of the AIFSD application-composition SDK. AIFSD makes the precise contracts in `llm-core` approachable to products and hosts. It will let products declare what they need, compare qualified implementations, choose an explicit profile, inspect the resulting plan, and acquire host-owned resources only after accepting that plan.
 
-The application-composition surface remains planned rather than implemented. The current `0.1.0` candidate is limited to the already characterised configuration and integration operations, and becomes publishable as `@aifsd/sdk` only after its exact dependency releases and provenance plan exist.
+That application-composition surface is planned, not shipped. The current `0.1.0` candidate supports only `@aifsd/sdk/config` and `@aifsd/sdk/integrations`.
+
+The software-creation workbench is an AIFSD product built on the SDK. It does not define the SDK. Source development happens beside `llm-core` so a change that affects both packages can remain atomic.
+
+The current candidate becomes publishable only after its exact dependency releases and provenance plan exist.
 
 The SDK supports two initial product journeys:
 

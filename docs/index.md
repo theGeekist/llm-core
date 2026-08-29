@@ -38,11 +38,18 @@ npm install @geekist/llm-core@2.0.0
 
 ## The short version
 
-`llm-core` is not an agent SDK or workflow engine. It supplies the portable contract, authority, conformance, and evidence layer used by:
+`llm-core` gives AIFSD and other hosts one portable contract for describing AI intent, qualifying implementations, controlling effects, and retaining evidence. It is not an agent SDK or workflow engine. It serves:
 
 1. AI-first software delivery tools that understand, specify, build, review, evaluate, approve, and release software; and
 2. qualified runtime integrations that execute agentic behavior inside the delivered product.
 
 The package does not select a default runner. A host or runtime integration implements `AgentRunner` and supplies it explicitly. Concrete runtime adapter subpaths become supported only after their own qualification and publication.
 
-Start with [Get started](/guide/hello-world), then read [Core concepts](/guide/core-concepts) and [Package exports](/reference/package-exports).
+Choose the route that matches your work:
+
+- [Portable capabilities](/capabilities/) for contract users.
+- [Agents and runtime integrations](/guide/agent) and [qualified adapters](/adapters/) for implementers.
+- [Packaging and conformance](/reference/conformance) and [evidence](/capabilities/evidence) for qualification consumers.
+- [`@aifsd/sdk`](https://github.com/theGeekist/llm-core/tree/main/packages/aifsd) for application composition. Its current candidate supports only `config` and `integrations`; application composition remains planned.
+
+[Package exports](/reference/package-exports) lists every public front and its owner.

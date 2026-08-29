@@ -1,6 +1,15 @@
 # Package exports
 
-The package is ESM-only and requires Node.js 22 or newer. It publishes 31 dependency-neutral entrypoints after the ADR-016 boundary correction, plus four independently qualified adapter or protocol entrypoints.
+The package is ESM-only and requires Node.js 22 or newer. The manifest exposes 35 public entrypoints. This table is the current inventory.
+
+| Classification | Public fronts |
+| --- | --- |
+| Portable kernel | `.`, `./contracts`, `./model`, `./tools`, `./control`, `./evidence`, `./state`, `./context`, `./artifacts`, `./evaluation`, `./agent`, `./workflow`, `./conversation`, `./interaction`, `./retrieval`, `./indexing`, `./storage`, `./memory`, `./media`, `./specifications` |
+| Runtime SPI | `./model/runtime`, `./tools/runtime`, `./control/runtime`, `./agent/runtime` |
+| Qualified adapter | `./adapters/ai-sdk`, `./adapters/langchain`, `./adapters/llamaindex`, `./adapters/catalogue`, `./adapters/catalogue/runtime`, `./adapters/ai-sdk-ui`, `./adapters/assistant-ui`, `./adapters/openai-chatkit`, `./adapters/nlux-ui` |
+| Protocol | `./a2a`, `./mcp` |
+
+Internal or unpublished modules are not package fronts. They include local and fake runners, reducers, canonicalisers, registration brands, and specification authority internals. Tests compare this classification with the package manifest so a new export cannot enter without an explicit owner.
 
 The root exports `defineTool` plus the specification load, review, and compile operations. Root types describe portable agent, workflow, conversation, tool, and specification values; they are not ready-to-run objects.
 
@@ -21,7 +30,7 @@ Important ownership fronts are:
 @geekist/llm-core/mcp
 ```
 
-`./agent/runtime` exposes the runner SPI but no concrete implementation. Concrete runtime support is published only through exact-version qualified adapter subpaths. `./workflow/runtime` was removed because the kernel does not own a workflow executor.
+`./agent/runtime` exposes the Agent runner SPI and native-session extension contracts. It does not aggregate generic capability catalogues, candidate resolution, acquisition, invocation, or retry. Those contracts have dedicated `./adapters/catalogue` and `./adapters/catalogue/runtime` fronts. Concrete runtime support is published only through exact-version qualified adapter subpaths. `./workflow/runtime` was removed because the kernel does not own a workflow executor.
 
 `./specifications` publishes source snapshots, closed exact operation matrices and target-bound change proposals. Every matrix covers all five operation families and binds one authority, format and immutable revision throughout. `SpecificationGraph` contains only portable nodes, relationships and their source bindings. Adapter diagnostics belong to the independently returned operation result; there is no graph-level conversion fidelity report.
 

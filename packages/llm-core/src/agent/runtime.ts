@@ -16,8 +16,6 @@ export {
   registerNativeAgentConversationContinuity,
   registerNativeAgentConversationProfile,
 } from "../features/agent/public";
-export * from "../application/capability-bindings/public";
-export * from "../composition/capability-bindings/public";
 export type {
   AdmittedAgentActiveInput,
   AgentActiveInputAcknowledgement,

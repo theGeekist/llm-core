@@ -18,7 +18,7 @@ This is typed capability composition, not a string-keyed service locator.
 
 ## Register invocation state
 
-`registerCapabilityInvocation` closes the bridge between a selected capability and execution state. It validates and freezes `InvocationContext`, then accepts only one typed lifetime: observe a `Snapshot`, continue a `LiveContinuation`, resume a `RegisteredResumableCheckpoint`, continue a `ProviderSessionRef`, or signal a `DurableExecutionHandle`. These states remain non-substitutable.
+After a host accepts a plan, the catalogue runtime front connects a selected capability to execution state. `registerCapabilityInvocation` validates and freezes `InvocationContext`. It accepts one typed lifetime: observe a `Snapshot`, continue a `LiveContinuation`, resume a `RegisteredResumableCheckpoint`, continue a `ProviderSessionRef`, or signal a `DurableExecutionHandle`. These states are not interchangeable.
 
 ## Qualify retries
 

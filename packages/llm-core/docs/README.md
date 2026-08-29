@@ -13,6 +13,7 @@ Current authority lives in [`final-architecture/`](final-architecture/):
 - [`ROADMAP.md`](final-architecture/ROADMAP.md) groups continuing programmes;
 - [`tasks/`](final-architecture/tasks/) owns exact lifecycle and scope; and
 - [`COORDINATION.md`](final-architecture/COORDINATION.md) owns execution rules.
+- [`AIFSD-CONSUMER-GAPS.md`](internal/AIFSD-CONSUMER-GAPS.md) records the current public-front evidence for the planned AIFSD composition consumer.
 
 Conversation routing and review context live in [`handoffs/`](handoffs/). They point back to task front matter rather than duplicating live task state.
 

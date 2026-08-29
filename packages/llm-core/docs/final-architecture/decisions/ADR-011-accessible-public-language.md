@@ -10,11 +10,11 @@ Supersedes: ADR-002's naming-process rule for future capability work, not its re
 ## Context
 
 Architecture v2 established precise contracts for portability, control,
-evidence, state and runtime provenance. The resulting API is safe and
-well-separated internally, but ordinary examples now require users to name
-runner preparation, bindings, registration, ports, projections and durable
-coordination before completing simple agent, tool, workflow or conversation
-work.
+evidence, state and runtime provenance. Those contracts are safe and have clear
+internal boundaries. The ordinary examples were still too hard to read. Users
+had to understand preparation, bindings, registration, ports, projections and
+durable coordination before they could describe a simple agent, tool, workflow
+or conversation.
 
 The proposed specification layer repeats this pattern by turning all eight
 internal interoperability seams into public nouns.
@@ -45,8 +45,9 @@ before the specifications stage adds another public capability.
 - Treat this ADR as the language-level decision only. It establishes audience
   levels, naming rules, stage order and usability gates; it does not ratify
   exact replacement names.
-- Require language-vocabulary to propose ADR-012 with the exact replacement map and public
-  surfaces. ADR-012 must be accepted before implementation changes begin.
+- Require `language-vocabulary` to propose ADR-012 with the exact replacement
+  map and public surfaces. ADR-012 must be accepted before implementation
+  begins.
 - Require README-sized typechecked fixtures for every common journey and an
   isolated packed-consumer usability gate.
 - Keep `specification-contracts` blocked until the complete language stage
@@ -55,10 +56,10 @@ before the specifications stage adds another public capability.
 ## Consequences
 
 The package may make another deliberate breaking replacement before
-specification work. Common
-usage becomes smaller while extension contracts remain available through
-explicit surfaces. Public documentation teaches application actions first and
-introduces implementation machinery only in extension guides.
+specification work. Common usage becomes smaller. Extension contracts remain
+available through explicit surfaces. Public documentation teaches application
+actions first. Extension guides explain implementation machinery where it is
+needed.
 
 ADR-002, ADR-008 and ADR-009 remain historical authority for names that ship
 today. ADR-012, not this decision, will supersede their exact naming clauses.
@@ -80,8 +81,8 @@ guidance, declaration tests and packed-consumer fixtures converge together in
 ## Naming and public API impact
 
 The initial findings and proposed direction are recorded in
-[`LANGUAGE.md`](../LANGUAGE.md). language-vocabulary owns the ADR-012 proposal and exact
-replacement map.
+[`LANGUAGE.md`](../LANGUAGE.md). `language-vocabulary` owns the ADR-012 proposal
+and exact replacement map.
 
 `Specification` remains reserved for specification interoperability. Native
 framework terms such as PydanticAI `AgentSpec` remain qualified adapter

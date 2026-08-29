@@ -132,11 +132,15 @@ publication. The kernel does not provide a fallback runner.
 
 ## AIFSD product language
 
-The complete AI-first delivery journey—understand, specify, build, independently
-review, evaluate, approve, collect evidence and release—belongs to an AIFSD
-SDK, CLI or application above `llm-core`. That product composes kernel contracts
-and delivery integrations such as OpenSpec, Codex, Claude or OpenHands. It is
-not named or implemented as a kernel runtime.
+The complete AI-first delivery journey belongs to AIFSD. It covers
+understanding, specification, implementation, independent review, evaluation,
+approval, evidence and release. AIFSD composes kernel contracts with delivery
+integrations such as OpenSpec, Codex, Claude or OpenHands. It is not a
+`llm-core` runtime.
+
+The supported AIFSD package currently exposes only `@aifsd/sdk/config` and
+`@aifsd/sdk/integrations`. Application composition and client presentation are
+planned surfaces. This language decision does not claim they ship.
 
 The second journey is agentic behavior inside the delivered product. It uses a
 qualified native runtime integration and shares the kernel's contracts,

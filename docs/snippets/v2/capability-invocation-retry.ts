@@ -2,7 +2,7 @@ import {
   executeWithQualifiedRetry,
   registerCapabilityInvocation,
   type AnyRegisteredRuntimeCapabilityBinding,
-} from "@geekist/llm-core/agent/runtime";
+} from "@geekist/llm-core/adapters/catalogue/runtime";
 import type { InvocationContext } from "@geekist/llm-core/contracts";
 import type { Snapshot } from "@geekist/llm-core/state";
 

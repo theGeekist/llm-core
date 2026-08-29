@@ -8,6 +8,8 @@ import * as nluxUi from "../../src/adapters/nlux-ui/index";
 import * as openaiChatkit from "../../src/adapters/openai-chatkit/index";
 import * as agent from "../../src/agent/index";
 import * as agentRuntime from "../../src/agent/runtime";
+import * as adapterCatalogue from "../../src/composition/capability-bindings/catalogue-public";
+import * as adapterCatalogueRuntime from "../../src/composition/capability-bindings/runtime-public";
 import * as control from "../../src/control/index";
 import * as toolRuntime from "../../src/tools/runtime";
 import * as workflow from "../../src/workflow/index";
@@ -54,8 +56,12 @@ describe("ADR-016 curated exports", () => {
     expect(Object.keys(workflow)).toEqual([]);
     expect(agentRuntime).not.toHaveProperty("createLocalAgentRunner");
     expect(agentRuntime).not.toHaveProperty("createModelToolAgentProgram");
-    expect(agentRuntime).toHaveProperty("createCapabilityCandidateCatalog");
-    expect(agentRuntime).toHaveProperty("acquireCapabilityBindings");
+    expect(agentRuntime).not.toHaveProperty("createCapabilityCandidateCatalog");
+    expect(agentRuntime).not.toHaveProperty("acquireCapabilityBindings");
+    expect(adapterCatalogue).toHaveProperty("createCapabilityCandidateCatalog");
+    expect(adapterCatalogueRuntime).toHaveProperty("acquireCapabilityBindings");
+    expect(adapterCatalogueRuntime).toHaveProperty("registerCapabilityInvocation");
+    expect(adapterCatalogueRuntime).toHaveProperty("executeWithQualifiedRetry");
   });
 
   test("publishes only the qualified AI SDK provider front", () => {
