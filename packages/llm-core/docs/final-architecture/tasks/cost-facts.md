@@ -28,10 +28,10 @@ read_scope:
   - docs/capabilities/evidence.md
   - packages/llm-core/src/features/model/**
 review_owner: coordinator
-updated_at: 2026-08-02
+updated_at: 2026-08-31
 ---
 
-# cost-facts — Usage, estimate and reconciled cost facts
+# cost-facts: Usage, estimate and reconciled cost facts
 
 ## Objective
 
@@ -46,6 +46,9 @@ routing or billing infrastructure.
 - Stable correlation to the exact provider execution and evidence references
   supplied by the consuming composition, without interpreting project, task,
   proposal, acceptance or intervention meaning.
+- Exact execution facts that remain usable when a Current Velocity proof runs
+  through an executor outside our control, without allowing that executor to
+  define whether its output was accepted or improved the declared outcome.
 - Partial/unavailable attribution, currency separation and explicit cache reuse
   and avoided-usage facts.
 - Ports for composition-owned price facts and authoritative provider
@@ -58,6 +61,7 @@ routing or billing infrastructure.
 - Current Velocity conclusions, accepted-work definitions, comparison windows,
   Simple Assembly proposal or decision records, and Task Graph lifecycle or
   acceptance semantics.
+- Repository, product, revenue or customer-outcome attribution.
 
 ## Acceptance criteria
 
@@ -71,6 +75,9 @@ routing or billing infrastructure.
 - Provider, model, invocation, evidence and correlation identities are retained
   independently, while absent or unverified usage and cost remain explicit
   unavailable facts rather than inferred zeroes.
+- A provider or executor success state remains an execution fact. It cannot
+  deserialize as repository acceptance, intervention success or a business
+  outcome.
 
 ## Verification
 

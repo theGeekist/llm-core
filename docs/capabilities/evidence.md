@@ -80,6 +80,8 @@ The receipt always carries an explicit pricing disposition. This capability reco
 
 Downstream products may correlate receipts with project or work records through stable identities. Correlation does not assign those semantics to the receipt. In particular, a provider receipt does not establish that repository work was accepted, that an intervention caused an outcome, or that a comparison window is admissible. Those conclusions remain with the consuming product and must be withheld when its evidence is insufficient.
 
+This boundary is also what permits an independent-executor proof. A native or external executor records what it attempted and what it observed. It cannot mark its own work accepted, redefine the authorised Project intent or turn a provider success state into an improved delivery, product or business outcome. The consuming composition must join separately owned evidence and may return an unavailable or inconclusive result.
+
 `createBudgetDecisionEvidence` records a composition-owned allow, warn, stop, or overrun decision for a known invocation and budget limit. It is evidence of the decision, not a budget controller and not a rewrite of observed usage.
 
 ## Observability is a one-way projection
