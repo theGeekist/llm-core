@@ -24,6 +24,8 @@ Scores refer only to criteria declared by the case. Result evidence must be draw
 
 Evaluation is provider-neutral. A model-based judge can be supplied as an evaluator, but its provider client and prompts remain live implementation details.
 
+An evaluation result is evidence for the declared case and criteria only. A downstream product may cite it when classifying a relationship or assessing a declared outcome, but the result does not create project truth, approve an intervention, define accepted work or establish causation. Those judgements retain their own authority, provenance and conclusion basis in the consuming product.
+
 ## Qualification and promotion
 
 `createEvaluationQualification` binds measured results to immutable dataset, split, baseline, candidate, evaluator, assertion, and evidence identities. A qualification declares normalized criterion thresholds and derives whether the measurements qualify; optional uncertainty is retained only when the evaluator supplies a normalized value.

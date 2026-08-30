@@ -79,7 +79,7 @@ Active tasks: 0
 | core-tool-control-events | core | done | core-contracts | — | — | — |
 | cost-budget-control | qualification | proposed | architecture-source-layout-normalization, cost-facts, runtime-receipt-reconciliation | — | — | — |
 | cost-budget-enforcement | qualification | proposed | architecture-source-layout-normalization, cost-budget-control, runtime-tools-front-boundary | — | — | — |
-| cost-facts | qualification | proposed | architecture-source-layout-normalization, capabilities-operational-evidence | — | — | — |
+| cost-facts | qualification | ready | architecture-source-layout-normalization, capabilities-operational-evidence | — | — | — |
 | integrations-authorization-lifecycle | integrations | proposed | architecture-source-layout-normalization, integrations-connector-contracts | — | — | — |
 | integrations-connector-characterization | integrations | done | architecture-external-contract-fidelity, architecture-source-layout-normalization, language-rollout, adapters-protocol-qualification | — | — | — |
 | integrations-connector-contracts | integrations | proposed | architecture-external-contract-fidelity, architecture-source-layout-normalization, integrations-connector-characterization | — | — | — |

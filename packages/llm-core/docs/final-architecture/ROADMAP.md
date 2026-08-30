@@ -161,6 +161,14 @@ The AIFSD delivery programme and llm-core runtime-adapter substitution remain
 independent. Cancelled llm-core product briefs now name committed AIFSD
 replacement tasks while remaining as public historical provenance.
 
+The immediate downstream product programme is now one bounded Current Velocity
+closed-loop proof. It may consume llm-core effect receipts, evidence references,
+provider and model identities, usage and cost facts. `llm-core` does not learn
+Current Velocity conclusions, Simple Assembly proposal or decision semantics,
+Task Graph lifecycle, accepted-work definitions, comparison windows or
+intervention authority. Stable correlation is sufficient. A universal
+portfolio run or approval contract is not a kernel prerequisite.
+
 ## Connectors and operating services
 
 ```text

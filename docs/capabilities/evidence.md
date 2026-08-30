@@ -78,6 +78,8 @@ For a completed portable `ModelResponse`, `createObservedModelUsageReceipt` deri
 
 The receipt always carries an explicit pricing disposition. This capability records only `unavailable` pricing (`not-provided`, `stale`, or `unverified-source`), so it cannot accidentally create a cost claim. A later cost-intelligence capability may add versioned pricing, currency, estimate, and provider-reconciliation facts; it must not reinterpret a usage receipt as any of those facts.
 
+Downstream products may correlate receipts with project or work records through stable identities. Correlation does not assign those semantics to the receipt. In particular, a provider receipt does not establish that repository work was accepted, that an intervention caused an outcome, or that a comparison window is admissible. Those conclusions remain with the consuming product and must be withheld when its evidence is insufficient.
+
 `createBudgetDecisionEvidence` records a composition-owned allow, warn, stop, or overrun decision for a known invocation and budget limit. It is evidence of the decision, not a budget controller and not a rewrite of observed usage.
 
 ## Observability is a one-way projection

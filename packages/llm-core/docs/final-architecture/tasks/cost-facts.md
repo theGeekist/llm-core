@@ -2,7 +2,7 @@
 id: cost-facts
 title: Usage, estimate and reconciled cost facts
 stage: qualification
-status: proposed
+status: ready
 priority: high
 depends_on:
   - architecture-source-layout-normalization
@@ -43,6 +43,9 @@ routing or billing infrastructure.
 
 - `UsageReceipt -> CostEstimate -> ReconciledCost` records with invocation,
   model/profile, provider request and source-version provenance.
+- Stable correlation to the exact provider execution and evidence references
+  supplied by the consuming composition, without interpreting project, task,
+  proposal, acceptance or intervention meaning.
 - Partial/unavailable attribution, currency separation and explicit cache reuse
   and avoided-usage facts.
 - Ports for composition-owned price facts and authoritative provider
@@ -52,6 +55,9 @@ routing or billing infrastructure.
 
 - Budget decisions, routing recommendations, price catalogues, exchange-rate
   authority, invoices, payment flows or hosted analytics.
+- Current Velocity conclusions, accepted-work definitions, comparison windows,
+  Simple Assembly proposal or decision records, and Task Graph lifecycle or
+  acceptance semantics.
 
 ## Acceptance criteria
 
@@ -62,6 +68,9 @@ routing or billing infrastructure.
 - Catalogues, exchange rates and invoices stay behind host-owned ports.
 - Facts remain portable and cannot acquire current billing or execution
   authority through deserialization.
+- Provider, model, invocation, evidence and correlation identities are retained
+  independently, while absent or unverified usage and cost remain explicit
+  unavailable facts rather than inferred zeroes.
 
 ## Verification
 
