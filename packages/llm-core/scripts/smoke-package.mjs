@@ -119,12 +119,7 @@ if (!Number.isInteger(nodeMajor) || nodeMajor < 22) {
 if (workspacePackageJson.engines?.node !== ">=22" || packageJson.engines?.node !== ">=22") {
   fail('Workspace and package must declare Node.js ">=22".');
 }
-if (
-  packageJson.version !== "2.0.0" ||
-  packageJson.type !== "module" ||
-  packageJson.main !== "./dist/esm/index.js" ||
-  packageJson.module !== "./dist/esm/index.js"
-) {
+if (packageJson.version !== "2.0.0" || packageJson.type !== "module") {
   fail("Package must publish the v2 ESM-only manifest.");
 }
 if (

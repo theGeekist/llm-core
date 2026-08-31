@@ -43,9 +43,6 @@
     "@aifsd/strict-json": "0.1.0",
     "@wpkernel/pipeline": "1.4.1"
   },
-  "main": "./dist/esm/index.js",
-  "module": "./dist/esm/index.js",
-  "types": "./dist/types/index.d.ts",
   "type": "module",
   "private": false,
   "scripts": {

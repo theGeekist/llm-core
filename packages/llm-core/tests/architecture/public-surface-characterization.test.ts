@@ -1,4 +1,6 @@
 import { describe, expect, test } from "bun:test";
+import { existsSync } from "node:fs";
+import { resolve } from "node:path";
 
 import * as root from "../../index";
 import * as contracts from "../../src/contracts/public";
@@ -114,8 +116,15 @@ const PUBLIC_FRONT_CLASSIFICATION = {
 
 const packageJson = (await Bun.file(new URL("../../package.json", import.meta.url)).json()) as {
   exports: Record<string, unknown>;
+  main?: unknown;
+  module?: unknown;
+  types?: unknown;
   version: string;
 };
+
+const rootTypeScript = await Bun.file(new URL("../../../../tsconfig.json", import.meta.url)).text();
+
+const packageTypeScript = await Bun.file(new URL("../../tsconfig.json", import.meta.url)).text();
 
 describe("ADR-016 public package surface", () => {
   test("publishes the corrected contract and integration fronts", () => {
@@ -143,9 +152,22 @@ describe("ADR-016 public package surface", () => {
     }
   });
 
-  test("does not retain legacy public subpaths", () => {
-    for (const subpath of ["./adapters", "./adapters/primitives", "./recipes", "./diagnostics"]) {
+  test("does not retain retired public subpaths", () => {
+    for (const subpath of [
+      "./functional",
+      "./adapters",
+      "./adapters/primitives",
+      "./recipes",
+      "./diagnostics",
+    ]) {
       expect(packageJson.exports[subpath]).toBeUndefined();
     }
+
+    expect(rootTypeScript).not.toContain('"@geekist/llm-core/functional"');
+    expect(packageTypeScript).not.toContain('"@geekist/llm-core/functional"');
+    expect(existsSync(resolve(import.meta.dir, "../../src/functional/index.ts"))).toBe(false);
+    expect(packageJson.main).toBeUndefined();
+    expect(packageJson.module).toBeUndefined();
+    expect(packageJson.types).toBeUndefined();
   });
 });

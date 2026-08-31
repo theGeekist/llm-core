@@ -31,7 +31,6 @@
     "paths": {
       "@aifsd/strict-json": ["./packages/strict-json/index.ts"],
       "@geekist/llm-core": ["./packages/llm-core/index.ts"],
-      "@geekist/llm-core/functional": ["./packages/llm-core/src/functional/index.ts"],
       "@geekist/llm-core/contracts": ["./packages/llm-core/src/contracts/public.ts"],
       "@geekist/llm-core/model": ["./packages/llm-core/src/features/model/public.ts"],
       "@geekist/llm-core/model/runtime": ["./packages/llm-core/src/features/model/runtime.ts"],

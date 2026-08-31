@@ -74,10 +74,6 @@ const indexFronts = new Map([
   ["agent/index.ts", "published ./agent front"],
   ["control/index.ts", "published ./control front"],
   ["conversation/index.ts", "published ./conversation front"],
-  [
-    "functional/index.ts",
-    "legacy package front retained only until architecture-legacy-functional-removal",
-  ],
   ["interaction/index.ts", "published ./interaction front"],
   ["specifications/index.ts", "published ./specifications front"],
   ["workflow/index.ts", "published ./workflow front"],
@@ -98,59 +94,115 @@ const isPublicFront = (path: string): boolean =>
 const isApplicationFeatureFront = (path: string): boolean =>
   isPublicFront(path) || path.endsWith("/orchestration.ts");
 
+const pathViolations = (label: "src" | "tests", root: string, file: string): string[] => {
+  const path = relativePath(root, file);
+  const segments = path.split("/");
+  const basename = segments.at(-1)!;
+  const stem = label === "tests" ? testFilenameStem(basename) : basename.slice(0, -3);
+  const governedPath = `${label}/${path}`;
+  const violations = segments
+    .slice(0, -1)
+    .filter((directory) => !kebabCase.test(directory))
+    .map((directory) => `${governedPath}: directory segment ${directory} must be kebab-case`);
+
+  if (!kebabCase.test(stem)) {
+    violations.push(`${governedPath}: filename must be kebab-case with a supported suffix`);
+  }
+  if (/^(?:common|helpers|misc|shared|utils)$/.test(stem)) {
+    violations.push(`${governedPath}: vague basename requires a descriptive owned concept`);
+  }
+  if (label === "tests") return violations;
+  if (segments.length > 3 && sourceDepthExceptionReason(path) === undefined) {
+    violations.push(`${governedPath}: production path exceeds src/<layer>/<owner>/<file>`);
+  }
+  if (basename === "index.ts" && !indexFronts.has(path)) {
+    violations.push(`${governedPath}: index.ts is reserved for package or stable subpath fronts`);
+  }
+  return violations;
+};
+
+const adapterOwnerViolation = (entry: {
+  readonly isDirectory: () => boolean;
+  readonly name: string;
+}): string[] => {
+  if (!entry.isDirectory()) return [];
+  const ownerRoot = resolve(adapterRoot, entry.name);
+  if (walkTypeScript(ownerRoot).length < 2) return [];
+  const hasFront = ["public.ts", "index.ts"].some((front) => existsSync(resolve(ownerRoot, front)));
+  return !hasFront && adapterFrontExceptionReason(entry.name) === undefined
+    ? [`src/adapters/${entry.name}: multi-file adapter owner requires public.ts or index.ts`]
+    : [];
+};
+
+const privateApplicationImportViolation = (file: string, specifier: string): string[] => {
+  const target = resolveInternalImport(file, specifier);
+  if (!target || !target.startsWith(sourceRoot)) return [];
+  const imported = sourcePath(target);
+  return imported.startsWith("application/") && !imported.endsWith("/public.ts")
+    ? [`${sourcePath(file)} -> ${imported}`]
+    : [];
+};
+
+const privateApplicationViolationsForFile = (file: string): string[] =>
+  importSpecifiers(readFileSync(file, "utf8")).flatMap((specifier) =>
+    privateApplicationImportViolation(file, specifier),
+  );
+
+const isContractDependencyViolation = (owner: string, imported: string): boolean =>
+  owner.startsWith("contracts/") &&
+  /^(?:features|application|composition|adapters)\//.test(imported);
+
+const isFeatureDependencyViolation = (owner: string, imported: string): boolean => {
+  const feature = owner.match(/^features\/([^/]+)\//)?.[1];
+  if (!feature) return false;
+  const importedFeature = imported.match(/^features\/([^/]+)\//)?.[1];
+  return (
+    (importedFeature !== undefined && feature !== importedFeature && !isPublicFront(imported)) ||
+    /^(?:application|composition|adapters)\//.test(imported)
+  );
+};
+
+const isApplicationDependencyViolation = (owner: string, imported: string): boolean => {
+  if (!owner.startsWith("application/")) return false;
+  const importedFeature = imported.match(/^features\/([^/]+)\//)?.[1];
+  return (
+    (importedFeature !== undefined && !isApplicationFeatureFront(imported)) ||
+    /^(?:composition|adapters)\//.test(imported)
+  );
+};
+
+const isAdapterDependencyViolation = (owner: string, imported: string): boolean =>
+  owner.startsWith("adapters/") &&
+  ((imported.startsWith("features/") && !isPublicFront(imported)) ||
+    (imported.startsWith("application/") && !imported.endsWith("/public.ts")));
+
+const dependencyViolation = (owner: string, imported: string): string[] => {
+  const violates = [
+    isContractDependencyViolation,
+    isFeatureDependencyViolation,
+    isApplicationDependencyViolation,
+    isAdapterDependencyViolation,
+  ].some((predicate) => predicate(owner, imported));
+  return violates ? [`${owner} -> ${imported}`] : [];
+};
+
+const sourceDependencyViolations = (file: string): string[] => {
+  const owner = sourcePath(file);
+  return importSpecifiers(readFileSync(file, "utf8")).flatMap((specifier) => {
+    const target = resolveInternalImport(file, specifier);
+    return !target || !target.startsWith(sourceRoot)
+      ? []
+      : dependencyViolation(owner, sourcePath(target));
+  });
+};
+
 describe("architecture v2 source boundaries", () => {
-  // One exhaustive scan keeps path naming and owner-front diagnostics atomic.
-  // eslint-disable-next-line sonarjs/cognitive-complexity
   test("uses shallow, descriptive paths and explicit owner fronts", () => {
-    const violations: string[] = [];
-    for (const [label, root] of [
-      ["src", sourceRoot],
-      ["tests", testRoot],
-    ] as const) {
-      for (const file of walkTypeScript(root)) {
-        const path = relativePath(root, file);
-        const segments = path.split("/");
-        const basename = segments.at(-1)!;
-        const stem = label === "tests" ? testFilenameStem(basename) : basename.slice(0, -3);
-        const governedPath = `${label}/${path}`;
-
-        for (const directory of segments.slice(0, -1)) {
-          if (!kebabCase.test(directory)) {
-            violations.push(`${governedPath}: directory segment ${directory} must be kebab-case`);
-          }
-        }
-        if (!kebabCase.test(stem)) {
-          violations.push(`${governedPath}: filename must be kebab-case with a supported suffix`);
-        }
-        if (/^(?:common|helpers|misc|shared|utils)$/.test(stem)) {
-          violations.push(`${governedPath}: vague basename requires a descriptive owned concept`);
-        }
-
-        if (label === "tests") continue;
-        if (segments.length > 3 && sourceDepthExceptionReason(path) === undefined) {
-          violations.push(`${governedPath}: production path exceeds src/<layer>/<owner>/<file>`);
-        }
-        if (basename === "index.ts" && !indexFronts.has(path)) {
-          violations.push(
-            `${governedPath}: index.ts is reserved for package or stable subpath fronts`,
-          );
-        }
-      }
-    }
-
-    for (const entry of readdirSync(adapterRoot, { withFileTypes: true })) {
-      if (!entry.isDirectory()) continue;
-      const ownerRoot = resolve(adapterRoot, entry.name);
-      if (walkTypeScript(ownerRoot).length < 2) continue;
-      const hasFront = ["public.ts", "index.ts"].some((front) =>
-        existsSync(resolve(ownerRoot, front)),
-      );
-      if (!hasFront && adapterFrontExceptionReason(entry.name) === undefined) {
-        violations.push(
-          `src/adapters/${entry.name}: multi-file adapter owner requires public.ts or index.ts`,
-        );
-      }
-    }
+    const violations = [
+      ...walkTypeScript(sourceRoot).flatMap((file) => pathViolations("src", sourceRoot, file)),
+      ...walkTypeScript(testRoot).flatMap((file) => pathViolations("tests", testRoot, file)),
+      ...readdirSync(adapterRoot, { withFileTypes: true }).flatMap(adapterOwnerViolation),
+    ];
     expect(violations).toEqual([]);
   });
 
@@ -174,71 +226,12 @@ describe("architecture v2 source boundaries", () => {
   });
 
   test("keeps adapters out of private application modules", () => {
-    const violations = walkTypeScript(adapterRoot).flatMap((file) =>
-      importSpecifiers(readFileSync(file, "utf8")).flatMap((specifier) => {
-        const target = resolveInternalImport(file, specifier);
-        if (!target || !target.startsWith(sourceRoot)) return [];
-        const imported = sourcePath(target);
-        return imported.startsWith("application/") && !imported.endsWith("/public.ts")
-          ? [`${sourcePath(file)} -> ${imported}`]
-          : [];
-      }),
-    );
+    const violations = walkTypeScript(adapterRoot).flatMap(privateApplicationViolationsForFile);
     expect(violations).toEqual([]);
   });
 
-  // One exhaustive scan keeps the dependency rules and their diagnostics atomic.
-  // eslint-disable-next-line sonarjs/cognitive-complexity
   test("keeps contracts dependency-light and cross-slice imports on public fronts", () => {
-    const violations: string[] = [];
-    for (const file of walkTypeScript(sourceRoot)) {
-      const owner = sourcePath(file);
-      for (const specifier of importSpecifiers(readFileSync(file, "utf8"))) {
-        const target = resolveInternalImport(file, specifier);
-        if (!target || !target.startsWith(sourceRoot)) continue;
-        const imported = sourcePath(target);
-
-        if (
-          owner.startsWith("contracts/") &&
-          /^(?:features|application|composition|adapters)\//.test(imported)
-        ) {
-          violations.push(`${owner} -> ${imported}`);
-          continue;
-        }
-
-        const feature = owner.match(/^features\/([^/]+)\//)?.[1];
-        const importedFeature = imported.match(/^features\/([^/]+)\//)?.[1];
-        if (feature && importedFeature && feature !== importedFeature && !isPublicFront(imported)) {
-          violations.push(`${owner} -> ${imported}`);
-          continue;
-        }
-        if (feature && /^(?:application|composition|adapters)\//.test(imported)) {
-          violations.push(`${owner} -> ${imported}`);
-          continue;
-        }
-
-        if (
-          owner.startsWith("application/") &&
-          importedFeature &&
-          !isApplicationFeatureFront(imported)
-        ) {
-          violations.push(`${owner} -> ${imported}`);
-          continue;
-        }
-        if (owner.startsWith("application/") && /^(?:composition|adapters)\//.test(imported)) {
-          violations.push(`${owner} -> ${imported}`);
-          continue;
-        }
-
-        if (
-          owner.startsWith("adapters/") &&
-          ((imported.startsWith("features/") && !isPublicFront(imported)) ||
-            (imported.startsWith("application/") && !imported.endsWith("/public.ts")))
-        ) {
-          violations.push(`${owner} -> ${imported}`);
-        }
-      }
-    }
+    const violations = walkTypeScript(sourceRoot).flatMap(sourceDependencyViolations);
     expect(violations).toEqual([]);
   });
 });
