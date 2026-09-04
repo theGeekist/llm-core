@@ -115,13 +115,20 @@ const snapshotMissingMetrics = (value: unknown): readonly UsageMetric[] | null =
   if (!Array.isArray(value) || value.length === 0) return null;
   const items: readonly unknown[] = value;
   const metrics: UsageMetric[] = [];
+  const seen = new Set<UsageMetric>();
   for (let i = 0; i < items.length; i += 1) {
     if (!Object.hasOwn(items, i)) return null;
     const item = items[i];
-    if (typeof item !== "string" || !USAGE_METRICS.includes(item as UsageMetric)) {
+    if (
+      typeof item !== "string" ||
+      !USAGE_METRICS.includes(item as UsageMetric) ||
+      seen.has(item as UsageMetric)
+    ) {
       return null;
     }
-    metrics.push(item as UsageMetric);
+    const metric = item as UsageMetric;
+    seen.add(metric);
+    metrics.push(metric);
   }
   return metrics;
 };
@@ -269,29 +276,6 @@ const snapshotProviderCostRecord = (value: unknown): ProviderCostRecord | null =
  * Purely derive the reconciliation disposition from an immutable cost estimate
  * and an authoritative provider record.
  */
-export const deriveReconciliationDisposition = (
-  estimate: CostEstimate,
-  providerRecord?: ProviderCostRecord,
-): ReconciledCostDisposition => {
-  if (providerRecord === undefined) {
-    return { kind: "unavailable", reason: "no-provider-record" };
-  }
-
-  if (estimate.disposition.kind === "unavailable") {
-    return { kind: "unreconcilable", reason: "estimate-unavailable" };
-  }
-
-  if (estimate.disposition.currency !== providerRecord.currency) {
-    return { kind: "divergent", reason: "currency-mismatch" };
-  }
-
-  if (!areDecimalAmountsEqual(estimate.disposition.amount, providerRecord.amount)) {
-    return { kind: "divergent", reason: "amount-mismatch" };
-  }
-
-  return { kind: "reconciled" };
-};
-
 function assertValidCostEstimateInput(input: unknown): asserts input is CostEstimate {
   if (
     !isPortableRecord(input) ||
@@ -308,6 +292,22 @@ function assertValidCostEstimateInput(input: unknown): asserts input is CostEsti
     );
   }
 }
+
+const costUnitsMatchReceipt = (
+  receipt: UsageReceipt,
+  units: readonly CostUsageUnit[],
+  disposition: CostEstimateDisposition,
+): boolean => {
+  const usage = receipt.usage;
+  if (usage === undefined) {
+    return (
+      units.length === 0 &&
+      disposition.kind === "unavailable" &&
+      disposition.reason === "incomplete-usage"
+    );
+  }
+  return units.length > 0 && units.every(({ metric, quantity }) => usage[metric] === quantity);
+};
 
 /**
  * Snapshot a cost estimate as an immutable, portable evidence record.
@@ -327,9 +327,10 @@ export const createCostEstimate = (input: CostEstimate): CostEstimate => {
   if (units === null || disposition === null) {
     throw new TypeError("Cost estimate units and disposition must be valid portable records.");
   }
-  const usage = receipt.usage;
-  if (usage === undefined || units.some(({ metric, quantity }) => usage[metric] !== quantity)) {
-    throw new TypeError("Cost estimate units must match the cited usage receipt exactly.");
+  if (!costUnitsMatchReceipt(receipt, units, disposition)) {
+    throw new TypeError(
+      "Cost estimate units and incomplete-usage disposition must match the cited usage receipt.",
+    );
   }
 
   let evidenceRef: EvidenceRef | undefined;
@@ -376,6 +377,34 @@ const assertCompatibleProviderIdentity = (
       "Contradictory provider or providerRequestId between cost estimate and provider record is an identity error.",
     );
   }
+};
+
+/**
+ * Purely derive the reconciliation disposition from an immutable cost estimate
+ * and an authoritative provider record.
+ */
+export const deriveReconciliationDisposition = (
+  estimate: CostEstimate,
+  providerRecord?: ProviderCostRecord,
+): ReconciledCostDisposition => {
+  assertCompatibleProviderIdentity(estimate, providerRecord);
+  if (providerRecord === undefined) {
+    return { kind: "unavailable", reason: "no-provider-record" };
+  }
+
+  if (estimate.disposition.kind === "unavailable") {
+    return { kind: "unreconcilable", reason: "estimate-unavailable" };
+  }
+
+  if (estimate.disposition.currency !== providerRecord.currency) {
+    return { kind: "divergent", reason: "currency-mismatch" };
+  }
+
+  if (!areDecimalAmountsEqual(estimate.disposition.amount, providerRecord.amount)) {
+    return { kind: "divergent", reason: "amount-mismatch" };
+  }
+
+  return { kind: "reconciled" };
 };
 
 const snapshotReconciledCostDisposition = (value: unknown): ReconciledCostDisposition | null => {

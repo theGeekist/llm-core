@@ -89,7 +89,7 @@ This boundary is also what permits an independent-executor proof. A native or ex
 Cost facts represent valuation and reconciliation separately from observed usage receipts. `CostEstimate` snapshots a price-source-backed valuation against a `UsageReceipt` without reinterpreting token counts or minting financial authority. `createCostEstimate` enforces two key boundaries:
 
 - A valid estimate embeds the validated usage receipt and carries the exact usage units valued. Every unit must match the corresponding observation in that receipt. The estimate also carries an external price source ID, a contract version, an effective timestamp, a currency, a decimal amount string, and optional assumptions.
-- An unavailable estimate (`no-pricing`, `stale-pricing`, `incomplete-usage`, `unverified-source`) carries **no money, no currency, and no price source**. It records the structural absence of pricing rather than an inferred zero or placeholder value.
+- An unavailable estimate (`no-pricing`, `stale-pricing`, `incomplete-usage`, `unverified-source`) carries **no money, no currency, and no price source**. It records the structural absence of pricing rather than an inferred zero or placeholder value. A receipt with no usage can produce only an `incomplete-usage` estimate with no valued units.
 
 Estimates remain descriptive evidence; they cannot deserialize as financial charges, billing executions, or invoices.
 

@@ -160,6 +160,22 @@ describe("CostEstimate", () => {
     }
   });
 
+  it("rejects duplicate missing usage metrics", () => {
+    expect(() =>
+      createCostEstimate(
+        validEstimatedInput({
+          disposition: {
+            kind: "partial",
+            priceSource: samplePriceSource(),
+            currency: "USD",
+            amount: "0.0030",
+            missing: ["inputTokens", "inputTokens"],
+          },
+        }),
+      ),
+    ).toThrow(TypeError);
+  });
+
   it("structural invariant 1: unavailable estimate carries NO amount, NO currency, and NO price source", () => {
     const estimate = createCostEstimate(
       validEstimatedInput({
@@ -204,6 +220,42 @@ describe("CostEstimate", () => {
           } as unknown as CostEstimate["disposition"],
         }),
       ),
+    ).toThrow(TypeError);
+  });
+
+  it("records absent usage only as an unavailable incomplete-usage estimate with no units", () => {
+    const receipt = createUsageReceipt({
+      receiptId: RECEIPT_ID,
+      invocation: { invocationId: INVOCATION_ID, runId: RUN_ID, stepId: STEP_ID },
+      observedAt: "2026-08-01T07:00:00.000Z",
+      resolvedModel: sampleModel(),
+      providerRequestId: "req-99",
+      attribution: { kind: "unavailable", reason: "not-reported" },
+      pricing: { kind: "unavailable", reason: "not-provided" },
+      redaction: { kind: "not-required" },
+    });
+    const input = validEstimatedInput({
+      receipt,
+      units: [],
+      disposition: { kind: "unavailable", reason: "incomplete-usage" },
+    });
+
+    const estimate = createCostEstimate(input);
+
+    expect(estimate.units).toEqual([]);
+    expect(estimate.receipt.usage).toBeUndefined();
+    expect(estimate.disposition).toEqual({ kind: "unavailable", reason: "incomplete-usage" });
+    expect(() =>
+      createCostEstimate({
+        ...input,
+        units: [{ metric: "inputTokens", quantity: 0 }],
+      }),
+    ).toThrow(TypeError);
+    expect(() =>
+      createCostEstimate({
+        ...input,
+        disposition: { kind: "unavailable", reason: "no-pricing" },
+      }),
     ).toThrow(TypeError);
   });
 

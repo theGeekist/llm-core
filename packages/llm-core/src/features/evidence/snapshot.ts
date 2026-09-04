@@ -147,7 +147,7 @@ export const snapshotUsage = (value: unknown): ModelUsage | null => {
 
 export const snapshotCostUsageUnits = (value: unknown): readonly CostUsageUnitShape[] | null => {
   const items = snapshotDenseArray(value);
-  if (items === null || items.length === 0) return null;
+  if (items === null) return null;
 
   const units: CostUsageUnitShape[] = [];
   const seen = new Set<UsageMetric>();

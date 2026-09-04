@@ -294,10 +294,11 @@ describe("CostReconciliation", () => {
     ).toThrow(TypeError);
   });
 
-  it("rejects contradictory providerRequestId as an identity error", () => {
+  it("rejects contradictory providerRequestId in derivation and creation", () => {
     const estimate = sampleEstimate({ receipt: sampleReceipt({ providerRequestId: "req-42" }) });
     const contradictoryRecord = sampleProviderRecord({ providerRequestId: "req-99" });
 
+    expect(() => deriveReconciliationDisposition(estimate, contradictoryRecord)).toThrow(TypeError);
     expect(() =>
       createReconciledCost({
         reconciliationId: RECONCILIATION_ID,
@@ -325,11 +326,13 @@ describe("CostReconciliation", () => {
     expect(reconciled.providerRecord?.sourceVersion).toBe(contractVersion("2026.8.0"));
     expect(reconciled.providerRecord?.evidenceRef.evidenceId).toBe(PROVIDER_EVIDENCE_ID);
 
+    const contradictoryRecord = sampleProviderRecord({ provider: providerRef("other-provider") });
+    expect(() => deriveReconciliationDisposition(estimate, contradictoryRecord)).toThrow(TypeError);
     expect(() =>
       createReconciledCost({
         reconciliationId: RECONCILIATION_ID,
         estimate,
-        providerRecord: sampleProviderRecord({ provider: providerRef("other-provider") }),
+        providerRecord: contradictoryRecord,
         disposition: { kind: "reconciled" },
         reconciledAt: "2026-08-01T07:15:00.000Z",
       }),
