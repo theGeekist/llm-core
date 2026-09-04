@@ -1,9 +1,0 @@
-[mcp_servers.simple-chat-project-room]
-command = "/Users/jasonnathan/Repos/simple-chat/packages/project-room-mcp/dist/simple-chat-project-room-mcp"
-args = []
-
-[mcp_servers.simple-chat-project-room.env]
-SIMPLE_CHAT_PROJECT_ROOM_PROJECT_ROOT = "/Users/jasonnathan/Repos/@theGeekist/llm-core"
-SIMPLE_CHAT_PROJECT_ROOM_DATABASE = "/Users/jasonnathan/Repos/@theGeekist/llm-core/.simpleassembly/project-room.sqlite"
-SIMPLE_CHAT_PROJECT_ROOM_PRINCIPALS = "/Users/jasonnathan/Repos/@theGeekist/llm-core/.simpleassembly/principals.json"
-SIMPLE_CHAT_PROJECT_ROOM_SESSION = "simpleassembly-llm-core-codex"
