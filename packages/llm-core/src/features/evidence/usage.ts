@@ -42,9 +42,9 @@ export type UsageAttributionDisposition =
     };
 
 /**
- * Pricing is intentionally unavailable in this slice. A verified price source,
- * currency basis, estimate, and provider reconciliation belong to the later
- * cost-intelligence capability; an observed usage fact must not guess a cost.
+ * Pricing is intentionally unavailable in this slice. Cost facts exist as a
+ * separate record family (CostEstimate, ReconciledCost) and must not reinterpret
+ * a usage receipt as cost or charge facts; an observed usage fact must not guess a cost.
  */
 export interface UnavailableUsagePricing {
   readonly kind: "unavailable";
@@ -183,7 +183,7 @@ const snapshotResolvedModel = (value: unknown): ResolvedModelIdentity | null => 
     provider: value.provider as ResolvedModelIdentity["provider"],
     deployment: value.deployment as ResolvedModelIdentity["deployment"],
     profileId: value.profileId as ResolvedModelIdentity["profileId"],
-    profileVersion: value.profileVersion as ResolvedModelIdentity["profileVersion"],
+    profileVersion: value.profileVersion,
   };
 };
 
@@ -399,7 +399,7 @@ export const createUsageReceipt = (input: UsageReceiptInput): UsageReceipt => {
   }
 
   return cloneFrozen({
-    receiptId: input.receiptId as EvidenceId,
+    receiptId: input.receiptId,
     invocation,
     observedAt: input.observedAt,
     resolvedModel,

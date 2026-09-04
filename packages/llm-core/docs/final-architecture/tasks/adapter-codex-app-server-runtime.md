@@ -2,7 +2,7 @@
 id: adapter-codex-app-server-runtime
 title: Qualify the Codex app-server native conversation adapter
 stage: adapters
-status: proposed
+status: done
 priority: critical
 forward_to: []
 depends_on:
@@ -38,7 +38,7 @@ read_scope:
   - packages/llm-core/tests/adapters/codex-app-server/**
   - docs/adapters/codex-app-server.md
 review_owner: coordinator
-updated_at: 2026-08-23
+updated_at: 2026-09-04
 ---
 
 # adapter-codex-app-server-runtime - Qualify the Codex app-server native conversation adapter
@@ -185,6 +185,25 @@ require the exact thread and turn identity. Adversarial fixtures cover every
 correction and the task-owned ESLint surface remains warning-free under the
 threshold of 10. Submitted for re-review without staging, commit or push.
 
+2026-09-04: Qualified the pinned host `codex-cli 0.147.0` through a disposable
+coordinator-owned stdio client. A stored-thread run completed after native-live
+`turn/steer`, `thread/resume` returned the same thread identity, and a later
+turn completed successfully. A separate active run accepted steering and then
+completed as `interrupted` after `turn/interrupt`. The observed native stream
+included `thread/started`, `turn/started`, `item/completed`,
+`item/agentMessage/delta` and `turn/completed`. An ephemeral-thread negative
+probe correctly refused later `thread/resume` because no durable rollout
+existed. A separate two-process probe completed a stored turn, terminated that
+coordinator-owned app-server, resumed the same thread identity from a new
+app-server process and completed the continued turn.
+
+2026-09-04: Antigravity independently reviewed the task-owned implementation,
+tests, public document and exact generated `0.147.0` protocol shapes. It
+reported no actionable findings and approved completion after the focused
+adapter suite, package and test typechecks, scoped lint and Prettier checks
+passed. The coordinator repeated the adapter suite, aggregate package/schema
+typechecks and package lint before the lifecycle transition.
+
 ## Blocker
 
 None recorded.
@@ -244,18 +263,18 @@ export remain outside this task.
 
 ### Deviations
 
-The task has not yet run a real disposable app-server lifecycle. The current
-focused suite uses exact request and notification fixtures derived from the
-generated `0.147.0` protocol.
+None. The deterministic fixtures remain the replayable regression evidence and
+the disposable live run qualifies the coordinator-owned host process route.
 
 ### Remaining risks
 
-The injected client must complete the app-server initialisation handshake and
-handle server-to-client approval or elicitation requests. A live qualification
-must prove those host responsibilities, disconnect/restart outcomes and
-causation-correlated processing evidence where the native stream permits it.
-The adapter remains internal until a later publication task grants a package
-export.
+Provider acceptance alone cannot establish semantic processing. The live
+qualification observed correlated native notifications but does not upgrade
+native acceptance into a model-processing guarantee. The injected client and
+application composition remain responsible for initialisation, authenticated
+transport, server-to-client approvals or elicitations, process supervision and
+restart policy. The adapter remains internal until a later publication task
+grants a package export.
 
 ### Recommended next task
 

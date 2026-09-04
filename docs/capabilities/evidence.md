@@ -76,13 +76,36 @@ An `EvidenceRef` identifies evidence held behind authorized storage. It carries 
 
 For a completed portable `ModelResponse`, `createObservedModelUsageReceipt` derives that identity from `model.profile`, records the response's observed usage and request ID, and drops its content, warnings, errors, and native metadata. A response without usage becomes an explicit `not-reported` attribution rather than an inferred zero.
 
-The receipt always carries an explicit pricing disposition. This capability records only `unavailable` pricing (`not-provided`, `stale`, or `unverified-source`), so it cannot accidentally create a cost claim. A later cost-intelligence capability may add versioned pricing, currency, estimate, and provider-reconciliation facts; it must not reinterpret a usage receipt as any of those facts.
+The receipt always carries an explicit pricing disposition. When pricing cannot be verified, it records an `unavailable` pricing disposition (`not-provided`, `stale`, or `unverified-source`), so it cannot accidentally create a cost claim. Cost estimation and reconciliation build on usage receipts through distinct, portable records.
 
 Downstream products may correlate receipts with project or work records through stable identities. Correlation does not assign those semantics to the receipt. In particular, a provider receipt does not establish that repository work was accepted, that an intervention caused an outcome, or that a comparison window is admissible. Those conclusions remain with the consuming product and must be withheld when its evidence is insufficient.
 
-This boundary is also what permits an independent-executor proof. A native or external executor records what it attempted and what it observed. It cannot mark its own work accepted, redefine the authorised Project intent or turn a provider success state into an improved delivery, product or business outcome. The consuming composition must join separately owned evidence and may return an unavailable or inconclusive result.
+This boundary is also what permits an independent-executor proof. A native or external executor records what it attempted and what it observed. It cannot mark its own work accepted, redefine the authorised Project intent or turn a provider success state into an improved delivery, product or business outcome. The consuming composition must join separately owned evidence and may return an inconclusive result.
 
 `createBudgetDecisionEvidence` records a composition-owned allow, warn, stop, or overrun decision for a known invocation and budget limit. It is evidence of the decision, not a budget controller and not a rewrite of observed usage.
+
+## Cost facts are portable estimates and provider reconciliations
+
+Cost facts represent valuation and reconciliation separately from observed usage receipts. `CostEstimate` snapshots a price-source-backed valuation against a `UsageReceipt` without reinterpreting token counts or minting financial authority. `createCostEstimate` enforces two key boundaries:
+
+- A valid estimate embeds the validated usage receipt and carries the exact usage units valued. Every unit must match the corresponding observation in that receipt. The estimate also carries an external price source ID, a contract version, an effective timestamp, a currency, a decimal amount string, and optional assumptions.
+- An unavailable estimate (`no-pricing`, `stale-pricing`, `incomplete-usage`, `unverified-source`) carries **no money, no currency, and no price source**. It records the structural absence of pricing rather than an inferred zero or placeholder value.
+
+Estimates remain descriptive evidence; they cannot deserialize as financial charges, billing executions, or invoices.
+
+`ReconciledCost` joins a portable `CostEstimate` with an authoritative `ProviderCostRecord`. `deriveReconciliationDisposition` and `createReconciledCost` derive reconciliation purely:
+
+- Presence of an authoritative provider record is strictly biconditional with `reconciled`, `divergent` (`amount-mismatch` or `currency-mismatch`), and `unreconcilable` (`estimate-unavailable`) dispositions. A reconciled cost with no provider record requires an `unavailable` disposition (`no-provider-record` or `pending`).
+- Exact decimal equality is derived on string representations without floating-point inaccuracy, matching values such as `"1.50"` and `"1.5"`.
+- A provider record identifies its provider and source, versions that source, and cites an evidence reference. A contradictory provider or `providerRequestId` between the embedded receipt and provider record is rejected outright as an identity error.
+
+Factories snapshot external inputs through the strict JSON boundary before validating closed record shapes. Array subclasses, accessors, sparse arrays, prototype pollution, and nested authority fields therefore cannot enter the portable facts.
+
+Host compositions provide pricing and provider data through explicit ports. `PriceFactPort` and `ProviderCostReconciliationPort` return `MaybePromise`, enabling synchronous in-memory lookup or asynchronous external query without forcing synthetic Promise allocations onto synchronous flows.
+
+## Cache reuse records avoided usage, not billing credit
+
+`createCacheAttributionRecord` embeds the validated usage receipt and records cache hit, miss, or not-applicable dispositions alongside observed or declared baseline token quantities. It captures avoided usage against a prior observation or declared baseline, but it carries **zero money, rate, currency, or charge semantics**. Valuing cache savings in monetary terms remains an external estimation concern owned by consuming host compositions.
 
 ## Observability is a one-way projection
 

@@ -23,7 +23,7 @@ Active tasks: 0
 | adapter-bmad-release | adapters | proposed | architecture-source-layout-normalization, adapter-bmad, specification-cross-adapter-conformance, architecture-release-reproducibility | — | — | — |
 | adapter-catalogue-public-qualification | adapters | done | architecture-external-contract-fidelity, architecture-release-reproducibility | — | — | — |
 | adapter-claude-native-session-runtime | adapters | proposed | native-agent-conversation-runtime-contract | — | — | — |
-| adapter-codex-app-server-runtime | adapters | proposed | native-agent-conversation-runtime-contract | — | — | — |
+| adapter-codex-app-server-runtime | adapters | done | native-agent-conversation-runtime-contract | — | — | — |
 | adapter-codex-desktop-hooks-runtime | adapters | proposed | native-agent-conversation-runtime-contract | — | — | — |
 | adapter-coding-agent-integration | adapters | done | architecture-external-contract-fidelity, architecture-runtime-ownership-correction, capabilities-runtime-conformance, capabilities-operational-evidence | — | — | — |
 | adapter-langgraph-runtime | adapters | proposed | architecture-external-contract-fidelity, architecture-runtime-ownership-correction, runtime-operation-contract-correction, architecture-release-reproducibility, capabilities-runtime-conformance, capabilities-operational-evidence | — | — | — |
@@ -79,7 +79,7 @@ Active tasks: 0
 | core-tool-control-events | core | done | core-contracts | — | — | — |
 | cost-budget-control | qualification | proposed | architecture-source-layout-normalization, cost-facts, runtime-receipt-reconciliation | — | — | — |
 | cost-budget-enforcement | qualification | proposed | architecture-source-layout-normalization, cost-budget-control, runtime-tools-front-boundary | — | — | — |
-| cost-facts | qualification | ready | architecture-source-layout-normalization, capabilities-operational-evidence | — | — | — |
+| cost-facts | qualification | done | architecture-source-layout-normalization, capabilities-operational-evidence | — | — | — |
 | integrations-authorization-lifecycle | integrations | proposed | architecture-source-layout-normalization, integrations-connector-contracts | — | — | — |
 | integrations-connector-characterization | integrations | done | architecture-external-contract-fidelity, architecture-source-layout-normalization, language-rollout, adapters-protocol-qualification | — | — | — |
 | integrations-connector-contracts | integrations | proposed | architecture-external-contract-fidelity, architecture-source-layout-normalization, integrations-connector-characterization | — | — | — |
