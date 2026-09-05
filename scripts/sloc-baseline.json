@@ -161,27 +161,11 @@
     },
     "packages/llm-core/tests/application/agent/local-runner.test.ts": {
       "lines": 766,
-      "sha256": "71fcca899ffded1d4ffc0649283391d332be7f47eb1ff066ab9ecf60114d4660",
-      "waiver": {
-        "version": 2,
-        "justification": "changed legacy proof suite above 600 lines pending decomposition",
-        "expiresOn": "2026-09-04",
-        "followUp": "packages/llm-core/docs/final-architecture/tasks/architecture-test-sloc-decomposition.md",
-        "currentLines": 766,
-        "currentSha256": "7781dc54517d741a5570479c710f3d308945708130bd17bf48461a0595070d8a"
-      }
+      "sha256": "71fcca899ffded1d4ffc0649283391d332be7f47eb1ff066ab9ecf60114d4660"
     },
     "packages/llm-core/tests/application/agent/model-tool-program.test.ts": {
       "lines": 776,
-      "sha256": "dfb2e63387b2fa4daf7ccf4b113ffab20ccadd1be8245878b27204bd803e8384",
-      "waiver": {
-        "version": 2,
-        "justification": "changed legacy proof suite above 600 lines pending decomposition",
-        "expiresOn": "2026-09-04",
-        "followUp": "packages/llm-core/docs/final-architecture/tasks/architecture-test-sloc-decomposition.md",
-        "currentLines": 782,
-        "currentSha256": "5c6ad22fbe082d3816ddfb1aeb47e523a088885ad45523857596841a2c6416d5"
-      }
+      "sha256": "dfb2e63387b2fa4daf7ccf4b113ffab20ccadd1be8245878b27204bd803e8384"
     },
     "packages/llm-core/tests/application/interaction/active-input.test.ts": {
       "lines": 527,
