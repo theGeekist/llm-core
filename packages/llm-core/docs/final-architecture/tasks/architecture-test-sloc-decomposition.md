@@ -2,7 +2,7 @@
 id: architecture-test-sloc-decomposition
 title: Decompose legacy runner test modules above the hard SLOC boundary
 stage: architecture
-status: proposed
+status: done
 priority: medium
 depends_on:
   - architecture-runtime-ownership-correction
@@ -69,7 +69,7 @@ bun run release:qualify:llm-core
 
 ## Work log
 
-Execution mode: shared-checkout
+Execution mode: isolated-worktree
 
 Execution rationale: The coordinator assigned this bounded test decomposition in
 canonical `main` at `89f13143f97b644b3714e66ce88db7398ce3e432`.
@@ -79,7 +79,8 @@ session adapter work; their source, tests and task records are disjoint and were
 left untouched. The coordinator approved the expanded test filename patterns
 and scoped ESLint baseline edits required by this decomposition.
 
-Swarm delegation: none; independent review belongs to the coordinator.
+Swarm delegation: bounded implementation and independent review workers; the
+coordinator reviewed the final diff and retains publication ownership.
 
 - Split runner proofs into lifecycle/identity, controls/interventions, and
   delegation/resume modules; split model/tool proofs into tool execution,
@@ -88,9 +89,9 @@ Swarm delegation: none; independent review belongs to the coordinator.
   `tests/support/model-tool-program-fixtures.ts`. All eight modules are below
   300 physical lines, against the 500-line target and 600-line hard boundary.
 - Removed both expired SLOC waivers and their now-obsolete baseline exceptions
-  together with the two matching sealed registry entries. Refreshed only the
-  checker’s existing digest pin after that deletion reduced it from 556 to 552
-  lines; all remaining seals, thresholds and policy remain enforced.
+  together with the two matching sealed registry entries. The follow-up checker
+  decomposition removes its own lightweight exception entirely; all remaining
+  seals, thresholds and policy remain enforced.
   Removed two resolved lint suppressions and six resolved
   nested-callback warnings from the sealed ESLint baseline; no allowances,
   exclusions or thresholds were added. Subagent cases are top-level tests in
@@ -134,3 +135,14 @@ scoped ESLint uses those suites and both new support fixtures.
 - Checker qualification: 52 tests, 65 assertions; strict scoped lint has zero
   warnings, all 639 modules pass SLOC, and baseline evolution has no errors.
   Independent differential parsing checks matched 7,381 suffix combinations.
+
+## Completion evidence
+
+- Coordinator approved implementation commit `eb775ad` after independent review.
+- Complete `release:qualify:llm-core` passed on the isolated candidate: all 14
+  package checks, repository lint/schema/docs/SLOC, 35 packed exports and their
+  declaration consumer, plus A2A, MCP, LangChain and LlamaIndex qualification.
+- Scoped strict TypeScript passed with no diagnostics. No quality thresholds,
+  baseline evolution rules, source contracts or existing proof cases were relaxed.
+- Publication uses the dedicated worktree and a normal fast-forward push;
+  canonical checkout adapter work remains untouched.

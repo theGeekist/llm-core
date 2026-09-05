@@ -55,7 +55,7 @@ Active tasks: 0
 | architecture-runtime-ownership-correction | architecture | done | architecture-decisions | — | — | — |
 | architecture-source-layout-normalization | architecture | done | architecture-decisions | — | — | — |
 | architecture-status-validation | architecture | done | architecture-decisions, architecture-source-layout-normalization | — | — | — |
-| architecture-test-sloc-decomposition | architecture | proposed | architecture-runtime-ownership-correction | — | — | — |
+| architecture-test-sloc-decomposition | architecture | done | architecture-runtime-ownership-correction | — | — | — |
 | capabilities-context-artifacts | capabilities | done | core-convergence | — | — | — |
 | capabilities-context-qualification | qualification | done | language-rollout | pre-completion | — | — |
 | capabilities-cost-intelligence | qualification | cancelled | capabilities-operational-evidence, capabilities-evaluation-qualification | — | — | cost-facts, cost-budget-control, cost-budget-enforcement, model-routing-qualification |
