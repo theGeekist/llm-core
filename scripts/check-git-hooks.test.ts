@@ -19,8 +19,22 @@ interface Manifest {
 const root = resolve(import.meta.dir, "..");
 const manifest = JSON.parse(readFileSync(resolve(root, "package.json"), "utf8")) as Manifest;
 const hook = (path: string): string => readFileSync(resolve(root, path), "utf8");
+const gitLocalVariables = Bun.spawnSync(["git", "rev-parse", "--local-env-vars"], {
+  stdout: "pipe",
+})
+  .stdout.toString()
+  .trim()
+  .split("\n");
+const fixtureEnvironment = Object.fromEntries(
+  Object.entries(process.env).filter(([name]) => !gitLocalVariables.includes(name)),
+);
 const git = (cwd: string, args: readonly string[]): string => {
-  const result = Bun.spawnSync(["git", ...args], { cwd, stderr: "pipe", stdout: "pipe" });
+  const result = Bun.spawnSync(["git", ...args], {
+    cwd,
+    env: fixtureEnvironment,
+    stderr: "pipe",
+    stdout: "pipe",
+  });
   if (result.exitCode !== 0) throw new Error(result.stderr.toString());
   return result.stdout.toString();
 };
@@ -43,7 +57,7 @@ const localCommand = (cwd: string, file: string, source: string): string => {
 const run = (cwd: string, args: readonly string[], environment: Readonly<Record<string, string>>) =>
   Bun.spawnSync(args, {
     cwd,
-    env: { ...process.env, ...environment },
+    env: { ...fixtureEnvironment, ...environment },
     stderr: "pipe",
     stdout: "pipe",
   });
@@ -97,7 +111,7 @@ describe("repository Git hooks", () => {
         {
           cwd: sandbox,
           env: {
-            ...process.env,
+            ...fixtureEnvironment,
             PATH: `${resolve(root, "node_modules/.bin")}:${process.env.PATH ?? ""}`,
           },
           stderr: "pipe",
@@ -362,4 +376,72 @@ describe("repository Git hooks", () => {
       rmSync(sandbox, { recursive: true, force: true });
     }
   });
+
+  test("pre-push clears inherited Git state before foreign repositories run", () => {
+    const sandbox = mkdtempSync(join(tmpdir(), "llm-core-hook-worktree-"));
+    try {
+      const primary = join(sandbox, "primary");
+      const linked = join(sandbox, "linked");
+      const remote = join(sandbox, "remote.git");
+      const foreign = join(sandbox, "foreign.git");
+      mkdirSync(primary);
+      git(primary, ["init", "--quiet"]);
+      git(primary, ["config", "user.email", "hooks@example.test"]);
+      git(primary, ["config", "user.name", "Hook Test"]);
+      writeFileSync(join(primary, "tracked.md"), "# Initial\n");
+      git(primary, ["add", "tracked.md"]);
+      git(primary, ["commit", "--quiet", "-m", "initial"]);
+      git(primary, ["init", "--bare", "--quiet", remote]);
+      git(primary, ["remote", "add", "origin", remote]);
+      git(primary, ["worktree", "add", "--quiet", "-b", "proof", linked]);
+      git(linked, ["update-ref", "refs/remotes/origin/proof", "HEAD"]);
+      git(linked, ["branch", "--set-upstream-to=origin/proof", "proof"]);
+      const hookDirectory = join(sandbox, "hooks");
+      mkdirSync(hookDirectory);
+      const pushHook = join(hookDirectory, "pre-push");
+      writeFileSync(pushHook, '#!/usr/bin/env sh\nexec sh "$REAL_PUSH_HOOK"\n');
+      chmodSync(pushHook, 0o755);
+      git(primary, ["config", "core.hooksPath", hookDirectory]);
+      const log = join(sandbox, "calls.log");
+      command(
+        sandbox,
+        "bun",
+        [
+          "#!/usr/bin/env sh",
+          "set -eu",
+          'git init --bare --quiet "$FOREIGN_REPOSITORY"',
+          'git rev-parse --show-toplevel >> "$HOOK_LOG"',
+          'git rev-parse --abbrev-ref --symbolic-full-name "@{upstream}" >> "$HOOK_LOG"',
+          'git -C "$FOREIGN_REPOSITORY" rev-parse --is-bare-repository >> "$HOOK_LOG"',
+          "for name in $(git rev-parse --local-env-vars); do",
+          '  if printenv "$name" >/dev/null; then exit 23; fi',
+          "done",
+          'printf "%s\\n" "$*" >> "$HOOK_LOG"',
+          "",
+        ].join("\n"),
+      );
+      const directory = git(linked, ["rev-parse", "--absolute-git-dir"]).trim();
+      const canonicalLinked = git(linked, ["rev-parse", "--show-toplevel"]).trim();
+      const result = run(linked, ["git", "push", "origin", "proof"], {
+        GIT_DIR: directory,
+        GIT_WORK_TREE: linked,
+        GIT_COMMON_DIR: join(primary, ".git"),
+        GIT_INDEX_FILE: join(directory, "index"),
+        FOREIGN_REPOSITORY: foreign,
+        HOOK_LOG: log,
+        REAL_PUSH_HOOK: resolve(root, "scripts/quality/pre-push.sh"),
+        PATH: `${resolve(sandbox, "bin")}:${process.env.PATH ?? ""}`,
+      });
+      expect(result.exitCode).toBe(0);
+      expect(readFileSync(log, "utf8")).toBe(
+        `${canonicalLinked}\norigin/proof\ntrue\nrun quality:prepush:fix\n${canonicalLinked}\norigin/proof\ntrue\nrun quality:prepush\n`,
+      );
+      expect(git(primary, ["config", "--get", "core.bare"]).trim()).toBe("false");
+      expect(git(remote, ["rev-parse", "refs/heads/proof"]).trim()).toBe(
+        git(linked, ["rev-parse", "HEAD"]).trim(),
+      );
+    } finally {
+      rmSync(sandbox, { recursive: true, force: true });
+    }
+  }, 15_000);
 });

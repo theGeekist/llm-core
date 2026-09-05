@@ -1,6 +1,12 @@
 #!/usr/bin/env sh
 set -eu
 
+# Keep this worktree selected, but do not leak hook-local Git state into fixture repositories.
+cd "$(git rev-parse --show-toplevel)"
+for git_local_variable in $(git rev-parse --local-env-vars); do
+  unset "$git_local_variable"
+done
+
 if git status --porcelain=v1 -z --untracked-files=all | grep -q .; then
   echo "Pre-push auto-fix requires a clean worktree."
   echo "Commit, stash, or remove staged, unstaged, and non-ignored untracked files, then retry the push."

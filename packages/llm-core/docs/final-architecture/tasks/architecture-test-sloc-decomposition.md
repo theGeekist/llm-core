@@ -16,6 +16,8 @@ write_scope:
   - packages/llm-core/tests/support/**
   - scripts/sloc-baseline.json
   - scripts/check-sloc.ts
+  - scripts/check-git-hooks.test.ts
+  - scripts/quality/pre-push.sh
   - scripts/sloc-task-authority.ts
   - scripts/sloc-task-authority.test.ts
   - packages/aifsd/tests/project-semantics/repository-corpus/task-graph-import.test.ts
@@ -146,3 +148,9 @@ scoped ESLint uses those suites and both new support fixtures.
   baseline evolution rules, source contracts or existing proof cases were relaxed.
 - Publication uses the dedicated worktree and a normal fast-forward push;
   canonical checkout adapter work remains untouched.
+
+- Actual pre-push execution exposed inherited Git repository variables leaking
+  into temporary fixture repositories. The hook now selects its worktree and
+  clears Git-local variables before qualification. A real linked-worktree push
+  regression verifies foreign bare initialisation, preserved upstream authority
+  and the unchanged remote commit without contaminating repository configuration.
