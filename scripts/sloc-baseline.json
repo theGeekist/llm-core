@@ -219,16 +219,6 @@
         "currentSha256": "e4f6e6003b3b68a5d62ce3c0da0b04cc111649f7b4e8a1c1308f9710e816a703"
       }
     },
-    "scripts/check-sloc.ts": {
-      "lines": 556,
-      "sha256": "233559ae929961e0c41ae312194551c87e3bf23fabd3b8fd69d6247267ad7305",
-      "waiver": {
-        "version": 3,
-        "justification": "approximately 500 lines",
-        "currentLines": 552,
-        "currentSha256": "12eba549557320bb8b437d853fb3be7cd24be7dade92fb99613b79a2b44d75ea"
-      }
-    },
     "scripts/quality/check-eslint-baseline.ts": {
       "lines": 518,
       "sha256": "a60cff44e4f20c45269cd63c1d9a6946b482845064738974a0f4fd5ff8349300",

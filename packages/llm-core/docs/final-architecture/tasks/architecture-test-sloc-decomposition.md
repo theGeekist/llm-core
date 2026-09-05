@@ -16,6 +16,8 @@ write_scope:
   - packages/llm-core/tests/support/**
   - scripts/sloc-baseline.json
   - scripts/check-sloc.ts
+  - scripts/sloc-task-authority.ts
+  - scripts/sloc-task-authority.test.ts
   - packages/aifsd/tests/project-semantics/repository-corpus/task-graph-import.test.ts
   - scripts/quality/eslint-baseline.json
   - packages/llm-core/docs/final-architecture/tasks/architecture-test-sloc-decomposition.md
@@ -124,3 +126,11 @@ scoped ESLint uses those suites and both new support fixtures.
   disk-backed corpus property test. Its scoped limit is now 15 seconds; all
   generated cases and assertions remain unchanged. The focused recheck passes
   with 30 assertions. No global timeout or production behaviour changed.
+
+- Independent review of the checker refactor passed. Task authority parsing is
+  now a focused helper; the checker is 430 lines and the helper 169 lines.
+  Removed the checker’s obsolete size exception and six resolved lint warnings
+  without changing thresholds, seals or baseline evolution policy.
+- Checker qualification: 52 tests, 65 assertions; strict scoped lint has zero
+  warnings, all 639 modules pass SLOC, and baseline evolution has no errors.
+  Independent differential parsing checks matched 7,381 suffix combinations.

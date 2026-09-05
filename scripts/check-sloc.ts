@@ -1,7 +1,7 @@
 import { createHash } from "node:crypto";
-import { lstatSync, readdirSync, readFileSync, realpathSync } from "node:fs";
-import { basename, extname, join, posix, relative, resolve, sep } from "node:path";
-import { scopesOverlap } from "@geekist/task-graph";
+import { readdirSync, readFileSync } from "node:fs";
+import { extname, join, relative, resolve, sep } from "node:path";
+import { isFollowUpPath, validateActiveWaiver } from "./sloc-task-authority.js";
 
 export interface SlocWaiver {
   readonly version: number;
@@ -144,104 +144,6 @@ const isIsoCalendarDate = (value: string): boolean => {
   return !Number.isNaN(parsed.valueOf()) && parsed.toISOString().slice(0, 10) === value;
 };
 
-const isFollowUpPath = (value: string): boolean => {
-  if (value.includes("\\") || posix.isAbsolute(value) || posix.normalize(value) !== value) {
-    return false;
-  }
-  const segments = value.split("/");
-  const taskIndex = segments.indexOf("tasks", 3);
-  return (
-    segments.length >= 5 &&
-    segments[0] === "packages" &&
-    segments[1] !== "" &&
-    segments[1] !== "." &&
-    segments[1] !== ".." &&
-    segments[2] === "docs" &&
-    segments.slice(3).every((segment) => segment !== "" && segment !== "." && segment !== "..") &&
-    taskIndex >= 3 &&
-    taskIndex === segments.length - 2 &&
-    /^[a-z0-9]+(?:-[a-z0-9]+)*\.md$/.test(segments.at(-1)!)
-  );
-};
-
-const packageOwner = (value: string): string | null => {
-  const segments = value.split("/");
-  return segments[0] === "packages" && segments.length > 2 ? (segments[1] ?? null) : null;
-};
-
-const isWithin = (parent: string, candidate: string): boolean => {
-  const path = relative(parent, candidate);
-  return path === "" || (!path.startsWith(`..${sep}`) && path !== ".." && !posix.isAbsolute(path));
-};
-
-const canonicalFollowUp = (root: string, followUp: string): string | null => {
-  try {
-    const task = resolve(root, followUp);
-    if (!lstatSync(task).isFile()) return null;
-    const canonicalRoot = realpathSync(root);
-    const canonicalTask = realpathSync(task);
-    const packageDocs = realpathSync(resolve(root, ...followUp.split("/").slice(0, 3)));
-    return isWithin(canonicalRoot, canonicalTask) && isWithin(packageDocs, canonicalTask)
-      ? canonicalTask
-      : null;
-  } catch {
-    return null;
-  }
-};
-
-interface TaskFrontMatter {
-  readonly id: string;
-  readonly status: string;
-  readonly writeScope: readonly string[];
-}
-
-const actionableTaskStatuses = new Set([
-  "proposed",
-  "ready",
-  "claimed",
-  "in_progress",
-  "review",
-  "blocked",
-]);
-
-const taskFrontMatter = (content: string): TaskFrontMatter | null => {
-  const lines = content.replaceAll("\r\n", "\n").split("\n");
-  if (lines[0] !== "---") return null;
-  const closing = lines.indexOf("---", 1);
-  if (closing < 0) return null;
-  const fields = new Map<string, string>();
-  const writeScope: string[] = [];
-  let listField: string | undefined;
-  for (const line of lines.slice(1, closing)) {
-    if (line.trim() === "" || line.trimStart().startsWith("#")) continue;
-    if (/^\s/.test(line)) {
-      const item = line.match(/^\s{2}-\s+(.+)$/)?.[1]?.trim();
-      if (listField === "write_scope" && item !== undefined) {
-        const value = item.replace(/^(?:"(.*)"|'(.*)')$/, "$1$2");
-        if (value === "" || writeScope.includes(value)) return null;
-        writeScope.push(value);
-      }
-      continue;
-    }
-    const separator = line.indexOf(":");
-    if (separator <= 0) return null;
-    const key = line.slice(0, separator);
-    if (!/^[a-z][a-z0-9_]*$/.test(key) || fields.has(key)) return null;
-    const value = line.slice(separator + 1).trim();
-    fields.set(key, value);
-    listField = value === "" ? key : undefined;
-    if (key === "write_scope" && value !== "" && value !== "[]") return null;
-  }
-  const id = fields.get("id");
-  const status = fields.get("status");
-  return id !== undefined &&
-    /^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(id) &&
-    status !== undefined &&
-    fields.has("write_scope")
-    ? { id, status, writeScope }
-    : null;
-};
-
 const validateWaiver = (path: string, waiver: SlocWaiver): string[] => {
   const errors = exactKeys(
     waiver,
@@ -257,28 +159,11 @@ const validateWaiver = (path: string, waiver: SlocWaiver): string[] => {
   if (!/^[a-f0-9]{64}$/.test(waiver.currentSha256)) {
     errors.push(`${path} waiver currentSha256 must be a SHA-256 digest`);
   }
-  if (waiver.currentLines <= slocV1Policy.hardLimit) {
-    if (waiver.justification !== approximateTargetJustification) {
-      errors.push(
-        `${path} waiver justification must be exactly ${JSON.stringify(approximateTargetJustification)}`,
-      );
-    }
-    if (waiver.expiresOn !== undefined || waiver.followUp !== undefined) {
-      errors.push(`${path} approximately-500 waiver must not require expiry or follow-up`);
-    }
-  } else {
-    if (typeof waiver.justification !== "string" || waiver.justification.trim() === "") {
-      errors.push(`${path} hard-boundary waiver justification must not be empty`);
-    }
-    if (waiver.expiresOn === undefined || !isIsoCalendarDate(waiver.expiresOn)) {
-      errors.push(`${path} waiver expiry must be a valid YYYY-MM-DD date`);
-    }
-    if (waiver.followUp === undefined || !isFollowUpPath(waiver.followUp)) {
-      errors.push(
-        `${path} waiver followUp must be a normalized repository-relative task path under packages/<owner>/docs/**/tasks/`,
-      );
-    }
-  }
+  errors.push(
+    ...(waiver.currentLines <= slocV1Policy.hardLimit
+      ? lightweightWaiverErrors(path, waiver)
+      : hardBoundaryWaiverErrors(path, waiver)),
+  );
   return errors;
 };
 
@@ -326,19 +211,9 @@ export const validateSlocBaseline = (
   }
   for (const [path, exception] of Object.entries(baseline.exceptions)) {
     errors.push(...validateException(path, exception, slocV1Policy.limit));
-    const sealedDigest = expectedLegacyEntries[path];
-    const isLightweightException =
-      exception.lines <= slocV1Policy.hardLimit &&
-      exception.waiver !== undefined &&
-      exception.waiver.currentLines <= slocV1Policy.hardLimit &&
-      exception.waiver.justification === approximateTargetJustification;
-    if (
-      (sealedDigest !== undefined && sealedDigest !== legacyEntryDigest(path, exception)) ||
-      (sealedDigest === undefined && !isLightweightException)
-    ) {
-      errors.push(`${path} is not a sealed legacy exception`);
-    }
+    errors.push(...sealedExceptionErrors(path, exception, expectedLegacyEntries));
   }
+
   for (const path of Object.keys(expectedLegacyEntries)) {
     if (!Object.hasOwn(baseline.exceptions, path)) {
       errors.push(`${path} sealed legacy exception is missing`);
@@ -351,55 +226,6 @@ const sameStrings = (actual: readonly string[], expected: readonly string[]): bo
   Array.isArray(actual) &&
   actual.length === expected.length &&
   actual.every((value, index) => value === expected[index]);
-
-interface ActiveWaiverContext {
-  readonly root: string;
-  readonly sourcePath: string;
-  readonly waiver: SlocWaiver;
-  readonly today: string;
-}
-
-const validateActiveWaiver = ({
-  root,
-  sourcePath,
-  waiver,
-  today,
-}: ActiveWaiverContext): string[] => {
-  if (waiver.followUp === undefined || waiver.expiresOn === undefined) return [];
-  if (!isFollowUpPath(waiver.followUp)) return [];
-  const task = canonicalFollowUp(root, waiver.followUp);
-  const errors: string[] = [];
-  const sourceOwner = packageOwner(sourcePath);
-  const followUpOwner = packageOwner(waiver.followUp);
-  if (sourceOwner !== null && followUpOwner !== sourceOwner) {
-    errors.push(
-      `${sourcePath} waiver follow-up must belong to package ${sourceOwner}, not ${followUpOwner ?? "repository"}`,
-    );
-  }
-  if (task === null) {
-    errors.push(
-      `${sourcePath} waiver follow-up must be a non-symlink regular file within its package docs task boundary`,
-    );
-  } else {
-    const expectedId = basename(task, ".md");
-    const frontMatter = taskFrontMatter(readFileSync(task, "utf8"));
-    if (frontMatter === null) {
-      errors.push(
-        `${sourcePath} waiver follow-up must have canonical front matter with unique id, status and write_scope fields`,
-      );
-    } else if (frontMatter.id !== expectedId) {
-      errors.push(`${sourcePath} waiver follow-up id must match its filename`);
-    } else if (!actionableTaskStatuses.has(frontMatter.status)) {
-      errors.push(
-        `${sourcePath} waiver follow-up status must be actionable: proposed, ready, claimed, in_progress, review, or blocked`,
-      );
-    } else if (!frontMatter.writeScope.some((scope) => scopesOverlap(scope, sourcePath))) {
-      errors.push(`${sourcePath} waiver follow-up write_scope does not own the waived source`);
-    }
-  }
-  if (waiver.expiresOn < today) errors.push(`${sourcePath} waiver expired`);
-  return errors;
-};
 
 interface MeasurementContext {
   readonly measurement: SourceMeasurement;
@@ -524,6 +350,58 @@ export const checkSloc = (
 
 export const readSlocBaseline = (path: string): SlocBaseline =>
   JSON.parse(readFileSync(path, "utf8")) as SlocBaseline;
+
+const lightweightWaiverErrors = (path: string, waiver: SlocWaiver): string[] => {
+  const errors: string[] = [];
+  if (waiver.justification !== approximateTargetJustification) {
+    errors.push(
+      `${path} waiver justification must be exactly ${JSON.stringify(approximateTargetJustification)}`,
+    );
+  }
+  if (waiver.expiresOn !== undefined || waiver.followUp !== undefined) {
+    errors.push(`${path} approximately-500 waiver must not require expiry or follow-up`);
+  }
+
+  return errors;
+};
+const hardBoundaryWaiverErrors = (path: string, waiver: SlocWaiver): string[] => {
+  const errors: string[] = [];
+  if (typeof waiver.justification !== "string" || waiver.justification.trim() === "") {
+    errors.push(`${path} hard-boundary waiver justification must not be empty`);
+  }
+  if (waiver.expiresOn === undefined || !isIsoCalendarDate(waiver.expiresOn)) {
+    errors.push(`${path} waiver expiry must be a valid YYYY-MM-DD date`);
+  }
+  if (waiver.followUp === undefined || !isFollowUpPath(waiver.followUp)) {
+    errors.push(
+      `${path} waiver followUp must be a normalized repository-relative task path under packages/<owner>/docs/**/tasks/`,
+    );
+  }
+
+  return errors;
+};
+
+const sealedExceptionErrors = (
+  path: string,
+  exception: SlocException,
+  expectedLegacyEntries: Readonly<Record<string, string>>,
+): string[] => {
+  const errors: string[] = [];
+  const sealedDigest = expectedLegacyEntries[path];
+  const isLightweightException =
+    exception.lines <= slocV1Policy.hardLimit &&
+    exception.waiver !== undefined &&
+    exception.waiver.currentLines <= slocV1Policy.hardLimit &&
+    exception.waiver.justification === approximateTargetJustification;
+  if (
+    (sealedDigest !== undefined && sealedDigest !== legacyEntryDigest(path, exception)) ||
+    (sealedDigest === undefined && !isLightweightException)
+  ) {
+    errors.push(`${path} is not a sealed legacy exception`);
+  }
+
+  return errors;
+};
 
 if (import.meta.main) {
   const root = resolve(import.meta.dir, "..");
