@@ -408,6 +408,7 @@ describe("Task Graph repository corpus adapter", () => {
     ]);
   });
 
+  // Thirty sequential corpus reloads need headroom during concurrent package qualification.
   test("preserves Task Graph dirty-path admission across generated fixture states", async () => {
     fixture = await createCorpusFixture();
     const current = fixture;
@@ -449,5 +450,5 @@ describe("Task Graph repository corpus adapter", () => {
       ),
       { numRuns: 30 },
     );
-  });
+  }, 15_000);
 });

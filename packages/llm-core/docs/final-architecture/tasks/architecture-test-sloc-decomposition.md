@@ -16,6 +16,7 @@ write_scope:
   - packages/llm-core/tests/support/**
   - scripts/sloc-baseline.json
   - scripts/check-sloc.ts
+  - packages/aifsd/tests/project-semantics/repository-corpus/task-graph-import.test.ts
   - scripts/quality/eslint-baseline.json
   - packages/llm-core/docs/final-architecture/tasks/architecture-test-sloc-decomposition.md
 required_reading:
@@ -118,3 +119,8 @@ scoped ESLint uses those suites and both new support fixtures.
 - Python bridge qualification uses the supported Homebrew Python 3.14 runtime;
   the system Python 3.9 is outside the declared support range. Both initially
   affected tests pass with the supported runtime, without source changes.
+
+- Release qualification exposed a five-second timeout in the SDK’s 30-run
+  disk-backed corpus property test. Its scoped limit is now 15 seconds; all
+  generated cases and assertions remain unchanged. The focused recheck passes
+  with 30 assertions. No global timeout or production behaviour changed.
