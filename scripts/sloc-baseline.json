@@ -119,6 +119,16 @@
         "currentSha256": "a37c48744e9a58dee41e577c474789c6a8c25d404c16305351a1054dd913cf37"
       }
     },
+    "packages/llm-core/src/features/evidence/cost.ts": {
+      "lines": 524,
+      "sha256": "3214eac8b03ffcbf216e0110d47e5a7e6326b816dab033ba1ce8250a5048f113",
+      "waiver": {
+        "version": 1,
+        "justification": "approximately 500 lines",
+        "currentLines": 524,
+        "currentSha256": "3214eac8b03ffcbf216e0110d47e5a7e6326b816dab033ba1ce8250a5048f113"
+      }
+    },
     "packages/llm-core/src/features/specifications/validation.ts": {
       "lines": 521,
       "sha256": "595dc2b6581a907f4d2f08f197b954d6addba74a1a0b3d599558a7bcbe4a57ca",

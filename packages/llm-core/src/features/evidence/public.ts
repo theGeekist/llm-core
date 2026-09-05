@@ -1,3 +1,26 @@
+export { createCostEstimate, createReconciledCost, deriveReconciliationDisposition } from "./cost";
+export type {
+  CostCorrelationRef,
+  CostEstimate,
+  CostEstimateDisposition,
+  CostUsageUnit,
+  PriceSource,
+  ProviderCostRecord,
+  ReconciledCost,
+  ReconciledCostDisposition,
+} from "./cost";
+export type {
+  PriceFactPort,
+  PriceFactResult,
+  ProviderCostReconciliationPort,
+  ProviderReconciliationResult,
+} from "./cost-ports";
+export { createCacheAttributionRecord } from "./cost-cache";
+export type {
+  AvoidedUsageDisposition,
+  CacheAttribution,
+  CacheAttributionRecord,
+} from "./cost-cache";
 export type {
   EventSink,
   ToolExecutionEvent,
