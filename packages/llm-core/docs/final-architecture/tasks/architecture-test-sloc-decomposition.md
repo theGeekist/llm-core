@@ -15,6 +15,7 @@ write_scope:
   - packages/llm-core/tests/application/agent/model-tool-program*.test.ts
   - packages/llm-core/tests/support/**
   - scripts/sloc-baseline.json
+  - scripts/check-sloc.ts
   - scripts/quality/eslint-baseline.json
   - packages/llm-core/docs/final-architecture/tasks/architecture-test-sloc-decomposition.md
 required_reading:
@@ -25,7 +26,7 @@ read_scope:
   - scripts/quality/eslint-baseline.json
 worktree: /private/tmp/llm-core-sloc-publication-20260905
 review_owner: coordinator
-updated_at: 2026-08-08
+updated_at: 2026-09-05
 ---
 
 # architecture-test-sloc-decomposition — Decompose legacy runner tests above the hard SLOC boundary
@@ -83,8 +84,11 @@ Swarm delegation: none; independent review belongs to the coordinator.
 - Extracted reusable setup into `tests/support/local-runner-fixtures.ts` and
   `tests/support/model-tool-program-fixtures.ts`. All eight modules are below
   300 physical lines, against the 500-line target and 600-line hard boundary.
-- Removed both expired SLOC waivers while retaining their immutable sealed
-  baseline provenance. Removed two resolved lint suppressions and six resolved
+- Removed both expired SLOC waivers and their now-obsolete baseline exceptions
+  together with the two matching sealed registry entries. Refreshed only the
+  checker’s existing digest pin after that deletion reduced it from 556 to 552
+  lines; all remaining seals, thresholds and policy remain enforced.
+  Removed two resolved lint suppressions and six resolved
   nested-callback warnings from the sealed ESLint baseline; no allowances,
   exclusions or thresholds were added. Subagent cases are top-level tests in
   their dedicated module, removing redundant callback nesting.
@@ -108,3 +112,9 @@ unchanged. The coordinator retains lifecycle/STATUS, staging, commit and push
 ownership. Focused commands use the six `local-runner*.test.ts` and
 `model-tool-program*.test.ts` files plus `tests/application/workflow`; strict
 scoped ESLint uses those suites and both new support fixtures.
+
+- Clean-tree SLOC qualification passes across 637 modules. The checker’s 49
+  tests pass with 54 assertions, and baseline validation reports no errors.
+- Python bridge qualification uses the supported Homebrew Python 3.14 runtime;
+  the system Python 3.9 is outside the declared support range. Both initially
+  affected tests pass with the supported runtime, without source changes.

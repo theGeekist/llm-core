@@ -159,14 +159,6 @@
         "currentSha256": "3976d5e4c48369caa3dabcaef59a9bdfc5d69170147fef0e959606acfe40da5f"
       }
     },
-    "packages/llm-core/tests/application/agent/local-runner.test.ts": {
-      "lines": 766,
-      "sha256": "71fcca899ffded1d4ffc0649283391d332be7f47eb1ff066ab9ecf60114d4660"
-    },
-    "packages/llm-core/tests/application/agent/model-tool-program.test.ts": {
-      "lines": 776,
-      "sha256": "dfb2e63387b2fa4daf7ccf4b113ffab20ccadd1be8245878b27204bd803e8384"
-    },
     "packages/llm-core/tests/application/interaction/active-input.test.ts": {
       "lines": 527,
       "sha256": "55a9f5f017f3923b3e6e583a351b87088481f126fd1de11f40b948a8411c11ce",
@@ -233,8 +225,8 @@
       "waiver": {
         "version": 3,
         "justification": "approximately 500 lines",
-        "currentLines": 556,
-        "currentSha256": "233559ae929961e0c41ae312194551c87e3bf23fabd3b8fd69d6247267ad7305"
+        "currentLines": 552,
+        "currentSha256": "12eba549557320bb8b437d853fb3be7cd24be7dade92fb99613b79a2b44d75ea"
       }
     },
     "scripts/quality/check-eslint-baseline.ts": {
