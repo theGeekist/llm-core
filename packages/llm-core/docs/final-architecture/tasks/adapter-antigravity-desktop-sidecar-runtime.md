@@ -34,7 +34,7 @@ read_scope:
   - packages/llm-core/tests/adapters/antigravity-desktop-sidecar/**
   - docs/adapters/antigravity-desktop-sidecar.md
 review_owner: coordinator
-updated_at: 2026-09-05
+updated_at: 2026-09-06
 ---
 
 # adapter-antigravity-desktop-sidecar-runtime - Qualify the Antigravity Desktop Sidecar adapter
@@ -143,3 +143,10 @@ must not advance to `done` until exact live evidence closes that gap.
 - Independent final re-review found no remaining actionable issues.
 - The task remains at review because the live causation-correlated busy-turn
   gate in the blocker above is unmet.
+- 2026-09-06: Current-host verification found Antigravity Desktop `2.12.2`,
+  which has drifted from the exact `2.11.0` source contract. Independent
+  governance review rejected rewriting the immutable acceptance criteria around
+  typed unsupported operations. It also corrected the probe so an accepted
+  synthetic busy-state receipt remains an overall bounded negative while
+  delivery timing is unqualified, and removed the corresponding overstatement
+  from the public adapter document.

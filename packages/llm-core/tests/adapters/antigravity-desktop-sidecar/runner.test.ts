@@ -294,6 +294,10 @@ describe("Antigravity Desktop Sidecar probe", () => {
       recipientObservation: "unobservable",
       semanticProcessing: "untested",
     });
+    expect(report).toMatchObject({
+      outcome: "bounded-negative",
+      reasonCode: "busy-turn-timing-unqualified",
+    });
   });
 
   test("does not treat a caller scenario flag as proof of busy state", async () => {

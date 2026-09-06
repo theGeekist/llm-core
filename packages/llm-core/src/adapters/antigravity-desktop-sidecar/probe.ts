@@ -180,7 +180,7 @@ export async function runAntigravityDesktopSidecarProbe(
     });
     return {
       ...base(client),
-      outcome: "qualified",
+      outcome: "bounded-negative",
       idleAddressability,
       busyTurnTiming: {
         classification: busyReceipt.accepted ? "unqualified" : "rejected",
@@ -189,9 +189,10 @@ export async function runAntigravityDesktopSidecarProbe(
         semanticProcessing: "untested",
         timingEvidenceRef: "antigravity-desktop-sidecar:busy-state-command-receipt",
       },
-      ...(busyReceipt.accepted ? {} : { reasonCode: "busy-turn-rejected" }),
-      details:
-        "Busy state and command receipt were observed. Recipient observation and delivery timing remain unqualified.",
+      reasonCode: busyReceipt.accepted ? "busy-turn-timing-unqualified" : "busy-turn-rejected",
+      details: busyReceipt.accepted
+        ? "Busy state and command receipt were observed. Recipient observation and delivery timing remain unqualified."
+        : "Busy state was observed, but the command was rejected.",
     };
   } catch {
     return {
