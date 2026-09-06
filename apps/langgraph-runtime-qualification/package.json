@@ -1,0 +1,11 @@
+{
+  "name": "@geekist/langgraph-runtime-qualification",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "qualify": "bun test qualification.test.ts"
+  },
+  "dependencies": {
+    "@langchain/langgraph": "1.0.7"
+  }
+}

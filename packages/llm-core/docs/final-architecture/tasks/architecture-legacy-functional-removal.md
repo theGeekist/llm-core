@@ -2,7 +2,7 @@
 id: architecture-legacy-functional-removal
 title: Remove internal compatibility and dead source bloat
 stage: architecture
-status: proposed
+status: done
 priority: high
 depends_on:
   - architecture-source-layout-normalization
@@ -22,6 +22,7 @@ conflicts_with:
   - applications-client-subpath-release
 write_scope:
   - tsconfig.json
+  - packages/llm-core/docs/final-architecture/STATUS.md
   - packages/llm-core/package.json
   - packages/llm-core/scripts/smoke-package.mjs
   - packages/llm-core/src/functional/index.ts
@@ -37,7 +38,7 @@ read_scope:
   - packages/llm-core/scripts/build.ts
   - packages/llm-core/tsconfig.json
 review_owner: coordinator
-updated_at: 2026-09-01
+updated_at: 2026-09-06
 ---
 
 # architecture-legacy-functional-removal — Remove internal compatibility and dead source bloat
@@ -99,8 +100,24 @@ model, type, formatting and diff gates pass. The complete release build passed
 801 tests with four existing optional external-adapter checks skipped; the
 isolated packed consumer verified all 35 ESM-only exports.
 
+2026-09-05 — Reconciled the stale lifecycle record against merged commit
+`16fa377` on current `main` at `09761df`. Independent review found no current
+implementation regression and identified one enforcement gap: the architecture
+test rejected only the exact retired alias. The review correction parses both
+JSONC TypeScript path maps, rejects the complete retired namespace, checks every
+public runtime front for the former helper exports, and adds compile-time
+negative imports for the base and descendant package subpaths. Final independent
+re-review found no actionable findings. Focused architecture tests, test
+typecheck, Prettier, scoped zero-warning ESLint and `git diff --check` pass.
+
+2026-09-06 — The user authorised integration of the reviewed enforcement and
+lifecycle correction. Reconciled the shared `STATUS.md` projection with the
+LangGraph task, and the full package release build passed with 900 tests, four
+optional skips and no failures.
+
 ## Handoff
 
-Implementation is review-ready as an uncommitted shared-checkout diff. Final
-independent source and adapter boundary audits are pending; no lifecycle,
-commit, push, publication or release action has been taken.
+The removal is merged in commit `16fa377`. This integration adds the stronger
+architecture regression test and corrected lifecycle evidence. The generated
+status, complete release build, package and test typechecks, formatting and
+independent review are clean. Publication remains a separate task.

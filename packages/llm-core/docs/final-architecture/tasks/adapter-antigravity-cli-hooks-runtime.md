@@ -2,7 +2,7 @@
 id: adapter-antigravity-cli-hooks-runtime
 title: Qualify the Antigravity CLI and hooks conversation adapter
 stage: adapters
-status: proposed
+status: review
 priority: critical
 forward_to: []
 depends_on:
@@ -38,7 +38,7 @@ read_scope:
   - packages/llm-core/tests/adapters/antigravity-cli-hooks/**
   - docs/adapters/antigravity-cli-hooks.md
 review_owner: coordinator
-updated_at: 2026-08-23
+updated_at: 2026-09-05
 ---
 
 # adapter-antigravity-cli-hooks-runtime - Qualify the Antigravity CLI and hooks conversation adapter
@@ -155,38 +155,94 @@ Follow [`../COORDINATION.md`](../COORDINATION.md) and the metadata contract in
 
 ## Work log
 
-Pending.
+- 2026-09-05: Host version probe `/Users/jasonnathan/.local/bin/agy --version` returned `1.1.27`.
+- 2026-09-05: Live start probe returned conversation `eed87062-a0d6-403e-bcbe-30a172880417`, exact output `AGY_START_0905`, native `init`, nested `step_update`, and terminal `result.status: "SUCCESS"`.
+- 2026-09-05: Live idle-continuation probe invoked `agy -p ... --conversation eed87062-a0d6-403e-bcbe-30a172880417 --output-format stream-json`, returned the same conversation ID, exact output `AGY_CONTINUE_0905`, and terminal `SUCCESS`.
+- 2026-09-05: Applied the resulting operation matrix: `conversation.start`, `conversation.continue` and `run.observe` are supported. `run.input.submit` and `run.cancel` remain `unsupported/qualification-failed` pending exact live gates.
+- 2026-09-05: The runner returns typed unsupported acknowledgements for input and cancellation without hook or process-cancellation side effects. Cancellation capability is `none`. Continued provider sessions resolve immediately while every later stream event remains subject to exact identity checking.
+- 2026-09-05: Renamed the hook boundary value to
+  `AntigravityHookInvocationProjection` to state that composition has already
+  validated native input.
+- 2026-09-05: Independent review replaced destructive inbox drain with
+  prepare/commit/release claims. Boundary outputs are now discriminated,
+  `Stop` prepares explicit refusals, failed stdout can release for redelivery,
+  hostile non-portable content is rejected, and runner construction enforces
+  the exact `agy 1.1.27` source contract.
+- 2026-09-05: Final deterministic verification passed with 11 focused tests
+  and 31 assertions, package and test TypeScript checks, scoped ESLint,
+  Prettier and the public-boundary check. All Antigravity production and
+  focused test modules are below 500 physical lines.
+- 2026-09-05: Re-ran the active-input gate against installed CLI `1.1.27`
+  with an eight-second `run_command` and a scoped `PostInvocation` hook.
+  Conversation `9c9daf7f-d583-4108-b006-efeb48a8472d` reported the command
+  active at step 2, then completed it in 8.048871 seconds and returned only
+  `AGY_ORIGINAL_DONE_20260905C` with terminal `SUCCESS`. The CLI host log
+  recorded `loaded 1 named hooks from 1 hooks.json file(s)`, but the handler
+  never ran, no hook input was captured, and the queued nonce flag remained.
+  The temporary shared `~/.gemini/config/hooks.json` was removed and its
+  absence verified after the probe.
+- 2026-09-05: Current `agy --help` exposes no active-run cancellation
+  operation. The `remote-control stop` command controls the background daemon,
+  not a conversation run.
+- 2026-09-05: Independent final re-review found no remaining actionable
+  issues. The four-adapter focused suite passes 50 tests with 133 assertions;
+  package and test typechecks, Prettier, the public-boundary check, and
+  `git diff --check` pass. Scoped ESLint exits successfully with two existing
+  Claude runner complexity warnings.
 
 ## Blocker
 
-None recorded.
+- Exact live active-input and cancellation gates have not passed. The current
+  active-input probe is a bounded negative because the loaded hook handler was
+  not dispatched. Those operations cannot be advertised or composed as
+  supported.
 
 ## Handoff
 
 ### Result
 
-Pending.
+The exact `1.1.27` start, idle-continuation and observation route is implemented and qualified by current host evidence. Active input and cancellation fail closed as typed unsupported operations with no corresponding native side effects.
+The implementation is review-clean, but the task remains at review because its
+active-input and cancellation acceptance gates are unmet.
 
 ### Decisions applied
 
-Pending.
+- ADR-006: Portable operation vocabulary and TaskGraph migration boundary.
+- ADR-007: Exact-version conformance fixtures and runtime contract isolation.
+- ADR-016: Integration-owned execution and application-composition boundaries.
+- ADR-017: Evidence-bound supported and `unsupported/qualification-failed` dispositions.
+- ADR-018: Provider-session continuity without inventing unqualified input or cancellation semantics.
 
 ### Files changed
 
-Pending.
+- `packages/llm-core/src/adapters/antigravity-cli-hooks/profile.ts`
+- `packages/llm-core/src/adapters/antigravity-cli-hooks/protocol.ts`
+- `packages/llm-core/src/adapters/antigravity-cli-hooks/inbox.ts`
+- `packages/llm-core/src/adapters/antigravity-cli-hooks/runner.ts`
+- `packages/llm-core/src/adapters/antigravity-cli-hooks/public.ts`
+- `packages/llm-core/tests/adapters/antigravity-cli-hooks/runner.test.ts`
+- `docs/adapters/antigravity-cli-hooks.md`
+- `packages/llm-core/docs/final-architecture/tasks/adapter-antigravity-cli-hooks-runtime.md`
 
 ### Verification evidence
 
-Pending.
+- Host version: `1.1.27`.
+- Start: conversation `eed87062-a0d6-403e-bcbe-30a172880417`, `AGY_START_0905`, terminal `SUCCESS`.
+- Idle continuation: same conversation ID, `AGY_CONTINUE_0905`, terminal `SUCCESS`.
+- `bun test packages/llm-core/tests/adapters/antigravity-cli-hooks` (11 pass, 0 fail, 31 assertions).
+- `./node_modules/.bin/tsc -p packages/llm-core/tsconfig.json --noEmit` (pass).
+- `./node_modules/.bin/tsc -p packages/llm-core/tsconfig.test.json --noEmit` (pass).
+- Scoped ESLint and Prettier checks (pass).
+- `bun scripts/check-public-boundary.ts` (pass).
 
 ### Deviations
 
-None recorded.
+- The immutable task objective and acceptance criteria anticipated supported execution-boundary input and explicit cancellation. Current host evidence does not qualify either operation, so both remain `unsupported/qualification-failed`.
 
 ### Remaining risks
 
-Pending.
+- Hook injection, recipient observation, semantic processing and process cancellation are unqualified. The hook inbox remains an internal post-validation projection helper and does not establish portable operation support.
 
 ### Recommended next task
 
-Cross-provider conformance after at least two unlike adapters qualify.
+Run exact live active-input and cancellation qualification before reconsidering either unsupported disposition, then proceed to `native-agent-cross-provider-conformance` only with the resulting evidence.

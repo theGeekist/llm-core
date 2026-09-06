@@ -1,6 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import { existsSync } from "node:fs";
 import { resolve } from "node:path";
+import { parseConfigFileTextToJson } from "typescript";
 
 import * as root from "../../index";
 import * as contracts from "../../src/contracts/public";
@@ -114,6 +115,21 @@ const PUBLIC_FRONT_CLASSIFICATION = {
   protocol: ["./a2a", "./mcp"],
 } as const;
 
+const RETIRED_FUNCTIONAL_RUNTIME_EXPORTS = [
+  "bindFirst",
+  "collectStep",
+  "compose",
+  "isPromiseLike",
+  "maybeAll",
+  "maybeChain",
+  "maybeMap",
+  "maybeMapOr",
+  "maybeTap",
+  "maybeToStep",
+  "maybeTry",
+  "toUndefined",
+] as const;
+
 const packageJson = (await Bun.file(new URL("../../package.json", import.meta.url)).json()) as {
   exports: Record<string, unknown>;
   main?: unknown;
@@ -122,9 +138,44 @@ const packageJson = (await Bun.file(new URL("../../package.json", import.meta.ur
   version: string;
 };
 
-const rootTypeScript = await Bun.file(new URL("../../../../tsconfig.json", import.meta.url)).text();
+const parseTypeScriptPaths = (fileName: string, source: string): Record<string, unknown> => {
+  const parsed = parseConfigFileTextToJson(fileName, source);
+  if (parsed.error !== undefined) {
+    throw new TypeError(`Could not parse ${fileName}.`);
+  }
+  return (
+    (parsed.config as { compilerOptions?: { paths?: Record<string, unknown> } }).compilerOptions
+      ?.paths ?? {}
+  );
+};
 
-const packageTypeScript = await Bun.file(new URL("../../tsconfig.json", import.meta.url)).text();
+const rootTypeScriptUrl = new URL("../../../../tsconfig.json", import.meta.url);
+const packageTypeScriptUrl = new URL("../../tsconfig.json", import.meta.url);
+const rootTypeScriptPaths = parseTypeScriptPaths(
+  rootTypeScriptUrl.pathname,
+  await Bun.file(rootTypeScriptUrl).text(),
+);
+const packageTypeScriptPaths = parseTypeScriptPaths(
+  packageTypeScriptUrl.pathname,
+  await Bun.file(packageTypeScriptUrl).text(),
+);
+
+// @ts-expect-error The retired package subpath must remain absent from declarations.
+type _RetiredFunctionalSurface = typeof import("@geekist/llm-core/functional"); // eslint-disable-line @typescript-eslint/consistent-type-imports
+// @ts-expect-error Descendants of the retired namespace must remain absent too.
+type _RetiredFunctionalDescendant = typeof import("@geekist/llm-core/functional/internal"); // eslint-disable-line @typescript-eslint/consistent-type-imports
+
+const retiredFunctionalRuntimeLeaks = (): string[] => {
+  const leaks: string[] = [];
+  for (const [subpath, surface] of Object.entries(PUBLIC_SURFACE)) {
+    for (const name of RETIRED_FUNCTIONAL_RUNTIME_EXPORTS) {
+      if (name in surface) {
+        leaks.push(`${subpath}:${name}`);
+      }
+    }
+  }
+  return leaks;
+};
 
 describe("ADR-016 public package surface", () => {
   test("publishes the corrected contract and integration fronts", () => {
@@ -163,8 +214,16 @@ describe("ADR-016 public package surface", () => {
       expect(packageJson.exports[subpath]).toBeUndefined();
     }
 
-    expect(rootTypeScript).not.toContain('"@geekist/llm-core/functional"');
-    expect(packageTypeScript).not.toContain('"@geekist/llm-core/functional"');
+    for (const paths of [rootTypeScriptPaths, packageTypeScriptPaths]) {
+      expect(
+        Object.keys(paths).filter(
+          (key) =>
+            key === "@geekist/llm-core/functional" ||
+            key.startsWith("@geekist/llm-core/functional/"),
+        ),
+      ).toEqual([]);
+    }
+    expect(retiredFunctionalRuntimeLeaks()).toEqual([]);
     expect(existsSync(resolve(import.meta.dir, "../../src/functional/index.ts"))).toBe(false);
     expect(packageJson.main).toBeUndefined();
     expect(packageJson.module).toBeUndefined();

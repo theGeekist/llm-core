@@ -7,7 +7,7 @@ Pre-transition source baseline: `c041792`
 
 <!-- architecture-status:generated:start -->
 
-Active tasks: 0
+Active tasks: 2
 
 ## Task inventory
 
@@ -17,16 +17,16 @@ Active tasks: 0
 | adapter-ai-sdk-native-contract-correction | adapters | done | architecture-external-contract-fidelity, core-ai-sdk-adapter | — | — | — |
 | adapter-ai-sdlc | adapters | done | specification-api | cf3347d | — | — |
 | adapter-ai-sdlc-release | adapters | proposed | architecture-source-layout-normalization, adapter-ai-sdlc, specification-cross-adapter-conformance, architecture-release-reproducibility | — | — | — |
-| adapter-antigravity-cli-hooks-runtime | adapters | proposed | native-agent-conversation-runtime-contract | — | — | — |
-| adapter-antigravity-desktop-sidecar-runtime | adapters | proposed | native-agent-conversation-runtime-contract | — | — | — |
+| adapter-antigravity-cli-hooks-runtime | adapters | review | native-agent-conversation-runtime-contract | — | — | — |
+| adapter-antigravity-desktop-sidecar-runtime | adapters | review | native-agent-conversation-runtime-contract | — | — | — |
 | adapter-bmad | adapters | done | specification-api | cf3347d | — | — |
 | adapter-bmad-release | adapters | proposed | architecture-source-layout-normalization, adapter-bmad, specification-cross-adapter-conformance, architecture-release-reproducibility | — | — | — |
 | adapter-catalogue-public-qualification | adapters | done | architecture-external-contract-fidelity, architecture-release-reproducibility | — | — | — |
-| adapter-claude-native-session-runtime | adapters | proposed | native-agent-conversation-runtime-contract | — | — | — |
+| adapter-claude-native-session-runtime | adapters | done | native-agent-conversation-runtime-contract | — | — | — |
 | adapter-codex-app-server-runtime | adapters | done | native-agent-conversation-runtime-contract | — | — | — |
-| adapter-codex-desktop-hooks-runtime | adapters | proposed | native-agent-conversation-runtime-contract | — | — | — |
+| adapter-codex-desktop-hooks-runtime | adapters | done | native-agent-conversation-runtime-contract | — | — | — |
 | adapter-coding-agent-integration | adapters | done | architecture-external-contract-fidelity, architecture-runtime-ownership-correction, capabilities-runtime-conformance, capabilities-operational-evidence | — | — | — |
-| adapter-langgraph-runtime | adapters | proposed | architecture-external-contract-fidelity, architecture-runtime-ownership-correction, runtime-operation-contract-correction, architecture-release-reproducibility, capabilities-runtime-conformance, capabilities-operational-evidence | — | — | — |
+| adapter-langgraph-runtime | adapters | done | architecture-external-contract-fidelity, architecture-runtime-ownership-correction, runtime-operation-contract-correction, architecture-release-reproducibility, capabilities-runtime-conformance, capabilities-operational-evidence | — | — | — |
 | adapter-openspec | adapters | done | specification-api | cf3347d | — | — |
 | adapter-openspec-release | adapters | proposed | architecture-source-layout-normalization, adapter-openspec, specification-cross-adapter-conformance, architecture-release-reproducibility | — | — | — |
 | adapter-pydantic-ai | adapters | done | specification-api | cf3347d | — | — |
@@ -50,7 +50,7 @@ Active tasks: 0
 | architecture-adapter-sloc-decomposition | architecture | proposed | architecture-source-layout-normalization | — | — | — |
 | architecture-decisions | architecture | done | — | — | — | — |
 | architecture-external-contract-fidelity | architecture | done | architecture-runtime-ownership-correction | — | — | — |
-| architecture-legacy-functional-removal | architecture | proposed | architecture-source-layout-normalization, language-rollout | — | — | — |
+| architecture-legacy-functional-removal | architecture | done | architecture-source-layout-normalization, language-rollout | — | — | — |
 | architecture-release-reproducibility | architecture | done | architecture-decisions, architecture-source-layout-normalization | — | — | — |
 | architecture-runtime-ownership-correction | architecture | done | architecture-decisions | — | — | — |
 | architecture-source-layout-normalization | architecture | done | architecture-decisions | — | — | — |

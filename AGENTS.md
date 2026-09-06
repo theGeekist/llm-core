@@ -64,7 +64,7 @@
 ## Task context
 
 - Before selecting or claiming architecture work, run
-  `bun run tasks:plan --authority all` from the canonical checkout.
+  `bun run tasks:plan` from the canonical checkout.
 - After selecting a task, run
   `bun run tasks:context -- <authority>/<task-id>` and open every generated
   governing, historical, decision and dependency item before implementation or

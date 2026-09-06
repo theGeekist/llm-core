@@ -29,7 +29,6 @@ required_reading:
 read_scope:
   - scripts/sloc-baseline.json
   - scripts/quality/eslint-baseline.json
-worktree: /private/tmp/llm-core-sloc-publication-20260905
 review_owner: coordinator
 updated_at: 2026-09-05
 ---

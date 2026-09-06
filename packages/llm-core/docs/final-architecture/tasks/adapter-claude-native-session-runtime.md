@@ -2,7 +2,7 @@
 id: adapter-claude-native-session-runtime
 title: Qualify Claude cross-session and Channel conversation profiles
 stage: adapters
-status: proposed
+status: done
 priority: critical
 forward_to: []
 depends_on:
@@ -167,7 +167,47 @@ Follow [`../COORDINATION.md`](../COORDINATION.md) and the metadata contract in
 
 ## Work log
 
-Pending.
+2026-09-05: Repaired the host Claude installation path after reinstall by
+removing three stale repository-local `agmsg` hook registrations whose scripts
+no longer exist. `claude doctor` then reported no installation issues.
+
+Implemented the pinned `2.1.261` cross-session adapter with opaque provider
+session continuity, verbose stream-json observation, explicitly unavailable
+active-input observation evidence and fail-closed output projection. Added a separate
+Channels research-preview profile whose input operation remains unsupported
+because the native notification contract supplies no delivery or processing
+acknowledgement.
+
+Live host characterization observed `system/init`, `assistant` and successful
+terminal `result` records, the exact caller-supplied session ID and an inbox
+socket. Anthropic's 2026-09-05 cross-session and Channels references provide the
+delivery-timing, inbound-control, socket and preview contract provenance.
+
+A two-session live probe delivered nonce
+`CLAUDE_NATIVE_NONCANCEL_20260905` without interrupting the receiver's 15-second
+Bash tool. The nonce arrived as an automatically queued turn immediately after
+the original terminal result. A longer active-window repeat did not qualify
+timing because the host's command-safety hook rejected the requested long
+sleep before the sender could address the receiver. The documented timing is
+`native-live` under ADR-018, but the profile leaves input
+`unsupported/qualification-failed` until the active-turn timing is reproduced
+against this host release. Cancellation is likewise unsupported in the profile
+until the concrete process supervisor passes a live cancellation probe.
+
+Independent review found that the first candidate overstated held-message
+acceptance and qualified input and cancellation beyond the retained live
+evidence. It also trusted incomplete terminal results and discarded unknown
+native records. The repaired adapter no longer exposes the unqualified inbox or
+process-cancellation candidates. Both methods fail explicitly as unsupported.
+It requires matching init and terminal identities, rejects native terminal error
+markers, and passes all valid native records in order to a composition-owned
+observer.
+
+A bounded live continuation probe started session
+`01990e90-0000-7000-8000-000000000905` and resumed it with `--resume`. Both
+commands returned the exact same session identity and their requested
+`RESUME_START_0905` and `RESUME_CONTINUE_0905` results with successful terminal
+records. This qualifies the advertised continuation route.
 
 ## Blocker
 
@@ -177,28 +217,65 @@ None recorded.
 
 ### Result
 
-Pending.
+Completed and independently approved exact-version adapter for Claude start,
+idle continuation, and observation. The restored final diff has no actionable
+review findings.
 
 ### Decisions applied
 
-Pending.
+- Cross-session inbox and Channels remain distinct route profiles.
+- Input and cancellation methods fail explicitly as unsupported and perform no
+  native side effect.
+- The adapter does not expose the unqualified native inbox. Recipient
+  observation and semantic processing evidence remain explicitly unavailable.
+- Cross-session input and cancellation remain
+  `unsupported/qualification-failed` until their outstanding live gates pass.
+- Channels input remains `unsupported/observability-insufficient` during the
+  research preview.
 
 ### Files changed
 
-Pending.
+- `packages/llm-core/src/adapters/claude-native-session/profile.ts`
+- `packages/llm-core/src/adapters/claude-native-session/protocol.ts`
+- `packages/llm-core/src/adapters/claude-native-session/public.ts`
+- `packages/llm-core/src/adapters/claude-native-session/runner.ts`
+- `packages/llm-core/tests/adapters/claude-native-session/fixtures.ts`
+- `packages/llm-core/tests/adapters/claude-native-session/profile.test.ts`
+- `packages/llm-core/tests/adapters/claude-native-session/runner.test.ts`
+- `docs/adapters/claude-native-session.md`
+- This task brief
 
 ### Verification evidence
 
-Pending.
+- Claude Code `2.1.261`, native commit `1349cf9c224c`, macOS arm64.
+- Live verbose stream-json start succeeded with exact session identity and
+  terminal result; the init record exposed the per-session messaging socket.
+- Focused deterministic suite: 16 passing tests.
+- `bun run --cwd packages/llm-core typecheck:tests`: passed.
+- `bun run typecheck:packages`: passed.
+- `claude doctor`: no installation issues found.
+- Independent final review: no actionable findings.
 
 ### Deviations
 
-None recorded.
+One stale `worktree` field on the already-completed SLOC task prevented the
+installed TaskGraph parser from validating any task. Removing that stale field
+restored normal planning, claim, and lifecycle commands; this task then moved
+to `done` through `tg complete`.
 
 ### Remaining risks
 
-Pending.
+The package deliberately does not own a Node/Bun Unix-socket implementation.
+Application composition must first qualify the socket token, inbound policy and
+native delivered/held/refused receipt mapping before a supported inbox client
+is introduced.
+
+The live host run proved non-cancellation and queued delivery at the terminal
+boundary. An independently observed delivery earlier inside a still-active turn
+remains outstanding because the bounded longer-running receiver command was
+rejected by host command policy. Live cancellation remains outstanding.
 
 ### Recommended next task
 
-Cross-provider conformance once a second unlike adapter is qualified.
+Codex Desktop hooks and Antigravity Desktop Sidecar qualification before final
+cross-provider conformance.
