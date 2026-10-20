@@ -2,7 +2,7 @@
 id: architecture-adapter-sloc-decomposition
 title: Decompose legacy adapter modules above the hard SLOC boundary
 stage: architecture
-status: in_progress
+status: done
 priority: medium
 depends_on:
   - architecture-source-layout-normalization
@@ -88,13 +88,25 @@ threshold or guard algorithm.
 Independent source review found no actionable issues. Focused adapter and SLOC tests
 passed 104 tests with two existing exact-runtime skips; the packed consumer
 verified 35 ESM-only exports. Receiving SLOC verification passes 676 modules.
-The combined quality gate and exact pull-request checks remain pending.
+The combined quality gate and exact pull-request checks passed.
 Source and integration evidence are attached to
 [quality repair PR #10](https://github.com/theGeekist/llm-core/pull/10).
-This task remains in progress until qualification and merged source are verified.
+2026-10-20: Exact reviewed head
+`c97b4e8dffc8aaf39ad425b89a27c592ec6a8546` passed GitHub Quality,
+PydanticAI conformance, CodeQL and Docs. PR #10 merged as
+`302b78a1112636e704394ed2f0af0d30af3ab518`; its tree is byte-identical to
+the reviewed and qualified tree. Receiving qualification passed the complete
+lint ratchet (302 anchored warnings, 86 digest-bound suppressions), all type,
+documentation, formatting and build checks, SLOC, and serial root coverage:
+1517 passing tests, seven existing skips, 87.18% line and 91.41% function
+coverage. A test attempt overlapping a package build was invalid; its packed
+consumer failure was retained, then the stable consumer diagnostic and serial
+coverage rerun passed. No gate or allowance was relaxed.
 
 ## Handoff
 
-Source extraction and independent review are complete. Receiving quality
-qualification and merge verification remain pending. No temporary waiver was
-renewed and no gate was relaxed.
+Completed and independently reviewed. Merged source and its exact tree were
+verified after all applicable pull-request checks passed. The three legacy
+adapters now obey the normal module-size policy without temporary waivers.
+The independently reviewed quality repair preserves public exports and exact
+operation behavior.
