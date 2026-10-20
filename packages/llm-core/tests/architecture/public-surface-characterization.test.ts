@@ -161,9 +161,11 @@ const packageTypeScriptPaths = parseTypeScriptPaths(
 );
 
 // @ts-expect-error The retired package subpath must remain absent from declarations.
-type _RetiredFunctionalSurface = typeof import("@geekist/llm-core/functional"); // eslint-disable-line @typescript-eslint/consistent-type-imports
+import type * as RetiredFunctionalSurface from "@geekist/llm-core/functional";
 // @ts-expect-error Descendants of the retired namespace must remain absent too.
-type _RetiredFunctionalDescendant = typeof import("@geekist/llm-core/functional/internal"); // eslint-disable-line @typescript-eslint/consistent-type-imports
+import type * as RetiredFunctionalDescendant from "@geekist/llm-core/functional/internal";
+type _RetiredFunctionalSurface = typeof RetiredFunctionalSurface;
+type _RetiredFunctionalDescendant = typeof RetiredFunctionalDescendant;
 
 const retiredFunctionalRuntimeLeaks = (): string[] => {
   const leaks: string[] = [];

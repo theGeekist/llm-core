@@ -66,6 +66,47 @@ const sourceContractMatches = (client: AntigravityDesktopSidecarClient): boolean
   client.sourceContract.identities.agentapi.providerInjected &&
   client.sourceContract.identities.agentapi.path === "/usr/local/bin/agentapi";
 
+const probeBusyTurn = async (
+  client: AntigravityDesktopSidecarClient,
+  scenario: NonNullable<ProbeOptions["activeTurnScenario"]>,
+  idleAddressability: AntigravitySidecarProbeReport["idleAddressability"],
+): Promise<AntigravitySidecarProbeReport> => {
+  const busyConversation = await client.newConversation({
+    prompt: scenario.initialPrompt,
+  });
+  const busyState = await client.inspectConversation(busyConversation.conversationId);
+  if (busyState.state !== "busy") {
+    return {
+      ...base(client),
+      outcome: "bounded-negative",
+      idleAddressability,
+      busyTurnTiming: untestedBusy(),
+      reasonCode: "busy-state-unproven",
+    };
+  }
+
+  const busyReceipt = await client.sendMessage({
+    conversationId: busyConversation.conversationId,
+    prompt: scenario.followUpPrompt,
+  });
+  return {
+    ...base(client),
+    outcome: "bounded-negative",
+    idleAddressability,
+    busyTurnTiming: {
+      classification: busyReceipt.accepted ? "unqualified" : "rejected",
+      commandAcceptance: busyReceipt.accepted ? "observed" : "rejected",
+      recipientObservation: "unobservable",
+      semanticProcessing: "untested",
+      timingEvidenceRef: "antigravity-desktop-sidecar:busy-state-command-receipt",
+    },
+    reasonCode: busyReceipt.accepted ? "busy-turn-timing-unqualified" : "busy-turn-rejected",
+    details: busyReceipt.accepted
+      ? "Busy state and command receipt were observed. Recipient observation and delivery timing remain unqualified."
+      : "Busy state was observed, but the command was rejected.",
+  };
+};
+
 /**
  * Qualifies addressability only from native state and command receipts. Provider
  * acceptance never upgrades recipient observation or semantic processing.
@@ -160,40 +201,7 @@ export async function runAntigravityDesktopSidecarProbe(
       };
     }
 
-    const busyConversation = await client.newConversation({
-      prompt: options.activeTurnScenario.initialPrompt,
-    });
-    const busyState = await client.inspectConversation(busyConversation.conversationId);
-    if (busyState.state !== "busy") {
-      return {
-        ...base(client),
-        outcome: "bounded-negative",
-        idleAddressability,
-        busyTurnTiming: untestedBusy(),
-        reasonCode: "busy-state-unproven",
-      };
-    }
-
-    const busyReceipt = await client.sendMessage({
-      conversationId: busyConversation.conversationId,
-      prompt: options.activeTurnScenario.followUpPrompt,
-    });
-    return {
-      ...base(client),
-      outcome: "bounded-negative",
-      idleAddressability,
-      busyTurnTiming: {
-        classification: busyReceipt.accepted ? "unqualified" : "rejected",
-        commandAcceptance: busyReceipt.accepted ? "observed" : "rejected",
-        recipientObservation: "unobservable",
-        semanticProcessing: "untested",
-        timingEvidenceRef: "antigravity-desktop-sidecar:busy-state-command-receipt",
-      },
-      reasonCode: busyReceipt.accepted ? "busy-turn-timing-unqualified" : "busy-turn-rejected",
-      details: busyReceipt.accepted
-        ? "Busy state and command receipt were observed. Recipient observation and delivery timing remain unqualified."
-        : "Busy state was observed, but the command was rejected.",
-    };
+    return await probeBusyTurn(client, options.activeTurnScenario, idleAddressability);
   } catch {
     return {
       ...base(client),
