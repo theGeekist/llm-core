@@ -1,11 +1,12 @@
+import { claudeStreamContract } from "./stream-contract";
 import { contractVersion } from "#contracts";
 import { registerNativeAgentConversationProfile } from "../../agent/runtime";
 
 export const CLAUDE_CODE_VERSION = "2.1.261";
 
 export const claudeCrossSessionConversationProfile = registerNativeAgentConversationProfile({
-  providerId: "provider.claude",
-  routeProfileId: "claude.cross-session.inbox",
+  providerId: claudeStreamContract.providerId,
+  routeProfileId: claudeStreamContract.routeProfileId,
   routeProfileVersion: contractVersion("1.0.0"),
   sourceContract: {
     authority: "Anthropic Claude Code cross-session messaging protocol",
@@ -43,7 +44,7 @@ export const claudeCrossSessionConversationProfile = registerNativeAgentConversa
 
 // Channel is a separate research-preview surface and owns no run lifecycle operations.
 export const claudeChannelConversationProfile = registerNativeAgentConversationProfile({
-  providerId: "provider.claude",
+  providerId: claudeStreamContract.providerId,
   routeProfileId: "claude.channel.research-preview",
   routeProfileVersion: contractVersion("1.0.0"),
   sourceContract: {

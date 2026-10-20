@@ -7,7 +7,7 @@ Pre-transition source baseline: `c041792`
 
 <!-- architecture-status:generated:start -->
 
-Active tasks: 2
+Active tasks: 3
 
 ## Task inventory
 
@@ -37,6 +37,7 @@ Active tasks: 2
 | adapter-spec-kit-release | adapters | proposed | architecture-source-layout-normalization, adapter-spec-kit, specification-cross-adapter-conformance, architecture-release-reproducibility | — | — | — |
 | adapter-strands-runtime | adapters | proposed | architecture-external-contract-fidelity, architecture-runtime-ownership-correction, runtime-operation-contract-correction, architecture-source-layout-normalization, capabilities-operational-evidence, capabilities-runtime-conformance, architecture-release-reproducibility | — | — | — |
 | adapter-strands-runtime-release | adapters | proposed | architecture-external-contract-fidelity, architecture-runtime-ownership-correction, runtime-operation-contract-correction, architecture-source-layout-normalization, adapter-strands-runtime | — | — | — |
+| adapter-string-contract-ownership | adapters | review | architecture-adapter-sloc-decomposition | — | — | — |
 | adapters-protocol-qualification | adapters | done | architecture-external-contract-fidelity, runtime-operation-contract-correction, architecture-source-layout-normalization, runtime-receipt-reconciliation, capabilities-operational-evidence, architecture-release-reproducibility, runtime-tools-front-boundary | — | — | — |
 | aifsd-delivery-characterization | applications | cancelled | architecture-runtime-ownership-correction, adapter-openspec, adapter-coding-agent-integration, capabilities-evaluation-qualification, capabilities-operational-evidence | — | — | aifsd/local-delivery-vertical-slice |
 | aifsd-delivery-toolchain | applications | cancelled | aifsd-delivery-characterization | — | — | aifsd/local-delivery-vertical-slice |

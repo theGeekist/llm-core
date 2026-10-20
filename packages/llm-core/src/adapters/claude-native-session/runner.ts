@@ -1,3 +1,4 @@
+import { claudeStreamContract, terminalFailureReason } from "./stream-contract";
 import {
   coreId,
   externalId,
@@ -44,8 +45,8 @@ export interface ClaudeNativeSessionIdentity {
 
 export interface ClaudeNativeSessionOutputProjector {
   projectAgentText(input: {
-    readonly providerId: "provider.claude";
-    readonly routeProfileId: "claude.cross-session.inbox";
+    readonly providerId: typeof claudeStreamContract.providerId;
+    readonly routeProfileId: typeof claudeStreamContract.routeProfileId;
     readonly sessionId: string;
     readonly text: string;
   }): MaybePromise<string | undefined>;
@@ -67,10 +68,8 @@ export interface ClaudeNativeSessionRunnerOptions {
 
 const sessionIdFromStartRequest = (request: AgentStartRequest): string | undefined => {
   const session = request.providerSession;
-  if (session && session.providerId !== "provider.claude") {
-    throw new TypeError(
-      "Claude native-session continuation requires a Claude provider-session reference.",
-    );
+  if (session && session.providerId !== claudeStreamContract.providerId) {
+    throw new TypeError(claudeStreamContract.messages.invalidContinuationProvider);
   }
   return session?.sessionId;
 };
@@ -91,7 +90,8 @@ const extractTextFromContent = (content: unknown): string => {
   if (!Array.isArray(content)) return "";
   return content
     .filter(
-      (item): item is Record<string, JsonValue> => isPortableRecord(item) && item.type === "text",
+      (item): item is Record<string, JsonValue> =>
+        isPortableRecord(item) && item.type === claudeStreamContract.events.assistant.textPartType,
     )
     .map((item) => (typeof item.text === "string" ? item.text : ""))
     .join("");
@@ -99,7 +99,9 @@ const extractTextFromContent = (content: unknown): string => {
 
 const projectSessionInitialisation = (event: ClaudeStreamEvent): ClaudeStreamProjection => {
   const sessionId = event.session_id;
-  return event.subtype === "init" && typeof sessionId === "string" && sessionId.length > 0
+  return event.subtype === claudeStreamContract.events.initialisation.subtype &&
+    typeof sessionId === "string" &&
+    sessionId.length > 0
     ? { kind: "session", sessionId }
     : { kind: "ignored" };
 };
@@ -110,21 +112,13 @@ const projectAssistantText = (event: ClaudeStreamEvent): ClaudeStreamProjection 
   return text.length > 0 ? { kind: "text", delta: text } : { kind: "ignored" };
 };
 
-const terminalFailureReason = (event: ClaudeStreamEvent): string => {
-  if (typeof event.error === "string") return `session-${event.error}`.replace(/_/g, "-");
-  if (typeof event.terminal_reason === "string" && event.terminal_reason !== "completed") {
-    return `session-${event.terminal_reason}`.replace(/_/g, "-");
-  }
-  return typeof event.subtype === "string"
-    ? `session-${event.subtype}`.replace(/_/g, "-")
-    : "session-execution-error";
-};
-
 const projectTerminalResult = (event: ClaudeStreamEvent): ClaudeStreamProjection => {
   const sessionId = typeof event.session_id === "string" ? event.session_id : undefined;
   const hasNativeError =
-    event.is_error !== false || event.error !== undefined || event.terminal_reason !== "completed";
-  if (event.subtype === "success" && !hasNativeError) {
+    event.is_error !== false ||
+    event.error !== undefined ||
+    event.terminal_reason !== claudeStreamContract.events.terminal.completedReason;
+  if (event.subtype === claudeStreamContract.events.terminal.successfulSubtype && !hasNativeError) {
     const resultText = typeof event.result === "string" ? event.result : undefined;
     return { kind: "terminal", status: "completed", sessionId, resultText };
   }
@@ -138,11 +132,11 @@ const projectTerminalResult = (event: ClaudeStreamEvent): ClaudeStreamProjection
 
 const projectClaudeStreamEvent = (event: ClaudeStreamEvent): ClaudeStreamProjection => {
   switch (event.type) {
-    case "system":
+    case claudeStreamContract.events.initialisation.type:
       return projectSessionInitialisation(event);
-    case "assistant":
+    case claudeStreamContract.events.assistant.type:
       return projectAssistantText(event);
-    case "result":
+    case claudeStreamContract.events.terminal.type:
       return projectTerminalResult(event);
     default:
       return { kind: "ignored" };
@@ -172,14 +166,12 @@ export const createClaudeNativeSessionRunner = ({
 
   const start = async (request: AgentStartRequest): Promise<NativeAgentRun> => {
     if (!prepared.has(request.agent)) {
-      throw new TypeError(
-        "Claude native-session runner accepts only definitions prepared by this runner.",
-      );
+      throw new TypeError(claudeStreamContract.messages.foreignPreparedDefinition);
     }
 
     const continuedSessionId = sessionIdFromStartRequest(request);
     if (continuedSessionId && activeSessions.has(continuedSessionId)) {
-      throw new TypeError("Claude continuation cannot start while that session is active.");
+      throw new TypeError(claudeStreamContract.messages.sessionAlreadyActive);
     }
     const prompt = formatPromptText(request.input);
     const handle = await client.spawn({
@@ -187,23 +179,23 @@ export const createClaudeNativeSessionRunner = ({
       ...(continuedSessionId ? { sessionId: continuedSessionId } : {}),
       options: {
         print: true,
-        outputFormat: "stream-json",
+        outputFormat: claudeStreamContract.outputFormat,
         verbose: true,
         includeHookEvents: true,
       },
     });
 
     if (handle.sessionId.length === 0) {
-      throw new TypeError("Claude process did not expose its caller-selected session identity.");
+      throw new TypeError(claudeStreamContract.messages.sessionIdentityMissing);
     }
     if (continuedSessionId && handle.sessionId !== continuedSessionId) {
-      throw new TypeError("Claude continuation changed the requested session identity.");
+      throw new TypeError(claudeStreamContract.messages.continuationIdentityChanged);
     }
     const sessionId = handle.sessionId;
     activeSessions.add(sessionId);
     const providerSession: ProviderSessionRef = createProviderSessionRef({
       kind: "provider-session-ref",
-      providerId: "provider.claude",
+      providerId: claudeStreamContract.providerId,
       sessionId: externalId<ProviderSessionId>(sessionId),
     });
 
@@ -216,7 +208,7 @@ export const createClaudeNativeSessionRunner = ({
     const terminalEvent = (status: AgentResult["status"], reasonCode?: string): AgentEvent =>
       ({
         eventId: identity.eventId(),
-        kind: `agent.run.${status}`,
+        kind: claudeStreamContract.portableEvents[status],
         occurredAt: identity.now(),
         sequence: sequence++,
         identity: { runId },
@@ -230,10 +222,10 @@ export const createClaudeNativeSessionRunner = ({
         terminal = {
           identity: { runId },
           status: "failed",
-          reasonCode: "session-terminal-identity-mismatch",
+          reasonCode: claudeStreamContract.failures.terminalIdentityMismatch.code,
           providerSession,
         };
-        return terminalEvent("failed", "session-terminal-identity-mismatch");
+        return terminalEvent("failed", claudeStreamContract.failures.terminalIdentityMismatch.code);
       }
 
       let status = projected.status;
@@ -244,14 +236,14 @@ export const createClaudeNativeSessionRunner = ({
         // Prefer the authoritative result text from the terminal event if present.
         const candidateText = projected.resultText ?? finalText;
         projectedText = await output.projectAgentText({
-          providerId: "provider.claude",
-          routeProfileId: "claude.cross-session.inbox",
+          providerId: claudeStreamContract.providerId,
+          routeProfileId: claudeStreamContract.routeProfileId,
           sessionId,
           text: candidateText,
         });
         if (typeof projectedText !== "string") {
           status = "failed";
-          reasonCode = "session-output-redaction-rejected";
+          reasonCode = claudeStreamContract.failures.outputRedactionRejected.code;
         }
       }
 
@@ -275,10 +267,13 @@ export const createClaudeNativeSessionRunner = ({
           terminal = {
             identity: { runId },
             status: "failed",
-            reasonCode: "session-identity-mismatch",
+            reasonCode: claudeStreamContract.failures.initialIdentityMismatch.code,
             providerSession,
           };
-          return terminalEvent("failed", "session-identity-mismatch");
+          return terminalEvent(
+            "failed",
+            claudeStreamContract.failures.initialIdentityMismatch.code,
+          );
         }
         sessionInitialised = true;
         return null;
@@ -287,10 +282,10 @@ export const createClaudeNativeSessionRunner = ({
         terminal = {
           identity: { runId },
           status: "failed",
-          reasonCode: "session-init-missing",
+          reasonCode: claudeStreamContract.failures.initialisationMissing.code,
           providerSession,
         };
-        return terminalEvent("failed", "session-init-missing");
+        return terminalEvent("failed", claudeStreamContract.failures.initialisationMissing.code);
       }
       if (projected.kind === "text") {
         finalText += projected.delta;
@@ -304,7 +299,7 @@ export const createClaudeNativeSessionRunner = ({
     const events = async function* (): AsyncGenerator<AgentEvent> {
       yield {
         eventId: identity.eventId(),
-        kind: "agent.run.started",
+        kind: claudeStreamContract.portableEvents.started,
         occurredAt: identity.now(),
         sequence: sequence++,
         identity: { runId },
@@ -313,7 +308,7 @@ export const createClaudeNativeSessionRunner = ({
 
       for await (const rawEvent of handle.events) {
         if (!isJsonValue(rawEvent) || !isPortableRecord(rawEvent)) {
-          throw new TypeError("Malformed stream-json event emitted by Claude native session.");
+          throw new TypeError(claudeStreamContract.messages.malformedNativeEvent);
         }
         await nativeEvents.observe({ sessionId, event: rawEvent });
         const event = await applyProjection(projectClaudeStreamEvent(rawEvent));
@@ -326,10 +321,10 @@ export const createClaudeNativeSessionRunner = ({
         terminal = {
           identity: { runId },
           status: "failed",
-          reasonCode: "process-loss",
+          reasonCode: claudeStreamContract.failures.processLoss.code,
           providerSession,
         };
-        yield terminalEvent("failed", "process-loss");
+        yield terminalEvent("failed", claudeStreamContract.failures.processLoss.code);
       }
     };
 
@@ -344,10 +339,12 @@ export const createClaudeNativeSessionRunner = ({
         terminal = {
           identity: { runId },
           status: "failed",
-          reasonCode: "session-malformed-output",
+          reasonCode: claudeStreamContract.failures.malformedOutput.code,
           providerSession,
         };
-        eventBuffer.push(terminalEvent("failed", "session-malformed-output"));
+        eventBuffer.push(
+          terminalEvent("failed", claudeStreamContract.failures.malformedOutput.code),
+        );
       } finally {
         pumpFinished = true;
         activeSessions.delete(sessionId);
@@ -372,7 +369,7 @@ export const createClaudeNativeSessionRunner = ({
       providerSession: () => providerSession,
       submitInput: async (input: AdmittedAgentActiveInput) => {
         if (!isAdmittedAgentActiveInput(input)) {
-          throw new TypeError("Claude native-session active input requires admitted active input.");
+          throw new TypeError(claudeStreamContract.messages.unadmittedActiveInput);
         }
         return registerAgentActiveInputAcknowledgement(
           {
@@ -394,7 +391,7 @@ export const createClaudeNativeSessionRunner = ({
             correlationId: inputIdentity.correlationId,
             stage: "recipient-observation",
             declaredAt: identity.now(),
-            reasonCode: "provider-unobservable",
+            reasonCode: claudeStreamContract.failures.recipientUnobservable.code,
           },
           inputIdentity,
         ),
@@ -415,7 +412,7 @@ export const createClaudeNativeSessionRunner = ({
   return Object.freeze({
     capabilities: () =>
       Object.freeze({
-        runnerId: "claude.native-session",
+        runnerId: claudeStreamContract.runnerId,
         runnerVersion: claudeCrossSessionConversationProfile.routeProfileVersion,
         controlledEffects: false,
         cancellation: "none",

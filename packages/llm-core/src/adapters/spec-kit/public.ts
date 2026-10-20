@@ -1,12 +1,17 @@
+import { specKitFileIdentity, specKitGraphIdentity } from "./file-identity";
 import {
+  specKitDocumentKinds,
+  isSpecKitDocumentKind,
+  isSpecKitProvenanceTier,
+  isSpecKitResolutionStrategy,
+} from "./file-types";
+import {
+  specKitContract,
   SPEC_KIT_ASSESSED_VERSION,
   SPEC_KIT_ASSESSED_COMMIT,
   SPEC_KIT_FILE_FORMAT,
   SPEC_KIT_FILE_SUPPORT,
   SPEC_KIT_CLI_SUPPORT,
-  CORE_WORKFLOW_FIXTURE_DIGEST,
-  CONTROL_WORKFLOW_FIXTURE_DIGEST,
-  WORKFLOW_OVERLAY_FIXTURE_DIGEST,
 } from "./support";
 export {
   SPEC_KIT_ASSESSED_VERSION,
@@ -158,30 +163,13 @@ const assertInput = (input: SpecKitFileImportInput): void => {
         !exact(file, ["path", "content", "kind", "provenance"]) ||
         !nonBlank(file.path) ||
         typeof file.content !== "string" ||
-        ![
-          "constitution",
-          "overlay",
-          "specification",
-          "plan",
-          "tasks",
-          "workflow",
-          "workflow-state",
-          "other",
-        ].includes(String(file.kind)) ||
+        !isSpecKitDocumentKind(file.kind) ||
         !exact(
           file.provenance,
           ["tier", "providerId", "resolutionScope", "order"],
           ["priority", "strategy"],
         ) ||
-        ![
-          "project",
-          "preset",
-          "extension",
-          "core",
-          "workflow-overlay",
-          "feature-artifact",
-          "workflow-run",
-        ].includes(String(file.provenance.tier)) ||
+        !isSpecKitProvenanceTier(file.provenance.tier) ||
         !nonBlank(file.provenance.providerId) ||
         !nonBlank(file.provenance.resolutionScope) ||
         typeof file.provenance.order !== "number" ||
@@ -193,7 +181,7 @@ const assertInput = (input: SpecKitFileImportInput): void => {
             file.provenance.priority < 0)) ||
         (file.provenance.strategy !== undefined &&
           (typeof file.provenance.strategy !== "string" ||
-            !["replace", "prepend", "append", "wrap"].includes(file.provenance.strategy)))
+            !isSpecKitResolutionStrategy(file.provenance.strategy)))
       ) {
         throw new TypeError(
           "Spec Kit files require explicit native provenance and resolution scope.",
@@ -210,13 +198,7 @@ const assertInput = (input: SpecKitFileImportInput): void => {
 const groupedFiles = (input: SpecKitFileImportInput): readonly GroupedFile[] =>
   input.sources.flatMap((source) => source.files.map((file) => ({ source, file })));
 
-const nodeKindFor = (kind: SpecKitDocumentKind) => {
-  if (kind === "constitution" || kind === "overlay") return "decision" as const;
-  if (kind === "specification") return "requirement" as const;
-  if (kind === "plan" || kind === "tasks") return "plan" as const;
-  if (kind === "workflow") return "workflow" as const;
-  return "artifact" as const;
-};
+const nodeKindFor = (kind: SpecKitDocumentKind) => specKitDocumentKinds[kind].nodeKind;
 
 const titleFor = (file: SpecKitFile): string => {
   for (const line of file.content.split("\n")) {
@@ -288,11 +270,7 @@ export const importSpecKitFiles = (rawInput: SpecKitFileImportInput): SpecKitFil
     if (file.kind === "workflow-state") {
       return [
         {
-          code: "spec-kit-workflow-state-not-durable-checkpoint",
-          severity: "warning",
-          impact: "advisory",
-          explanation:
-            "Local Spec Kit workflow state remains source-owned observation data; it is not an llm-core durable execution checkpoint.",
+          ...specKitContract.observationDiagnostics.workflowState,
           source: { sourceId, documentId: file.path },
         } satisfies SpecificationDiagnostic,
       ];
@@ -300,10 +278,7 @@ export const importSpecKitFiles = (rawInput: SpecKitFileImportInput): SpecKitFil
     if (file.kind === "other") {
       return [
         {
-          code: "spec-kit-unclassified-file-preserved",
-          severity: "info",
-          impact: "advisory",
-          explanation: "The unclassified Spec Kit file remains a source-owned artifact.",
+          ...specKitContract.observationDiagnostics.unclassifiedFile,
           source: { sourceId, documentId: file.path },
         } satisfies SpecificationDiagnostic,
       ];
@@ -341,7 +316,7 @@ export const importSpecKitFiles = (rawInput: SpecKitFileImportInput): SpecKitFil
         content: { path: file.path, text: file.content, kind: file.kind },
       })),
       extensions: {
-        "io.github.spec-kit": {
+        [specKitContract.namespace]: {
           assessedCommit: SPEC_KIT_ASSESSED_COMMIT,
           resolutionOrder: source.files.map((file) => ({
             path: file.path,
@@ -355,15 +330,13 @@ export const importSpecKitFiles = (rawInput: SpecKitFileImportInput): SpecKitFil
     const workflowProgram = parsedWorkflows.get(file)?.program;
     const overlayProgram = parsedOverlays.get(file)?.program;
     return {
-      nodeId: `spec-kit.node.${createHash("sha256")
-        .update(JSON.stringify([source.sourceId, file.path]))
-        .digest("hex")}`,
+      nodeId: specKitFileIdentity(source.sourceId, file.path),
       kind: nodeKindFor(file.kind),
       title: titleFor(file),
       source: { sourceId: source.sourceId as never, documentId: file.path },
       content: { path: file.path, text: file.content, kind: file.kind },
       extensions: {
-        "io.github.spec-kit": {
+        [specKitContract.namespace]: {
           provenance: file.provenance,
           ...(workflowProgram === undefined ? {} : { workflowProgram }),
           ...(overlayProgram === undefined ? {} : { overlayProgram }),
@@ -372,9 +345,7 @@ export const importSpecKitFiles = (rawInput: SpecKitFileImportInput): SpecKitFil
     };
   });
   const graph: JsonObject = {
-    graphId: `spec-kit.graph.${createHash("sha256")
-      .update(JSON.stringify(input.sources.map((source) => [source.sourceId, source.revision])))
-      .digest("hex")}`,
+    graphId: specKitGraphIdentity(input.sources),
     version: SPEC_KIT_ASSESSED_VERSION,
     sources: sources as unknown as JsonValue[],
     nodes: nodes as unknown as JsonValue[],
@@ -385,22 +356,12 @@ export const importSpecKitFiles = (rawInput: SpecKitFileImportInput): SpecKitFil
       graph,
       operation: createSpecificationOperation({
         operation: "derive-portable-specification",
-        sourceContract: {
-          authority: "Spec Kit repository",
-          format: SPEC_KIT_FILE_FORMAT,
-          revision: SPEC_KIT_ASSESSED_COMMIT,
-        },
+        sourceContract: specKitContract.file,
         disposition: "supported",
         fixtures: [
-          { fixtureId: "spec-kit.workflow.core.c0fe0e4", digest: CORE_WORKFLOW_FIXTURE_DIGEST },
-          {
-            fixtureId: "spec-kit.workflow.control-flow.c0fe0e4",
-            digest: CONTROL_WORKFLOW_FIXTURE_DIGEST,
-          },
-          {
-            fixtureId: "spec-kit.workflow.overlay.installed.c0fe0e4",
-            digest: WORKFLOW_OVERLAY_FIXTURE_DIGEST,
-          },
+          specKitContract.fixtures.coreWorkflow,
+          specKitContract.fixtures.controlWorkflow,
+          specKitContract.fixtures.workflowOverlay,
         ],
         diagnostics,
       }),

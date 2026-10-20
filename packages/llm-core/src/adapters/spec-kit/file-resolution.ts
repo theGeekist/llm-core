@@ -1,3 +1,9 @@
+import {
+  workflowOverlayProvider,
+  workflowResolutionScope,
+  isWorkflowResolutionScope,
+  overlayEditLocation,
+} from "./file-identity";
 import type { JsonObject } from "#contracts";
 import { compareUtf16CodeUnits } from "#shared/fp";
 import { isPortableRecord } from "#shared/portable-data";
@@ -5,6 +11,23 @@ import type { SpecificationDiagnostic } from "@geekist/llm-core/specifications";
 import type { SpecKitFile, GroupedFile } from "./file-types";
 import type { SpecKitOverlayOperation, SpecKitWorkflowOverlayParseResult } from "./overlay";
 import type { SpecKitWorkflowParseResult, SpecKitWorkflowProgram } from "./workflow";
+
+const overlayResolutionDiagnostics = {
+  baseUnobserved: {
+    code: "spec-kit-workflow-overlay-base-unobserved",
+    severity: "warning",
+    impact: "blocking",
+    explanation:
+      "The enabled overlay is preserved, but its anchors and native winning-operation conflicts cannot be verified without the observed base workflow tree.",
+  },
+  anchorConflict: {
+    code: "spec-kit-workflow-overlay-anchor-conflict",
+    severity: "error",
+    impact: "blocking",
+    explanation: (anchor: string, descendant: string, operation: SpecKitOverlayOperation): string =>
+      `Overlay anchor conflict: '${anchor}' is an ancestor of '${descendant}', and the ancestor's winning ${operation} operation makes the result order-dependent.`,
+  },
+} as const;
 
 const assertContiguousOrders = (files: readonly GroupedFile[], scope: string): void => {
   const orders = files.map(({ file }) => file.provenance.order);
@@ -21,8 +44,8 @@ export const assertOverlayProvenance = (
   results.forEach((result, file) => {
     const overlay = result.program;
     if (overlay === undefined) return;
-    const expectedProviderId = `project:${overlay.overlayId}`;
-    const expectedScope = `workflow:${overlay.extendsWorkflowId}`;
+    const expectedProviderId = workflowOverlayProvider(overlay.overlayId);
+    const expectedScope = workflowResolutionScope(overlay.extendsWorkflowId);
     if (
       file.provenance.providerId !== expectedProviderId ||
       file.provenance.resolutionScope !== expectedScope ||
@@ -59,7 +82,7 @@ export const assertWorkflowResolutionOrder = (
 ): void => {
   const scopes = new Map<string, GroupedFile[]>();
   files.forEach((grouped) => {
-    if (!grouped.file.provenance.resolutionScope.startsWith("workflow:")) return;
+    if (!isWorkflowResolutionScope(grouped.file.provenance.resolutionScope)) return;
     const scoped = scopes.get(grouped.file.provenance.resolutionScope) ?? [];
     scoped.push(grouped);
     scopes.set(grouped.file.provenance.resolutionScope, scoped);
@@ -108,7 +131,7 @@ export const assertWorkflowResolutionOrder = (
   const nonWorkflowScopes = new Map<string, GroupedFile[]>();
   files.forEach((grouped) => {
     const scope = grouped.file.provenance.resolutionScope;
-    if (scope.startsWith("workflow:")) return;
+    if (isWorkflowResolutionScope(scope)) return;
     const scoped = nonWorkflowScopes.get(scope) ?? [];
     scoped.push(grouped);
     nonWorkflowScopes.set(scope, scoped);
@@ -235,11 +258,7 @@ export const overlayResolutionIssues = (
       );
       if (base === undefined) {
         return enabledOverlays.map(({ source, file }) => ({
-          code: "spec-kit-workflow-overlay-base-unobserved",
-          severity: "warning",
-          impact: "blocking",
-          explanation:
-            "The enabled overlay is preserved, but its anchors and native winning-operation conflicts cannot be verified without the observed base workflow tree.",
+          ...overlayResolutionDiagnostics.baseUnobserved,
           source: { sourceId: source.sourceId as never, documentId: file.path },
         }));
       }
@@ -279,14 +298,16 @@ export const overlayResolutionIssues = (
             .filter((candidate) => descendants.has(candidate))
             .sort(compareUtf16CodeUnits)
             .map((descendant) => ({
-              code: "spec-kit-workflow-overlay-anchor-conflict",
-              severity: "error",
-              impact: "blocking",
-              explanation: `Overlay anchor conflict: '${anchor}' is an ancestor of '${descendant}', and the ancestor's winning ${winner.operation} operation makes the result order-dependent.`,
+              ...overlayResolutionDiagnostics.anchorConflict,
+              explanation: overlayResolutionDiagnostics.anchorConflict.explanation(
+                anchor,
+                descendant,
+                winner.operation,
+              ),
               source: {
                 sourceId: winner.grouped.source.sourceId as never,
                 documentId: winner.grouped.file.path,
-                location: `/edits/${winner.index}`,
+                location: overlayEditLocation(winner.index),
               },
             }));
         });

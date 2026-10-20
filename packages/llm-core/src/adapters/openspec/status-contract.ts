@@ -1,16 +1,132 @@
-import { isJsonValue, type JsonObject } from "#contracts";
+import {
+  contractVersion,
+  digest,
+  extensionNamespace,
+  isJsonValue,
+  type JsonObject,
+} from "#contracts";
+import { createHash } from "node:crypto";
 import { compareUtf16CodeUnits } from "#shared/fp";
 import { cloneFrozen, hasOnlyKeys, isPortableRecord } from "#shared/portable-data";
 
-export const OPENSPEC_SOURCE_STATUS_CONTRACT =
-  "source-commit-19d41714c8b790488732687443713e406ef5aeef" as const;
-export const OPENSPEC_NPM_STATUS_CONTRACT =
-  "npm-tarball-1.6.0-sha1-00b6f63e9671153b8621466a9ed423792349b54f" as const;
+// Repository source and the published tarball have different artifact contracts.
+// These immutable identities preserve that distinction even at the same version.
+const sourceRevision = "19d41714c8b790488732687443713e406ef5aeef";
+const packageVersion = "1.6.0";
+const tarballSha1 = "00b6f63e9671153b8621466a9ed423792349b54f";
+
+export const openSpecContract = cloneFrozen({
+  authority: "OpenSpec repository and published package",
+  format: Object.freeze({
+    id: extensionNamespace("io.github.fission-ai.openspec"),
+    version: contractVersion(packageVersion),
+  }),
+  sourceRevision,
+  fileLayout: "documented-file-layout-v1.6.0",
+  statusDocumentId: "status.json",
+  statusCommand: "status --json",
+  diagnostics: {
+    fileContentUninterpreted: {
+      code: "openspec.file-content-uninterpreted",
+      severity: "warning",
+      impact: "advisory",
+      explanation:
+        "The documented OpenSpec file and path are preserved, but its source-owned content is not promoted to canonical specification semantics.",
+    },
+    statusDependenciesUnavailable: {
+      code: "openspec.status-dependencies-unavailable",
+      severity: "warning",
+      impact: "advisory",
+      explanation:
+        "The official OpenSpec 1.6.0 npm tarball omits each artifact's requires list; current missingDeps are preserved, but dependency relationships are not inferred.",
+    },
+  },
+  fixtures: Object.freeze({
+    file: {
+      fixtureId: "openspec.file.current-spec.v1.6.0",
+      digest: digest("de88ed452e28ed383ccab87565f543eda6a25871e2051310522e90303771fe8f"),
+    },
+    sourceStatus: {
+      fixtureId: "openspec.cli.status.v1.6.0",
+      digest: digest("7c45bfbba83da5767d78a9de82d3e98c71816b5c4036373fe58e50a81b2de335"),
+    },
+    skippedSourceStatus: {
+      fixtureId: "openspec.cli.status.skip-specs.v1.6.0",
+      digest: digest("727f3a29de8876d627c1d743e8fdf45fbab2a236da4c567c99a22197609c79dc"),
+    },
+    publishedStatus: {
+      fixtureId: "openspec.cli.status.npm-tarball.v1.6.0",
+      digest: digest("972b1e4f3402e62b14bacce53eaa74f8d1a86e19b981290139634e165f4af15c"),
+    },
+  }),
+} as const);
+
+export const openSpecStatusContracts = cloneFrozen({
+  repository: Object.freeze({
+    identity: `source-commit-${sourceRevision}` as const,
+    revision: sourceRevision,
+    artifactStates: ["done", "skipped", "ready", "blocked"] as const,
+    artifactRequiredFields: ["id", "outputPath", "status", "requires"] as const,
+    hasDependencyEdges: true,
+    fixture: openSpecContract.fixtures.sourceStatus,
+  }),
+  publishedPackage: Object.freeze({
+    identity: `npm-tarball-${packageVersion}-sha1-${tarballSha1}` as const,
+    packageVersion,
+    integrity: Object.freeze({ algorithm: "sha1", value: tarballSha1 }),
+    artifactStates: ["done", "ready", "blocked"] as const,
+    artifactRequiredFields: ["id", "outputPath", "status"] as const,
+    hasDependencyEdges: false,
+    fixture: openSpecContract.fixtures.publishedStatus,
+  }),
+} as const);
+
+export const OPENSPEC_SOURCE_STATUS_CONTRACT = openSpecStatusContracts.repository.identity;
+export const OPENSPEC_NPM_STATUS_CONTRACT = openSpecStatusContracts.publishedPackage.identity;
 export type OpenSpecStatusContract =
   | typeof OPENSPEC_SOURCE_STATUS_CONTRACT
   | typeof OPENSPEC_NPM_STATUS_CONTRACT;
+type ArtifactStatus = (typeof openSpecStatusContracts.repository.artifactStates)[number];
 
-type ArtifactStatus = "done" | "skipped" | "ready" | "blocked";
+export const statusContractDefinition = (contract: OpenSpecStatusContract) =>
+  contract === OPENSPEC_SOURCE_STATUS_CONTRACT
+    ? openSpecStatusContracts.repository
+    : openSpecStatusContracts.publishedPackage;
+
+/** Stable source-owned identity, including the source observation to avoid cross-source collisions. */
+export const statusArtifactIdentity = (
+  sourceId: string,
+  changeName: string,
+  artifactId: string,
+): string =>
+  `openspec.artifact.${createHash("sha256")
+    .update(JSON.stringify([sourceId, changeName, artifactId]))
+    .digest("hex")}`;
+
+/** Preserve edge direction and the exact legacy tuple bytes; this is not a core UUID. */
+export const statusDependencyIdentity = (
+  sourceId: string,
+  changeName: string,
+  edge: { readonly artifactId: string; readonly requiredId: string },
+): string =>
+  `openspec.relationship.${createHash("sha256")
+    .update(JSON.stringify([sourceId, changeName, edge.artifactId, edge.requiredId]))
+    .digest("hex")}`;
+
+export const statusGraphIdentity = (stdout: string): string =>
+  `openspec.status.${createHash("sha256").update(stdout).digest("hex")}`;
+
+export const statusArtifactBinding = (sourceId: string, artifactId: string) => ({
+  sourceId,
+  documentId: openSpecContract.statusDocumentId,
+  location: `/artifacts/${artifactId}`,
+});
+
+/** Location of native dependency evidence for a declared artifact. */
+export const statusDependencyBinding = (sourceId: string, artifactId: string) => ({
+  ...statusArtifactBinding(sourceId, artifactId),
+  location: `/artifacts/${artifactId}/requires`,
+});
 
 interface CapturedStatusArtifactBase {
   readonly id: string;
@@ -104,14 +220,9 @@ const parseArtifact = (
   value: unknown,
   contract: OpenSpecStatusContract,
 ): CapturedStatusArtifact => {
-  const sourceContract = contract === OPENSPEC_SOURCE_STATUS_CONTRACT;
-  if (
-    !exactRecord(
-      value,
-      sourceContract ? ["id", "outputPath", "status", "requires"] : ["id", "outputPath", "status"],
-      ["missingDeps"],
-    )
-  ) {
+  const definition = statusContractDefinition(contract);
+  const sourceContract = definition.hasDependencyEdges;
+  if (!exactRecord(value, definition.artifactRequiredFields, ["missingDeps"])) {
     throw new TypeError(
       `OpenSpec status artifacts do not match the declared ${contract} contract.`,
     );
@@ -119,9 +230,7 @@ const parseArtifact = (
   if (
     !nonBlank(value.id) ||
     !nonBlank(value.outputPath) ||
-    !(
-      sourceContract ? ["done", "skipped", "ready", "blocked"] : ["done", "ready", "blocked"]
-    ).includes(String(value.status)) ||
+    !definition.artifactStates.some((state) => state === String(value.status)) ||
     (sourceContract && !stringArray(value.requires)) ||
     (value.missingDeps !== undefined && !stringArray(value.missingDeps))
   ) {
