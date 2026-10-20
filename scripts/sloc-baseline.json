@@ -83,42 +83,6 @@
         "currentSha256": "23dff4054fd58a49fcc22111d951a15da2b6a3786cfec36d8220945a418e55e8"
       }
     },
-    "packages/llm-core/src/adapters/openspec/public.ts": {
-      "lines": 625,
-      "sha256": "d34007afda617b1e551541f212bc70db989c5a01814b5eddcaff47f3cef36a6c",
-      "waiver": {
-        "version": 4,
-        "justification": "committed legacy adapter changed before decomposition",
-        "expiresOn": "2026-09-06",
-        "followUp": "packages/llm-core/docs/final-architecture/tasks/architecture-adapter-sloc-decomposition.md",
-        "currentLines": 694,
-        "currentSha256": "1d6748e917a7d2c6d3f5e7cee2f616f8f9732fe4986c3f3b37dc8e4e8c368c4a"
-      }
-    },
-    "packages/llm-core/src/adapters/pydantic-ai-spec/compiler.ts": {
-      "lines": 632,
-      "sha256": "6e9d4934a0cbc4cc61a1774885aff4905af0adbb86e7543d8fb8e5439daadf5f",
-      "waiver": {
-        "version": 4,
-        "justification": "committed legacy adapter changed before decomposition",
-        "expiresOn": "2026-09-06",
-        "followUp": "packages/llm-core/docs/final-architecture/tasks/architecture-adapter-sloc-decomposition.md",
-        "currentLines": 710,
-        "currentSha256": "553946ee7edb47be557661aa8d347963ea91ee328c7917629f6bdc47589df981"
-      }
-    },
-    "packages/llm-core/src/adapters/spec-kit/public.ts": {
-      "lines": 823,
-      "sha256": "758f3b70adcfaab1975ddcd393b6c5d22356af036faebb80dee7a7afc13ccc62",
-      "waiver": {
-        "version": 4,
-        "justification": "committed legacy adapter changed before decomposition",
-        "expiresOn": "2026-09-06",
-        "followUp": "packages/llm-core/docs/final-architecture/tasks/architecture-adapter-sloc-decomposition.md",
-        "currentLines": 922,
-        "currentSha256": "a37c48744e9a58dee41e577c474789c6a8c25d404c16305351a1054dd913cf37"
-      }
-    },
     "packages/llm-core/src/features/evidence/cost.ts": {
       "lines": 524,
       "sha256": "3214eac8b03ffcbf216e0110d47e5a7e6326b816dab033ba1ce8250a5048f113",
