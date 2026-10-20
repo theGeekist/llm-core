@@ -97,47 +97,56 @@ const extractTextFromContent = (content: unknown): string => {
     .join("");
 };
 
+const projectSessionInitialisation = (event: ClaudeStreamEvent): ClaudeStreamProjection => {
+  const sessionId = event.session_id;
+  return event.subtype === "init" && typeof sessionId === "string" && sessionId.length > 0
+    ? { kind: "session", sessionId }
+    : { kind: "ignored" };
+};
+
+const projectAssistantText = (event: ClaudeStreamEvent): ClaudeStreamProjection => {
+  if (!isPortableRecord(event.message)) return { kind: "ignored" };
+  const text = extractTextFromContent(event.message.content);
+  return text.length > 0 ? { kind: "text", delta: text } : { kind: "ignored" };
+};
+
+const terminalFailureReason = (event: ClaudeStreamEvent): string => {
+  if (typeof event.error === "string") return `session-${event.error}`.replace(/_/g, "-");
+  if (typeof event.terminal_reason === "string" && event.terminal_reason !== "completed") {
+    return `session-${event.terminal_reason}`.replace(/_/g, "-");
+  }
+  return typeof event.subtype === "string"
+    ? `session-${event.subtype}`.replace(/_/g, "-")
+    : "session-execution-error";
+};
+
+const projectTerminalResult = (event: ClaudeStreamEvent): ClaudeStreamProjection => {
+  const sessionId = typeof event.session_id === "string" ? event.session_id : undefined;
+  const hasNativeError =
+    event.is_error !== false || event.error !== undefined || event.terminal_reason !== "completed";
+  if (event.subtype === "success" && !hasNativeError) {
+    const resultText = typeof event.result === "string" ? event.result : undefined;
+    return { kind: "terminal", status: "completed", sessionId, resultText };
+  }
+  return {
+    kind: "terminal",
+    status: "failed",
+    sessionId,
+    reasonCode: terminalFailureReason(event),
+  };
+};
+
 const projectClaudeStreamEvent = (event: ClaudeStreamEvent): ClaudeStreamProjection => {
-  if (typeof event.type !== "string") return { kind: "ignored" };
-
-  if (event.type === "system" && event.subtype === "init") {
-    const sessionId = event.session_id;
-    return typeof sessionId === "string" && sessionId.length > 0
-      ? { kind: "session", sessionId }
-      : { kind: "ignored" };
+  switch (event.type) {
+    case "system":
+      return projectSessionInitialisation(event);
+    case "assistant":
+      return projectAssistantText(event);
+    case "result":
+      return projectTerminalResult(event);
+    default:
+      return { kind: "ignored" };
   }
-
-  if (event.type === "assistant") {
-    const message = event.message;
-    if (isPortableRecord(message)) {
-      const text = extractTextFromContent(message.content);
-      if (text.length > 0) return { kind: "text", delta: text };
-    }
-    return { kind: "ignored" };
-  }
-
-  if (event.type === "result") {
-    const subtype = event.subtype;
-    const sessionId = typeof event.session_id === "string" ? event.session_id : undefined;
-    const terminalReason = event.terminal_reason;
-    const hasNativeError =
-      event.is_error !== false || event.error !== undefined || terminalReason !== "completed";
-    if (subtype === "success" && !hasNativeError) {
-      const resultText = typeof event.result === "string" ? event.result : undefined;
-      return { kind: "terminal", status: "completed", sessionId, resultText };
-    }
-    const reasonCode =
-      typeof event.error === "string"
-        ? `session-${event.error}`.replace(/_/g, "-")
-        : typeof terminalReason === "string" && terminalReason !== "completed"
-          ? `session-${terminalReason}`.replace(/_/g, "-")
-          : typeof event.subtype === "string"
-            ? `session-${event.subtype}`.replace(/_/g, "-")
-            : "session-execution-error";
-    return { kind: "terminal", status: "failed", sessionId, reasonCode };
-  }
-
-  return { kind: "ignored" };
 };
 
 const formatPromptText = (input: JsonValue): string => {
@@ -214,37 +223,9 @@ export const createClaudeNativeSessionRunner = ({
         facts: { status, ...(reasonCode ? { reasonCode } : {}) },
       }) as AgentEvent;
 
-    const applyProjection = async (
-      projected: ClaudeStreamProjection,
+    const applyTerminalProjection = async (
+      projected: Extract<ClaudeStreamProjection, { kind: "terminal" }>,
     ): Promise<AgentEvent | null> => {
-      if (projected.kind === "session") {
-        if (projected.sessionId !== sessionId) {
-          terminal = {
-            identity: { runId },
-            status: "failed",
-            reasonCode: "session-identity-mismatch",
-            providerSession,
-          };
-          return terminalEvent("failed", "session-identity-mismatch");
-        }
-        sessionInitialised = true;
-        return null;
-      }
-      if (projected.kind !== "ignored" && !sessionInitialised) {
-        terminal = {
-          identity: { runId },
-          status: "failed",
-          reasonCode: "session-init-missing",
-          providerSession,
-        };
-        return terminalEvent("failed", "session-init-missing");
-      }
-      if (projected.kind === "text") {
-        finalText += projected.delta;
-        return null;
-      }
-      if (projected.kind !== "terminal") return null;
-
       if (projected.sessionId !== sessionId) {
         terminal = {
           identity: { runId },
@@ -284,6 +265,40 @@ export const createClaudeNativeSessionRunner = ({
         providerSession,
       };
       return terminalEvent(status, reasonCode);
+    };
+
+    const applyProjection = async (
+      projected: ClaudeStreamProjection,
+    ): Promise<AgentEvent | null> => {
+      if (projected.kind === "session") {
+        if (projected.sessionId !== sessionId) {
+          terminal = {
+            identity: { runId },
+            status: "failed",
+            reasonCode: "session-identity-mismatch",
+            providerSession,
+          };
+          return terminalEvent("failed", "session-identity-mismatch");
+        }
+        sessionInitialised = true;
+        return null;
+      }
+      if (projected.kind !== "ignored" && !sessionInitialised) {
+        terminal = {
+          identity: { runId },
+          status: "failed",
+          reasonCode: "session-init-missing",
+          providerSession,
+        };
+        return terminalEvent("failed", "session-init-missing");
+      }
+      if (projected.kind === "text") {
+        finalText += projected.delta;
+        return null;
+      }
+      if (projected.kind !== "terminal") return null;
+
+      return applyTerminalProjection(projected);
     };
 
     const events = async function* (): AsyncGenerator<AgentEvent> {

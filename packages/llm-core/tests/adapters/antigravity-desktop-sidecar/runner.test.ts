@@ -300,6 +300,20 @@ describe("Antigravity Desktop Sidecar probe", () => {
     });
   });
 
+  test("reports asynchronous busy-probe failure as blocked", async () => {
+    const report = await runAntigravityDesktopSidecarProbe(
+      clientFixture({
+        newConversation: async ({ prompt }) => {
+          if (prompt === "Hold busy") throw new Error("native probe failed");
+          return { conversationId: "conv-idle" };
+        },
+      }),
+      { activeTurnScenario: { initialPrompt: "Hold busy", followUpPrompt: "Nonce" } },
+    );
+    expect(report).toMatchObject({ outcome: "blocked", reasonCode: "probe-error" });
+    expect(report.busyTurnTiming.commandAcceptance).toBe("untested");
+  });
+
   test("does not treat a caller scenario flag as proof of busy state", async () => {
     const report = await runAntigravityDesktopSidecarProbe(clientFixture(), {
       activeTurnScenario: { initialPrompt: "Hold busy", followUpPrompt: "Nonce" },

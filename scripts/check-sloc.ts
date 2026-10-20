@@ -49,14 +49,8 @@ export const slocV1Policy = Object.freeze({
   ]),
   excludedSuffixes: Object.freeze([".generated.ts", ".generated.tsx", ".snap.ts", ".snap.tsx"]),
 });
-const sealedLegacyEntries: Readonly<Record<string, string>> = {
-  "packages/llm-core/src/adapters/openspec/public.ts":
-    "aead16e5dab2a848fcd3197b0c47623ba93389a24943f63f8cec7ba5a1f165a6",
-  "packages/llm-core/src/adapters/pydantic-ai-spec/compiler.ts":
-    "5c48d596367f4f7d3a29eb898aaa9bdb5278d0c80409e4843f661da54b1d0663",
-  "packages/llm-core/src/adapters/spec-kit/public.ts":
-    "ead646c6212830167be8052505f38ce771355eb24a151a9ef40e8775a9a826b7",
-};
+// The three sealed legacy adapters have been decomposed; no hard-boundary exceptions remain.
+const sealedLegacyEntries: Readonly<Record<string, string>> = {};
 
 export const approximateTargetJustification = "approximately 500 lines";
 
