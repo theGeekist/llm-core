@@ -36,7 +36,7 @@ read_scope:
   - packages/llm-core/src/application/agent/**
   - packages/llm-core/src/application/workflow/**
 review_owner: coordinator
-updated_at: 2026-08-03
+updated_at: 2026-10-20
 ---
 
 # cost-budget-control — Budget decision control
@@ -92,3 +92,22 @@ Replaces the budget portion of `capabilities-cost-intelligence`; not claimed.
 ## Handoff
 
 Pending.
+
+## Free-route and optimisation evidence
+
+A free token tariff, account credit and an unbilled usage fact have different
+meanings. Qualify pre-dispatch allowance/eligibility and explicit no-paid-fallback
+policy for a selected no-spend comparison. Exhausted or unknown entitlement
+must not silently top up, select a paid route or rewrite observed usage.
+Preserve allowance source/time, exact model/provider route, policy decision and
+failure evidence through the existing cost/budget records.
+
+For an optimisation comparison, keep stable prompt/tool prefixes and batched
+independent reads as host-specific candidates rather than universal kernel
+behavior. The
+[Cloudflare 19 October case study](https://blog.cloudflare.com/obsessive-inference-optimization/)
+reports an observational before/after result. Retain actual input/output/cache
+usage and quality evidence; a cache-hit percentage alone cannot establish
+savings when total volume changes. Unavailable native cache controls are
+recorded as unsupported, not simulated cost reductions. Existing facts,
+controlled-effect and enforcement owners remain unchanged.
