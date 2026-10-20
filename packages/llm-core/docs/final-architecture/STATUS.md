@@ -7,7 +7,7 @@ Pre-transition source baseline: `c041792`
 
 <!-- architecture-status:generated:start -->
 
-Active tasks: 3
+Active tasks: 2
 
 ## Task inventory
 
@@ -47,7 +47,7 @@ Active tasks: 3
 | applications-client-subpath-release | applications | cancelled | architecture-source-layout-normalization, applications-client-platform-qualification | — | — | aifsd/clients-surface-publication |
 | applications-desktop | applications | cancelled | architecture-source-layout-normalization, applications-client-subpath-release | — | — | aifsd/clients-desktop-foundation |
 | applications-mobile | applications | cancelled | architecture-source-layout-normalization, applications-client-subpath-release | — | — | aifsd/clients-mobile-foundation |
-| architecture-adapter-sloc-decomposition | architecture | in_progress | architecture-source-layout-normalization | — | — | — |
+| architecture-adapter-sloc-decomposition | architecture | done | architecture-source-layout-normalization | — | — | — |
 | architecture-decisions | architecture | done | — | — | — | — |
 | architecture-external-contract-fidelity | architecture | done | architecture-runtime-ownership-correction | — | — | — |
 | architecture-legacy-functional-removal | architecture | done | architecture-source-layout-normalization, language-rollout | — | — | — |
