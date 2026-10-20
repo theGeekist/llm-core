@@ -1,3 +1,12 @@
+import {
+  issue,
+  pydanticDiagnostics,
+  semanticCategoryIds as SEMANTIC_CATEGORIES,
+  semanticIssue,
+  modelRequirementDiagnostic,
+  type SemanticCategory,
+  type PydanticDiagnosticDefinition,
+} from "./native-contract";
 import { isJsonValue, type JsonValue } from "#contracts";
 import { compareUtf16CodeUnits } from "#shared/fp";
 import type {
@@ -6,40 +15,13 @@ import type {
 } from "@geekist/llm-core/specifications";
 import type { PydanticAiCompilationTarget } from "./types";
 
-export const issue = (input: {
-  readonly code: string;
-  readonly impact: SpecificationDiagnostic["impact"];
-  readonly explanation: string;
-  readonly nodeId: SpecificationDiagnostic["nodeId"];
-}): SpecificationDiagnostic => ({
-  code: input.code,
-  severity: input.impact === "blocking" ? "error" : "warning",
-  impact: input.impact,
-  explanation: input.explanation,
-  nodeId: input.nodeId,
-});
-
-const SEMANTIC_CATEGORIES = [
-  "modelRequirements",
-  "prompt",
-  "tools",
-  "context",
-  "evaluation",
-] as const;
-
-type SemanticCategory = (typeof SEMANTIC_CATEGORIES)[number];
-
 type ReviewedSemanticValues = Pick<PydanticAiCompilationTarget["semantics"], SemanticCategory>;
-
 interface AcceptedSemanticProjection {
   readonly values: ReviewedSemanticValues;
   readonly nodeIds: Readonly<Partial<Record<SemanticCategory, SpecificationDiagnostic["nodeId"]>>>;
   readonly invalid: ReadonlySet<SemanticCategory>;
   readonly issues: readonly SpecificationDiagnostic[];
 }
-
-const categoryCode = (category: SemanticCategory): string =>
-  category === "modelRequirements" ? "model-requirements" : category;
 
 const canonicalJson = (value: JsonValue): string => {
   if (value === null || typeof value !== "object") return JSON.stringify(value);
@@ -122,12 +104,11 @@ const semanticContent = (projection: SpecificationProjectionView): AcceptedSeman
       );
       invalid.add(category);
       issues.push(
-        issue({
-          code: `pydantic-ai.${categoryCode(category)}-accepted-content-missing`,
-          impact: "blocking",
-          explanation: `Every accepted item must explicitly bind ${category} content; an omitted field is not evidence of semantic absence.`,
-          nodeId: missing?.scopeId ?? projection.acceptedItems[0]!.scopeId,
-        }),
+        semanticIssue(
+          category,
+          "acceptedContentMissing",
+          missing?.scopeId ?? projection.acceptedItems[0]!.scopeId,
+        ),
       );
       continue;
     }
@@ -138,14 +119,7 @@ const semanticContent = (projection: SpecificationProjectionView): AcceptedSeman
     const invalidArray = invalidCategoryArray(category, first.value);
     if (invalidArray) {
       invalid.add(category);
-      issues.push(
-        issue({
-          code: `pydantic-ai.${categoryCode(category)}-content-invalid`,
-          impact: "blocking",
-          explanation: `Accepted ${category} content must be an explicit array of portable category values.`,
-          nodeId: first.nodeId,
-        }),
-      );
+      issues.push(semanticIssue(category, "contentInvalid", first.nodeId));
       continue;
     }
     const contradiction = categoryObservations.find(
@@ -153,14 +127,7 @@ const semanticContent = (projection: SpecificationProjectionView): AcceptedSeman
     );
     if (contradiction !== undefined) {
       invalid.add(category);
-      issues.push(
-        issue({
-          code: `pydantic-ai.${categoryCode(category)}-accepted-content-contradictory`,
-          impact: "blocking",
-          explanation: `Accepted ${category} content contains conflicting values, including explicit empty or null claims.`,
-          nodeId: contradiction.nodeId,
-        }),
-      );
+      issues.push(semanticIssue(category, "acceptedContentContradictory", contradiction.nodeId));
     }
   }
   return {
@@ -186,16 +153,7 @@ const reviewedScopeIssues = (
       new Set(reviewedScope).size === acceptedScope.length &&
       reviewedScope.every((scopeId) => acceptedScopeSet.has(scopeId));
     if (exactCoverage) return [];
-    return [
-      issue({
-        code: `pydantic-ai.${
-          category === "modelRequirements" ? "model-requirements" : category
-        }-review-scope-invalid`,
-        impact: "blocking",
-        explanation: `Reviewed ${category} semantics must account for every item in the accepted specification scope.`,
-        nodeId,
-      }),
-    ];
+    return [semanticIssue(category, "reviewScopeInvalid", nodeId)];
   });
 };
 
@@ -221,14 +179,7 @@ const semanticMismatchIssues = (
     ) {
       return [];
     }
-    return [
-      issue({
-        code: `pydantic-ai.${categoryCode(category)}-review-content-mismatch`,
-        impact: "blocking",
-        explanation: `Reviewed ${category} semantics must exactly match the authority-bound accepted item content.`,
-        nodeId: accepted.nodeIds[category] ?? nodeId,
-      }),
-    ];
+    return [semanticIssue(category, "reviewContentMismatch", accepted.nodeIds[category] ?? nodeId)];
   });
 
 const modelRequirementIssues = (
@@ -239,9 +190,7 @@ const modelRequirementIssues = (
   if (!Array.isArray(semantics.modelRequirements)) {
     return [
       issue({
-        code: "pydantic-ai.model-requirements-invalid",
-        impact: "blocking",
-        explanation: "Reviewed model requirements must be an explicit array.",
+        ...pydanticDiagnostics.modelRequirementsInvalid,
         nodeId,
       }),
     ];
@@ -256,14 +205,7 @@ const modelRequirementIssues = (
   const required = accepted.values.modelRequirements.some(
     (requirement: { readonly required?: boolean }) => requirement.required !== false,
   );
-  return [
-    issue({
-      code: "pydantic-ai.model-requirements-unsupported",
-      impact: "blocking",
-      explanation: `${required ? "Required" : "Advisory"} llm-core model requirements and their resolution authority have no exact AgentSpec representation.`,
-      nodeId,
-    }),
-  ];
+  return [modelRequirementDiagnostic(required, nodeId)];
 };
 
 const promptIssues = (
@@ -273,10 +215,7 @@ const promptIssues = (
   !accepted.invalid.has("prompt") && accepted.values.prompt !== null
     ? [
         issue({
-          code: "pydantic-ai.prompt-template-unsupported",
-          impact: "blocking",
-          explanation:
-            "AgentSpec instructions do not preserve llm-core prompt template identity, inputs, schema, and metadata semantics.",
+          ...pydanticDiagnostics.promptTemplateUnsupported,
           nodeId,
         }),
       ]
@@ -290,9 +229,7 @@ const toolIssues = (
   if (!Array.isArray(semantics.tools)) {
     return [
       issue({
-        code: "pydantic-ai.tools-invalid",
-        impact: "blocking",
-        explanation: "Reviewed tool semantics must be an explicit array.",
+        ...pydanticDiagnostics.toolsInvalid,
         nodeId,
       }),
     ];
@@ -302,10 +239,7 @@ const toolIssues = (
     accepted.values.tools.length > 0
     ? [
         issue({
-          code: "pydantic-ai.tool-declarations-unsupported",
-          impact: "blocking",
-          explanation:
-            "AgentSpec cannot retain llm-core tool declaration, control, and execution authority semantics.",
+          ...pydanticDiagnostics.toolDeclarationsUnsupported,
           nodeId,
         }),
       ]
@@ -315,16 +249,13 @@ const toolIssues = (
 const nullableCategoryIssues = (input: {
   readonly accepted: AcceptedSemanticProjection;
   readonly category: "context" | "evaluation";
-  readonly code: string;
-  readonly explanation: string;
+  readonly diagnostic: PydanticDiagnosticDefinition;
   readonly nodeId: SpecificationDiagnostic["nodeId"];
 }): readonly SpecificationDiagnostic[] =>
   !input.accepted.invalid.has(input.category) && input.accepted.values[input.category] !== null
     ? [
         issue({
-          code: input.code,
-          impact: "blocking",
-          explanation: input.explanation,
+          ...input.diagnostic,
           nodeId: input.nodeId,
         }),
       ]
@@ -338,10 +269,7 @@ export const reviewedSemanticIssues = (
   if (!hasExplicitSemanticReview(semantics)) {
     return [
       issue({
-        code: "pydantic-ai.semantic-review-required",
-        impact: "blocking",
-        explanation:
-          "Projection requires explicit review accounting for model requirement, prompt, tool, context, and evaluation semantics.",
+        ...pydanticDiagnostics.semanticReviewRequired,
         nodeId,
       }),
     ];
@@ -357,17 +285,13 @@ export const reviewedSemanticIssues = (
     ...nullableCategoryIssues({
       accepted,
       category: "context",
-      code: "pydantic-ai.context-selection-unsupported",
-      explanation:
-        "AgentSpec cannot retain llm-core context scope, provenance, eligibility, and budget semantics.",
+      diagnostic: pydanticDiagnostics.contextSelectionUnsupported,
       nodeId,
     }),
     ...nullableCategoryIssues({
       accepted,
       category: "evaluation",
-      code: "pydantic-ai.evaluation-qualification-unsupported",
-      explanation:
-        "AgentSpec cannot retain llm-core evaluation qualification, evidence, and promotion-gate semantics.",
+      diagnostic: pydanticDiagnostics.evaluationQualificationUnsupported,
       nodeId,
     }),
   ];

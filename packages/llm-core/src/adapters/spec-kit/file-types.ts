@@ -1,28 +1,53 @@
+import { cloneFrozen } from "#shared/portable-data";
 import type {
+  SpecificationDocumentNodeKind,
   SpecificationSourceRole,
   SpecificationSourceAuthority,
   SpecificationOperation,
   SpecificationAdapterSupport,
 } from "@geekist/llm-core/specifications";
 
-export type SpecKitDocumentKind =
-  | "constitution"
-  | "overlay"
-  | "specification"
-  | "plan"
-  | "tasks"
-  | "workflow"
-  | "workflow-state"
-  | "other";
+/** Native document classes and their exact portable document-node interpretation. */
+export const specKitDocumentKinds = cloneFrozen({
+  constitution: { nodeKind: "decision", meaning: "Project constitution" },
+  overlay: { nodeKind: "decision", meaning: "Source-owned overlay declaration" },
+  specification: { nodeKind: "requirement", meaning: "Feature specification" },
+  plan: { nodeKind: "plan", meaning: "Implementation plan" },
+  tasks: { nodeKind: "plan", meaning: "Source task list" },
+  workflow: { nodeKind: "workflow", meaning: "Native workflow program" },
+  "workflow-state": {
+    nodeKind: "artifact",
+    meaning: "Observed local state, never a portable checkpoint",
+  },
+  other: { nodeKind: "artifact", meaning: "Unclassified source artifact" },
+} as const satisfies Readonly<
+  Record<string, { readonly nodeKind: SpecificationDocumentNodeKind; readonly meaning: string }>
+>);
+export type SpecKitDocumentKind = keyof typeof specKitDocumentKinds;
 
-export type SpecKitProvenanceTier =
-  | "project"
-  | "preset"
-  | "extension"
-  | "core"
-  | "workflow-overlay"
-  | "feature-artifact"
-  | "workflow-run";
+/** Native resolver tiers; order and priority remain independently recorded facts. */
+export const specKitProvenanceTiers = [
+  "project",
+  "preset",
+  "extension",
+  "core",
+  "workflow-overlay",
+  "feature-artifact",
+  "workflow-run",
+] as const;
+export type SpecKitProvenanceTier = (typeof specKitProvenanceTiers)[number];
+export const specKitResolutionStrategies = ["replace", "prepend", "append", "wrap"] as const;
+
+export const isSpecKitDocumentKind = (value: unknown): value is SpecKitDocumentKind =>
+  typeof value === "string" && Object.hasOwn(specKitDocumentKinds, value);
+
+export const isSpecKitProvenanceTier = (value: unknown): value is SpecKitProvenanceTier =>
+  typeof value === "string" && specKitProvenanceTiers.some((tier) => tier === value);
+
+export const isSpecKitResolutionStrategy = (
+  value: unknown,
+): value is (typeof specKitResolutionStrategies)[number] =>
+  specKitResolutionStrategies.some((strategy) => strategy === value);
 
 /** Native resolver attribution; `order` is zero-based within `resolutionScope`. */
 export interface SpecKitFileProvenance {
@@ -32,7 +57,7 @@ export interface SpecKitFileProvenance {
   readonly resolutionScope: string;
   readonly order: number;
   readonly priority?: number;
-  readonly strategy?: "replace" | "prepend" | "append" | "wrap";
+  readonly strategy?: (typeof specKitResolutionStrategies)[number];
 }
 
 export interface SpecKitFile {

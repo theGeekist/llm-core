@@ -1,3 +1,4 @@
+import { sidecarProbeContract } from "./probe-contract";
 import { ANTIGRAVITY_DESKTOP_HOST_VERSION, ANTIGRAVITY_SIDECAR_CONTRACT_VERSION } from "./profile";
 import type {
   AntigravityDesktopSidecarClient,
@@ -12,7 +13,7 @@ export type BusyTurnDeliveryClassification =
   | "rejected";
 
 export interface AntigravitySidecarProbeReport {
-  readonly route: "antigravity.desktop-sidecar.agentapi";
+  readonly route: typeof sidecarProbeContract.routeProfileId;
   readonly outcome: "qualified" | "blocked" | "bounded-negative";
   readonly identities?: AntigravitySidecarRuntimeIdentities;
   readonly idleAddressability: {
@@ -42,7 +43,7 @@ export interface ProbeOptions {
 const base = (
   client: AntigravityDesktopSidecarClient,
 ): Pick<AntigravitySidecarProbeReport, "route" | "identities"> => ({
-  route: "antigravity.desktop-sidecar.agentapi",
+  route: sidecarProbeContract.routeProfileId,
   identities: client.sourceContract.identities,
 });
 
@@ -56,15 +57,17 @@ const untestedBusy = (): AntigravitySidecarProbeReport["busyTurnTiming"] => ({
 const sourceContractMatches = (client: AntigravityDesktopSidecarClient): boolean =>
   client.sourceContract.desktopHostVersion === ANTIGRAVITY_DESKTOP_HOST_VERSION &&
   client.sourceContract.sidecarContractVersion === ANTIGRAVITY_SIDECAR_CONTRACT_VERSION &&
-  client.sourceContract.identities.desktopApp.product === "Antigravity Desktop" &&
+  client.sourceContract.identities.desktopApp.product === sidecarProbeContract.runtime.product &&
   client.sourceContract.identities.desktopApp.version === ANTIGRAVITY_DESKTOP_HOST_VERSION &&
-  client.sourceContract.identities.desktopApp.bundleId === "com.google.antigravity" &&
-  client.sourceContract.identities.sidecar.id === "simple-chat-qualification" &&
+  client.sourceContract.identities.desktopApp.bundleId === sidecarProbeContract.runtime.bundleId &&
+  client.sourceContract.identities.sidecar.id === sidecarProbeContract.runtime.sidecarId &&
   client.sourceContract.identities.sidecar.supervised &&
-  client.sourceContract.identities.sidecar.restartPolicy === "never" &&
-  client.sourceContract.identities.agentapi.executable === "agentapi" &&
+  client.sourceContract.identities.sidecar.restartPolicy ===
+    sidecarProbeContract.runtime.restartPolicy &&
+  client.sourceContract.identities.agentapi.executable ===
+    sidecarProbeContract.runtime.executable &&
   client.sourceContract.identities.agentapi.providerInjected &&
-  client.sourceContract.identities.agentapi.path === "/usr/local/bin/agentapi";
+  client.sourceContract.identities.agentapi.path === sidecarProbeContract.runtime.executablePath;
 
 const probeBusyTurn = async (
   client: AntigravityDesktopSidecarClient,
@@ -81,7 +84,7 @@ const probeBusyTurn = async (
       outcome: "bounded-negative",
       idleAddressability,
       busyTurnTiming: untestedBusy(),
-      reasonCode: "busy-state-unproven",
+      reasonCode: sidecarProbeContract.reasons.busyStateUnproven.code,
     };
   }
 
@@ -98,12 +101,14 @@ const probeBusyTurn = async (
       commandAcceptance: busyReceipt.accepted ? "observed" : "rejected",
       recipientObservation: "unobservable",
       semanticProcessing: "untested",
-      timingEvidenceRef: "antigravity-desktop-sidecar:busy-state-command-receipt",
+      timingEvidenceRef: sidecarProbeContract.evidence.busyCommandReceipt,
     },
-    reasonCode: busyReceipt.accepted ? "busy-turn-timing-unqualified" : "busy-turn-rejected",
+    reasonCode: busyReceipt.accepted
+      ? sidecarProbeContract.reasons.busyTimingUnqualified.code
+      : sidecarProbeContract.reasons.busyCommandRejected.code,
     details: busyReceipt.accepted
-      ? "Busy state and command receipt were observed. Recipient observation and delivery timing remain unqualified."
-      : "Busy state was observed, but the command was rejected.",
+      ? sidecarProbeContract.explanations.busyTimingUnqualified
+      : sidecarProbeContract.explanations.busyCommandRejected,
   };
 };
 
@@ -126,13 +131,13 @@ export async function runAntigravityDesktopSidecarProbe(
         semanticProcessing: "untested",
       },
       busyTurnTiming: untestedBusy(),
-      reasonCode: "source-contract-mismatch",
+      reasonCode: sidecarProbeContract.reasons.sourceContractMismatch.code,
     };
   }
 
   try {
     const idleConversation = await client.newConversation({
-      prompt: "qualification:probe:idle:start",
+      prompt: sidecarProbeContract.prompts.idleStart,
     });
     if (!idleConversation.conversationId) {
       return {
@@ -145,7 +150,7 @@ export async function runAntigravityDesktopSidecarProbe(
           semanticProcessing: "untested",
         },
         busyTurnTiming: untestedBusy(),
-        reasonCode: "conversation-id-missing",
+        reasonCode: sidecarProbeContract.reasons.conversationIdentityMissing.code,
       };
     }
 
@@ -161,13 +166,13 @@ export async function runAntigravityDesktopSidecarProbe(
           semanticProcessing: "untested",
         },
         busyTurnTiming: untestedBusy(),
-        reasonCode: "idle-state-unproven",
+        reasonCode: sidecarProbeContract.reasons.idleStateUnproven.code,
       };
     }
 
     const idleReceipt = await client.sendMessage({
       conversationId: idleConversation.conversationId,
-      prompt: "qualification:probe:idle:continue",
+      prompt: sidecarProbeContract.prompts.idleContinuation,
     });
     if (!idleReceipt.accepted) {
       return {
@@ -180,7 +185,7 @@ export async function runAntigravityDesktopSidecarProbe(
           semanticProcessing: "untested",
         },
         busyTurnTiming: untestedBusy(),
-        reasonCode: "idle-send-rejected",
+        reasonCode: sidecarProbeContract.reasons.idleCommandRejected.code,
       };
     }
 
@@ -196,8 +201,7 @@ export async function runAntigravityDesktopSidecarProbe(
         outcome: "qualified",
         idleAddressability,
         busyTurnTiming: untestedBusy(),
-        details:
-          "Idle addressability is qualified through an observed idle state and accepted command. Recipient processing is unobservable.",
+        details: sidecarProbeContract.explanations.idleAddressabilityQualified,
       };
     }
 
@@ -213,7 +217,7 @@ export async function runAntigravityDesktopSidecarProbe(
         semanticProcessing: "untested",
       },
       busyTurnTiming: untestedBusy(),
-      reasonCode: "probe-error",
+      reasonCode: sidecarProbeContract.reasons.probeError.code,
     };
   }
 }

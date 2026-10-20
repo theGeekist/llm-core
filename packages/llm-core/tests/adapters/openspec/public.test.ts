@@ -252,6 +252,18 @@ describe("OpenSpec adapter", () => {
     ).toThrow(OPENSPEC_SOURCE_STATUS_CONTRACT);
   });
 
+  test.each([
+    [sourceStatus, "status-v1.6.0.json"],
+    [npmStatus, "status-npm-tarball-v1.6.0.json"],
+  ] as const)("rejects array-valued artifact states for %j", (status, name) => {
+    const payload = JSON.parse(fixture(name)) as { artifacts: { status: unknown }[] };
+    const artifact = payload.artifacts.find((entry) => entry.status === "ready")!;
+    artifact.status = [artifact.status];
+    expect(() => importOpenSpecStatusCli({ ...status, stdout: JSON.stringify(payload) })).toThrow(
+      "OpenSpec status artifacts contain invalid values.",
+    );
+  });
+
   test("requires dependency lists on every artifact and validates their references", () => {
     const payload = JSON.parse(fixture("status-v1.6.0.json")) as {
       artifacts: { id: string; status: string; requires?: string[]; missingDeps?: string[] }[];

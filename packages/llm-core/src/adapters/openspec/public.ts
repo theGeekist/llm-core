@@ -6,6 +6,13 @@ import {
   unique,
   isSourceArtifact,
   parseStatus,
+  openSpecContract,
+  statusContractDefinition,
+  statusArtifactIdentity,
+  statusDependencyIdentity,
+  statusGraphIdentity,
+  statusArtifactBinding,
+  statusDependencyBinding,
   type OpenSpecStatusContract,
 } from "./status-contract";
 export {
@@ -14,13 +21,7 @@ export {
   type OpenSpecStatusContract,
 } from "./status-contract";
 import { createHash } from "node:crypto";
-import {
-  contractVersion,
-  digest,
-  extensionNamespace,
-  type ContractVersion,
-  type JsonValue,
-} from "#contracts";
+import { digest, type ContractVersion, type JsonValue } from "#contracts";
 import { cloneFrozen } from "#shared/portable-data";
 import {
   createSpecificationAdapterSupport,
@@ -32,26 +33,12 @@ import {
   type SpecificationSourceSnapshot,
 } from "@geekist/llm-core/specifications";
 
-const FORMAT_ID = extensionNamespace("io.github.fission-ai.openspec");
-const VERSION = contractVersion("1.6.0");
-const EXTENSION = "io.github.fission-ai.openspec";
-const STATUS_FIXTURE_DIGEST = digest(
-  "7c45bfbba83da5767d78a9de82d3e98c71816b5c4036373fe58e50a81b2de335",
-);
-const SKIPPED_STATUS_FIXTURE_DIGEST = digest(
-  "727f3a29de8876d627c1d743e8fdf45fbab2a236da4c567c99a22197609c79dc",
-);
-const NPM_STATUS_FIXTURE_DIGEST = digest(
-  "972b1e4f3402e62b14bacce53eaa74f8d1a86e19b981290139634e165f4af15c",
-);
-const FILE_FIXTURE_DIGEST = digest(
-  "de88ed452e28ed383ccab87565f543eda6a25871e2051310522e90303771fe8f",
-);
+const { format, authority, fixtures } = openSpecContract;
 const sha256 = (value: string) => digest(createHash("sha256").update(value).digest("hex"));
 
 const sourceContract = (revision: string) => ({
-  authority: "OpenSpec repository and published package",
-  format: { id: FORMAT_ID, version: VERSION },
+  authority: authority,
+  format: format,
   revision,
 });
 
@@ -89,32 +76,32 @@ const unsupported = <TOperation extends SpecificationOperation["operation"]>(
 
 export const OPENSPEC_FILE_SUPPORT: SpecificationAdapterSupport = createSpecificationAdapterSupport(
   {
-    format: { id: FORMAT_ID, version: VERSION },
-    authority: "OpenSpec repository and published package",
-    revision: "19d41714c8b790488732687443713e406ef5aeef",
+    format: format,
+    authority: authority,
+    revision: openSpecContract.sourceRevision,
     sourceOwnership: "source-owned",
     operations: [
-      supported("observe-native-source", "19d41714c8b790488732687443713e406ef5aeef", {
-        fixtures: [{ fixtureId: "openspec.file.current-spec.v1.6.0", digest: FILE_FIXTURE_DIGEST }],
+      supported("observe-native-source", openSpecContract.sourceRevision, {
+        fixtures: [fixtures.file],
       }),
       unsupported(
         "derive-portable-specification",
-        "19d41714c8b790488732687443713e406ef5aeef",
+        openSpecContract.sourceRevision,
         "OpenSpec file content is retained natively but is not yet derived into portable semantics.",
       ),
       unsupported(
         "compile-portable-specification",
-        "19d41714c8b790488732687443713e406ef5aeef",
+        openSpecContract.sourceRevision,
         "OpenSpec file compilation is not implemented.",
       ),
       unsupported(
         "export-native-source",
-        "19d41714c8b790488732687443713e406ef5aeef",
+        openSpecContract.sourceRevision,
         "OpenSpec file export is not implemented.",
       ),
       unsupported(
         "round-trip-native-source",
-        "19d41714c8b790488732687443713e406ef5aeef",
+        openSpecContract.sourceRevision,
         "OpenSpec file round trip is not implemented.",
       ),
     ],
@@ -123,22 +110,16 @@ export const OPENSPEC_FILE_SUPPORT: SpecificationAdapterSupport = createSpecific
 
 export const OPENSPEC_SOURCE_STATUS_CLI_SUPPORT: SpecificationAdapterSupport =
   createSpecificationAdapterSupport({
-    format: { id: FORMAT_ID, version: VERSION },
-    authority: "OpenSpec repository and published package",
+    format: format,
+    authority: authority,
     revision: OPENSPEC_SOURCE_STATUS_CONTRACT,
     sourceOwnership: "source-owned",
     operations: [
       supported("observe-native-source", OPENSPEC_SOURCE_STATUS_CONTRACT, {
-        fixtures: [{ fixtureId: "openspec.cli.status.v1.6.0", digest: STATUS_FIXTURE_DIGEST }],
+        fixtures: [fixtures.sourceStatus],
       }),
       supported("derive-portable-specification", OPENSPEC_SOURCE_STATUS_CONTRACT, {
-        fixtures: [
-          { fixtureId: "openspec.cli.status.v1.6.0", digest: STATUS_FIXTURE_DIGEST },
-          {
-            fixtureId: "openspec.cli.status.skip-specs.v1.6.0",
-            digest: SKIPPED_STATUS_FIXTURE_DIGEST,
-          },
-        ],
+        fixtures: [fixtures.sourceStatus, fixtures.skippedSourceStatus],
       }),
       unsupported(
         "compile-portable-specification",
@@ -160,26 +141,16 @@ export const OPENSPEC_SOURCE_STATUS_CLI_SUPPORT: SpecificationAdapterSupport =
 
 export const OPENSPEC_NPM_STATUS_CLI_SUPPORT: SpecificationAdapterSupport =
   createSpecificationAdapterSupport({
-    format: { id: FORMAT_ID, version: VERSION },
-    authority: "OpenSpec repository and published package",
+    format: format,
+    authority: authority,
     revision: OPENSPEC_NPM_STATUS_CONTRACT,
     sourceOwnership: "source-owned",
     operations: [
       supported("observe-native-source", OPENSPEC_NPM_STATUS_CONTRACT, {
-        fixtures: [
-          {
-            fixtureId: "openspec.cli.status.npm-tarball.v1.6.0",
-            digest: NPM_STATUS_FIXTURE_DIGEST,
-          },
-        ],
+        fixtures: [fixtures.publishedStatus],
       }),
       supported("derive-portable-specification", OPENSPEC_NPM_STATUS_CONTRACT, {
-        fixtures: [
-          {
-            fixtureId: "openspec.cli.status.npm-tarball.v1.6.0",
-            digest: NPM_STATUS_FIXTURE_DIGEST,
-          },
-        ],
+        fixtures: [fixtures.publishedStatus],
       }),
       unsupported(
         "compile-portable-specification",
@@ -241,7 +212,7 @@ export interface OpenSpecStatusImportResult {
 }
 
 const assertVersion = (version: ContractVersion): void => {
-  if (version !== VERSION)
+  if (version !== format.version)
     throw new TypeError(`OpenSpec ${version} is unsupported; expected 1.6.0.`);
 };
 
@@ -294,11 +265,7 @@ const fileDiagnostics = (
   files: readonly OpenSpecFileObservation[],
 ): readonly SpecificationDiagnostic[] =>
   files.map((file) => ({
-    code: "openspec.file-content-uninterpreted",
-    severity: "warning",
-    impact: "advisory",
-    explanation:
-      "The documented OpenSpec file and path are preserved, but its source-owned content is not promoted to canonical specification semantics.",
+    ...openSpecContract.diagnostics.fileContentUninterpreted,
     source: { sourceId: sourceId as never, documentId: file.documentId },
   }));
 
@@ -319,7 +286,7 @@ export const importOpenSpecFiles = (
   const diagnostics = fileDiagnostics(input.sourceId, input.files);
   const snapshot = createSpecificationSourceSnapshot({
     sourceId: input.sourceId as never,
-    format: { id: FORMAT_ID, version: VERSION },
+    format: format,
     revision: input.revision,
     contentDigest: sha256(input.files.map((file) => file.content).join("\u0000")),
     observedAt: input.observedAt,
@@ -335,8 +302,8 @@ export const importOpenSpecFiles = (
       content: { path: file.path, text: file.content, kind: file.kind },
     })),
     extensions: {
-      [EXTENSION]: {
-        contract: "documented-file-layout-v1.6.0",
+      [format.id]: {
+        contract: openSpecContract.fileLayout,
         sourceOwnership: "source-owned",
         writeBack: "unsupported",
       },
@@ -344,17 +311,12 @@ export const importOpenSpecFiles = (
   });
   return cloneFrozen({
     snapshot,
-    operation: supported("observe-native-source", "19d41714c8b790488732687443713e406ef5aeef", {
-      fixtures: [{ fixtureId: "openspec.file.current-spec.v1.6.0", digest: FILE_FIXTURE_DIGEST }],
+    operation: supported("observe-native-source", openSpecContract.sourceRevision, {
+      fixtures: [fixtures.file],
       diagnostics: diagnostics,
     }),
   });
 };
-
-const nodeId = (sourceId: string, changeName: string, artifactId: string): string =>
-  `openspec.artifact.${createHash("sha256")
-    .update(JSON.stringify([sourceId, changeName, artifactId]))
-    .digest("hex")}`;
 
 export const importOpenSpecStatusCli = (
   rawInput: OpenSpecStatusCliInput,
@@ -370,75 +332,67 @@ export const importOpenSpecStatusCli = (
   const ids = new Map(
     status.artifacts.map((artifact) => [
       artifact.id,
-      nodeId(input.sourceId, status.changeName, artifact.id),
+      statusArtifactIdentity(input.sourceId, status.changeName, artifact.id),
     ]),
   );
   const diagnostics: readonly SpecificationDiagnostic[] =
     input.contract === OPENSPEC_NPM_STATUS_CONTRACT
       ? [
           {
-            code: "openspec.status-dependencies-unavailable",
-            severity: "warning",
-            impact: "advisory",
-            explanation:
-              "The official OpenSpec 1.6.0 npm tarball omits each artifact's requires list; current missingDeps are preserved, but dependency relationships are not inferred.",
-            source: { sourceId, documentId: "status.json" },
+            ...openSpecContract.diagnostics.statusDependenciesUnavailable,
+            source: { sourceId, documentId: openSpecContract.statusDocumentId },
           },
         ]
       : [];
   const snapshot = createSpecificationSourceSnapshot({
     sourceId,
-    format: { id: FORMAT_ID, version: VERSION },
+    format: format,
     revision: input.revision,
     contentDigest: sha256(input.stdout),
     observedAt: input.observedAt,
     role: "generated",
     authority: "advisory",
-    documents: [{ documentId: "status.json", content: status as unknown as JsonValue }],
+    documents: [
+      { documentId: openSpecContract.statusDocumentId, content: status as unknown as JsonValue },
+    ],
     extensions: {
-      [EXTENSION]: { command: "status --json", version: VERSION, contract: input.contract },
+      [format.id]: {
+        command: openSpecContract.statusCommand,
+        version: format.version,
+        contract: input.contract,
+      },
     },
   });
   const nodes = status.artifacts.map((artifact) => ({
     nodeId: ids.get(artifact.id)!,
     kind: "workflow",
     title: `${status.changeName}: ${artifact.id}`,
-    source: { sourceId, documentId: "status.json", location: `/artifacts/${artifact.id}` },
+    source: statusArtifactBinding(sourceId, artifact.id),
     content: artifact as unknown as JsonValue,
-    extensions: { [EXTENSION]: { schemaName: status.schemaName } },
+    extensions: { [format.id]: { schemaName: status.schemaName } },
   }));
   const relationships = status.artifacts.flatMap((artifact) =>
     isSourceArtifact(artifact)
       ? artifact.requires.map((required) => ({
-          relationshipId: `openspec.relationship.${createHash("sha256")
-            .update(JSON.stringify([input.sourceId, status.changeName, artifact.id, required]))
-            .digest("hex")}`,
+          relationshipId: statusDependencyIdentity(input.sourceId, status.changeName, {
+            artifactId: artifact.id,
+            requiredId: required,
+          }),
           kind: "depends-on",
           from: ids.get(artifact.id)!,
           to: ids.get(required)!,
-          source: {
-            sourceId,
-            documentId: "status.json",
-            location: `/artifacts/${artifact.id}/requires`,
-          },
+          source: statusDependencyBinding(sourceId, artifact.id),
         }))
       : [],
   );
   return cloneFrozen({
     operation: supported("derive-portable-specification", input.contract, {
-      fixtures: [
-        input.contract === OPENSPEC_SOURCE_STATUS_CONTRACT
-          ? { fixtureId: "openspec.cli.status.v1.6.0", digest: STATUS_FIXTURE_DIGEST }
-          : {
-              fixtureId: "openspec.cli.status.npm-tarball.v1.6.0",
-              digest: NPM_STATUS_FIXTURE_DIGEST,
-            },
-      ],
+      fixtures: [statusContractDefinition(input.contract).fixture],
       diagnostics: diagnostics,
     }),
     graph: {
-      graphId: `openspec.status.${sha256(input.stdout).value}`,
-      version: VERSION,
+      graphId: statusGraphIdentity(input.stdout),
+      version: format.version,
       sources: [snapshot],
       nodes,
       relationships,
