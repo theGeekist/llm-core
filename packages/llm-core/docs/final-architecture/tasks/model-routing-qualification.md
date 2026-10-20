@@ -35,7 +35,7 @@ read_scope:
   - docs/capabilities/evaluation.md
   - packages/llm-core/src/features/evidence/**
 review_owner: coordinator
-updated_at: 2026-08-02
+updated_at: 2026-10-20
 ---
 
 # model-routing-qualification — Evaluation-backed model routing qualification
@@ -82,3 +82,31 @@ Replaces the routing portion of `capabilities-cost-intelligence`; not claimed.
 ## Handoff
 
 Pending.
+
+## Candidate comparison, 20 October 2026
+
+The [MiniMax M3.1 Flash announcement](https://www.minimax.io/blog/minimax-m31f)
+reports nearly threefold speed and 70% lower overall agentic cost; these are
+vendor workload claims, not a measured routing recommendation. Compare exact
+provider tariffs and account eligibility separately. The
+[OpenRouter free endpoint](https://openrouter.ai/minimax/minimax-m3.1-flash:free)
+is a zero-token-price candidate, not an established free-quota or privacy
+entitlement for a particular account. Qualify actual limits, provider identity,
+reasoning/usage behavior and the existing compatible model adapter. Do not
+assume a compatible intermediary preserves the direct provider's reasoning
+defaults. Record strict privacy/residency settings and refused routes; do not
+relax them or fall back to a paid model to complete the trial.
+
+Use public/synthetic fixtures first, with no new subscription, top-up or paid
+API call. Upstream retention/training/residency eligibility must be established
+before private inputs. Preserve dataset/split/evaluator and accepted-result
+checks, latency, observed usage, correction effort and every failed attempt.
+Missing model usage remains unavailable, not zero. A configured zero token
+tariff does not make host, setup, review and repair effort free.
+
+[Clairic preview](https://developers.cloudflare.com/workers-ai/models/clairic/)
+is typed extraction, not a generic chat-model replacement. Any host-selected
+candidate retains source spans, missing-field and truncation evidence; model
+confidence or forecast intervals do not establish factual correctness or
+deterministic calculations. Qualify only the capability actually used through
+existing application/integration ownership.
