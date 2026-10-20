@@ -146,8 +146,10 @@ const assertInput = (input: SpecKitFileImportInput): void => {
       !exact(source, ["sourceId", "revision", "role", "authority", "files"]) ||
       !nonBlank(source.sourceId) ||
       !nonBlank(source.revision) ||
-      !["primary", "overlay", "reference", "generated"].includes(String(source.role)) ||
-      !["authoritative", "advisory", "informative"].includes(String(source.authority)) ||
+      typeof source.role !== "string" ||
+      !["primary", "overlay", "reference", "generated"].includes(source.role) ||
+      typeof source.authority !== "string" ||
+      !["authoritative", "advisory", "informative"].includes(source.authority) ||
       !Array.isArray(source.files) ||
       source.files.length === 0 ||
       sourceIds.has(source.sourceId)

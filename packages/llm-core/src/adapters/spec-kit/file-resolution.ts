@@ -102,11 +102,7 @@ export const assertWorkflowResolutionOrder = (
       .toSorted(
         (left, right) =>
           left.file.provenance.priority! - right.file.provenance.priority! ||
-          (left.file.provenance.providerId < right.file.provenance.providerId
-            ? -1
-            : left.file.provenance.providerId > right.file.provenance.providerId
-              ? 1
-              : 0),
+          compareUtf16CodeUnits(left.file.provenance.providerId, right.file.provenance.providerId),
       )
       .map(({ file }) => file.provenance.providerId);
     if (byDeclaredOrder.some((providerId, index) => providerId !== byNativePrecedence[index])) {
@@ -165,10 +161,10 @@ export const assertOverlayEditsAgainstBase = (
     if (
       file.kind !== "workflow" ||
       program === undefined ||
-      !file.provenance.resolutionScope.startsWith("workflow:")
+      !isWorkflowResolutionScope(file.provenance.resolutionScope)
     )
       return;
-    const expectedScope = `workflow:${program.workflowId}`;
+    const expectedScope = workflowResolutionScope(program.workflowId);
     if (file.provenance.resolutionScope !== expectedScope) {
       throw new TypeError(
         `Spec Kit base workflow provenance for ${file.path} must match its native workflow ID.`,

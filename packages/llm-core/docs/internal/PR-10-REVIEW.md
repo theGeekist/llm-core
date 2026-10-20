@@ -13,8 +13,8 @@ request applies regardless of its GitHub review-state label.
 
 ## Accountability and approval
 
-The correction must remain a separate draft PR for explicit user review and
-approval. Automated checks and independent agent review are technical evidence;
+The correction remains a separate PR, ready for explicit user review. Never
+create draft PRs. Merging requires explicit user approval. Automated checks and independent agent review are technical evidence;
 neither represents the user's acceptance.
 
 ## Existing conventions to apply
@@ -79,3 +79,21 @@ The correction now requires actual strings and rejects those malformed JSON
 values; valid pinned inputs, serialized values and public API types are unchanged.
 A focused regression verifies both rejections and the valid constitution's
 portable decision meaning without importing the new catalogue as its oracle.
+
+## PR #12 bounded review follow-up
+
+The subsequent functional-style comment is explicitly nonblocking. The touched
+PydanticAI compiler already uses `maybeMap` and `MaybePromise`; synchronous
+validators and identity builders remain synchronous. Claude streaming and Sidecar
+probe orchestration await real client/observer effects. Reworking their stateful
+runtime sequencing would exceed this small follow-up and is deferred.
+
+The small convention improvement reuses `compareUtf16CodeUnits` for SpecKit
+provider ordering, replacing a nested conditional without changing tie semantics.
+Overlay/base scope validation now consistently uses the existing workflow identity
+helpers. No new generic utility or async abstraction is introduced.
+
+The verified CodeRabbit coercion findings are corrected: OpenSpec artifact status
+and SpecKit source role/authority require actual strings before closed-value
+checks. Regressions exercise both OpenSpec contracts and both source fields;
+existing independent fixtures continue to prove valid input semantics.

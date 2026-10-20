@@ -230,7 +230,8 @@ const parseArtifact = (
   if (
     !nonBlank(value.id) ||
     !nonBlank(value.outputPath) ||
-    !definition.artifactStates.some((state) => state === String(value.status)) ||
+    typeof value.status !== "string" ||
+    !definition.artifactStates.some((state) => state === value.status) ||
     (sourceContract && !stringArray(value.requires)) ||
     (value.missingDeps !== undefined && !stringArray(value.missingDeps))
   ) {

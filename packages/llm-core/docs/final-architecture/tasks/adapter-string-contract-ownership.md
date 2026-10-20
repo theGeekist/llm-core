@@ -30,6 +30,7 @@ write_scope:
   - packages/llm-core/src/adapters/antigravity-desktop-sidecar/profile.ts
   - packages/llm-core/src/adapters/antigravity-desktop-sidecar/probe-contract.ts
   - packages/llm-core/tests/adapters/spec-kit/contract-ownership.test.ts
+  - packages/llm-core/tests/adapters/openspec/public.test.ts
   - packages/llm-core/docs/internal/PR-10-REVIEW.md
   - packages/llm-core/docs/final-architecture/tasks/adapter-string-contract-ownership.md
   - packages/llm-core/docs/final-architecture/STATUS.md
@@ -74,12 +75,13 @@ adapter-owned definitions used by behavior.
 
 ## Scope and limits
 
-At most sixteen production files and four task/evidence/test files are writable.
+At most sixteen production files and five task/evidence/test files are writable.
 Use the twelve existing source files and four named new modules above. Adjacent
 Claude and Sidecar profiles may wire their existing identities into shared typed
 definitions; their capability declarations must remain unchanged. Audit the
-checker seal removal but do not edit checker policy or baselines. Add only a
-meaningful malformed-JSON regression for the reviewed kind/tier coercion gap.
+checker seal removal but do not edit checker policy or baselines. Add meaningful
+malformed-JSON regressions for the reviewed kind/tier, source role/authority and
+OpenSpec artifact-status coercion gaps.
 Preserve public APIs, exact serialized values, error behavior, unknown native
 failures and source-versus-published-package distinctions. Do not create a
 repository-wide string framework or merely hoist arbitrary constants.
@@ -93,8 +95,9 @@ repository-wide string framework or merely hoist arbitrary constants.
   new definitions as both expected and actual values.
 - Focused tests, package types, lint, SLOC and package qualification pass.
 - Independent review covers the exact final diff and all three user requests.
-- Publish a separate draft follow-up PR. Do not mark it ready, merge it, resolve
-  user threads or claim user acceptance without explicit user approval.
+- Keep the separate follow-up PR ready for review; never create a draft PR.
+  Do not merge, resolve user threads or claim user acceptance without explicit
+  user approval.
 
 ## Work log
 
@@ -111,9 +114,27 @@ passed with 904 tests and four existing external-runtime skips. The isolated
 packed consumer verified all 35 ESM-only exports. User acceptance is not inferred
 from these technical checks.
 
+2026-10-20 follow-up: Verified all three CodeRabbit observations against the
+published PR head. Added actual-string checks and malformed-input regressions for
+OpenSpec status and SpecKit source role/authority. Reused workflow scope builders
+and the established UTF-16 comparator. The functional-style review is explicitly
+nonblocking; wider runtime sequencing changes are deferred. Independent review of
+the seven-file follow-up found no actionable issues. Focused adapter tests passed
+40 tests with one existing external-runtime skip; production and test types,
+formatting and SLOC passed. Package `release:build` passed with 908 tests and four
+existing external-runtime skips, schema/status validation, lint (zero errors),
+types and declaration/ESM builds.
+
+Execution mode: dedicated-worktree
+Execution checkout: `/workspace/scratch/80516c47232a/llm-core-pr12`.
+Execution rationale: Preserve the prior dirty checkout and qualify an isolated
+copy of the authoritative published PR head `5e36ad0f`.
+Concurrency evaluation: no concurrent writes; the follow-up changes no Sidecar
+files and therefore avoids the active Sidecar review scope.
+
 ## Handoff
 
 Source correction, independent technical review and local combined qualification
-are complete. Remote checks and explicit user approval remain pending. Publish
-only a separate draft PR; do not mark ready, merge or resolve the original user
-threads.
+are complete for the initial PR head. PR #12 is open and ready for review. Its
+initial remote checks passed; follow-up edits require fresh checks. Explicit user
+merge approval remains pending. Do not merge or resolve the original user threads.
