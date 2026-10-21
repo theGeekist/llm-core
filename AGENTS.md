@@ -2,11 +2,16 @@
 
 ## Authoritative workspace
 
-- The canonical coordination checkout for this project is
-  `/Users/jasonnathan/Repos/@theGeekist/llm-core`.
+- Use the checkout the user selected for the task. The currently approved WSL
+  selection is `/home/jasonjn/Repos/@theGeekist/llm-core`, which resolves to
+  `/mnt/c/Repos/@theGeekist/llm-core`.
 - Before inspecting, editing, testing, or reporting status, run
-  `git rev-parse --show-toplevel` and require that exact path unless the
-  selected task's front matter explicitly names a dedicated worktree.
+  `git rev-parse --show-toplevel` from the selected checkout and verify that
+  the result is its resolved Git root. Resolve symlinks before comparing paths;
+  accept a selected symlink path when it resolves to the same checkout. Do not
+  require the raw selected path string to equal Git's resolved root. If the
+  selected task's front matter names a dedicated worktree, verify and use that
+  exact task-selected worktree.
 - Treat `.worktrees/**`, sibling repositories, attachments, research folders,
   and copied source trees as context only. Do not edit them or use their state
   as project evidence unless the selected task explicitly names that exact

@@ -1,23 +1,35 @@
 # Geekist AI ecosystem
 
-This workspace contains independently owned packages for portable AI contracts, runtime integrations, and AI-first software delivery. The packages share one ecosystem documentation site while retaining their own engineering documents and architecture authority.
+This monorepo contains three independently owned packages. The [public VitePress site](./docs/index.md) documents `llm-core`; each package owns its engineering material and task state. This page is a route map to implemented capabilities and their evidence, not a substitute for package authority.
 
-## Packages
+## Packages and current boundaries
 
-| Package | Purpose | Package documents |
+| Package | Implemented surface | Start here |
 | --- | --- | --- |
-| [`@geekist/llm-core`](./packages/llm-core/README.md) | Portable contracts, conformance, authority, and evidence for agentic systems | [`packages/llm-core/docs`](./packages/llm-core/docs/README.md) |
-| [`@aifsd/sdk`](./packages/aifsd/README.md) | AI-first software delivery and application-integration journeys | Private engineering authority; optional local `packages/aifsd/docs` mount |
-| [`@aifsd/strict-json`](./packages/strict-json/README.md) | Strict JSON normalisation, canonicalisation, and immutable snapshots | [`packages/strict-json/docs`](./packages/strict-json/docs/README.md) |
+| [`@geekist/llm-core`](./packages/llm-core/README.md) | Portable AI contracts, specifications, controlled effects, conformance, authority, evidence and qualified integration fronts. Version `2.0.0` candidate; no default agent or workflow executor. | [Package engineering docs](./packages/llm-core/docs/README.md), [public exports](./docs/reference/package-exports.md), [architecture status](./packages/llm-core/docs/final-architecture/STATUS.md) |
+| [`@aifsd/sdk`](./packages/aifsd/README.md) | Version `0.1.0` candidate with two package exports: `config` and `integrations`. Project semantics and a headless workbench exist as internal source and host composition, not published SDK fronts. | [Package README](./packages/aifsd/README.md), [exports](./packages/aifsd/package.json), [workbench host](./apps/aifsd-headless-workbench/README.md) |
+| [`@aifsd/strict-json`](./packages/strict-json/README.md) | Strict JSON normalisation, canonical bytes, snapshots and valid-graph freezing shared by the kernel and SDK. Version `0.1.0` candidate. | [Contract](./packages/strict-json/docs/internal/STRICT-JSON-CONTRACT.md), [package tests](./packages/strict-json/tests/) |
 
-Additional packages use the same ownership shape:
+All three packages target Node.js 22 or newer. `llm-core` and AIFSD pin `@wpkernel/pipeline@1.4.1` as composition substrate; [ADR-009](./packages/llm-core/docs/final-architecture/decisions/ADR-009-specification-interoperability.md) explains why specification meaning and authority stay with `llm-core`. Version numbers in manifests are candidates, not evidence of an npm release. Use the [release history](./docs/reference/release-history.md) and each package's qualification records for release claims.
 
-```text
-packages/<package>/
-├── README.md
-├── docs/
-├── src/
-└── tests/
-```
+## Capability history and evidence
 
-The shared [VitePress site](./docs/index.md) currently documents `llm-core` and can aggregate future package sections. Start package work from its README and engineering docs. Documentation-only internal material belongs under `packages/<package>/docs/internal/`.
+The links below lead to the native `llm-core` task or decision, then to current source or tests. Task front matter owns lifecycle state; the [generated status projection](./packages/llm-core/docs/final-architecture/STATUS.md) is an index. The [v2 kernel plan](./packages/llm-core/docs/final-architecture/PLAN.md) records the completed kernel boundary, while the [roadmap](./packages/llm-core/docs/final-architecture/ROADMAP.md) tracks continuing programmes. Pre-v2 documents under `packages/llm-core/docs/` are historical provenance.
+
+| Capability | Native authority | Implementation and evidence | Maturity boundary |
+| --- | --- | --- | --- |
+| Portable agent, model, tool, state, conversation, interaction, retrieval, context, artifact and evaluation contracts | [Core convergence](./packages/llm-core/docs/final-architecture/tasks/core-convergence.md), [ADR-016](./packages/llm-core/docs/final-architecture/decisions/ADR-016-integration-owned-execution.md) | [Public package fronts](./docs/reference/package-exports.md), [kernel tests](./packages/llm-core/tests/) | Kernel complete; execution belongs to selected integrations. |
+| Controlled tool execution, durable receipts, redacted events and evidence | [Tool control](./packages/llm-core/docs/final-architecture/tasks/core-tool-control-events.md), [receipt reconciliation](./packages/llm-core/docs/final-architecture/tasks/runtime-receipt-reconciliation.md) | [Tool runtime front](./packages/llm-core/src/tools/runtime.ts), [controlled execution guide](./docs/orchestration/controlled-tool-execution.md) | Implemented kernel controls; host/runtime effects remain explicit. |
+| Typed specification graph, exact operation contracts, review and authority-bound compilation | [Specification API](./packages/llm-core/docs/final-architecture/tasks/specification-api.md), [exact operations](./packages/llm-core/docs/final-architecture/tasks/specification-exact-operation-contracts.md), [ADR-017](./packages/llm-core/docs/final-architecture/decisions/ADR-017-external-contract-fidelity.md) | [Specification design](./packages/llm-core/docs/final-architecture/SPECIFICATIONS.md), [public front](./packages/llm-core/src/specifications/index.ts), [tests](./packages/llm-core/tests/specifications/) | Implemented contract and authority; individual adapter publication has separate tasks. |
+| Inert adapter catalogue, operation-scoped resolution and post-acceptance acquisition | [Catalogue qualification](./packages/llm-core/docs/final-architecture/tasks/adapter-catalogue-public-qualification.md) | [Catalogue fronts](./docs/reference/package-exports.md), [AIFSD consumer gap](./packages/llm-core/docs/internal/AIFSD-CONSUMER-GAPS.md) | Public fronts exist; AIFSD application composition is still planned. |
+| Native agent conversation contract and concrete runtime adapters | [ADR-018](./packages/llm-core/docs/final-architecture/decisions/ADR-018-native-agent-conversation-runtime.md), [native contract task](./packages/llm-core/docs/final-architecture/tasks/native-agent-conversation-runtime-contract.md), [adapter tasks](./packages/llm-core/docs/final-architecture/tasks/README.md) | [Runtime adapter docs](./docs/adapters/index.md), [agent tests](./packages/llm-core/tests/agent/) | Contract complete. Adapter implementations and cross-provider qualification have distinct task states; consult the status projection before claiming support. |
+| A2A and MCP protocol fronts | [Protocol qualification](./packages/llm-core/docs/final-architecture/tasks/adapters-protocol-qualification.md) | [Package exports](./docs/reference/package-exports.md), [adapter tests](./packages/llm-core/tests/adapters/) | Conditional, exact-upstream support windows with separate qualifiers. |
+| Strict JSON boundary | [Strict JSON contract](./packages/strict-json/docs/internal/STRICT-JSON-CONTRACT.md) | [Source](./packages/strict-json/src/), [tests](./packages/strict-json/tests/) | Implemented workspace package; release evidence is separate. |
+
+## AIFSD implementation and publication boundary
+
+The public SDK's [`config` front](./packages/aifsd/src/config/index.ts) implements manifest validation, catalogue resolution, reproducibility locking, native-change planning, approved application and renderer-neutral explanation. Its [focused tests](./packages/aifsd/tests/config/) cover closed inputs, ownership and adversarial cases. The [`integrations` front](./packages/aifsd/src/integrations/index.ts) implements integration authoring, validation, qualification, trust and activation; [integration tests](./packages/aifsd/tests/integrations/) and [PydanticAI/OpenHands fixtures](./packages/aifsd/tests/fixtures/integrations/) characterize those boundaries. The package [manifest](./packages/aifsd/package.json) is the export authority.
+
+The repository also contains [project semantics](./packages/aifsd/src/project-semantics/public.ts), [its tests](./packages/aifsd/tests/project-semantics/), a [headless workbench](./packages/aifsd/src/application/headless-workbench/public.ts) and a [host application with qualification evidence](./apps/aifsd-headless-workbench/). These are implemented internal/host work. They do not imply a published `@aifsd/sdk/application`, desktop/mobile SDK, complete delivery workbench or hosted service. The AIFSD product architecture and task authority live in a separate private research repository; the optional ignored `packages/aifsd/docs` mount is absent from this checkout. Public builds and checks do not depend on it. The [llm-core consumer-gap record](./packages/llm-core/docs/internal/AIFSD-CONSUMER-GAPS.md) states the remaining application-composition boundary without inventing private task state.
+
+For use, start at the relevant package README. For `llm-core` API and adoption, use the [public capability guide](./docs/capabilities/index.md) and [API by subpath](./docs/reference/api.md). Package-specific engineering documents belong in `packages/<package>/docs/internal/`, while the root `docs/` tree remains the aggregated public site.
