@@ -7,7 +7,7 @@ Pre-transition source baseline: `c041792`
 
 <!-- architecture-status:generated:start -->
 
-Active tasks: 3
+Active tasks: 4
 
 ## Task inventory
 
@@ -95,6 +95,7 @@ Active tasks: 3
 | production-quality-gates | qualification | done | — | — | — | — |
 | release-history-provenance | qualification | done | release-v2-readiness | — | — | — |
 | release-v2-readiness | architecture | done | architecture-release-reproducibility, adapters-protocol-qualification | — | — | — |
+| repository-package-index-readme-restoration | architecture | review | — | — | — | — |
 | runtime-adapter-substitution | qualification | proposed | architecture-external-contract-fidelity, runtime-operation-contract-correction, adapter-langgraph-runtime, adapter-pydantic-ai-runtime | — | — | — |
 | runtime-operation-contract-correction | adapters | done | architecture-external-contract-fidelity, capabilities-runtime-conformance | — | — | — |
 | runtime-receipt-reconciliation | qualification | done | core-tool-control-events, core-state-interventions, language-rollout | bb7f7f7 | — | — |
