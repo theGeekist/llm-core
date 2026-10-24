@@ -68,6 +68,7 @@ A dirty edit replaced the package index with a pinned-history note. Its links po
 - `/home/jasonjn/.bun/bin/bun node_modules/prettier/bin/prettier.cjs --check README.md packages/llm-core/docs/final-architecture/tasks/repository-package-index-readme-restoration.md` — passed.
 - `/home/jasonjn/.bun/bin/bun run packages/llm-core/scripts/check-architecture-status.ts` — passed against 97 task briefs.
 - A Node-based local-link scan of `README.md` — passed; every local Markdown target exists.
+- `! rg -n -F -e 'project-management-report.md' -e 'perceval-probe-receipt.json' README.md` — passed; neither untracked packet filename appears.
 - `bun install --frozen-lockfile --no-progress` was attempted to repair ignored local dependencies but stalled without output and was interrupted; no successful install is claimed.
 
 ## Required evidence
