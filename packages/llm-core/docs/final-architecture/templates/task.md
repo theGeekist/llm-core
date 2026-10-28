@@ -85,7 +85,7 @@ Record existing replacements or planned forward targets when cancelled. For
 active work use the canonical labels:
 
 ```text
-Execution mode: shared-checkout | dedicated-worktree
+Execution mode: shared-checkout
 Execution rationale: <non-empty explanation>
 Concurrency evaluation: <ongoing task IDs or none; start alongside | wait | no concurrency; boundary rationale>
 Concurrent task scopes: none | <task IDs and disjoint scopes>

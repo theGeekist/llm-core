@@ -17,7 +17,7 @@ preference. Before claiming, the coordinator:
 6. assigns one primary owner, lease, base SHA and execution location.
 
 DAG readiness alone does not authorize a claim. Overlap is serialized or
-repartitioned; a separate checkout never cures shared ownership.
+repartitioned; all work uses the selected primary checkout.
 
 The coordinator owns every lifecycle transition and is the only writer of
 `STATUS.md`. It changes task front matter and regenerates STATUS in the same
@@ -44,16 +44,14 @@ as implementation authority.
 - Disjoint tasks may share that checkout; one writer per file is absolute.
 - Shared manifests, lockfiles, generated artifacts and staging paths count as
   writes and must be included in the boundary check.
-- A dedicated worktree is a last resort for otherwise-disjoint risky or bulk
-  work, or clean final evidence that genuinely needs isolation. Record why.
 - A task-local swarm is optional. Children inherit the task scope, receive
   disjoint subpaths/outputs and never claim, integrate or broaden work.
 - Workers edit only `write_scope`, do not switch branches, and do not rebase,
   merge or cherry-pick.
 - Re-evaluate boundaries when another candidate is considered, scope changes or
   an unexpected shared-file edit appears. Stop until ownership is disjoint.
-- Final repository-wide or publication evidence uses a quiescent shared
-  checkout or the task's justified dedicated worktree.
+- Final repository-wide or publication evidence uses a quiescent selected
+  checkout.
 
 ## Cross-runtime swarm
 
@@ -130,12 +128,8 @@ Review begins from an uncommitted task-scoped diff. The submission records:
 - ADRs, deviations, known loss and remaining risk; and
 - any task-local delegation.
 
-After approval:
-
-- **Shared checkout:** the coordinator commits only approved task paths on the
-  current branch, leaving unrelated diffs untouched.
-- **Dedicated worktree:** the approved task commit is created on its isolated
-  ref and integrated by the coordinator.
+After approval, the coordinator commits only approved task paths on the current
+branch, leaving unrelated diffs untouched.
 
 The coordinator runs receiving verification, records the approved SHA, then
 changes the task to `done` and regenerates STATUS. Task-frontmatter changes and
@@ -162,5 +156,5 @@ Task-focused checks supplement, never replace, package gates.
 
 Project state is recoverable from accepted ADRs, task front matter, approved
 commits and the generated STATUS projection. Chat history and uncommitted
-worktree state are never required inputs. Historical `legacy_id`, `branch` and
+checkout state are never required inputs. Historical `legacy_id`, `branch` and
 `worktree` values remain immutable provenance.

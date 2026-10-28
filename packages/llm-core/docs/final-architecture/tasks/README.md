@@ -16,7 +16,7 @@ Use only these values:
 - `status`: `proposed`, `ready`, `claimed`, `in_progress`, `review`, `blocked`, `done`, `cancelled`;
 - `priority`: `critical`, `high`, `medium`, `normal`.
 
-Task assignment is cooperative repository-local state under `.taskgraph/local/`, not task-frontmatter authority. Claims do not grant filesystem permissions or replace Git and worktrees as integration evidence.
+Task assignment is cooperative repository-local state under `.taskgraph/local/`, not task-frontmatter authority. Claims do not grant filesystem permissions or replace Git integration evidence.
 
 `evidence_milestone` is optional structured STATUS evidence for completed work. `forward_to` records local or package-qualified successor tasks without making their existence or lifecycle a hard graph dependency. Prose work logs are not projection inputs.
 
@@ -27,7 +27,7 @@ The coordinator owns lifecycle changes and updates task front matter plus `STATU
 Work logs retain execution and review evidence as prose. They are not claim, lease or admission authority. Useful evidence may include:
 
 ```text
-Execution mode: shared-checkout | dedicated-worktree
+Execution mode: shared-checkout
 Execution rationale: <non-empty explanation>
 Concurrency evaluation: <ongoing task IDs or none; start alongside | wait | no concurrency; boundary rationale>
 Concurrent task scopes: none | <task IDs and disjoint scopes>

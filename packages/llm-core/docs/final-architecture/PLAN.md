@@ -150,10 +150,8 @@ bun run docs:check
 bun run --cwd packages/llm-core format:check
 ```
 
-Repository-wide results normally use a quiescent primary checkout. A dedicated
-worktree is acceptable only when its last-resort isolation rationale is
-recorded. Focused task results remain valid during disjoint shared-checkout
-work.
+Repository-wide results use a quiescent selected checkout. Focused task results
+remain valid during disjoint shared-checkout work.
 
 ## Progress authority
 
@@ -165,4 +163,4 @@ work.
   projection together.
 - [`COORDINATION.md`](COORDINATION.md) defines claims, boundary-driven execution
   modes, optional swarms, review and integration.
-- Conversations and uncommitted worktree state are never required inputs.
+- Conversations and uncommitted checkout state are never required inputs.
