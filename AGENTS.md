@@ -9,23 +9,21 @@
   `git rev-parse --show-toplevel` from the selected checkout and verify that
   the result is its resolved Git root. Resolve symlinks before comparing paths;
   accept a selected symlink path when it resolves to the same checkout. Do not
-  require the raw selected path string to equal Git's resolved root. If the
-  selected task's front matter names a dedicated worktree, verify and use that
-  exact task-selected worktree.
-- Treat `.worktrees/**`, sibling repositories, attachments, research folders,
-  and copied source trees as context only. Do not edit them or use their state
-  as project evidence unless the selected task explicitly names that exact
-  checkout and grants its paths in `write_scope`.
+  require the raw selected path string to equal Git's resolved root. Work only
+  in the selected checkout; do not create, select, attach, restore, switch to,
+  or use a Git worktree.
+- Treat sibling repositories, attachments, research folders, and copied source
+  trees as context only. Do not edit them or use their state as project
+  evidence unless the selected task explicitly names that exact checkout and
+  grants its paths in `write_scope`.
 - Never select a workspace because a broad search found a similarly named file.
-  Resolve the task brief from this checkout first, then use its recorded
-  `worktree` path when one is active.
+  Resolve the task brief from this checkout first.
 - Before starting the next candidate task, inspect `git status` and every task
   currently active. Compare that candidate's conflicts, write scope, generated
   outputs, and staging paths with the ongoing work in real time. Selection is
-  incremental, with no preset serial or parallel preference. Use the primary
-  checkout by default; serialize or repartition overlaps. A dedicated worktree
-  is a last resort for otherwise-disjoint work whose risk, bulk, or final
-  evidence genuinely requires isolation.
+  incremental, with no preset serial or parallel preference. Use the selected
+  checkout; serialize or repartition overlapping work. All work stays in that
+  checkout.
 
 ## Git workflow
 
