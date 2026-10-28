@@ -1,4 +1,4 @@
 #!/usr/bin/env sh
 set -eu
 
-exec bun run quality:prepush:hook
+exec sh scripts/quality/run-local-hook.sh pre-push

@@ -2,5 +2,4 @@
 set -eu
 
 # Compatibility hook path for checkouts that explicitly use .githooks.
-# lint-staged preserves unstaged hunks and reapplies successful fixes to the index.
-exec bun run lint:staged
+exec sh scripts/quality/run-local-hook.sh pre-commit
