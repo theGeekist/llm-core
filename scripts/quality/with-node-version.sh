@@ -13,6 +13,8 @@ if [ "$(node --version 2>/dev/null || true)" != "v$node_version" ]; then
     echo "Pre-push requires Node v$node_version. Install it with: nvm install $node_version"
     exit 1
   fi
+  NVM_DIR="$nvm_directory"
+  export NVM_DIR
   # shellcheck disable=SC1090
   . "$nvm_directory/nvm.sh"
   if ! nvm use "$node_version" >/dev/null; then

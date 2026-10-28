@@ -223,6 +223,35 @@ describe("repository Git hooks", () => {
       expect(exact.exitCode).toBe(0);
       expect(readFileSync(log, "utf8")).toBe("v24.13.0\n");
 
+      const defaultHome = resolve(sandbox, "default-home");
+      const defaultNvmDirectory = resolve(defaultHome, ".nvm");
+      mkdirSync(defaultNvmDirectory, { recursive: true });
+      writeFileSync(
+        resolve(defaultNvmDirectory, "nvm.sh"),
+        [
+          '[ "$NVM_DIR" = "$EXPECTED_NVM_DIR" ] || return 1',
+          "nvm() {",
+          '  [ "$1" = "use" ] && [ "$2" = "24.13.0" ] || return 1',
+          '  export FAKE_NODE_VERSION="$2"',
+          "}",
+          "",
+        ].join("\n"),
+      );
+      const defaultNvm = run(
+        sandbox,
+        ["sh", resolve(root, "scripts/quality/with-node-version.sh"), "target"],
+        {
+          EXPECTED_NVM_DIR: defaultNvmDirectory,
+          FAKE_NODE_VERSION: "22.22.0",
+          HOME: defaultHome,
+          HOOK_LOG: log,
+          NVM_DIR: "",
+          PATH: path,
+        },
+      );
+      expect(defaultNvm.exitCode).toBe(0);
+      expect(readFileSync(log, "utf8")).toBe("v24.13.0\n");
+
       const nvmDirectory = resolve(sandbox, "nvm");
       mkdirSync(nvmDirectory, { recursive: true });
       writeFileSync(
