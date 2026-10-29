@@ -3,8 +3,7 @@
 ## Authoritative workspace
 
 - Use the checkout the user selected for the task. The currently approved WSL
-  selection is `/home/jasonjn/Repos/@theGeekist/llm-core`, which resolves to
-  `/mnt/c/Repos/@theGeekist/llm-core`.
+  checkout is `/home/jasonjn/Repos/@theGeekist/llm-core`.
 - Before inspecting, editing, testing, or reporting status, run
   `git rev-parse --show-toplevel` from the selected checkout and verify that
   the result is its resolved Git root. Resolve symlinks before comparing paths;

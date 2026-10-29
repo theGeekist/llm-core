@@ -3,6 +3,7 @@
   "limit": 500,
   "excludedDirectories": [
     ".git",
+    ".site-observatory",
     ".worktrees",
     "__snapshots__",
     "coverage",
@@ -171,6 +172,16 @@
         "justification": "approximately 500 lines",
         "currentLines": 521,
         "currentSha256": "1b5da099aad43d3d7cc9f384d3f12435fe62dd106a60f903ee5d8ef7d69369d9"
+      }
+    },
+    "scripts/check-git-hooks.test.ts": {
+      "lines": 536,
+      "sha256": "e9d90d4bb515122dcba3b4c18a0739e50aad3be72ef14e5c683a5e02d2ceeaba",
+      "waiver": {
+        "version": 1,
+        "justification": "approximately 500 lines",
+        "currentLines": 536,
+        "currentSha256": "e9d90d4bb515122dcba3b4c18a0739e50aad3be72ef14e5c683a5e02d2ceeaba"
       }
     },
     "scripts/check-sloc.test.ts": {

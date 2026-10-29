@@ -27,3 +27,10 @@ codex/
 
 # Local Simple Assembly project state.
 .simpleassembly/
+
+# Separate local Observatory checkout and its build dependencies.
+.site-observatory/
+
+# Local research packet copies are not repository evidence.
+/perceval-probe-receipt.json
+/project-management-report.md
