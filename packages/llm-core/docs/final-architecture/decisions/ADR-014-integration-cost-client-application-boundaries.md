@@ -95,6 +95,12 @@ OS lifecycle behavior.
 - Price catalogues, exchange rates, invoices and billing reconciliation remain
   host/service concerns behind ports; the kernel owns portable facts and
   decision evidence only.
+- A downstream Current Velocity proof may correlate controlled-effect
+  receipts, evidence references, provider/model identities, usage and cost
+  facts. These records establish execution and attribution only: they do not
+  establish accepted output, delivery value, repository progress, or a
+  productivity conclusion. Project/task semantics, estimates, acceptance,
+  replay windows and recorder policy belong to the consuming product.
 
 ### End-user client applications
 
@@ -121,6 +127,12 @@ OS lifecycle behavior.
 - A hosted connector service, daemon, sync service, price service or billing
   backend is an optional delivery product. None becomes a hidden dependency of
   local `llm-core` execution.
+- Current Velocity is a downstream consumer of qualified integration evidence,
+  not an `llm-core` capability. Its pilot sizing, product management records,
+  active-capacity normalization, accepted-output unit, longitudinal recorder,
+  historic-as-of reconstruction and current preview policy remain owned by
+  that product. No `llm-core` receipt or estimate implies acceptance, available
+  capacity, a delivery target, or a Current Velocity result.
 - Consumer subscription/usage tracking uses documented provider APIs, explicit
   user imports, or locally generated receipts. Browser scraping of Pro-plan
   usage pages and collection of session cookies are outside the supported

@@ -27,7 +27,7 @@ read_scope:
   - packages/llm-core/docs/final-architecture/STATUS.md
   - packages/llm-core/docs/final-architecture/tasks/repository-package-index-readme-restoration.md
 review_owner: coordinator
-updated_at: 2026-10-23
+updated_at: 2026-10-29
 ---
 
 # repository-package-index-readme-restoration: Restore the repository package index README
@@ -64,11 +64,11 @@ A dirty edit replaced the package index with a pinned-history note. Its links po
 
 ## Verification
 
-- `BUN_TMPDIR=/tmp/codex-bun-tmp BUN_INSTALL=/home/jasonjn/.bun PATH=/home/jasonjn/.bun/bin:$PATH bun run docs:check` — failed before validation because the installed tree is missing `micromark-util-chunked`.
+- `PATH=/home/jasonjn/.bun/bin:$PATH bun run docs:check` — passed; verified 49 published pages, 172 package engineering pages, 6 routing pages, 23 embedded snippets, all sidebar links and snippet types.
 - `/home/jasonjn/.bun/bin/bun node_modules/prettier/bin/prettier.cjs --check README.md packages/llm-core/docs/final-architecture/tasks/repository-package-index-readme-restoration.md` — passed.
 - `/home/jasonjn/.bun/bin/bun run packages/llm-core/scripts/check-architecture-status.ts` — passed against 97 task briefs.
 - A Node-based local-link scan of `README.md` — passed; every local Markdown target exists.
-- `! rg -n -F -e 'project-management-report.md' -e 'perceval-probe-receipt.json' README.md` — passed; neither untracked packet filename appears.
+- `! rg -n -F -e 'project-management-report.md' -e 'perceval-probe-receipt.json' README.md` — passed; neither packet filename appears.
 - `bun install --frozen-lockfile --no-progress` was attempted to repair ignored local dependencies but stalled without output and was interrupted; no successful install is claimed.
 
 ## Required evidence
@@ -85,15 +85,15 @@ Concurrency evaluation: existing active tasks have disjoint source and adapter s
 Concurrent task scopes: none
 Swarm delegation: none
 
-## Blocker
+## Previous blocker
 
-The full `docs:check` gate remains blocked by the missing `micromark-util-chunked` package in the existing ignored `node_modules` tree. A frozen-lockfile install stalled and was interrupted. The focused formatter, local-link scan and architecture STATUS check passed.
+The earlier `docs:check` attempt was blocked by a missing `micromark-util-chunked` package in the ignored `node_modules` tree, and a frozen-lockfile install stalled. The current `docs:check` run passes with the installed dependencies.
 
 ## Handoff
 
 ### Result
 
-The root README matches the committed package index again. Its release-history link targets maintained repository documentation, and all local Markdown links resolve. Awaiting review; the full docs checker could not start because of an incomplete local dependency tree.
+The root README matches the committed package index again. Its release-history link targets maintained repository documentation, and all local Markdown links resolve. Awaiting review; the full docs checker now passes.
 
 ### Decisions applied
 
@@ -108,15 +108,15 @@ Use the repository's maintained release-history document as the history pointer.
 
 ### Verification evidence
 
-The task-scoped Prettier check, local README link scan and architecture STATUS check passed. The repository `docs:check` command exited 1 because Bun could not resolve `micromark-util-chunked`; a frozen install did not complete. Neither the lockfile nor packet copies were targeted.
+The task-scoped Prettier check, local README link scan, architecture STATUS check and repository `docs:check` command passed. An earlier frozen install did not complete. Neither the lockfile nor packet copies were targeted.
 
 ### Deviations
 
-The `tg` command is absent from PATH, so the planning CLI could not be run; use the repository-owned architecture status checker directly.
+The earlier `tg` command was absent from PATH. With the local Bun path set, `bun run tasks:plan` and `bun run tasks:context -- llm-core/repository-package-index-readme-restoration` now pass.
 
 ### Remaining risks
 
-Rerun `docs:check` after restoring the missing package in the local Bun dependency tree.
+No task-scoped check remains blocked.
 
 ### Recommended next task
 

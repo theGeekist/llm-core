@@ -167,7 +167,11 @@ provider and model identities, usage and cost facts. `llm-core` does not learn
 Current Velocity conclusions, Simple Assembly proposal or decision semantics,
 Task Graph lifecycle, accepted-work definitions, comparison windows or
 intervention authority. Stable correlation is sufficient. A universal
-portfolio run or approval contract is not a kernel prerequisite.
+portfolio run or approval contract is not a kernel prerequisite. ADR-014 also
+keeps its pilot sizing, product-management records, capacity normalization,
+accepted-output unit, recorder, historical replay and current preview policy
+in the downstream product; execution receipts and cost estimates do not imply
+acceptance or a productivity result.
 
 ## Connectors and operating services
 

@@ -3,4 +3,4 @@ set -eu
 
 # lint-staged hides unstaged hunks from partially staged files, restores them
 # afterwards, and adds only successful formatter and ESLint fixes back to the index.
-exec bun run lint:staged
+exec sh scripts/quality/run-local-hook.sh pre-commit

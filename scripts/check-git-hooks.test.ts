@@ -1,6 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import {
   chmodSync,
+  copyFileSync,
   existsSync,
   mkdirSync,
   mkdtempSync,
@@ -78,11 +79,11 @@ describe("repository Git hooks", () => {
     }
   });
 
-  test("uses the staged fixer for both supported pre-commit entrypoints", () => {
+  test("uses the checked staged fixer for both supported pre-commit entrypoints", () => {
     for (const path of [".husky/pre-commit", ".githooks/pre-commit"]) {
       const source = hook(path);
       expect(source).toContain("set -eu");
-      expect(source).toContain("exec bun run lint:staged");
+      expect(source).toContain("exec sh scripts/quality/run-local-hook.sh pre-commit");
       expect(source).not.toContain("bun run format");
       expect(source).not.toContain("bun run lint:fix");
     }
@@ -137,19 +138,72 @@ describe("repository Git hooks", () => {
       "sh scripts/quality/with-node-version.sh sh scripts/quality/pre-push.sh",
     );
 
-    const husky = hook(".husky/pre-push");
-    expect(husky).toBe(hook(".githooks/pre-push"));
-    expect(husky).toContain("exec bun run quality:prepush:hook");
+    for (const path of [".husky/pre-push", ".githooks/pre-push"]) {
+      expect(hook(path)).toContain("exec sh scripts/quality/run-local-hook.sh pre-push");
+    }
+    expect(hook("scripts/quality/run-local-hook.sh")).toContain(
+      'required_commands="turbo prettier eslint tsc"',
+    );
 
     const policy = hook("scripts/quality/pre-push.sh");
     expect(policy).toContain("git status --porcelain=v1 -z --untracked-files=all");
     expect(policy.indexOf("bun run quality:prepush:fix")).toBeLessThan(
-      policy.indexOf("exec bun run quality:prepush\n"),
+      policy.indexOf('env QUALITY_BASE_SHA="$quality_base_sha" bun run quality:prepush'),
     );
+    expect(policy).toContain("sh scripts/quality/check-quality-base.sh");
+    expect(policy).toContain("origin/main advanced while the local quality gate was running");
     expect(policy).toContain("Pre-push auto-fix changed tracked files. The push was blocked.");
     expect(policy).toContain(
       "Review the changes, stage them deliberately, commit again, then retry the push.",
     );
+  });
+
+  test("uses a fresh origin/main SHA for main-target PR local quality checks", () => {
+    expect(hook("scripts/quality/check-quality-base.sh")).toContain(
+      "Local parity assumes pull requests target the repository's trunk, main.",
+    );
+    const sandbox = mkdtempSync(join(tmpdir(), "llm-core-quality-base-"));
+    const remote = resolve(sandbox, "origin.git");
+    const repository = resolve(sandbox, "repo");
+    mkdirSync(repository);
+    try {
+      git(repository, ["init", "--quiet"]);
+      git(repository, ["config", "user.email", "hooks@example.test"]);
+      git(repository, ["config", "user.name", "Hook Test"]);
+      writeFileSync(resolve(repository, "tracked.md"), "# Initial\n");
+      git(repository, ["add", "tracked.md"]);
+      git(repository, ["commit", "--quiet", "-m", "initial"]);
+      const initial = git(repository, ["rev-parse", "HEAD"]).trim();
+      git(repository, ["init", "--bare", "--quiet", remote]);
+      git(repository, ["remote", "add", "origin", remote]);
+      git(repository, ["push", "--quiet", "origin", "HEAD:refs/heads/main"]);
+      git(repository, ["update-ref", "refs/remotes/origin/main", initial]);
+
+      const resolveBase = () =>
+        run(repository, ["sh", resolve(root, "scripts/quality/check-quality-base.sh")], {
+          PATH: process.env.PATH ?? "",
+        });
+      const fresh = resolveBase();
+      expect(fresh.exitCode).toBe(0);
+      expect(fresh.stdout.toString().trim()).toBe(initial);
+
+      writeFileSync(resolve(repository, "tracked.md"), "# Advanced\n");
+      git(repository, ["add", "tracked.md"]);
+      git(repository, ["commit", "--quiet", "-m", "advance main"]);
+      git(repository, ["push", "--quiet", "origin", "HEAD:refs/heads/main"]);
+      git(repository, ["update-ref", "refs/remotes/origin/main", initial]);
+      const stale = resolveBase();
+      expect(stale.exitCode).toBe(1);
+      expect(stale.stderr.toString()).toContain("Local origin/main is stale");
+      expect(stale.stderr.toString()).toContain("git fetch origin main");
+
+      git(repository, ["remote", "remove", "origin"]);
+      const unavailable = resolveBase();
+      expect(unavailable.exitCode).toBe(1);
+      expect(unavailable.stderr.toString()).toContain("Cannot verify origin/main");
+    } finally {
+      rmSync(sandbox, { recursive: true, force: true });
+    }
   });
 
   test("uses the repository Node declaration before pre-push work", () => {
@@ -167,6 +221,35 @@ describe("repository Git hooks", () => {
         { FAKE_NODE_VERSION: "24.13.0", HOOK_LOG: log, PATH: path },
       );
       expect(exact.exitCode).toBe(0);
+      expect(readFileSync(log, "utf8")).toBe("v24.13.0\n");
+
+      const defaultHome = resolve(sandbox, "default-home");
+      const defaultNvmDirectory = resolve(defaultHome, ".nvm");
+      mkdirSync(defaultNvmDirectory, { recursive: true });
+      writeFileSync(
+        resolve(defaultNvmDirectory, "nvm.sh"),
+        [
+          '[ "$NVM_DIR" = "$EXPECTED_NVM_DIR" ] || return 1',
+          "nvm() {",
+          '  [ "$1" = "use" ] && [ "$2" = "24.13.0" ] || return 1',
+          '  export FAKE_NODE_VERSION="$2"',
+          "}",
+          "",
+        ].join("\n"),
+      );
+      const defaultNvm = run(
+        sandbox,
+        ["sh", resolve(root, "scripts/quality/with-node-version.sh"), "target"],
+        {
+          EXPECTED_NVM_DIR: defaultNvmDirectory,
+          FAKE_NODE_VERSION: "22.22.0",
+          HOME: defaultHome,
+          HOOK_LOG: log,
+          NVM_DIR: "",
+          PATH: path,
+        },
+      );
+      expect(defaultNvm.exitCode).toBe(0);
       expect(readFileSync(log, "utf8")).toBe("v24.13.0\n");
 
       const nvmDirectory = resolve(sandbox, "nvm");
@@ -377,25 +460,35 @@ describe("repository Git hooks", () => {
     }
   });
 
-  test("pre-push clears inherited Git state before foreign repositories run", () => {
-    const sandbox = mkdtempSync(join(tmpdir(), "llm-core-hook-worktree-"));
+  test("pre-push clears inherited Git state before foreign repositories run in an ordinary checkout", () => {
+    const sandbox = mkdtempSync(join(tmpdir(), "llm-core-hook-checkout-"));
     try {
       const primary = join(sandbox, "primary");
-      const linked = join(sandbox, "linked");
       const remote = join(sandbox, "remote.git");
       const foreign = join(sandbox, "foreign.git");
       mkdirSync(primary);
-      git(primary, ["init", "--quiet"]);
+      git(primary, ["init", "--quiet", "--initial-branch=proof"]);
       git(primary, ["config", "user.email", "hooks@example.test"]);
       git(primary, ["config", "user.name", "Hook Test"]);
       writeFileSync(join(primary, "tracked.md"), "# Initial\n");
+      mkdirSync(join(primary, "scripts/quality"), { recursive: true });
+      copyFileSync(
+        resolve(root, "scripts/quality/check-quality-base.sh"),
+        join(primary, "scripts/quality/check-quality-base.sh"),
+      );
       git(primary, ["add", "tracked.md"]);
+      git(primary, ["add", "scripts/quality/check-quality-base.sh"]);
       git(primary, ["commit", "--quiet", "-m", "initial"]);
       git(primary, ["init", "--bare", "--quiet", remote]);
+      const initial = git(primary, ["rev-parse", "HEAD"]).trim();
       git(primary, ["remote", "add", "origin", remote]);
-      git(primary, ["worktree", "add", "--quiet", "-b", "proof", linked]);
-      git(linked, ["update-ref", "refs/remotes/origin/proof", "HEAD"]);
-      git(linked, ["branch", "--set-upstream-to=origin/proof", "proof"]);
+      git(primary, ["push", "--quiet", "origin", "HEAD:refs/heads/main"]);
+      git(primary, ["update-ref", "refs/remotes/origin/main", initial]);
+      git(primary, ["update-ref", "refs/remotes/origin/proof", initial]);
+      git(primary, ["branch", "--set-upstream-to=origin/proof", "proof"]);
+      writeFileSync(join(primary, "feature.md"), "# Feature\n");
+      git(primary, ["add", "feature.md"]);
+      git(primary, ["commit", "--quiet", "-m", "feature change"]);
       const hookDirectory = join(sandbox, "hooks");
       mkdirSync(hookDirectory);
       const pushHook = join(hookDirectory, "pre-push");
@@ -417,16 +510,12 @@ describe("repository Git hooks", () => {
           '  if printenv "$name" >/dev/null; then exit 23; fi',
           "done",
           'printf "%s\\n" "$*" >> "$HOOK_LOG"',
+          'if [ "$2" = "quality:prepush" ]; then printf "%s\\n" "$QUALITY_BASE_SHA" >> "$HOOK_LOG"; fi',
           "",
         ].join("\n"),
       );
-      const directory = git(linked, ["rev-parse", "--absolute-git-dir"]).trim();
-      const canonicalLinked = git(linked, ["rev-parse", "--show-toplevel"]).trim();
-      const result = run(linked, ["git", "push", "origin", "proof"], {
-        GIT_DIR: directory,
-        GIT_WORK_TREE: linked,
-        GIT_COMMON_DIR: join(primary, ".git"),
-        GIT_INDEX_FILE: join(directory, "index"),
+      const canonicalRoot = git(primary, ["rev-parse", "--show-toplevel"]).trim();
+      const result = run(primary, ["git", "push", "origin", "proof"], {
         FOREIGN_REPOSITORY: foreign,
         HOOK_LOG: log,
         REAL_PUSH_HOOK: resolve(root, "scripts/quality/pre-push.sh"),
@@ -434,11 +523,11 @@ describe("repository Git hooks", () => {
       });
       expect(result.exitCode).toBe(0);
       expect(readFileSync(log, "utf8")).toBe(
-        `${canonicalLinked}\norigin/proof\ntrue\nrun quality:prepush:fix\n${canonicalLinked}\norigin/proof\ntrue\nrun quality:prepush\n`,
+        `${canonicalRoot}\norigin/proof\ntrue\nrun quality:prepush:fix\n${canonicalRoot}\norigin/proof\ntrue\nrun quality:prepush\n${initial}\n`,
       );
       expect(git(primary, ["config", "--get", "core.bare"]).trim()).toBe("false");
       expect(git(remote, ["rev-parse", "refs/heads/proof"]).trim()).toBe(
-        git(linked, ["rev-parse", "HEAD"]).trim(),
+        git(primary, ["rev-parse", "HEAD"]).trim(),
       );
     } finally {
       rmSync(sandbox, { recursive: true, force: true });

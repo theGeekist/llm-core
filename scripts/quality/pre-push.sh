@@ -29,4 +29,13 @@ if [ "$fix_status" -ne 0 ]; then
 fi
 
 echo "Running the CI quality boundary. This includes the sealed ESLint baseline and may take a few minutes."
-exec bun run quality:prepush
+quality_base_sha=$(sh scripts/quality/check-quality-base.sh)
+echo "Using verified origin/main $quality_base_sha as QUALITY_BASE_SHA."
+env QUALITY_BASE_SHA="$quality_base_sha" bun run quality:prepush
+
+latest_quality_base_sha=$(sh scripts/quality/check-quality-base.sh)
+if [ "$latest_quality_base_sha" != "$quality_base_sha" ]; then
+  echo "origin/main advanced while the local quality gate was running; the push was blocked." >&2
+  echo "Fetch origin/main and rerun the pre-push gate." >&2
+  exit 1
+fi

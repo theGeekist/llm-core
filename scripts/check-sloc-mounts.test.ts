@@ -41,3 +41,15 @@ test("SLOC excludes ignored external context mounts exactly", () => {
     rmSync(external, { recursive: true, force: true });
   }
 });
+
+test("SLOC excludes a separate local Observatory checkout", () => {
+  const root = mkdtempSync(join(tmpdir(), "llm-core-sloc-observatory-"));
+  try {
+    mkdirSync(join(root, ".site-observatory"));
+    writeFileSync(join(root, ".site-observatory", "site.ts"), "site\n".repeat(601));
+
+    expect(checkSloc(root, baseline, { expectedLegacyEntries: {} }).errors).toEqual([]);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
