@@ -44,6 +44,11 @@
   },
   "contextSources": [
     {
+      "mutableReadingStatuses": ["proposed", "ready"],
+      "pathPrefix": "context/task-graph",
+      "rootFromWorkspace": "context/task-graph"
+    },
+    {
       "mutableReadingStatuses": null,
       "pathPrefix": "context/aifsd-research",
       "rootFromWorkspace": "context/aifsd-research"

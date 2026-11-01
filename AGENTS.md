@@ -21,8 +21,9 @@
   currently active. Compare that candidate's conflicts, write scope, generated
   outputs, and staging paths with the ongoing work in real time. Selection is
   incremental, with no preset serial or parallel preference. Use the selected
-  checkout; serialize or repartition overlapping work. All work stays in that
-  checkout.
+  checkout. Inspect actual overlapping
+  edits before choosing partitioned work, a shared writer or integration order;
+  a path overlap alone does not require serial execution.
 
 ## Git workflow
 
@@ -30,6 +31,23 @@
 - Start work from an up-to-date, clean `main`.
 - Do not create or switch to a feature branch unless the user explicitly asks for one.
 - Keep changes focused and reviewable. Do not commit, push, publish, or release unless explicitly requested.
+
+## Parallel work
+
+- Use the existing checkout and preserve its dirty work. The latest maintainer
+  instructions prohibit worktrees; earlier conversation permission does not
+  override the current workspace policy.
+- Record each task's owner, repository, base revision, branch and intended write
+  boundary before delegation. Assign a receiving integration owner when needed.
+- Keep causal dependencies, context links and conflict warnings distinct. A
+  dependency requires an actual prerequisite output. Shared paths alone do not
+  create an execution order; partition compatible edits or coordinate a common
+  writer. Record incompatible contract changes and serious integration risks
+  with their specific resolution instead of inventing dependency edges.
+- Plan integration and affected checks against the receiving head. Account for
+  shared databases and incompatible API decisions; separate branches do not
+  establish merge safety. Use TaskGraph's existing plan, context and reservation
+  facilities where available.
 
 ## Package ownership
 

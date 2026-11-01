@@ -28,11 +28,14 @@ write_scope:
   - docs/adapters/native-agent-conversation.md
   - packages/llm-core/docs/final-architecture/tasks/task-graph-native-agent-runtime-migration-qualification.md
 required_reading:
+  - path: context/task-graph/.taskgraph/decisions/ADR-006-provisional-native-agent-runtime-integration.md
+    reason: Preserve the temporary provider-runtime exception and TaskGraph-owned task, evidence, ledger and Current Velocity boundaries.
   - path: context/simple-chat/architecture/evidence/2026-08-19-native-agent-capability-reconciliation.markdown
     reason: Preserve the complete provider-route inventory and the distinction between documented capability and executable adapter conformance.
   - path: context/simple-chat/architecture/evidence/2026-08-18-native-agent-ingress-spike.markdown
     reason: Retain the executable Codex and Antigravity evidence against which the migrated adapters must be compared.
 read_scope:
+  - context/task-graph/.taskgraph/decisions/ADR-006-provisional-native-agent-runtime-integration.md
   - context/simple-chat/architecture/evidence/2026-08-18-native-agent-ingress-spike.markdown
   - context/simple-chat/architecture/evidence/2026-08-19-native-agent-capability-reconciliation.markdown
   - packages/llm-core/src/features/agent/**
@@ -59,10 +62,15 @@ provisional provider code is retired.
 
 ## Why this exists
 
-Task Graph contains the first executable reference while llm-core and
-`@aifsd/sdk` are not yet reachable by a consumer. Permanent ownership belongs
-here, but migration without fixture, source and revision provenance would
-create a second implementation and conceal native-contract or timing drift.
+TaskGraph ADR-006 records the temporary provider-runtime exception while a
+qualified llm-core route and AIFSD consumer path are established. The llm-core
+contracts and adapters now exist; exact route qualification and the AIFSD
+consumer qualification remain pending. Migration without fixture, source and
+revision provenance would create a second implementation and conceal
+native-contract or timing drift.
+
+AIFSD owns shared scoring and score-method learning. TaskGraph retains its
+empirical work ledger and Current Velocity product presentation and projections.
 
 ## Inputs
 
@@ -83,7 +91,7 @@ create a second implementation and conceal native-contract or timing drift.
 ## Out of scope
 
 - Removing Task Graph's provisional code before AIFSD and consumer dogfood.
-- Moving Task Graph annotations, empirical ledger or Current Velocity here.
+- Moving Task Graph annotations, empirical work ledger or Current Velocity product presentation/projections into llm-core or AIFSD; shared scoring and score-method learning remain AIFSD-owned.
 - Adding Task Graph as a runtime dependency of llm-core.
 - Reimplementing a route when the incumbent code can be migrated coherently.
 
