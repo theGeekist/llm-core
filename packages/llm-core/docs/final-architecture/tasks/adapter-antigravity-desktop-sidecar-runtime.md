@@ -3,7 +3,7 @@ id: adapter-antigravity-desktop-sidecar-runtime
 title: Qualify the Antigravity Desktop Sidecar adapter
 stage: adapters
 status: review
-priority: critical
+priority: normal
 forward_to: []
 depends_on:
   - native-agent-conversation-runtime-contract
@@ -34,7 +34,7 @@ read_scope:
   - packages/llm-core/tests/adapters/antigravity-desktop-sidecar/**
   - docs/adapters/antigravity-desktop-sidecar.md
 review_owner: coordinator
-updated_at: 2026-09-06
+updated_at: 2026-11-03
 ---
 
 # adapter-antigravity-desktop-sidecar-runtime - Qualify the Antigravity Desktop Sidecar adapter

@@ -3,7 +3,7 @@ id: adapter-antigravity-cli-hooks-runtime
 title: Qualify the Antigravity CLI and hooks conversation adapter
 stage: adapters
 status: review
-priority: critical
+priority: normal
 forward_to: []
 depends_on:
   - native-agent-conversation-runtime-contract
@@ -38,7 +38,7 @@ read_scope:
   - packages/llm-core/tests/adapters/antigravity-cli-hooks/**
   - docs/adapters/antigravity-cli-hooks.md
 review_owner: coordinator
-updated_at: 2026-09-05
+updated_at: 2026-11-03
 ---
 
 # adapter-antigravity-cli-hooks-runtime - Qualify the Antigravity CLI and hooks conversation adapter

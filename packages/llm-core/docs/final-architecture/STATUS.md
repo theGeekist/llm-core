@@ -7,7 +7,7 @@ Pre-transition source baseline: `c041792`
 
 <!-- architecture-status:generated:start -->
 
-Active tasks: 4
+Active tasks: 5
 
 ## Task inventory
 
@@ -93,6 +93,7 @@ Active tasks: 4
 | native-agent-cross-provider-conformance | qualification | proposed | adapter-codex-app-server-runtime, adapter-codex-desktop-hooks-runtime, adapter-claude-native-session-runtime, adapter-antigravity-cli-hooks-runtime, adapter-antigravity-desktop-sidecar-runtime | — | — | — |
 | native-agent-runtime-governance-reconciliation | architecture | done | — | — | — | — |
 | production-quality-gates | qualification | done | — | — | — | — |
+| publish-delivery-architecture-alignment | architecture | review | — | — | — | — |
 | release-history-provenance | qualification | done | release-v2-readiness | — | — | — |
 | release-v2-readiness | architecture | done | architecture-release-reproducibility, adapters-protocol-qualification | — | — | — |
 | repository-package-index-readme-restoration | architecture | review | — | — | — | — |

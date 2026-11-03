@@ -4,6 +4,7 @@
   "excludedDirectories": [
     ".git",
     ".site-observatory",
+    ".site-project-pulse",
     ".worktrees",
     "__snapshots__",
     "coverage",

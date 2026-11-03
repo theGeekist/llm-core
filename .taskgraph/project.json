@@ -57,6 +57,11 @@
   ],
   "externalReadingSources": [
     {
+      "mutableReadingStatuses": ["proposed", "ready"],
+      "pathPrefix": "context/task-graph",
+      "root": "context/task-graph"
+    },
+    {
       "mutableReadingStatuses": null,
       "pathPrefix": "packages/aifsd/docs",
       "root": "packages/aifsd/docs"

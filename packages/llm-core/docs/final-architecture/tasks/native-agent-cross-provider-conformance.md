@@ -3,7 +3,7 @@ id: native-agent-cross-provider-conformance
 title: Qualify native-agent conversation conformance across providers
 stage: qualification
 status: proposed
-priority: critical
+priority: normal
 forward_to: []
 depends_on:
   - adapter-codex-app-server-runtime
@@ -50,7 +50,7 @@ read_scope:
   - packages/llm-core/tests/conformance/native-agent-conversation/**
   - docs/adapters/native-agent-conversation.md
 review_owner: coordinator
-updated_at: 2026-08-23
+updated_at: 2026-11-03
 ---
 
 # native-agent-cross-provider-conformance - Qualify native-agent conversation conformance across providers

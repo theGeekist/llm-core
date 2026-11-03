@@ -53,3 +53,15 @@ test("SLOC excludes a separate local Observatory checkout", () => {
     rmSync(root, { recursive: true, force: true });
   }
 });
+
+test("SLOC excludes a separate local Project Pulse Site checkout", () => {
+  const root = mkdtempSync(join(tmpdir(), "llm-core-sloc-project-pulse-"));
+  try {
+    mkdirSync(join(root, ".site-project-pulse"));
+    writeFileSync(join(root, ".site-project-pulse", "site.ts"), "site\n".repeat(601));
+
+    expect(checkSloc(root, baseline, { expectedLegacyEntries: {} }).errors).toEqual([]);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
