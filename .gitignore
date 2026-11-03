@@ -31,6 +31,7 @@ codex/
 # Separate local Observatory checkout and its build dependencies.
 .site-observatory/
 .site-project-pulse/
+/.cloudflare/cache/
 
 # Local research packet copies are not repository evidence.
 /perceval-probe-receipt.json

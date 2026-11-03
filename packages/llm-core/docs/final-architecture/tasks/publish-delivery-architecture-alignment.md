@@ -11,6 +11,9 @@ conflicts_with: []
 write_scope:
   - AGENTS.md
   - .gitignore
+  - scripts/check-sloc.ts
+  - scripts/check-sloc-mounts.test.ts
+  - scripts/sloc-baseline.json
   - .taskgraph/project.json
   - task-graph.project.json
   - packages/llm-core/docs/final-architecture/tasks/task-graph-native-agent-runtime-migration-qualification.md
@@ -33,7 +36,7 @@ read_scope:
   - .husky/**
   - scripts/quality/**
 review_owner: coordinator
-updated_at: 2026-11-01
+updated_at: 2026-11-03
 ---
 
 # Publish the delivery architecture and task-context alignment
@@ -55,7 +58,7 @@ qualification rather than present the documentation correction as implementation
 Include the parallel-work guidance, reconciled with the latest no-worktree instructions, the TaskGraph external
 reading mount in both consumed configurations, and the migration brief's corrected ownership and qualification
 language. Keep the separate, already committed Project Pulse Site checkout out
-of this library's source inventory. Regenerate the task-state projection for
+of this library's source inventory and SLOC walk. Regenerate the task-state projection for
 this publication record. No runtime, score calculation or product implementation
 changes belong to this task.
 
@@ -94,3 +97,10 @@ the current workspace policy, ownership boundaries and pending qualification.
 The commit and push hooks remain mandatory publication gates. The ready-for-review
 PR will link this task and record their result; human acceptance and merge remain
 separate. Keep remaining runtime and AIFSD qualification with their existing tasks.
+
+On 3 November 2026, the pre-push gate found a 705-line file in the ignored
+`.site-project-pulse` checkout. The gate's own directory walk did not respect
+Git ignore rules. The follow-up excludes this separate local Site directory in
+the canonical SLOC policy and baseline, with a focused regression test. The
+four mount tests and `bun run check:sloc` passed after the fix. The other
+quality stages passed before SLOC; the full required pre-push gate is pending.

@@ -3,7 +3,7 @@ id: task-graph-native-agent-runtime-migration-qualification
 title: Qualify migration from the Task Graph native-agent reference
 stage: qualification
 status: proposed
-priority: critical
+priority: normal
 forward_to: []
 depends_on:
   - native-agent-cross-provider-conformance
@@ -49,7 +49,7 @@ read_scope:
   - packages/llm-core/tests/conformance/native-agent-conversation/**
   - docs/adapters/native-agent-conversation.md
 review_owner: coordinator
-updated_at: 2026-08-23
+updated_at: 2026-11-03
 ---
 
 # task-graph-native-agent-runtime-migration-qualification - Qualify migration from the Task Graph native-agent reference

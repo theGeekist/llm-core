@@ -40,6 +40,7 @@ export const slocV1Policy = Object.freeze({
   excludedDirectories: Object.freeze([
     ".git",
     ".site-observatory",
+    ".site-project-pulse",
     ".worktrees",
     "__snapshots__",
     "coverage",
