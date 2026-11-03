@@ -16,6 +16,9 @@ write_scope:
   - scripts/sloc-baseline.json
   - .taskgraph/project.json
   - task-graph.project.json
+  - packages/llm-core/docs/final-architecture/tasks/adapter-antigravity-cli-hooks-runtime.md
+  - packages/llm-core/docs/final-architecture/tasks/adapter-antigravity-desktop-sidecar-runtime.md
+  - packages/llm-core/docs/final-architecture/tasks/native-agent-cross-provider-conformance.md
   - packages/llm-core/docs/final-architecture/tasks/task-graph-native-agent-runtime-migration-qualification.md
   - packages/llm-core/docs/final-architecture/tasks/publish-delivery-architecture-alignment.md
   - packages/llm-core/docs/final-architecture/STATUS.md
@@ -94,13 +97,17 @@ Independent reviewer `commit_task_graph` reported no actionable findings on the
 seven-file documentation/configuration change, including both context consumers,
 the current workspace policy, ownership boundaries and pending qualification.
 
-The commit and push hooks remain mandatory publication gates. The ready-for-review
-PR will link this task and record their result; human acceptance and merge remain
+The commit and push hooks remain mandatory publication gates. [PR #16](https://github.com/theGeekist/llm-core/pull/16)
+links this task and the migration brief; human acceptance and merge remain
 separate. Keep remaining runtime and AIFSD qualification with their existing tasks.
 
 On 3 November 2026, the pre-push gate found a 705-line file in the ignored
 `.site-project-pulse` checkout. The gate's own directory walk did not respect
 Git ignore rules. The follow-up excludes this separate local Site directory in
 the canonical SLOC policy and baseline, with a focused regression test. The
-four mount tests and `bun run check:sloc` passed after the fix. The other
-quality stages passed before SLOC; the full required pre-push gate is pending.
+four mount tests and `bun run check:sloc` passed after the fix. The full
+required pre-push gate then passed with the pinned Bun and Node versions.
+PR #16's CI, CodeQL and documentation checks passed. CodeRabbit subsequently
+found that this task's `write_scope` omitted the three Antigravity and
+cross-provider task records changed by the PR. The follow-up declares those
+exact paths; the publication scope and acceptance criterion now agree.
